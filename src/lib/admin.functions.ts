@@ -109,6 +109,7 @@ const productSchema = z.object({
   status: z.enum(["active", "draft", "out_of_stock"]),
   primary_image_url: z.string().max(500).optional().nullable(),
   gallery: z.array(z.string().max(500)).max(8).optional().default([]),
+  category_id: z.string().uuid().optional().nullable(),
 });
 
 export const upsertProduct = createServerFn({ method: "POST" })
