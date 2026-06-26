@@ -19,7 +19,7 @@ import { amIOwner } from "@/lib/owner.functions";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-const links = [
+const links: { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/products", label: "Products", icon: Package },
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag },
@@ -27,7 +27,7 @@ const links = [
   { to: "/admin/banners", label: "Banners", icon: ImageIcon },
   { to: "/admin/settings", label: "Store Settings", icon: Settings },
   { to: "/admin/subscription", label: "Subscription", icon: CreditCard },
-] as const;
+];
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminLayout,
