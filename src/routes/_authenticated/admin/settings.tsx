@@ -109,7 +109,7 @@ function SettingsPage() {
         <div className="grid gap-3 sm:grid-cols-2">
           {[
             { key: "header_color", label: "Header background", fallback: "#ffffff" },
-            { key: "title_bar_color", label: "Product title bar", fallback: "#0f172a" },
+            { key: "title_bar_color", label: "Product card panel", fallback: "#0f172a" },
             { key: "footer_color", label: "Footer background", fallback: "#0f172a" },
             { key: "button_color", label: "Primary button", fallback: "#0f172a" },
           ].map((c) => (
