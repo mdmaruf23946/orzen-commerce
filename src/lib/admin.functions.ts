@@ -354,11 +354,10 @@ export const upsertCategory = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
     if (!store) throw new Error("No store");
-    const slug = slugify(data.name);
     if (data.id) {
       const { error } = await supabase
         .from("categories")
-        .update({ name: data.name, slug })
+        .update({ name: data.name })
         .eq("id", data.id)
         .eq("store_id", store.id);
       if (error) throw new Error(error.message);
@@ -366,8 +365,8 @@ export const upsertCategory = createServerFn({ method: "POST" })
     }
     const { data: created, error } = await supabase
       .from("categories")
-      .insert({ store_id: store.id, name: data.name, slug })
-      .select("id,name,slug,store_id")
+      .insert({ store_id: store.id, name: data.name })
+      .select("id,name,store_id")
       .single();
     if (error) throw new Error(error.message);
     return created;
