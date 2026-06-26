@@ -16,6 +16,7 @@ import { Route as StoreSlugRouteRouteImport } from './routes/store/$slug/route'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as StoreSlugIndexRouteImport } from './routes/store/$slug/index'
 import { Route as ApiImgSplatRouteImport } from './routes/api/img.$'
+import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -51,6 +52,12 @@ const ApiImgSplatRoute = ApiImgSplatRouteImport.update({
   path: '/api/img/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StoreSlugProductProductIdRoute =
+  StoreSlugProductProductIdRouteImport.update({
+    id: '/product/$productId',
+    path: '/product/$productId',
+    getParentRoute: () => StoreSlugRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
   '/api/img/$': typeof ApiImgSplatRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
+  '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -66,6 +74,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRouteRoute
   '/api/img/$': typeof ApiImgSplatRoute
   '/store/$slug': typeof StoreSlugIndexRoute
+  '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -76,6 +85,7 @@ export interface FileRoutesById {
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
   '/api/img/$': typeof ApiImgSplatRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
+  '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -86,8 +96,15 @@ export interface FileRouteTypes {
     | '/store/$slug'
     | '/api/img/$'
     | '/store/$slug/'
+    | '/store/$slug/product/$productId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/admin' | '/api/img/$' | '/store/$slug'
+  to:
+    | '/'
+    | '/auth'
+    | '/admin'
+    | '/api/img/$'
+    | '/store/$slug'
+    | '/store/$slug/product/$productId'
   id:
     | '__root__'
     | '/'
@@ -97,6 +114,7 @@ export interface FileRouteTypes {
     | '/store/$slug'
     | '/api/img/$'
     | '/store/$slug/'
+    | '/store/$slug/product/$productId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -158,6 +176,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiImgSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/store/$slug/product/$productId': {
+      id: '/store/$slug/product/$productId'
+      path: '/product/$productId'
+      fullPath: '/store/$slug/product/$productId'
+      preLoaderRoute: typeof StoreSlugProductProductIdRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
+    }
   }
 }
 
@@ -174,10 +199,12 @@ const AuthenticatedRouteRouteWithChildren =
 
 interface StoreSlugRouteRouteChildren {
   StoreSlugIndexRoute: typeof StoreSlugIndexRoute
+  StoreSlugProductProductIdRoute: typeof StoreSlugProductProductIdRoute
 }
 
 const StoreSlugRouteRouteChildren: StoreSlugRouteRouteChildren = {
   StoreSlugIndexRoute: StoreSlugIndexRoute,
+  StoreSlugProductProductIdRoute: StoreSlugProductProductIdRoute,
 }
 
 const StoreSlugRouteRouteWithChildren = StoreSlugRouteRoute._addFileChildren(
