@@ -318,10 +318,13 @@ export type Database = {
         Row: {
           address: string | null
           bkash_number: string | null
+          button_color: string | null
           created_at: string
           description: string | null
           expires_at: string | null
           facebook: string | null
+          footer_color: string | null
+          header_color: string | null
           id: string
           logo_url: string | null
           nagad_number: string | null
@@ -332,16 +335,20 @@ export type Database = {
           primary_color: string
           slug: string
           status: Database["public"]["Enums"]["store_status"]
+          title_bar_color: string | null
           updated_at: string
           whatsapp: string | null
         }
         Insert: {
           address?: string | null
           bkash_number?: string | null
+          button_color?: string | null
           created_at?: string
           description?: string | null
           expires_at?: string | null
           facebook?: string | null
+          footer_color?: string | null
+          header_color?: string | null
           id?: string
           logo_url?: string | null
           nagad_number?: string | null
@@ -352,16 +359,20 @@ export type Database = {
           primary_color?: string
           slug: string
           status?: Database["public"]["Enums"]["store_status"]
+          title_bar_color?: string | null
           updated_at?: string
           whatsapp?: string | null
         }
         Update: {
           address?: string | null
           bkash_number?: string | null
+          button_color?: string | null
           created_at?: string
           description?: string | null
           expires_at?: string | null
           facebook?: string | null
+          footer_color?: string | null
+          header_color?: string | null
           id?: string
           logo_url?: string | null
           nagad_number?: string | null
@@ -372,6 +383,7 @@ export type Database = {
           primary_color?: string
           slug?: string
           status?: Database["public"]["Enums"]["store_status"]
+          title_bar_color?: string | null
           updated_at?: string
           whatsapp?: string | null
         }
