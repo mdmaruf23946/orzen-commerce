@@ -123,11 +123,8 @@ export const upsertProduct = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
     if (!store) throw new Error("No store");
-    const slug = slugify(data.name) + "-" + Math.random().toString(36).slice(2, 6);
-    const payload = {
-      store_id: store.id,
+    const baseFields = {
       name: data.name,
-      slug: data.id ? undefined : slug,
       description: data.description ?? null,
       price: data.price,
       old_price: data.old_price ?? null,
@@ -135,13 +132,22 @@ export const upsertProduct = createServerFn({ method: "POST" })
       status: data.status,
       primary_image_url: data.primary_image_url ?? null,
       gallery: data.gallery ?? [],
-    } as Record<string, unknown>;
+    };
     if (data.id) {
-      const { error } = await supabase.from("products").update(payload).eq("id", data.id).eq("store_id", store.id);
+      const { error } = await supabase
+        .from("products")
+        .update(baseFields)
+        .eq("id", data.id)
+        .eq("store_id", store.id);
       if (error) throw new Error(error.message);
       return { id: data.id };
     }
-    const { data: created, error } = await supabase.from("products").insert(payload).select("id").single();
+    const slug = slugify(data.name) + "-" + Math.random().toString(36).slice(2, 6);
+    const { data: created, error } = await supabase
+      .from("products")
+      .insert({ ...baseFields, store_id: store.id, slug })
+      .select("id")
+      .single();
     if (error) throw new Error(error.message);
     return created;
   });
