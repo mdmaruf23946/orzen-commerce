@@ -10,9 +10,33 @@ type Product = {
   primary_image_url: string | null;
 };
 
+function readPanelColor(): string {
+  if (typeof window === "undefined") return "#0f172a";
+  const v = getComputedStyle(document.documentElement)
+    .getPropertyValue("--store-title-bar-bg")
+    .trim();
+  return v || "#0f172a";
+}
+
+function isLight(hex: string): boolean {
+  const m = hex.replace("#", "");
+  if (m.length !== 3 && m.length !== 6) return false;
+  const h = m.length === 3 ? m.split("").map((c) => c + c).join("") : m;
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  // Relative luminance (sRGB approx)
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum > 0.6;
+}
+
 export function ProductCard({ slug, p }: { slug: string; p: Product }) {
   const navigate = useNavigate();
   const outOfStock = p.stock <= 0;
+  const light = typeof window !== "undefined" ? isLight(readPanelColor()) : false;
+  const fg = light ? "#0f172a" : "#ffffff";
+  const muted = light ? "rgba(15,23,42,0.6)" : "rgba(255,255,255,0.7)";
+  const outlineBorder = light ? "rgba(15,23,42,0.35)" : "rgba(255,255,255,0.55)";
 
   function handleAdd(e: React.MouseEvent) {
     e.preventDefault();
@@ -64,31 +88,34 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
       </Link>
 
       <div
-        className="px-2 py-1.5 text-center text-xs font-semibold text-white sm:text-sm"
-        style={{ backgroundColor: "var(--store-title-bar-bg)" }}
+        className="flex flex-1 flex-col gap-2 p-2.5 sm:p-3"
+        style={{ backgroundColor: "var(--store-title-bar-bg, #0f172a)", color: fg }}
       >
         <Link
           to="/store/$slug/product/$productId"
           params={{ slug, productId: p.id }}
-          className="line-clamp-2"
+          className="line-clamp-2 text-center text-xs font-semibold sm:text-sm"
+          style={{ color: fg }}
         >
           {p.name}
         </Link>
-      </div>
 
-      <div className="flex flex-1 flex-col gap-2 p-2">
         <div className="flex items-baseline justify-center gap-2">
-          <span className="text-base font-bold" style={{ color: "var(--primary)" }}>
+          <span className="text-base font-bold" style={{ color: fg }}>
             ৳{Number(p.price).toFixed(0)}
           </span>
           {p.old_price && (
-            <span className="text-xs text-muted-foreground line-through">
+            <span className="text-xs line-through" style={{ color: muted }}>
               ৳{Number(p.old_price).toFixed(0)}
             </span>
           )}
         </div>
+
         {outOfStock ? (
-          <span className="text-center text-[11px] font-semibold text-destructive">
+          <span
+            className="mt-auto text-center text-[11px] font-semibold"
+            style={{ color: "#ef4444" }}
+          >
             Out of stock
           </span>
         ) : (
@@ -96,11 +123,8 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
             <button
               type="button"
               onClick={handleAdd}
-              className="h-8 rounded-md border text-xs font-semibold active:opacity-80"
-              style={{
-                borderColor: "var(--store-btn-bg)",
-                color: "var(--store-btn-bg)",
-              }}
+              className="h-8 rounded-md border bg-transparent text-xs font-semibold active:opacity-80"
+              style={{ borderColor: outlineBorder, color: fg }}
             >
               Add to Cart
             </button>
@@ -108,7 +132,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
               type="button"
               onClick={handleBuy}
               className="h-9 w-full rounded-md text-sm font-semibold text-white active:opacity-80"
-              style={{ backgroundColor: "var(--store-btn-bg)" }}
+              style={{ backgroundColor: "var(--store-btn-bg, #0f172a)" }}
             >
               Buy Now
             </button>
