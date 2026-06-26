@@ -67,6 +67,10 @@ export const updateMyStore = createServerFn({ method: "POST" })
         facebook: z.string().trim().max(200).optional().nullable(),
         address: z.string().trim().max(500).optional().nullable(),
         primary_color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+        header_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().nullable(),
+        title_bar_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().nullable(),
+        footer_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().nullable(),
+        button_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().nullable(),
         bkash_number: z.string().trim().max(40).optional().nullable(),
         nagad_number: z.string().trim().max(40).optional().nullable(),
       })

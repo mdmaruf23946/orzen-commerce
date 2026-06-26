@@ -24,7 +24,7 @@ export const getStoreBySlug = createServerFn({ method: "GET" })
     const sb = publicClient();
     const { data: store, error } = await sb
       .from("stores")
-      .select("id,slug,name,description,logo_url,phone,whatsapp,facebook,address,primary_color,bkash_number,nagad_number,status")
+      .select("id,slug,name,description,logo_url,phone,whatsapp,facebook,address,primary_color,header_color,title_bar_color,footer_color,button_color,bkash_number,nagad_number,status")
       .eq("slug", data.slug)
       .eq("status", "active")
       .maybeSingle();
@@ -53,12 +53,25 @@ export const listStoreProducts = createServerFn({ method: "GET" })
     const sb = publicClient();
     const { data: products, error } = await sb
       .from("products")
-      .select("id,name,slug,price,old_price,stock,status,primary_image_url")
+      .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id")
       .eq("store_id", data.storeId)
       .neq("status", "draft")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return (products ?? []).map((p) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }));
+  });
+
+export const listStoreCategories = createServerFn({ method: "GET" })
+  .inputValidator((d) => z.object({ storeId: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const sb = publicClient();
+    const { data: cats, error } = await sb
+      .from("categories")
+      .select("id,name")
+      .eq("store_id", data.storeId)
+      .order("name", { ascending: true });
+    if (error) throw new Error(error.message);
+    return cats ?? [];
   });
 
 export const getProduct = createServerFn({ method: "GET" })

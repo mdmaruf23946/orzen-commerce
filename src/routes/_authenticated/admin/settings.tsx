@@ -47,6 +47,10 @@ function SettingsPage() {
           facebook: form.facebook,
           address: form.address,
           primary_color: form.primary_color || "#0f172a",
+          header_color: form.header_color || null,
+          title_bar_color: form.title_bar_color || null,
+          footer_color: form.footer_color || null,
+          button_color: form.button_color || null,
           bkash_number: form.bkash_number,
           nagad_number: form.nagad_number,
         },
@@ -96,6 +100,46 @@ function SettingsPage() {
             />
             <Input value={form.primary_color || ""} onChange={(e) => set("primary_color", e.target.value)} />
           </div>
+        </div>
+      </section>
+
+      <section className="space-y-4 rounded-xl border bg-card p-4">
+        <h2 className="text-sm font-semibold">Theme colors</h2>
+        <p className="text-xs text-muted-foreground">Customize how your storefront looks. Leave empty to use defaults.</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {[
+            { key: "header_color", label: "Header background", fallback: "#ffffff" },
+            { key: "title_bar_color", label: "Product title bar", fallback: "#0f172a" },
+            { key: "footer_color", label: "Footer background", fallback: "#0f172a" },
+            { key: "button_color", label: "Primary button", fallback: "#0f172a" },
+          ].map((c) => (
+            <div key={c.key} className="space-y-1.5">
+              <Label htmlFor={c.key}>{c.label}</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  id={c.key}
+                  type="color"
+                  value={form[c.key] || c.fallback}
+                  onChange={(e) => set(c.key, e.target.value)}
+                  className="h-10 w-14 rounded-md border"
+                />
+                <Input
+                  value={form[c.key] || ""}
+                  placeholder={c.fallback}
+                  onChange={(e) => set(c.key, e.target.value)}
+                />
+                {form[c.key] && (
+                  <button
+                    type="button"
+                    onClick={() => set(c.key, "")}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
