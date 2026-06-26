@@ -1,9 +1,10 @@
 import { createFileRoute, Link, Outlet, notFound } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ShoppingCart, Phone, MessageCircle, Facebook } from "lucide-react";
+import { ShoppingCart, Search, Phone, MessageCircle, Facebook } from "lucide-react";
 import { getStoreBySlug } from "@/lib/storefront.functions";
 import { cartCount } from "@/lib/cart";
+import { StoreUIProvider, useStoreUI } from "@/lib/store-ui";
 
 const storeQuery = (slug: string) =>
   queryOptions({
@@ -47,17 +48,24 @@ function StoreLayout() {
   const { data: store } = useSuspenseQuery(storeQuery(slug));
   if (!store) return null;
 
+  const themeVars = {
+    ["--primary" as string]: store.primary_color || "#0f172a",
+    ["--store-header-bg" as string]: store.header_color || "#ffffff",
+    ["--store-title-bar-bg" as string]: store.title_bar_color || store.primary_color || "#0f172a",
+    ["--store-footer-bg" as string]: store.footer_color || "#0f172a",
+    ["--store-btn-bg" as string]: store.button_color || store.primary_color || "#0f172a",
+  } as React.CSSProperties;
+
   return (
-    <div
-      className="min-h-screen bg-background"
-      style={{ ["--primary" as string]: store.primary_color } as React.CSSProperties}
-    >
-      <StoreHeader slug={slug} name={store.name} logoUrl={store.logo_url} />
-      <main className="mx-auto max-w-5xl px-4 pb-12 pt-4 sm:px-6">
-        <Outlet />
-      </main>
-      <StoreFooter store={store} />
-    </div>
+    <StoreUIProvider>
+      <div className="min-h-screen bg-background" style={themeVars}>
+        <StoreHeader slug={slug} name={store.name} logoUrl={store.logo_url} />
+        <main className="mx-auto max-w-5xl px-4 pb-12 pt-4 sm:px-6">
+          <Outlet />
+        </main>
+        <StoreFooter store={store} />
+      </div>
+    </StoreUIProvider>
   );
 }
 
@@ -71,6 +79,8 @@ function StoreHeader({
   logoUrl: string | null;
 }) {
   const [count, setCount] = useState(0);
+  const { query, setQuery } = useStoreUI();
+
   useEffect(() => {
     const update = () => setCount(cartCount(slug));
     update();
@@ -83,41 +93,72 @@ function StoreHeader({
   }, [slug]);
 
   return (
-    <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6">
-        <Link
-          to="/store/$slug"
-          params={{ slug }}
-          className="flex min-w-0 items-center gap-2"
-        >
-          {logoUrl ? (
-            <img src={logoUrl} alt="" className="h-8 w-8 rounded-full object-cover" loading="eager" />
-          ) : (
-            <div
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-bold text-primary-foreground"
-              style={{ backgroundColor: "var(--primary)" }}
-            >
-              {name.charAt(0)}
-            </div>
-          )}
-          <span className="truncate text-sm font-semibold sm:text-base">{name}</span>
-        </Link>
-        <Link
-          to="/store/$slug/cart"
-          params={{ slug }}
-          className="relative flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted"
-          aria-label="Cart"
-        >
-          <ShoppingCart className="h-5 w-5" />
-          {count > 0 && (
-            <span
-              className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full px-1 text-[10px] font-bold text-primary-foreground"
-              style={{ backgroundColor: "var(--primary)" }}
-            >
-              {count}
-            </span>
-          )}
-        </Link>
+    <header
+      className="sticky top-0 z-20 border-b"
+      style={{ backgroundColor: "var(--store-header-bg)" }}
+    >
+      <div className="mx-auto max-w-5xl px-4 sm:px-6">
+        <div className="flex h-14 items-center gap-3">
+          <Link to="/store/$slug" params={{ slug }} className="flex min-w-0 items-center gap-2">
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt=""
+                className="h-9 w-9 shrink-0 rounded-full object-cover"
+                loading="eager"
+              />
+            ) : (
+              <div
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-bold text-white"
+                style={{ backgroundColor: "var(--primary)" }}
+              >
+                {name.charAt(0)}
+              </div>
+            )}
+            <span className="truncate text-sm font-semibold sm:text-base">{name}</span>
+          </Link>
+
+          <div className="relative ml-auto hidden flex-1 max-w-sm sm:block">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search products…"
+              className="h-9 w-full rounded-md border bg-background pl-8 pr-3 text-sm outline-none focus:ring-1 focus:ring-ring"
+            />
+          </div>
+
+          <Link
+            to="/store/$slug/cart"
+            params={{ slug }}
+            className="relative ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full sm:ml-0"
+            aria-label="Cart"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {count > 0 && (
+              <span
+                className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full px-1 text-[10px] font-bold text-white"
+                style={{ backgroundColor: "var(--primary)" }}
+              >
+                {count}
+              </span>
+            )}
+          </Link>
+        </div>
+
+        <div className="pb-2 sm:hidden">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search products…"
+              className="h-9 w-full rounded-md border bg-background pl-8 pr-3 text-sm outline-none focus:ring-1 focus:ring-ring"
+            />
+          </div>
+        </div>
       </div>
     </header>
   );
@@ -126,14 +167,41 @@ function StoreHeader({
 function StoreFooter({
   store,
 }: {
-  store: { name: string; phone: string | null; whatsapp: string | null; facebook: string | null };
+  store: {
+    name: string;
+    description: string | null;
+    logo_url: string | null;
+    phone: string | null;
+    whatsapp: string | null;
+    facebook: string | null;
+  };
 }) {
   return (
-    <footer className="mt-8 border-t bg-muted/30">
-      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+    <footer
+      className="mt-8 text-white/90"
+      style={{ backgroundColor: "var(--store-footer-bg)" }}
+    >
+      <div className="mx-auto grid max-w-5xl gap-8 px-4 py-10 sm:grid-cols-3 sm:px-6">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            {store.logo_url ? (
+              <img src={store.logo_url} alt="" className="h-9 w-9 rounded-full object-cover" />
+            ) : (
+              <div className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-sm font-bold">
+                {store.name.charAt(0)}
+              </div>
+            )}
+            <span className="text-base font-semibold text-white">{store.name}</span>
+          </div>
+          {store.description && (
+            <p className="text-sm text-white/70 line-clamp-4">{store.description}</p>
+          )}
+        </div>
+
+        <div className="space-y-2 text-sm">
+          <h3 className="text-sm font-semibold text-white">Contact</h3>
           {store.phone && (
-            <a href={`tel:${store.phone}`} className="inline-flex items-center gap-1.5 hover:text-foreground">
+            <a href={`tel:${store.phone}`} className="flex items-center gap-2 text-white/80 hover:text-white">
               <Phone className="h-4 w-4" /> {store.phone}
             </a>
           )}
@@ -142,7 +210,7 @@ function StoreFooter({
               href={`https://wa.me/${store.whatsapp.replace(/\D/g, "")}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 hover:text-foreground"
+              className="flex items-center gap-2 text-white/80 hover:text-white"
             >
               <MessageCircle className="h-4 w-4" /> WhatsApp
             </a>
@@ -152,14 +220,23 @@ function StoreFooter({
               href={store.facebook}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 hover:text-foreground"
+              className="flex items-center gap-2 text-white/80 hover:text-white"
             >
               <Facebook className="h-4 w-4" /> Facebook
             </a>
           )}
         </div>
-        <p className="mt-4 text-xs text-muted-foreground">
-          © {new Date().getFullYear()} {store.name}. Powered by ShopFlow.
+
+        <div className="space-y-2 text-sm">
+          <h3 className="text-sm font-semibold text-white">Quick Links</h3>
+          <a href="#privacy" className="block text-white/80 hover:text-white">Privacy Policy</a>
+          <a href="#terms" className="block text-white/80 hover:text-white">Terms &amp; Conditions</a>
+          <a href="#returns" className="block text-white/80 hover:text-white">Return Policy</a>
+        </div>
+      </div>
+      <div className="border-t border-white/10">
+        <p className="mx-auto max-w-5xl px-4 py-4 text-center text-xs text-white/60 sm:px-6">
+          © {new Date().getFullYear()} {store.name}. All rights reserved.
         </p>
       </div>
     </footer>

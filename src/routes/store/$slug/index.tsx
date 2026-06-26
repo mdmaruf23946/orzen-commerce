@@ -1,7 +1,14 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { listStoreBanners, listStoreProducts, getStoreBySlug } from "@/lib/storefront.functions";
+import { useEffect, useMemo, useState } from "react";
+import {
+  listStoreBanners,
+  listStoreProducts,
+  listStoreCategories,
+  getStoreBySlug,
+} from "@/lib/storefront.functions";
+import { useStoreUI } from "@/lib/store-ui";
+import { ProductCard } from "@/components/storefront/ProductCard";
 
 const storeQuery = (slug: string) =>
   queryOptions({ queryKey: ["store", slug], queryFn: () => getStoreBySlug({ data: { slug } }) });
@@ -18,6 +25,12 @@ const productsQuery = (storeId: string) =>
     queryFn: () => listStoreProducts({ data: { storeId } }),
   });
 
+const categoriesQuery = (storeId: string) =>
+  queryOptions({
+    queryKey: ["categories", storeId],
+    queryFn: () => listStoreCategories({ data: { storeId } }),
+  });
+
 export const Route = createFileRoute("/store/$slug/")({
   loader: async ({ context, params }) => {
     const store = await context.queryClient.ensureQueryData(storeQuery(params.slug));
@@ -25,6 +38,7 @@ export const Route = createFileRoute("/store/$slug/")({
     await Promise.all([
       context.queryClient.ensureQueryData(bannersQuery(store.id)),
       context.queryClient.ensureQueryData(productsQuery(store.id)),
+      context.queryClient.ensureQueryData(categoriesQuery(store.id)),
     ]);
     return { storeId: store.id };
   },
@@ -39,58 +53,78 @@ function StoreHome() {
   if (!store) return null;
   const { data: banners } = useSuspenseQuery(bannersQuery(store.id));
   const { data: products } = useSuspenseQuery(productsQuery(store.id));
+  const { data: categories } = useSuspenseQuery(categoriesQuery(store.id));
+  const { query } = useStoreUI();
+  const [activeCat, setActiveCat] = useState<string | null>(null);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return products.filter((p) => {
+      if (activeCat && p.category_id !== activeCat) return false;
+      if (q && !p.name.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [products, query, activeCat]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {banners.length > 0 && <BannerCarousel banners={banners} />}
-      {products.length === 0 ? (
+
+      {categories.length > 0 && (
+        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+          <CategoryPill
+            label="All Products"
+            active={activeCat === null}
+            onClick={() => setActiveCat(null)}
+          />
+          {categories.map((c) => (
+            <CategoryPill
+              key={c.id}
+              label={c.name}
+              active={activeCat === c.id}
+              onClick={() => setActiveCat(c.id)}
+            />
+          ))}
+        </div>
+      )}
+
+      {filtered.length === 0 ? (
         <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">
-          No products yet.
+          {products.length === 0 ? "No products yet." : "No products match your search."}
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-          {products.map((p) => (
-            <Link
-              key={p.id}
-              to="/store/$slug/product/$productId"
-              params={{ slug, productId: p.id }}
-              className="group flex flex-col overflow-hidden rounded-xl border bg-card transition hover:shadow-md"
-            >
-              <div className="aspect-square overflow-hidden bg-muted">
-                {p.primary_image_url ? (
-                  <img
-                    src={p.primary_image_url}
-                    alt={p.name}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition group-hover:scale-[1.03]"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                    No image
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-1 flex-col p-3">
-                <h3 className="line-clamp-2 text-sm font-medium">{p.name}</h3>
-                <div className="mt-auto flex items-baseline gap-2 pt-2">
-                  <span className="text-base font-bold" style={{ color: "var(--primary)" }}>
-                    ৳{Number(p.price).toFixed(0)}
-                  </span>
-                  {p.old_price && (
-                    <span className="text-xs text-muted-foreground line-through">
-                      ৳{Number(p.old_price).toFixed(0)}
-                    </span>
-                  )}
-                </div>
-                {p.stock <= 0 && (
-                  <span className="mt-1 text-[11px] font-medium text-destructive">Out of stock</span>
-                )}
-              </div>
-            </Link>
+          {filtered.map((p) => (
+            <ProductCard key={p.id} slug={slug} p={p} />
           ))}
         </div>
       )}
     </div>
+  );
+}
+
+function CategoryPill({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap"
+      style={
+        active
+          ? { backgroundColor: "var(--store-btn-bg)", color: "#fff", borderColor: "var(--store-btn-bg)" }
+          : { backgroundColor: "transparent" }
+      }
+    >
+      {label}
+    </button>
   );
 }
 
