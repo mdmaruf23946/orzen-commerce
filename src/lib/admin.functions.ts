@@ -323,3 +323,64 @@ export const mySubscription = createServerFn({ method: "GET" })
       .limit(20);
     return { store, payments: payments ?? [] };
   });
+
+// ---------- CATEGORIES ----------
+export const listMyCategories = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    if (!store) return [];
+    const { data, error } = await supabase
+      .from("categories")
+      .select("*")
+      .eq("store_id", store.id)
+      .order("name", { ascending: true });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+export const upsertCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string().uuid().optional(),
+        name: z.string().trim().min(1).max(80),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    if (!store) throw new Error("No store");
+    const slug = slugify(data.name);
+    if (data.id) {
+      const { error } = await supabase
+        .from("categories")
+        .update({ name: data.name, slug })
+        .eq("id", data.id)
+        .eq("store_id", store.id);
+      if (error) throw new Error(error.message);
+      return { id: data.id };
+    }
+    const { data: created, error } = await supabase
+      .from("categories")
+      .insert({ store_id: store.id, name: data.name, slug })
+      .select("id,name,slug,store_id")
+      .single();
+    if (error) throw new Error(error.message);
+    return created;
+  });
+
+export const deleteCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    if (!store) throw new Error("No store");
+    const { error } = await supabase.from("categories").delete().eq("id", data.id).eq("store_id", store.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
