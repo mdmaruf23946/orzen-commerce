@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
+const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+
 export function ImageUploader({
   storeId,
   value,
@@ -19,20 +21,35 @@ export function ImageUploader({
   const [uploading, setUploading] = useState(false);
 
   async function handle(file: File) {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      toast.error("Image is too large (max 5 MB)");
+      return;
+    }
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
+      const rawExt = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const ext = rawExt.slice(0, 5) || "jpg";
       const path = `${storeId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const { error } = await supabase.storage.from("store-assets").upload(path, file, {
         upsert: false,
         contentType: file.type,
       });
-      if (error) throw error;
+      if (error) {
+        console.error("Upload error:", error);
+        const msg = error.message || "Upload failed. Check your permissions or try again.";
+        throw new Error(msg);
+      }
       onChange(path);
+      toast.success("Image uploaded");
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
       setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
     }
   }
 
