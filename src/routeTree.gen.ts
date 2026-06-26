@@ -13,12 +13,16 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StoreSlugRouteRouteImport } from './routes/store/$slug/route'
+import { Route as AuthenticatedOwnerRouteRouteImport } from './routes/_authenticated/owner/route'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as StoreSlugIndexRouteImport } from './routes/store/$slug/index'
+import { Route as AuthenticatedOwnerIndexRouteImport } from './routes/_authenticated/owner/index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as StoreSlugCheckoutRouteImport } from './routes/store/$slug/checkout'
 import { Route as StoreSlugCartRouteImport } from './routes/store/$slug/cart'
 import { Route as ApiImgSplatRouteImport } from './routes/api/img.$'
+import { Route as AuthenticatedOwnerStoresRouteImport } from './routes/_authenticated/owner/stores'
+import { Route as AuthenticatedOwnerPackagesRouteImport } from './routes/_authenticated/owner/packages'
 import { Route as AuthenticatedAdminSubscriptionRouteImport } from './routes/_authenticated/admin/subscription'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin/settings'
 import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authenticated/admin/products'
@@ -47,6 +51,11 @@ const StoreSlugRouteRoute = StoreSlugRouteRouteImport.update({
   path: '/store/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedOwnerRouteRoute = AuthenticatedOwnerRouteRouteImport.update({
+  id: '/owner',
+  path: '/owner',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminRouteRoute = AuthenticatedAdminRouteRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -56,6 +65,11 @@ const StoreSlugIndexRoute = StoreSlugIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => StoreSlugRouteRoute,
+} as any)
+const AuthenticatedOwnerIndexRoute = AuthenticatedOwnerIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedOwnerRouteRoute,
 } as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
@@ -77,6 +91,18 @@ const ApiImgSplatRoute = ApiImgSplatRouteImport.update({
   path: '/api/img/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedOwnerStoresRoute =
+  AuthenticatedOwnerStoresRouteImport.update({
+    id: '/stores',
+    path: '/stores',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerPackagesRoute =
+  AuthenticatedOwnerPackagesRouteImport.update({
+    id: '/packages',
+    path: '/packages',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
 const AuthenticatedAdminSubscriptionRoute =
   AuthenticatedAdminSubscriptionRouteImport.update({
     id: '/subscription',
@@ -129,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
+  '/owner': typeof AuthenticatedOwnerRouteRouteWithChildren
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
@@ -136,10 +163,13 @@ export interface FileRoutesByFullPath {
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
+  '/owner/packages': typeof AuthenticatedOwnerPackagesRoute
+  '/owner/stores': typeof AuthenticatedOwnerStoresRoute
   '/api/img/$': typeof ApiImgSplatRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/owner/': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
@@ -153,10 +183,13 @@ export interface FileRoutesByTo {
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
+  '/owner/packages': typeof AuthenticatedOwnerPackagesRoute
+  '/owner/stores': typeof AuthenticatedOwnerStoresRoute
   '/api/img/$': typeof ApiImgSplatRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/owner': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug': typeof StoreSlugIndexRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
@@ -167,6 +200,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
+  '/_authenticated/owner': typeof AuthenticatedOwnerRouteRouteWithChildren
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
   '/_authenticated/admin/banners': typeof AuthenticatedAdminBannersRoute
   '/_authenticated/admin/customers': typeof AuthenticatedAdminCustomersRoute
@@ -174,10 +208,13 @@ export interface FileRoutesById {
   '/_authenticated/admin/products': typeof AuthenticatedAdminProductsRoute
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/_authenticated/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
+  '/_authenticated/owner/packages': typeof AuthenticatedOwnerPackagesRoute
+  '/_authenticated/owner/stores': typeof AuthenticatedOwnerStoresRoute
   '/api/img/$': typeof ApiImgSplatRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/owner/': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
@@ -188,6 +225,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/admin'
+    | '/owner'
     | '/store/$slug'
     | '/admin/banners'
     | '/admin/customers'
@@ -195,10 +233,13 @@ export interface FileRouteTypes {
     | '/admin/products'
     | '/admin/settings'
     | '/admin/subscription'
+    | '/owner/packages'
+    | '/owner/stores'
     | '/api/img/$'
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
     | '/admin/'
+    | '/owner/'
     | '/store/$slug/'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
@@ -212,10 +253,13 @@ export interface FileRouteTypes {
     | '/admin/products'
     | '/admin/settings'
     | '/admin/subscription'
+    | '/owner/packages'
+    | '/owner/stores'
     | '/api/img/$'
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
     | '/admin'
+    | '/owner'
     | '/store/$slug'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
@@ -225,6 +269,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/admin'
+    | '/_authenticated/owner'
     | '/store/$slug'
     | '/_authenticated/admin/banners'
     | '/_authenticated/admin/customers'
@@ -232,10 +277,13 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/products'
     | '/_authenticated/admin/settings'
     | '/_authenticated/admin/subscription'
+    | '/_authenticated/owner/packages'
+    | '/_authenticated/owner/stores'
     | '/api/img/$'
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
     | '/_authenticated/admin/'
+    | '/_authenticated/owner/'
     | '/store/$slug/'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
@@ -279,6 +327,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreSlugRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/owner': {
+      id: '/_authenticated/owner'
+      path: '/owner'
+      fullPath: '/owner'
+      preLoaderRoute: typeof AuthenticatedOwnerRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
@@ -292,6 +347,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/store/$slug/'
       preLoaderRoute: typeof StoreSlugIndexRouteImport
       parentRoute: typeof StoreSlugRouteRoute
+    }
+    '/_authenticated/owner/': {
+      id: '/_authenticated/owner/'
+      path: '/'
+      fullPath: '/owner/'
+      preLoaderRoute: typeof AuthenticatedOwnerIndexRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/admin/': {
       id: '/_authenticated/admin/'
@@ -320,6 +382,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/img/$'
       preLoaderRoute: typeof ApiImgSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/owner/stores': {
+      id: '/_authenticated/owner/stores'
+      path: '/stores'
+      fullPath: '/owner/stores'
+      preLoaderRoute: typeof AuthenticatedOwnerStoresRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/packages': {
+      id: '/_authenticated/owner/packages'
+      path: '/packages'
+      fullPath: '/owner/packages'
+      preLoaderRoute: typeof AuthenticatedOwnerPackagesRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/admin/subscription': {
       id: '/_authenticated/admin/subscription'
@@ -406,12 +482,32 @@ const AuthenticatedAdminRouteRouteWithChildren =
     AuthenticatedAdminRouteRouteChildren,
   )
 
+interface AuthenticatedOwnerRouteRouteChildren {
+  AuthenticatedOwnerPackagesRoute: typeof AuthenticatedOwnerPackagesRoute
+  AuthenticatedOwnerStoresRoute: typeof AuthenticatedOwnerStoresRoute
+  AuthenticatedOwnerIndexRoute: typeof AuthenticatedOwnerIndexRoute
+}
+
+const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren =
+  {
+    AuthenticatedOwnerPackagesRoute: AuthenticatedOwnerPackagesRoute,
+    AuthenticatedOwnerStoresRoute: AuthenticatedOwnerStoresRoute,
+    AuthenticatedOwnerIndexRoute: AuthenticatedOwnerIndexRoute,
+  }
+
+const AuthenticatedOwnerRouteRouteWithChildren =
+  AuthenticatedOwnerRouteRoute._addFileChildren(
+    AuthenticatedOwnerRouteRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
+  AuthenticatedOwnerRouteRoute: typeof AuthenticatedOwnerRouteRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRouteWithChildren,
+  AuthenticatedOwnerRouteRoute: AuthenticatedOwnerRouteRouteWithChildren,
 }
 
 const AuthenticatedRouteRouteWithChildren =
