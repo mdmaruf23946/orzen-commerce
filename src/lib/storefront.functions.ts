@@ -65,13 +65,13 @@ export const listStoreCategories = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ storeId: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     const sb = publicClient();
-    const { data, error } = await sb
+    const { data: cats, error } = await sb
       .from("categories")
       .select("id,name")
       .eq("store_id", data.storeId)
       .order("name", { ascending: true });
     if (error) throw new Error(error.message);
-    return data ?? [];
+    return cats ?? [];
   });
 
 export const getProduct = createServerFn({ method: "GET" })
