@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StoreSlugRouteRouteImport } from './routes/store/$slug/route'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
+import { Route as StoreSlugIndexRouteImport } from './routes/store/$slug/index'
 import { Route as ApiImgSplatRouteImport } from './routes/api/img.$'
 
 const AuthRoute = AuthRouteImport.update({
@@ -40,6 +41,11 @@ const AuthenticatedAdminRouteRoute = AuthenticatedAdminRouteRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const StoreSlugIndexRoute = StoreSlugIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StoreSlugRouteRoute,
+} as any)
 const ApiImgSplatRoute = ApiImgSplatRouteImport.update({
   id: '/api/img/$',
   path: '/api/img/$',
@@ -50,15 +56,16 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRouteRoute
-  '/store/$slug': typeof StoreSlugRouteRoute
+  '/store/$slug': typeof StoreSlugRouteRouteWithChildren
   '/api/img/$': typeof ApiImgSplatRoute
+  '/store/$slug/': typeof StoreSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRouteRoute
-  '/store/$slug': typeof StoreSlugRouteRoute
   '/api/img/$': typeof ApiImgSplatRoute
+  '/store/$slug': typeof StoreSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -66,14 +73,21 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRoute
-  '/store/$slug': typeof StoreSlugRouteRoute
+  '/store/$slug': typeof StoreSlugRouteRouteWithChildren
   '/api/img/$': typeof ApiImgSplatRoute
+  '/store/$slug/': typeof StoreSlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/admin' | '/store/$slug' | '/api/img/$'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/admin'
+    | '/store/$slug'
+    | '/api/img/$'
+    | '/store/$slug/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/admin' | '/store/$slug' | '/api/img/$'
+  to: '/' | '/auth' | '/admin' | '/api/img/$' | '/store/$slug'
   id:
     | '__root__'
     | '/'
@@ -82,13 +96,14 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/store/$slug'
     | '/api/img/$'
+    | '/store/$slug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
-  StoreSlugRouteRoute: typeof StoreSlugRouteRoute
+  StoreSlugRouteRoute: typeof StoreSlugRouteRouteWithChildren
   ApiImgSplatRoute: typeof ApiImgSplatRoute
 }
 
@@ -129,6 +144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/store/$slug/': {
+      id: '/store/$slug/'
+      path: '/'
+      fullPath: '/store/$slug/'
+      preLoaderRoute: typeof StoreSlugIndexRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
+    }
     '/api/img/$': {
       id: '/api/img/$'
       path: '/api/img/$'
@@ -150,11 +172,23 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface StoreSlugRouteRouteChildren {
+  StoreSlugIndexRoute: typeof StoreSlugIndexRoute
+}
+
+const StoreSlugRouteRouteChildren: StoreSlugRouteRouteChildren = {
+  StoreSlugIndexRoute: StoreSlugIndexRoute,
+}
+
+const StoreSlugRouteRouteWithChildren = StoreSlugRouteRoute._addFileChildren(
+  StoreSlugRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
-  StoreSlugRouteRoute: StoreSlugRouteRoute,
+  StoreSlugRouteRoute: StoreSlugRouteRouteWithChildren,
   ApiImgSplatRoute: ApiImgSplatRoute,
 }
 export const routeTree = rootRouteImport
