@@ -19,6 +19,7 @@ import { Route as StoreSlugCheckoutRouteImport } from './routes/store/$slug/chec
 import { Route as StoreSlugCartRouteImport } from './routes/store/$slug/cart'
 import { Route as ApiImgSplatRouteImport } from './routes/api/img.$'
 import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
+import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/order.$orderId'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -70,6 +71,11 @@ const StoreSlugProductProductIdRoute =
     path: '/product/$productId',
     getParentRoute: () => StoreSlugRouteRoute,
   } as any)
+const StoreSlugOrderOrderIdRoute = StoreSlugOrderOrderIdRouteImport.update({
+  id: '/order/$orderId',
+  path: '/order/$orderId',
+  getParentRoute: () => StoreSlugRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
+  '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
 }
 export interface FileRoutesByTo {
@@ -90,6 +97,7 @@ export interface FileRoutesByTo {
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/store/$slug': typeof StoreSlugIndexRoute
+  '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
 }
 export interface FileRoutesById {
@@ -103,6 +111,7 @@ export interface FileRoutesById {
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
+  '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
 }
 export interface FileRouteTypes {
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
     | '/store/$slug/'
+    | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
     | '/store/$slug'
+    | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
   id:
     | '__root__'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
     | '/store/$slug/'
+    | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
   fileRoutesById: FileRoutesById
 }
@@ -221,6 +233,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreSlugProductProductIdRouteImport
       parentRoute: typeof StoreSlugRouteRoute
     }
+    '/store/$slug/order/$orderId': {
+      id: '/store/$slug/order/$orderId'
+      path: '/order/$orderId'
+      fullPath: '/store/$slug/order/$orderId'
+      preLoaderRoute: typeof StoreSlugOrderOrderIdRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
+    }
   }
 }
 
@@ -239,6 +258,7 @@ interface StoreSlugRouteRouteChildren {
   StoreSlugCartRoute: typeof StoreSlugCartRoute
   StoreSlugCheckoutRoute: typeof StoreSlugCheckoutRoute
   StoreSlugIndexRoute: typeof StoreSlugIndexRoute
+  StoreSlugOrderOrderIdRoute: typeof StoreSlugOrderOrderIdRoute
   StoreSlugProductProductIdRoute: typeof StoreSlugProductProductIdRoute
 }
 
@@ -246,6 +266,7 @@ const StoreSlugRouteRouteChildren: StoreSlugRouteRouteChildren = {
   StoreSlugCartRoute: StoreSlugCartRoute,
   StoreSlugCheckoutRoute: StoreSlugCheckoutRoute,
   StoreSlugIndexRoute: StoreSlugIndexRoute,
+  StoreSlugOrderOrderIdRoute: StoreSlugOrderOrderIdRoute,
   StoreSlugProductProductIdRoute: StoreSlugProductProductIdRoute,
 }
 
