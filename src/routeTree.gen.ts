@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as StoreSlugRouteRouteImport } from './routes/store/$slug/route'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as StoreSlugIndexRouteImport } from './routes/store/$slug/index'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as StoreSlugCheckoutRouteImport } from './routes/store/$slug/checkout'
 import { Route as StoreSlugCartRouteImport } from './routes/store/$slug/cart'
 import { Route as ApiImgSplatRouteImport } from './routes/api/img.$'
@@ -50,6 +51,11 @@ const StoreSlugIndexRoute = StoreSlugIndexRouteImport.update({
   path: '/',
   getParentRoute: () => StoreSlugRouteRoute,
 } as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
 const StoreSlugCheckoutRoute = StoreSlugCheckoutRouteImport.update({
   id: '/checkout',
   path: '/checkout',
@@ -80,11 +86,12 @@ const StoreSlugOrderOrderIdRoute = StoreSlugOrderOrderIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/admin': typeof AuthenticatedAdminRouteRoute
+  '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
   '/api/img/$': typeof ApiImgSplatRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
@@ -92,10 +99,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/admin': typeof AuthenticatedAdminRouteRoute
   '/api/img/$': typeof ApiImgSplatRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
   '/store/$slug': typeof StoreSlugIndexRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
@@ -105,11 +112,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/_authenticated/admin': typeof AuthenticatedAdminRouteRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
   '/api/img/$': typeof ApiImgSplatRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
@@ -124,6 +132,7 @@ export interface FileRouteTypes {
     | '/api/img/$'
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
+    | '/admin/'
     | '/store/$slug/'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
@@ -131,10 +140,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
-    | '/admin'
     | '/api/img/$'
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
+    | '/admin'
     | '/store/$slug'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
@@ -148,6 +157,7 @@ export interface FileRouteTypes {
     | '/api/img/$'
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
+    | '/_authenticated/admin/'
     | '/store/$slug/'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
@@ -205,6 +215,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreSlugIndexRouteImport
       parentRoute: typeof StoreSlugRouteRoute
     }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/store/$slug/checkout': {
       id: '/store/$slug/checkout'
       path: '/checkout'
@@ -243,12 +260,26 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedAdminRouteRouteChildren {
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+}
+
+const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
+  {
+    AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+  }
+
+const AuthenticatedAdminRouteRouteWithChildren =
+  AuthenticatedAdminRouteRoute._addFileChildren(
+    AuthenticatedAdminRouteRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRoute
+  AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRoute,
+  AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRouteWithChildren,
 }
 
 const AuthenticatedRouteRouteWithChildren =
