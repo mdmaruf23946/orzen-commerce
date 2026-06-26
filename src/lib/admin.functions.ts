@@ -133,6 +133,7 @@ export const upsertProduct = createServerFn({ method: "POST" })
       status: data.status,
       primary_image_url: data.primary_image_url ?? null,
       gallery: data.gallery ?? [],
+      category_id: data.category_id ?? null,
     };
     if (data.id) {
       const { error } = await supabase
