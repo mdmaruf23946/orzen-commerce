@@ -1,28 +1,31 @@
-## Product Card — Unified Bottom Panel
+## Product Details Page UX Improvement
 
-Refactor the storefront product card so the full info area (title + price + buttons) sits inside one solid-colored container, controlled by a single store setting. No new dependencies, no extra queries, no animations.
+Reorder the product details layout so the action area (quantity + Add to Cart + Buy Now) appears immediately under price/stock, with the description moved below. No new dependencies, no animations, no extra JS.
 
-### 1. Reuse the existing color field
-- Reuse the existing `stores.title_bar_color` column as the unified "Product card panel" color (it already powers the title bar and is already editable + loaded with the store). No DB migration, no extra payload.
-- In `src/routes/_authenticated/admin/settings.tsx`, rename the picker label from **"Product title bar"** to **"Product card panel"** and update the helper hint. Same field, clearer meaning.
+### File touched
+- `src/routes/store/$slug/product.$productId.tsx` — JSX reorder only; loaders, queries, and handlers stay unchanged so loading speed is unaffected.
 
-### 2. Rework `src/components/storefront/ProductCard.tsx`
-- Keep the image block as-is (lazy, aspect-square, link to product detail).
-- Replace the current split (colored title strip + plain price/buttons area) with **one** container directly under the image:
-  - `background: var(--store-title-bar-bg)` with a sensible fallback.
-  - Auto-contrast text: compute white vs near-black once per render from the hex via simple luminance check (pure JS, no lib) so titles/prices stay readable on light or dark panels.
-  - Inside the panel, stacked layout: title (2-line clamp) → price row (current + struck-through old price) → Add to Cart (outline) + Buy Now (solid) buttons.
-  - Buttons: outline button uses `currentColor`/transparent on the panel; solid Buy Now uses `--store-btn-bg`. White text on Buy Now stays as today.
-  - Out-of-stock state replaces the buttons with a centered "Out of stock" label inside the same panel.
-- Keep `:active` opacity only — no shadows, gradients, transitions.
+### New structure
 
-### 3. Performance guardrails
-- No new server calls, no new context, no extra renders — purely presentational JSX/CSS changes inside one component.
-- Contrast calc is O(1) per card and runs only on render of already-loaded data.
-- CSS variables continue to drive theming; admin color change still takes effect on next render with zero refetch.
+Mobile (single column, order top → bottom):
+1. Product images (main + thumbnails)
+2. Title
+3. Price + old price
+4. Stock status
+5. Quantity selector (− / qty / +)
+6. Add to Cart button
+7. Buy Now button
+8. Description
+9. Back link
 
-### Files touched
-- `src/components/storefront/ProductCard.tsx` — restructure into single panel + contrast helper.
-- `src/routes/_authenticated/admin/settings.tsx` — relabel the existing color picker.
+Desktop (`sm:` and up) — two-column grid:
+- Left column: images + thumbnails
+- Right column: title, price, stock, quantity, Add to Cart, Buy Now
+- Description spans full width **below both columns** (moved out of the right column into a third row under the grid)
 
-No schema changes, no new routes, no new packages.
+### Implementation notes
+- Wrap images + info in a `grid sm:grid-cols-2 gap-6` container; render the description as a sibling block after the grid so it sits below both columns on desktop and naturally below the buttons on mobile.
+- Keep buttons in a 2-column grid (`grid-cols-2 gap-3`) so they remain visible together above the fold on mobile.
+- Quantity selector stays as the existing rounded − / qty / + control, placed directly above the buttons.
+- No style/animation additions; reuse existing Tailwind classes and CSS variables already in the file.
+- No changes to data fetching, cart logic, or routes.
