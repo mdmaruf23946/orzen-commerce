@@ -109,6 +109,7 @@ const productSchema = z.object({
   status: z.enum(["active", "draft", "out_of_stock"]),
   primary_image_url: z.string().max(500).optional().nullable(),
   gallery: z.array(z.string().max(500)).max(8).optional().default([]),
+  category_id: z.string().uuid().optional().nullable(),
 });
 
 export const upsertProduct = createServerFn({ method: "POST" })
@@ -132,6 +133,7 @@ export const upsertProduct = createServerFn({ method: "POST" })
       status: data.status,
       primary_image_url: data.primary_image_url ?? null,
       gallery: data.gallery ?? [],
+      category_id: data.category_id ?? null,
     };
     if (data.id) {
       const { error } = await supabase
@@ -320,4 +322,64 @@ export const mySubscription = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false })
       .limit(20);
     return { store, payments: payments ?? [] };
+  });
+
+// ---------- CATEGORIES ----------
+export const listMyCategories = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    if (!store) return [];
+    const { data, error } = await supabase
+      .from("categories")
+      .select("*")
+      .eq("store_id", store.id)
+      .order("name", { ascending: true });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+export const upsertCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string().uuid().optional(),
+        name: z.string().trim().min(1).max(80),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    if (!store) throw new Error("No store");
+    if (data.id) {
+      const { error } = await supabase
+        .from("categories")
+        .update({ name: data.name })
+        .eq("id", data.id)
+        .eq("store_id", store.id);
+      if (error) throw new Error(error.message);
+      return { id: data.id };
+    }
+    const { data: created, error } = await supabase
+      .from("categories")
+      .insert({ store_id: store.id, name: data.name })
+      .select("id,name,store_id")
+      .single();
+    if (error) throw new Error(error.message);
+    return created;
+  });
+
+export const deleteCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    if (!store) throw new Error("No store");
+    const { error } = await supabase.from("categories").delete().eq("id", data.id).eq("store_id", store.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });

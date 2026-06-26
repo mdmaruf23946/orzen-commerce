@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import {
   LayoutDashboard,
   Package,
+  Tags,
   ShoppingBag,
   Users,
   Image as ImageIcon,
@@ -22,6 +23,7 @@ import { Button } from "@/components/ui/button";
 const links: { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/products", label: "Products", icon: Package },
+  { to: "/admin/categories", label: "Categories", icon: Tags },
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/banners", label: "Banners", icon: ImageIcon },
