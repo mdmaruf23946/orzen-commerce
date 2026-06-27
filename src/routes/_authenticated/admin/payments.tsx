@@ -69,9 +69,9 @@ function PaymentsPage() {
               onCheckedChange={(v) => set("cod", { enabled: v })}
             />
           </div>
-          <MobileMethod label="bKash" v={form.bkash ?? {}} onChange={(v) => set("bkash", v)} />
-          <MobileMethod label="Nagad" v={form.nagad ?? {}} onChange={(v) => set("nagad", v)} />
-          <MobileMethod label="Rocket" v={form.rocket ?? {}} onChange={(v) => set("rocket", v)} />
+          <MobileMethod label="bKash" v={{ enabled: false, number: "", ...(form.bkash ?? {}) }} onChange={(v) => set("bkash", v)} />
+          <MobileMethod label="Nagad" v={{ enabled: false, number: "", ...(form.nagad ?? {}) }} onChange={(v) => set("nagad", v)} />
+          <MobileMethod label="Rocket" v={{ enabled: false, number: "", ...(form.rocket ?? {}) }} onChange={(v) => set("rocket", v)} />
           <div className="space-y-2 rounded-lg border p-3">
             <div className="flex items-center justify-between">
               <Label>Bank Account (optional)</Label>
