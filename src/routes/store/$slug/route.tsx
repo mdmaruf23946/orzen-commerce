@@ -18,17 +18,24 @@ export const Route = createFileRoute("/store/$slug")({
     if (!store) throw notFound();
     return { store };
   },
-  head: ({ loaderData }) =>
-    loaderData
-      ? {
-          meta: [
-            { title: loaderData.store.name },
-            { name: "description", content: loaderData.store.description ?? loaderData.store.name },
-            { property: "og:title", content: loaderData.store.name },
-            { property: "og:description", content: loaderData.store.description ?? loaderData.store.name },
-          ],
-        }
-      : {},
+  head: ({ loaderData }) => {
+    if (!loaderData) return {};
+    const s: any = loaderData.store;
+    const seo = s.seo ?? {};
+    const title = seo.title || s.name;
+    const description = seo.description || s.description || s.name;
+    const meta: any[] = [
+      { title },
+      { name: "description", content: description },
+      { property: "og:title", content: title },
+      { property: "og:description", content: description },
+    ];
+    if (seo.keywords) meta.push({ name: "keywords", content: seo.keywords });
+    if (seo.og_image_url) meta.push({ property: "og:image", content: seo.og_image_url });
+    const links: any[] = [];
+    if (seo.favicon_url) links.push({ rel: "icon", href: seo.favicon_url });
+    return { meta, links };
+  },
   notFoundComponent: () => (
     <div className="flex min-h-screen items-center justify-center p-6 text-center">
       <div>
@@ -47,6 +54,9 @@ function StoreLayout() {
   const { slug } = Route.useParams();
   const { data: store } = useSuspenseQuery(storeQuery(slug));
   if (!store) return null;
+  const s: any = store;
+  const theme = s.theme ?? {};
+  const radius = typeof theme.radius === "number" ? `${theme.radius}px` : "0.5rem";
 
   const themeVars = {
     ["--primary" as string]: store.primary_color || "#0f172a",
@@ -54,10 +64,12 @@ function StoreLayout() {
     ["--store-title-bar-bg" as string]: store.title_bar_color || store.primary_color || "#0f172a",
     ["--store-footer-bg" as string]: store.footer_color || "#0f172a",
     ["--store-btn-bg" as string]: store.button_color || store.primary_color || "#0f172a",
+    ["--radius" as string]: radius,
   } as React.CSSProperties;
 
   return (
     <StoreUIProvider>
+      <TrackingScripts marketing={s.marketing} />
       <div className="min-h-screen bg-background" style={themeVars}>
         <StoreHeader slug={slug} name={store.name} logoUrl={store.logo_url} />
         <main className="mx-auto max-w-5xl px-4 pb-12 pt-4 sm:px-6">
@@ -67,6 +79,52 @@ function StoreLayout() {
       </div>
     </StoreUIProvider>
   );
+}
+
+function TrackingScripts({ marketing }: { marketing: any }) {
+  const m = marketing ?? {};
+  const en = m.enabled ?? {};
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const added: HTMLScriptElement[] = [];
+    const add = (src: string, inline?: string) => {
+      const s = document.createElement("script");
+      s.async = true;
+      if (src) s.src = src;
+      if (inline) s.text = inline;
+      document.head.appendChild(s);
+      added.push(s);
+    };
+    if (m.gtm_id && en.gtm !== false) {
+      add(
+        "",
+        `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s);j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${m.gtm_id}');`,
+      );
+    }
+    if (m.ga4_id && en.ga4 !== false) {
+      add(`https://www.googletagmanager.com/gtag/js?id=${m.ga4_id}`);
+      add(
+        "",
+        `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${m.ga4_id}');`,
+      );
+    }
+    if (m.fb_pixel_id && en.fb_pixel !== false) {
+      add(
+        "",
+        `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${m.fb_pixel_id}');fbq('track','PageView');`,
+      );
+    }
+    if (m.tiktok_pixel_id && en.tiktok !== false) {
+      add(
+        "",
+        `!function (w, d, t) {w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e};ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=i,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};var o=document.createElement("script");o.type="text/javascript",o.async=!0,o.src=i+"?sdkid="+e+"&lib="+t;var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};ttq.load('${m.tiktok_pixel_id}');ttq.page();}(window,document,'ttq');`,
+      );
+    }
+    return () => {
+      for (const s of added) s.remove();
+    };
+  }, [m.gtm_id, m.ga4_id, m.fb_pixel_id, m.tiktok_pixel_id, en.gtm, en.ga4, en.fb_pixel, en.tiktok]);
+  return null;
 }
 
 function StoreHeader({
