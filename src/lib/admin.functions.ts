@@ -387,3 +387,165 @@ export const deleteCategory = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ---------- SETTINGS SECTIONS (jsonb blobs on stores) ----------
+async function updateStoreColumn(
+  supabase: any,
+  userId: string,
+  column: string,
+  value: unknown,
+) {
+  const { error } = await supabase
+    .from("stores")
+    .update({ [column]: value })
+    .eq("owner_user_id", userId);
+  if (error) throw new Error(error.message);
+  return { ok: true };
+}
+
+const marketingSchema = z.object({
+  fb_pixel_id: z.string().trim().max(60).optional().nullable(),
+  fb_capi_token: z.string().trim().max(300).optional().nullable(),
+  fb_capi_enabled: z.boolean().optional(),
+  ga4_id: z.string().trim().max(40).optional().nullable(),
+  gtm_id: z.string().trim().max(40).optional().nullable(),
+  tiktok_pixel_id: z.string().trim().max(60).optional().nullable(),
+  enabled: z
+    .object({
+      fb_pixel: z.boolean().optional(),
+      ga4: z.boolean().optional(),
+      gtm: z.boolean().optional(),
+      tiktok: z.boolean().optional(),
+    })
+    .optional(),
+});
+
+export const updateMarketing = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => marketingSchema.parse(d))
+  .handler(async ({ data, context }) =>
+    updateStoreColumn(context.supabase, context.userId, "marketing", data),
+  );
+
+const courierProvider = z.object({
+  api_key: z.string().trim().max(300).optional().nullable(),
+  secret: z.string().trim().max(300).optional().nullable(),
+  base_url: z.string().trim().max(300).optional().nullable(),
+  enabled: z.boolean().optional(),
+});
+const couriersSchema = z.object({
+  steadfast: courierProvider.optional(),
+  pathao: courierProvider.optional(),
+  redx: courierProvider.optional(),
+  paperfly: courierProvider.optional(),
+});
+
+export const updateCouriers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => couriersSchema.parse(d))
+  .handler(async ({ data, context }) =>
+    updateStoreColumn(context.supabase, context.userId, "couriers", data),
+  );
+
+const seoSchema = z.object({
+  title: z.string().trim().max(160).optional().nullable(),
+  description: z.string().trim().max(320).optional().nullable(),
+  keywords: z.string().trim().max(300).optional().nullable(),
+  og_image_url: z.string().max(500).optional().nullable(),
+  favicon_url: z.string().max(500).optional().nullable(),
+});
+export const updateSeo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => seoSchema.parse(d))
+  .handler(async ({ data, context }) =>
+    updateStoreColumn(context.supabase, context.userId, "seo", data),
+  );
+
+const deliverySchema = z.object({
+  inside_city: z.number().nonnegative().optional(),
+  outside_city: z.number().nonnegative().optional(),
+  free_min: z.number().nonnegative().optional(),
+  cod_enabled: z.boolean().optional(),
+});
+export const updateDelivery = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => deliverySchema.parse(d))
+  .handler(async ({ data, context }) =>
+    updateStoreColumn(context.supabase, context.userId, "delivery", data),
+  );
+
+const paymentMethod = z.object({
+  enabled: z.boolean().optional(),
+  number: z.string().trim().max(60).optional().nullable(),
+});
+const paymentsSchema = z.object({
+  cod: z.object({ enabled: z.boolean().optional() }).optional(),
+  bkash: paymentMethod.optional(),
+  nagad: paymentMethod.optional(),
+  rocket: paymentMethod.optional(),
+  bank: z
+    .object({
+      enabled: z.boolean().optional(),
+      name: z.string().trim().max(120).optional().nullable(),
+      account: z.string().trim().max(60).optional().nullable(),
+      branch: z.string().trim().max(120).optional().nullable(),
+    })
+    .optional(),
+  instructions: z.string().trim().max(1000).optional().nullable(),
+});
+export const updatePayments = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => paymentsSchema.parse(d))
+  .handler(async ({ data, context }) =>
+    updateStoreColumn(context.supabase, context.userId, "payments_config", data),
+  );
+
+const notificationsSchema = z.object({
+  whatsapp: z.string().trim().max(40).optional().nullable(),
+  email_enabled: z.boolean().optional(),
+  sms_api_placeholder: z.string().trim().max(300).optional().nullable(),
+});
+export const updateNotifications = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => notificationsSchema.parse(d))
+  .handler(async ({ data, context }) =>
+    updateStoreColumn(context.supabase, context.userId, "notifications", data),
+  );
+
+const productDefaultsSchema = z.object({
+  warranty: z.string().trim().max(2000).optional().nullable(),
+  return_policy: z.string().trim().max(2000).optional().nullable(),
+  shipping_info: z.string().trim().max(2000).optional().nullable(),
+});
+export const updateProductDefaults = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => productDefaultsSchema.parse(d))
+  .handler(async ({ data, context }) =>
+    updateStoreColumn(context.supabase, context.userId, "product_defaults", data),
+  );
+
+const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
+const themeSchema = z.object({
+  header_color: hex.optional().nullable(),
+  footer_color: hex.optional().nullable(),
+  title_bar_color: hex.optional().nullable(),
+  button_color: hex.optional().nullable(),
+  radius: z.number().int().min(0).max(24).optional(),
+});
+export const updateTheme = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => themeSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    // Mirror colors into existing columns for backward compatibility, store full theme blob (incl radius).
+    const colorUpdates: Record<string, unknown> = {};
+    for (const k of ["header_color", "footer_color", "title_bar_color", "button_color"] as const) {
+      if (k in data && data[k] !== undefined) colorUpdates[k] = data[k] ?? null;
+    }
+    const { error } = await supabase
+      .from("stores")
+      .update({ ...colorUpdates, theme: data })
+      .eq("owner_user_id", userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
