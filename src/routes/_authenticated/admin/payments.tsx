@@ -69,9 +69,12 @@ function PaymentsPage() {
               onCheckedChange={(v) => set("cod", { enabled: v })}
             />
           </div>
-          <MobileMethod label="bKash" v={{ enabled: false, number: "", ...(form.bkash ?? {}) }} onChange={(v) => set("bkash", v)} />
-          <MobileMethod label="Nagad" v={{ enabled: false, number: "", ...(form.nagad ?? {}) }} onChange={(v) => set("nagad", v)} />
-          <MobileMethod label="Rocket" v={{ enabled: false, number: "", ...(form.rocket ?? {}) }} onChange={(v) => set("rocket", v)} />
+          {(["bkash", "nagad", "rocket"] as const).map((k) => {
+            const cur = (form[k] ?? {}) as Partial<Mobile>;
+            const v: Mobile = { enabled: cur.enabled ?? false, number: cur.number ?? "" };
+            const label = k === "bkash" ? "bKash" : k === "nagad" ? "Nagad" : "Rocket";
+            return <MobileMethod key={k} label={label} v={v} onChange={(nv) => set(k, nv)} />;
+          })}
           <div className="space-y-2 rounded-lg border p-3">
             <div className="flex items-center justify-between">
               <Label>Bank Account (optional)</Label>
