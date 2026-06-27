@@ -333,6 +333,18 @@ function ProductDialog({
             <Label htmlFor="d">Description</Label>
             <Textarea id="d" rows={4} value={description ?? ""} onChange={(e) => setDescription(e.target.value)} />
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="wr">Warranty</Label>
+            <Textarea id="wr" rows={2} value={warranty} onChange={(e) => setWarranty(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="rt">Return policy</Label>
+            <Textarea id="rt" rows={2} value={returnPolicy} onChange={(e) => setReturnPolicy(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="sh">Shipping information</Label>
+            <Textarea id="sh" rows={2} value={shippingInfo} onChange={(e) => setShippingInfo(e.target.value)} />
+          </div>
           <Button type="submit" disabled={saving} className="w-full">
             {saving ? "Saving…" : "Save"}
           </Button>
