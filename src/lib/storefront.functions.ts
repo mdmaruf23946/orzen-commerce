@@ -24,7 +24,7 @@ export const getStoreBySlug = createServerFn({ method: "GET" })
     const sb = publicClient();
     const { data: store, error } = await sb
       .from("stores")
-      .select("id,slug,name,description,logo_url,phone,whatsapp,facebook,address,primary_color,header_color,title_bar_color,footer_color,button_color,bkash_number,nagad_number,status")
+      .select("id,slug,name,description,logo_url,phone,whatsapp,facebook,address,primary_color,header_color,title_bar_color,footer_color,button_color,bkash_number,nagad_number,status,marketing,seo,theme,delivery,payments_config")
       .eq("slug", data.slug)
       .eq("status", "active")
       .maybeSingle();
