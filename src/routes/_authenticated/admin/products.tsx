@@ -211,6 +211,9 @@ function ProductDialog({
         primary_image_url: image,
         gallery,
         category_id: categoryId || null,
+        warranty: warranty || null,
+        return_policy: returnPolicy || null,
+        shipping_info: shippingInfo || null,
       });
     } catch (err) {
       toast.error((err as Error).message);
