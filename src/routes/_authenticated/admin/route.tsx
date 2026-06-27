@@ -13,6 +13,14 @@ import {
   CreditCard,
   LogOut,
   Menu,
+  Megaphone,
+  Truck,
+  Palette,
+  Search as SearchIcon,
+  PackageOpen,
+  Wallet,
+  Bell,
+  ClipboardList,
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +35,14 @@ const links: { to: string; label: string; icon: typeof LayoutDashboard; exact?: 
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/banners", label: "Banners", icon: ImageIcon },
+  { to: "/admin/marketing", label: "Marketing", icon: Megaphone },
+  { to: "/admin/couriers", label: "Couriers", icon: Truck },
+  { to: "/admin/theme", label: "Theme", icon: Palette },
+  { to: "/admin/seo", label: "SEO", icon: SearchIcon },
+  { to: "/admin/delivery", label: "Delivery", icon: PackageOpen },
+  { to: "/admin/payments", label: "Payments", icon: Wallet },
+  { to: "/admin/notifications", label: "Notifications", icon: Bell },
+  { to: "/admin/product-defaults", label: "Product Defaults", icon: ClipboardList },
   { to: "/admin/settings", label: "Store Settings", icon: Settings },
   { to: "/admin/subscription", label: "Subscription", icon: CreditCard },
 ];
