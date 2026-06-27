@@ -502,7 +502,7 @@ export type Database = {
         | "processing"
         | "delivered"
         | "cancelled"
-      payment_method: "cod" | "bkash" | "nagad"
+      payment_method: "cod" | "bkash" | "nagad" | "rocket" | "bank"
       product_status: "active" | "draft" | "out_of_stock"
       store_status: "active" | "suspended"
     }
@@ -640,7 +640,7 @@ export const Constants = {
         "delivered",
         "cancelled",
       ],
-      payment_method: ["cod", "bkash", "nagad"],
+      payment_method: ["cod", "bkash", "nagad", "rocket", "bank"],
       product_status: ["active", "draft", "out_of_stock"],
       store_status: ["active", "suspended"],
     },
