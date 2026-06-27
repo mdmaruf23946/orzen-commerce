@@ -114,6 +114,9 @@ const productSchema = z.object({
   primary_image_url: z.string().max(500).optional().nullable(),
   gallery: z.array(z.string().max(500)).max(8).optional().default([]),
   category_id: z.string().uuid().optional().nullable(),
+  warranty: z.string().trim().max(2000).optional().nullable(),
+  return_policy: z.string().trim().max(2000).optional().nullable(),
+  shipping_info: z.string().trim().max(2000).optional().nullable(),
 });
 
 export const upsertProduct = createServerFn({ method: "POST" })
@@ -138,6 +141,9 @@ export const upsertProduct = createServerFn({ method: "POST" })
       primary_image_url: data.primary_image_url ?? null,
       gallery: data.gallery ?? [],
       category_id: data.category_id ?? null,
+      warranty: data.warranty ?? null,
+      return_policy: data.return_policy ?? null,
+      shipping_info: data.shipping_info ?? null,
     };
     if (data.id) {
       const { error } = await supabase
