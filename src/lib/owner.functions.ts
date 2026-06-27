@@ -164,7 +164,7 @@ export const amIOwner = createServerFn({ method: "GET" })
   });
 
 // ---------- ROLE MANAGEMENT + AUDIT ----------
-const roleEnum = z.enum(["owner", "admin", "user"]);
+const roleEnum = z.enum(["owner", "user"]);
 
 async function findUserByEmail(email: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
