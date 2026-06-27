@@ -23,6 +23,7 @@ import { Route as StoreSlugCartRouteImport } from './routes/store/$slug/cart'
 import { Route as ApiImgSplatRouteImport } from './routes/api/img.$'
 import { Route as AuthenticatedOwnerStoresRouteImport } from './routes/_authenticated/owner/stores'
 import { Route as AuthenticatedOwnerPackagesRouteImport } from './routes/_authenticated/owner/packages'
+import { Route as AuthenticatedOwnerAuditRouteImport } from './routes/_authenticated/owner/audit'
 import { Route as AuthenticatedAdminThemeRouteImport } from './routes/_authenticated/admin/theme'
 import { Route as AuthenticatedAdminSubscriptionRouteImport } from './routes/_authenticated/admin/subscription'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin/settings'
@@ -112,6 +113,11 @@ const AuthenticatedOwnerPackagesRoute =
     path: '/packages',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
+const AuthenticatedOwnerAuditRoute = AuthenticatedOwnerAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AuthenticatedOwnerRouteRoute,
+} as any)
 const AuthenticatedAdminThemeRoute = AuthenticatedAdminThemeRouteImport.update({
   id: '/theme',
   path: '/theme',
@@ -233,6 +239,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
+  '/owner/audit': typeof AuthenticatedOwnerAuditRoute
   '/owner/packages': typeof AuthenticatedOwnerPackagesRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
   '/api/img/$': typeof ApiImgSplatRoute
@@ -262,6 +269,7 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
+  '/owner/audit': typeof AuthenticatedOwnerAuditRoute
   '/owner/packages': typeof AuthenticatedOwnerPackagesRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
   '/api/img/$': typeof ApiImgSplatRoute
@@ -296,6 +304,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/_authenticated/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/_authenticated/admin/theme': typeof AuthenticatedAdminThemeRoute
+  '/_authenticated/owner/audit': typeof AuthenticatedOwnerAuditRoute
   '/_authenticated/owner/packages': typeof AuthenticatedOwnerPackagesRoute
   '/_authenticated/owner/stores': typeof AuthenticatedOwnerStoresRoute
   '/api/img/$': typeof ApiImgSplatRoute
@@ -330,6 +339,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/subscription'
     | '/admin/theme'
+    | '/owner/audit'
     | '/owner/packages'
     | '/owner/stores'
     | '/api/img/$'
@@ -359,6 +369,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/subscription'
     | '/admin/theme'
+    | '/owner/audit'
     | '/owner/packages'
     | '/owner/stores'
     | '/api/img/$'
@@ -392,6 +403,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/settings'
     | '/_authenticated/admin/subscription'
     | '/_authenticated/admin/theme'
+    | '/_authenticated/owner/audit'
     | '/_authenticated/owner/packages'
     | '/_authenticated/owner/stores'
     | '/api/img/$'
@@ -510,6 +522,13 @@ declare module '@tanstack/react-router' {
       path: '/packages'
       fullPath: '/owner/packages'
       preLoaderRoute: typeof AuthenticatedOwnerPackagesRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/audit': {
+      id: '/_authenticated/owner/audit'
+      path: '/audit'
+      fullPath: '/owner/audit'
+      preLoaderRoute: typeof AuthenticatedOwnerAuditRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/admin/theme': {
@@ -680,6 +699,7 @@ const AuthenticatedAdminRouteRouteWithChildren =
   )
 
 interface AuthenticatedOwnerRouteRouteChildren {
+  AuthenticatedOwnerAuditRoute: typeof AuthenticatedOwnerAuditRoute
   AuthenticatedOwnerPackagesRoute: typeof AuthenticatedOwnerPackagesRoute
   AuthenticatedOwnerStoresRoute: typeof AuthenticatedOwnerStoresRoute
   AuthenticatedOwnerIndexRoute: typeof AuthenticatedOwnerIndexRoute
@@ -687,6 +707,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
 
 const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren =
   {
+    AuthenticatedOwnerAuditRoute: AuthenticatedOwnerAuditRoute,
     AuthenticatedOwnerPackagesRoute: AuthenticatedOwnerPackagesRoute,
     AuthenticatedOwnerStoresRoute: AuthenticatedOwnerStoresRoute,
     AuthenticatedOwnerIndexRoute: AuthenticatedOwnerIndexRoute,
