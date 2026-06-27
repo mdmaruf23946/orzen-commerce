@@ -10,7 +10,14 @@ export const Route = createFileRoute("/_authenticated/admin/payments")({
   component: PaymentsPage,
 });
 
-const defaults = {
+const defaults: {
+  cod: { enabled: boolean };
+  bkash: { enabled: boolean; number: string };
+  nagad: { enabled: boolean; number: string };
+  rocket: { enabled: boolean; number: string };
+  bank: { enabled: boolean; name: string; account: string; branch: string };
+  instructions: string;
+} = {
   cod: { enabled: true },
   bkash: { enabled: false, number: "" },
   nagad: { enabled: false, number: "" },
