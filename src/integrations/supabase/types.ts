@@ -14,6 +14,153 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_conversations: {
+        Row: {
+          address: string | null
+          channel: string
+          created_at: string
+          customer_name: string | null
+          external_id: string | null
+          id: string
+          phone: string | null
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          channel?: string
+          created_at?: string
+          customer_name?: string | null
+          external_id?: string | null
+          id?: string
+          phone?: string | null
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          channel?: string
+          created_at?: string
+          customer_name?: string | null
+          external_id?: string | null
+          id?: string
+          phone?: string | null
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_conversations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_global_settings: {
+        Row: {
+          created_at: string
+          default_model: string
+          enabled: boolean
+          id: number
+          provider_api_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_model?: string
+          enabled?: boolean
+          id?: number
+          provider_api_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_model?: string
+          enabled?: boolean
+          id?: number
+          provider_api_key?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_usage: {
+        Row: {
+          completion_tokens: number
+          cost_usd: number
+          created_at: string
+          id: string
+          kind: string
+          model: string
+          prompt_tokens: number
+          store_id: string | null
+        }
+        Insert: {
+          completion_tokens?: number
+          cost_usd?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          model: string
+          prompt_tokens?: number
+          store_id?: string | null
+        }
+        Update: {
+          completion_tokens?: number
+          cost_usd?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          model?: string
+          prompt_tokens?: number
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       banners: {
         Row: {
           created_at: string
@@ -73,6 +220,50 @@ export type Database = {
             foreignKeyName: "categories_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messenger_integrations: {
+        Row: {
+          connected_at: string | null
+          created_at: string
+          id: string
+          page_access_token: string | null
+          page_id: string | null
+          status: string
+          store_id: string
+          updated_at: string
+          verify_token: string | null
+        }
+        Insert: {
+          connected_at?: string | null
+          created_at?: string
+          id?: string
+          page_access_token?: string | null
+          page_id?: string | null
+          status?: string
+          store_id: string
+          updated_at?: string
+          verify_token?: string | null
+        }
+        Update: {
+          connected_at?: string | null
+          created_at?: string
+          id?: string
+          page_access_token?: string | null
+          page_id?: string | null
+          status?: string
+          store_id?: string
+          updated_at?: string
+          verify_token?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messenger_integrations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
@@ -355,6 +546,59 @@ export type Database = {
           target_user_id?: string
         }
         Relationships: []
+      }
+      store_ai_agents: {
+        Row: {
+          agent_name: string
+          created_at: string
+          enabled: boolean
+          human_like: boolean
+          id: string
+          knowledge: Json
+          language: string
+          store_id: string
+          style: string
+          updated_at: string
+          use_emoji: boolean
+          welcome_message: string
+        }
+        Insert: {
+          agent_name?: string
+          created_at?: string
+          enabled?: boolean
+          human_like?: boolean
+          id?: string
+          knowledge?: Json
+          language?: string
+          store_id: string
+          style?: string
+          updated_at?: string
+          use_emoji?: boolean
+          welcome_message?: string
+        }
+        Update: {
+          agent_name?: string
+          created_at?: string
+          enabled?: boolean
+          human_like?: boolean
+          id?: string
+          knowledge?: Json
+          language?: string
+          store_id?: string
+          style?: string
+          updated_at?: string
+          use_emoji?: boolean
+          welcome_message?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_ai_agents_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stores: {
         Row: {
