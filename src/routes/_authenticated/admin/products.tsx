@@ -106,6 +106,7 @@ function ProductsPage() {
           storeId={store.id}
           editing={editing}
           categories={categories ?? []}
+          productDefaults={(store as any).product_defaults ?? null}
           onClose={() => setOpen(false)}
           onSave={async (data) => {
             await save({ data });
@@ -123,12 +124,14 @@ function ProductDialog({
   storeId,
   editing,
   categories,
+  productDefaults,
   onClose,
   onSave,
 }: {
   storeId: string;
   editing: Product | null;
   categories: Category[];
+  productDefaults: { warranty?: string; return_policy?: string; shipping_info?: string } | null;
   onClose: () => void;
   onSave: (data: any) => Promise<void>;
 }) {
@@ -150,6 +153,15 @@ function ProductDialog({
     Array.isArray(editing?.gallery) ? (editing!.gallery as string[]) : [],
   );
   const [categoryId, setCategoryId] = useState<string>(editing?.category_id ?? "");
+  const [warranty, setWarranty] = useState<string>(
+    (editing as any)?.warranty ?? (editing ? "" : productDefaults?.warranty ?? ""),
+  );
+  const [returnPolicy, setReturnPolicy] = useState<string>(
+    (editing as any)?.return_policy ?? (editing ? "" : productDefaults?.return_policy ?? ""),
+  );
+  const [shippingInfo, setShippingInfo] = useState<string>(
+    (editing as any)?.shipping_info ?? (editing ? "" : productDefaults?.shipping_info ?? ""),
+  );
   const [newCatName, setNewCatName] = useState("");
   const [addingCat, setAddingCat] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -199,6 +211,9 @@ function ProductDialog({
         primary_image_url: image,
         gallery,
         category_id: categoryId || null,
+        warranty: warranty || null,
+        return_policy: returnPolicy || null,
+        shipping_info: shippingInfo || null,
       });
     } catch (err) {
       toast.error((err as Error).message);
@@ -317,6 +332,18 @@ function ProductDialog({
           <div className="space-y-1.5">
             <Label htmlFor="d">Description</Label>
             <Textarea id="d" rows={4} value={description ?? ""} onChange={(e) => setDescription(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="wr">Warranty</Label>
+            <Textarea id="wr" rows={2} value={warranty} onChange={(e) => setWarranty(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="rt">Return policy</Label>
+            <Textarea id="rt" rows={2} value={returnPolicy} onChange={(e) => setReturnPolicy(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="sh">Shipping information</Label>
+            <Textarea id="sh" rows={2} value={shippingInfo} onChange={(e) => setShippingInfo(e.target.value)} />
           </div>
           <Button type="submit" disabled={saving} className="w-full">
             {saving ? "Saving…" : "Save"}

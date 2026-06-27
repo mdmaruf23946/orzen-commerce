@@ -259,11 +259,14 @@ export type Database = {
           old_price: number | null
           price: number
           primary_image_url: string | null
+          return_policy: string | null
+          shipping_info: string | null
           slug: string
           status: Database["public"]["Enums"]["product_status"]
           stock: number
           store_id: string
           updated_at: string
+          warranty: string | null
         }
         Insert: {
           category_id?: string | null
@@ -275,11 +278,14 @@ export type Database = {
           old_price?: number | null
           price?: number
           primary_image_url?: string | null
+          return_policy?: string | null
+          shipping_info?: string | null
           slug: string
           status?: Database["public"]["Enums"]["product_status"]
           stock?: number
           store_id: string
           updated_at?: string
+          warranty?: string | null
         }
         Update: {
           category_id?: string | null
@@ -291,11 +297,14 @@ export type Database = {
           old_price?: number | null
           price?: number
           primary_image_url?: string | null
+          return_policy?: string | null
+          shipping_info?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["product_status"]
           stock?: number
           store_id?: string
           updated_at?: string
+          warranty?: string | null
         }
         Relationships: [
           {
@@ -319,7 +328,9 @@ export type Database = {
           address: string | null
           bkash_number: string | null
           button_color: string | null
+          couriers: Json
           created_at: string
+          delivery: Json
           description: string | null
           expires_at: string | null
           facebook: string | null
@@ -327,14 +338,20 @@ export type Database = {
           header_color: string | null
           id: string
           logo_url: string | null
+          marketing: Json
           nagad_number: string | null
           name: string
+          notifications: Json
           owner_user_id: string
           package_id: string | null
+          payments_config: Json
           phone: string | null
           primary_color: string
+          product_defaults: Json
+          seo: Json
           slug: string
           status: Database["public"]["Enums"]["store_status"]
+          theme: Json
           title_bar_color: string | null
           updated_at: string
           whatsapp: string | null
@@ -343,7 +360,9 @@ export type Database = {
           address?: string | null
           bkash_number?: string | null
           button_color?: string | null
+          couriers?: Json
           created_at?: string
+          delivery?: Json
           description?: string | null
           expires_at?: string | null
           facebook?: string | null
@@ -351,14 +370,20 @@ export type Database = {
           header_color?: string | null
           id?: string
           logo_url?: string | null
+          marketing?: Json
           nagad_number?: string | null
           name: string
+          notifications?: Json
           owner_user_id: string
           package_id?: string | null
+          payments_config?: Json
           phone?: string | null
           primary_color?: string
+          product_defaults?: Json
+          seo?: Json
           slug: string
           status?: Database["public"]["Enums"]["store_status"]
+          theme?: Json
           title_bar_color?: string | null
           updated_at?: string
           whatsapp?: string | null
@@ -367,7 +392,9 @@ export type Database = {
           address?: string | null
           bkash_number?: string | null
           button_color?: string | null
+          couriers?: Json
           created_at?: string
+          delivery?: Json
           description?: string | null
           expires_at?: string | null
           facebook?: string | null
@@ -375,14 +402,20 @@ export type Database = {
           header_color?: string | null
           id?: string
           logo_url?: string | null
+          marketing?: Json
           nagad_number?: string | null
           name?: string
+          notifications?: Json
           owner_user_id?: string
           package_id?: string | null
+          payments_config?: Json
           phone?: string | null
           primary_color?: string
+          product_defaults?: Json
+          seo?: Json
           slug?: string
           status?: Database["public"]["Enums"]["store_status"]
+          theme?: Json
           title_bar_color?: string | null
           updated_at?: string
           whatsapp?: string | null
@@ -469,7 +502,7 @@ export type Database = {
         | "processing"
         | "delivered"
         | "cancelled"
-      payment_method: "cod" | "bkash" | "nagad"
+      payment_method: "cod" | "bkash" | "nagad" | "rocket" | "bank"
       product_status: "active" | "draft" | "out_of_stock"
       store_status: "active" | "suspended"
     }
@@ -607,7 +640,7 @@ export const Constants = {
         "delivered",
         "cancelled",
       ],
-      payment_method: ["cod", "bkash", "nagad"],
+      payment_method: ["cod", "bkash", "nagad", "rocket", "bank"],
       product_status: ["active", "draft", "out_of_stock"],
       store_status: ["active", "suspended"],
     },

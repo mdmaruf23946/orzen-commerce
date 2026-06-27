@@ -30,19 +30,43 @@ function CheckoutPage() {
   const { data: store } = useSuspenseQuery(storeQuery(slug));
   const place = useServerFn(placeOrder);
 
+  type PM = "cod" | "bkash" | "nagad" | "rocket" | "bank";
   const [items, setItems] = useState<CartItem[]>([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [area, setArea] = useState("");
-  const [method, setMethod] = useState<"cod" | "bkash" | "nagad">("cod");
+  const [insideCity, setInsideCity] = useState(true);
+  const [method, setMethod] = useState<PM>("cod");
   const [txnId, setTxnId] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => setItems(readCart(slug)), [slug]);
 
   if (!store) return null;
-  const total = items.reduce((a, i) => a + i.qty * i.price, 0);
+  const s: any = store;
+  const pc = s.payments_config ?? {};
+  const delivery = s.delivery ?? {};
+  const subtotal = items.reduce((a, i) => a + i.qty * i.price, 0);
+  const freeMin = Number(delivery.free_min ?? 0);
+  const baseShip = Number((insideCity ? delivery.inside_city : delivery.outside_city) ?? 0);
+  const shipping = freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
+  const total = subtotal + shipping;
+
+  const methods: { id: PM; label: string; desc: string }[] = [];
+  if (pc.cod?.enabled !== false) methods.push({ id: "cod", label: "Cash on Delivery", desc: "Pay when you receive" });
+  const bk = pc.bkash?.number ?? s.bkash_number;
+  if ((pc.bkash?.enabled ?? !!bk) && bk) methods.push({ id: "bkash", label: "bKash", desc: `Send to ${bk}` });
+  const ng = pc.nagad?.number ?? s.nagad_number;
+  if ((pc.nagad?.enabled ?? !!ng) && ng) methods.push({ id: "nagad", label: "Nagad", desc: `Send to ${ng}` });
+  if (pc.rocket?.enabled && pc.rocket?.number) methods.push({ id: "rocket", label: "Rocket", desc: `Send to ${pc.rocket.number}` });
+  if (pc.bank?.enabled && pc.bank?.account)
+    methods.push({ id: "bank", label: "Bank Transfer", desc: `${pc.bank.name ?? ""} ${pc.bank.account}`.trim() });
+
+  // Ensure selected method is still available
+  useEffect(() => {
+    if (methods.length && !methods.find((m) => m.id === method)) setMethod(methods[0].id);
+  }, [methods.map((m) => m.id).join(","), method]);
 
   if (items.length === 0) {
     return (
@@ -105,21 +129,26 @@ function CheckoutPage() {
             <Label htmlFor="area">Delivery area (optional)</Label>
             <Input id="area" value={area} onChange={(e) => setArea(e.target.value)} />
           </div>
+          {(Number(delivery.inside_city) || Number(delivery.outside_city)) ? (
+            <div className="space-y-1.5">
+              <Label>Delivery zone</Label>
+              <div className="flex gap-2">
+                <label className={`flex-1 cursor-pointer rounded-md border p-2 text-sm ${insideCity ? "border-primary bg-primary/5" : ""}`}>
+                  <input type="radio" className="mr-2" checked={insideCity} onChange={() => setInsideCity(true)} />
+                  Inside city · ৳{Number(delivery.inside_city ?? 0).toFixed(0)}
+                </label>
+                <label className={`flex-1 cursor-pointer rounded-md border p-2 text-sm ${!insideCity ? "border-primary bg-primary/5" : ""}`}>
+                  <input type="radio" className="mr-2" checked={!insideCity} onChange={() => setInsideCity(false)} />
+                  Outside city · ৳{Number(delivery.outside_city ?? 0).toFixed(0)}
+                </label>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <h2 className="mt-6 text-sm font-semibold">Payment method</h2>
         <div className="mt-2 grid gap-2">
-          {(
-            [
-              { id: "cod", label: "Cash on Delivery", desc: "Pay when you receive" },
-              ...(store.bkash_number
-                ? [{ id: "bkash" as const, label: "bKash", desc: `Send to ${store.bkash_number}` }]
-                : []),
-              ...(store.nagad_number
-                ? [{ id: "nagad" as const, label: "Nagad", desc: `Send to ${store.nagad_number}` }]
-                : []),
-            ] as { id: "cod" | "bkash" | "nagad"; label: string; desc: string }[]
-          ).map((m) => (
+          {methods.map((m) => (
             <label
               key={m.id}
               className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 ${method === m.id ? "border-primary bg-primary/5" : ""}`}
@@ -140,10 +169,17 @@ function CheckoutPage() {
           ))}
         </div>
         {method !== "cod" && (
-          <div className="mt-3 space-y-1.5">
-            <Label htmlFor="txn">Transaction ID</Label>
-            <Input id="txn" required value={txnId} onChange={(e) => setTxnId(e.target.value)} />
-          </div>
+          <>
+            {pc.instructions && (
+              <p className="mt-3 whitespace-pre-line rounded-md bg-muted p-3 text-xs text-muted-foreground">
+                {pc.instructions}
+              </p>
+            )}
+            <div className="mt-3 space-y-1.5">
+              <Label htmlFor="txn">Transaction ID</Label>
+              <Input id="txn" required value={txnId} onChange={(e) => setTxnId(e.target.value)} />
+            </div>
+          </>
         )}
       </div>
 
@@ -160,13 +196,17 @@ function CheckoutPage() {
               </li>
             ))}
           </ul>
-          <div className="mt-3 flex items-center justify-between border-t pt-3">
-            <span className="text-sm">Total</span>
-            <span className="text-lg font-bold">৳{total.toFixed(0)}</span>
+          <div className="mt-3 space-y-1 border-t pt-3 text-sm">
+            <div className="flex justify-between"><span>Subtotal</span><span>৳{subtotal.toFixed(0)}</span></div>
+            <div className="flex justify-between"><span>Shipping</span><span>{shipping === 0 ? "Free" : `৳${shipping.toFixed(0)}`}</span></div>
+            <div className="mt-2 flex items-center justify-between border-t pt-2">
+              <span className="text-sm">Total</span>
+              <span className="text-lg font-bold">৳{total.toFixed(0)}</span>
+            </div>
           </div>
           <Button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || methods.length === 0}
             className="mt-4 h-12 w-full"
             style={{ backgroundColor: "var(--primary)", color: "white" }}
           >
