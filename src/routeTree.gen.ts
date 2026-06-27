@@ -21,6 +21,7 @@ import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authentic
 import { Route as StoreSlugCheckoutRouteImport } from './routes/store/$slug/checkout'
 import { Route as StoreSlugCartRouteImport } from './routes/store/$slug/cart'
 import { Route as ApiImgSplatRouteImport } from './routes/api/img.$'
+import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
 import { Route as AuthenticatedOwnerStoresRouteImport } from './routes/_authenticated/owner/stores'
 import { Route as AuthenticatedOwnerPackagesRouteImport } from './routes/_authenticated/owner/packages'
 import { Route as AuthenticatedOwnerAuditRouteImport } from './routes/_authenticated/owner/audit'
@@ -41,6 +42,7 @@ import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminBannersRouteImport } from './routes/_authenticated/admin/banners'
 import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
 import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/order.$orderId'
+import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -99,6 +101,11 @@ const StoreSlugCartRoute = StoreSlugCartRouteImport.update({
 const ApiImgSplatRoute = ApiImgSplatRouteImport.update({
   id: '/api/img/$',
   path: '/api/img/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiChatRoute = ApiAiChatRouteImport.update({
+  id: '/api/ai/chat',
+  path: '/api/ai/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedOwnerStoresRoute =
@@ -217,6 +224,12 @@ const StoreSlugOrderOrderIdRoute = StoreSlugOrderOrderIdRouteImport.update({
   path: '/order/$orderId',
   getParentRoute: () => StoreSlugRouteRoute,
 } as any)
+const ApiPublicMessengerWebhookRoute =
+  ApiPublicMessengerWebhookRouteImport.update({
+    id: '/api/public/messenger/webhook',
+    path: '/api/public/messenger/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -242,12 +255,14 @@ export interface FileRoutesByFullPath {
   '/owner/audit': typeof AuthenticatedOwnerAuditRoute
   '/owner/packages': typeof AuthenticatedOwnerPackagesRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
+  '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/owner/': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
+  '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
 }
@@ -272,12 +287,14 @@ export interface FileRoutesByTo {
   '/owner/audit': typeof AuthenticatedOwnerAuditRoute
   '/owner/packages': typeof AuthenticatedOwnerPackagesRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
+  '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/owner': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug': typeof StoreSlugIndexRoute
+  '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
 }
@@ -307,12 +324,14 @@ export interface FileRoutesById {
   '/_authenticated/owner/audit': typeof AuthenticatedOwnerAuditRoute
   '/_authenticated/owner/packages': typeof AuthenticatedOwnerPackagesRoute
   '/_authenticated/owner/stores': typeof AuthenticatedOwnerStoresRoute
+  '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/owner/': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
+  '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
 }
@@ -342,12 +361,14 @@ export interface FileRouteTypes {
     | '/owner/audit'
     | '/owner/packages'
     | '/owner/stores'
+    | '/api/ai/chat'
     | '/api/img/$'
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
     | '/admin/'
     | '/owner/'
     | '/store/$slug/'
+    | '/api/public/messenger/webhook'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
   fileRoutesByTo: FileRoutesByTo
@@ -372,12 +393,14 @@ export interface FileRouteTypes {
     | '/owner/audit'
     | '/owner/packages'
     | '/owner/stores'
+    | '/api/ai/chat'
     | '/api/img/$'
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
     | '/admin'
     | '/owner'
     | '/store/$slug'
+    | '/api/public/messenger/webhook'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
   id:
@@ -406,12 +429,14 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/audit'
     | '/_authenticated/owner/packages'
     | '/_authenticated/owner/stores'
+    | '/api/ai/chat'
     | '/api/img/$'
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
     | '/_authenticated/admin/'
     | '/_authenticated/owner/'
     | '/store/$slug/'
+    | '/api/public/messenger/webhook'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
   fileRoutesById: FileRoutesById
@@ -421,7 +446,9 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   StoreSlugRouteRoute: typeof StoreSlugRouteRouteWithChildren
+  ApiAiChatRoute: typeof ApiAiChatRoute
   ApiImgSplatRoute: typeof ApiImgSplatRoute
+  ApiPublicMessengerWebhookRoute: typeof ApiPublicMessengerWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -508,6 +535,13 @@ declare module '@tanstack/react-router' {
       path: '/api/img/$'
       fullPath: '/api/img/$'
       preLoaderRoute: typeof ApiImgSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/chat': {
+      id: '/api/ai/chat'
+      path: '/api/ai/chat'
+      fullPath: '/api/ai/chat'
+      preLoaderRoute: typeof ApiAiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/owner/stores': {
@@ -650,6 +684,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreSlugOrderOrderIdRouteImport
       parentRoute: typeof StoreSlugRouteRoute
     }
+    '/api/public/messenger/webhook': {
+      id: '/api/public/messenger/webhook'
+      path: '/api/public/messenger/webhook'
+      fullPath: '/api/public/messenger/webhook'
+      preLoaderRoute: typeof ApiPublicMessengerWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -756,7 +797,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   StoreSlugRouteRoute: StoreSlugRouteRouteWithChildren,
+  ApiAiChatRoute: ApiAiChatRoute,
   ApiImgSplatRoute: ApiImgSplatRoute,
+  ApiPublicMessengerWebhookRoute: ApiPublicMessengerWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
