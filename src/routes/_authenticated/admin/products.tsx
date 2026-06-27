@@ -123,12 +123,14 @@ function ProductDialog({
   storeId,
   editing,
   categories,
+  productDefaults,
   onClose,
   onSave,
 }: {
   storeId: string;
   editing: Product | null;
   categories: Category[];
+  productDefaults: { warranty?: string; return_policy?: string; shipping_info?: string } | null;
   onClose: () => void;
   onSave: (data: any) => Promise<void>;
 }) {
@@ -150,6 +152,15 @@ function ProductDialog({
     Array.isArray(editing?.gallery) ? (editing!.gallery as string[]) : [],
   );
   const [categoryId, setCategoryId] = useState<string>(editing?.category_id ?? "");
+  const [warranty, setWarranty] = useState<string>(
+    (editing as any)?.warranty ?? (editing ? "" : productDefaults?.warranty ?? ""),
+  );
+  const [returnPolicy, setReturnPolicy] = useState<string>(
+    (editing as any)?.return_policy ?? (editing ? "" : productDefaults?.return_policy ?? ""),
+  );
+  const [shippingInfo, setShippingInfo] = useState<string>(
+    (editing as any)?.shipping_info ?? (editing ? "" : productDefaults?.shipping_info ?? ""),
+  );
   const [newCatName, setNewCatName] = useState("");
   const [addingCat, setAddingCat] = useState(false);
   const [saving, setSaving] = useState(false);
