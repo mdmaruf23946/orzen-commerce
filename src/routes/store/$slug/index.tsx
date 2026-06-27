@@ -10,25 +10,34 @@ import {
 import { useStoreUI } from "@/lib/store-ui";
 import { ProductCard } from "@/components/storefront/ProductCard";
 
+const STALE = 5 * 60_000;
+
 const storeQuery = (slug: string) =>
-  queryOptions({ queryKey: ["store", slug], queryFn: () => getStoreBySlug({ data: { slug } }) });
+  queryOptions({
+    queryKey: ["store", slug],
+    queryFn: () => getStoreBySlug({ data: { slug } }),
+    staleTime: STALE,
+  });
 
 const bannersQuery = (storeId: string) =>
   queryOptions({
     queryKey: ["banners", storeId],
     queryFn: () => listStoreBanners({ data: { storeId } }),
+    staleTime: STALE,
   });
 
 const productsQuery = (storeId: string) =>
   queryOptions({
     queryKey: ["products", storeId],
     queryFn: () => listStoreProducts({ data: { storeId } }),
+    staleTime: STALE,
   });
 
 const categoriesQuery = (storeId: string) =>
   queryOptions({
     queryKey: ["categories", storeId],
     queryFn: () => listStoreCategories({ data: { storeId } }),
+    staleTime: STALE,
   });
 
 export const Route = createFileRoute("/store/$slug/")({
