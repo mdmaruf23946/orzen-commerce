@@ -106,6 +106,7 @@ function ProductsPage() {
           storeId={store.id}
           editing={editing}
           categories={categories ?? []}
+          productDefaults={(store as any).product_defaults ?? null}
           onClose={() => setOpen(false)}
           onSave={async (data) => {
             await save({ data });
