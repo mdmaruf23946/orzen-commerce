@@ -26,14 +26,15 @@ const defaults: {
   instructions: "",
 };
 
+type Mobile = { enabled: boolean; number: string };
 function MobileMethod({
   label,
   v,
   onChange,
 }: {
   label: string;
-  v: { enabled?: boolean; number?: string };
-  onChange: (next: { enabled?: boolean; number?: string }) => void;
+  v: Mobile;
+  onChange: (next: Mobile) => void;
 }) {
   return (
     <div className="space-y-2 rounded-lg border p-3">
