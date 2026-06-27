@@ -162,3 +162,83 @@ export const amIOwner = createServerFn({ method: "GET" })
       .maybeSingle();
     return { isOwner: !!data };
   });
+
+// ---------- ROLE MANAGEMENT + AUDIT ----------
+const roleEnum = z.enum(["owner", "user"]);
+
+async function findUserByEmail(email: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  for (let page = 1; page <= 10; page++) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 100 });
+    if (error) throw new Error(error.message);
+    const match = data.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+    if (match) return { id: match.id, email: match.email ?? null };
+    if (data.users.length < 100) break;
+  }
+  return null;
+}
+
+export const grantRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ email: z.string().trim().email(), role: roleEnum }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const target = await findUserByEmail(data.email);
+    if (!target) throw new Error("User not found with that email");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("user_roles")
+      .insert({ user_id: target.id, role: data.role });
+    if (error && !error.message.toLowerCase().includes("duplicate")) throw new Error(error.message);
+    await context.supabase.from("role_audit_log").insert({
+      actor_user_id: context.userId,
+      actor_email: (context.claims.email as string | undefined) ?? null,
+      target_user_id: target.id,
+      target_email: target.email,
+      role: data.role,
+      action: "granted",
+    });
+    return { ok: true };
+  });
+
+export const revokeRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ targetUserId: z.string().uuid(), role: roleEnum }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: u } = await supabaseAdmin.auth.admin.getUserById(data.targetUserId);
+    const targetEmail = u?.user?.email ?? null;
+    const { error } = await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", data.targetUserId)
+      .eq("role", data.role);
+    if (error) throw new Error(error.message);
+    await context.supabase.from("role_audit_log").insert({
+      actor_user_id: context.userId,
+      actor_email: (context.claims.email as string | undefined) ?? null,
+      target_user_id: data.targetUserId,
+      target_email: targetEmail,
+      role: data.role,
+      action: "revoked",
+    });
+    return { ok: true };
+  });
+
+export const listRoleAuditLog = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { data, error } = await context.supabase
+      .from("role_audit_log")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });

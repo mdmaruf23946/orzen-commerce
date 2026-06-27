@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { LayoutDashboard, Store as StoreIcon, Package, LogOut, Menu, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, Store as StoreIcon, Package, LogOut, Menu, ArrowLeft, ShieldCheck } from "lucide-react";
 import { amIOwner } from "@/lib/owner.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,7 @@ const links = [
   { to: "/owner", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/owner/stores", label: "Stores", icon: StoreIcon },
   { to: "/owner/packages", label: "Packages", icon: Package },
+  { to: "/owner/audit", label: "Role Audit", icon: ShieldCheck },
 ];
 
 export const Route = createFileRoute("/_authenticated/owner")({
