@@ -1,80 +1,104 @@
-## Store Admin Panel — New Sections
 
-Add 8 new admin pages without touching existing ones (Dashboard, Products, Categories, Orders, Customers, Banners, Store Settings, Subscription, Logout). Theme Customization moves color pickers out of Store Settings into its own page.
+## AI Sales Agent — Multi-Tenant System
 
-### 1. Database changes (single migration)
+A modular AI layer added on top of the existing platform. Owner controls global AI settings + provider key; each store gets its own isolated agent with its own knowledge, behavior, and chat history. Storefront gets a lazy-loaded chat widget; Messenger integration is scaffolded with webhook + connect flow.
 
-Extend `public.stores` with new JSONB + scalar columns (nullable, safe defaults):
+By default we use the built-in **Lovable AI Gateway** (no user-supplied API key required) with `google/gemini-3-flash-preview`. The Owner's "Connect AI Provider API Key" field is optional — if set, it overrides the gateway; if empty, the platform key is used. This keeps the system usable out-of-the-box.
 
-- `marketing jsonb` — `{ fb_pixel_id, fb_capi_token, fb_capi_enabled, ga4_id, gtm_id, tiktok_pixel_id, enabled_map }`
-- `couriers jsonb` — `{ steadfast: {api_key, secret, enabled}, pathao: {...}, redx: {...}, paperfly: {...} }` (extensible map keyed by provider slug)
-- `seo jsonb` — `{ title, description, keywords, og_image_url, favicon_url }`
-- `delivery jsonb` — `{ inside_city, outside_city, free_min, cod_enabled }`
-- `payments_config jsonb` — `{ cod:{enabled}, bkash:{number,enabled}, nagad:{number,enabled}, rocket:{number,enabled}, bank:{name,account,branch,enabled}, instructions }`
-- `notifications jsonb` — `{ whatsapp, email_enabled, sms_api_placeholder }`
-- `product_defaults jsonb` — `{ warranty, return_policy, shipping_info }`
-- `theme jsonb` — `{ header_color, footer_color, card_color, title_bar_color, button_color, radius }` (mirrors existing color columns plus `radius`)
+---
 
-Existing color columns (`header_color`, `title_bar_color`, `footer_color`, `button_color`) stay for backward compatibility; new Theme page writes both the old columns and `theme.radius`.
+### 1. Database (single migration)
 
-Add `products.warranty`, `products.return_policy`, `products.shipping_info` (text, nullable) — populated from `product_defaults` at create time, editable per product.
+New tables (all RLS-enabled, store-scoped):
 
-### 2. Server functions (`src/lib/admin.functions.ts`)
+- `ai_global_settings` (singleton row, owner-only) — `enabled`, `default_model`, `provider_api_key` (nullable, owner-only readable), `created_at/updated_at`.
+- `ai_usage` — `id`, `store_id` (nullable for owner-level), `model`, `prompt_tokens`, `completion_tokens`, `cost_usd`, `kind` (chat/messenger), `created_at`. Indexed by `store_id, created_at`.
+- `store_ai_agents` — one row per store: `store_id` (unique FK), `enabled`, `agent_name`, `welcome_message`, `language` (bn/en/both), `style`, `use_emoji`, `human_like`, `knowledge` jsonb `{ store_info, delivery_policy, return_policy, warranty_policy, payment_methods, business_hours, faqs:[{q,a}] }`.
+- `ai_conversations` — `id`, `store_id`, `channel` (web/messenger), `external_id` (messenger PSID, nullable), `customer_name`, `phone`, `address`, `status`, `created_at`.
+- `ai_messages` — `id`, `conversation_id`, `role` (user/assistant/system/tool), `content`, `created_at`.
+- `messenger_integrations` — `store_id` (unique), `page_id`, `page_access_token` (encrypted/owner-managed at app level), `verify_token`, `connected_at`, `status`.
 
-One generic settings updater per section, validated with Zod:
+Every new public table gets explicit `GRANT` + RLS:
+- `store_ai_agents`, `ai_conversations`, `ai_messages`, `messenger_integrations`: owner-of-store via existing `stores.owner_id` check; platform owner via `has_role(uid,'owner')`.
+- `ai_global_settings`, owner-wide `ai_usage`: `has_role(uid,'owner')` only.
+- Storefront widget reads agent config + writes conversations through server functions (publishable-key path with store scoping), not direct table access for writes.
 
-- `updateMarketing`, `updateCouriers`, `updateSeo`, `updateDelivery`, `updatePayments`, `updateNotifications`, `updateProductDefaults`, `updateTheme`
-- Extend `getMyStore` to return the new JSONB blobs.
+### 2. Server functions (`src/lib/ai.functions.ts` + `ai.server.ts`)
 
-All reuse the existing owner-store check; no new RLS needed (already scoped to store owner).
+Lovable AI Gateway helper in `src/lib/ai-gateway.server.ts` (per knowledge file). Reads `LOVABLE_API_KEY`; falls back to `ai_global_settings.provider_api_key` if owner configured a custom one.
 
-### 3. Storefront integration (lightweight, no perf cost)
+Functions:
+- Owner: `getAiGlobalSettings`, `updateAiGlobalSettings`, `getAiUsageStats` (totals, by store, last 30 days).
+- Store admin: `getMyAgent`, `updateMyAgent` (general/knowledge/behavior in one upsert).
+- Storefront chat: `chatWithAgent({ slug, conversationId?, messages })` — streams via `streamText`, loads store's products/categories/stock + agent knowledge as system context, logs usage to `ai_usage`, persists to `ai_conversations`/`ai_messages`. Tool calls:
+  - `searchProducts(query)` → only this store's products.
+  - `getProduct(id)` → price/stock/details, scoped.
+  - `placeOrder({ items, name, phone, address })` → creates `orders` + `order_items` for this store, returns order id.
+- Messenger: `connectMessenger`, `disconnectMessenger`, public webhook route below.
 
-- `getStoreBySlug` returns `marketing`, `seo`, `theme`, `delivery`, `payments_config`.
-- In `src/routes/store/$slug/route.tsx`:
-  - Inject SEO title/description/favicon/OG image via TanStack `head()` from loader data (no extra request).
-  - Conditionally append GA4 / GTM / FB Pixel / TikTok Pixel `<script>` tags only when IDs exist. Use `async` / defer. No npm packages.
-  - Apply `theme.radius` as a CSS variable alongside existing color vars.
-- Checkout page reads `delivery` for charges + free-shipping threshold and `payments_config` for enabled methods (replacing hardcoded bKash/Nagad logic).
-- Facebook CAPI: server-side fire-and-forget `fetch` from the `checkout` server function when `fb_capi_enabled` and token present. No new dependencies.
+All store-scoped functions resolve `store_id` from the slug or auth context and pass it explicitly to every DB query — no cross-store reads possible.
 
-### 4. New admin pages (under `src/routes/_authenticated/admin/`)
+### 3. Storefront chat widget (lazy)
 
-Each page = small form, reuses existing `Input`, `Textarea`, `Switch`, `Button`, `ImageUploader`. No new libraries.
+- `src/components/storefront/AIChatLauncher.tsx` — tiny (~1 KB) floating button only. No AI code, no markdown lib, no streaming code.
+- On click → `React.lazy(() => import("./AIChatPanel"))` loads the heavy panel: message list, input, streaming via `useChat` → `/api/ai/chat`.
+- Mounted from `src/routes/store/$slug/route.tsx` only when `store_ai_agents.enabled = true` (already in loader data — no extra request).
+- Uses store theme variables already on the layout.
+- Mobile-first sheet on small screens, bottom-right panel on desktop.
+- Conversation id stored in `localStorage` per store slug for continuity.
 
-- `marketing.tsx` — tracking IDs + per-channel enable switches.
-- `couriers.tsx` — provider cards (SteadFast, Pathao, RedX, Paperfly) each with API key/secret + enable switch. Driven by a config array so adding a new provider = one entry.
-- `theme.tsx` — color pickers (header, footer, card, title bar, button) + radius slider (0–16px). Live preview swatch.
-- `seo.tsx` — title/description/keywords + OG image + favicon uploaders.
-- `delivery.tsx` — inside/outside charge, free-min, COD toggle.
-- `payments.tsx` — per-method enable + numbers/bank fields + instructions textarea.
-- `notifications.tsx` — WhatsApp number, email toggle, SMS placeholder (disabled input + "coming soon").
-- `product-defaults.tsx` — warranty/return/shipping textareas. Products form prefills from these on "New product".
+Server route: `src/routes/api/ai/chat.ts` (streaming `POST`, validates slug, calls `chatWithAgent`).
 
-### 5. Sidebar (`src/routes/_authenticated/admin/route.tsx`)
+### 4. Messenger integration
 
-Append new links in this order, grouped after existing ones, before Subscription:
+- Admin page `src/routes/_authenticated/admin/messenger.tsx`: Connect Facebook Page form (page id + page access token + auto-generated verify token), status, disconnect.
+- Public webhook route `src/routes/api/public/messenger/webhook.ts` — `GET` for FB verification, `POST` for messages. Looks up `messenger_integrations` by `page_id`, resolves `store_id`, runs the same agent logic (non-streaming), replies via Graph API. No streaming.
+- Full OAuth login flow is out of scope for phase 1 — user pastes page access token. Documented in the UI.
 
-```
-Marketing · Couriers · Theme · SEO · Delivery · Payments · Notifications · Product Defaults
-```
+### 5. Admin UI additions
 
-Remove the "Theme colors" block from `settings.tsx` (moved to Theme page). All other Store Settings fields stay.
+Store Admin sidebar (`src/routes/_authenticated/admin/route.tsx`) — add two links:
+- **AI Sales Agent** → `/admin/ai-agent` (tabs: General · Knowledge · Behavior).
+- **Messenger** → `/admin/messenger`.
 
-### 6. Auto parcel / tracking (courier)
+Owner sidebar (`src/routes/_authenticated/owner/route.tsx`) — add:
+- **AI Settings** → `/owner/ai` (enable toggle, optional provider key field, default model select, usage dashboard: total tokens, est. cost, per-store breakdown).
 
-Phase 1 ships the credentials UI + DB only (SteadFast adapter scaffold with `createParcel(orderId)` server fn behind a "Send to courier" button on the order detail). Pathao/RedX/Paperfly slots present but disabled until keys/endpoints provided. This keeps scope tight and avoids speculative API code.
+All forms reuse existing `SettingsPage`, `Input`, `Textarea`, `Switch`, `Button`. No new UI libs.
 
-### Performance
+### 6. Security & isolation
 
-- No new npm packages.
-- Tracking scripts loaded `async`, only when configured.
-- All new pages are simple forms — no charts, no animations.
-- JSONB columns = one row read per store; no extra queries.
-- Theme + SEO injected from the same loader that already fetches the store.
+- Every agent server fn derives `store_id` server-side from slug or authenticated owner. Tool implementations always filter by that `store_id`.
+- Tool schemas exposed to the model never accept a `store_id` argument — model cannot target another store.
+- `messenger_integrations.page_access_token` and `ai_global_settings.provider_api_key` are select-restricted by RLS to owner/store-owner respectively; never sent to the client.
+- Webhook verifies FB signature (`x-hub-signature-256`) using app secret stored as a Lovable secret.
 
-### Out of scope (ask before adding)
+### 7. Performance
 
-- Live courier webhook receivers (need public URLs + secrets per provider).
-- SMS provider selection.
-- Multi-currency.
+- Widget: launcher only on first paint (button + 1 icon). Panel + AI SDK loaded on click.
+- No tracking scripts touched; no extra network calls on homepage.
+- Server route streams responses (`toUIMessageStreamResponse`).
+- Agent enabled flag included in existing `getStoreBySlug` response — zero extra queries on storefront load.
+- `staleTime` continues to apply; queries unchanged.
+
+### 8. Secrets
+
+- `LOVABLE_API_KEY` — already present.
+- `FB_APP_SECRET` — request via `add_secret` only when user starts the Messenger flow (not now).
+
+### Out of scope (ask later)
+- Full Facebook Login OAuth flow (phase 1 uses pasted page token).
+- WhatsApp / Instagram channels.
+- Voice / image input.
+- Fine-tuning or per-store custom models.
+
+---
+
+### Build order
+1. Migration (tables + RLS + grants).
+2. Gateway helper + `ai.functions.ts` (chat + tools + usage logging).
+3. Owner AI Settings page + route.
+4. Store Admin AI Agent page (3 tabs).
+5. Lazy chat widget + `/api/ai/chat` route + mount in store layout.
+6. Messenger admin page + public webhook route + connect/disconnect.
+7. Verify: storefront LCP unchanged, cross-store isolation test, order creation from chat.
