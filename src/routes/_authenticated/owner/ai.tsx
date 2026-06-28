@@ -93,16 +93,20 @@ function OwnerAi() {
 
         <div className="space-y-1">
           <label className="text-sm font-medium">
-            Provider API key {hasKey && <span className="text-xs text-emerald-600">(configured)</span>}
+            Provider API key{" "}
+            <span className="text-xs text-muted-foreground">(optional)</span>
+            {hasKey && <span className="ml-2 text-xs text-emerald-600">(configured)</span>}
           </label>
           <Input
             type="password"
             value={form.provider_api_key}
             onChange={(e) => setForm({ ...form, provider_api_key: e.target.value })}
-            placeholder={hasKey ? "•••••••• (leave blank to keep)" : "Leave blank to use Lovable AI"}
+            placeholder={hasKey ? "•••••••• (leave blank to keep)" : "Leave blank — Lovable AI is auto-configured"}
           />
           <p className="text-xs text-muted-foreground">
-            Optional. When set, overrides the platform Lovable AI Gateway key.
+            Lovable AI Gateway is auto-configured on this platform — you do <strong>not</strong> need to paste an OpenAI/Google API key here.
+            Only paste a value if you have a dedicated <code>lv_...</code> Lovable API key to override the platform default.
+            Any other key will be ignored to prevent gateway 401 errors.
           </p>
         </div>
 
