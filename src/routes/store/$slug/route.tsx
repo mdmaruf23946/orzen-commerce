@@ -63,6 +63,7 @@ export const Route = createFileRoute("/store/$slug")({
 function StoreLayout() {
   const { slug } = Route.useParams();
   const { data: store } = useSuspenseQuery(storeQuery(slug));
+  const { data: agent } = useQuery(agentQuery(slug));
   if (!store) return null;
   const s: any = store;
   const theme = s.theme ?? {};
@@ -86,6 +87,9 @@ function StoreLayout() {
           <Outlet />
         </main>
         <StoreFooter store={store} />
+        {agent && (
+          <AIChatLauncher slug={slug} agentName={agent.agent_name} welcome={agent.welcome_message} />
+        )}
       </div>
     </StoreUIProvider>
   );
