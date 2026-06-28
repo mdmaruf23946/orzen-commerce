@@ -65,10 +65,12 @@ function AdminAgent() {
 
   useEffect(() => {
     if (data) {
+      const d = data as any;
       setForm({
         ...DEFAULTS,
-        ...data,
-        knowledge: { ...DEFAULTS.knowledge, ...((data as any).knowledge ?? {}) },
+        ...d,
+        language: (["bn", "en", "both"].includes(d.language) ? d.language : "both") as Form["language"],
+        knowledge: { ...DEFAULTS.knowledge, ...(d.knowledge ?? {}) },
       });
     }
   }, [data]);
