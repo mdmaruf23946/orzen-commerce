@@ -168,7 +168,13 @@ export async function logUsage(storeId: string | null, model: string, usage: any
 export async function getModelForStore() {
   const sb = admin();
   const { data: settings } = await sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle();
-  const apiKey = settings?.provider_api_key || process.env.LOVABLE_API_KEY!;
+  // Always use the platform-provisioned Lovable AI key. The optional
+  // provider_api_key from the owner panel is only honored if it looks like a
+  // Lovable key — otherwise the gateway rejects it with 401.
+  const saved = (settings?.provider_api_key || "").trim();
+  const looksLovable = saved.startsWith("lv_") || saved.startsWith("sk-lovable");
+  const apiKey = (looksLovable ? saved : "") || process.env.LOVABLE_API_KEY!;
+  if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
   const modelId = settings?.default_model || "google/gemini-3-flash-preview";
   const gateway = createLovableAiGatewayProvider(apiKey);
   return { model: gateway(modelId), modelId };
