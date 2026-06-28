@@ -26,6 +26,7 @@ import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
 import { Route as AuthenticatedOwnerStoresRouteImport } from './routes/_authenticated/owner/stores'
 import { Route as AuthenticatedOwnerPackagesRouteImport } from './routes/_authenticated/owner/packages'
 import { Route as AuthenticatedOwnerAuditRouteImport } from './routes/_authenticated/owner/audit'
+import { Route as AuthenticatedOwnerAiRouteImport } from './routes/_authenticated/owner/ai'
 import { Route as AuthenticatedAdminThemeRouteImport } from './routes/_authenticated/admin/theme'
 import { Route as AuthenticatedAdminSubscriptionRouteImport } from './routes/_authenticated/admin/subscription'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin/settings'
@@ -35,12 +36,14 @@ import { Route as AuthenticatedAdminProductDefaultsRouteImport } from './routes/
 import { Route as AuthenticatedAdminPaymentsRouteImport } from './routes/_authenticated/admin/payments'
 import { Route as AuthenticatedAdminOrdersRouteImport } from './routes/_authenticated/admin/orders'
 import { Route as AuthenticatedAdminNotificationsRouteImport } from './routes/_authenticated/admin/notifications'
+import { Route as AuthenticatedAdminMessengerRouteImport } from './routes/_authenticated/admin/messenger'
 import { Route as AuthenticatedAdminMarketingRouteImport } from './routes/_authenticated/admin/marketing'
 import { Route as AuthenticatedAdminDeliveryRouteImport } from './routes/_authenticated/admin/delivery'
 import { Route as AuthenticatedAdminCustomersRouteImport } from './routes/_authenticated/admin/customers'
 import { Route as AuthenticatedAdminCouriersRouteImport } from './routes/_authenticated/admin/couriers'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
 import { Route as AuthenticatedAdminBannersRouteImport } from './routes/_authenticated/admin/banners'
+import { Route as AuthenticatedAdminAiAgentRouteImport } from './routes/_authenticated/admin/ai-agent'
 import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
 import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/order.$orderId'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
@@ -131,6 +134,11 @@ const AuthenticatedOwnerAuditRoute = AuthenticatedOwnerAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AuthenticatedOwnerRouteRoute,
 } as any)
+const AuthenticatedOwnerAiRoute = AuthenticatedOwnerAiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
+  getParentRoute: () => AuthenticatedOwnerRouteRoute,
+} as any)
 const AuthenticatedAdminThemeRoute = AuthenticatedAdminThemeRouteImport.update({
   id: '/theme',
   path: '/theme',
@@ -183,6 +191,12 @@ const AuthenticatedAdminNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminMessengerRoute =
+  AuthenticatedAdminMessengerRouteImport.update({
+    id: '/messenger',
+    path: '/messenger',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminMarketingRoute =
   AuthenticatedAdminMarketingRouteImport.update({
     id: '/marketing',
@@ -219,6 +233,12 @@ const AuthenticatedAdminBannersRoute =
     path: '/banners',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminAiAgentRoute =
+  AuthenticatedAdminAiAgentRouteImport.update({
+    id: '/ai-agent',
+    path: '/ai-agent',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const StoreSlugProductProductIdRoute =
   StoreSlugProductProductIdRouteImport.update({
     id: '/product/$productId',
@@ -244,12 +264,14 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/owner': typeof AuthenticatedOwnerRouteRouteWithChildren
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
+  '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/couriers': typeof AuthenticatedAdminCouriersRoute
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/delivery': typeof AuthenticatedAdminDeliveryRoute
   '/admin/marketing': typeof AuthenticatedAdminMarketingRoute
+  '/admin/messenger': typeof AuthenticatedAdminMessengerRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
@@ -259,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
+  '/owner/ai': typeof AuthenticatedOwnerAiRoute
   '/owner/audit': typeof AuthenticatedOwnerAuditRoute
   '/owner/packages': typeof AuthenticatedOwnerPackagesRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
@@ -277,12 +300,14 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/auth': typeof AuthRoute
+  '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/couriers': typeof AuthenticatedAdminCouriersRoute
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/delivery': typeof AuthenticatedAdminDeliveryRoute
   '/admin/marketing': typeof AuthenticatedAdminMarketingRoute
+  '/admin/messenger': typeof AuthenticatedAdminMessengerRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
@@ -292,6 +317,7 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
+  '/owner/ai': typeof AuthenticatedOwnerAiRoute
   '/owner/audit': typeof AuthenticatedOwnerAuditRoute
   '/owner/packages': typeof AuthenticatedOwnerPackagesRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
@@ -315,12 +341,14 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/_authenticated/owner': typeof AuthenticatedOwnerRouteRouteWithChildren
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
+  '/_authenticated/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/_authenticated/admin/banners': typeof AuthenticatedAdminBannersRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/couriers': typeof AuthenticatedAdminCouriersRoute
   '/_authenticated/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/_authenticated/admin/delivery': typeof AuthenticatedAdminDeliveryRoute
   '/_authenticated/admin/marketing': typeof AuthenticatedAdminMarketingRoute
+  '/_authenticated/admin/messenger': typeof AuthenticatedAdminMessengerRoute
   '/_authenticated/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/_authenticated/admin/payments': typeof AuthenticatedAdminPaymentsRoute
@@ -330,6 +358,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/_authenticated/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/_authenticated/admin/theme': typeof AuthenticatedAdminThemeRoute
+  '/_authenticated/owner/ai': typeof AuthenticatedOwnerAiRoute
   '/_authenticated/owner/audit': typeof AuthenticatedOwnerAuditRoute
   '/_authenticated/owner/packages': typeof AuthenticatedOwnerPackagesRoute
   '/_authenticated/owner/stores': typeof AuthenticatedOwnerStoresRoute
@@ -353,12 +382,14 @@ export interface FileRouteTypes {
     | '/admin'
     | '/owner'
     | '/store/$slug'
+    | '/admin/ai-agent'
     | '/admin/banners'
     | '/admin/categories'
     | '/admin/couriers'
     | '/admin/customers'
     | '/admin/delivery'
     | '/admin/marketing'
+    | '/admin/messenger'
     | '/admin/notifications'
     | '/admin/orders'
     | '/admin/payments'
@@ -368,6 +399,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/subscription'
     | '/admin/theme'
+    | '/owner/ai'
     | '/owner/audit'
     | '/owner/packages'
     | '/owner/stores'
@@ -386,12 +418,14 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/auth'
+    | '/admin/ai-agent'
     | '/admin/banners'
     | '/admin/categories'
     | '/admin/couriers'
     | '/admin/customers'
     | '/admin/delivery'
     | '/admin/marketing'
+    | '/admin/messenger'
     | '/admin/notifications'
     | '/admin/orders'
     | '/admin/payments'
@@ -401,6 +435,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/subscription'
     | '/admin/theme'
+    | '/owner/ai'
     | '/owner/audit'
     | '/owner/packages'
     | '/owner/stores'
@@ -423,12 +458,14 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/owner'
     | '/store/$slug'
+    | '/_authenticated/admin/ai-agent'
     | '/_authenticated/admin/banners'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/couriers'
     | '/_authenticated/admin/customers'
     | '/_authenticated/admin/delivery'
     | '/_authenticated/admin/marketing'
+    | '/_authenticated/admin/messenger'
     | '/_authenticated/admin/notifications'
     | '/_authenticated/admin/orders'
     | '/_authenticated/admin/payments'
@@ -438,6 +475,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/settings'
     | '/_authenticated/admin/subscription'
     | '/_authenticated/admin/theme'
+    | '/_authenticated/owner/ai'
     | '/_authenticated/owner/audit'
     | '/_authenticated/owner/packages'
     | '/_authenticated/owner/stores'
@@ -585,6 +623,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerAuditRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
+    '/_authenticated/owner/ai': {
+      id: '/_authenticated/owner/ai'
+      path: '/ai'
+      fullPath: '/owner/ai'
+      preLoaderRoute: typeof AuthenticatedOwnerAiRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
     '/_authenticated/admin/theme': {
       id: '/_authenticated/admin/theme'
       path: '/theme'
@@ -648,6 +693,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminNotificationsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/messenger': {
+      id: '/_authenticated/admin/messenger'
+      path: '/messenger'
+      fullPath: '/admin/messenger'
+      preLoaderRoute: typeof AuthenticatedAdminMessengerRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/marketing': {
       id: '/_authenticated/admin/marketing'
       path: '/marketing'
@@ -690,6 +742,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminBannersRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/ai-agent': {
+      id: '/_authenticated/admin/ai-agent'
+      path: '/ai-agent'
+      fullPath: '/admin/ai-agent'
+      preLoaderRoute: typeof AuthenticatedAdminAiAgentRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/store/$slug/product/$productId': {
       id: '/store/$slug/product/$productId'
       path: '/product/$productId'
@@ -715,12 +774,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAdminRouteRouteChildren {
+  AuthenticatedAdminAiAgentRoute: typeof AuthenticatedAdminAiAgentRoute
   AuthenticatedAdminBannersRoute: typeof AuthenticatedAdminBannersRoute
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminCouriersRoute: typeof AuthenticatedAdminCouriersRoute
   AuthenticatedAdminCustomersRoute: typeof AuthenticatedAdminCustomersRoute
   AuthenticatedAdminDeliveryRoute: typeof AuthenticatedAdminDeliveryRoute
   AuthenticatedAdminMarketingRoute: typeof AuthenticatedAdminMarketingRoute
+  AuthenticatedAdminMessengerRoute: typeof AuthenticatedAdminMessengerRoute
   AuthenticatedAdminNotificationsRoute: typeof AuthenticatedAdminNotificationsRoute
   AuthenticatedAdminOrdersRoute: typeof AuthenticatedAdminOrdersRoute
   AuthenticatedAdminPaymentsRoute: typeof AuthenticatedAdminPaymentsRoute
@@ -735,12 +796,14 @@ interface AuthenticatedAdminRouteRouteChildren {
 
 const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
   {
+    AuthenticatedAdminAiAgentRoute: AuthenticatedAdminAiAgentRoute,
     AuthenticatedAdminBannersRoute: AuthenticatedAdminBannersRoute,
     AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
     AuthenticatedAdminCouriersRoute: AuthenticatedAdminCouriersRoute,
     AuthenticatedAdminCustomersRoute: AuthenticatedAdminCustomersRoute,
     AuthenticatedAdminDeliveryRoute: AuthenticatedAdminDeliveryRoute,
     AuthenticatedAdminMarketingRoute: AuthenticatedAdminMarketingRoute,
+    AuthenticatedAdminMessengerRoute: AuthenticatedAdminMessengerRoute,
     AuthenticatedAdminNotificationsRoute: AuthenticatedAdminNotificationsRoute,
     AuthenticatedAdminOrdersRoute: AuthenticatedAdminOrdersRoute,
     AuthenticatedAdminPaymentsRoute: AuthenticatedAdminPaymentsRoute,
@@ -760,6 +823,7 @@ const AuthenticatedAdminRouteRouteWithChildren =
   )
 
 interface AuthenticatedOwnerRouteRouteChildren {
+  AuthenticatedOwnerAiRoute: typeof AuthenticatedOwnerAiRoute
   AuthenticatedOwnerAuditRoute: typeof AuthenticatedOwnerAuditRoute
   AuthenticatedOwnerPackagesRoute: typeof AuthenticatedOwnerPackagesRoute
   AuthenticatedOwnerStoresRoute: typeof AuthenticatedOwnerStoresRoute
@@ -768,6 +832,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
 
 const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren =
   {
+    AuthenticatedOwnerAiRoute: AuthenticatedOwnerAiRoute,
     AuthenticatedOwnerAuditRoute: AuthenticatedOwnerAuditRoute,
     AuthenticatedOwnerPackagesRoute: AuthenticatedOwnerPackagesRoute,
     AuthenticatedOwnerStoresRoute: AuthenticatedOwnerStoresRoute,
@@ -825,13 +890,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

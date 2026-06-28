@@ -21,6 +21,8 @@ import {
   Wallet,
   Bell,
   ClipboardList,
+  Bot,
+  MessageSquare,
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,6 +45,8 @@ const links: { to: string; label: string; icon: typeof LayoutDashboard; exact?: 
   { to: "/admin/payments", label: "Payments", icon: Wallet },
   { to: "/admin/notifications", label: "Notifications", icon: Bell },
   { to: "/admin/product-defaults", label: "Product Defaults", icon: ClipboardList },
+  { to: "/admin/ai-agent", label: "AI Sales Agent", icon: Bot },
+  { to: "/admin/messenger", label: "Messenger", icon: MessageSquare },
   { to: "/admin/settings", label: "Store Settings", icon: Settings },
   { to: "/admin/subscription", label: "Subscription", icon: CreditCard },
 ];
