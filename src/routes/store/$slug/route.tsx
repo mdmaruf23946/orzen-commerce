@@ -1,15 +1,25 @@
 import { createFileRoute, Link, Outlet, notFound } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { ShoppingCart, Search, Phone, MessageCircle, Facebook } from "lucide-react";
 import { getStoreBySlug } from "@/lib/storefront.functions";
+import { getStoreAgentPublic } from "@/lib/ai.functions";
 import { cartCount } from "@/lib/cart";
 import { StoreUIProvider, useStoreUI } from "@/lib/store-ui";
+import { AIChatLauncher } from "@/components/storefront/AIChatLauncher";
 
 const storeQuery = (slug: string) =>
   queryOptions({
     queryKey: ["store", slug],
     queryFn: () => getStoreBySlug({ data: { slug } }),
+    staleTime: 5 * 60 * 1000,
+  });
+
+const agentQuery = (slug: string) =>
+  queryOptions({
+    queryKey: ["store", slug, "agent"],
+    queryFn: () => getStoreAgentPublic({ data: { slug } }),
+    staleTime: 5 * 60 * 1000,
   });
 
 export const Route = createFileRoute("/store/$slug")({
