@@ -22,7 +22,7 @@ function CheckoutPage() {
   const { data: plans } = useQuery({ queryKey: ["admin", "billingPlans"], queryFn: () => plansFn() });
   const { data: methods } = useQuery({ queryKey: ["admin", "paymentMethods"], queryFn: () => methodsFn() });
 
-  const pkg = (plans ?? []).find((p: any) => p.id === packageId);
+  const pkg = (plans ?? []).find((p: any) => p.id === packageId) as any;
   const [method, setMethod] = useState<"bkash" | "nagad" | "rocket">("bkash");
   const [txnId, setTxnId] = useState("");
   const [sender, setSender] = useState("");
