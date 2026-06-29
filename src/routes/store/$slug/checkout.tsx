@@ -218,14 +218,28 @@ function CheckoutPage() {
               </li>
             ))}
           </ul>
+          <div className="mt-3 flex gap-2">
+            <Input placeholder="Coupon code" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} className="h-9" />
+            {coupon ? (
+              <Button type="button" size="sm" variant="outline" onClick={() => { setCoupon(null); setCouponCode(""); }}>Remove</Button>
+            ) : (
+              <Button type="button" size="sm" variant="outline" onClick={applyCoupon} disabled={applyingCoupon || !couponCode.trim()}>
+                {applyingCoupon ? "…" : "Apply"}
+              </Button>
+            )}
+          </div>
           <div className="mt-3 space-y-1 border-t pt-3 text-sm">
             <div className="flex justify-between"><span>Subtotal</span><span>৳{subtotal.toFixed(0)}</span></div>
             <div className="flex justify-between"><span>Shipping</span><span>{shipping === 0 ? "Free" : `৳${shipping.toFixed(0)}`}</span></div>
+            {discount > 0 && (
+              <div className="flex justify-between text-emerald-600"><span>Discount ({coupon!.code})</span><span>-৳{discount.toFixed(0)}</span></div>
+            )}
             <div className="mt-2 flex items-center justify-between border-t pt-2">
               <span className="text-sm">Total</span>
               <span className="text-lg font-bold">৳{total.toFixed(0)}</span>
             </div>
           </div>
+
           <Button
             type="submit"
             disabled={submitting || methods.length === 0}
