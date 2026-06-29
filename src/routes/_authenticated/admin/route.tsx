@@ -136,6 +136,7 @@ function AdminLayout() {
           <div className="fixed inset-0 z-30 bg-black/40 md:hidden" onClick={() => setOpen(false)} />
         )}
         <main className="flex-1 p-4 md:p-8">
+          <SubscriptionStatusBanner />
           <Outlet />
         </main>
       </div>
