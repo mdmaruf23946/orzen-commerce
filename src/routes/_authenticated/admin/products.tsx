@@ -223,9 +223,13 @@ function ProductDialog({
   const [shippingInfo, setShippingInfo] = useState<string>(
     (editing as any)?.shipping_info ?? (editing ? "" : productDefaults?.shipping_info ?? ""),
   );
+  const [costPrice, setCostPrice] = useState<string>((editing as any)?.cost_price != null ? String((editing as any).cost_price) : "");
+  const [sku, setSku] = useState<string>((editing as any)?.sku ?? "");
+  const [lowThreshold, setLowThreshold] = useState<number>((editing as any)?.low_stock_threshold ?? 5);
   const [newCatName, setNewCatName] = useState("");
   const [addingCat, setAddingCat] = useState(false);
   const [saving, setSaving] = useState(false);
+
 
   const reg = Number(regularPrice) || 0;
   const sale = salePrice === "" ? null : Number(salePrice);
