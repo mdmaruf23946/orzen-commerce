@@ -1,94 +1,52 @@
-# Subscription & Payment System
 
-Builds on what already exists (`subscription_packages`, `stores.package_id/expires_at`, `payments`, owner Packages page, admin Subscription page). Nothing existing is duplicated — fields are added, status enforcement is added, and a renewal flow is added.
+## Goal
 
-## 1. Database (one migration)
+Rebuild the store admin's Subscription experience so every plan (Free Trial, Basic, Business, Custom) is shown as a detailed card with limits, features and a clear upgrade path, plus a side-by-side comparison table and a live trial countdown.
 
-Extend `subscription_packages`:
-- `description text`, `is_trial boolean default false`, `trial_days int default 0`
-- `order_limit int`, `customer_limit int`, `staff_limit int`, `storage_mb int`
-- `billing_cycle text default 'monthly'` (`monthly | 2m | 3m | 6m | yearly | custom`)
-- `features jsonb default '{}'` — feature flags map (see §3)
-- `sort_order int default 0`
+## Scope
 
-Extend `stores`:
-- `trial_ends_at timestamptz`
-- `subscription_status text default 'trialing'` (`trialing | active | expired | suspended | cancelled`)
-- `last_renewed_at timestamptz`
+Frontend-only redesign of the existing billing page. No schema or business-logic changes — we reuse `myBillingStatus`, `listPublicPlans`, the existing `subscription_packages` columns (`product_limit`, `order_limit`, `storage_mb`, `staff_limit`, `is_trial`, `trial_days`, `features` JSON, `billing_cycle`, `price`) and `features.ts` flags. New-user trial auto-start already runs via the `start_trial_for_store` DB trigger and the status banner already shows expiry — we'll add a richer countdown on the page itself.
 
-Extend `payments`:
-- `invoice_no text`, `cycle_start date`, `cycle_end date`, `verified_by uuid`, `verified_at timestamptz`, `notes text`
-- unique index on `(store_id, invoice_no)`
+One small data tweak: `listPublicPlans` currently filters out trial plans (`is_trial = false`). We'll include trial plans too so the Free Trial card can render from the same source of truth.
 
-New table `platform_payment_settings` (single row keyed by `id='global'`, owner-only):
-- `bkash jsonb`, `nagad jsonb`, `rocket jsonb`, `sslcommerz jsonb` — each `{ enabled, number|store_id, api_key, instructions }`. API credentials stored only here, never returned to non-owners.
+## Page layout (`src/routes/_authenticated/admin/billing.tsx`)
 
-New table `subscription_notifications`:
-- `store_id`, `type` (`trial_started|trial_expiring|expired|payment_success|payment_failed|renewal_reminder`), `sent_at`, `meta jsonb`. Read by store owner, written by server fns.
+1. **Header / current status strip**
+   - Current plan name + price + billing cycle.
+   - Status pill (Trialing / Active / Expired / Suspended).
+   - Trial countdown block when `subscription_status === "trialing"`: large "X days Y hours remaining", progress bar (days_left / trial_days), short note "After the trial ends, your store moves to the Free plan automatically."
 
-Trigger / function `public.start_trial_for_store()` — on `stores` insert, if no `package_id`, set `package_id` = first `is_trial=true` package, `trial_ends_at = now() + trial_days`, `expires_at = trial_ends_at`, `subscription_status='trialing'`, and write a `subscription_notifications` row.
+2. **Plan cards grid** (`grid-cols-1 sm:grid-cols-2 xl:grid-cols-4`)
+   - One card per plan returned from `listPublicPlans` (now includes the trial).
+   - Card shows:
+     - Plan name, short description, price (`৳X / cycle`, "Free" for trial).
+     - "Current Plan" badge when `store.package_id === plan.id`.
+     - "Most Popular" highlight ring on the Business plan (detected by name match, fallback to middle paid plan).
+     - Limits block: Products, Orders, Storage (MB → GB if ≥1024), Staff. "Unlimited" when value is 0/null.
+     - Feature list with check/cross icons for: AI Agent, Messenger AI, Courier, Facebook Pixel, Analytics, Inventory, Invoice, Coupons. Trial plan shows all-enabled with a "Full access during trial" note.
+     - Support type line derived from `plan.features.support` or a fixed map (Trial → Community, Basic → Email, Business → Priority, Custom → Dedicated).
+     - CTA: "Current Plan" (disabled) / "Upgrade" (paid) / "Trial Active" (disabled on trial card while trialing) / "Contact Sales" link for Custom plan (mailto or `/contact`).
 
-Function `public.refresh_store_subscription_status(_store_id uuid)` — recomputes `subscription_status` from `expires_at` (sets `expired` when past), called from server fns after payment / assign / cron.
+3. **Compare Plans section** (collapsible, default open on desktop, accordion on mobile)
+   - Responsive table with sticky first column listing every feature/limit row from the requirements.
+   - One column per plan, ✓ / ✕ / value cells.
+   - On mobile (<640px) the table becomes a stacked per-plan summary inside `<details>` blocks to avoid horizontal scroll while keeping it lightweight.
 
-GRANTs follow existing pattern (authenticated for owner-scoped tables, anon for `subscription_packages` SELECT only).
+4. **Payment history** — keep the existing table unchanged below the comparison section.
 
-## 2. Server functions
+## Small supporting changes
 
-`src/lib/billing.functions.ts` (new):
-- `listPublicPlans()` — anon, returns active non-trial packages for the upgrade page.
-- `myBillingStatus()` — auth, returns store + plan + days_left + status + recent payments + active notifications.
-- `submitManualPayment({ packageId, method, txn_id, amount, sender_number })` — store owner; inserts `payments` row with `status='pending'` and notifies owner.
-- `startSslcommerzCheckout({ packageId })` — store owner; creates pending payment, returns gateway redirect URL (uses creds from `platform_payment_settings`). Stubbed with clear TODO if creds blank.
+- `src/lib/billing.functions.ts`: drop `.eq("is_trial", false)` in `listPublicPlans` and order by `is_trial DESC` then `sort_order` so the trial card appears first. No new fields needed.
+- `src/lib/features.ts`: add a small `PLAN_FEATURE_ROWS` constant (label + key + render type: bool | limit | text) used by both the card feature list and the comparison table to avoid duplication.
+- No changes to `SubscriptionStatusBanner`, routing, or DB.
 
-`src/lib/owner.functions.ts` (extend):
-- `upsertPackage` — accept new fields (features, limits, billing_cycle, trial).
-- `listPayments({ status?, from?, to? })`, `verifyPayment({ id, approve })` — on approve: marks paid, advances `stores.expires_at` by package duration, sets `subscription_status='active'`, writes timeline + notification.
-- `extendSubscription({ storeId, days })`, `setStoreSubscriptionStatus({ storeId, status })`.
-- `revenueStats()` — today / month / year / total + counts of trialing / active / expired / suspended + renewal rate (paid renewals ÷ expiring last 30d).
-- `getPaymentSettings` / `updatePaymentSettings` — owner only.
+## Out of scope
 
-Server route `src/routes/api/public/billing/sslcommerz-ipn.ts` — verifies signature against stored secret, marks matching payment paid, advances expiry. Public path, signature-verified (no auth header).
+- Owner-side package editing UI.
+- Implementing a separate "Free (post-trial)" package row — the DB already flips `subscription_status` to `expired` after the trial; surfacing a dedicated Free tier in marketing copy only would require a new package row, which the user can add from the Owner → Packages page. We'll display the Free Trial card and clearly state the post-trial behavior; if the user wants a literal "Free plan" package shown, that's a follow-up (one DB seed).
 
-Cron via `pg_cron` + `pg_net` daily: hits `/api/public/billing/daily-refresh` which (a) sets expired stores, (b) inserts `trial_expiring` / `renewal_reminder` notifications for stores with ≤3 days left and none sent in last 24h. Endpoint authenticated by `apikey` header (anon key).
+## Technical notes
 
-## 3. Feature flags (no-code gating)
-
-A single source of truth: `src/lib/features.ts` exports `FEATURE_KEYS` (`ai_agent`, `ai_messenger`, `pixel`, `courier`, `inventory`, `coupons`, `invoice`, `analytics`, `import_export`, `bulk_actions`, `staff`, `customer_notes`, `returns`). Helper `hasFeature(store, key)` reads `store.subscription_packages.features[key]`; trial package returns true for all.
-
-`getMyStore` already returns the joined package — extend the projection to include `features`, `subscription_status`, `trial_ends_at`. Hook `useStoreFeatures()` exposes a memoized map.
-
-Apply gating non-invasively:
-- Sidebar entries in `_authenticated/admin/route.tsx` hide items whose feature is off.
-- Each gated page renders an `<UpgradeRequired feature="..." />` card when off (one shared component) — no logic deleted from the existing pages.
-- A top-level `<StoreStatusBanner />` in the admin layout shows trial countdown, expiring warning, or "Read-only — please renew". When `subscription_status` is `expired | suspended`, the admin server mutations short-circuit via a new `assertActiveSubscription` helper used by write fns in `admin.functions.ts`, `inventory.functions.ts`, `coupons.functions.ts`, etc.
-
-Storefront stays online for read-only when expired; checkout fn rejects new orders with a polite message when status is `expired | suspended`.
-
-## 4. Owner panel (new + updated routes)
-
-- `owner/packages.tsx` — extend dialog to a tabbed form: General / Limits / Features (checkbox list from `FEATURE_KEYS`) / Trial / Status. Drag-free sort via number input.
-- `owner/billing.tsx` (new) — revenue cards (today/month/year/total, active/trial/expired, renewal rate), recent payments table, status filter, "Verify"/"Reject" actions.
-- `owner/payment-settings.tsx` (new) — enable + credentials per gateway (bKash/Nagad/Rocket/SSLCommerz), connection status pill (green if creds present & enabled).
-- `owner/subscriptions.tsx` (new) — store list with status tabs (All / Trial / Active / Expired / Suspended), per-row actions: Upgrade (change package), Extend days, Suspend / Reactivate.
-- Sidebar in `owner/route.tsx` gets 3 new links: Billing, Subscriptions, Payment Settings.
-
-## 5. Store admin panel (new routes)
-
-- `_authenticated/admin/billing.tsx` — current plan card, trial / days-left badge, plan comparison table, "Renew / Upgrade" CTA.
-- `_authenticated/admin/billing.checkout.$packageId.tsx` — choose method, show owner-configured instructions, capture txn_id + sender number → `submitManualPayment`; "Pay with SSLCommerz" button when enabled.
-- Existing `subscription.tsx` stays as payment history (no duplication).
-
-## 6. Notifications
-
-Stored in `subscription_notifications`; a small bell badge in admin layout shows unread counts. No email/SMS provider added — UI + DB only (extensible later via the same helper).
-
-## 7. Performance
-
-- All new lists paginated 50/page; queries project narrow columns.
-- Feature gating computed once per request, memoized client-side.
-- No new heavy deps; SSLCommerz call uses native `fetch`.
-- All new routes lazy-loaded by file-based routing.
-
-## Open question
-
-Payment verification model: should bKash/Nagad/Rocket stay **manual** (owner approves pending payments — matches existing storefront pattern, zero API setup), or do you want me to wire one of them to its live gateway API? I'll proceed manual + SSLCommerz live (with creds stored in payment-settings) unless you say otherwise.
+- All data already comes from two existing server functions — no new round trips.
+- Page stays SSR-friendly under `_authenticated`; uses `useQuery` with the existing `staleTime`.
+- Pure Tailwind + existing shadcn `Button`, `Badge`, `Progress`, `Card`; no new dependencies, keeping bundle size flat.
