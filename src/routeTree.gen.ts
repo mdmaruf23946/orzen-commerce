@@ -53,6 +53,7 @@ import { Route as AuthenticatedAdminAiAgentRouteImport } from './routes/_authent
 import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
 import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/order.$orderId'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
+import { Route as AuthenticatedAdminInvoiceOrderIdRouteImport } from './routes/_authenticated/admin/invoice.$orderId'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -298,6 +299,12 @@ const ApiPublicMessengerWebhookRoute =
     path: '/api/public/messenger/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedAdminInvoiceOrderIdRoute =
+  AuthenticatedAdminInvoiceOrderIdRouteImport.update({
+    id: '/invoice/$orderId',
+    path: '/invoice/$orderId',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -340,6 +347,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/owner/': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
+  '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
@@ -382,6 +390,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/owner': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug': typeof StoreSlugIndexRoute
+  '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
@@ -429,6 +438,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/owner/': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
+  '/_authenticated/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
@@ -476,6 +486,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/owner/'
     | '/store/$slug/'
+    | '/admin/invoice/$orderId'
     | '/api/public/messenger/webhook'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
@@ -518,6 +529,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/owner'
     | '/store/$slug'
+    | '/admin/invoice/$orderId'
     | '/api/public/messenger/webhook'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
@@ -564,6 +576,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/owner/'
     | '/store/$slug/'
+    | '/_authenticated/admin/invoice/$orderId'
     | '/api/public/messenger/webhook'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
@@ -890,6 +903,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMessengerWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin/invoice/$orderId': {
+      id: '/_authenticated/admin/invoice/$orderId'
+      path: '/invoice/$orderId'
+      fullPath: '/admin/invoice/$orderId'
+      preLoaderRoute: typeof AuthenticatedAdminInvoiceOrderIdRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
   }
 }
 
@@ -918,6 +938,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminSubscriptionRoute: typeof AuthenticatedAdminSubscriptionRoute
   AuthenticatedAdminThemeRoute: typeof AuthenticatedAdminThemeRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+  AuthenticatedAdminInvoiceOrderIdRoute: typeof AuthenticatedAdminInvoiceOrderIdRoute
 }
 
 const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
@@ -947,6 +968,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminSubscriptionRoute: AuthenticatedAdminSubscriptionRoute,
     AuthenticatedAdminThemeRoute: AuthenticatedAdminThemeRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+    AuthenticatedAdminInvoiceOrderIdRoute:
+      AuthenticatedAdminInvoiceOrderIdRoute,
   }
 
 const AuthenticatedAdminRouteRouteWithChildren =
