@@ -644,32 +644,53 @@ export type Database = {
         Row: {
           amount: number
           created_at: string
+          cycle_end: string | null
+          cycle_start: string | null
           id: string
+          invoice_no: string | null
           method: string | null
+          notes: string | null
           package_id: string | null
+          sender_number: string | null
           status: string
           store_id: string
           txn_id: string | null
+          verified_at: string | null
+          verified_by: string | null
         }
         Insert: {
           amount: number
           created_at?: string
+          cycle_end?: string | null
+          cycle_start?: string | null
           id?: string
+          invoice_no?: string | null
           method?: string | null
+          notes?: string | null
           package_id?: string | null
+          sender_number?: string | null
           status?: string
           store_id: string
           txn_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Update: {
           amount?: number
           created_at?: string
+          cycle_end?: string | null
+          cycle_start?: string | null
           id?: string
+          invoice_no?: string | null
           method?: string | null
+          notes?: string | null
           package_id?: string | null
+          sender_number?: string | null
           status?: string
           store_id?: string
           txn_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Relationships: [
           {
@@ -709,6 +730,33 @@ export type Database = {
           id?: string
           is_active?: boolean
           title?: string
+        }
+        Relationships: []
+      }
+      platform_payment_settings: {
+        Row: {
+          bkash: Json
+          id: string
+          nagad: Json
+          rocket: Json
+          sslcommerz: Json
+          updated_at: string
+        }
+        Insert: {
+          bkash?: Json
+          id?: string
+          nagad?: Json
+          rocket?: Json
+          sslcommerz?: Json
+          updated_at?: string
+        }
+        Update: {
+          bkash?: Json
+          id?: string
+          nagad?: Json
+          rocket?: Json
+          sslcommerz?: Json
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1001,6 +1049,7 @@ export type Database = {
           footer_color: string | null
           header_color: string | null
           id: string
+          last_renewed_at: string | null
           logo_url: string | null
           marketing: Json
           nagad_number: string | null
@@ -1015,8 +1064,10 @@ export type Database = {
           seo: Json
           slug: string
           status: Database["public"]["Enums"]["store_status"]
+          subscription_status: string
           theme: Json
           title_bar_color: string | null
+          trial_ends_at: string | null
           updated_at: string
           whatsapp: string | null
         }
@@ -1033,6 +1084,7 @@ export type Database = {
           footer_color?: string | null
           header_color?: string | null
           id?: string
+          last_renewed_at?: string | null
           logo_url?: string | null
           marketing?: Json
           nagad_number?: string | null
@@ -1047,8 +1099,10 @@ export type Database = {
           seo?: Json
           slug: string
           status?: Database["public"]["Enums"]["store_status"]
+          subscription_status?: string
           theme?: Json
           title_bar_color?: string | null
+          trial_ends_at?: string | null
           updated_at?: string
           whatsapp?: string | null
         }
@@ -1065,6 +1119,7 @@ export type Database = {
           footer_color?: string | null
           header_color?: string | null
           id?: string
+          last_renewed_at?: string | null
           logo_url?: string | null
           marketing?: Json
           nagad_number?: string | null
@@ -1079,8 +1134,10 @@ export type Database = {
           seo?: Json
           slug?: string
           status?: Database["public"]["Enums"]["store_status"]
+          subscription_status?: string
           theme?: Json
           title_bar_color?: string | null
+          trial_ends_at?: string | null
           updated_at?: string
           whatsapp?: string | null
         }
@@ -1094,33 +1151,98 @@ export type Database = {
           },
         ]
       }
-      subscription_packages: {
+      subscription_notifications: {
         Row: {
           created_at: string
-          duration_days: number
           id: string
-          is_active: boolean
-          name: string
-          price: number
-          product_limit: number
+          meta: Json
+          read_at: string | null
+          store_id: string
+          type: string
         }
         Insert: {
           created_at?: string
-          duration_days?: number
           id?: string
-          is_active?: boolean
-          name: string
-          price?: number
-          product_limit?: number
+          meta?: Json
+          read_at?: string | null
+          store_id: string
+          type: string
         }
         Update: {
           created_at?: string
+          id?: string
+          meta?: Json
+          read_at?: string | null
+          store_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_notifications_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_packages: {
+        Row: {
+          billing_cycle: string
+          created_at: string
+          customer_limit: number | null
+          description: string | null
+          duration_days: number
+          features: Json
+          id: string
+          is_active: boolean
+          is_trial: boolean
+          name: string
+          order_limit: number | null
+          price: number
+          product_limit: number
+          sort_order: number
+          staff_limit: number | null
+          storage_mb: number | null
+          trial_days: number
+        }
+        Insert: {
+          billing_cycle?: string
+          created_at?: string
+          customer_limit?: number | null
+          description?: string | null
           duration_days?: number
+          features?: Json
           id?: string
           is_active?: boolean
-          name?: string
+          is_trial?: boolean
+          name: string
+          order_limit?: number | null
           price?: number
           product_limit?: number
+          sort_order?: number
+          staff_limit?: number | null
+          storage_mb?: number | null
+          trial_days?: number
+        }
+        Update: {
+          billing_cycle?: string
+          created_at?: string
+          customer_limit?: number | null
+          description?: string | null
+          duration_days?: number
+          features?: Json
+          id?: string
+          is_active?: boolean
+          is_trial?: boolean
+          name?: string
+          order_limit?: number | null
+          price?: number
+          product_limit?: number
+          sort_order?: number
+          staff_limit?: number | null
+          storage_mb?: number | null
+          trial_days?: number
         }
         Relationships: []
       }
@@ -1159,6 +1281,10 @@ export type Database = {
         Returns: boolean
       }
       is_store_owner: { Args: { _store_id: string }; Returns: boolean }
+      refresh_store_subscription_status: {
+        Args: { _store_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "owner" | "user"

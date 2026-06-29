@@ -117,24 +117,34 @@ export const upsertPackage = createServerFn({ method: "POST" })
       .object({
         id: z.string().uuid().optional(),
         name: z.string().trim().min(1).max(80),
+        description: z.string().trim().max(500).nullish(),
         price: z.number().nonnegative(),
         duration_days: z.number().int().min(1).max(3650),
-        product_limit: z.number().int().min(1).max(100000),
+        billing_cycle: z.string().min(1).max(20).default("monthly"),
+        product_limit: z.number().int().min(0).max(1000000),
+        order_limit: z.number().int().min(0).max(10000000).nullish(),
+        customer_limit: z.number().int().min(0).max(10000000).nullish(),
+        staff_limit: z.number().int().min(0).max(1000).nullish(),
+        storage_mb: z.number().int().min(0).max(1000000).nullish(),
         is_active: z.boolean(),
+        is_trial: z.boolean().default(false),
+        trial_days: z.number().int().min(0).max(365).default(0),
+        features: z.record(z.string(), z.boolean()).default({}),
+        sort_order: z.number().int().default(0),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId);
     const { id, ...rest } = data;
+    const payload = rest as any;
     if (id) {
-      const { error } = await context.supabase.from("subscription_packages").update(rest).eq("id", id);
+      const { error } = await (context.supabase.from("subscription_packages") as any).update(payload).eq("id", id);
       if (error) throw new Error(error.message);
       return { id };
     }
-    const { data: created, error } = await context.supabase
-      .from("subscription_packages")
-      .insert(rest)
+    const { data: created, error } = await (context.supabase.from("subscription_packages") as any)
+      .insert(payload)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -242,3 +252,253 @@ export const listRoleAuditLog = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return data ?? [];
   });
+
+// ---------- BILLING & SUBSCRIPTIONS ----------
+
+export const listPayments = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        status: z.string().optional(),
+        from: z.string().optional(),
+        to: z.string().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    let q = (context.supabase.from("payments") as any)
+      .select("*, stores(name,slug), subscription_packages(name,price)")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (data.status) q = q.eq("status", data.status);
+    if (data.from) q = q.gte("created_at", data.from);
+    if (data.to) q = q.lte("created_at", data.to);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
+export const verifyPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ id: z.string().uuid(), approve: z.boolean(), notes: z.string().max(500).optional() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const { data: pay } = await sb
+      .from("payments")
+      .select("id,store_id,package_id,amount,status")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!pay) throw new Error("Payment not found");
+    if (pay.status === "paid") throw new Error("Already verified");
+
+    if (!data.approve) {
+      const { error } = await sb
+        .from("payments")
+        .update({ status: "rejected", verified_by: context.userId, verified_at: new Date().toISOString(), notes: data.notes ?? null })
+        .eq("id", data.id);
+      if (error) throw new Error(error.message);
+      await sb.from("subscription_notifications").insert({
+        store_id: pay.store_id,
+        type: "payment_failed",
+        meta: { payment_id: pay.id, reason: data.notes ?? "rejected" },
+      });
+      return { ok: true };
+    }
+
+    // Approve: load package, advance expiry
+    const { data: pkg } = await sb
+      .from("subscription_packages")
+      .select("id,duration_days,name")
+      .eq("id", pay.package_id)
+      .maybeSingle();
+    if (!pkg) throw new Error("Package missing");
+    const { data: store } = await sb
+      .from("stores")
+      .select("id,expires_at")
+      .eq("id", pay.store_id)
+      .maybeSingle();
+    const now = new Date();
+    const base =
+      store?.expires_at && new Date(store.expires_at) > now ? new Date(store.expires_at) : now;
+    const newExpiry = new Date(base);
+    newExpiry.setDate(newExpiry.getDate() + (pkg.duration_days || 30));
+    const cycleStart = now.toISOString().slice(0, 10);
+    const cycleEnd = newExpiry.toISOString().slice(0, 10);
+    const invoiceNo = `INV-S-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}-${pay.id.slice(0, 6).toUpperCase()}`;
+
+    const { error: payErr } = await sb
+      .from("payments")
+      .update({
+        status: "paid",
+        verified_by: context.userId,
+        verified_at: now.toISOString(),
+        invoice_no: invoiceNo,
+        cycle_start: cycleStart,
+        cycle_end: cycleEnd,
+        notes: data.notes ?? null,
+      })
+      .eq("id", data.id);
+    if (payErr) throw new Error(payErr.message);
+
+    const { error: stErr } = await sb
+      .from("stores")
+      .update({
+        package_id: pkg.id,
+        expires_at: newExpiry.toISOString(),
+        last_renewed_at: now.toISOString(),
+        subscription_status: "active",
+      })
+      .eq("id", pay.store_id);
+    if (stErr) throw new Error(stErr.message);
+
+    await sb.from("subscription_notifications").insert({
+      store_id: pay.store_id,
+      type: "payment_success",
+      meta: { payment_id: pay.id, invoice_no: invoiceNo, package: pkg.name },
+    });
+    return { ok: true, invoice_no: invoiceNo };
+  });
+
+export const extendSubscription = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ storeId: z.string().uuid(), days: z.number().int().min(1).max(3650) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const { data: s } = await sb.from("stores").select("expires_at").eq("id", data.storeId).maybeSingle();
+    const base = s?.expires_at && new Date(s.expires_at) > new Date() ? new Date(s.expires_at) : new Date();
+    base.setDate(base.getDate() + data.days);
+    const { error } = await sb
+      .from("stores")
+      .update({ expires_at: base.toISOString(), subscription_status: "active" })
+      .eq("id", data.storeId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const setSubscriptionStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        storeId: z.string().uuid(),
+        status: z.enum(["trialing", "active", "expired", "suspended", "cancelled"]),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const { error } = await sb
+      .from("stores")
+      .update({ subscription_status: data.status })
+      .eq("id", data.storeId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const revenueStats = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const now = new Date();
+    const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const yearStart = new Date(now.getFullYear(), 0, 1);
+    const last30 = new Date(now.getTime() - 30 * 86400000);
+
+    const [{ data: payments }, { data: stores }] = await Promise.all([
+      sb.from("payments").select("amount,status,created_at,verified_at").eq("status", "paid"),
+      sb.from("stores").select("subscription_status,expires_at,last_renewed_at"),
+    ]);
+    const sum = (rows: any[], gte?: Date) =>
+      (rows ?? [])
+        .filter((p) => !gte || new Date(p.verified_at || p.created_at) >= gte)
+        .reduce((a, p) => a + Number(p.amount || 0), 0);
+
+    const today = sum(payments ?? [], dayStart);
+    const month = sum(payments ?? [], monthStart);
+    const year = sum(payments ?? [], yearStart);
+    const total = sum(payments ?? []);
+
+    const counts = { trialing: 0, active: 0, expired: 0, suspended: 0 };
+    for (const s of stores ?? []) {
+      const k = (s.subscription_status ?? "active") as keyof typeof counts;
+      if (counts[k] !== undefined) counts[k]++;
+    }
+    // renewal rate = paid renewals in last 30 / stores expiring in last 30
+    const expiringLast30 = (stores ?? []).filter(
+      (s: any) => s.expires_at && new Date(s.expires_at) >= last30 && new Date(s.expires_at) <= new Date(now.getTime() + 30 * 86400000),
+    ).length;
+    const renewedLast30 = (stores ?? []).filter(
+      (s: any) => s.last_renewed_at && new Date(s.last_renewed_at) >= last30,
+    ).length;
+    const renewal_rate = expiringLast30 ? Math.round((renewedLast30 / expiringLast30) * 100) : 0;
+
+    return { today, month, year, total, ...counts, renewal_rate };
+  });
+
+export const getPaymentSettings = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const { data } = await sb
+      .from("platform_payment_settings")
+      .select("*")
+      .eq("id", "global")
+      .maybeSingle();
+    return (
+      data ?? { id: "global", bkash: {}, nagad: {}, rocket: {}, sslcommerz: {} }
+    );
+  });
+
+export const updatePaymentSettings = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        bkash: z.record(z.string(), z.any()).optional(),
+        nagad: z.record(z.string(), z.any()).optional(),
+        rocket: z.record(z.string(), z.any()).optional(),
+        sslcommerz: z.record(z.string(), z.any()).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const { error } = await sb
+      .from("platform_payment_settings")
+      .update({ ...data, updated_at: new Date().toISOString() })
+      .eq("id", "global");
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const listSubscriptionStores = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ filter: z.string().optional() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    let q = sb
+      .from("stores")
+      .select(
+        "id,name,slug,subscription_status,trial_ends_at,expires_at,last_renewed_at,package_id,owner_user_id, subscription_packages(name,price)",
+      )
+      .order("expires_at", { ascending: true, nullsFirst: false });
+    if (data.filter && data.filter !== "all") q = q.eq("subscription_status", data.filter);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
