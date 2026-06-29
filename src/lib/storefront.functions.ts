@@ -101,6 +101,33 @@ const itemSchema = z.object({
   qty: z.number().int().min(1).max(99),
 });
 
+export const validateCoupon = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z.object({
+      storeId: z.string().uuid(),
+      code: z.string().trim().min(1).max(40),
+      subtotal: z.number().nonnegative(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const sb = publicClient();
+    const { data: c } = await sb
+      .from("coupons")
+      .select("id,code,type,value,min_order,usage_limit,used_count,expires_at,active")
+      .eq("store_id", data.storeId)
+      .eq("code", data.code.toUpperCase())
+      .maybeSingle();
+    if (!c || !c.active) return { ok: false as const, error: "Invalid coupon" };
+    if (c.expires_at && new Date(c.expires_at) < new Date()) return { ok: false as const, error: "Coupon expired" };
+    if (c.usage_limit != null && c.used_count >= c.usage_limit) return { ok: false as const, error: "Usage limit reached" };
+    if (data.subtotal < Number(c.min_order ?? 0)) return { ok: false as const, error: `Minimum order ৳${c.min_order}` };
+    let discount = 0; let freeShipping = false;
+    if (c.type === "percent") discount = Math.round(data.subtotal * Number(c.value) / 100);
+    else if (c.type === "fixed") discount = Math.min(Number(c.value), data.subtotal);
+    else if (c.type === "free_shipping") freeShipping = true;
+    return { ok: true as const, couponId: c.id, code: c.code, type: c.type, discount, freeShipping };
+  });
+
 export const placeOrder = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z
@@ -114,15 +141,16 @@ export const placeOrder = createServerFn({ method: "POST" })
         txnId: z.string().trim().max(120).optional(),
         notes: z.string().trim().max(500).optional(),
         items: z.array(itemSchema).min(1).max(50),
+        couponCode: z.string().trim().max(40).optional(),
+        insideCity: z.boolean().optional(),
       })
       .parse(d),
   )
   .handler(async ({ data }) => {
     const sb = publicClient();
-    // Validate store + load products
     const { data: store } = await sb
       .from("stores")
-      .select("id,status")
+      .select("id,status,delivery")
       .eq("id", data.storeId)
       .maybeSingle();
     if (!store || store.status !== "active") throw new Error("Store unavailable");
@@ -150,6 +178,33 @@ export const placeOrder = createServerFn({ method: "POST" })
       };
     });
 
+    // Delivery
+    const d: any = store.delivery ?? {};
+    const insideCity = data.insideCity ?? true;
+    const baseShip = Number((insideCity ? d.inside_city : d.outside_city) ?? 0);
+    const freeMin = Number(d.free_min ?? 0);
+    let delivery_amount = freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
+
+    // Coupon
+    let coupon_id: string | null = null;
+    let discount_amount = 0;
+    if (data.couponCode) {
+      const { data: c } = await sb
+        .from("coupons")
+        .select("id,code,type,value,min_order,usage_limit,used_count,expires_at,active")
+        .eq("store_id", data.storeId)
+        .eq("code", data.couponCode.toUpperCase())
+        .maybeSingle();
+      if (c && c.active && (!c.expires_at || new Date(c.expires_at) >= new Date()) &&
+          (c.usage_limit == null || c.used_count < c.usage_limit) &&
+          subtotal >= Number(c.min_order ?? 0)) {
+        coupon_id = c.id;
+        if (c.type === "percent") discount_amount = Math.round(subtotal * Number(c.value) / 100);
+        else if (c.type === "fixed") discount_amount = Math.min(Number(c.value), subtotal);
+        else if (c.type === "free_shipping") delivery_amount = 0;
+      }
+    }
+
     const { data: order, error: oErr } = await sb
       .from("orders")
       .insert({
@@ -161,7 +216,10 @@ export const placeOrder = createServerFn({ method: "POST" })
         payment_method: data.paymentMethod,
         txn_id: data.txnId ?? null,
         notes: data.notes ?? null,
-        subtotal,
+        subtotal: subtotal + delivery_amount - discount_amount,
+        delivery_amount,
+        discount_amount,
+        coupon_id,
         status: "pending",
       })
       .select("id")
@@ -173,8 +231,19 @@ export const placeOrder = createServerFn({ method: "POST" })
       .insert(itemRows.map((r) => ({ ...r, order_id: order.id })));
     if (iErr) throw new Error(iErr.message);
 
+    if (coupon_id) {
+      await sb.from("coupon_redemptions").insert({
+        coupon_id, store_id: data.storeId, order_id: order.id,
+        customer_phone: data.phone, discount_amount,
+      });
+      // best-effort increment
+      const { data: c2 } = await sb.from("coupons").select("used_count").eq("id", coupon_id).maybeSingle();
+      if (c2) await sb.from("coupons").update({ used_count: (c2.used_count ?? 0) + 1 }).eq("id", coupon_id);
+    }
+
     return { orderId: order.id };
   });
+
 
 export const getOrder = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ orderId: z.string().uuid() }).parse(d))
