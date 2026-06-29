@@ -1,0 +1,510 @@
+// Business management server functions: inventory, coupons, finance,
+// returns, customer notes, internal notes, order timeline, invoice,
+// bulk product actions, import/export, analytics.
+import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { z } from "zod";
+
+async function myStoreId(supabase: any, userId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from("stores")
+    .select("id")
+    .eq("owner_user_id", userId)
+    .maybeSingle();
+  return data?.id ?? null;
+}
+
+// ---------- INVENTORY ----------
+export const listInventory = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) return [];
+    const { data } = await context.supabase
+      .from("products")
+      .select("id,name,sku,stock,cost_price,price,low_stock_threshold,status,primary_image_url")
+      .eq("store_id", sid)
+      .order("stock", { ascending: true });
+    return data ?? [];
+  });
+
+export const listStockMovements = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ productId: z.string().uuid().optional(), limit: z.number().int().min(1).max(200).optional() }).parse(d ?? {}))
+  .handler(async ({ data, context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) return [];
+    let q = context.supabase
+      .from("stock_movements")
+      .select("id,product_id,delta,type,reason,ref_order_id,created_at,products(name)")
+      .eq("store_id", sid)
+      .order("created_at", { ascending: false })
+      .limit(data.limit ?? 100);
+    if (data.productId) q = q.eq("product_id", data.productId);
+    const { data: rows } = await q;
+    return rows ?? [];
+  });
+
+export const adjustStock = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      productId: z.string().uuid(),
+      delta: z.number().int(),
+      reason: z.string().max(200).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) throw new Error("No store");
+    const { data: prod } = await context.supabase
+      .from("products")
+      .select("id,stock")
+      .eq("id", data.productId)
+      .eq("store_id", sid)
+      .maybeSingle();
+    if (!prod) throw new Error("Product not found");
+    const newStock = Math.max(0, (prod.stock ?? 0) + data.delta);
+    const { error: e1 } = await context.supabase
+      .from("products")
+      .update({ stock: newStock })
+      .eq("id", prod.id);
+    if (e1) throw new Error(e1.message);
+    const { error: e2 } = await context.supabase.from("stock_movements").insert({
+      store_id: sid,
+      product_id: prod.id,
+      delta: data.delta,
+      type: data.delta >= 0 ? "manual_in" : "manual_out",
+      reason: data.reason ?? null,
+      created_by: context.userId,
+    });
+    if (e2) throw new Error(e2.message);
+    return { stock: newStock };
+  });
+
+// ---------- COUPONS ----------
+const couponSchema = z.object({
+  code: z.string().trim().min(1).max(40).regex(/^[A-Z0-9_-]+$/i, "Letters, numbers, dash, underscore"),
+  type: z.enum(["percent", "fixed", "free_shipping"]),
+  value: z.number().nonnegative(),
+  min_order: z.number().nonnegative().default(0),
+  usage_limit: z.number().int().min(0).optional().nullable(),
+  expires_at: z.string().optional().nullable(),
+  active: z.boolean().default(true),
+});
+
+export const listCoupons = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) return [];
+    const { data } = await context.supabase
+      .from("coupons")
+      .select("*")
+      .eq("store_id", sid)
+      .order("created_at", { ascending: false });
+    return data ?? [];
+  });
+
+export const upsertCoupon = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid().optional() }).merge(couponSchema).parse(d))
+  .handler(async ({ data, context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) throw new Error("No store");
+    const row = {
+      store_id: sid,
+      code: data.code.toUpperCase(),
+      type: data.type,
+      value: data.value,
+      min_order: data.min_order ?? 0,
+      usage_limit: data.usage_limit ?? null,
+      expires_at: data.expires_at || null,
+      active: data.active,
+    };
+    if (data.id) {
+      const { error } = await context.supabase.from("coupons").update(row).eq("id", data.id).eq("store_id", sid);
+      if (error) throw new Error(error.message);
+      return { id: data.id };
+    }
+    const { data: c, error } = await context.supabase.from("coupons").insert(row).select("id").single();
+    if (error) throw new Error(error.message);
+    return c;
+  });
+
+export const deleteCoupon = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) throw new Error("No store");
+    const { error } = await context.supabase.from("coupons").delete().eq("id", data.id).eq("store_id", sid);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------- EXPENSES ----------
+export const listExpenses = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ from: z.string().optional(), to: z.string().optional() }).parse(d ?? {}))
+  .handler(async ({ data, context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) return [];
+    let q = context.supabase.from("expenses").select("*").eq("store_id", sid).order("spent_on", { ascending: false }).limit(200);
+    if (data.from) q = q.gte("spent_on", data.from);
+    if (data.to) q = q.lte("spent_on", data.to);
+    const { data: rows } = await q;
+    return rows ?? [];
+  });
+
+export const addExpense = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      category: z.enum(["fb_ads", "courier", "packaging", "salary", "misc"]),
+      amount: z.number().positive(),
+      note: z.string().max(300).optional(),
+      spent_on: z.string().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) throw new Error("No store");
+    const { error } = await context.supabase.from("expenses").insert({
+      store_id: sid,
+      category: data.category,
+      amount: data.amount,
+      note: data.note ?? null,
+      spent_on: data.spent_on || new Date().toISOString().slice(0, 10),
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteExpense = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) throw new Error("No store");
+    const { error } = await context.supabase.from("expenses").delete().eq("id", data.id).eq("store_id", sid);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const financeSummary = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) return null;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const [{ data: orders }, { data: items }, { data: expenses }] = await Promise.all([
+      context.supabase.from("orders").select("id,subtotal,discount_amount,status,created_at").eq("store_id", sid),
+      context.supabase.from("order_items").select("qty,price_snapshot,products(cost_price),orders!inner(store_id,status,created_at)").eq("orders.store_id", sid),
+      context.supabase.from("expenses").select("amount,spent_on").eq("store_id", sid),
+    ]);
+    let todaySales = 0, monthSales = 0, totalSales = 0;
+    for (const o of orders ?? []) {
+      if (o.status === "cancelled") continue;
+      const v = Number(o.subtotal) - Number(o.discount_amount ?? 0);
+      totalSales += v;
+      const dt = new Date(o.created_at);
+      if (dt >= today) todaySales += v;
+      if (dt >= monthStart) monthSales += v;
+    }
+    let todayCogs = 0, monthCogs = 0, totalCogs = 0;
+    for (const it of (items ?? []) as any[]) {
+      if (it.orders?.status === "cancelled") continue;
+      const cost = Number(it.products?.cost_price ?? 0) * Number(it.qty);
+      totalCogs += cost;
+      const dt = new Date(it.orders?.created_at);
+      if (dt >= today) todayCogs += cost;
+      if (dt >= monthStart) monthCogs += cost;
+    }
+    let todayExpense = 0, monthExpense = 0, totalExpense = 0;
+    const tStr = today.toISOString().slice(0, 10);
+    const mStr = monthStart.toISOString().slice(0, 10);
+    for (const e of expenses ?? []) {
+      const amt = Number(e.amount);
+      totalExpense += amt;
+      if (e.spent_on >= mStr) monthExpense += amt;
+      if (e.spent_on >= tStr) todayExpense += amt;
+    }
+    return {
+      todaySales, monthSales, totalSales,
+      todayExpense, monthExpense, totalExpense,
+      todayProfit: todaySales - todayCogs - todayExpense,
+      monthProfit: monthSales - monthCogs - monthExpense,
+      netProfit: totalSales - totalCogs - totalExpense,
+    };
+  });
+
+// ---------- RETURNS ----------
+export const listReturns = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) return [];
+    const { data } = await context.supabase
+      .from("returns")
+      .select("*, orders(customer_name,phone,subtotal,invoice_no)")
+      .eq("store_id", sid)
+      .order("created_at", { ascending: false });
+    return data ?? [];
+  });
+
+export const upsertReturn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      id: z.string().uuid().optional(),
+      order_id: z.string().uuid(),
+      type: z.enum(["return", "exchange"]),
+      reason: z.string().max(500).optional(),
+      status: z.enum(["requested", "approved", "rejected", "refunded", "completed"]).default("requested"),
+      refund_amount: z.number().nonnegative().optional(),
+      resolution_note: z.string().max(500).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) throw new Error("No store");
+    const row = {
+      store_id: sid,
+      order_id: data.order_id,
+      type: data.type,
+      reason: data.reason ?? null,
+      status: data.status,
+      refund_amount: data.refund_amount ?? 0,
+      resolution_note: data.resolution_note ?? null,
+    };
+    if (data.id) {
+      const { error } = await context.supabase.from("returns").update(row).eq("id", data.id).eq("store_id", sid);
+      if (error) throw new Error(error.message);
+      return { id: data.id };
+    }
+    const { data: r, error } = await context.supabase.from("returns").insert(row).select("id").single();
+    if (error) throw new Error(error.message);
+    return r;
+  });
+
+// ---------- ORDER TIMELINE + INTERNAL NOTES + INVOICE ----------
+export const getOrderDetails = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ orderId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) throw new Error("No store");
+    const [{ data: order }, { data: items }, { data: timeline }, { data: notes }, { data: store }] = await Promise.all([
+      context.supabase.from("orders").select("*").eq("id", data.orderId).eq("store_id", sid).maybeSingle(),
+      context.supabase.from("order_items").select("*").eq("order_id", data.orderId),
+      context.supabase.from("order_timeline").select("*").eq("order_id", data.orderId).order("created_at"),
+      context.supabase.from("order_internal_notes").select("*").eq("order_id", data.orderId).order("created_at"),
+      context.supabase.from("stores").select("name,phone,address,logo_url,whatsapp").eq("id", sid).maybeSingle(),
+    ]);
+    return { order, items: items ?? [], timeline: timeline ?? [], notes: notes ?? [], store };
+  });
+
+export const addInternalNote = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ order_id: z.string().uuid(), body: z.string().trim().min(1).max(1000) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) throw new Error("No store");
+    const { error } = await context.supabase.from("order_internal_notes").insert({
+      store_id: sid, order_id: data.order_id, body: data.body, created_by: context.userId,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteInternalNote = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) throw new Error("No store");
+    const { error } = await context.supabase.from("order_internal_notes").delete().eq("id", data.id).eq("store_id", sid);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------- CUSTOMER NOTES ----------
+export const getCustomerNote = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ phone: z.string().min(1) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) return null;
+    const { data: n } = await context.supabase
+      .from("customer_notes")
+      .select("*")
+      .eq("store_id", sid)
+      .eq("customer_phone", data.phone)
+      .maybeSingle();
+    return n;
+  });
+
+export const upsertCustomerNote = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      phone: z.string().min(1).max(40),
+      tags: z.array(z.string().max(40)).max(20).default([]),
+      note: z.string().max(2000).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) throw new Error("No store");
+    const { error } = await context.supabase.from("customer_notes").upsert({
+      store_id: sid, customer_phone: data.phone, tags: data.tags, note: data.note ?? null,
+    }, { onConflict: "store_id,customer_phone" });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------- BULK PRODUCT ACTIONS ----------
+export const bulkUpdateProducts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      ids: z.array(z.string().uuid()).min(1).max(500),
+      patch: z.object({
+        category_id: z.string().uuid().nullable().optional(),
+        price: z.number().nonnegative().optional(),
+        stock: z.number().int().min(0).optional(),
+        status: z.enum(["active", "draft", "out_of_stock"]).optional(),
+      }),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) throw new Error("No store");
+    const { error } = await context.supabase.from("products").update(data.patch).in("id", data.ids).eq("store_id", sid);
+    if (error) throw new Error(error.message);
+    return { ok: true, count: data.ids.length };
+  });
+
+export const bulkDeleteProducts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ ids: z.array(z.string().uuid()).min(1).max(500) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) throw new Error("No store");
+    const { error } = await context.supabase.from("products").delete().in("id", data.ids).eq("store_id", sid);
+    if (error) throw new Error(error.message);
+    return { ok: true, count: data.ids.length };
+  });
+
+// ---------- IMPORT / EXPORT ----------
+export const bulkImportProducts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      rows: z.array(z.object({
+        name: z.string().min(1).max(160),
+        price: z.number().nonnegative(),
+        old_price: z.number().nonnegative().optional().nullable(),
+        cost_price: z.number().nonnegative().optional(),
+        stock: z.number().int().min(0).optional(),
+        sku: z.string().max(60).optional().nullable(),
+        status: z.enum(["active", "draft", "out_of_stock"]).optional(),
+        description: z.string().max(5000).optional().nullable(),
+      })).min(1).max(500),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) throw new Error("No store");
+    const rows = data.rows.map((r) => ({
+      store_id: sid,
+      name: r.name,
+      slug: r.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 60) + "-" + Math.random().toString(36).slice(2, 6),
+      price: r.price,
+      old_price: r.old_price ?? null,
+      cost_price: r.cost_price ?? 0,
+      stock: r.stock ?? 0,
+      sku: r.sku ?? null,
+      status: r.status ?? "active",
+      description: r.description ?? null,
+    }));
+    const { error } = await context.supabase.from("products").insert(rows);
+    if (error) throw new Error(error.message);
+    return { ok: true, count: rows.length };
+  });
+
+export const exportProductsCsv = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) return "";
+    const { data } = await context.supabase
+      .from("products")
+      .select("name,sku,price,old_price,cost_price,stock,status,description")
+      .eq("store_id", sid);
+    const esc = (v: any) => {
+      const s = v == null ? "" : String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const header = ["name", "sku", "price", "old_price", "cost_price", "stock", "status", "description"];
+    const lines = [header.join(",")];
+    for (const r of data ?? []) lines.push(header.map((h) => esc((r as any)[h])).join(","));
+    return lines.join("\n");
+  });
+
+// ---------- ANALYTICS ----------
+export const businessAnalytics = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) return null;
+    const [{ data: orders }, { data: items }] = await Promise.all([
+      context.supabase.from("orders").select("id,phone,subtotal,discount_amount,status,created_at").eq("store_id", sid),
+      context.supabase.from("order_items").select("product_id,qty,name_snapshot,orders!inner(store_id,status)").eq("orders.store_id", sid),
+    ]);
+    const live = (orders ?? []).filter((o) => o.status !== "cancelled");
+    const totalSales = live.reduce((a, o) => a + Number(o.subtotal) - Number(o.discount_amount ?? 0), 0);
+    const totalOrders = live.length;
+    const aov = totalOrders ? totalSales / totalOrders : 0;
+
+    // product ranking
+    const counter = new Map<string, { name: string; qty: number }>();
+    for (const it of (items ?? []) as any[]) {
+      if (it.orders?.status === "cancelled") continue;
+      const k = it.product_id;
+      const cur = counter.get(k) ?? { name: it.name_snapshot, qty: 0 };
+      cur.qty += Number(it.qty);
+      counter.set(k, cur);
+    }
+    const ranked = Array.from(counter.values()).sort((a, b) => b.qty - a.qty);
+
+    // customers
+    const phoneCount = new Map<string, number>();
+    for (const o of live) phoneCount.set(o.phone, (phoneCount.get(o.phone) ?? 0) + 1);
+    const newCustomers = Array.from(phoneCount.values()).filter((v) => v === 1).length;
+    const returning = Array.from(phoneCount.values()).filter((v) => v > 1).length;
+
+    // daily series (last 14 days)
+    const days: { d: string; sales: number; orders: number }[] = [];
+    const start = new Date(); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - 13);
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(start); d.setDate(start.getDate() + i);
+      days.push({ d: d.toISOString().slice(0, 10), sales: 0, orders: 0 });
+    }
+    const dayMap = new Map(days.map((x) => [x.d, x]));
+    for (const o of live) {
+      const k = new Date(o.created_at).toISOString().slice(0, 10);
+      const row = dayMap.get(k);
+      if (row) { row.sales += Number(o.subtotal) - Number(o.discount_amount ?? 0); row.orders += 1; }
+    }
+
+    return {
+      totalSales, totalOrders, aov,
+      bestSellers: ranked.slice(0, 5),
+      worstSellers: ranked.slice(-5).reverse(),
+      newCustomers, returningCustomers: returning,
+      series: days,
+    };
+  });
