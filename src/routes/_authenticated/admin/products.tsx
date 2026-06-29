@@ -381,23 +381,34 @@ function ProductDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
+              <Label htmlFor="cp">Cost price (for profit)</Label>
+              <Input id="cp" type="number" min={0} step="0.01" placeholder="0" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="sku">SKU</Label>
+              <Input id="sku" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="Optional" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1.5">
               <Label htmlFor="s">Stock</Label>
               <Input id="s" type="number" min={0} required value={stock} onChange={(e) => setStock(Number(e.target.value))} />
             </div>
             <div className="space-y-1.5">
+              <Label htmlFor="lst">Low-stock alert</Label>
+              <Input id="lst" type="number" min={0} value={lowThreshold} onChange={(e) => setLowThreshold(Number(e.target.value))} />
+            </div>
+            <div className="space-y-1.5">
               <Label htmlFor="st">Status</Label>
-              <select
-                id="st"
-                value={status}
-                onChange={(e) => setStatus(e.target.value as Product["status"])}
-                className="flex h-9 w-full rounded-md border bg-background px-3 text-sm"
-              >
+              <select id="st" value={status} onChange={(e) => setStatus(e.target.value as Product["status"])} className="flex h-9 w-full rounded-md border bg-background px-3 text-sm">
                 <option value="active">Active</option>
                 <option value="draft">Draft</option>
                 <option value="out_of_stock">Out of stock</option>
               </select>
             </div>
           </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="d">Description</Label>
             <Textarea id="d" rows={4} value={description ?? ""} onChange={(e) => setDescription(e.target.value)} />
