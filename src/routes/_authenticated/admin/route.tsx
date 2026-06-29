@@ -34,6 +34,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { amIOwner } from "@/lib/owner.functions";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { SubscriptionStatusBanner } from "@/components/admin/SubscriptionStatusBanner";
 
 const links: { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -60,6 +61,7 @@ const links: { to: string; label: string; icon: typeof LayoutDashboard; exact?: 
   { to: "/admin/messenger", label: "Messenger", icon: MessageSquare },
   { to: "/admin/settings", label: "Store Settings", icon: Settings },
   { to: "/admin/subscription", label: "Subscription", icon: CreditCard },
+  { to: "/admin/billing", label: "Billing & Plans", icon: Wallet },
 ];
 
 
@@ -134,6 +136,7 @@ function AdminLayout() {
           <div className="fixed inset-0 z-30 bg-black/40 md:hidden" onClick={() => setOpen(false)} />
         )}
         <main className="flex-1 p-4 md:p-8">
+          <SubscriptionStatusBanner />
           <Outlet />
         </main>
       </div>

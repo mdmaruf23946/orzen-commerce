@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { LayoutDashboard, Store as StoreIcon, Package, LogOut, Menu, ArrowLeft, ShieldCheck, Sparkles } from "lucide-react";
+import { LayoutDashboard, Store as StoreIcon, Package, LogOut, Menu, ArrowLeft, ShieldCheck, Sparkles, Wallet, Users, CreditCard } from "lucide-react";
 import { amIOwner } from "@/lib/owner.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,9 @@ import { Button } from "@/components/ui/button";
 const links = [
   { to: "/owner", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/owner/stores", label: "Stores", icon: StoreIcon },
+  { to: "/owner/subscriptions", label: "Subscriptions", icon: Users },
+  { to: "/owner/billing", label: "Billing", icon: Wallet },
+  { to: "/owner/payment-settings", label: "Payment Settings", icon: CreditCard },
   { to: "/owner/packages", label: "Packages", icon: Package },
   { to: "/owner/audit", label: "Role Audit", icon: ShieldCheck },
   { to: "/owner/ai", label: "AI Settings", icon: Sparkles },

@@ -23,8 +23,11 @@ import { Route as StoreSlugCheckoutRouteImport } from './routes/store/$slug/chec
 import { Route as StoreSlugCartRouteImport } from './routes/store/$slug/cart'
 import { Route as ApiImgSplatRouteImport } from './routes/api/img.$'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
+import { Route as AuthenticatedOwnerSubscriptionsRouteImport } from './routes/_authenticated/owner/subscriptions'
 import { Route as AuthenticatedOwnerStoresRouteImport } from './routes/_authenticated/owner/stores'
+import { Route as AuthenticatedOwnerPaymentSettingsRouteImport } from './routes/_authenticated/owner/payment-settings'
 import { Route as AuthenticatedOwnerPackagesRouteImport } from './routes/_authenticated/owner/packages'
+import { Route as AuthenticatedOwnerBillingRouteImport } from './routes/_authenticated/owner/billing'
 import { Route as AuthenticatedOwnerAuditRouteImport } from './routes/_authenticated/owner/audit'
 import { Route as AuthenticatedOwnerAiRouteImport } from './routes/_authenticated/owner/ai'
 import { Route as AuthenticatedAdminThemeRouteImport } from './routes/_authenticated/admin/theme'
@@ -47,6 +50,7 @@ import { Route as AuthenticatedAdminCustomersRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminCouriersRouteImport } from './routes/_authenticated/admin/couriers'
 import { Route as AuthenticatedAdminCouponsRouteImport } from './routes/_authenticated/admin/coupons'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
+import { Route as AuthenticatedAdminBillingRouteImport } from './routes/_authenticated/admin/billing'
 import { Route as AuthenticatedAdminBannersRouteImport } from './routes/_authenticated/admin/banners'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin/analytics'
 import { Route as AuthenticatedAdminAiAgentRouteImport } from './routes/_authenticated/admin/ai-agent'
@@ -54,6 +58,7 @@ import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$s
 import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/order.$orderId'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
 import { Route as AuthenticatedAdminInvoiceOrderIdRouteImport } from './routes/_authenticated/admin/invoice.$orderId'
+import { Route as AuthenticatedAdminBillingCheckoutPackageIdRouteImport } from './routes/_authenticated/admin/billing.checkout.$packageId'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -124,16 +129,34 @@ const ApiAiChatRoute = ApiAiChatRouteImport.update({
   path: '/api/ai/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedOwnerSubscriptionsRoute =
+  AuthenticatedOwnerSubscriptionsRouteImport.update({
+    id: '/subscriptions',
+    path: '/subscriptions',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
 const AuthenticatedOwnerStoresRoute =
   AuthenticatedOwnerStoresRouteImport.update({
     id: '/stores',
     path: '/stores',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
+const AuthenticatedOwnerPaymentSettingsRoute =
+  AuthenticatedOwnerPaymentSettingsRouteImport.update({
+    id: '/payment-settings',
+    path: '/payment-settings',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
 const AuthenticatedOwnerPackagesRoute =
   AuthenticatedOwnerPackagesRouteImport.update({
     id: '/packages',
     path: '/packages',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerBillingRoute =
+  AuthenticatedOwnerBillingRouteImport.update({
+    id: '/billing',
+    path: '/billing',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
 const AuthenticatedOwnerAuditRoute = AuthenticatedOwnerAuditRouteImport.update({
@@ -264,6 +287,12 @@ const AuthenticatedAdminCategoriesRoute =
     path: '/categories',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminBillingRoute =
+  AuthenticatedAdminBillingRouteImport.update({
+    id: '/billing',
+    path: '/billing',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminBannersRoute =
   AuthenticatedAdminBannersRouteImport.update({
     id: '/banners',
@@ -305,6 +334,12 @@ const AuthenticatedAdminInvoiceOrderIdRoute =
     path: '/invoice/$orderId',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminBillingCheckoutPackageIdRoute =
+  AuthenticatedAdminBillingCheckoutPackageIdRouteImport.update({
+    id: '/checkout/$packageId',
+    path: '/checkout/$packageId',
+    getParentRoute: () => AuthenticatedAdminBillingRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -316,6 +351,7 @@ export interface FileRoutesByFullPath {
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
+  '/admin/billing': typeof AuthenticatedAdminBillingRouteWithChildren
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/admin/couriers': typeof AuthenticatedAdminCouriersRoute
@@ -338,8 +374,11 @@ export interface FileRoutesByFullPath {
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
   '/owner/ai': typeof AuthenticatedOwnerAiRoute
   '/owner/audit': typeof AuthenticatedOwnerAuditRoute
+  '/owner/billing': typeof AuthenticatedOwnerBillingRoute
   '/owner/packages': typeof AuthenticatedOwnerPackagesRoute
+  '/owner/payment-settings': typeof AuthenticatedOwnerPaymentSettingsRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
+  '/owner/subscriptions': typeof AuthenticatedOwnerSubscriptionsRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
@@ -351,6 +390,7 @@ export interface FileRoutesByFullPath {
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
+  '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -359,6 +399,7 @@ export interface FileRoutesByTo {
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
+  '/admin/billing': typeof AuthenticatedAdminBillingRouteWithChildren
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/admin/couriers': typeof AuthenticatedAdminCouriersRoute
@@ -381,8 +422,11 @@ export interface FileRoutesByTo {
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
   '/owner/ai': typeof AuthenticatedOwnerAiRoute
   '/owner/audit': typeof AuthenticatedOwnerAuditRoute
+  '/owner/billing': typeof AuthenticatedOwnerBillingRoute
   '/owner/packages': typeof AuthenticatedOwnerPackagesRoute
+  '/owner/payment-settings': typeof AuthenticatedOwnerPaymentSettingsRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
+  '/owner/subscriptions': typeof AuthenticatedOwnerSubscriptionsRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
@@ -394,6 +438,7 @@ export interface FileRoutesByTo {
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
+  '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -407,6 +452,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/banners': typeof AuthenticatedAdminBannersRoute
+  '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRouteWithChildren
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/_authenticated/admin/couriers': typeof AuthenticatedAdminCouriersRoute
@@ -429,8 +475,11 @@ export interface FileRoutesById {
   '/_authenticated/admin/theme': typeof AuthenticatedAdminThemeRoute
   '/_authenticated/owner/ai': typeof AuthenticatedOwnerAiRoute
   '/_authenticated/owner/audit': typeof AuthenticatedOwnerAuditRoute
+  '/_authenticated/owner/billing': typeof AuthenticatedOwnerBillingRoute
   '/_authenticated/owner/packages': typeof AuthenticatedOwnerPackagesRoute
+  '/_authenticated/owner/payment-settings': typeof AuthenticatedOwnerPaymentSettingsRoute
   '/_authenticated/owner/stores': typeof AuthenticatedOwnerStoresRoute
+  '/_authenticated/owner/subscriptions': typeof AuthenticatedOwnerSubscriptionsRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
@@ -442,6 +491,7 @@ export interface FileRoutesById {
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
+  '/_authenticated/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -455,6 +505,7 @@ export interface FileRouteTypes {
     | '/admin/ai-agent'
     | '/admin/analytics'
     | '/admin/banners'
+    | '/admin/billing'
     | '/admin/categories'
     | '/admin/coupons'
     | '/admin/couriers'
@@ -477,8 +528,11 @@ export interface FileRouteTypes {
     | '/admin/theme'
     | '/owner/ai'
     | '/owner/audit'
+    | '/owner/billing'
     | '/owner/packages'
+    | '/owner/payment-settings'
     | '/owner/stores'
+    | '/owner/subscriptions'
     | '/api/ai/chat'
     | '/api/img/$'
     | '/store/$slug/cart'
@@ -490,6 +544,7 @@ export interface FileRouteTypes {
     | '/api/public/messenger/webhook'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
+    | '/admin/billing/checkout/$packageId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -498,6 +553,7 @@ export interface FileRouteTypes {
     | '/admin/ai-agent'
     | '/admin/analytics'
     | '/admin/banners'
+    | '/admin/billing'
     | '/admin/categories'
     | '/admin/coupons'
     | '/admin/couriers'
@@ -520,8 +576,11 @@ export interface FileRouteTypes {
     | '/admin/theme'
     | '/owner/ai'
     | '/owner/audit'
+    | '/owner/billing'
     | '/owner/packages'
+    | '/owner/payment-settings'
     | '/owner/stores'
+    | '/owner/subscriptions'
     | '/api/ai/chat'
     | '/api/img/$'
     | '/store/$slug/cart'
@@ -533,6 +592,7 @@ export interface FileRouteTypes {
     | '/api/public/messenger/webhook'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
+    | '/admin/billing/checkout/$packageId'
   id:
     | '__root__'
     | '/'
@@ -545,6 +605,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/ai-agent'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/banners'
+    | '/_authenticated/admin/billing'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/coupons'
     | '/_authenticated/admin/couriers'
@@ -567,8 +628,11 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/theme'
     | '/_authenticated/owner/ai'
     | '/_authenticated/owner/audit'
+    | '/_authenticated/owner/billing'
     | '/_authenticated/owner/packages'
+    | '/_authenticated/owner/payment-settings'
     | '/_authenticated/owner/stores'
+    | '/_authenticated/owner/subscriptions'
     | '/api/ai/chat'
     | '/api/img/$'
     | '/store/$slug/cart'
@@ -580,6 +644,7 @@ export interface FileRouteTypes {
     | '/api/public/messenger/webhook'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
+    | '/_authenticated/admin/billing/checkout/$packageId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -693,6 +758,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/owner/subscriptions': {
+      id: '/_authenticated/owner/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/owner/subscriptions'
+      preLoaderRoute: typeof AuthenticatedOwnerSubscriptionsRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
     '/_authenticated/owner/stores': {
       id: '/_authenticated/owner/stores'
       path: '/stores'
@@ -700,11 +772,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerStoresRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
+    '/_authenticated/owner/payment-settings': {
+      id: '/_authenticated/owner/payment-settings'
+      path: '/payment-settings'
+      fullPath: '/owner/payment-settings'
+      preLoaderRoute: typeof AuthenticatedOwnerPaymentSettingsRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
     '/_authenticated/owner/packages': {
       id: '/_authenticated/owner/packages'
       path: '/packages'
       fullPath: '/owner/packages'
       preLoaderRoute: typeof AuthenticatedOwnerPackagesRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/billing': {
+      id: '/_authenticated/owner/billing'
+      path: '/billing'
+      fullPath: '/owner/billing'
+      preLoaderRoute: typeof AuthenticatedOwnerBillingRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/owner/audit': {
@@ -861,6 +947,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCategoriesRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/billing': {
+      id: '/_authenticated/admin/billing'
+      path: '/billing'
+      fullPath: '/admin/billing'
+      preLoaderRoute: typeof AuthenticatedAdminBillingRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/banners': {
       id: '/_authenticated/admin/banners'
       path: '/banners'
@@ -910,13 +1003,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminInvoiceOrderIdRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/billing/checkout/$packageId': {
+      id: '/_authenticated/admin/billing/checkout/$packageId'
+      path: '/checkout/$packageId'
+      fullPath: '/admin/billing/checkout/$packageId'
+      preLoaderRoute: typeof AuthenticatedAdminBillingCheckoutPackageIdRouteImport
+      parentRoute: typeof AuthenticatedAdminBillingRoute
+    }
   }
 }
+
+interface AuthenticatedAdminBillingRouteChildren {
+  AuthenticatedAdminBillingCheckoutPackageIdRoute: typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
+}
+
+const AuthenticatedAdminBillingRouteChildren: AuthenticatedAdminBillingRouteChildren =
+  {
+    AuthenticatedAdminBillingCheckoutPackageIdRoute:
+      AuthenticatedAdminBillingCheckoutPackageIdRoute,
+  }
+
+const AuthenticatedAdminBillingRouteWithChildren =
+  AuthenticatedAdminBillingRoute._addFileChildren(
+    AuthenticatedAdminBillingRouteChildren,
+  )
 
 interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminAiAgentRoute: typeof AuthenticatedAdminAiAgentRoute
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
   AuthenticatedAdminBannersRoute: typeof AuthenticatedAdminBannersRoute
+  AuthenticatedAdminBillingRoute: typeof AuthenticatedAdminBillingRouteWithChildren
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminCouponsRoute: typeof AuthenticatedAdminCouponsRoute
   AuthenticatedAdminCouriersRoute: typeof AuthenticatedAdminCouriersRoute
@@ -946,6 +1062,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminAiAgentRoute: AuthenticatedAdminAiAgentRoute,
     AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
     AuthenticatedAdminBannersRoute: AuthenticatedAdminBannersRoute,
+    AuthenticatedAdminBillingRoute: AuthenticatedAdminBillingRouteWithChildren,
     AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
     AuthenticatedAdminCouponsRoute: AuthenticatedAdminCouponsRoute,
     AuthenticatedAdminCouriersRoute: AuthenticatedAdminCouriersRoute,
@@ -980,8 +1097,11 @@ const AuthenticatedAdminRouteRouteWithChildren =
 interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerAiRoute: typeof AuthenticatedOwnerAiRoute
   AuthenticatedOwnerAuditRoute: typeof AuthenticatedOwnerAuditRoute
+  AuthenticatedOwnerBillingRoute: typeof AuthenticatedOwnerBillingRoute
   AuthenticatedOwnerPackagesRoute: typeof AuthenticatedOwnerPackagesRoute
+  AuthenticatedOwnerPaymentSettingsRoute: typeof AuthenticatedOwnerPaymentSettingsRoute
   AuthenticatedOwnerStoresRoute: typeof AuthenticatedOwnerStoresRoute
+  AuthenticatedOwnerSubscriptionsRoute: typeof AuthenticatedOwnerSubscriptionsRoute
   AuthenticatedOwnerIndexRoute: typeof AuthenticatedOwnerIndexRoute
 }
 
@@ -989,8 +1109,12 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
   {
     AuthenticatedOwnerAiRoute: AuthenticatedOwnerAiRoute,
     AuthenticatedOwnerAuditRoute: AuthenticatedOwnerAuditRoute,
+    AuthenticatedOwnerBillingRoute: AuthenticatedOwnerBillingRoute,
     AuthenticatedOwnerPackagesRoute: AuthenticatedOwnerPackagesRoute,
+    AuthenticatedOwnerPaymentSettingsRoute:
+      AuthenticatedOwnerPaymentSettingsRoute,
     AuthenticatedOwnerStoresRoute: AuthenticatedOwnerStoresRoute,
+    AuthenticatedOwnerSubscriptionsRoute: AuthenticatedOwnerSubscriptionsRoute,
     AuthenticatedOwnerIndexRoute: AuthenticatedOwnerIndexRoute,
   }
 
@@ -1045,13 +1169,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

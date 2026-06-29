@@ -1,74 +1,94 @@
+# Subscription & Payment System
 
-# Store Admin Business Management Expansion
-
-Extends the existing admin panel with 10 new modules. No existing feature is duplicated — Products, Orders, Customers, Banners, Settings, AI, Messenger, Marketing, Couriers, Theme, SEO, Delivery, Payments, Notifications, Product Defaults, Categories, Subscription stay as-is. New work plugs into the same sidebar, uses the same server-fn + RLS patterns, and stays mobile-first with no new heavy libraries.
+Builds on what already exists (`subscription_packages`, `stores.package_id/expires_at`, `payments`, owner Packages page, admin Subscription page). Nothing existing is duplicated — fields are added, status enforcement is added, and a renewal flow is added.
 
 ## 1. Database (one migration)
 
-New tables (all RLS-scoped to the owning store via `stores.owner_id = auth.uid()`, with proper GRANTs):
+Extend `subscription_packages`:
+- `description text`, `is_trial boolean default false`, `trial_days int default 0`
+- `order_limit int`, `customer_limit int`, `staff_limit int`, `storage_mb int`
+- `billing_cycle text default 'monthly'` (`monthly | 2m | 3m | 6m | yearly | custom`)
+- `features jsonb default '{}'` — feature flags map (see §3)
+- `sort_order int default 0`
 
-- `stock_movements` — store_id, product_id, delta, type (`order|manual_in|manual_out|return|adjustment`), reason, ref_order_id, created_by, created_at.
-- `coupons` — store_id, code (unique per store), type (`percent|fixed|free_shipping`), value, min_order, usage_limit, used_count, starts_at, expires_at, active.
-- `coupon_redemptions` — coupon_id, order_id, customer_phone, discount_amount, created_at.
-- `expenses` — store_id, category (`fb_ads|courier|packaging|salary|misc`), amount, note, spent_on (date), created_at.
-- `returns` — store_id, order_id, type (`return|exchange`), reason, status (`requested|approved|rejected|refunded|completed`), refund_amount, resolution_note, created_at, updated_at.
-- `order_timeline` — order_id, store_id, stage (`placed|confirmed|packed|courier_assigned|shipped|delivered|returned|cancelled`), note, created_at.
-- `customer_notes` — store_id, customer_phone (key, since there's no customers table), tags text[], note.
-- `order_internal_notes` — order_id, store_id, body, created_by, created_at. (RLS: store owner only — never exposed on public storefront fns.)
+Extend `stores`:
+- `trial_ends_at timestamptz`
+- `subscription_status text default 'trialing'` (`trialing | active | expired | suspended | cancelled`)
+- `last_renewed_at timestamptz`
 
-Column additions:
-- `products`: `cost_price numeric`, `low_stock_threshold int default 5`, `sku text`.
-- `orders`: `coupon_id`, `discount_amount`, `invoice_no text unique per store` (generated on confirm).
+Extend `payments`:
+- `invoice_no text`, `cycle_start date`, `cycle_end date`, `verified_by uuid`, `verified_at timestamptz`, `notes text`
+- unique index on `(store_id, invoice_no)`
 
-Triggers:
-- After `order_items` insert on confirmed order → insert negative `stock_movements` row and decrement `products.stock`.
-- After `orders.status` change → insert `order_timeline` row with the matching stage.
-- `invoice_no` auto-set when status moves to `confirmed` (format `INV-{store_prefix}-{yyyymm}-{seq}`).
+New table `platform_payment_settings` (single row keyed by `id='global'`, owner-only):
+- `bkash jsonb`, `nagad jsonb`, `rocket jsonb`, `sslcommerz jsonb` — each `{ enabled, number|store_id, api_key, instructions }`. API credentials stored only here, never returned to non-owners.
 
-## 2. Server functions (`src/lib/admin.functions.ts` additions + new `src/lib/inventory.functions.ts`, `coupons.functions.ts`, `finance.functions.ts`, `returns.functions.ts`, `analytics.functions.ts`)
+New table `subscription_notifications`:
+- `store_id`, `type` (`trial_started|trial_expiring|expired|payment_success|payment_failed|renewal_reminder`), `sent_at`, `meta jsonb`. Read by store owner, written by server fns.
 
-All use `requireSupabaseAuth` and scope by `store_id` resolved from `getMyStore`. Public storefront gets one new fn `validateCoupon({ code, subtotal })` in `storefront.functions.ts` (no auth, narrow column projection). Checkout fn updated to accept `coupon_code`, recompute discount server-side, record redemption, apply free-shipping logic.
+Trigger / function `public.start_trial_for_store()` — on `stores` insert, if no `package_id`, set `package_id` = first `is_trial=true` package, `trial_ends_at = now() + trial_days`, `expires_at = trial_ends_at`, `subscription_status='trialing'`, and write a `subscription_notifications` row.
 
-## 3. New admin routes (under `src/routes/_authenticated/admin/`)
+Function `public.refresh_store_subscription_status(_store_id uuid)` — recomputes `subscription_status` from `expires_at` (sets `expired` when past), called from server fns after payment / assign / cron.
 
-- `inventory.tsx` — table of products with stock, cost, price, profit/unit, low/out badges; manual +/- dialog writes a `stock_movements` row. Tab for "Movements" history (paginated, 50/page).
-- `coupons.tsx` — list + create/edit dialog with all coupon types, status toggle, usage counter.
-- `finance.tsx` — expense entry form + list filtered by date range + cards (Today sales, Today expenses, Today profit, Monthly profit, Net profit). Profit = sales − COGS (from `cost_price` × qty in order_items) − expenses.
-- `returns.tsx` — list of return/exchange requests with status workflow buttons; "New return" picks an existing order.
-- `analytics.tsx` — Sales / Products / Customers / Performance sections using small SVG sparklines (no chart library; hand-rolled `<svg>` polyline ~30 LOC). Daily / Weekly / Monthly toggle.
-- `import-export.tsx` — CSV upload (parsed client-side with a tiny ~80-line CSV parser, no PapaParse), preview + validation table, then bulk upsert via server fn. Export downloads CSV/XLSX (XLSX via `xlsx` only if user wants — default CSV to avoid the dep).
+GRANTs follow existing pattern (authenticated for owner-scoped tables, anon for `subscription_packages` SELECT only).
 
-Sidebar in `route.tsx` gets 6 new links with lucide icons (Boxes, Ticket, Wallet, RotateCcw, BarChart3, FileUp).
+## 2. Server functions
 
-## 4. Edits to existing routes
+`src/lib/billing.functions.ts` (new):
+- `listPublicPlans()` — anon, returns active non-trial packages for the upgrade page.
+- `myBillingStatus()` — auth, returns store + plan + days_left + status + recent payments + active notifications.
+- `submitManualPayment({ packageId, method, txn_id, amount, sender_number })` — store owner; inserts `payments` row with `status='pending'` and notifies owner.
+- `startSslcommerzCheckout({ packageId })` — store owner; creates pending payment, returns gateway redirect URL (uses creds from `platform_payment_settings`). Stubbed with clear TODO if creds blank.
 
-- `products.tsx` — add checkbox column, sticky bulk-action bar (Delete / Change category / Update price / Update stock / Change status) when any row selected. Form: add `cost_price`, `low_stock_threshold`, `sku`.
-- `orders.tsx` — order row expands to show:
-  - Timeline (vertical list of stages with timestamps).
-  - Internal notes thread (add/delete, owner-only).
-  - "Generate invoice" / "Print" / "Download PDF" buttons.
-- `customers.tsx` — per-customer drawer with tags (chips: Trusted / COD Risk / VIP / Frequent — plus custom) and free-text note, saved to `customer_notes` keyed by phone.
+`src/lib/owner.functions.ts` (extend):
+- `upsertPackage` — accept new fields (features, limits, billing_cycle, trial).
+- `listPayments({ status?, from?, to? })`, `verifyPayment({ id, approve })` — on approve: marks paid, advances `stores.expires_at` by package duration, sets `subscription_status='active'`, writes timeline + notification.
+- `extendSubscription({ storeId, days })`, `setStoreSubscriptionStatus({ storeId, status })`.
+- `revenueStats()` — today / month / year / total + counts of trialing / active / expired / suspended + renewal rate (paid renewals ÷ expiring last 30d).
+- `getPaymentSettings` / `updatePaymentSettings` — owner only.
 
-## 5. Invoice
+Server route `src/routes/api/public/billing/sslcommerz-ipn.ts` — verifies signature against stored secret, marks matching payment paid, advances expiry. Public path, signature-verified (no auth header).
 
-- New route `admin/orders.$orderId.invoice.tsx` — thermal-friendly 80mm CSS print layout (`@media print` with `@page { size: 80mm auto }`), shows store info, customer, items, totals, invoice no.
-- "Download PDF" uses the browser's native print-to-PDF (`window.print()`) — zero JS dependency, keeps bundle small. Document this in the UI.
+Cron via `pg_cron` + `pg_net` daily: hits `/api/public/billing/daily-refresh` which (a) sets expired stores, (b) inserts `trial_expiring` / `renewal_reminder` notifications for stores with ≤3 days left and none sent in last 24h. Endpoint authenticated by `apikey` header (anon key).
 
-## 6. Checkout integration
+## 3. Feature flags (no-code gating)
 
-`checkout.tsx` gets a coupon input that calls `validateCoupon`, shows discount line, free-shipping note. Order placement passes the code; server recomputes everything (never trusts client totals).
+A single source of truth: `src/lib/features.ts` exports `FEATURE_KEYS` (`ai_agent`, `ai_messenger`, `pixel`, `courier`, `inventory`, `coupons`, `invoice`, `analytics`, `import_export`, `bulk_actions`, `staff`, `customer_notes`, `returns`). Helper `hasFeature(store, key)` reads `store.subscription_packages.features[key]`; trial package returns true for all.
 
-## 7. Performance guardrails
+`getMyStore` already returns the joined package — extend the projection to include `features`, `subscription_status`, `trial_ends_at`. Hook `useStoreFeatures()` exposes a memoized map.
 
-- No new npm packages by default (CSV parser inline, charts inline SVG, PDF via `window.print`). Only if user later asks for `.xlsx` import/export we add `xlsx` (~400KB) lazily on the import page via `await import('xlsx')`.
-- All new admin routes lazy-loaded by TanStack file-based routing (already the case).
-- Each new server fn returns only the columns the page renders; analytics uses SQL aggregates (`group by date_trunc`) rather than pulling rows.
-- Lists paginated at 50; movement/timeline use indexes on `(store_id, created_at desc)` and `(order_id, created_at)`.
-- Mobile-first: bulk-action bar collapses to a bottom sheet on small screens; tables become card lists < `sm`.
+Apply gating non-invasively:
+- Sidebar entries in `_authenticated/admin/route.tsx` hide items whose feature is off.
+- Each gated page renders an `<UpgradeRequired feature="..." />` card when off (one shared component) — no logic deleted from the existing pages.
+- A top-level `<StoreStatusBanner />` in the admin layout shows trial countdown, expiring warning, or "Read-only — please renew". When `subscription_status` is `expired | suspended`, the admin server mutations short-circuit via a new `assertActiveSubscription` helper used by write fns in `admin.functions.ts`, `inventory.functions.ts`, `coupons.functions.ts`, etc.
 
-## Open questions before I start
+Storefront stays online for read-only when expired; checkout fn rejects new orders with a polite message when status is `expired | suspended`.
 
-1. Confirm CSV-only import/export by default (keeps bundle small). XLSX support can be added later if needed — OK?
-2. Invoice PDF via browser print-to-PDF (no extra deps) vs. a real PDF lib like `pdf-lib` (~100KB) — print-to-PDF OK?
-3. Discount applies to `subtotal` (excluding delivery) for percent/fixed, and zeroes delivery for free_shipping — confirm.
-4. Customer identity is by `phone` (since there's no logged-in customer model on storefront) — OK for customer notes and returning-customer analytics?
+## 4. Owner panel (new + updated routes)
+
+- `owner/packages.tsx` — extend dialog to a tabbed form: General / Limits / Features (checkbox list from `FEATURE_KEYS`) / Trial / Status. Drag-free sort via number input.
+- `owner/billing.tsx` (new) — revenue cards (today/month/year/total, active/trial/expired, renewal rate), recent payments table, status filter, "Verify"/"Reject" actions.
+- `owner/payment-settings.tsx` (new) — enable + credentials per gateway (bKash/Nagad/Rocket/SSLCommerz), connection status pill (green if creds present & enabled).
+- `owner/subscriptions.tsx` (new) — store list with status tabs (All / Trial / Active / Expired / Suspended), per-row actions: Upgrade (change package), Extend days, Suspend / Reactivate.
+- Sidebar in `owner/route.tsx` gets 3 new links: Billing, Subscriptions, Payment Settings.
+
+## 5. Store admin panel (new routes)
+
+- `_authenticated/admin/billing.tsx` — current plan card, trial / days-left badge, plan comparison table, "Renew / Upgrade" CTA.
+- `_authenticated/admin/billing.checkout.$packageId.tsx` — choose method, show owner-configured instructions, capture txn_id + sender number → `submitManualPayment`; "Pay with SSLCommerz" button when enabled.
+- Existing `subscription.tsx` stays as payment history (no duplication).
+
+## 6. Notifications
+
+Stored in `subscription_notifications`; a small bell badge in admin layout shows unread counts. No email/SMS provider added — UI + DB only (extensible later via the same helper).
+
+## 7. Performance
+
+- All new lists paginated 50/page; queries project narrow columns.
+- Feature gating computed once per request, memoized client-side.
+- No new heavy deps; SSLCommerz call uses native `fetch`.
+- All new routes lazy-loaded by file-based routing.
+
+## Open question
+
+Payment verification model: should bKash/Nagad/Rocket stay **manual** (owner approves pending payments — matches existing storefront pattern, zero API setup), or do you want me to wire one of them to its live gateway API? I'll proceed manual + SSLCommerz live (with creds stored in payment-settings) unless you say otherwise.
