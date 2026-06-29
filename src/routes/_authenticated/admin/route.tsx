@@ -94,12 +94,13 @@ function AdminLayout() {
       <div className="flex">
         <aside
           className={cn(
-            "fixed inset-y-0 left-0 z-40 w-64 transform border-r bg-background transition-transform md:static md:translate-x-0",
+            "fixed inset-y-0 left-0 z-40 flex h-screen w-64 transform flex-col border-r bg-background transition-transform md:sticky md:top-0 md:translate-x-0",
             open ? "translate-x-0" : "-translate-x-full",
           )}
         >
-          <div className="flex h-14 items-center border-b px-5 font-semibold">Store Admin</div>
-          <nav className="flex flex-col gap-1 p-3">
+          <div className="flex h-14 shrink-0 items-center border-b px-5 font-semibold">Store Admin</div>
+          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
+
             {links.map((l) => (
               <Link
                 key={l.to}
