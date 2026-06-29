@@ -61,6 +61,7 @@ const links: { to: string; label: string; icon: typeof LayoutDashboard; exact?: 
   { to: "/admin/messenger", label: "Messenger", icon: MessageSquare },
   { to: "/admin/settings", label: "Store Settings", icon: Settings },
   { to: "/admin/subscription", label: "Subscription", icon: CreditCard },
+  { to: "/admin/billing", label: "Billing & Plans", icon: Wallet },
 ];
 
 
