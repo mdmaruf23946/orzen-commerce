@@ -116,8 +116,11 @@ function CheckoutPage() {
           paymentMethod: method,
           txnId: method === "cod" ? undefined : txnId,
           items: items.map((i) => ({ productId: i.productId, qty: i.qty })),
+          couponCode: coupon?.code,
+          insideCity,
         },
       });
+
       clearCart(slug);
       navigate({ to: "/store/$slug/order/$orderId", params: { slug, orderId: res.orderId } });
     } catch (err) {
