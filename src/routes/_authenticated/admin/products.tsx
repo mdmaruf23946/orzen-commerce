@@ -271,6 +271,9 @@ function ProductDialog({
         // active selling price → price; original → old_price (only when discounted)
         price: hasDiscount ? sale : reg,
         old_price: hasDiscount ? reg : null,
+        cost_price: costPrice === "" ? 0 : Number(costPrice),
+        sku: sku || null,
+        low_stock_threshold: Number(lowThreshold),
         stock: Number(stock),
         status,
         primary_image_url: image,
@@ -280,6 +283,7 @@ function ProductDialog({
         return_policy: returnPolicy || null,
         shipping_info: shippingInfo || null,
       });
+
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
