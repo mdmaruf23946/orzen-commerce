@@ -34,6 +34,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { amIOwner } from "@/lib/owner.functions";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { SubscriptionStatusBanner } from "@/components/admin/SubscriptionStatusBanner";
 
 const links: { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
