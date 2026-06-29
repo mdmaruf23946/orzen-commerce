@@ -30,6 +30,7 @@ function CheckoutPage() {
   const navigate = useNavigate();
   const { data: store } = useSuspenseQuery(storeQuery(slug));
   const place = useServerFn(placeOrder);
+  const valCoupon = useServerFn(validateCoupon);
 
   type PM = "cod" | "bkash" | "nagad" | "rocket" | "bank";
   const [items, setItems] = useState<CartItem[]>([]);
@@ -41,6 +42,9 @@ function CheckoutPage() {
   const [method, setMethod] = useState<PM>("cod");
   const [txnId, setTxnId] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [coupon, setCoupon] = useState<{ code: string; discount: number; freeShipping: boolean } | null>(null);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
 
   useEffect(() => setItems(readCart(slug)), [slug]);
 
@@ -51,8 +55,22 @@ function CheckoutPage() {
   const subtotal = items.reduce((a, i) => a + i.qty * i.price, 0);
   const freeMin = Number(delivery.free_min ?? 0);
   const baseShip = Number((insideCity ? delivery.inside_city : delivery.outside_city) ?? 0);
-  const shipping = freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
-  const total = subtotal + shipping;
+  let shipping = freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
+  if (coupon?.freeShipping) shipping = 0;
+  const discount = coupon?.discount ?? 0;
+  const total = Math.max(0, subtotal + shipping - discount);
+
+  async function applyCoupon() {
+    if (!couponCode.trim()) return;
+    setApplyingCoupon(true);
+    try {
+      const res = await valCoupon({ data: { storeId: store!.id, code: couponCode.trim(), subtotal } });
+      if (!res.ok) { toast.error(res.error); setCoupon(null); }
+      else { setCoupon({ code: res.code, discount: res.discount, freeShipping: res.freeShipping }); toast.success("Coupon applied"); }
+    } catch (err) { toast.error((err as Error).message); }
+    finally { setApplyingCoupon(false); }
+  }
+
 
   const methods: { id: PM; label: string; desc: string }[] = [];
   if (pc.cod?.enabled !== false) methods.push({ id: "cod", label: "Cash on Delivery", desc: "Pay when you receive" });
