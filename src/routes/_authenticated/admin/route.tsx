@@ -23,6 +23,11 @@ import {
   ClipboardList,
   Bot,
   MessageSquare,
+  Boxes,
+  Ticket,
+  RotateCcw,
+  BarChart3,
+  FileUp,
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,10 +37,16 @@ import { Button } from "@/components/ui/button";
 
 const links: { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/admin/products", label: "Products", icon: Package },
   { to: "/admin/categories", label: "Categories", icon: Tags },
+  { to: "/admin/inventory", label: "Inventory", icon: Boxes },
+  { to: "/admin/import-export", label: "Import / Export", icon: FileUp },
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag },
+  { to: "/admin/returns", label: "Returns", icon: RotateCcw },
   { to: "/admin/customers", label: "Customers", icon: Users },
+  { to: "/admin/coupons", label: "Coupons", icon: Ticket },
+  { to: "/admin/finance", label: "Finance", icon: Wallet },
   { to: "/admin/banners", label: "Banners", icon: ImageIcon },
   { to: "/admin/marketing", label: "Marketing", icon: Megaphone },
   { to: "/admin/couriers", label: "Couriers", icon: Truck },
@@ -50,6 +61,7 @@ const links: { to: string; label: string; icon: typeof LayoutDashboard; exact?: 
   { to: "/admin/settings", label: "Store Settings", icon: Settings },
   { to: "/admin/subscription", label: "Subscription", icon: CreditCard },
 ];
+
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminLayout,

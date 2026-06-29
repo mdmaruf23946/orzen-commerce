@@ -1,38 +1,74 @@
 
-## AI Sales Agent — Remaining Work
+# Store Admin Business Management Expansion
 
-Database, server functions, gateway helper, streaming chat route, Messenger webhook, and the lazy chat widget components are already in place from the previous turn. This plan finishes the user-facing surfaces and wires the widget into the storefront. No new dependencies, no homepage perf cost.
+Extends the existing admin panel with 10 new modules. No existing feature is duplicated — Products, Orders, Customers, Banners, Settings, AI, Messenger, Marketing, Couriers, Theme, SEO, Delivery, Payments, Notifications, Product Defaults, Categories, Subscription stay as-is. New work plugs into the same sidebar, uses the same server-fn + RLS patterns, and stays mobile-first with no new heavy libraries.
 
-### 1. Owner → AI Settings (`/owner/ai`)
-- New route `src/routes/_authenticated/owner/ai.tsx`.
-- Form (reuses `SettingsPage`-style layout): Enable toggle, Default model select (Lovable AI catalog: `google/gemini-3-flash-preview` default + a few alternates), optional Provider API key (password input, never returned in plaintext to client — show "configured" badge).
-- Usage panel: total tokens, estimated cost, per-store breakdown for last 30 days from `getAiUsageStats`.
-- Sidebar link added in `src/routes/_authenticated/owner/route.tsx` (Sparkles icon).
+## 1. Database (one migration)
 
-### 2. Store Admin → AI Sales Agent (`/admin/ai-agent`)
-- New route `src/routes/_authenticated/admin/ai-agent.tsx` with three tabs (shadcn `Tabs`):
-  - **General**: Enable, Agent Name, Welcome Message.
-  - **Knowledge**: Store Info, Delivery / Return / Warranty policies, Payment Methods, Business Hours, FAQs repeater (q/a pairs).
-  - **Behavior**: Language (bn/en/both), Style, Emoji toggle, Human-like toggle.
-- Single `updateMyAgent` save per tab.
-- Sidebar link added in `src/routes/_authenticated/admin/route.tsx` (Bot icon).
+New tables (all RLS-scoped to the owning store via `stores.owner_id = auth.uid()`, with proper GRANTs):
 
-### 3. Store Admin → Messenger (`/admin/messenger`)
-- New route `src/routes/_authenticated/admin/messenger.tsx`.
-- Form: Page ID, Page Access Token (password), auto-generated Verify Token (shown to copy into FB app), Webhook URL display (`/api/public/messenger/webhook`).
-- Connection status + Disconnect button.
-- Sidebar link added (MessageSquare icon).
+- `stock_movements` — store_id, product_id, delta, type (`order|manual_in|manual_out|return|adjustment`), reason, ref_order_id, created_by, created_at.
+- `coupons` — store_id, code (unique per store), type (`percent|fixed|free_shipping`), value, min_order, usage_limit, used_count, starts_at, expires_at, active.
+- `coupon_redemptions` — coupon_id, order_id, customer_phone, discount_amount, created_at.
+- `expenses` — store_id, category (`fb_ads|courier|packaging|salary|misc`), amount, note, spent_on (date), created_at.
+- `returns` — store_id, order_id, type (`return|exchange`), reason, status (`requested|approved|rejected|refunded|completed`), refund_amount, resolution_note, created_at, updated_at.
+- `order_timeline` — order_id, store_id, stage (`placed|confirmed|packed|courier_assigned|shipped|delivered|returned|cancelled`), note, created_at.
+- `customer_notes` — store_id, customer_phone (key, since there's no customers table), tags text[], note.
+- `order_internal_notes` — order_id, store_id, body, created_by, created_at. (RLS: store owner only — never exposed on public storefront fns.)
 
-### 4. Storefront Chat Widget mount
-- Update `src/lib/storefront.functions.ts` `getStoreBySlug` to also return `ai_agent` row (enabled, agent_name, welcome_message) — single extra query, cached with existing storeQuery `staleTime`.
-- Update `src/routes/store/$slug/route.tsx` to render `<AIChatLauncher>` only when `ai_agent.enabled`. Launcher already lazy-loads `AIChatPanel`; no impact on initial paint.
+Column additions:
+- `products`: `cost_price numeric`, `low_stock_threshold int default 5`, `sku text`.
+- `orders`: `coupon_id`, `discount_amount`, `invoice_no text unique per store` (generated on confirm).
 
-### 5. Verification
-- Typecheck passes (current `ai`/`@ai-sdk/react` v7/v4 alignment).
-- Smoke test via Playwright: open a storefront, click chat button, send "What products do you have?", confirm streamed reply lists only that store's products.
-- Confirm `/owner/ai` and `/admin/ai-agent` render and save.
+Triggers:
+- After `order_items` insert on confirmed order → insert negative `stock_movements` row and decrement `products.stock`.
+- After `orders.status` change → insert `order_timeline` row with the matching stage.
+- `invoice_no` auto-set when status moves to `confirmed` (format `INV-{store_prefix}-{yyyymm}-{seq}`).
 
-### Out of scope (already covered or future)
-- Full FB OAuth (phase 2 — current flow uses pasted page token).
-- New npm packages.
-- Changes to existing storefront queries beyond adding the agent flag.
+## 2. Server functions (`src/lib/admin.functions.ts` additions + new `src/lib/inventory.functions.ts`, `coupons.functions.ts`, `finance.functions.ts`, `returns.functions.ts`, `analytics.functions.ts`)
+
+All use `requireSupabaseAuth` and scope by `store_id` resolved from `getMyStore`. Public storefront gets one new fn `validateCoupon({ code, subtotal })` in `storefront.functions.ts` (no auth, narrow column projection). Checkout fn updated to accept `coupon_code`, recompute discount server-side, record redemption, apply free-shipping logic.
+
+## 3. New admin routes (under `src/routes/_authenticated/admin/`)
+
+- `inventory.tsx` — table of products with stock, cost, price, profit/unit, low/out badges; manual +/- dialog writes a `stock_movements` row. Tab for "Movements" history (paginated, 50/page).
+- `coupons.tsx` — list + create/edit dialog with all coupon types, status toggle, usage counter.
+- `finance.tsx` — expense entry form + list filtered by date range + cards (Today sales, Today expenses, Today profit, Monthly profit, Net profit). Profit = sales − COGS (from `cost_price` × qty in order_items) − expenses.
+- `returns.tsx` — list of return/exchange requests with status workflow buttons; "New return" picks an existing order.
+- `analytics.tsx` — Sales / Products / Customers / Performance sections using small SVG sparklines (no chart library; hand-rolled `<svg>` polyline ~30 LOC). Daily / Weekly / Monthly toggle.
+- `import-export.tsx` — CSV upload (parsed client-side with a tiny ~80-line CSV parser, no PapaParse), preview + validation table, then bulk upsert via server fn. Export downloads CSV/XLSX (XLSX via `xlsx` only if user wants — default CSV to avoid the dep).
+
+Sidebar in `route.tsx` gets 6 new links with lucide icons (Boxes, Ticket, Wallet, RotateCcw, BarChart3, FileUp).
+
+## 4. Edits to existing routes
+
+- `products.tsx` — add checkbox column, sticky bulk-action bar (Delete / Change category / Update price / Update stock / Change status) when any row selected. Form: add `cost_price`, `low_stock_threshold`, `sku`.
+- `orders.tsx` — order row expands to show:
+  - Timeline (vertical list of stages with timestamps).
+  - Internal notes thread (add/delete, owner-only).
+  - "Generate invoice" / "Print" / "Download PDF" buttons.
+- `customers.tsx` — per-customer drawer with tags (chips: Trusted / COD Risk / VIP / Frequent — plus custom) and free-text note, saved to `customer_notes` keyed by phone.
+
+## 5. Invoice
+
+- New route `admin/orders.$orderId.invoice.tsx` — thermal-friendly 80mm CSS print layout (`@media print` with `@page { size: 80mm auto }`), shows store info, customer, items, totals, invoice no.
+- "Download PDF" uses the browser's native print-to-PDF (`window.print()`) — zero JS dependency, keeps bundle small. Document this in the UI.
+
+## 6. Checkout integration
+
+`checkout.tsx` gets a coupon input that calls `validateCoupon`, shows discount line, free-shipping note. Order placement passes the code; server recomputes everything (never trusts client totals).
+
+## 7. Performance guardrails
+
+- No new npm packages by default (CSV parser inline, charts inline SVG, PDF via `window.print`). Only if user later asks for `.xlsx` import/export we add `xlsx` (~400KB) lazily on the import page via `await import('xlsx')`.
+- All new admin routes lazy-loaded by TanStack file-based routing (already the case).
+- Each new server fn returns only the columns the page renders; analytics uses SQL aggregates (`group by date_trunc`) rather than pulling rows.
+- Lists paginated at 50; movement/timeline use indexes on `(store_id, created_at desc)` and `(order_id, created_at)`.
+- Mobile-first: bulk-action bar collapses to a bottom sheet on small screens; tables become card lists < `sm`.
+
+## Open questions before I start
+
+1. Confirm CSV-only import/export by default (keeps bundle small). XLSX support can be added later if needed — OK?
+2. Invoice PDF via browser print-to-PDF (no extra deps) vs. a real PDF lib like `pdf-lib` (~100KB) — print-to-PDF OK?
+3. Discount applies to `subtotal` (excluding delivery) for percent/fixed, and zeroes delivery for free_shipping — confirm.
+4. Customer identity is by `phone` (since there's no logged-in customer model on storefront) — OK for customer notes and returning-customer analytics?

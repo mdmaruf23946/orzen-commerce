@@ -109,6 +109,9 @@ const productSchema = z.object({
   description: z.string().trim().max(5000).optional().nullable(),
   price: z.number().nonnegative(),
   old_price: z.number().nonnegative().optional().nullable(),
+  cost_price: z.number().nonnegative().optional().nullable(),
+  low_stock_threshold: z.number().int().min(0).optional().nullable(),
+  sku: z.string().trim().max(60).optional().nullable(),
   stock: z.number().int().min(0),
   status: z.enum(["active", "draft", "out_of_stock"]),
   primary_image_url: z.string().max(500).optional().nullable(),
@@ -136,6 +139,9 @@ export const upsertProduct = createServerFn({ method: "POST" })
       description: data.description ?? null,
       price: data.price,
       old_price: data.old_price ?? null,
+      cost_price: data.cost_price ?? 0,
+      low_stock_threshold: data.low_stock_threshold ?? 5,
+      sku: data.sku ?? null,
       stock: data.stock,
       status: data.status,
       primary_image_url: data.primary_image_url ?? null,
@@ -145,6 +151,7 @@ export const upsertProduct = createServerFn({ method: "POST" })
       return_policy: data.return_policy ?? null,
       shipping_info: data.shipping_info ?? null,
     };
+
     if (data.id) {
       const { error } = await supabase
         .from("products")

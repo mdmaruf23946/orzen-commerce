@@ -3,12 +3,13 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getStoreBySlug, placeOrder } from "@/lib/storefront.functions";
-import { readCart, clearCart, cartTotal, type CartItem } from "@/lib/cart";
+import { getStoreBySlug, placeOrder, validateCoupon } from "@/lib/storefront.functions";
+import { readCart, clearCart, type CartItem } from "@/lib/cart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+
 
 const storeQuery = (slug: string) =>
   queryOptions({ queryKey: ["store", slug], queryFn: () => getStoreBySlug({ data: { slug } }) });
@@ -29,6 +30,7 @@ function CheckoutPage() {
   const navigate = useNavigate();
   const { data: store } = useSuspenseQuery(storeQuery(slug));
   const place = useServerFn(placeOrder);
+  const valCoupon = useServerFn(validateCoupon);
 
   type PM = "cod" | "bkash" | "nagad" | "rocket" | "bank";
   const [items, setItems] = useState<CartItem[]>([]);
@@ -40,6 +42,9 @@ function CheckoutPage() {
   const [method, setMethod] = useState<PM>("cod");
   const [txnId, setTxnId] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [coupon, setCoupon] = useState<{ code: string; discount: number; freeShipping: boolean } | null>(null);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
 
   useEffect(() => setItems(readCart(slug)), [slug]);
 
@@ -50,8 +55,22 @@ function CheckoutPage() {
   const subtotal = items.reduce((a, i) => a + i.qty * i.price, 0);
   const freeMin = Number(delivery.free_min ?? 0);
   const baseShip = Number((insideCity ? delivery.inside_city : delivery.outside_city) ?? 0);
-  const shipping = freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
-  const total = subtotal + shipping;
+  let shipping = freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
+  if (coupon?.freeShipping) shipping = 0;
+  const discount = coupon?.discount ?? 0;
+  const total = Math.max(0, subtotal + shipping - discount);
+
+  async function applyCoupon() {
+    if (!couponCode.trim()) return;
+    setApplyingCoupon(true);
+    try {
+      const res = await valCoupon({ data: { storeId: store!.id, code: couponCode.trim(), subtotal } });
+      if (!res.ok) { toast.error(res.error); setCoupon(null); }
+      else { setCoupon({ code: res.code, discount: res.discount, freeShipping: res.freeShipping }); toast.success("Coupon applied"); }
+    } catch (err) { toast.error((err as Error).message); }
+    finally { setApplyingCoupon(false); }
+  }
+
 
   const methods: { id: PM; label: string; desc: string }[] = [];
   if (pc.cod?.enabled !== false) methods.push({ id: "cod", label: "Cash on Delivery", desc: "Pay when you receive" });
@@ -97,8 +116,11 @@ function CheckoutPage() {
           paymentMethod: method,
           txnId: method === "cod" ? undefined : txnId,
           items: items.map((i) => ({ productId: i.productId, qty: i.qty })),
+          couponCode: coupon?.code,
+          insideCity,
         },
       });
+
       clearCart(slug);
       navigate({ to: "/store/$slug/order/$orderId", params: { slug, orderId: res.orderId } });
     } catch (err) {
@@ -196,14 +218,28 @@ function CheckoutPage() {
               </li>
             ))}
           </ul>
+          <div className="mt-3 flex gap-2">
+            <Input placeholder="Coupon code" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} className="h-9" />
+            {coupon ? (
+              <Button type="button" size="sm" variant="outline" onClick={() => { setCoupon(null); setCouponCode(""); }}>Remove</Button>
+            ) : (
+              <Button type="button" size="sm" variant="outline" onClick={applyCoupon} disabled={applyingCoupon || !couponCode.trim()}>
+                {applyingCoupon ? "…" : "Apply"}
+              </Button>
+            )}
+          </div>
           <div className="mt-3 space-y-1 border-t pt-3 text-sm">
             <div className="flex justify-between"><span>Subtotal</span><span>৳{subtotal.toFixed(0)}</span></div>
             <div className="flex justify-between"><span>Shipping</span><span>{shipping === 0 ? "Free" : `৳${shipping.toFixed(0)}`}</span></div>
+            {discount > 0 && (
+              <div className="flex justify-between text-emerald-600"><span>Discount ({coupon!.code})</span><span>-৳{discount.toFixed(0)}</span></div>
+            )}
             <div className="mt-2 flex items-center justify-between border-t pt-2">
               <span className="text-sm">Total</span>
               <span className="text-lg font-bold">৳{total.toFixed(0)}</span>
             </div>
           </div>
+
           <Button
             type="submit"
             disabled={submitting || methods.length === 0}
