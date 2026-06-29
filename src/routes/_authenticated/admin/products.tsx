@@ -159,9 +159,8 @@ function ProductsPage() {
             </ul>
           </>
         )}
-
-        )}
       </div>
+
 
       {open && store && (
         <ProductDialog
