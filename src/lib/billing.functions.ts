@@ -15,7 +15,7 @@ export const listPublicPlans = createServerFn({ method: "GET" }).handler(async (
     .from("subscription_packages")
     .select(PUBLIC_FIELDS)
     .eq("is_active", true)
-    .eq("is_trial", false)
+    .order("is_trial", { ascending: false })
     .order("sort_order", { ascending: true })
     .order("price", { ascending: true });
   if (error) throw new Error(error.message);
