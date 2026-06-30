@@ -44,11 +44,6 @@ function PackagesPage() {
       <DiscountSettingsCard />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {/* spacer to preserve original grid below */}
-      </div>
-      <div className="hidden">{/* legacy placeholder removed */}</div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" style={{ display: "none" }}></div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {(packages ?? []).map((p: any) => (
           <div key={p.id} className="rounded-xl border bg-card p-4">
             <div className="flex items-start justify-between gap-2">
