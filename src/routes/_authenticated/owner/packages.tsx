@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { listPackages, upsertPackage, deletePackage } from "@/lib/owner.functions";
+import { listPackages, upsertPackage, deletePackage, getOwnerBillingSettings, updateBillingSettings } from "@/lib/owner.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +40,9 @@ function PackagesPage() {
           <Plus className="mr-1 h-4 w-4" /> New package
         </Button>
       </div>
+
+      <DiscountSettingsCard />
+
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {(packages ?? []).map((p: any) => (
           <div key={p.id} className="rounded-xl border bg-card p-4">
@@ -215,5 +218,65 @@ function PackageDialog({ editing, onClose, onSaved }: { editing: any; onClose: (
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function DiscountSettingsCard() {
+  const getFn = useServerFn(getOwnerBillingSettings);
+  const saveFn = useServerFn(updateBillingSettings);
+  const qc = useQueryClient();
+  const { data } = useQuery({ queryKey: ["owner", "billingSettings"], queryFn: () => getFn() });
+  const [form, setForm] = useState<{ discount_3m: number; discount_6m: number; discount_yearly: number } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const current = form ?? data ?? { discount_3m: 5, discount_6m: 10, discount_yearly: 20 };
+
+  async function save() {
+    setSaving(true);
+    try {
+      await saveFn({
+        data: {
+          discount_3m: Number(current.discount_3m),
+          discount_6m: Number(current.discount_6m),
+          discount_yearly: Number(current.discount_yearly),
+        },
+      });
+      toast.success("Billing discounts updated");
+      qc.invalidateQueries({ queryKey: ["owner", "billingSettings"] });
+      qc.invalidateQueries({ queryKey: ["admin", "billingSettings"] });
+      setForm(null);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const set = (k: "discount_3m" | "discount_6m" | "discount_yearly", v: any) =>
+    setForm((f) => ({ ...(f ?? current), [k]: Number(v) }));
+
+  return (
+    <div className="rounded-xl border bg-card p-4">
+      <div className="text-sm font-semibold">Billing cycle discounts</div>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        Percent off the equivalent monthly price for longer billing cycles. Applied automatically at checkout.
+      </p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        <div className="space-y-1.5">
+          <Label>3 Months (%)</Label>
+          <Input type="number" min={0} max={100} value={current.discount_3m} onChange={(e) => set("discount_3m", e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>6 Months (%)</Label>
+          <Input type="number" min={0} max={100} value={current.discount_6m} onChange={(e) => set("discount_6m", e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Yearly (%)</Label>
+          <Input type="number" min={0} max={100} value={current.discount_yearly} onChange={(e) => set("discount_yearly", e.target.value)} />
+        </div>
+      </div>
+      <div className="mt-3 flex justify-end">
+        <Button onClick={save} disabled={saving || !form}>{saving ? "Saving…" : "Save discounts"}</Button>
+      </div>
+    </div>
   );
 }

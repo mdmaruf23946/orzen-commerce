@@ -502,3 +502,37 @@ export const listSubscriptionStores = createServerFn({ method: "POST" })
     return rows ?? [];
   });
 
+export const getOwnerBillingSettings = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { data } = await (context.supabase.from("platform_billing_settings" as any) as any)
+      .select("discount_3m,discount_6m,discount_yearly")
+      .eq("id", "global")
+      .maybeSingle();
+    return {
+      discount_3m: Number(data?.discount_3m ?? 5),
+      discount_6m: Number(data?.discount_6m ?? 10),
+      discount_yearly: Number(data?.discount_yearly ?? 20),
+    };
+  });
+
+export const updateBillingSettings = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        discount_3m: z.number().min(0).max(100),
+        discount_6m: z.number().min(0).max(100),
+        discount_yearly: z.number().min(0).max(100),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { error } = await (context.supabase.from("platform_billing_settings" as any) as any)
+      .upsert({ id: "global", ...data, updated_at: new Date().toISOString() });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+

@@ -1,12 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, X, Sparkles, Crown } from "lucide-react";
-import { myBillingStatus, listPublicPlans } from "@/lib/billing.functions";
-import { PLAN_ROWS, supportTypeFor, formatLimit, type PlanRow } from "@/lib/features";
+import { useMemo, useState } from "react";
+import { Check, X, Sparkles, Crown, Sparkle, Download } from "lucide-react";
+import {
+  myBillingStatus,
+  listPublicPlans,
+  getBillingSettings,
+  computeCycleTotal,
+  type CycleKey,
+} from "@/lib/billing.functions";
+import { FEATURE_KEYS, FEATURE_LABELS, formatLimit } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 
 export const Route = createFileRoute("/_authenticated/admin/billing")({
   component: BillingPage,
@@ -19,129 +25,220 @@ type Plan = {
   price: number;
   billing_cycle?: string | null;
   is_trial?: boolean | null;
-  trial_days?: number | null;
+  plan_tier?: "free" | "basic" | "business" | "custom" | null;
   product_limit?: number | null;
   order_limit?: number | null;
   storage_mb?: number | null;
   staff_limit?: number | null;
   features?: Record<string, any> | null;
+  feature_summary?: string[] | null;
 };
 
-function planCellValue(plan: Plan, row: PlanRow): { kind: "bool"; on: boolean } | { kind: "text"; text: string } {
-  if (row.kind === "trial") {
-    return { kind: "text", text: plan.is_trial ? `${plan.trial_days ?? 3} days free` : "—" };
-  }
-  if (row.kind === "limit") {
-    return { kind: "text", text: formatLimit(plan[row.key] as number | null | undefined, row.unit) };
-  }
-  if (row.kind === "support") {
-    return { kind: "text", text: supportTypeFor(plan) };
-  }
-  // feature
-  const on = !!plan.is_trial || !!plan.features?.[row.key];
-  return { kind: "bool", on };
+const TIER_ORDER: Array<"free" | "basic" | "business" | "custom"> = ["free", "basic", "business", "custom"];
+const TIER_NAME: Record<string, string> = {
+  free: "Free",
+  basic: "Basic",
+  business: "Business",
+  custom: "Custom",
+};
+
+function tierOf(p: Plan): "free" | "basic" | "business" | "custom" | null {
+  if (p.plan_tier) return p.plan_tier;
+  const n = (p.name ?? "").toLowerCase();
+  if (n.includes("free")) return "free";
+  if (n.includes("basic") || n.includes("starter")) return "basic";
+  if (n.includes("business") || n.includes("pro")) return "business";
+  if (n.includes("custom") || n.includes("enterprise")) return "custom";
+  return null;
 }
 
 function BillingPage() {
   const statusFn = useServerFn(myBillingStatus);
   const plansFn = useServerFn(listPublicPlans);
+  const settingsFn = useServerFn(getBillingSettings);
+
   const { data: status } = useQuery({ queryKey: ["admin", "billing"], queryFn: () => statusFn() });
   const { data: plansRaw } = useQuery({ queryKey: ["admin", "billingPlans"], queryFn: () => plansFn() });
+  const { data: settings } = useQuery({
+    queryKey: ["admin", "billingSettings"],
+    queryFn: () => settingsFn(),
+    staleTime: 5 * 60_000,
+  });
+
+  const [cycle, setCycle] = useState<CycleKey>("monthly");
 
   const plans = (plansRaw ?? []) as Plan[];
   const store = status?.store as any;
   const pkg = store?.subscription_packages as Plan | undefined;
-  const subStatus = (store?.subscription_status ?? "trialing") as string;
+  const subStatus = (store?.subscription_status ?? "active") as string;
   const daysLeft = status?.days_left ?? 0;
-  const currentId = store?.package_id as string | undefined;
+  const isTrialing = subStatus === "trialing";
 
-  // Trial countdown
-  const trialPlan = plans.find((p) => p.is_trial);
-  const trialTotal = trialPlan?.trial_days ?? pkg?.trial_days ?? 3;
-  const trialProgress = subStatus === "trialing" ? Math.max(0, Math.min(100, (daysLeft / trialTotal) * 100)) : 0;
+  const tierMap = useMemo(() => {
+    const m = new Map<string, Plan>();
+    for (const p of plans) {
+      const t = tierOf(p);
+      if (t && !m.has(t)) m.set(t, p);
+    }
+    return m;
+  }, [plans]);
 
-  // Pick "most popular" — Business by name, else middle paid plan
-  const paidPlans = plans.filter((p) => !p.is_trial);
-  const popularId =
-    paidPlans.find((p) => /business/i.test(p.name))?.id ??
-    (paidPlans.length >= 2 ? paidPlans[Math.floor(paidPlans.length / 2)]?.id : undefined);
+  const currentTier = pkg ? tierOf(pkg) : isTrialing ? null : "free";
+  const s = settings ?? { discount_3m: 5, discount_6m: 10, discount_yearly: 20 };
+
+  const cycleOptions: { key: CycleKey; label: string; discount: number }[] = [
+    { key: "monthly", label: "Monthly", discount: 0 },
+    { key: "3m", label: "3 Months", discount: s.discount_3m },
+    { key: "6m", label: "6 Months", discount: s.discount_6m },
+    { key: "yearly", label: "Yearly", discount: s.discount_yearly },
+  ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Billing & Subscription</h1>
-        <p className="text-sm text-muted-foreground">Manage your plan, view limits, and upgrade anytime.</p>
-      </div>
-
-      {/* Current status */}
-      <div className="rounded-xl border bg-card p-4 sm:p-5">
-        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-          <div className="min-w-0">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">Current plan</div>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <span className="truncate text-xl font-bold">{pkg?.name ?? "No plan"}</span>
-              <Badge variant={
-                subStatus === "active" ? "default" :
-                subStatus === "trialing" ? "secondary" :
-                "destructive"
-              } className="capitalize">{subStatus}</Badge>
-            </div>
-            {pkg && (
-              <div className="mt-1 text-sm text-muted-foreground">
-                {pkg.is_trial ? "Free trial" : `৳${Number(pkg.price).toFixed(0)} · ${pkg.billing_cycle ?? "monthly"}`}
+    <div className="space-y-6 pb-10">
+      {/* 1. Free Trial Banner — only when trialing */}
+      {isTrialing && (
+        <div className="rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4 dark:border-amber-900/50 dark:from-amber-950/30 dark:to-orange-950/30">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
+                <Sparkle className="h-4 w-4 shrink-0" />
+                <span className="truncate text-sm font-semibold">🎉 Your Free Trial is Active</span>
               </div>
-            )}
-          </div>
-          <div className="text-left sm:text-right">
-            {store?.expires_at && (
-              <>
-                <div className="text-xs uppercase text-muted-foreground">{subStatus === "trialing" ? "Trial ends" : "Renews / expires"}</div>
-                <div className="text-sm font-medium">{new Date(store.expires_at).toLocaleDateString()}</div>
-              </>
+              <div className="mt-0.5 text-lg font-bold text-amber-950 dark:text-amber-100">
+                {daysLeft} Day{daysLeft === 1 ? "" : "s"} Remaining
+              </div>
+              <p className="mt-0.5 text-xs text-amber-800/80 dark:text-amber-200/80">
+                Enjoy all Premium Features during your trial.
+              </p>
+            </div>
+            {tierMap.get("business") && (
+              <Link
+                to="/admin/billing/checkout/$packageId"
+                params={{ packageId: tierMap.get("business")!.id }}
+                search={{ cycle } as any}
+              >
+                <Button size="sm" className="bg-amber-600 hover:bg-amber-700">Upgrade Now</Button>
+              </Link>
             )}
           </div>
         </div>
+      )}
 
-        {subStatus === "trialing" && (
-          <div className="mt-4 rounded-lg bg-amber-50 p-3 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <div className="text-sm font-semibold">
-                {daysLeft} day{daysLeft === 1 ? "" : "s"} remaining in your free trial
-              </div>
-              <div className="text-xs opacity-80">Full premium access</div>
+      <div>
+        <h1 className="text-2xl font-semibold">Billing & Subscription</h1>
+        <p className="text-sm text-muted-foreground">Pick the plan that fits your business — change anytime.</p>
+      </div>
+
+      {/* 8. Current Plan Section */}
+      <div className="rounded-xl border bg-card p-4 sm:p-5">
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+          <div className="min-w-0">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">Current plan</div>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <span className="truncate text-xl font-bold">
+                {isTrialing ? "Free Plan" : (pkg?.name ?? "Free Plan")}
+              </span>
+              <Badge
+                variant={subStatus === "active" ? "default" : isTrialing ? "secondary" : "destructive"}
+                className="capitalize"
+              >
+                {isTrialing ? "Trial Active" : subStatus}
+              </Badge>
             </div>
-            <Progress value={trialProgress} className="mt-2 h-2 bg-amber-200/60" />
-            <p className="mt-2 text-xs opacity-80">
-              After the trial ends, your store moves to a limited plan until you upgrade.
-            </p>
+            <div className="mt-1 text-sm text-muted-foreground">
+              {isTrialing
+                ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} remaining · all premium features unlocked`
+                : pkg
+                  ? `৳${Number(pkg.price).toFixed(0)} · ${pkg.billing_cycle ?? "monthly"}`
+                  : "Limited features. Upgrade for more."}
+            </div>
           </div>
-        )}
+          <div className="text-left sm:text-right">
+            {isTrialing && store?.trial_ends_at ? (
+              <>
+                <div className="text-xs uppercase text-muted-foreground">Trial ends</div>
+                <div className="text-sm font-medium">{new Date(store.trial_ends_at).toLocaleDateString()}</div>
+              </>
+            ) : store?.expires_at ? (
+              <>
+                <div className="text-xs uppercase text-muted-foreground">Renews / expires</div>
+                <div className="text-sm font-medium">{new Date(store.expires_at).toLocaleDateString()}</div>
+              </>
+            ) : null}
+          </div>
+        </div>
 
         {(subStatus === "expired" || subStatus === "cancelled") && (
-          <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-900 dark:bg-red-950/30 dark:text-red-200">
+          <div className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-900 dark:bg-red-950/30 dark:text-red-200">
             Your subscription has expired. Upgrade to restore full access.
           </div>
         )}
       </div>
 
-      {/* Plan cards */}
+      {/* 3. Billing Cycle Selector */}
+      <section>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Choose your billing cycle</h2>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {cycleOptions.map((c) => {
+            const active = cycle === c.key;
+            return (
+              <button
+                key={c.key}
+                type="button"
+                onClick={() => setCycle(c.key)}
+                className={`relative rounded-lg border p-3 text-left transition ${
+                  active ? "border-primary bg-primary/5 ring-2 ring-primary/30" : "hover:border-foreground/30"
+                }`}
+              >
+                <div className="text-sm font-semibold">{c.label}</div>
+                <div className="mt-0.5 text-[11px] text-muted-foreground">
+                  {c.discount > 0 ? `Save ${c.discount}%` : "No discount"}
+                </div>
+                {c.discount > 0 && (
+                  <span className="absolute -top-2 right-2 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                    -{c.discount}%
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 4-6. Plan Cards */}
       <section>
         <h2 className="mb-3 text-lg font-semibold">Available plans</h2>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {plans.map((p) => {
-            const isCurrent = currentId === p.id;
-            const isPopular = !p.is_trial && popularId === p.id;
-            const isCustom = /custom|enterprise/i.test(p.name);
+          {TIER_ORDER.map((tier) => {
+            const p = tierMap.get(tier);
+            const isCurrent = currentTier === tier && !isTrialing;
+            const isPopular = tier === "business";
+            const isCustom = tier === "custom";
+            const isFree = tier === "free";
+
+            if (!p) {
+              return (
+                <div key={tier} className="rounded-xl border border-dashed bg-card/40 p-4 text-sm text-muted-foreground">
+                  <div className="font-semibold text-foreground">{TIER_NAME[tier]}</div>
+                  <p className="mt-2">Coming soon.</p>
+                </div>
+              );
+            }
+
+            const calc = !isFree && !isCustom ? computeCycleTotal(Number(p.price), cycle, s) : null;
+
             return (
               <div
-                key={p.id}
+                key={tier}
                 className={`relative flex flex-col rounded-xl border bg-card p-4 ${
                   isPopular ? "border-primary ring-2 ring-primary/30" : ""
                 } ${isCurrent ? "border-emerald-500" : ""}`}
               >
                 {isPopular && (
                   <div className="absolute -top-2 left-4 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase text-primary-foreground">
-                    <Sparkles className="h-3 w-3" /> Most popular
+                    <Sparkles className="h-3 w-3" /> Most Popular
                   </div>
                 )}
                 {isCurrent && (
@@ -154,38 +251,55 @@ function BillingPage() {
                 {p.description && <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{p.description}</p>}
 
                 <div className="mt-3">
-                  {p.is_trial ? (
-                    <div className="text-2xl font-extrabold">Free</div>
-                  ) : (
+                  {isCustom ? (
+                    <div className="text-2xl font-extrabold">Custom</div>
+                  ) : isFree ? (
                     <div className="text-2xl font-extrabold">
-                      ৳{Number(p.price).toFixed(0)}
-                      <span className="text-sm font-normal text-muted-foreground"> / {p.billing_cycle ?? "monthly"}</span>
+                      ৳0<span className="text-sm font-normal text-muted-foreground"> / forever</span>
                     </div>
+                  ) : (
+                    <>
+                      <div className="flex items-baseline gap-2">
+                        <div className="text-2xl font-extrabold">৳{calc!.total.toLocaleString()}</div>
+                        {calc!.discountPct > 0 && (
+                          <div className="text-xs text-muted-foreground line-through">
+                            ৳{(Number(p.price) * calc!.months).toLocaleString()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-0.5 text-[11px] text-muted-foreground">
+                        ৳{calc!.perMonth.toLocaleString()}/mo · billed every {calc!.months} mo
+                      </div>
+                      {calc!.saved > 0 && (
+                        <div className="mt-1 inline-block rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                          Save ৳{calc!.saved.toLocaleString()}
+                        </div>
+                      )}
+                    </>
                   )}
-                  <div className="mt-1 text-[11px] text-muted-foreground">
-                    {p.is_trial ? `${p.trial_days ?? 3}-day free trial` : "Trial: not included"}
-                  </div>
                 </div>
 
-                <ul className="mt-4 space-y-1.5 text-sm">
-                  {PLAN_ROWS.filter((r) => r.kind !== "trial").map((row) => {
-                    const v = planCellValue(p, row);
+                {/* Limits */}
+                <ul className="mt-4 space-y-1.5 text-xs">
+                  <LimitRow label="Products" value={formatLimit(p.product_limit, undefined)} />
+                  <LimitRow label="Orders / month" value={formatLimit(p.order_limit, undefined)} />
+                  <LimitRow label="Storage" value={formatLimit(p.storage_mb, "MB")} />
+                  <LimitRow label="Staff" value={formatLimit(p.staff_limit, undefined)} />
+                </ul>
+
+                {/* Features */}
+                <ul className="mt-3 space-y-1 border-t pt-3 text-xs">
+                  {FEATURE_KEYS.map((k) => {
+                    const on = isCustom ? true : !!p.features?.[k];
                     return (
-                      <li key={`${row.kind}-${"key" in row ? row.key : row.label}`} className="flex items-start gap-2">
-                        {v.kind === "bool" ? (
-                          v.on ? (
-                            <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                          ) : (
-                            <X className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/60" />
-                          )
+                      <li key={k} className="flex items-start gap-2">
+                        {on ? (
+                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
                         ) : (
-                          <span className="mt-0.5 inline-block h-4 w-4 shrink-0 rounded-full bg-muted text-center text-[10px] leading-4 text-muted-foreground">•</span>
+                          <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
                         )}
-                        <span className="min-w-0 flex-1 text-xs">
-                          <span className="text-muted-foreground">{row.label}: </span>
-                          <span className={v.kind === "bool" && !v.on ? "text-muted-foreground/70" : "font-medium"}>
-                            {v.kind === "text" ? v.text : v.on ? "Included" : "—"}
-                          </span>
+                        <span className={on ? "" : "text-muted-foreground/70 line-through"}>
+                          {FEATURE_LABELS[k]}
                         </span>
                       </li>
                     );
@@ -195,16 +309,16 @@ function BillingPage() {
                 <div className="mt-4">
                   {isCurrent ? (
                     <Button disabled className="w-full" variant="secondary">Current Plan</Button>
-                  ) : p.is_trial ? (
-                    <Button disabled className="w-full" variant="outline">
-                      {subStatus === "trialing" ? "Trial Active" : "Trial Used"}
-                    </Button>
                   ) : isCustom ? (
                     <a href="mailto:support@example.com?subject=Custom%20Plan%20Inquiry" className="block">
                       <Button variant="outline" className="w-full">Contact Sales</Button>
                     </a>
+                  ) : isFree ? (
+                    <Button disabled className="w-full" variant="outline">
+                      {isTrialing ? "After trial" : "Free Forever"}
+                    </Button>
                   ) : (
-                    <Link to="/admin/billing/checkout/$packageId" params={{ packageId: p.id }} className="block">
+                    <Link to="/admin/billing/checkout/$packageId" params={{ packageId: p.id }} search={{ cycle } as any} className="block">
                       <Button className="w-full">Upgrade</Button>
                     </Link>
                   )}
@@ -212,112 +326,192 @@ function BillingPage() {
               </div>
             );
           })}
-          {plans.length === 0 && (
-            <div className="rounded-xl border bg-card p-6 text-sm text-muted-foreground sm:col-span-2 xl:col-span-4">
-              No plans available yet.
-            </div>
-          )}
         </div>
       </section>
 
-      {/* Compare plans */}
-      {plans.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-lg font-semibold">Compare plans</h2>
+      {/* 7. Compare Plans */}
+      <section>
+        <h2 className="mb-3 text-lg font-semibold">Compare plans</h2>
 
-          {/* Desktop / tablet table */}
-          <div className="hidden overflow-x-auto rounded-xl border bg-card sm:block">
-            <table className="w-full text-sm">
-              <thead className="border-b bg-muted/50 text-left text-xs uppercase text-muted-foreground">
-                <tr>
-                  <th className="sticky left-0 z-10 bg-muted/50 p-3">Feature</th>
-                  {plans.map((p) => (
-                    <th key={p.id} className="p-3 text-center">
-                      <div className="font-semibold text-foreground">{p.name}</div>
-                      <div className="font-normal normal-case text-muted-foreground">
-                        {p.is_trial ? "Free" : `৳${Number(p.price).toFixed(0)}`}
-                      </div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {PLAN_ROWS.map((row) => (
-                  <tr key={`${row.kind}-${"key" in row ? row.key : row.label}`} className="border-b last:border-0">
-                    <th className="sticky left-0 z-10 bg-card p-3 text-left font-medium">{row.label}</th>
-                    {plans.map((p) => {
-                      const v = planCellValue(p, row);
-                      return (
-                        <td key={p.id} className="p-3 text-center">
-                          {v.kind === "bool" ? (
-                            v.on ? <Check className="mx-auto h-4 w-4 text-emerald-600" /> : <X className="mx-auto h-4 w-4 text-muted-foreground/50" />
-                          ) : (
-                            <span className="text-xs">{v.text}</span>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
+        {/* Desktop table */}
+        <div className="hidden overflow-x-auto rounded-xl border bg-card sm:block">
+          <table className="w-full text-sm">
+            <thead className="border-b bg-muted/50 text-left text-xs uppercase text-muted-foreground">
+              <tr>
+                <th className="sticky left-0 z-10 bg-muted/50 p-3">Feature</th>
+                {TIER_ORDER.map((t) => (
+                  <th key={t} className="p-3 text-center">
+                    <div className="font-semibold text-foreground">{TIER_NAME[t]}</div>
+                  </th>
                 ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile: stacked per-plan */}
-          <div className="space-y-2 sm:hidden">
-            {plans.map((p) => (
-              <details key={p.id} className="rounded-xl border bg-card p-3" open={currentId === p.id}>
-                <summary className="flex cursor-pointer items-center justify-between gap-2 font-semibold">
-                  <span className="truncate">{p.name}</span>
-                  <span className="text-sm text-muted-foreground">{p.is_trial ? "Free" : `৳${Number(p.price).toFixed(0)}`}</span>
-                </summary>
-                <ul className="mt-3 space-y-1.5">
-                  {PLAN_ROWS.map((row) => {
-                    const v = planCellValue(p, row);
+              </tr>
+            </thead>
+            <tbody>
+              <CompareLimitRow label="Products" tierMap={tierMap} accessor={(p) => formatLimit(p.product_limit)} />
+              <CompareLimitRow label="Orders / month" tierMap={tierMap} accessor={(p) => formatLimit(p.order_limit)} />
+              <CompareLimitRow label="Storage" tierMap={tierMap} accessor={(p) => formatLimit(p.storage_mb, "MB")} />
+              <CompareLimitRow label="Staff" tierMap={tierMap} accessor={(p) => formatLimit(p.staff_limit)} />
+              {FEATURE_KEYS.map((k) => (
+                <tr key={k} className="border-b last:border-0">
+                  <th className="sticky left-0 z-10 bg-card p-3 text-left font-medium">{FEATURE_LABELS[k]}</th>
+                  {TIER_ORDER.map((t) => {
+                    const p = tierMap.get(t);
+                    const on = t === "custom" ? true : !!p?.features?.[k];
                     return (
-                      <li key={`${row.kind}-${"key" in row ? row.key : row.label}`} className="flex items-center justify-between gap-3 text-sm">
-                        <span className="text-muted-foreground">{row.label}</span>
-                        {v.kind === "bool" ? (
-                          v.on ? <Check className="h-4 w-4 text-emerald-600" /> : <X className="h-4 w-4 text-muted-foreground/50" />
+                      <td key={t} className="p-3 text-center">
+                        {p ? (
+                          on ? (
+                            <Check className="mx-auto h-4 w-4 text-emerald-600" />
+                          ) : (
+                            <X className="mx-auto h-4 w-4 text-muted-foreground/50" />
+                          )
                         ) : (
-                          <span className="font-medium">{v.text}</span>
+                          <span className="text-xs text-muted-foreground">—</span>
                         )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile: per-plan accordion */}
+        <div className="space-y-2 sm:hidden">
+          {TIER_ORDER.map((t) => {
+            const p = tierMap.get(t);
+            if (!p) return null;
+            return (
+              <details key={t} className="rounded-xl border bg-card p-3" open={currentTier === t}>
+                <summary className="flex cursor-pointer items-center justify-between gap-2 font-semibold">
+                  <span className="truncate">{TIER_NAME[t]}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {t === "custom" ? "Custom" : t === "free" ? "Free" : `৳${Number(p.price).toFixed(0)}/mo`}
+                  </span>
+                </summary>
+                <ul className="mt-3 space-y-1.5 text-sm">
+                  <MobileRow label="Products" value={formatLimit(p.product_limit)} />
+                  <MobileRow label="Orders / month" value={formatLimit(p.order_limit)} />
+                  <MobileRow label="Storage" value={formatLimit(p.storage_mb, "MB")} />
+                  <MobileRow label="Staff" value={formatLimit(p.staff_limit)} />
+                  {FEATURE_KEYS.map((k) => {
+                    const on = t === "custom" ? true : !!p.features?.[k];
+                    return (
+                      <li key={k} className="flex items-center justify-between gap-3">
+                        <span className="text-muted-foreground">{FEATURE_LABELS[k]}</span>
+                        {on ? <Check className="h-4 w-4 text-emerald-600" /> : <X className="h-4 w-4 text-muted-foreground/50" />}
                       </li>
                     );
                   })}
                 </ul>
               </details>
-            ))}
-          </div>
-        </section>
-      )}
+            );
+          })}
+        </div>
+      </section>
 
-      {/* Payment history */}
+      {/* 9. Payment history */}
       <section>
         <h2 className="mb-3 text-lg font-semibold">Payment history</h2>
         <div className="overflow-x-auto rounded-xl border bg-card">
           <table className="w-full text-sm">
             <thead className="border-b bg-muted/50 text-left text-xs uppercase text-muted-foreground">
-              <tr><th className="p-3">Date</th><th className="p-3">Invoice</th><th className="p-3">Method</th><th className="p-3">Txn ID</th><th className="p-3 text-right">Amount</th><th className="p-3">Status</th></tr>
+              <tr>
+                <th className="p-3">Invoice</th>
+                <th className="p-3">Package</th>
+                <th className="p-3">Period</th>
+                <th className="p-3">Method</th>
+                <th className="p-3">Txn ID</th>
+                <th className="p-3 text-right">Amount</th>
+                <th className="p-3">Paid</th>
+                <th className="p-3">Status</th>
+                <th className="p-3"></th>
+              </tr>
             </thead>
             <tbody>
               {(status?.payments ?? []).map((p: any) => (
                 <tr key={p.id} className="border-b last:border-0">
-                  <td className="p-3 text-xs">{new Date(p.created_at).toLocaleDateString()}</td>
                   <td className="p-3 font-mono text-[11px]">{p.invoice_no ?? "—"}</td>
+                  <td className="p-3 text-xs">{p.subscription_packages?.name ?? "—"}</td>
+                  <td className="p-3 text-[11px] text-muted-foreground">
+                    {p.cycle_start ? new Date(p.cycle_start).toLocaleDateString() : "—"}
+                    {p.cycle_end ? ` → ${new Date(p.cycle_end).toLocaleDateString()}` : ""}
+                  </td>
                   <td className="p-3 uppercase">{p.method ?? "—"}</td>
                   <td className="p-3 font-mono text-[11px]">{p.txn_id ?? "—"}</td>
                   <td className="p-3 text-right">৳{Number(p.amount).toFixed(0)}</td>
-                  <td className="p-3 capitalize">{p.status}</td>
+                  <td className="p-3 text-xs">{new Date(p.created_at).toLocaleDateString()}</td>
+                  <td className="p-3 capitalize">
+                    <Badge
+                      variant={p.status === "paid" ? "default" : p.status === "pending" ? "secondary" : "destructive"}
+                      className="capitalize"
+                    >
+                      {p.status}
+                    </Badge>
+                  </td>
+                  <td className="p-3">
+                    {p.status === "paid" && (
+                      <button
+                        type="button"
+                        onClick={() => window.print()}
+                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                      >
+                        <Download className="h-3 w-3" /> Invoice
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
               {(status?.payments ?? []).length === 0 && (
-                <tr><td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">No payments yet</td></tr>
+                <tr><td colSpan={9} className="p-6 text-center text-sm text-muted-foreground">No payments yet</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </section>
     </div>
+  );
+}
+
+function LimitRow({ label, value }: { label: string; value: string }) {
+  return (
+    <li className="flex items-center justify-between gap-2">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium">{value}</span>
+    </li>
+  );
+}
+
+function MobileRow({ label, value }: { label: string; value: string }) {
+  return (
+    <li className="flex items-center justify-between gap-3">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium">{value}</span>
+    </li>
+  );
+}
+
+function CompareLimitRow({
+  label,
+  tierMap,
+  accessor,
+}: {
+  label: string;
+  tierMap: Map<string, Plan>;
+  accessor: (p: Plan) => string;
+}) {
+  return (
+    <tr className="border-b last:border-0">
+      <th className="sticky left-0 z-10 bg-card p-3 text-left font-medium">{label}</th>
+      {TIER_ORDER.map((t) => {
+        const p = tierMap.get(t);
+        return (
+          <td key={t} className="p-3 text-center text-xs">
+            {p ? accessor(p) : "—"}
+          </td>
+        );
+      })}
+    </tr>
   );
 }

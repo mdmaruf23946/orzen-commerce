@@ -1,52 +1,68 @@
-
 ## Goal
+Redesign the Store Admin **Billing & Subscription** page into a clean SaaS experience that cleanly separates the temporary Free Trial from the four real plans (Free, Basic, Business, Custom), adds a billing-cycle selector with owner-controlled discounts, and adds a downloadable payment history — without breaking existing checkout/payment logic.
 
-Rebuild the store admin's Subscription experience so every plan (Free Trial, Basic, Business, Custom) is shown as a detailed card with limits, features and a clear upgrade path, plus a side-by-side comparison table and a live trial countdown.
+## 1. Database (one migration)
 
-## Scope
+Add owner-configurable settings (no breaking changes):
 
-Frontend-only redesign of the existing billing page. No schema or business-logic changes — we reuse `myBillingStatus`, `listPublicPlans`, the existing `subscription_packages` columns (`product_limit`, `order_limit`, `storage_mb`, `staff_limit`, `is_trial`, `trial_days`, `features` JSON, `billing_cycle`, `price`) and `features.ts` flags. New-user trial auto-start already runs via the `start_trial_for_store` DB trigger and the status banner already shows expiry — we'll add a richer countdown on the page itself.
+- `subscription_packages.plan_tier` enum `'free' | 'basic' | 'business' | 'custom'` (nullable; used to identify the 4 canonical plans in the UI).
+- `subscription_packages.feature_summary` (text[]) — optional bullet list shown on the card.
+- New table `platform_billing_settings` (single row, id='global'):
+  - `discount_3m numeric default 5`
+  - `discount_6m numeric default 10`
+  - `discount_yearly numeric default 20`
+  - RLS: read = anon+authenticated, write = owner role only.
+- Ensure the trial trigger (`start_trial_for_store`) also assigns the **Free** plan tier after trial expiry. Add helper SQL function `expire_trials()` (called by existing refresh routine) that, when `trial_ends_at < now()` and status was `trialing`, moves the store to the Free plan and sets `subscription_status='active'`.
+- Seed the four canonical plans (Free, Basic, Business, Custom) if missing, using existing `lunex` row mapped to Business.
 
-One small data tweak: `listPublicPlans` currently filters out trial plans (`is_trial = false`). We'll include trial plans too so the Free Trial card can render from the same source of truth.
+## 2. Server functions (`src/lib/billing.functions.ts`)
 
-## Page layout (`src/routes/_authenticated/admin/billing.tsx`)
+- `listPublicPlans`: exclude trial plans (`is_trial=false`), return ordered by `plan_tier` (free→basic→business→custom). Include `feature_summary` and `plan_tier`.
+- `getBillingSettings` (public GET): returns the 3 discount percentages.
+- `submitManualPayment`: accept `billing_cycle` ('monthly' | '3m' | '6m' | 'yearly') and compute `amount` server-side using `price * cycle_months * (1 - discount)`.
+- Owner side (`src/lib/owner.functions.ts`): `updateBillingSettings({discount_3m, discount_6m, discount_yearly})` — owner-only.
 
-1. **Header / current status strip**
-   - Current plan name + price + billing cycle.
-   - Status pill (Trialing / Active / Expired / Suspended).
-   - Trial countdown block when `subscription_status === "trialing"`: large "X days Y hours remaining", progress bar (days_left / trial_days), short note "After the trial ends, your store moves to the Free plan automatically."
+## 3. Store Admin Billing page (`src/routes/_authenticated/admin/billing.tsx`)
 
-2. **Plan cards grid** (`grid-cols-1 sm:grid-cols-2 xl:grid-cols-4`)
-   - One card per plan returned from `listPublicPlans` (now includes the trial).
-   - Card shows:
-     - Plan name, short description, price (`৳X / cycle`, "Free" for trial).
-     - "Current Plan" badge when `store.package_id === plan.id`.
-     - "Most Popular" highlight ring on the Business plan (detected by name match, fallback to middle paid plan).
-     - Limits block: Products, Orders, Storage (MB → GB if ≥1024), Staff. "Unlimited" when value is 0/null.
-     - Feature list with check/cross icons for: AI Agent, Messenger AI, Courier, Facebook Pixel, Analytics, Inventory, Invoice, Coupons. Trial plan shows all-enabled with a "Full access during trial" note.
-     - Support type line derived from `plan.features.support` or a fixed map (Trial → Community, Basic → Email, Business → Priority, Custom → Dedicated).
-     - CTA: "Current Plan" (disabled) / "Upgrade" (paid) / "Trial Active" (disabled on trial card while trialing) / "Contact Sales" link for Custom plan (mailto or `/contact`).
+Rewrite the page with these sections (top to bottom):
 
-3. **Compare Plans section** (collapsible, default open on desktop, accordion on mobile)
-   - Responsive table with sticky first column listing every feature/limit row from the requirements.
-   - One column per plan, ✓ / ✕ / value cells.
-   - On mobile (<640px) the table becomes a stacked per-plan summary inside `<details>` blocks to avoid horizontal scroll while keeping it lightweight.
+1. **Trial Banner** — only when `subscription_status==='trialing'`. Compact amber/gradient banner with 🎉 title, "X Days Remaining", short copy, `Upgrade Now` button. Auto-hides after expiry.
+2. **Current Plan Card** — plan name, status badge, billing cycle, expiry/renewal date, Upgrade button. If trialing, shows "Free Plan · Trial Active · X days remaining".
+3. **Billing Cycle Selector** — segmented control: Monthly | 3 Months (-5%) | 6 Months (-10%) | Yearly (-20%). Labels read from `getBillingSettings`. Selection lives in component state; recomputes prices instantly.
+4. **Plan Cards Grid** (4 cards: Free, Basic, Business⭐, Custom):
+   - Free: ৳0, "Current Plan" if applicable, limited features.
+   - Basic / Business: monthly price → discounted total for chosen cycle, per-month equivalent under it, savings badge.
+   - Business gets "⭐ Most Popular".
+   - Custom: no price, "Contact Sales" button (mailto).
+   - Each card lists: limits (products/orders/storage/staff) + feature check/cross list using `FEATURE_KEYS`.
+   - Upgrade button passes `packageId` + `cycle` to checkout.
+5. **Compare Plans Table** — sticky header, 4 plan columns, rows from `PLAN_ROWS` (limits + every feature). Mobile: accordion per plan.
+6. **Payment History** — invoice no, package, billing period (cycle_start → cycle_end), method, txn id, amount, paid date, expiry, status, "Download" link → opens existing `/admin/invoice/$orderId` style printable view (new lightweight `subscription-invoice` route or reuse). Lazy-load this section via `React.lazy` so it doesn't block first paint.
 
-4. **Payment history** — keep the existing table unchanged below the comparison section.
+Performance: single `useQuery` for `myBillingStatus`, one for `listPublicPlans`, one for `getBillingSettings`. No animations beyond CSS transitions. All sections render from already-fetched data — no extra requests when switching billing cycle.
 
-## Small supporting changes
+## 4. Checkout route (`billing.checkout.$packageId.tsx`)
 
-- `src/lib/billing.functions.ts`: drop `.eq("is_trial", false)` in `listPublicPlans` and order by `is_trial DESC` then `sort_order` so the trial card appears first. No new fields needed.
-- `src/lib/features.ts`: add a small `PLAN_FEATURE_ROWS` constant (label + key + render type: bool | limit | text) used by both the card feature list and the comparison table to avoid duplication.
-- No changes to `SubscriptionStatusBanner`, routing, or DB.
+- Read `cycle` from search params (default `monthly`).
+- Show selected plan + cycle + computed total (with discount line).
+- Payment method picker (existing bkash/nagad/rocket flow).
+- Submit calls updated `submitManualPayment({packageId, cycle, method, txn_id, sender_number})`.
 
-## Out of scope
+## 5. Owner Panel — Discount settings
 
-- Owner-side package editing UI.
-- Implementing a separate "Free (post-trial)" package row — the DB already flips `subscription_status` to `expired` after the trial; surfacing a dedicated Free tier in marketing copy only would require a new package row, which the user can add from the Owner → Packages page. We'll display the Free Trial card and clearly state the post-trial behavior; if the user wants a literal "Free plan" package shown, that's a follow-up (one DB seed).
+Extend `src/routes/_authenticated/owner/packages.tsx` (or a small new card) with a "Billing Discounts" form: three percentage inputs (3m, 6m, yearly) wired to `updateBillingSettings`.
+
+## 6. Feature gating
+
+No changes to `src/lib/features.ts` runtime behavior. After trial expiry, the store's package becomes Free → existing `hasFeature()` already returns false for unselected features. Trial banner disappears automatically because `subscription_status` flips off `trialing`.
+
+## What is NOT changing
+- `src/routes/_authenticated/admin/subscription.tsx` legacy view stays untouched (still linked from older nav, harmless).
+- AI, products, orders, storefront, RLS for unrelated tables.
+- The existing `payments` and `subscription_notifications` schemas (only reads/writes adjust).
 
 ## Technical notes
-
-- All data already comes from two existing server functions — no new round trips.
-- Page stays SSR-friendly under `_authenticated`; uses `useQuery` with the existing `staleTime`.
-- Pure Tailwind + existing shadcn `Button`, `Badge`, `Progress`, `Card`; no new dependencies, keeping bundle size flat.
+- Trial detection: `store.subscription_status === 'trialing'` AND `trial_ends_at > now()`.
+- Discount math: `total = monthlyPrice * months * (1 - discountPct/100)`; show both total and effective per-month.
+- Canonical plans resolved by `plan_tier`; if a tier is missing the card renders a "Coming soon" placeholder so layout stays stable.
+- Invoice download: client-side print of a minimal HTML invoice route (`/admin/billing/invoice/$paymentId`) — no PDF lib added (keeps bundle small).

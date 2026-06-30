@@ -709,6 +709,30 @@ export type Database = {
           },
         ]
       }
+      platform_billing_settings: {
+        Row: {
+          discount_3m: number
+          discount_6m: number
+          discount_yearly: number
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          discount_3m?: number
+          discount_6m?: number
+          discount_yearly?: number
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          discount_3m?: number
+          discount_6m?: number
+          discount_yearly?: number
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_notices: {
         Row: {
           body: string | null
@@ -1193,12 +1217,14 @@ export type Database = {
           customer_limit: number | null
           description: string | null
           duration_days: number
+          feature_summary: string[] | null
           features: Json
           id: string
           is_active: boolean
           is_trial: boolean
           name: string
           order_limit: number | null
+          plan_tier: string | null
           price: number
           product_limit: number
           sort_order: number
@@ -1212,12 +1238,14 @@ export type Database = {
           customer_limit?: number | null
           description?: string | null
           duration_days?: number
+          feature_summary?: string[] | null
           features?: Json
           id?: string
           is_active?: boolean
           is_trial?: boolean
           name: string
           order_limit?: number | null
+          plan_tier?: string | null
           price?: number
           product_limit?: number
           sort_order?: number
@@ -1231,12 +1259,14 @@ export type Database = {
           customer_limit?: number | null
           description?: string | null
           duration_days?: number
+          feature_summary?: string[] | null
           features?: Json
           id?: string
           is_active?: boolean
           is_trial?: boolean
           name?: string
           order_limit?: number | null
+          plan_tier?: string | null
           price?: number
           product_limit?: number
           sort_order?: number
@@ -1272,6 +1302,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      expire_trials: { Args: never; Returns: undefined }
       generate_invoice_no: { Args: { _store_id: string }; Returns: string }
       has_role: {
         Args: {
