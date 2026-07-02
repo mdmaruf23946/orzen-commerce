@@ -1,68 +1,88 @@
 ## Goal
-Redesign the Store Admin **Billing & Subscription** page into a clean SaaS experience that cleanly separates the temporary Free Trial from the four real plans (Free, Basic, Business, Custom), adds a billing-cycle selector with owner-controlled discounts, and adds a downloadable payment history — without breaking existing checkout/payment logic.
+Make the Subscription & Billing page display the four canonical plans (Free / Basic / Business / Custom) with correct data, fix the mobile layout, and enforce feature access across the Store Admin panel so locked modules show an "Upgrade Required" screen linking to `/admin/billing`.
 
-## 1. Database (one migration)
+## 1. Database — fix seeded plans (one migration)
 
-Add owner-configurable settings (no breaking changes):
+The `subscription_packages` row currently tagged as Business is literally named `lunex` (that's the store-derived name leaking into the UI) and Basic is missing courier + pixel. One migration to normalize:
 
-- `subscription_packages.plan_tier` enum `'free' | 'basic' | 'business' | 'custom'` (nullable; used to identify the 4 canonical plans in the UI).
-- `subscription_packages.feature_summary` (text[]) — optional bullet list shown on the card.
-- New table `platform_billing_settings` (single row, id='global'):
-  - `discount_3m numeric default 5`
-  - `discount_6m numeric default 10`
-  - `discount_yearly numeric default 20`
-  - RLS: read = anon+authenticated, write = owner role only.
-- Ensure the trial trigger (`start_trial_for_store`) also assigns the **Free** plan tier after trial expiry. Add helper SQL function `expire_trials()` (called by existing refresh routine) that, when `trial_ends_at < now()` and status was `trialing`, moves the store to the Free plan and sets `subscription_status='active'`.
-- Seed the four canonical plans (Free, Basic, Business, Custom) if missing, using existing `lunex` row mapped to Business.
+- `UPDATE subscription_packages SET name='Business' WHERE plan_tier='business'` (renames the "lunex" row).
+- `UPDATE` Basic → add `courier: true, pixel: true` to `features` (keep existing keys).
+- `UPDATE` Business → ensure full feature set: `ai_agent, ai_messenger, courier, pixel, analytics, inventory, invoice, coupons, import_export, bulk_actions, staff, customer_notes, returns`.
+- `UPDATE` Free → keep minimal (`invoice` only; explicit `false` isn't needed, missing key === off).
+- `UPDATE` Custom → all feature keys `true`, limits stay `0` (rendered as "Unlimited" by `formatLimit`).
+- Set `feature_summary` (text[]) for each so cards can show a short bullet list above the checklist.
 
-## 2. Server functions (`src/lib/billing.functions.ts`)
+No schema changes; data-only via the migration tool.
 
-- `listPublicPlans`: exclude trial plans (`is_trial=false`), return ordered by `plan_tier` (free→basic→business→custom). Include `feature_summary` and `plan_tier`.
-- `getBillingSettings` (public GET): returns the 3 discount percentages.
-- `submitManualPayment`: accept `billing_cycle` ('monthly' | '3m' | '6m' | 'yearly') and compute `amount` server-side using `price * cycle_months * (1 - discount)`.
-- Owner side (`src/lib/owner.functions.ts`): `updateBillingSettings({discount_3m, discount_6m, discount_yearly})` — owner-only.
+## 2. Billing page UI (`src/routes/_authenticated/admin/billing.tsx`)
 
-## 3. Store Admin Billing page (`src/routes/_authenticated/admin/billing.tsx`)
+Change display + mobile layout only (no logic changes to queries):
 
-Rewrite the page with these sections (top to bottom):
+- **Force canonical name**: render `TIER_NAME[tier]` + " Plan" instead of `p.name` on plan cards, comparison table headers, and mobile accordion. `p.name` is only used to resolve the tier fallback.
+- **Current Plan card**: show `TIER_NAME[currentTier] + " Plan"` (never the raw DB name), so "lunex" can never appear even if a legacy row survives.
+- **Mobile-first grid**:
+  - Cards: `grid-cols-1 sm:grid-cols-2 xl:grid-cols-4`, `gap-3 sm:gap-4`.
+  - Cycle selector: `grid-cols-2 gap-2` on mobile (already), tighten padding to `p-2.5` so 4 labels fit ≤360px.
+  - Every card row uses `grid-cols-[minmax(0,1fr)_auto]` with `min-w-0` + `truncate` on the label and `shrink-0` on the value, so long numbers never push the Upgrade button outside.
+  - Card container: `p-4`, `rounded-xl`, `overflow-hidden`; Upgrade `<Button className="w-full">` stays inside.
+  - Comparison table: keep desktop table, but drop `overflow-x-auto` on mobile (mobile uses the accordion already; ensures no horizontal scroll on the page itself).
+  - Wrap the whole page in `max-w-full overflow-x-hidden` guard to catch any stray overflow from child sections.
+- **Show real limits** (already wired via `formatLimit`) — confirm with seeded values after migration:
+  - Free: 20 products / 50 orders / 100 MB / 0 staff
+  - Basic: 200 / 500 / 1 GB / 2
+  - Business: e.g. 1000 / 5000 / 5 GB / 5 (updated in migration)
+  - Custom: Unlimited across the board.
+- **Feature summary bullets** (new small block above the checklist) — read `p.feature_summary` if present.
 
-1. **Trial Banner** — only when `subscription_status==='trialing'`. Compact amber/gradient banner with 🎉 title, "X Days Remaining", short copy, `Upgrade Now` button. Auto-hides after expiry.
-2. **Current Plan Card** — plan name, status badge, billing cycle, expiry/renewal date, Upgrade button. If trialing, shows "Free Plan · Trial Active · X days remaining".
-3. **Billing Cycle Selector** — segmented control: Monthly | 3 Months (-5%) | 6 Months (-10%) | Yearly (-20%). Labels read from `getBillingSettings`. Selection lives in component state; recomputes prices instantly.
-4. **Plan Cards Grid** (4 cards: Free, Basic, Business⭐, Custom):
-   - Free: ৳0, "Current Plan" if applicable, limited features.
-   - Basic / Business: monthly price → discounted total for chosen cycle, per-month equivalent under it, savings badge.
-   - Business gets "⭐ Most Popular".
-   - Custom: no price, "Contact Sales" button (mailto).
-   - Each card lists: limits (products/orders/storage/staff) + feature check/cross list using `FEATURE_KEYS`.
-   - Upgrade button passes `packageId` + `cycle` to checkout.
-5. **Compare Plans Table** — sticky header, 4 plan columns, rows from `PLAN_ROWS` (limits + every feature). Mobile: accordion per plan.
-6. **Payment History** — invoice no, package, billing period (cycle_start → cycle_end), method, txn id, amount, paid date, expiry, status, "Download" link → opens existing `/admin/invoice/$orderId` style printable view (new lightweight `subscription-invoice` route or reuse). Lazy-load this section via `React.lazy` so it doesn't block first paint.
+## 3. Backend feature gating
 
-Performance: single `useQuery` for `myBillingStatus`, one for `listPublicPlans`, one for `getBillingSettings`. No animations beyond CSS transitions. All sections render from already-fetched data — no extra requests when switching billing cycle.
+Add real gating so a store on Free can't reach Business-only pages.
 
-## 4. Checkout route (`billing.checkout.$packageId.tsx`)
+### 3a. Reusable component `src/components/admin/FeatureGate.tsx`
+- Props: `feature: FeatureKey`, `children`.
+- Reads `myBillingStatus` via TanStack Query (cached; same key as the billing page — no extra request).
+- If `hasFeature(store, feature)` → render children.
+- Else → render a compact "Upgrade Required" card: lock icon, feature label, "Available on Business plan" (looked up from `PLAN_ROWS`), and a `Link to="/admin/billing"` "View Plans" button. Also disables the sidebar link visual state via a `data-locked` attribute (optional polish).
 
-- Read `cycle` from search params (default `monthly`).
-- Show selected plan + cycle + computed total (with discount line).
-- Payment method picker (existing bkash/nagad/rocket flow).
-- Submit calls updated `submitManualPayment({packageId, cycle, method, txn_id, sender_number})`.
+### 3b. Server-side guards
+Extend the existing server functions that write feature-gated data to reject when the store lacks the feature. Central helper `assertFeature(context, key)` in `src/lib/admin.functions.ts`:
+- Fetches `stores` row + package for `context.userId`, throws `Error("Feature not available on your plan")` when `hasFeature` is false.
+- Wire into the mutating fns for: coupons, expenses/finance, returns, inventory stock movements, import/export, bulk product ops, customer notes, staff invites, courier/pixel settings save, AI agent config, messenger config.
+  Read-only lookups stay open (UI already hides them).
 
-## 5. Owner Panel — Discount settings
+### 3c. Route-level wrap
+Wrap the page component in each feature-owning route with `<FeatureGate feature="…">`:
+- `admin/ai-agent.tsx` → `ai_agent`
+- `admin/messenger.tsx` → `ai_messenger`
+- `admin/couriers.tsx` → `courier`
+- `admin/analytics.tsx` → `analytics`
+- `admin/inventory.tsx` → `inventory`
+- `admin/invoice.$orderId.tsx` → `invoice`
+- `admin/coupons.tsx` → `coupons`
+- `admin/import-export.tsx` → `import_export`
+- `admin/returns.tsx` → `returns`
+- `admin/customers.tsx` (notes tab only) → `customer_notes`
+- `admin/marketing.tsx` (pixel section) → `pixel`
+- Bulk-action toolbar in `admin/products.tsx` → hide when `!hasFeature('bulk_actions')`.
 
-Extend `src/routes/_authenticated/owner/packages.tsx` (or a small new card) with a "Billing Discounts" form: three percentage inputs (3m, 6m, yearly) wired to `updateBillingSettings`.
+Trial (`is_trial`) still unlocks everything via existing `hasFeature`.
 
-## 6. Feature gating
+### 3d. Sidebar lock icons
+In `src/routes/_authenticated/admin/route.tsx`, add a small 🔒 icon next to nav items whose feature is off. Click still navigates — the FeatureGate on the target page shows the upgrade CTA. No behavioral redirects (keeps things fast, avoids loops during trial→free transition).
 
-No changes to `src/lib/features.ts` runtime behavior. After trial expiry, the store's package becomes Free → existing `hasFeature()` already returns false for unselected features. Trial banner disappears automatically because `subscription_status` flips off `trialing`.
+## 4. Performance
+
+- No new queries: `FeatureGate` shares the `["admin","billing"]` cache with the billing page (5-minute staleTime).
+- No animations added; existing CSS transitions untouched.
+- Card grid uses static Tailwind utilities — no runtime style computation.
 
 ## What is NOT changing
-- `src/routes/_authenticated/admin/subscription.tsx` legacy view stays untouched (still linked from older nav, harmless).
-- AI, products, orders, storefront, RLS for unrelated tables.
-- The existing `payments` and `subscription_notifications` schemas (only reads/writes adjust).
+- Billing server functions signatures, checkout flow, payment history, discount math.
+- Router, auth gate, or storefront.
+- Feature key list in `src/lib/features.ts` (only additive: `assertFeature` helper).
 
 ## Technical notes
-- Trial detection: `store.subscription_status === 'trialing'` AND `trial_ends_at > now()`.
-- Discount math: `total = monthlyPrice * months * (1 - discountPct/100)`; show both total and effective per-month.
-- Canonical plans resolved by `plan_tier`; if a tier is missing the card renders a "Coming soon" placeholder so layout stays stable.
-- Invoice download: client-side print of a minimal HTML invoice route (`/admin/billing/invoice/$paymentId`) — no PDF lib added (keeps bundle small).
+- Migration is data-only; no `CREATE TABLE`, no new GRANTs needed.
+- `TIER_NAME` map already exists in `billing.tsx`; just render it wherever `pkg?.name`/`p.name` is currently shown as the plan title.
+- `assertFeature` throws a friendly `Error` — client mutations already show `error.message` via toast, so no extra UI wiring needed.
+- Mobile test target: 360×640 (smallest common Android) and 320×568 (iPhone SE 1). Grid + `min-w-0` pattern is the standard fix from the responsive-layout rules.
