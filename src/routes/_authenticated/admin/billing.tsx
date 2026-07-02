@@ -288,6 +288,18 @@ function BillingPage() {
                   <LimitRow label="Staff" value={formatLimit(p.staff_limit, undefined)} />
                 </ul>
 
+                {/* Summary bullets */}
+                {p.feature_summary && p.feature_summary.length > 0 && (
+                  <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+                    {p.feature_summary.map((s, i) => (
+                      <li key={i} className="flex items-start gap-1.5">
+                        <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-primary/60" />
+                        <span className="min-w-0">{s}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
                 {/* Features */}
                 <ul className="mt-3 space-y-1 border-t pt-3 text-xs">
                   {FEATURE_KEYS.map((k) => {
