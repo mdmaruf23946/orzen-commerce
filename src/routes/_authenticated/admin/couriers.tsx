@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/_authenticated/admin/couriers")({
-  component: CouriersPage,
+  component: () => <FeatureGate feature="courier"><CouriersPage /></FeatureGate>,
 });
 
 const providers = [
