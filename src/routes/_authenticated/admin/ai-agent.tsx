@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
@@ -12,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/_authenticated/admin/ai-agent")({
-  component: AdminAgent,
+  component: () => <FeatureGate feature="ai_agent"><AdminAgent /></FeatureGate>,
 });
 
 type Faq = { q: string; a: string };

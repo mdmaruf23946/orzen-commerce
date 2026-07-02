@@ -36,10 +36,10 @@ type Plan = {
 
 const TIER_ORDER: Array<"free" | "basic" | "business" | "custom"> = ["free", "basic", "business", "custom"];
 const TIER_NAME: Record<string, string> = {
-  free: "Free",
-  basic: "Basic",
-  business: "Business",
-  custom: "Custom",
+  free: "Free Plan",
+  basic: "Basic Plan",
+  business: "Business Plan",
+  custom: "Custom Plan",
 };
 
 function tierOf(p: Plan): "free" | "basic" | "business" | "custom" | null {
@@ -94,7 +94,8 @@ function BillingPage() {
   ];
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-6 pb-10 max-w-full overflow-x-hidden">
+
       {/* 1. Free Trial Banner — only when trialing */}
       {isTrialing && (
         <div className="rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4 dark:border-amber-900/50 dark:from-amber-950/30 dark:to-orange-950/30">
@@ -136,7 +137,7 @@ function BillingPage() {
             <div className="text-xs uppercase tracking-wide text-muted-foreground">Current plan</div>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <span className="truncate text-xl font-bold">
-                {isTrialing ? "Free Plan" : (pkg?.name ?? "Free Plan")}
+                {isTrialing ? "Free Plan" : (currentTier ? TIER_NAME[currentTier] : "Free Plan")}
               </span>
               <Badge
                 variant={subStatus === "active" ? "default" : isTrialing ? "secondary" : "destructive"}
@@ -210,7 +211,7 @@ function BillingPage() {
       {/* 4-6. Plan Cards */}
       <section>
         <h2 className="mb-3 text-lg font-semibold">Available plans</h2>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
           {TIER_ORDER.map((tier) => {
             const p = tierMap.get(tier);
             const isCurrent = currentTier === tier && !isTrialing;
@@ -247,7 +248,7 @@ function BillingPage() {
                   </div>
                 )}
 
-                <div className="mt-1 text-base font-semibold">{p.name}</div>
+                <div className="mt-1 truncate text-base font-semibold">{TIER_NAME[tier]}</div>
                 {p.description && <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{p.description}</p>}
 
                 <div className="mt-3">
@@ -286,6 +287,18 @@ function BillingPage() {
                   <LimitRow label="Storage" value={formatLimit(p.storage_mb, "MB")} />
                   <LimitRow label="Staff" value={formatLimit(p.staff_limit, undefined)} />
                 </ul>
+
+                {/* Summary bullets */}
+                {p.feature_summary && p.feature_summary.length > 0 && (
+                  <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+                    {p.feature_summary.map((s, i) => (
+                      <li key={i} className="flex items-start gap-1.5">
+                        <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-primary/60" />
+                        <span className="min-w-0">{s}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
 
                 {/* Features */}
                 <ul className="mt-3 space-y-1 border-t pt-3 text-xs">
@@ -376,6 +389,7 @@ function BillingPage() {
             </tbody>
           </table>
         </div>
+
 
         {/* Mobile: per-plan accordion */}
         <div className="space-y-2 sm:hidden">

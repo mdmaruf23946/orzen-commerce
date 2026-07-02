@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -7,7 +8,7 @@ import { bulkImportProducts, exportProductsCsv } from "@/lib/business.functions"
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/admin/import-export")({
-  component: ImportExportPage,
+  component: () => <FeatureGate feature="import_export"><ImportExportPage /></FeatureGate>,
 });
 
 // Minimal CSV parser supporting quoted fields and escaped quotes.

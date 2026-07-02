@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -11,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/_authenticated/admin/inventory")({
-  component: InventoryPage,
+  component: () => <FeatureGate feature="inventory"><InventoryPage /></FeatureGate>,
 });
 
 function InventoryPage() {

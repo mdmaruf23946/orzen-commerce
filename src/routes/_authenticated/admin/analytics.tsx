@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { businessAnalytics } from "@/lib/business.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/analytics")({
-  component: AnalyticsPage,
+  component: () => <FeatureGate feature="analytics"><AnalyticsPage /></FeatureGate>,
 });
 
 function Sparkline({ data }: { data: number[] }) {

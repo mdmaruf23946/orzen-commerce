@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -15,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 const STATUSES = ["requested", "approved", "rejected", "refunded", "completed"] as const;
 
 export const Route = createFileRoute("/_authenticated/admin/returns")({
-  component: ReturnsPage,
+  component: () => <FeatureGate feature="returns"><ReturnsPage /></FeatureGate>,
 });
 
 function ReturnsPage() {
