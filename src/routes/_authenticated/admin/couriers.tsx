@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { updateCouriers } from "@/lib/admin.functions";
 import { SettingsPage } from "@/components/admin/SettingsPage";
 import { Input } from "@/components/ui/input";
