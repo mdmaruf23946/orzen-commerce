@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/coupons")({
-  component: CouponsPage,
+  component: () => <FeatureGate feature="coupons"><CouponsPage /></FeatureGate>,
 });
 
 function CouponsPage() {
