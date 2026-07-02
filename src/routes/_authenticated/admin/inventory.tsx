@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/_authenticated/admin/inventory")({
-  component: InventoryPage,
+  component: () => <FeatureGate feature="inventory"><InventoryPage /></FeatureGate>,
 });
 
 function InventoryPage() {
