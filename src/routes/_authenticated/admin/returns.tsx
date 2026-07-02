@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 const STATUSES = ["requested", "approved", "rejected", "refunded", "completed"] as const;
 
 export const Route = createFileRoute("/_authenticated/admin/returns")({
-  component: ReturnsPage,
+  component: () => <FeatureGate feature="returns"><ReturnsPage /></FeatureGate>,
 });
 
 function ReturnsPage() {
