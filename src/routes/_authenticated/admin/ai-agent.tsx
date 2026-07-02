@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/_authenticated/admin/ai-agent")({
-  component: AdminAgent,
+  component: () => <FeatureGate feature="ai_agent"><AdminAgent /></FeatureGate>,
 });
 
 type Faq = { q: string; a: string };
