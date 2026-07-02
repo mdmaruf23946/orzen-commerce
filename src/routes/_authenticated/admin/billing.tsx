@@ -137,7 +137,7 @@ function BillingPage() {
             <div className="text-xs uppercase tracking-wide text-muted-foreground">Current plan</div>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <span className="truncate text-xl font-bold">
-                {isTrialing ? "Free Plan" : (pkg?.name ?? "Free Plan")}
+                {isTrialing ? "Free Plan" : (currentTier ? TIER_NAME[currentTier] : "Free Plan")}
               </span>
               <Badge
                 variant={subStatus === "active" ? "default" : isTrialing ? "secondary" : "destructive"}
