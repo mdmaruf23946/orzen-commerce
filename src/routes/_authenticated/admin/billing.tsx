@@ -364,15 +364,10 @@ function BillingPage() {
               <CompareLimitRow label="Orders / month" tierMap={tierMap} accessor={(p) => formatLimit(p.order_limit)} />
               <CompareLimitRow label="Storage" tierMap={tierMap} accessor={(p) => formatLimit(p.storage_mb, "MB")} />
               <CompareLimitRow label="Staff" tierMap={tierMap} accessor={(p) => formatLimit(p.staff_limit)} />
-        {/* Desktop table */}
-        <div className="hidden overflow-x-auto rounded-xl border bg-card sm:block">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-muted/50 text-left text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="sticky left-0 z-10 bg-muted/50 p-3">Feature</th>
-                {TIER_ORDER.map((t) => (
-                  <th key={t} className="p-3 text-center">
-                    <div className="font-semibold text-foreground">{TIER_NAME[t]}</div>
+              {FEATURE_KEYS.map((k) => (
+                <tr key={k} className="border-b last:border-0">
+                  <th className="sticky left-0 z-10 bg-card p-3 text-left font-medium">{FEATURE_LABELS[k]}</th>
+                  {TIER_ORDER.map((t) => {
                     const p = tierMap.get(t);
                     const on = t === "custom" ? true : !!p?.features?.[k];
                     return (
@@ -394,6 +389,7 @@ function BillingPage() {
             </tbody>
           </table>
         </div>
+
 
         {/* Mobile: per-plan accordion */}
         <div className="space-y-2 sm:hidden">
