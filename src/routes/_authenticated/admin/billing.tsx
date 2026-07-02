@@ -36,10 +36,10 @@ type Plan = {
 
 const TIER_ORDER: Array<"free" | "basic" | "business" | "custom"> = ["free", "basic", "business", "custom"];
 const TIER_NAME: Record<string, string> = {
-  free: "Free",
-  basic: "Basic",
-  business: "Business",
-  custom: "Custom",
+  free: "Free Plan",
+  basic: "Basic Plan",
+  business: "Business Plan",
+  custom: "Custom Plan",
 };
 
 function tierOf(p: Plan): "free" | "basic" | "business" | "custom" | null {
