@@ -94,7 +94,8 @@ function BillingPage() {
   ];
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-6 pb-10 max-w-full overflow-x-hidden">
+
       {/* 1. Free Trial Banner — only when trialing */}
       {isTrialing && (
         <div className="rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4 dark:border-amber-900/50 dark:from-amber-950/30 dark:to-orange-950/30">
