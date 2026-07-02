@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/_authenticated/admin/messenger")({
-  component: AdminMessenger,
+  component: () => <FeatureGate feature="ai_messenger"><AdminMessenger /></FeatureGate>,
 });
 
 function AdminMessenger() {
