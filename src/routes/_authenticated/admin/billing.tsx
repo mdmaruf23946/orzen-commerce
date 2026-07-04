@@ -94,22 +94,22 @@ function BillingPage() {
   ];
 
   return (
-    <div className="space-y-6 pb-10 max-w-full overflow-x-hidden">
+    <div className="space-y-4 pb-10 max-w-full overflow-x-hidden sm:space-y-6">
 
       {/* 1. Free Trial Banner — only when trialing */}
       {isTrialing && (
-        <div className="rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4 dark:border-amber-900/50 dark:from-amber-950/30 dark:to-orange-950/30">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+        <div className="rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-3 sm:rounded-xl sm:p-4 dark:border-amber-900/50 dark:from-amber-950/30 dark:to-orange-950/30">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:gap-3">
             <div className="min-w-0">
-              <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
-                <Sparkle className="h-4 w-4 shrink-0" />
-                <span className="truncate text-sm font-semibold">🎉 Your Free Trial is Active</span>
+              <div className="flex items-center gap-1.5 text-amber-900 dark:text-amber-200">
+                <Sparkle className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate text-xs font-semibold sm:text-sm">🎉 Free Trial Active</span>
               </div>
-              <div className="mt-0.5 text-lg font-bold text-amber-950 dark:text-amber-100">
+              <div className="mt-0.5 text-base font-bold text-amber-950 sm:text-lg dark:text-amber-100">
                 {daysLeft} Day{daysLeft === 1 ? "" : "s"} Remaining
               </div>
-              <p className="mt-0.5 text-xs text-amber-800/80 dark:text-amber-200/80">
-                Enjoy all Premium Features during your trial.
+              <p className="mt-0.5 text-[11px] text-amber-800/80 sm:text-xs dark:text-amber-200/80">
+                All Premium Features unlocked.
               </p>
             </div>
             {tierMap.get("business") && (
@@ -118,7 +118,7 @@ function BillingPage() {
                 params={{ packageId: tierMap.get("business")!.id }}
                 search={{ cycle } as any}
               >
-                <Button size="sm" className="bg-amber-600 hover:bg-amber-700">Upgrade Now</Button>
+                <Button size="sm" className="h-8 bg-amber-600 px-2.5 text-xs hover:bg-amber-700 sm:h-9 sm:px-3 sm:text-sm">Upgrade</Button>
               </Link>
             )}
           </div>
@@ -126,29 +126,29 @@ function BillingPage() {
       )}
 
       <div>
-        <h1 className="text-2xl font-semibold">Billing & Subscription</h1>
-        <p className="text-sm text-muted-foreground">Pick the plan that fits your business — change anytime.</p>
+        <h1 className="text-lg font-semibold sm:text-2xl">Billing & Subscription</h1>
+        <p className="text-xs text-muted-foreground sm:text-sm">Pick the plan that fits your business — change anytime.</p>
       </div>
 
       {/* 8. Current Plan Section */}
-      <div className="rounded-xl border bg-card p-4 sm:p-5">
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+      <div className="rounded-lg border bg-card p-3 sm:rounded-xl sm:p-5">
+        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-3">
           <div className="min-w-0">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">Current plan</div>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <span className="truncate text-xl font-bold">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground sm:text-xs">Current plan</div>
+            <div className="mt-0.5 flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className="truncate text-base font-bold sm:text-xl">
                 {isTrialing ? "Free Plan" : (currentTier ? TIER_NAME[currentTier] : "Free Plan")}
               </span>
               <Badge
                 variant={subStatus === "active" ? "default" : isTrialing ? "secondary" : "destructive"}
-                className="capitalize"
+                className="h-5 px-1.5 text-[10px] capitalize sm:h-6 sm:text-xs"
               >
                 {isTrialing ? "Trial Active" : subStatus}
               </Badge>
             </div>
-            <div className="mt-1 text-sm text-muted-foreground">
+            <div className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
               {isTrialing
-                ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} remaining · all premium features unlocked`
+                ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} remaining · all premium unlocked`
                 : pkg
                   ? `৳${Number(pkg.price).toFixed(0)} · ${pkg.billing_cycle ?? "monthly"}`
                   : "Limited features. Upgrade for more."}
@@ -157,20 +157,20 @@ function BillingPage() {
           <div className="text-left sm:text-right">
             {isTrialing && store?.trial_ends_at ? (
               <>
-                <div className="text-xs uppercase text-muted-foreground">Trial ends</div>
-                <div className="text-sm font-medium">{new Date(store.trial_ends_at).toLocaleDateString()}</div>
+                <div className="text-[10px] uppercase text-muted-foreground sm:text-xs">Trial ends</div>
+                <div className="text-xs font-medium sm:text-sm">{new Date(store.trial_ends_at).toLocaleDateString()}</div>
               </>
             ) : store?.expires_at ? (
               <>
-                <div className="text-xs uppercase text-muted-foreground">Renews / expires</div>
-                <div className="text-sm font-medium">{new Date(store.expires_at).toLocaleDateString()}</div>
+                <div className="text-[10px] uppercase text-muted-foreground sm:text-xs">Renews / expires</div>
+                <div className="text-xs font-medium sm:text-sm">{new Date(store.expires_at).toLocaleDateString()}</div>
               </>
             ) : null}
           </div>
         </div>
 
         {(subStatus === "expired" || subStatus === "cancelled") && (
-          <div className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-900 dark:bg-red-950/30 dark:text-red-200">
+          <div className="mt-2 rounded-md bg-red-50 p-2 text-xs text-red-900 sm:mt-3 sm:rounded-lg sm:p-3 sm:text-sm dark:bg-red-950/30 dark:text-red-200">
             Your subscription has expired. Upgrade to restore full access.
           </div>
         )}
@@ -179,7 +179,7 @@ function BillingPage() {
       {/* 3. Billing Cycle Selector */}
       <section>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Choose your billing cycle</h2>
+          <h2 className="text-sm font-semibold sm:text-lg">Choose your billing cycle</h2>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {cycleOptions.map((c) => {
@@ -189,16 +189,16 @@ function BillingPage() {
                 key={c.key}
                 type="button"
                 onClick={() => setCycle(c.key)}
-                className={`relative rounded-lg border p-3 text-left transition ${
+                className={`relative rounded-lg border p-2 text-left transition sm:p-3 ${
                   active ? "border-primary bg-primary/5 ring-2 ring-primary/30" : "hover:border-foreground/30"
                 }`}
               >
-                <div className="text-sm font-semibold">{c.label}</div>
-                <div className="mt-0.5 text-[11px] text-muted-foreground">
+                <div className="text-xs font-semibold sm:text-sm">{c.label}</div>
+                <div className="mt-0.5 text-[10px] text-muted-foreground sm:text-[11px]">
                   {c.discount > 0 ? `Save ${c.discount}%` : "No discount"}
                 </div>
                 {c.discount > 0 && (
-                  <span className="absolute -top-2 right-2 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                  <span className="absolute -top-2 right-2 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-bold text-white sm:text-[10px]">
                     -{c.discount}%
                   </span>
                 )}
@@ -208,9 +208,10 @@ function BillingPage() {
         </div>
       </section>
 
+
       {/* 4-6. Plan Cards */}
       <section>
-        <h2 className="mb-3 text-lg font-semibold">Available plans</h2>
+        <h2 className="mb-2 text-sm font-semibold sm:mb-3 sm:text-lg">Available plans</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
           {TIER_ORDER.map((tier) => {
             const p = tierMap.get(tier);
@@ -253,15 +254,15 @@ function BillingPage() {
 
                 <div className="mt-3">
                   {isCustom ? (
-                    <div className="text-2xl font-extrabold">Custom</div>
+                    <div className="text-xl font-extrabold sm:text-2xl">Custom</div>
                   ) : isFree ? (
-                    <div className="text-2xl font-extrabold">
-                      ৳0<span className="text-sm font-normal text-muted-foreground"> / forever</span>
+                    <div className="text-xl font-extrabold sm:text-2xl">
+                      ৳0<span className="text-xs font-normal text-muted-foreground sm:text-sm"> / forever</span>
                     </div>
                   ) : (
                     <>
                       <div className="flex items-baseline gap-2">
-                        <div className="text-2xl font-extrabold">৳{calc!.total.toLocaleString()}</div>
+                        <div className="text-xl font-extrabold sm:text-2xl">৳{calc!.total.toLocaleString()}</div>
                         {calc!.discountPct > 0 && (
                           <div className="text-xs text-muted-foreground line-through">
                             ৳{(Number(p.price) * calc!.months).toLocaleString()}
@@ -344,7 +345,7 @@ function BillingPage() {
 
       {/* 7. Compare Plans */}
       <section>
-        <h2 className="mb-3 text-lg font-semibold">Compare plans</h2>
+        <h2 className="mb-2 text-sm font-semibold sm:mb-3 sm:text-lg">Compare plans</h2>
 
         {/* Desktop table */}
         <div className="hidden overflow-x-auto rounded-xl border bg-card sm:block">
@@ -427,7 +428,7 @@ function BillingPage() {
 
       {/* 9. Payment history */}
       <section>
-        <h2 className="mb-3 text-lg font-semibold">Payment history</h2>
+        <h2 className="mb-2 text-sm font-semibold sm:mb-3 sm:text-lg">Payment history</h2>
         <div className="overflow-x-auto rounded-xl border bg-card">
           <table className="w-full text-sm">
             <thead className="border-b bg-muted/50 text-left text-xs uppercase text-muted-foreground">
