@@ -211,7 +211,7 @@ function BillingPage() {
 
       {/* 4-6. Plan Cards */}
       <section>
-        <h2 className="mb-3 text-lg font-semibold">Available plans</h2>
+        <h2 className="mb-2 text-sm font-semibold sm:mb-3 sm:text-lg">Available plans</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
           {TIER_ORDER.map((tier) => {
             const p = tierMap.get(tier);
