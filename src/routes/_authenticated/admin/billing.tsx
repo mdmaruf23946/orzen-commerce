@@ -262,7 +262,7 @@ function BillingPage() {
                   ) : (
                     <>
                       <div className="flex items-baseline gap-2">
-                        <div className="text-2xl font-extrabold">৳{calc!.total.toLocaleString()}</div>
+                        <div className="text-xl font-extrabold sm:text-2xl">৳{calc!.total.toLocaleString()}</div>
                         {calc!.discountPct > 0 && (
                           <div className="text-xs text-muted-foreground line-through">
                             ৳{(Number(p.price) * calc!.months).toLocaleString()}
