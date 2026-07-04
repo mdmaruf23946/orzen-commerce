@@ -345,7 +345,7 @@ function BillingPage() {
 
       {/* 7. Compare Plans */}
       <section>
-        <h2 className="mb-3 text-lg font-semibold">Compare plans</h2>
+        <h2 className="mb-2 text-sm font-semibold sm:mb-3 sm:text-lg">Compare plans</h2>
 
         {/* Desktop table */}
         <div className="hidden overflow-x-auto rounded-xl border bg-card sm:block">
@@ -428,7 +428,7 @@ function BillingPage() {
 
       {/* 9. Payment history */}
       <section>
-        <h2 className="mb-3 text-lg font-semibold">Payment history</h2>
+        <h2 className="mb-2 text-sm font-semibold sm:mb-3 sm:text-lg">Payment history</h2>
         <div className="overflow-x-auto rounded-xl border bg-card">
           <table className="w-full text-sm">
             <thead className="border-b bg-muted/50 text-left text-xs uppercase text-muted-foreground">
