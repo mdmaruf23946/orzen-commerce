@@ -94,22 +94,22 @@ function BillingPage() {
   ];
 
   return (
-    <div className="space-y-6 pb-10 max-w-full overflow-x-hidden">
+    <div className="space-y-4 pb-10 max-w-full overflow-x-hidden sm:space-y-6">
 
       {/* 1. Free Trial Banner — only when trialing */}
       {isTrialing && (
-        <div className="rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4 dark:border-amber-900/50 dark:from-amber-950/30 dark:to-orange-950/30">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+        <div className="rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-3 sm:rounded-xl sm:p-4 dark:border-amber-900/50 dark:from-amber-950/30 dark:to-orange-950/30">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:gap-3">
             <div className="min-w-0">
-              <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
-                <Sparkle className="h-4 w-4 shrink-0" />
-                <span className="truncate text-sm font-semibold">🎉 Your Free Trial is Active</span>
+              <div className="flex items-center gap-1.5 text-amber-900 dark:text-amber-200">
+                <Sparkle className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate text-xs font-semibold sm:text-sm">🎉 Free Trial Active</span>
               </div>
-              <div className="mt-0.5 text-lg font-bold text-amber-950 dark:text-amber-100">
+              <div className="mt-0.5 text-base font-bold text-amber-950 sm:text-lg dark:text-amber-100">
                 {daysLeft} Day{daysLeft === 1 ? "" : "s"} Remaining
               </div>
-              <p className="mt-0.5 text-xs text-amber-800/80 dark:text-amber-200/80">
-                Enjoy all Premium Features during your trial.
+              <p className="mt-0.5 text-[11px] text-amber-800/80 sm:text-xs dark:text-amber-200/80">
+                All Premium Features unlocked.
               </p>
             </div>
             {tierMap.get("business") && (
@@ -118,7 +118,7 @@ function BillingPage() {
                 params={{ packageId: tierMap.get("business")!.id }}
                 search={{ cycle } as any}
               >
-                <Button size="sm" className="bg-amber-600 hover:bg-amber-700">Upgrade Now</Button>
+                <Button size="sm" className="h-8 bg-amber-600 px-2.5 text-xs hover:bg-amber-700 sm:h-9 sm:px-3 sm:text-sm">Upgrade</Button>
               </Link>
             )}
           </div>
@@ -126,8 +126,8 @@ function BillingPage() {
       )}
 
       <div>
-        <h1 className="text-2xl font-semibold">Billing & Subscription</h1>
-        <p className="text-sm text-muted-foreground">Pick the plan that fits your business — change anytime.</p>
+        <h1 className="text-lg font-semibold sm:text-2xl">Billing & Subscription</h1>
+        <p className="text-xs text-muted-foreground sm:text-sm">Pick the plan that fits your business — change anytime.</p>
       </div>
 
       {/* 8. Current Plan Section */}
