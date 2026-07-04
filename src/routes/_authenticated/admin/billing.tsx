@@ -254,10 +254,10 @@ function BillingPage() {
 
                 <div className="mt-3">
                   {isCustom ? (
-                    <div className="text-2xl font-extrabold">Custom</div>
+                    <div className="text-xl font-extrabold sm:text-2xl">Custom</div>
                   ) : isFree ? (
-                    <div className="text-2xl font-extrabold">
-                      ৳0<span className="text-sm font-normal text-muted-foreground"> / forever</span>
+                    <div className="text-xl font-extrabold sm:text-2xl">
+                      ৳0<span className="text-xs font-normal text-muted-foreground sm:text-sm"> / forever</span>
                     </div>
                   ) : (
                     <>
