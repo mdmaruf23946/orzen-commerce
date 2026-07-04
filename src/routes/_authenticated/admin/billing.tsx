@@ -131,24 +131,24 @@ function BillingPage() {
       </div>
 
       {/* 8. Current Plan Section */}
-      <div className="rounded-xl border bg-card p-4 sm:p-5">
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+      <div className="rounded-lg border bg-card p-3 sm:rounded-xl sm:p-5">
+        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-3">
           <div className="min-w-0">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">Current plan</div>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <span className="truncate text-xl font-bold">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground sm:text-xs">Current plan</div>
+            <div className="mt-0.5 flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className="truncate text-base font-bold sm:text-xl">
                 {isTrialing ? "Free Plan" : (currentTier ? TIER_NAME[currentTier] : "Free Plan")}
               </span>
               <Badge
                 variant={subStatus === "active" ? "default" : isTrialing ? "secondary" : "destructive"}
-                className="capitalize"
+                className="h-5 px-1.5 text-[10px] capitalize sm:h-6 sm:text-xs"
               >
                 {isTrialing ? "Trial Active" : subStatus}
               </Badge>
             </div>
-            <div className="mt-1 text-sm text-muted-foreground">
+            <div className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
               {isTrialing
-                ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} remaining · all premium features unlocked`
+                ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} remaining · all premium unlocked`
                 : pkg
                   ? `৳${Number(pkg.price).toFixed(0)} · ${pkg.billing_cycle ?? "monthly"}`
                   : "Limited features. Upgrade for more."}
@@ -157,20 +157,20 @@ function BillingPage() {
           <div className="text-left sm:text-right">
             {isTrialing && store?.trial_ends_at ? (
               <>
-                <div className="text-xs uppercase text-muted-foreground">Trial ends</div>
-                <div className="text-sm font-medium">{new Date(store.trial_ends_at).toLocaleDateString()}</div>
+                <div className="text-[10px] uppercase text-muted-foreground sm:text-xs">Trial ends</div>
+                <div className="text-xs font-medium sm:text-sm">{new Date(store.trial_ends_at).toLocaleDateString()}</div>
               </>
             ) : store?.expires_at ? (
               <>
-                <div className="text-xs uppercase text-muted-foreground">Renews / expires</div>
-                <div className="text-sm font-medium">{new Date(store.expires_at).toLocaleDateString()}</div>
+                <div className="text-[10px] uppercase text-muted-foreground sm:text-xs">Renews / expires</div>
+                <div className="text-xs font-medium sm:text-sm">{new Date(store.expires_at).toLocaleDateString()}</div>
               </>
             ) : null}
           </div>
         </div>
 
         {(subStatus === "expired" || subStatus === "cancelled") && (
-          <div className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-900 dark:bg-red-950/30 dark:text-red-200">
+          <div className="mt-2 rounded-md bg-red-50 p-2 text-xs text-red-900 sm:mt-3 sm:rounded-lg sm:p-3 sm:text-sm dark:bg-red-950/30 dark:text-red-200">
             Your subscription has expired. Upgrade to restore full access.
           </div>
         )}
@@ -179,7 +179,7 @@ function BillingPage() {
       {/* 3. Billing Cycle Selector */}
       <section>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Choose your billing cycle</h2>
+          <h2 className="text-sm font-semibold sm:text-lg">Choose your billing cycle</h2>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {cycleOptions.map((c) => {
@@ -189,16 +189,16 @@ function BillingPage() {
                 key={c.key}
                 type="button"
                 onClick={() => setCycle(c.key)}
-                className={`relative rounded-lg border p-3 text-left transition ${
+                className={`relative rounded-lg border p-2 text-left transition sm:p-3 ${
                   active ? "border-primary bg-primary/5 ring-2 ring-primary/30" : "hover:border-foreground/30"
                 }`}
               >
-                <div className="text-sm font-semibold">{c.label}</div>
-                <div className="mt-0.5 text-[11px] text-muted-foreground">
+                <div className="text-xs font-semibold sm:text-sm">{c.label}</div>
+                <div className="mt-0.5 text-[10px] text-muted-foreground sm:text-[11px]">
                   {c.discount > 0 ? `Save ${c.discount}%` : "No discount"}
                 </div>
                 {c.discount > 0 && (
-                  <span className="absolute -top-2 right-2 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                  <span className="absolute -top-2 right-2 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-bold text-white sm:text-[10px]">
                     -{c.discount}%
                   </span>
                 )}
@@ -207,6 +207,7 @@ function BillingPage() {
           })}
         </div>
       </section>
+
 
       {/* 4-6. Plan Cards */}
       <section>
