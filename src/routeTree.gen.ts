@@ -23,12 +23,27 @@ import { Route as StoreSlugCheckoutRouteImport } from './routes/store/$slug/chec
 import { Route as StoreSlugCartRouteImport } from './routes/store/$slug/cart'
 import { Route as ApiImgSplatRouteImport } from './routes/api/img.$'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
+import { Route as AuthenticatedOwnerWebhooksRouteImport } from './routes/_authenticated/owner/webhooks'
+import { Route as AuthenticatedOwnerUsersRouteImport } from './routes/_authenticated/owner/users'
+import { Route as AuthenticatedOwnerSystemRouteImport } from './routes/_authenticated/owner/system'
+import { Route as AuthenticatedOwnerSupportRouteImport } from './routes/_authenticated/owner/support'
 import { Route as AuthenticatedOwnerSubscriptionsRouteImport } from './routes/_authenticated/owner/subscriptions'
 import { Route as AuthenticatedOwnerStoresRouteImport } from './routes/_authenticated/owner/stores'
+import { Route as AuthenticatedOwnerReportsRouteImport } from './routes/_authenticated/owner/reports'
 import { Route as AuthenticatedOwnerPaymentSettingsRouteImport } from './routes/_authenticated/owner/payment-settings'
 import { Route as AuthenticatedOwnerPackagesRouteImport } from './routes/_authenticated/owner/packages'
+import { Route as AuthenticatedOwnerNotificationsRouteImport } from './routes/_authenticated/owner/notifications'
+import { Route as AuthenticatedOwnerMarketingRouteImport } from './routes/_authenticated/owner/marketing'
+import { Route as AuthenticatedOwnerLogsRouteImport } from './routes/_authenticated/owner/logs'
+import { Route as AuthenticatedOwnerHealthRouteImport } from './routes/_authenticated/owner/health'
+import { Route as AuthenticatedOwnerFeaturesRouteImport } from './routes/_authenticated/owner/features'
+import { Route as AuthenticatedOwnerDevLogsRouteImport } from './routes/_authenticated/owner/dev-logs'
+import { Route as AuthenticatedOwnerCouriersRouteImport } from './routes/_authenticated/owner/couriers'
 import { Route as AuthenticatedOwnerBillingRouteImport } from './routes/_authenticated/owner/billing'
+import { Route as AuthenticatedOwnerBackupsRouteImport } from './routes/_authenticated/owner/backups'
 import { Route as AuthenticatedOwnerAuditRouteImport } from './routes/_authenticated/owner/audit'
+import { Route as AuthenticatedOwnerApiRouteImport } from './routes/_authenticated/owner/api'
+import { Route as AuthenticatedOwnerAiUsageRouteImport } from './routes/_authenticated/owner/ai-usage'
 import { Route as AuthenticatedOwnerAiRouteImport } from './routes/_authenticated/owner/ai'
 import { Route as AuthenticatedAdminThemeRouteImport } from './routes/_authenticated/admin/theme'
 import { Route as AuthenticatedAdminSubscriptionRouteImport } from './routes/_authenticated/admin/subscription'
@@ -129,6 +144,29 @@ const ApiAiChatRoute = ApiAiChatRouteImport.update({
   path: '/api/ai/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedOwnerWebhooksRoute =
+  AuthenticatedOwnerWebhooksRouteImport.update({
+    id: '/webhooks',
+    path: '/webhooks',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerUsersRoute = AuthenticatedOwnerUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AuthenticatedOwnerRouteRoute,
+} as any)
+const AuthenticatedOwnerSystemRoute =
+  AuthenticatedOwnerSystemRouteImport.update({
+    id: '/system',
+    path: '/system',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerSupportRoute =
+  AuthenticatedOwnerSupportRouteImport.update({
+    id: '/support',
+    path: '/support',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
 const AuthenticatedOwnerSubscriptionsRoute =
   AuthenticatedOwnerSubscriptionsRouteImport.update({
     id: '/subscriptions',
@@ -139,6 +177,12 @@ const AuthenticatedOwnerStoresRoute =
   AuthenticatedOwnerStoresRouteImport.update({
     id: '/stores',
     path: '/stores',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerReportsRoute =
+  AuthenticatedOwnerReportsRouteImport.update({
+    id: '/reports',
+    path: '/reports',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
 const AuthenticatedOwnerPaymentSettingsRoute =
@@ -153,10 +197,57 @@ const AuthenticatedOwnerPackagesRoute =
     path: '/packages',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
+const AuthenticatedOwnerNotificationsRoute =
+  AuthenticatedOwnerNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerMarketingRoute =
+  AuthenticatedOwnerMarketingRouteImport.update({
+    id: '/marketing',
+    path: '/marketing',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerLogsRoute = AuthenticatedOwnerLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => AuthenticatedOwnerRouteRoute,
+} as any)
+const AuthenticatedOwnerHealthRoute =
+  AuthenticatedOwnerHealthRouteImport.update({
+    id: '/health',
+    path: '/health',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerFeaturesRoute =
+  AuthenticatedOwnerFeaturesRouteImport.update({
+    id: '/features',
+    path: '/features',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerDevLogsRoute =
+  AuthenticatedOwnerDevLogsRouteImport.update({
+    id: '/dev-logs',
+    path: '/dev-logs',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerCouriersRoute =
+  AuthenticatedOwnerCouriersRouteImport.update({
+    id: '/couriers',
+    path: '/couriers',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
 const AuthenticatedOwnerBillingRoute =
   AuthenticatedOwnerBillingRouteImport.update({
     id: '/billing',
     path: '/billing',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerBackupsRoute =
+  AuthenticatedOwnerBackupsRouteImport.update({
+    id: '/backups',
+    path: '/backups',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
 const AuthenticatedOwnerAuditRoute = AuthenticatedOwnerAuditRouteImport.update({
@@ -164,6 +255,17 @@ const AuthenticatedOwnerAuditRoute = AuthenticatedOwnerAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AuthenticatedOwnerRouteRoute,
 } as any)
+const AuthenticatedOwnerApiRoute = AuthenticatedOwnerApiRouteImport.update({
+  id: '/api',
+  path: '/api',
+  getParentRoute: () => AuthenticatedOwnerRouteRoute,
+} as any)
+const AuthenticatedOwnerAiUsageRoute =
+  AuthenticatedOwnerAiUsageRouteImport.update({
+    id: '/ai-usage',
+    path: '/ai-usage',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
 const AuthenticatedOwnerAiRoute = AuthenticatedOwnerAiRouteImport.update({
   id: '/ai',
   path: '/ai',
@@ -373,12 +475,27 @@ export interface FileRoutesByFullPath {
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
   '/owner/ai': typeof AuthenticatedOwnerAiRoute
+  '/owner/ai-usage': typeof AuthenticatedOwnerAiUsageRoute
+  '/owner/api': typeof AuthenticatedOwnerApiRoute
   '/owner/audit': typeof AuthenticatedOwnerAuditRoute
+  '/owner/backups': typeof AuthenticatedOwnerBackupsRoute
   '/owner/billing': typeof AuthenticatedOwnerBillingRoute
+  '/owner/couriers': typeof AuthenticatedOwnerCouriersRoute
+  '/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
+  '/owner/features': typeof AuthenticatedOwnerFeaturesRoute
+  '/owner/health': typeof AuthenticatedOwnerHealthRoute
+  '/owner/logs': typeof AuthenticatedOwnerLogsRoute
+  '/owner/marketing': typeof AuthenticatedOwnerMarketingRoute
+  '/owner/notifications': typeof AuthenticatedOwnerNotificationsRoute
   '/owner/packages': typeof AuthenticatedOwnerPackagesRoute
   '/owner/payment-settings': typeof AuthenticatedOwnerPaymentSettingsRoute
+  '/owner/reports': typeof AuthenticatedOwnerReportsRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
   '/owner/subscriptions': typeof AuthenticatedOwnerSubscriptionsRoute
+  '/owner/support': typeof AuthenticatedOwnerSupportRoute
+  '/owner/system': typeof AuthenticatedOwnerSystemRoute
+  '/owner/users': typeof AuthenticatedOwnerUsersRoute
+  '/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
@@ -421,12 +538,27 @@ export interface FileRoutesByTo {
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
   '/owner/ai': typeof AuthenticatedOwnerAiRoute
+  '/owner/ai-usage': typeof AuthenticatedOwnerAiUsageRoute
+  '/owner/api': typeof AuthenticatedOwnerApiRoute
   '/owner/audit': typeof AuthenticatedOwnerAuditRoute
+  '/owner/backups': typeof AuthenticatedOwnerBackupsRoute
   '/owner/billing': typeof AuthenticatedOwnerBillingRoute
+  '/owner/couriers': typeof AuthenticatedOwnerCouriersRoute
+  '/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
+  '/owner/features': typeof AuthenticatedOwnerFeaturesRoute
+  '/owner/health': typeof AuthenticatedOwnerHealthRoute
+  '/owner/logs': typeof AuthenticatedOwnerLogsRoute
+  '/owner/marketing': typeof AuthenticatedOwnerMarketingRoute
+  '/owner/notifications': typeof AuthenticatedOwnerNotificationsRoute
   '/owner/packages': typeof AuthenticatedOwnerPackagesRoute
   '/owner/payment-settings': typeof AuthenticatedOwnerPaymentSettingsRoute
+  '/owner/reports': typeof AuthenticatedOwnerReportsRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
   '/owner/subscriptions': typeof AuthenticatedOwnerSubscriptionsRoute
+  '/owner/support': typeof AuthenticatedOwnerSupportRoute
+  '/owner/system': typeof AuthenticatedOwnerSystemRoute
+  '/owner/users': typeof AuthenticatedOwnerUsersRoute
+  '/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
@@ -474,12 +606,27 @@ export interface FileRoutesById {
   '/_authenticated/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/_authenticated/admin/theme': typeof AuthenticatedAdminThemeRoute
   '/_authenticated/owner/ai': typeof AuthenticatedOwnerAiRoute
+  '/_authenticated/owner/ai-usage': typeof AuthenticatedOwnerAiUsageRoute
+  '/_authenticated/owner/api': typeof AuthenticatedOwnerApiRoute
   '/_authenticated/owner/audit': typeof AuthenticatedOwnerAuditRoute
+  '/_authenticated/owner/backups': typeof AuthenticatedOwnerBackupsRoute
   '/_authenticated/owner/billing': typeof AuthenticatedOwnerBillingRoute
+  '/_authenticated/owner/couriers': typeof AuthenticatedOwnerCouriersRoute
+  '/_authenticated/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
+  '/_authenticated/owner/features': typeof AuthenticatedOwnerFeaturesRoute
+  '/_authenticated/owner/health': typeof AuthenticatedOwnerHealthRoute
+  '/_authenticated/owner/logs': typeof AuthenticatedOwnerLogsRoute
+  '/_authenticated/owner/marketing': typeof AuthenticatedOwnerMarketingRoute
+  '/_authenticated/owner/notifications': typeof AuthenticatedOwnerNotificationsRoute
   '/_authenticated/owner/packages': typeof AuthenticatedOwnerPackagesRoute
   '/_authenticated/owner/payment-settings': typeof AuthenticatedOwnerPaymentSettingsRoute
+  '/_authenticated/owner/reports': typeof AuthenticatedOwnerReportsRoute
   '/_authenticated/owner/stores': typeof AuthenticatedOwnerStoresRoute
   '/_authenticated/owner/subscriptions': typeof AuthenticatedOwnerSubscriptionsRoute
+  '/_authenticated/owner/support': typeof AuthenticatedOwnerSupportRoute
+  '/_authenticated/owner/system': typeof AuthenticatedOwnerSystemRoute
+  '/_authenticated/owner/users': typeof AuthenticatedOwnerUsersRoute
+  '/_authenticated/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
@@ -527,12 +674,27 @@ export interface FileRouteTypes {
     | '/admin/subscription'
     | '/admin/theme'
     | '/owner/ai'
+    | '/owner/ai-usage'
+    | '/owner/api'
     | '/owner/audit'
+    | '/owner/backups'
     | '/owner/billing'
+    | '/owner/couriers'
+    | '/owner/dev-logs'
+    | '/owner/features'
+    | '/owner/health'
+    | '/owner/logs'
+    | '/owner/marketing'
+    | '/owner/notifications'
     | '/owner/packages'
     | '/owner/payment-settings'
+    | '/owner/reports'
     | '/owner/stores'
     | '/owner/subscriptions'
+    | '/owner/support'
+    | '/owner/system'
+    | '/owner/users'
+    | '/owner/webhooks'
     | '/api/ai/chat'
     | '/api/img/$'
     | '/store/$slug/cart'
@@ -575,12 +737,27 @@ export interface FileRouteTypes {
     | '/admin/subscription'
     | '/admin/theme'
     | '/owner/ai'
+    | '/owner/ai-usage'
+    | '/owner/api'
     | '/owner/audit'
+    | '/owner/backups'
     | '/owner/billing'
+    | '/owner/couriers'
+    | '/owner/dev-logs'
+    | '/owner/features'
+    | '/owner/health'
+    | '/owner/logs'
+    | '/owner/marketing'
+    | '/owner/notifications'
     | '/owner/packages'
     | '/owner/payment-settings'
+    | '/owner/reports'
     | '/owner/stores'
     | '/owner/subscriptions'
+    | '/owner/support'
+    | '/owner/system'
+    | '/owner/users'
+    | '/owner/webhooks'
     | '/api/ai/chat'
     | '/api/img/$'
     | '/store/$slug/cart'
@@ -627,12 +804,27 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/subscription'
     | '/_authenticated/admin/theme'
     | '/_authenticated/owner/ai'
+    | '/_authenticated/owner/ai-usage'
+    | '/_authenticated/owner/api'
     | '/_authenticated/owner/audit'
+    | '/_authenticated/owner/backups'
     | '/_authenticated/owner/billing'
+    | '/_authenticated/owner/couriers'
+    | '/_authenticated/owner/dev-logs'
+    | '/_authenticated/owner/features'
+    | '/_authenticated/owner/health'
+    | '/_authenticated/owner/logs'
+    | '/_authenticated/owner/marketing'
+    | '/_authenticated/owner/notifications'
     | '/_authenticated/owner/packages'
     | '/_authenticated/owner/payment-settings'
+    | '/_authenticated/owner/reports'
     | '/_authenticated/owner/stores'
     | '/_authenticated/owner/subscriptions'
+    | '/_authenticated/owner/support'
+    | '/_authenticated/owner/system'
+    | '/_authenticated/owner/users'
+    | '/_authenticated/owner/webhooks'
     | '/api/ai/chat'
     | '/api/img/$'
     | '/store/$slug/cart'
@@ -758,6 +950,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/owner/webhooks': {
+      id: '/_authenticated/owner/webhooks'
+      path: '/webhooks'
+      fullPath: '/owner/webhooks'
+      preLoaderRoute: typeof AuthenticatedOwnerWebhooksRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/users': {
+      id: '/_authenticated/owner/users'
+      path: '/users'
+      fullPath: '/owner/users'
+      preLoaderRoute: typeof AuthenticatedOwnerUsersRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/system': {
+      id: '/_authenticated/owner/system'
+      path: '/system'
+      fullPath: '/owner/system'
+      preLoaderRoute: typeof AuthenticatedOwnerSystemRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/support': {
+      id: '/_authenticated/owner/support'
+      path: '/support'
+      fullPath: '/owner/support'
+      preLoaderRoute: typeof AuthenticatedOwnerSupportRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
     '/_authenticated/owner/subscriptions': {
       id: '/_authenticated/owner/subscriptions'
       path: '/subscriptions'
@@ -770,6 +990,13 @@ declare module '@tanstack/react-router' {
       path: '/stores'
       fullPath: '/owner/stores'
       preLoaderRoute: typeof AuthenticatedOwnerStoresRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/reports': {
+      id: '/_authenticated/owner/reports'
+      path: '/reports'
+      fullPath: '/owner/reports'
+      preLoaderRoute: typeof AuthenticatedOwnerReportsRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/owner/payment-settings': {
@@ -786,6 +1013,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerPackagesRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
+    '/_authenticated/owner/notifications': {
+      id: '/_authenticated/owner/notifications'
+      path: '/notifications'
+      fullPath: '/owner/notifications'
+      preLoaderRoute: typeof AuthenticatedOwnerNotificationsRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/marketing': {
+      id: '/_authenticated/owner/marketing'
+      path: '/marketing'
+      fullPath: '/owner/marketing'
+      preLoaderRoute: typeof AuthenticatedOwnerMarketingRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/logs': {
+      id: '/_authenticated/owner/logs'
+      path: '/logs'
+      fullPath: '/owner/logs'
+      preLoaderRoute: typeof AuthenticatedOwnerLogsRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/health': {
+      id: '/_authenticated/owner/health'
+      path: '/health'
+      fullPath: '/owner/health'
+      preLoaderRoute: typeof AuthenticatedOwnerHealthRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/features': {
+      id: '/_authenticated/owner/features'
+      path: '/features'
+      fullPath: '/owner/features'
+      preLoaderRoute: typeof AuthenticatedOwnerFeaturesRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/dev-logs': {
+      id: '/_authenticated/owner/dev-logs'
+      path: '/dev-logs'
+      fullPath: '/owner/dev-logs'
+      preLoaderRoute: typeof AuthenticatedOwnerDevLogsRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/couriers': {
+      id: '/_authenticated/owner/couriers'
+      path: '/couriers'
+      fullPath: '/owner/couriers'
+      preLoaderRoute: typeof AuthenticatedOwnerCouriersRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
     '/_authenticated/owner/billing': {
       id: '/_authenticated/owner/billing'
       path: '/billing'
@@ -793,11 +1069,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerBillingRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
+    '/_authenticated/owner/backups': {
+      id: '/_authenticated/owner/backups'
+      path: '/backups'
+      fullPath: '/owner/backups'
+      preLoaderRoute: typeof AuthenticatedOwnerBackupsRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
     '/_authenticated/owner/audit': {
       id: '/_authenticated/owner/audit'
       path: '/audit'
       fullPath: '/owner/audit'
       preLoaderRoute: typeof AuthenticatedOwnerAuditRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/api': {
+      id: '/_authenticated/owner/api'
+      path: '/api'
+      fullPath: '/owner/api'
+      preLoaderRoute: typeof AuthenticatedOwnerApiRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/ai-usage': {
+      id: '/_authenticated/owner/ai-usage'
+      path: '/ai-usage'
+      fullPath: '/owner/ai-usage'
+      preLoaderRoute: typeof AuthenticatedOwnerAiUsageRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/owner/ai': {
@@ -1096,25 +1393,55 @@ const AuthenticatedAdminRouteRouteWithChildren =
 
 interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerAiRoute: typeof AuthenticatedOwnerAiRoute
+  AuthenticatedOwnerAiUsageRoute: typeof AuthenticatedOwnerAiUsageRoute
+  AuthenticatedOwnerApiRoute: typeof AuthenticatedOwnerApiRoute
   AuthenticatedOwnerAuditRoute: typeof AuthenticatedOwnerAuditRoute
+  AuthenticatedOwnerBackupsRoute: typeof AuthenticatedOwnerBackupsRoute
   AuthenticatedOwnerBillingRoute: typeof AuthenticatedOwnerBillingRoute
+  AuthenticatedOwnerCouriersRoute: typeof AuthenticatedOwnerCouriersRoute
+  AuthenticatedOwnerDevLogsRoute: typeof AuthenticatedOwnerDevLogsRoute
+  AuthenticatedOwnerFeaturesRoute: typeof AuthenticatedOwnerFeaturesRoute
+  AuthenticatedOwnerHealthRoute: typeof AuthenticatedOwnerHealthRoute
+  AuthenticatedOwnerLogsRoute: typeof AuthenticatedOwnerLogsRoute
+  AuthenticatedOwnerMarketingRoute: typeof AuthenticatedOwnerMarketingRoute
+  AuthenticatedOwnerNotificationsRoute: typeof AuthenticatedOwnerNotificationsRoute
   AuthenticatedOwnerPackagesRoute: typeof AuthenticatedOwnerPackagesRoute
   AuthenticatedOwnerPaymentSettingsRoute: typeof AuthenticatedOwnerPaymentSettingsRoute
+  AuthenticatedOwnerReportsRoute: typeof AuthenticatedOwnerReportsRoute
   AuthenticatedOwnerStoresRoute: typeof AuthenticatedOwnerStoresRoute
   AuthenticatedOwnerSubscriptionsRoute: typeof AuthenticatedOwnerSubscriptionsRoute
+  AuthenticatedOwnerSupportRoute: typeof AuthenticatedOwnerSupportRoute
+  AuthenticatedOwnerSystemRoute: typeof AuthenticatedOwnerSystemRoute
+  AuthenticatedOwnerUsersRoute: typeof AuthenticatedOwnerUsersRoute
+  AuthenticatedOwnerWebhooksRoute: typeof AuthenticatedOwnerWebhooksRoute
   AuthenticatedOwnerIndexRoute: typeof AuthenticatedOwnerIndexRoute
 }
 
 const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren =
   {
     AuthenticatedOwnerAiRoute: AuthenticatedOwnerAiRoute,
+    AuthenticatedOwnerAiUsageRoute: AuthenticatedOwnerAiUsageRoute,
+    AuthenticatedOwnerApiRoute: AuthenticatedOwnerApiRoute,
     AuthenticatedOwnerAuditRoute: AuthenticatedOwnerAuditRoute,
+    AuthenticatedOwnerBackupsRoute: AuthenticatedOwnerBackupsRoute,
     AuthenticatedOwnerBillingRoute: AuthenticatedOwnerBillingRoute,
+    AuthenticatedOwnerCouriersRoute: AuthenticatedOwnerCouriersRoute,
+    AuthenticatedOwnerDevLogsRoute: AuthenticatedOwnerDevLogsRoute,
+    AuthenticatedOwnerFeaturesRoute: AuthenticatedOwnerFeaturesRoute,
+    AuthenticatedOwnerHealthRoute: AuthenticatedOwnerHealthRoute,
+    AuthenticatedOwnerLogsRoute: AuthenticatedOwnerLogsRoute,
+    AuthenticatedOwnerMarketingRoute: AuthenticatedOwnerMarketingRoute,
+    AuthenticatedOwnerNotificationsRoute: AuthenticatedOwnerNotificationsRoute,
     AuthenticatedOwnerPackagesRoute: AuthenticatedOwnerPackagesRoute,
     AuthenticatedOwnerPaymentSettingsRoute:
       AuthenticatedOwnerPaymentSettingsRoute,
+    AuthenticatedOwnerReportsRoute: AuthenticatedOwnerReportsRoute,
     AuthenticatedOwnerStoresRoute: AuthenticatedOwnerStoresRoute,
     AuthenticatedOwnerSubscriptionsRoute: AuthenticatedOwnerSubscriptionsRoute,
+    AuthenticatedOwnerSupportRoute: AuthenticatedOwnerSupportRoute,
+    AuthenticatedOwnerSystemRoute: AuthenticatedOwnerSystemRoute,
+    AuthenticatedOwnerUsersRoute: AuthenticatedOwnerUsersRoute,
+    AuthenticatedOwnerWebhooksRoute: AuthenticatedOwnerWebhooksRoute,
     AuthenticatedOwnerIndexRoute: AuthenticatedOwnerIndexRoute,
   }
 
