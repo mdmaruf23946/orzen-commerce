@@ -644,3 +644,58 @@ export const ownerControlCenter = createServerFn({ method: "GET" })
     };
   });
 
+// ---------- STORE DETAIL / USAGE ----------
+
+export const getStoreUsage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ storeId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const last30 = new Date(Date.now() - 30 * 86400000).toISOString();
+
+    const [
+      { data: store },
+      { count: products },
+      { count: orders },
+      { count: orders30 },
+      { data: revenueRows },
+      { data: aiRows },
+      { data: recentPayments },
+    ] = await Promise.all([
+      sb.from("stores")
+        .select("*, subscription_packages(name,price,product_limit,order_limit,customer_limit,storage_mb)")
+        .eq("id", data.storeId).maybeSingle(),
+      sb.from("products").select("*", { count: "exact", head: true }).eq("store_id", data.storeId),
+      sb.from("orders").select("*", { count: "exact", head: true }).eq("store_id", data.storeId),
+      sb.from("orders").select("*", { count: "exact", head: true })
+        .eq("store_id", data.storeId).gte("created_at", last30),
+      sb.from("orders").select("total,status,customer_phone,created_at").eq("store_id", data.storeId),
+      sb.from("ai_usage").select("cost_usd,total_tokens,created_at")
+        .eq("store_id", data.storeId).gte("created_at", last30),
+      sb.from("payments").select("id,amount,status,method,created_at,invoice_no")
+        .eq("store_id", data.storeId).order("created_at", { ascending: false }).limit(10),
+    ]);
+
+    const revenue = (revenueRows ?? [])
+      .filter((o: any) => o.status === "delivered" || o.status === "confirmed" || o.status === "processing")
+      .reduce((a: number, o: any) => a + Number(o.total || 0), 0);
+    const customers = new Set((revenueRows ?? []).map((o: any) => o.customer_phone).filter(Boolean)).size;
+    const aiCost = (aiRows ?? []).reduce((a: number, r: any) => a + Number(r.cost_usd || 0), 0);
+    const aiTokens = (aiRows ?? []).reduce((a: number, r: any) => a + Number(r.total_tokens || 0), 0);
+
+    return {
+      store,
+      counts: {
+        products: products ?? 0,
+        orders: orders ?? 0,
+        orders30d: orders30 ?? 0,
+        customers,
+      },
+      revenue,
+      ai: { cost: aiCost, tokens: aiTokens, requests: (aiRows ?? []).length },
+      recentPayments: recentPayments ?? [],
+    };
+  });
+
+
