@@ -536,3 +536,111 @@ export const updateBillingSettings = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ---------- CONTROL CENTER DASHBOARD ----------
+
+export const ownerControlCenter = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const now = new Date();
+    const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const last7 = new Date(now.getTime() - 7 * 86400000);
+    const last30 = new Date(now.getTime() - 30 * 86400000);
+    const next7 = new Date(now.getTime() + 7 * 86400000);
+
+    const [
+      { data: payments },
+      { data: stores },
+      { count: usersCount },
+      { data: aiUsage },
+      { data: recentPayments },
+      { data: recentStores },
+      { data: recentAudit },
+      { count: pendingPayments },
+    ] = await Promise.all([
+      sb.from("payments").select("amount,status,created_at,verified_at").eq("status", "paid"),
+      sb.from("stores").select("id,name,subscription_status,expires_at,trial_ends_at,created_at,status"),
+      sb.from("user_roles").select("*", { count: "exact", head: true }).eq("role", "user"),
+      sb.from("ai_usage").select("cost_usd,total_tokens,created_at").gte("created_at", last30.toISOString()),
+      sb.from("payments").select("id,amount,method,status,created_at,stores(name)").order("created_at", { ascending: false }).limit(5),
+      sb.from("stores").select("id,name,slug,created_at").order("created_at", { ascending: false }).limit(5),
+      sb.from("role_audit_log").select("actor_email,target_email,role,action,created_at").order("created_at", { ascending: false }).limit(5),
+      sb.from("payments").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    ]);
+
+    const sum = (rows: any[], gte?: Date) =>
+      (rows ?? [])
+        .filter((p) => !gte || new Date(p.verified_at || p.created_at) >= gte)
+        .reduce((a, p) => a + Number(p.amount || 0), 0);
+
+    const revenueToday = sum(payments ?? [], dayStart);
+    const revenueMonth = sum(payments ?? [], monthStart);
+    const revenueTotal = sum(payments ?? []);
+    const mrr = revenueMonth;
+
+    // 7-day sparkline
+    const days: { date: string; total: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 86400000);
+      d.setHours(0, 0, 0, 0);
+      const next = new Date(d.getTime() + 86400000);
+      const total = (payments ?? [])
+        .filter((p: any) => {
+          const t = new Date(p.verified_at || p.created_at);
+          return t >= d && t < next;
+        })
+        .reduce((a: number, p: any) => a + Number(p.amount || 0), 0);
+      days.push({ date: d.toISOString().slice(5, 10), total });
+    }
+
+    // Store counts
+    const totalStores = (stores ?? []).length;
+    let activeStores = 0, trialing = 0, expired = 0, suspended = 0, expiringSoon = 0;
+    for (const s of stores ?? []) {
+      const st = s.subscription_status ?? "active";
+      if (st === "active") activeStores++;
+      else if (st === "trialing") trialing++;
+      else if (st === "expired") expired++;
+      else if (st === "suspended") suspended++;
+      if (s.expires_at && new Date(s.expires_at) > now && new Date(s.expires_at) <= next7) expiringSoon++;
+    }
+    const newStores7d = (stores ?? []).filter((s: any) => new Date(s.created_at) >= last7).length;
+
+    // AI usage
+    const aiCost = (aiUsage ?? []).reduce((a: number, r: any) => a + Number(r.cost_usd || 0), 0);
+    const aiTokens = (aiUsage ?? []).reduce((a: number, r: any) => a + Number(r.total_tokens || 0), 0);
+    const aiRequests = (aiUsage ?? []).length;
+
+    // Recent activity feed (mixed)
+    const activity: any[] = [];
+    for (const p of recentPayments ?? []) {
+      activity.push({
+        type: "payment",
+        at: p.created_at,
+        text: `Payment ${p.status} · ৳${Number(p.amount).toFixed(0)} · ${p.stores?.name ?? "—"}`,
+      });
+    }
+    for (const s of recentStores ?? []) {
+      activity.push({ type: "store", at: s.created_at, text: `New store: ${s.name}` });
+    }
+    for (const a of recentAudit ?? []) {
+      activity.push({
+        type: "role",
+        at: a.created_at,
+        text: `Role ${a.action}: ${a.role} → ${a.target_email ?? "user"}`,
+      });
+    }
+    activity.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+
+    return {
+      revenue: { today: revenueToday, month: revenueMonth, total: revenueTotal, mrr, spark: days },
+      stores: { total: totalStores, active: activeStores, trialing, expired, suspended, expiringSoon, new7d: newStores7d },
+      users: usersCount ?? 0,
+      ai: { cost: aiCost, tokens: aiTokens, requests: aiRequests },
+      pendingPayments: pendingPayments ?? 0,
+      activity: activity.slice(0, 10),
+    };
+  });
+
