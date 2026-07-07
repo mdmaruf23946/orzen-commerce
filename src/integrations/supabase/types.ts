@@ -66,7 +66,9 @@ export type Database = {
           created_at: string
           default_model: string
           enabled: boolean
+          gemini_api_key: string | null
           id: number
+          openai_api_key: string | null
           provider_api_key: string | null
           updated_at: string
         }
@@ -74,7 +76,9 @@ export type Database = {
           created_at?: string
           default_model?: string
           enabled?: boolean
+          gemini_api_key?: string | null
           id?: number
+          openai_api_key?: string | null
           provider_api_key?: string | null
           updated_at?: string
         }
@@ -82,7 +86,9 @@ export type Database = {
           created_at?: string
           default_model?: string
           enabled?: boolean
+          gemini_api_key?: string | null
           id?: number
+          openai_api_key?: string | null
           provider_api_key?: string | null
           updated_at?: string
         }
@@ -1052,6 +1058,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "store_ai_agents_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_ai_config: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          gemini_api_key: string | null
+          id: string
+          model: string | null
+          monthly_token_limit: number | null
+          notes: string | null
+          openai_api_key: string | null
+          provider: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          gemini_api_key?: string | null
+          id?: string
+          model?: string | null
+          monthly_token_limit?: number | null
+          notes?: string | null
+          openai_api_key?: string | null
+          provider?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          gemini_api_key?: string | null
+          id?: string
+          model?: string | null
+          monthly_token_limit?: number | null
+          notes?: string | null
+          openai_api_key?: string | null
+          provider?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_ai_config_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: true
             referencedRelation: "stores"
