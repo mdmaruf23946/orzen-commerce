@@ -1,15 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { getAiGlobalSettings, getAiUsageStats, updateAiGlobalSettings } from "@/lib/ai.functions";
+import {
+  aiControlCenterOverview,
+  listStoresAiConfig,
+  upsertStoreAiConfig,
+  updateGlobalAiKeys,
+} from "@/lib/owner.functions";
+import { getAiGlobalSettings, updateAiGlobalSettings } from "@/lib/ai.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Sparkles, KeyRound, Zap, DollarSign, Activity, Cpu, CheckCircle2, XCircle, Settings2, Search,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/owner/ai")({
-  component: OwnerAi,
+  component: AIControlCenter,
 });
 
 const MODELS = [
@@ -20,143 +32,485 @@ const MODELS = [
   "openai/gpt-5",
 ];
 
-function OwnerAi() {
-  const getSettings = useServerFn(getAiGlobalSettings);
-  const getStats = useServerFn(getAiUsageStats);
-  const save = useServerFn(updateAiGlobalSettings);
-  const qc = useQueryClient();
-  const { data: settings } = useQuery({ queryKey: ["ai", "settings"], queryFn: () => getSettings() });
-  const { data: stats } = useQuery({ queryKey: ["ai", "stats"], queryFn: () => getStats() });
+function AIControlCenter() {
+  const overviewFn = useServerFn(aiControlCenterOverview);
+  const listFn = useServerFn(listStoresAiConfig);
+  const getGlobal = useServerFn(getAiGlobalSettings);
 
-  const [form, setForm] = useState({ enabled: true, default_model: MODELS[0], provider_api_key: "" });
+  const { data: overview } = useQuery({ queryKey: ["ai", "overview"], queryFn: () => overviewFn(), staleTime: 30_000 });
+  const { data: stores } = useQuery({ queryKey: ["ai", "stores"], queryFn: () => listFn(), staleTime: 15_000 });
+  const { data: global } = useQuery({ queryKey: ["ai", "global"], queryFn: () => getGlobal() });
+
+  const [search, setSearch] = useState("");
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return ((stores as any[]) ?? []).filter((s) =>
+      !q || `${s.name} ${s.slug}`.toLowerCase().includes(q),
+    );
+  }, [stores, search]);
+
+  const t = (overview as any)?.totals ?? { requests: 0, tokens: 0, cost: 0, req7: 0, cost7: 0 };
+  const g = (overview as any)?.global ?? {};
+
+  return (
+    <div className="space-y-5 min-w-0">
+      <div>
+        <h1 className="text-2xl font-semibold">AI Control Center</h1>
+        <p className="text-sm text-muted-foreground">Manage OpenAI and Gemini per store · monitor platform-wide AI usage.</p>
+      </div>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <Kpi icon={Activity} label="Requests (30d)" value={t.requests.toLocaleString()} />
+        <Kpi icon={Cpu} label="Tokens (30d)" value={`${(t.tokens / 1000).toFixed(1)}k`} />
+        <Kpi icon={DollarSign} label="Cost (30d)" value={`$${t.cost.toFixed(2)}`} />
+        <Kpi icon={Zap} label="Cost (7d)" value={`$${t.cost7.toFixed(2)}`} />
+        <Kpi icon={Sparkles} label="Enabled stores" value={`${(overview as any)?.enabledStores ?? 0}/${(overview as any)?.configuredStores ?? 0}`} />
+      </div>
+
+      {/* Sparkline + model breakdown */}
+      <div className="grid gap-3 lg:grid-cols-2">
+        <div className="rounded-xl border bg-card p-4 min-w-0">
+          <div className="mb-2 flex items-center justify-between text-xs">
+            <span className="font-semibold text-muted-foreground">Cost — last 7 days</span>
+            <span className="text-muted-foreground">${t.cost7.toFixed(2)}</span>
+          </div>
+          <Sparkline data={(overview as any)?.spark ?? []} />
+        </div>
+        <div className="rounded-xl border bg-card p-4 min-w-0">
+          <div className="mb-2 text-xs font-semibold text-muted-foreground">Top models (30d)</div>
+          <div className="space-y-1.5">
+            {((overview as any)?.byModel ?? []).slice(0, 5).map((m: any) => {
+              const pct = t.cost ? Math.min(100, Math.round((m.cost / t.cost) * 100)) : 0;
+              return (
+                <div key={m.model} className="min-w-0">
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="truncate font-mono">{m.model}</span>
+                    <span className="shrink-0 text-muted-foreground">${m.cost.toFixed(3)} · {m.requests}</span>
+                  </div>
+                  <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+            {(((overview as any)?.byModel ?? []).length === 0) && (
+              <div className="text-xs text-muted-foreground">No AI activity yet.</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Platform provider settings */}
+      <PlatformSettings global={global} overview={overview} />
+
+      {/* Per-store list */}
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">Stores</h2>
+          <div className="relative w-full sm:w-64">
+            <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search store…"
+              className="h-9 w-full rounded-md border bg-background pl-7 pr-3 text-sm"
+            />
+          </div>
+        </div>
+
+        {/* Mobile cards */}
+        <div className="grid gap-3 sm:hidden">
+          {filtered.map((s: any) => (
+            <StoreCard key={s.id} row={s} onEdit={() => setOpenId(s.id)} />
+          ))}
+          {filtered.length === 0 && (
+            <div className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">No stores.</div>
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden overflow-x-auto rounded-xl border bg-card sm:block">
+          <table className="w-full text-sm">
+            <thead className="border-b bg-muted/50 text-left text-xs uppercase text-muted-foreground">
+              <tr>
+                <th className="p-3">Store</th>
+                <th className="p-3">Enabled</th>
+                <th className="p-3">Provider</th>
+                <th className="p-3">Keys</th>
+                <th className="p-3 text-right">Usage 30d</th>
+                <th className="p-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((s: any) => (
+                <tr key={s.id} className="border-b last:border-0">
+                  <td className="p-3">
+                    <div className="font-medium">{s.name}</div>
+                    <div className="text-[11px] text-muted-foreground">/{s.slug}</div>
+                  </td>
+                  <td className="p-3">
+                    {s.config?.enabled === false ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><XCircle className="h-3 w-3" /> Off</span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs text-emerald-600"><CheckCircle2 className="h-3 w-3" /> On</span>
+                    )}
+                  </td>
+                  <td className="p-3 text-xs uppercase">{s.config?.provider ?? "platform"}</td>
+                  <td className="p-3">
+                    <div className="flex flex-wrap gap-1 text-[10px]">
+                      <KeyPill label="OpenAI" on={s.config?.has_openai} />
+                      <KeyPill label="Gemini" on={s.config?.has_gemini} />
+                    </div>
+                  </td>
+                  <td className="p-3 text-right text-xs">
+                    <div>{s.usage30d.requests} req</div>
+                    <div className="text-muted-foreground">${s.usage30d.cost.toFixed(3)}</div>
+                  </td>
+                  <td className="p-3 text-right">
+                    <Button size="sm" variant="outline" onClick={() => setOpenId(s.id)}>
+                      <Settings2 className="mr-1 h-3 w-3" /> Configure
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr><td colSpan={6} className="p-8 text-center text-sm text-muted-foreground">No stores.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <StoreAiSheet
+        storeId={openId}
+        row={filtered.find((s: any) => s.id === openId) ?? null}
+        onClose={() => setOpenId(null)}
+      />
+    </div>
+  );
+}
+
+function Kpi({ icon: Icon, label, value }: any) {
+  return (
+    <div className="rounded-xl border bg-card p-3 min-w-0">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground"><Icon className="h-3.5 w-3.5" /> {label}</div>
+      <div className="mt-1 truncate text-xl font-semibold">{value}</div>
+    </div>
+  );
+}
+
+function KeyPill({ label, on }: { label: string; on?: boolean }) {
+  return (
+    <span className={`rounded-full border px-1.5 py-0.5 ${on ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "text-muted-foreground"}`}>
+      {label}{on ? " ✓" : ""}
+    </span>
+  );
+}
+
+function Sparkline({ data }: { data: { date: string; cost: number }[] }) {
+  const max = Math.max(0.001, ...data.map((d) => d.cost));
+  const w = 100, h = 40;
+  const pts = data.map((d, i) => `${(i / (data.length - 1 || 1)) * w},${h - (d.cost / max) * h}`).join(" ");
+  return (
+    <div>
+      <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="h-16 w-full">
+        <polyline fill="none" stroke="currentColor" strokeWidth="1.5" points={pts} className="text-primary" />
+      </svg>
+      <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
+        {data.map((d) => <span key={d.date}>{d.date}</span>)}
+      </div>
+    </div>
+  );
+}
+
+function PlatformSettings({ global, overview }: { global: any; overview: any }) {
+  const qc = useQueryClient();
+  const saveBasic = useServerFn(updateAiGlobalSettings);
+  const saveKeys = useServerFn(updateGlobalAiKeys);
+  const [form, setForm] = useState({ enabled: true, default_model: MODELS[0] });
+  const [openai, setOpenai] = useState("");
+  const [gemini, setGemini] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (settings) {
-      setForm({
-        enabled: !!settings.enabled,
-        default_model: settings.default_model || MODELS[0],
-        provider_api_key: "",
-      });
-    }
-  }, [settings]);
+    if (global) setForm({ enabled: !!global.enabled, default_model: global.default_model || MODELS[0] });
+  }, [global]);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  const g = overview?.global ?? {};
+
+  async function submit() {
     setSaving(true);
     try {
-      await save({
-        data: {
-          enabled: form.enabled,
-          default_model: form.default_model,
-          provider_api_key: form.provider_api_key || null,
-        },
-      });
-      qc.invalidateQueries({ queryKey: ["ai", "settings"] });
-      toast.success("Saved");
-    } catch (err) {
-      toast.error((err as Error).message);
-    } finally {
-      setSaving(false);
-    }
+      await saveBasic({ data: { enabled: form.enabled, default_model: form.default_model, provider_api_key: null } });
+      if (openai || gemini) {
+        await saveKeys({ data: { openai_api_key: openai || null, gemini_api_key: gemini || null } });
+        setOpenai(""); setGemini("");
+      }
+      qc.invalidateQueries({ queryKey: ["ai"] });
+      toast.success("Platform AI updated");
+    } catch (e) { toast.error((e as Error).message); }
+    finally { setSaving(false); }
   }
 
-  const hasKey = !!(settings as any)?.provider_api_key;
+  async function clearKey(provider: "openai" | "gemini") {
+    if (!confirm(`Clear platform ${provider.toUpperCase()} key?`)) return;
+    await saveKeys({ data: provider === "openai" ? { clear_openai: true } : { clear_gemini: true } });
+    qc.invalidateQueries({ queryKey: ["ai"] });
+    toast.success("Cleared");
+  }
 
   return (
-    <div className="max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">AI Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Global AI configuration and usage.</p>
-      </div>
-
-      <form onSubmit={submit} className="space-y-4 rounded-xl border bg-card p-4">
-        <label className="flex items-center justify-between">
-          <span className="text-sm font-medium">Enable AI globally</span>
+    <div className="rounded-xl border bg-card p-4 space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <h2 className="text-lg font-semibold">Platform defaults</h2>
+          <p className="text-xs text-muted-foreground">Used when a store hasn't set its own provider or keys.</p>
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Enabled</span>
           <Switch checked={form.enabled} onCheckedChange={(v) => setForm({ ...form, enabled: v })} />
         </label>
+      </div>
 
-        <div className="space-y-1">
-          <label className="text-sm font-medium">Default model</label>
-          <select
-            value={form.default_model}
-            onChange={(e) => setForm({ ...form, default_model: e.target.value })}
-            className="h-9 w-full rounded-md border bg-background px-3 text-sm"
-          >
-            {MODELS.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label className="text-xs font-medium text-muted-foreground">Default model</label>
+          <select value={form.default_model} onChange={(e) => setForm({ ...form, default_model: e.target.value })}
+            className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm">
+            {MODELS.map((m) => <option key={m} value={m}>{m}</option>)}
           </select>
         </div>
-
-        <div className="space-y-1">
-          <label className="text-sm font-medium">
-            Provider API key{" "}
-            <span className="text-xs text-muted-foreground">(optional)</span>
-            {hasKey && <span className="ml-2 text-xs text-emerald-600">(configured)</span>}
-          </label>
-          <Input
-            type="password"
-            value={form.provider_api_key}
-            onChange={(e) => setForm({ ...form, provider_api_key: e.target.value })}
-            placeholder={hasKey ? "•••••••• (leave blank to keep)" : "Leave blank — Lovable AI is auto-configured"}
-          />
-          <p className="text-xs text-muted-foreground">
-            Lovable AI Gateway is auto-configured on this platform — you do <strong>not</strong> need to paste an OpenAI/Google API key here.
-            Only paste a value if you have a dedicated <code>lv_...</code> Lovable API key to override the platform default.
-            Any other key will be ignored to prevent gateway 401 errors.
-          </p>
+        <div className="flex items-end text-xs text-muted-foreground">
+          {g.has_lovable_key ? "Lovable AI Gateway configured." : "Lovable AI Gateway auto-configured."}
         </div>
 
-        <Button type="submit" disabled={saving}>
-          {saving ? "Saving…" : "Save changes"}
-        </Button>
-      </form>
+        <ProviderKeyField
+          icon={KeyRound}
+          label="OpenAI API key"
+          existing={g.openai_key_masked}
+          value={openai}
+          onChange={setOpenai}
+          onClear={() => clearKey("openai")}
+          placeholder="sk-…"
+        />
+        <ProviderKeyField
+          icon={KeyRound}
+          label="Gemini API key"
+          existing={g.gemini_key_masked}
+          value={gemini}
+          onChange={setGemini}
+          onClear={() => clearKey("gemini")}
+          placeholder="AIza…"
+        />
+      </div>
 
-      <div className="rounded-xl border bg-card p-4">
-        <h2 className="text-lg font-semibold">Usage (last 30 days)</h2>
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="Requests" value={stats?.totals?.requests ?? 0} />
-          <Stat label="Prompt tokens" value={stats?.totals?.prompt ?? 0} />
-          <Stat label="Completion tokens" value={stats?.totals?.completion ?? 0} />
-          <Stat label="Est. cost (USD)" value={(stats?.totals?.cost ?? 0).toFixed(2)} />
-        </div>
-        {stats?.byStore && stats.byStore.length > 0 && (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left text-xs text-muted-foreground">
-                <tr>
-                  <th className="px-2 py-1">Store</th>
-                  <th className="px-2 py-1">Requests</th>
-                  <th className="px-2 py-1">Tokens</th>
-                  <th className="px-2 py-1">Cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.byStore.map((r: any) => (
-                  <tr key={r.store_id} className="border-t">
-                    <td className="px-2 py-1 font-mono text-xs">{r.store_id}</td>
-                    <td className="px-2 py-1">{r.requests}</td>
-                    <td className="px-2 py-1">{r.tokens}</td>
-                    <td className="px-2 py-1">${Number(r.cost).toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      <div className="flex justify-end">
+        <Button onClick={submit} disabled={saving}>{saving ? "Saving…" : "Save platform settings"}</Button>
+      </div>
+    </div>
+  );
+}
+
+function ProviderKeyField({ icon: Icon, label, existing, value, onChange, onClear, placeholder }: any) {
+  return (
+    <div>
+      <label className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+        <Icon className="h-3 w-3" /> {label}
+        {existing && <span className="ml-2 text-emerald-600">({existing})</span>}
+      </label>
+      <div className="mt-1 flex gap-2">
+        <Input type="password" value={value} onChange={(e) => onChange(e.target.value)}
+          placeholder={existing ? "Leave blank to keep" : placeholder} />
+        {existing && (
+          <Button type="button" size="sm" variant="outline" onClick={onClear}>Clear</Button>
         )}
       </div>
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: number | string }) {
+function StoreCard({ row, onEdit }: { row: any; onEdit: () => void }) {
   return (
-    <div className="rounded-lg border bg-background p-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-xl font-semibold">{value}</div>
+    <div className="rounded-xl border bg-card p-3 min-w-0">
+      <div className="flex items-start justify-between gap-2 min-w-0">
+        <div className="min-w-0">
+          <div className="truncate font-medium">{row.name}</div>
+          <div className="truncate text-[11px] text-muted-foreground">/{row.slug}</div>
+        </div>
+        {row.config?.enabled === false
+          ? <span className="text-xs text-muted-foreground">Off</span>
+          : <span className="text-xs text-emerald-600">On</span>}
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+        <span className="uppercase text-muted-foreground">{row.config?.provider ?? "platform"}</span>
+        <KeyPill label="OpenAI" on={row.config?.has_openai} />
+        <KeyPill label="Gemini" on={row.config?.has_gemini} />
+      </div>
+      <div className="mt-2 flex items-center justify-between text-[11px]">
+        <span className="text-muted-foreground">{row.usage30d.requests} req · ${row.usage30d.cost.toFixed(3)}</span>
+        <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]" onClick={onEdit}>Configure</Button>
+      </div>
+    </div>
+  );
+}
+
+function StoreAiSheet({ storeId, row, onClose }: { storeId: string | null; row: any; onClose: () => void }) {
+  const qc = useQueryClient();
+  const save = useServerFn(upsertStoreAiConfig);
+  const [form, setForm] = useState({
+    enabled: true,
+    provider: "platform" as "platform" | "openai" | "gemini",
+    model: "",
+    monthly_token_limit: "" as string | number,
+    notes: "",
+  });
+  const [openai, setOpenai] = useState("");
+  const [gemini, setGemini] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!row) return;
+    const c = row.config;
+    setForm({
+      enabled: c?.enabled ?? true,
+      provider: (c?.provider as any) ?? "platform",
+      model: c?.model ?? "",
+      monthly_token_limit: c?.monthly_token_limit ?? "",
+      notes: c?.notes ?? "",
+    });
+    setOpenai(""); setGemini("");
+  }, [row?.id]);
+
+  async function submit() {
+    if (!storeId) return;
+    setSaving(true);
+    try {
+      const payload: any = {
+        storeId,
+        enabled: form.enabled,
+        provider: form.provider,
+        model: form.model || null,
+        monthly_token_limit: form.monthly_token_limit === "" ? null : Number(form.monthly_token_limit),
+        notes: form.notes || null,
+      };
+      if (openai) payload.openai_api_key = openai;
+      if (gemini) payload.gemini_api_key = gemini;
+      await save({ data: payload });
+      qc.invalidateQueries({ queryKey: ["ai"] });
+      toast.success("Store AI updated");
+      onClose();
+    } catch (e) { toast.error((e as Error).message); }
+    finally { setSaving(false); }
+  }
+
+  async function clearKey(provider: "openai" | "gemini") {
+    if (!storeId) return;
+    if (!confirm(`Clear ${provider.toUpperCase()} key for this store?`)) return;
+    await save({ data: provider === "openai" ? { storeId, clear_openai: true } : { storeId, clear_gemini: true } });
+    qc.invalidateQueries({ queryKey: ["ai"] });
+    toast.success("Cleared");
+  }
+
+  return (
+    <Sheet open={!!storeId} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent className="w-full overflow-y-auto sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle className="truncate">{row?.name ?? "Configure AI"}</SheetTitle>
+        </SheetHeader>
+        {row && (
+          <div className="mt-4 space-y-4 text-sm">
+            <div className="flex items-center justify-between rounded-lg border bg-card p-3">
+              <div>
+                <div className="font-medium">AI enabled</div>
+                <div className="text-xs text-muted-foreground">Turn off to disable AI for this store.</div>
+              </div>
+              <Switch checked={form.enabled} onCheckedChange={(v) => setForm({ ...form, enabled: v })} />
+            </div>
+
+            <div className="space-y-3 rounded-lg border bg-card p-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Provider</label>
+                <select value={form.provider} onChange={(e) => setForm({ ...form, provider: e.target.value as any })}
+                  className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm">
+                  <option value="platform">Platform default (Lovable AI Gateway)</option>
+                  <option value="openai">OpenAI (this store's key)</option>
+                  <option value="gemini">Gemini (this store's key)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Model override</label>
+                <select value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })}
+                  className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm">
+                  <option value="">Use platform default</option>
+                  {MODELS.map((m) => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Monthly token limit</label>
+                <Input
+                  type="number" min={0}
+                  value={form.monthly_token_limit}
+                  onChange={(e) => setForm({ ...form, monthly_token_limit: e.target.value })}
+                  placeholder="0 = unlimited"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3 rounded-lg border bg-card p-3">
+              <div className="text-xs font-semibold text-muted-foreground">Provider keys (per-store)</div>
+              <ProviderKeyField
+                icon={KeyRound} label="OpenAI API key"
+                existing={row.config?.openai_key_masked}
+                value={openai} onChange={setOpenai}
+                onClear={() => clearKey("openai")} placeholder="sk-…"
+              />
+              <ProviderKeyField
+                icon={KeyRound} label="Gemini API key"
+                existing={row.config?.gemini_key_masked}
+                value={gemini} onChange={setGemini}
+                onClear={() => clearKey("gemini")} placeholder="AIza…"
+              />
+            </div>
+
+            <div className="rounded-lg border bg-card p-3">
+              <label className="text-xs font-medium text-muted-foreground">Notes</label>
+              <textarea
+                value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                className="mt-1 h-20 w-full rounded-md border bg-background p-2 text-sm"
+                placeholder="Internal notes…"
+              />
+            </div>
+
+            <div className="rounded-lg border bg-card p-3 text-xs">
+              <div className="mb-1 font-semibold text-muted-foreground">Usage (30d)</div>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <Cell label="Requests" value={row.usage30d.requests} />
+                <Cell label="Tokens" value={`${(row.usage30d.tokens / 1000).toFixed(1)}k`} />
+                <Cell label="Cost" value={`$${row.usage30d.cost.toFixed(3)}`} />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={onClose}>Cancel</Button>
+              <Button onClick={submit} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
+            </div>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function Cell({ label, value }: { label: string; value: any }) {
+  return (
+    <div className="rounded-md bg-muted p-2">
+      <div className="text-[10px] text-muted-foreground">{label}</div>
+      <div className="font-semibold">{value}</div>
     </div>
   );
 }
