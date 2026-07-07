@@ -698,4 +698,186 @@ export const getStoreUsage = createServerFn({ method: "POST" })
     };
   });
 
+// ---------- AI CONTROL CENTER ----------
+
+const MASK = (v?: string | null) => (v ? `••••${v.slice(-4)}` : null);
+
+export const listStoresAiConfig = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const last30 = new Date(Date.now() - 30 * 86400000).toISOString();
+
+    const [{ data: stores }, { data: cfgs }, { data: usage }] = await Promise.all([
+      sb.from("stores").select("id,name,slug,subscription_status,status").order("name"),
+      sb.from("store_ai_config").select("*"),
+      sb.from("ai_usage").select("store_id,cost_usd,prompt_tokens,completion_tokens,created_at")
+        .gte("created_at", last30),
+    ]);
+
+    const cfgMap = new Map<string, any>();
+    for (const c of cfgs ?? []) cfgMap.set(c.store_id, c);
+
+    const usageMap = new Map<string, { requests: number; tokens: number; cost: number }>();
+    for (const r of usage ?? []) {
+      const k = r.store_id ?? "unknown";
+      const cur = usageMap.get(k) ?? { requests: 0, tokens: 0, cost: 0 };
+      cur.requests++;
+      cur.tokens += Number(r.prompt_tokens || 0) + Number(r.completion_tokens || 0);
+      cur.cost += Number(r.cost_usd || 0);
+      usageMap.set(k, cur);
+    }
+
+    return (stores ?? []).map((s: any) => {
+      const c = cfgMap.get(s.id);
+      const u = usageMap.get(s.id) ?? { requests: 0, tokens: 0, cost: 0 };
+      return {
+        id: s.id,
+        name: s.name,
+        slug: s.slug,
+        subscription_status: s.subscription_status,
+        status: s.status,
+        config: c ? {
+          enabled: c.enabled,
+          provider: c.provider,
+          model: c.model,
+          monthly_token_limit: c.monthly_token_limit,
+          notes: c.notes,
+          openai_key_masked: MASK(c.openai_api_key),
+          gemini_key_masked: MASK(c.gemini_api_key),
+          has_openai: !!c.openai_api_key,
+          has_gemini: !!c.gemini_api_key,
+        } : null,
+        usage30d: u,
+      };
+    });
+  });
+
+export const upsertStoreAiConfig = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      storeId: z.string().uuid(),
+      enabled: z.boolean().optional(),
+      provider: z.enum(["platform", "openai", "gemini"]).optional(),
+      model: z.string().max(120).nullish(),
+      openai_api_key: z.string().max(500).nullish(),
+      gemini_api_key: z.string().max(500).nullish(),
+      monthly_token_limit: z.number().int().min(0).nullish(),
+      notes: z.string().max(500).nullish(),
+      clear_openai: z.boolean().optional(),
+      clear_gemini: z.boolean().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const { data: existing } = await sb.from("store_ai_config").select("id").eq("store_id", data.storeId).maybeSingle();
+    const patch: any = {};
+    if (data.enabled !== undefined) patch.enabled = data.enabled;
+    if (data.provider !== undefined) patch.provider = data.provider;
+    if (data.model !== undefined) patch.model = data.model;
+    if (data.monthly_token_limit !== undefined) patch.monthly_token_limit = data.monthly_token_limit;
+    if (data.notes !== undefined) patch.notes = data.notes;
+    if (data.clear_openai) patch.openai_api_key = null;
+    else if (data.openai_api_key) patch.openai_api_key = data.openai_api_key;
+    if (data.clear_gemini) patch.gemini_api_key = null;
+    else if (data.gemini_api_key) patch.gemini_api_key = data.gemini_api_key;
+
+    if (existing) {
+      const { error } = await sb.from("store_ai_config").update(patch).eq("store_id", data.storeId);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await sb.from("store_ai_config").insert({ store_id: data.storeId, ...patch });
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true };
+  });
+
+export const aiControlCenterOverview = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const now = Date.now();
+    const last30 = new Date(now - 30 * 86400000).toISOString();
+    const last7 = new Date(now - 7 * 86400000);
+
+    const [{ data: globalSettings }, { data: usage }, { count: enabledStores }, { count: totalConfigs }] = await Promise.all([
+      sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle(),
+      sb.from("ai_usage").select("model,cost_usd,prompt_tokens,completion_tokens,created_at,store_id")
+        .gte("created_at", last30),
+      sb.from("store_ai_config").select("*", { count: "exact", head: true }).eq("enabled", true),
+      sb.from("store_ai_config").select("*", { count: "exact", head: true }),
+    ]);
+
+    let requests = 0, tokens = 0, cost = 0, req7 = 0, cost7 = 0;
+    const byModel = new Map<string, { requests: number; tokens: number; cost: number }>();
+    const days: { date: string; cost: number; requests: number }[] = [];
+    const dayStart0 = new Date(now); dayStart0.setHours(0, 0, 0, 0);
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(dayStart0.getTime() - i * 86400000);
+      days.push({ date: d.toISOString().slice(5, 10), cost: 0, requests: 0 });
+    }
+    const dayZeroTs = new Date(dayStart0.getTime() - 6 * 86400000).getTime();
+    for (const r of usage ?? []) {
+      requests++;
+      const t = Number(r.prompt_tokens || 0) + Number(r.completion_tokens || 0);
+      const c = Number(r.cost_usd || 0);
+      tokens += t; cost += c;
+      const created = new Date(r.created_at);
+      if (created >= last7) { req7++; cost7 += c; }
+      const bm = byModel.get(r.model) ?? { requests: 0, tokens: 0, cost: 0 };
+      bm.requests++; bm.tokens += t; bm.cost += c;
+      byModel.set(r.model, bm);
+      const dayIdx = Math.floor((created.getTime() - dayZeroTs) / 86400000);
+      if (dayIdx >= 0 && dayIdx < 7) { days[dayIdx].cost += c; days[dayIdx].requests++; }
+    }
+
+    return {
+      global: {
+        enabled: !!globalSettings?.enabled,
+        default_model: globalSettings?.default_model ?? null,
+        has_lovable_key: !!globalSettings?.provider_api_key,
+        openai_key_masked: MASK(globalSettings?.openai_api_key),
+        gemini_key_masked: MASK(globalSettings?.gemini_api_key),
+        has_openai: !!globalSettings?.openai_api_key,
+        has_gemini: !!globalSettings?.gemini_api_key,
+      },
+      totals: { requests, tokens, cost, req7, cost7 },
+      spark: days,
+      byModel: Array.from(byModel.entries())
+        .map(([model, v]) => ({ model, ...v }))
+        .sort((a, b) => b.cost - a.cost),
+      configuredStores: totalConfigs ?? 0,
+      enabledStores: enabledStores ?? 0,
+    };
+  });
+
+export const updateGlobalAiKeys = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      openai_api_key: z.string().max(500).nullish(),
+      gemini_api_key: z.string().max(500).nullish(),
+      clear_openai: z.boolean().optional(),
+      clear_gemini: z.boolean().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const patch: any = {};
+    if (data.clear_openai) patch.openai_api_key = null;
+    else if (data.openai_api_key) patch.openai_api_key = data.openai_api_key;
+    if (data.clear_gemini) patch.gemini_api_key = null;
+    else if (data.gemini_api_key) patch.gemini_api_key = data.gemini_api_key;
+    if (Object.keys(patch).length === 0) return { ok: true };
+    const { error } = await sb.from("ai_global_settings").update(patch).eq("id", 1);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+
 
