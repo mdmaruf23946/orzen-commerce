@@ -167,6 +167,75 @@ export type Database = {
           },
         ]
       }
+      announcements: {
+        Row: {
+          audience: string
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          published_at: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audience?: string
+          body: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          published_at?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: string
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          published_at?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      api_keys: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          key_hash: string
+          last_used_at: string | null
+          name: string
+          prefix: string
+          revoked_at: string | null
+          scopes: string[]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key_hash: string
+          last_used_at?: string | null
+          name: string
+          prefix: string
+          revoked_at?: string | null
+          scopes?: string[]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key_hash?: string
+          last_used_at?: string | null
+          name?: string
+          prefix?: string
+          revoked_at?: string | null
+          scopes?: string[]
+        }
+        Relationships: []
+      }
       banners: {
         Row: {
           created_at: string
@@ -230,6 +299,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      contact_requests: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          phone: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          phone?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          phone?: string | null
+          status?: string
+        }
+        Relationships: []
       }
       coupon_redemptions: {
         Row: {
@@ -332,6 +431,45 @@ export type Database = {
           },
         ]
       }
+      courier_providers: {
+        Row: {
+          api_key: string | null
+          base_url: string | null
+          code: string
+          config: Json
+          created_at: string
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          api_key?: string | null
+          base_url?: string | null
+          code: string
+          config?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string | null
+          base_url?: string | null
+          code?: string
+          config?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_notes: {
         Row: {
           created_at: string
@@ -407,6 +545,77 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      feedback: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          page_url: string | null
+          rating: number | null
+          store_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          page_url?: string | null
+          rating?: number | null
+          store_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          page_url?: string | null
+          rating?: number | null
+          store_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_pixel_defaults: {
+        Row: {
+          capi_token: string | null
+          extra: Json
+          fb_pixel_id: string | null
+          ga4_id: string | null
+          gtm_id: string | null
+          id: number
+          tiktok_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          capi_token?: string | null
+          extra?: Json
+          fb_pixel_id?: string | null
+          ga4_id?: string | null
+          gtm_id?: string | null
+          id?: number
+          tiktok_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          capi_token?: string | null
+          extra?: Json
+          fb_pixel_id?: string | null
+          ga4_id?: string | null
+          gtm_id?: string | null
+          id?: number
+          tiktok_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       messenger_integrations: {
         Row: {
@@ -739,6 +948,33 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_feature_flags: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          enabled: boolean
+          flag_key: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          flag_key: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          flag_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_notices: {
         Row: {
           body: string | null
@@ -786,6 +1022,24 @@ export type Database = {
           nagad?: Json
           rocket?: Json
           sslcommerz?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          id: number
+          settings: Json
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          settings?: Json
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          settings?: Json
           updated_at?: string
         }
         Relationships: []
@@ -1332,6 +1586,85 @@ export type Database = {
         }
         Relationships: []
       }
+      support_tickets: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          priority: string
+          status: string
+          store_id: string | null
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          store_id?: string | null
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          store_id?: string | null
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_messages: {
+        Row: {
+          author_user_id: string | null
+          body: string
+          created_at: string
+          id: string
+          is_internal: boolean
+          ticket_id: string
+        }
+        Insert: {
+          author_user_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          ticket_id: string
+        }
+        Update: {
+          author_user_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1350,6 +1683,45 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      webhooks: {
+        Row: {
+          created_at: string
+          event: string
+          id: string
+          is_active: boolean
+          last_delivery_at: string | null
+          last_status: number | null
+          name: string
+          secret: string | null
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          event: string
+          id?: string
+          is_active?: boolean
+          last_delivery_at?: string | null
+          last_status?: number | null
+          name: string
+          secret?: string | null
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          id?: string
+          is_active?: boolean
+          last_delivery_at?: string | null
+          last_status?: number | null
+          name?: string
+          secret?: string | null
+          updated_at?: string
+          url?: string
         }
         Relationships: []
       }
