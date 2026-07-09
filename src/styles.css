@@ -140,5 +140,51 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 }
+
+/* ORZEN brand tokens & landing-page utilities */
+:root {
+  --orzen-navy: #111827;
+  --orzen-blue: #2563eb;
+  --orzen-blue-600: #1d4ed8;
+  --orzen-success: #16a34a;
+  --orzen-warning: #f59e0b;
+  --orzen-danger: #dc2626;
+  --orzen-border: #e5e7eb;
+  --orzen-bg: #ffffff;
+  --orzen-muted: #6b7280;
+  --orzen-slate-50: #f9fafb;
+  --orzen-slate-100: #f3f4f6;
+  --shadow-soft: 0 10px 30px -12px rgb(17 24 39 / 0.10);
+  --shadow-lift: 0 20px 45px -20px rgb(17 24 39 / 0.18);
+}
+
+@keyframes orzen-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes orzen-fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes orzen-blink {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+@utility orzen-float {
+  animation: orzen-float 4s ease-in-out infinite;
+}
+@utility orzen-fade-up {
+  animation: orzen-fade-up 0.7s ease-out both;
+}
+@utility orzen-blink {
+  animation: orzen-blink 1.4s ease-in-out infinite;
+}
+
