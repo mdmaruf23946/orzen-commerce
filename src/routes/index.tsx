@@ -1189,7 +1189,6 @@ function Footer() {
     {
       title: "Product",
       links: [
-        { label: "Pricing", href: "#pricing" },
         { label: "Features", href: "#features" },
         { label: "Templates", href: "#templates" },
         { label: "AI", href: "#ai" },
