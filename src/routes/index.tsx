@@ -956,17 +956,19 @@ function WhyOrzen() {
     <section className="bg-[color:var(--orzen-slate-50)] py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <SectionHeader eyebrow="Why ORZEN" title="Built for the way you actually sell" />
-        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {WHY.map((w) => (
             <div
               key={w.title}
-              className="rounded-2xl border border-[color:var(--orzen-border)] bg-white p-5 transition hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]"
+              className="flex h-full items-start gap-4 rounded-2xl border border-[color:var(--orzen-border)] bg-white p-6 transition hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]"
             >
-              <span className="inline-grid h-11 w-11 place-items-center rounded-xl bg-[color:var(--orzen-navy)] text-white">
+              <span className="inline-grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[color:var(--orzen-navy)] text-white">
                 <w.icon className="h-5 w-5" />
               </span>
-              <h3 className="mt-4 text-base font-bold">{w.title}</h3>
-              <p className="mt-1.5 text-sm text-[color:var(--orzen-muted)]">{w.desc}</p>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-bold leading-snug">{w.title}</h3>
+                <p className="mt-1.5 text-sm text-[color:var(--orzen-muted)]">{w.desc}</p>
+              </div>
             </div>
           ))}
         </div>
