@@ -631,62 +631,34 @@ function Workflow() {
           title="From signup to first sale in an afternoon"
           subtitle="A guided path from first login to scaling — every step handled inside ORZEN."
         />
-        <div className="relative mt-14">
+        <div className="relative mx-auto mt-14 max-w-3xl">
           <div
-            className="absolute left-5 top-0 h-full w-px bg-gradient-to-b from-[color:var(--orzen-blue)]/40 to-transparent lg:left-1/2 lg:-translate-x-1/2"
+            className="absolute left-5 top-2 bottom-2 w-px bg-gradient-to-b from-[color:var(--orzen-blue)]/50 via-[color:var(--orzen-border)] to-transparent"
             aria-hidden
           />
-          <ol className="space-y-8 lg:space-y-14">
+          <ol className="space-y-6">
             {STEPS.map((s, i) => (
-              <li
-                key={s.title}
-                className={cn(
-                  "relative grid grid-cols-[2.5rem_1fr] items-center gap-4 lg:grid-cols-2 lg:gap-10",
-                  i % 2 === 1 && "lg:[direction:rtl]"
-                )}
-              >
-                <div className="relative z-10 lg:col-span-2 lg:grid lg:grid-cols-2 lg:gap-10 lg:[direction:ltr]">
-                  <div
-                    className={cn(
-                      "hidden lg:block",
-                      i % 2 === 1 ? "lg:order-2" : "lg:order-1"
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "rounded-2xl border border-[color:var(--orzen-border)] bg-white p-6 shadow-[var(--shadow-soft)]",
-                        i % 2 === 1 ? "lg:ml-10 lg:text-left" : "lg:mr-10 lg:text-right"
-                      )}
-                    >
-                      <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--orzen-blue)]">
+              <li key={s.title} className="relative flex items-stretch gap-4 sm:gap-6">
+                <div className="relative z-10 flex flex-col items-center">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[color:var(--orzen-navy)] text-xs font-bold text-white shadow-[var(--shadow-soft)] ring-4 ring-white">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1 rounded-2xl border border-[color:var(--orzen-border)] bg-white p-5 shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 sm:p-6">
+                  <div className="flex items-start gap-4">
+                    <span className="inline-grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[color:var(--orzen-blue)]/10 text-[color:var(--orzen-blue)]">
+                      <s.icon className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-[color:var(--orzen-blue)]">
                         Step {i + 1}
                       </p>
-                      <h3 className="mt-1 text-lg font-bold">{s.title}</h3>
-                      <p className="mt-2 text-sm text-[color:var(--orzen-muted)]">{s.desc}</p>
+                      <h3 className="mt-0.5 text-base font-bold leading-snug sm:text-lg">
+                        {s.title}
+                      </h3>
+                      <p className="mt-1.5 text-sm text-[color:var(--orzen-muted)]">{s.desc}</p>
                     </div>
                   </div>
-                  <div
-                    className={cn(
-                      "hidden lg:flex lg:items-center",
-                      i % 2 === 1 ? "lg:order-1 lg:justify-end" : "lg:order-2 lg:justify-start"
-                    )}
-                  >
-                    <span className="grid h-14 w-14 place-items-center rounded-2xl bg-[color:var(--orzen-navy)] text-white shadow-[var(--shadow-soft)]">
-                      <s.icon className="h-6 w-6" />
-                    </span>
-                  </div>
-                </div>
-
-                {/* Mobile row */}
-                <span className="grid h-10 w-10 place-items-center rounded-xl bg-[color:var(--orzen-navy)] text-white lg:hidden">
-                  <s.icon className="h-5 w-5" />
-                </span>
-                <div className="lg:hidden">
-                  <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--orzen-blue)]">
-                    Step {i + 1}
-                  </p>
-                  <h3 className="mt-0.5 text-base font-bold">{s.title}</h3>
-                  <p className="mt-1 text-sm text-[color:var(--orzen-muted)]">{s.desc}</p>
                 </div>
               </li>
             ))}
