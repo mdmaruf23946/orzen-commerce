@@ -27,7 +27,6 @@ import {
   X,
   Check,
   Play,
-  Play,
   Store,
   ShoppingBag,
   User,
