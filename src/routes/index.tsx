@@ -468,17 +468,19 @@ function Features() {
           title="Everything you need to sell online"
           subtitle="12 production-grade modules built into every store — no plugins, no add-ons, no slowdowns."
         />
-        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f) => (
             <div
               key={f.title}
-              className="group rounded-2xl border border-[color:var(--orzen-border)] bg-white p-5 transition-all hover:-translate-y-1 hover:border-[color:var(--orzen-navy)]/20 hover:shadow-[var(--shadow-soft)]"
+              className="group flex h-full items-start gap-4 rounded-2xl border border-[color:var(--orzen-border)] bg-white p-6 transition-all hover:-translate-y-1 hover:border-[color:var(--orzen-navy)]/20 hover:shadow-[var(--shadow-soft)]"
             >
-              <span className="inline-grid h-11 w-11 place-items-center rounded-xl bg-[color:var(--orzen-blue)]/10 text-[color:var(--orzen-blue)] transition-colors group-hover:bg-[color:var(--orzen-blue)] group-hover:text-white">
+              <span className="inline-grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[color:var(--orzen-blue)]/10 text-[color:var(--orzen-blue)] transition-colors group-hover:bg-[color:var(--orzen-blue)] group-hover:text-white">
                 <f.icon className="h-5 w-5" />
               </span>
-              <h3 className="mt-4 text-base font-bold">{f.title}</h3>
-              <p className="mt-1.5 text-sm text-[color:var(--orzen-muted)]">{f.desc}</p>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-bold leading-snug">{f.title}</h3>
+                <p className="mt-1.5 text-sm text-[color:var(--orzen-muted)]">{f.desc}</p>
+              </div>
             </div>
           ))}
         </div>
