@@ -1,80 +1,54 @@
-# ORZEN Landing Page — Full Redesign Plan
+## Landing Page Cleanup — Scope
 
-Rebuild `src/routes/index.tsx` from scratch as a premium, white-background, mobile-first SaaS landing page for ORZEN, matching Shopify/Framer/Stripe/Vercel polish. All 15 sections, brand tokens, animations, and responsive rules included. No placeholder lorem ipsum — realistic copy for a Bangladesh-friendly eCommerce SaaS.
+Edit `src/routes/index.tsx` only. No content rewrites, no token changes.
 
-## Design tokens (added to `src/styles.css`)
+### 1. Remove sections
+- Delete the entire **Pricing** section (billing-cycle toggle + 4 plan cards).
+- Delete the entire **Compare Plans** table section.
+- Remove their nav links / anchor targets from the sticky header + footer so smooth-scroll never lands on a missing anchor.
+- Recheck vertical rhythm: keep the standard `py-20 md:py-28` between remaining sections so no visible gap remains.
 
-Extend `:root` and `@theme inline` with ORZEN brand tokens (kept alongside existing shadcn tokens, not replacing them):
+### 2. Platform Features — new card layout
+Convert each of the 12 cards to a horizontal flex row:
 
-- `--orzen-navy: #111827` (primary)
-- `--orzen-blue: #2563EB` (accent)
-- `--orzen-success: #16A34A`
-- `--orzen-warning: #F59E0B`
-- `--orzen-danger: #DC2626`
-- `--orzen-border: #E5E7EB`
-- `--orzen-bg: #FFFFFF`
-- Soft shadow token: `--shadow-soft: 0 10px 30px -12px rgb(17 24 39 / 0.08)`
-- Utility keyframes: `float`, `fade-up`, `count-in` (added via `@utility` / keyframes block)
+```text
+┌─────────────────────────────────────┐
+│  [Icon]   Feature Title             │
+│           Feature description text  │
+└─────────────────────────────────────┘
+```
 
-Typography: Inter (already common) loaded via `<link>` in `src/routes/__root.tsx` head — display weights 600/700/800 for headlines, 400/500 for body.
+- `flex items-start gap-4`, icon in a fixed `h-11 w-11` tinted rounded square on the left.
+- Right column: title on top (`font-semibold`), description below (`text-sm text-muted-foreground mt-1`).
+- Grid stays `sm:grid-cols-2 lg:grid-cols-3`, all cards `h-full` for equal height, uniform `p-6`.
+- Keep hover lift + border transition already in use.
 
-## Page structure (single route, componentized inline)
+### 3. Why ORZEN — same layout as Features
+- Apply the identical horizontal `[Icon] Title / Description-below` card to all 8 benefit cards.
+- Same grid, same padding, same equal-height rule. Visually consistent with Section 1.
 
-File: `src/routes/index.tsx` — replaces current landing.
-Head metadata updated: title "ORZEN — Create Your Online Store in Minutes", real description, og tags, twitter card.
+### 4. How It Works — redesigned timeline
+Rebuild the current zig-zag/alternating timeline into a single-column premium timeline that works identically on mobile and desktop:
 
-Sections in order:
+```text
+│
+● 01   ┌──────────────────────────────────────┐
+│      │ [Icon]  Step Title                   │
+│      │         Step description             │
+│      └──────────────────────────────────────┘
+│
+● 02   ┌──────────────────────────────────────┐
+```
 
-1. **Sticky Header** — logo wordmark, nav (Features, Pricing, Templates, AI, FAQ, Contact) with smooth-scroll to section anchors, `Sign In` link → `/auth`, `Create Store` primary button → `/auth`. Backdrop blur + border-bottom on scroll. Mobile: hamburger sheet.
-2. **Hero** — Two-column on desktop, stacked on mobile. Left: H1 "Create Your Online Store in Minutes.", subheadline listing capabilities, `Create Free Store` + `Watch Demo` buttons, tiny trust row ("No credit card • Free forever plan"). Right: layered dashboard mockup built in pure HTML/CSS/SVG (no external images) — main dashboard card with KPIs (Revenue, Orders, Visitors), a mini bar chart, floating cards for "New Order", "AI reply sent", "Courier picked up", with subtle floating animation.
-3. **Trust bar** — 4 stat tiles with counter-in animation (1000+ Stores, 50,000+ Orders, 99.9% Uptime, 24/7 Monitoring).
-4. **Features grid** — 12 cards (Store Builder, AI Sales Agent, Messenger AI, Facebook Pixel, Courier Integration, Inventory, Coupons, Analytics, Invoices, SEO, Theme Customizer, Multi-Device). Lucide icon in a rounded tinted square, title, one-line description, hover lift + border color shift.
-5. **AI Sales Agent showcase** — Split layout. Left: bullet list of what the AI does + `Try AI Demo` button. Right: realistic chat widget mockup (customer bubbles + AI bubbles, typing indicator, product card in-chat).
-6. **Platform Workflow** — 7-step vertical timeline on mobile, alternating zig-zag on desktop, with numbered circles, connector line, icon per step (Create Account → Analytics & Growth).
-7. **Dashboard Showcase** — Tabbed mockup switcher (Store Admin / Customer Store / Owner Panel / AI / Analytics). Rendered as browser-chrome frame on desktop and phone frame beside it. All mockups built with divs/SVG.
-8. **Pricing** — Billing cycle toggle (Monthly / 3M / 6M / Yearly) with auto-applied discount badges (10/20/30%). Four cards (Free, Basic, Business [Most Popular ring + badge], Custom). Each card: price, per-cycle savings note, feature checklist (5–7 items), CTA. Mobile: horizontal snap-scroll.
-9. **Compare Plans table** — Full feature matrix (Products, Orders, Storage, AI Agent, Messenger, Courier, Pixel, Analytics, Invoices, Coupons, SEO, Themes, Support, Staff, API, Custom Domain) × 4 plans. Uses ✓ / — / "Unlimited" chips. Desktop: real table. Mobile: per-plan stacked cards.
-10. **Theme Marketplace** — 7 template cards (Fashion, Electronics, Furniture, Cosmetics, Books, Food, Digital). Each card: stylized preview (gradient + mock product tiles built in CSS, category-appropriate palette), category label, `Use Template` button. Horizontal scroll on mobile.
-11. **Why ORZEN** — 8 reason cards in a 4×2 grid (No Coding, Fast Setup, AI Powered, Bangladesh Friendly, Courier Ready, Facebook Ready, Mobile First, Affordable). Icon + short blurb.
-12. **Testimonials** — Auto-advancing slider (3 visible desktop, 1 mobile) using a lightweight interval + transform, pause on hover. Each card: avatar (initials in colored circle), name, store name, 5-star rating, review. 6 testimonials with Bangladeshi store names.
-13. **FAQ** — Accordion built on shadcn `Accordion` (already installed). 15 Q&A across Pricing, AI, Payments, Courier, Messenger, Free Trial, Support, Themes.
-14. **Final CTA** — Full-width dark navy panel with rounded top, headline "Ready to Launch Your Store?", subcopy, `Create Store Free` (blue) + `View Pricing` (outline light) buttons, subtle grid/gradient backdrop.
-15. **Footer** — 4-column on desktop (Brand + description, Product links, Company links, Legal), social icons row (Facebook, LinkedIn, YouTube, Email), bottom bar with © ORZEN and small print.
+- Outer wrapper: `relative max-w-3xl mx-auto`, vertical connector line as an absolute `w-px bg-border` positioned at a fixed left offset (e.g. `left-5`).
+- Each step is a flex row: numbered circle (`h-10 w-10 rounded-full bg-primary text-primary-foreground`) sitting on the line, then a card taking `flex-1` to the right with `ml-6`.
+- Card interior uses the same `[Icon] Title / Description-below` pattern as Features / Why ORZEN.
+- No alternating sides, no overlap, no clipped text; description gets full card width.
+- Mobile: same structure, timeline stays on the left; card fills remaining width, no horizontal scroll.
 
-## Animations
+### 5. Housekeeping
+- Fix the SSR hydration mismatch in the trust-bar `CountUp` component: render the plain numeric string on the server and start the animation only after mount (client-only effect), so SSR and first client render match (`০` vs `0` locale mismatch goes away).
+- No changes to `src/styles.css`, tokens, fonts, hero, AI showcase, dashboards, marketplace, testimonials, FAQ, final CTA, or footer content — only nav-link cleanup for the removed anchors.
 
-- `animate-fade-in` and a new `animate-fade-up` on section entry (CSS keyframes, `will-change: transform, opacity`, triggered by an `IntersectionObserver` hook `useReveal` added to `src/hooks/use-reveal.ts`).
-- Counter animation for stats using `requestAnimationFrame` (in-view only).
-- Floating dashboard cards use `@keyframes float` (translateY 0 → -6px, 4s ease-in-out infinite, staggered delays).
-- Hover lift: `transition-transform hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]`.
-- Smooth scrolling via `html { scroll-behavior: smooth }` and `scroll-margin-top` on section anchors so sticky header doesn't cover them.
-
-## Responsive rules
-
-- Mobile-first Tailwind: base styles = 320px; `sm/md/lg/xl` upgrades.
-- No horizontal page scroll: `overflow-x-hidden` on `body` wrapper; horizontally scrolling regions are opt-in (pricing, templates) via `overflow-x-auto snap-x`.
-- Buttons full width under `sm`.
-- Grids collapse to 1 col on mobile, 2 on `sm`, 3–4 on `lg`.
-- All mockups use `max-w-full` + intrinsic aspect ratios.
-
-## Performance & SEO
-
-- No external images — mockups, template previews, and avatars are pure CSS/SVG, so nothing to lazy-load beyond fonts.
-- Single route file, tree-shaken lucide icons, no new dependencies.
-- Semantic HTML: single `<h1>`, `<section>` per block with `aria-labelledby`, nav landmarks, accessible accordion (shadcn), sufficient contrast against white using navy/blue tokens.
-- Route head: real title (<60 chars), description (<160 chars), og:title/description/type, twitter:card. No og:image (none available; hosting fallback will handle).
-
-## Files touched
-
-- `src/routes/index.tsx` — full rewrite (single file, section components colocated at bottom for clarity, ~700–900 lines).
-- `src/styles.css` — add ORZEN tokens, `@keyframes float / fade-up`, `@utility` helpers.
-- `src/routes/__root.tsx` — add Inter `<link>` in head (only if not already loaded).
-- `src/hooks/use-reveal.ts` — new tiny IntersectionObserver hook for reveal-on-scroll and counters.
-
-## Out of scope (unless you say otherwise)
-
-- Wiring nav CTAs to anything beyond `/auth` and in-page anchors.
-- Building real `/pricing`, `/features`, `/templates`, `/ai`, `/faq`, `/contact` routes (nav uses `#` anchors on the landing page; separate routes can be a follow-up).
-- Real testimonial photos (using styled initials avatars instead — no stock photo dependency).
-
-Confirm and I'll build it end-to-end in one pass.
+### Files touched
+- `src/routes/index.tsx` (only)

@@ -26,7 +26,6 @@ import {
   Menu,
   X,
   Check,
-  Minus,
   Play,
   Store,
   ShoppingBag,
@@ -64,8 +63,6 @@ function Landing() {
         <AIShowcase />
         <Workflow />
         <DashboardShowcase />
-        <Pricing />
-        <ComparePlans />
         <Templates />
         <WhyOrzen />
         <Testimonials />
@@ -83,7 +80,6 @@ function Landing() {
 
 const NAV = [
   { label: "Features", href: "#features" },
-  { label: "Pricing", href: "#pricing" },
   { label: "Templates", href: "#templates" },
   { label: "AI", href: "#ai" },
   { label: "FAQ", href: "#faq" },
@@ -407,7 +403,7 @@ function StatTile({ end, suffix, label, start }: { end: number; suffix: string; 
   return (
     <div className="text-center">
       <p className="text-3xl font-extrabold sm:text-4xl">
-        {v.toLocaleString()}
+        {v.toLocaleString("en-US")}
         <span className="text-[color:var(--orzen-blue)]">{suffix}</span>
       </p>
       <p className="mt-1 text-xs font-medium text-[color:var(--orzen-muted)] sm:text-sm">{label}</p>
@@ -471,17 +467,19 @@ function Features() {
           title="Everything you need to sell online"
           subtitle="12 production-grade modules built into every store — no plugins, no add-ons, no slowdowns."
         />
-        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f) => (
             <div
               key={f.title}
-              className="group rounded-2xl border border-[color:var(--orzen-border)] bg-white p-5 transition-all hover:-translate-y-1 hover:border-[color:var(--orzen-navy)]/20 hover:shadow-[var(--shadow-soft)]"
+              className="group flex h-full items-start gap-4 rounded-2xl border border-[color:var(--orzen-border)] bg-white p-6 transition-all hover:-translate-y-1 hover:border-[color:var(--orzen-navy)]/20 hover:shadow-[var(--shadow-soft)]"
             >
-              <span className="inline-grid h-11 w-11 place-items-center rounded-xl bg-[color:var(--orzen-blue)]/10 text-[color:var(--orzen-blue)] transition-colors group-hover:bg-[color:var(--orzen-blue)] group-hover:text-white">
+              <span className="inline-grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[color:var(--orzen-blue)]/10 text-[color:var(--orzen-blue)] transition-colors group-hover:bg-[color:var(--orzen-blue)] group-hover:text-white">
                 <f.icon className="h-5 w-5" />
               </span>
-              <h3 className="mt-4 text-base font-bold">{f.title}</h3>
-              <p className="mt-1.5 text-sm text-[color:var(--orzen-muted)]">{f.desc}</p>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-bold leading-snug">{f.title}</h3>
+                <p className="mt-1.5 text-sm text-[color:var(--orzen-muted)]">{f.desc}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -632,62 +630,34 @@ function Workflow() {
           title="From signup to first sale in an afternoon"
           subtitle="A guided path from first login to scaling — every step handled inside ORZEN."
         />
-        <div className="relative mt-14">
+        <div className="relative mx-auto mt-14 max-w-3xl">
           <div
-            className="absolute left-5 top-0 h-full w-px bg-gradient-to-b from-[color:var(--orzen-blue)]/40 to-transparent lg:left-1/2 lg:-translate-x-1/2"
+            className="absolute left-5 top-2 bottom-2 w-px bg-gradient-to-b from-[color:var(--orzen-blue)]/50 via-[color:var(--orzen-border)] to-transparent"
             aria-hidden
           />
-          <ol className="space-y-8 lg:space-y-14">
+          <ol className="space-y-6">
             {STEPS.map((s, i) => (
-              <li
-                key={s.title}
-                className={cn(
-                  "relative grid grid-cols-[2.5rem_1fr] items-center gap-4 lg:grid-cols-2 lg:gap-10",
-                  i % 2 === 1 && "lg:[direction:rtl]"
-                )}
-              >
-                <div className="relative z-10 lg:col-span-2 lg:grid lg:grid-cols-2 lg:gap-10 lg:[direction:ltr]">
-                  <div
-                    className={cn(
-                      "hidden lg:block",
-                      i % 2 === 1 ? "lg:order-2" : "lg:order-1"
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "rounded-2xl border border-[color:var(--orzen-border)] bg-white p-6 shadow-[var(--shadow-soft)]",
-                        i % 2 === 1 ? "lg:ml-10 lg:text-left" : "lg:mr-10 lg:text-right"
-                      )}
-                    >
-                      <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--orzen-blue)]">
+              <li key={s.title} className="relative flex items-stretch gap-4 sm:gap-6">
+                <div className="relative z-10 flex flex-col items-center">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[color:var(--orzen-navy)] text-xs font-bold text-white shadow-[var(--shadow-soft)] ring-4 ring-white">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1 rounded-2xl border border-[color:var(--orzen-border)] bg-white p-5 shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 sm:p-6">
+                  <div className="flex items-start gap-4">
+                    <span className="inline-grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[color:var(--orzen-blue)]/10 text-[color:var(--orzen-blue)]">
+                      <s.icon className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-[color:var(--orzen-blue)]">
                         Step {i + 1}
                       </p>
-                      <h3 className="mt-1 text-lg font-bold">{s.title}</h3>
-                      <p className="mt-2 text-sm text-[color:var(--orzen-muted)]">{s.desc}</p>
+                      <h3 className="mt-0.5 text-base font-bold leading-snug sm:text-lg">
+                        {s.title}
+                      </h3>
+                      <p className="mt-1.5 text-sm text-[color:var(--orzen-muted)]">{s.desc}</p>
                     </div>
                   </div>
-                  <div
-                    className={cn(
-                      "hidden lg:flex lg:items-center",
-                      i % 2 === 1 ? "lg:order-1 lg:justify-end" : "lg:order-2 lg:justify-start"
-                    )}
-                  >
-                    <span className="grid h-14 w-14 place-items-center rounded-2xl bg-[color:var(--orzen-navy)] text-white shadow-[var(--shadow-soft)]">
-                      <s.icon className="h-6 w-6" />
-                    </span>
-                  </div>
-                </div>
-
-                {/* Mobile row */}
-                <span className="grid h-10 w-10 place-items-center rounded-xl bg-[color:var(--orzen-navy)] text-white lg:hidden">
-                  <s.icon className="h-5 w-5" />
-                </span>
-                <div className="lg:hidden">
-                  <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--orzen-blue)]">
-                    Step {i + 1}
-                  </p>
-                  <h3 className="mt-0.5 text-base font-bold">{s.title}</h3>
-                  <p className="mt-1 text-sm text-[color:var(--orzen-muted)]">{s.desc}</p>
                 </div>
               </li>
             ))}
@@ -901,266 +871,6 @@ function Kpi({ label, v }: { label: string; v: string }) {
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Pricing                                                                     */
-/* -------------------------------------------------------------------------- */
-
-type Cycle = "monthly" | "3m" | "6m" | "yearly";
-const CYCLES: { key: Cycle; label: string; months: number; discount: number }[] = [
-  { key: "monthly", label: "Monthly", months: 1, discount: 0 },
-  { key: "3m", label: "3 Months", months: 3, discount: 0.1 },
-  { key: "6m", label: "6 Months", months: 6, discount: 0.2 },
-  { key: "yearly", label: "Yearly", months: 12, discount: 0.3 },
-];
-
-const PLANS = [
-  {
-    name: "Free",
-    monthly: 0,
-    tagline: "Perfect for exploring.",
-    cta: "Start Free",
-    features: ["1 store", "20 products", "Basic analytics", "Storefront chat", "Community support"],
-  },
-  {
-    name: "Basic",
-    monthly: 990,
-    tagline: "For new store owners.",
-    cta: "Upgrade",
-    features: ["1 store", "500 products", "AI Sales Agent (basic)", "Courier integration", "Email support"],
-  },
-  {
-    name: "Business",
-    monthly: 2490,
-    tagline: "For growing brands.",
-    cta: "Upgrade",
-    popular: true,
-    features: [
-      "3 stores",
-      "Unlimited products",
-      "AI Agent + Messenger AI",
-      "Facebook Pixel & retargeting",
-      "Priority support",
-    ],
-  },
-  {
-    name: "Custom",
-    monthly: null as number | null,
-    tagline: "Enterprise & agencies.",
-    cta: "Compare Plans",
-    features: ["Unlimited stores", "Custom domain", "API access", "Dedicated manager", "SLA & onboarding"],
-  },
-];
-
-function Pricing() {
-  const [cycle, setCycle] = useState<Cycle>("monthly");
-  const current = CYCLES.find((c) => c.key === cycle)!;
-  return (
-    <section id="pricing" className="scroll-mt-24 py-20 md:py-28">
-      <div className="mx-auto max-w-7xl px-5 md:px-8">
-        <SectionHeader
-          eyebrow="Pricing"
-          title="Simple pricing that grows with you"
-          subtitle="Start free. Upgrade when you're ready. Cancel any time."
-        />
-        <div className="mx-auto mt-8 flex max-w-full justify-center overflow-x-auto">
-          <div className="inline-flex rounded-full border border-[color:var(--orzen-border)] bg-white p-1">
-            {CYCLES.map((c) => (
-              <button
-                key={c.key}
-                onClick={() => setCycle(c.key)}
-                className={cn(
-                  "relative rounded-full px-3.5 py-2 text-xs font-semibold whitespace-nowrap sm:text-sm",
-                  cycle === c.key
-                    ? "bg-[color:var(--orzen-navy)] text-white"
-                    : "text-[color:var(--orzen-muted)] hover:text-[color:var(--orzen-navy)]"
-                )}
-              >
-                {c.label}
-                {c.discount > 0 && (
-                  <span
-                    className={cn(
-                      "ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-                      cycle === c.key
-                        ? "bg-white/15 text-white"
-                        : "bg-[color:var(--orzen-success)]/10 text-[color:var(--orzen-success)]"
-                    )}
-                  >
-                    -{Math.round(c.discount * 100)}%
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="-mx-5 mt-10 grid snap-x snap-mandatory grid-flow-col auto-cols-[85%] gap-4 overflow-x-auto px-5 pb-4 sm:mx-0 sm:grid-flow-row sm:auto-cols-auto sm:grid-cols-2 sm:px-0 lg:grid-cols-4">
-          {PLANS.map((p) => {
-            const price =
-              p.monthly === null
-                ? null
-                : Math.round(p.monthly * current.months * (1 - current.discount));
-            return (
-              <div
-                key={p.name}
-                className={cn(
-                  "snap-start relative flex flex-col rounded-2xl border bg-white p-6 transition-all",
-                  p.popular
-                    ? "border-[color:var(--orzen-blue)] shadow-[var(--shadow-lift)] ring-2 ring-[color:var(--orzen-blue)]/20"
-                    : "border-[color:var(--orzen-border)] hover:shadow-[var(--shadow-soft)]"
-                )}
-              >
-                {p.popular && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[color:var(--orzen-blue)] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white">
-                    Most Popular
-                  </span>
-                )}
-                <h3 className="text-lg font-bold">{p.name}</h3>
-                <p className="mt-1 text-sm text-[color:var(--orzen-muted)]">{p.tagline}</p>
-                <div className="mt-5">
-                  {price === null ? (
-                    <p className="text-3xl font-extrabold">Let&apos;s talk</p>
-                  ) : (
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-4xl font-extrabold">৳ {price.toLocaleString()}</span>
-                      <span className="text-sm text-[color:var(--orzen-muted)]">
-                        /{current.label.toLowerCase()}
-                      </span>
-                    </div>
-                  )}
-                  {current.discount > 0 && price !== null && (
-                    <p className="mt-1 text-xs font-semibold text-[color:var(--orzen-success)]">
-                      Save {Math.round(current.discount * 100)}% billed {current.label.toLowerCase()}
-                    </p>
-                  )}
-                </div>
-                <ul className="mt-6 space-y-2.5 text-sm">
-                  {p.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2">
-                      <Check className="mt-0.5 h-4 w-4 flex-none text-[color:var(--orzen-success)]" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  to="/auth"
-                  className={cn(
-                    "mt-6 inline-flex items-center justify-center gap-1.5 rounded-full px-5 py-3 text-sm font-semibold transition",
-                    p.popular
-                      ? "bg-[color:var(--orzen-blue)] text-white hover:bg-[color:var(--orzen-blue-600)]"
-                      : "border border-[color:var(--orzen-navy)] text-[color:var(--orzen-navy)] hover:bg-[color:var(--orzen-navy)] hover:text-white"
-                  )}
-                >
-                  {p.cta}
-                </Link>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* Compare Plans                                                               */
-/* -------------------------------------------------------------------------- */
-
-const COMPARE_ROWS: { label: string; values: (string | boolean)[] }[] = [
-  { label: "Products", values: ["20", "500", "Unlimited", "Unlimited"] },
-  { label: "Orders / month", values: ["50", "2,000", "Unlimited", "Unlimited"] },
-  { label: "Storage", values: ["500 MB", "5 GB", "50 GB", "Unlimited"] },
-  { label: "AI Sales Agent", values: [false, "Basic", true, true] },
-  { label: "Messenger AI", values: [false, false, true, true] },
-  { label: "Courier Integration", values: [false, true, true, true] },
-  { label: "Facebook Pixel", values: [false, true, true, true] },
-  { label: "Analytics", values: ["Basic", true, "Advanced", "Advanced"] },
-  { label: "Invoices", values: [true, true, true, true] },
-  { label: "Coupons", values: [false, true, true, true] },
-  { label: "SEO tools", values: ["Basic", true, "Advanced", "Advanced"] },
-  { label: "Themes", values: ["3", "12", "All", "All + custom"] },
-  { label: "Support", values: ["Community", "Email", "Priority", "Dedicated"] },
-  { label: "Staff accounts", values: ["1", "3", "10", "Unlimited"] },
-  { label: "API access", values: [false, false, true, true] },
-  { label: "Custom domain", values: [false, true, true, true] },
-];
-
-function Cell({ v }: { v: string | boolean }) {
-  if (v === true) return <Check className="mx-auto h-4 w-4 text-[color:var(--orzen-success)]" />;
-  if (v === false) return <Minus className="mx-auto h-4 w-4 text-[color:var(--orzen-muted)]" />;
-  return <span className="text-sm font-medium">{v}</span>;
-}
-
-function ComparePlans() {
-  return (
-    <section className="bg-[color:var(--orzen-slate-50)] py-20 md:py-28">
-      <div className="mx-auto max-w-7xl px-5 md:px-8">
-        <SectionHeader eyebrow="Compare" title="See exactly what each plan includes" />
-        <div className="mt-12 hidden overflow-hidden rounded-2xl border border-[color:var(--orzen-border)] bg-white lg:block">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-[color:var(--orzen-slate-50)]">
-                <th className="p-4 text-left font-bold">Feature</th>
-                {PLANS.map((p) => (
-                  <th key={p.name} className="p-4 text-center font-bold">
-                    {p.name}
-                    {p.popular && (
-                      <span className="ml-2 rounded-full bg-[color:var(--orzen-blue)] px-2 py-0.5 text-[10px] font-semibold text-white">
-                        Popular
-                      </span>
-                    )}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {COMPARE_ROWS.map((r) => (
-                <tr key={r.label} className="border-t border-[color:var(--orzen-border)]">
-                  <td className="p-4 font-medium">{r.label}</td>
-                  {r.values.map((v, i) => (
-                    <td key={i} className="p-4 text-center">
-                      <Cell v={v} />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:hidden">
-          {PLANS.map((p, pi) => (
-            <div key={p.name} className="rounded-2xl border border-[color:var(--orzen-border)] bg-white p-5">
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold">{p.name}</h3>
-                {p.popular && (
-                  <span className="rounded-full bg-[color:var(--orzen-blue)] px-2 py-0.5 text-[10px] font-semibold text-white">
-                    Popular
-                  </span>
-                )}
-              </div>
-              <ul className="mt-3 space-y-2 text-sm">
-                {COMPARE_ROWS.map((r) => (
-                  <li key={r.label} className="flex items-center justify-between gap-3 border-t border-[color:var(--orzen-border)] py-2 first:border-0">
-                    <span className="text-[color:var(--orzen-muted)]">{r.label}</span>
-                    <span className="font-medium">
-                      {typeof r.values[pi] === "boolean" ? (
-                        r.values[pi] ? (
-                          <Check className="h-4 w-4 text-[color:var(--orzen-success)]" />
-                        ) : (
-                          <Minus className="h-4 w-4 text-[color:var(--orzen-muted)]" />
-                        )
-                      ) : (
-                        (r.values[pi] as string)
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
 /* -------------------------------------------------------------------------- */
 /* Templates                                                                   */
@@ -1245,17 +955,19 @@ function WhyOrzen() {
     <section className="bg-[color:var(--orzen-slate-50)] py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <SectionHeader eyebrow="Why ORZEN" title="Built for the way you actually sell" />
-        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {WHY.map((w) => (
             <div
               key={w.title}
-              className="rounded-2xl border border-[color:var(--orzen-border)] bg-white p-5 transition hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]"
+              className="flex h-full items-start gap-4 rounded-2xl border border-[color:var(--orzen-border)] bg-white p-6 transition hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]"
             >
-              <span className="inline-grid h-11 w-11 place-items-center rounded-xl bg-[color:var(--orzen-navy)] text-white">
+              <span className="inline-grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[color:var(--orzen-navy)] text-white">
                 <w.icon className="h-5 w-5" />
               </span>
-              <h3 className="mt-4 text-base font-bold">{w.title}</h3>
-              <p className="mt-1.5 text-sm text-[color:var(--orzen-muted)]">{w.desc}</p>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-bold leading-snug">{w.title}</h3>
+                <p className="mt-1.5 text-sm text-[color:var(--orzen-muted)]">{w.desc}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -1455,10 +1167,10 @@ function FinalCTA() {
               Create Store Free <ArrowRight className="h-4 w-4" />
             </Link>
             <a
-              href="#pricing"
+              href="#features"
               className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/30 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white hover:bg-white/10 sm:w-auto"
             >
-              View Pricing
+              Explore Features
             </a>
           </div>
         </div>
@@ -1476,7 +1188,6 @@ function Footer() {
     {
       title: "Product",
       links: [
-        { label: "Pricing", href: "#pricing" },
         { label: "Features", href: "#features" },
         { label: "Templates", href: "#templates" },
         { label: "AI", href: "#ai" },
