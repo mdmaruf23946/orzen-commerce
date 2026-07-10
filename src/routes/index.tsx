@@ -64,8 +64,6 @@ function Landing() {
         <AIShowcase />
         <Workflow />
         <DashboardShowcase />
-        <Pricing />
-        <ComparePlans />
         <Templates />
         <WhyOrzen />
         <Testimonials />
