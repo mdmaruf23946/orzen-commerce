@@ -404,7 +404,7 @@ function StatTile({ end, suffix, label, start }: { end: number; suffix: string; 
   return (
     <div className="text-center">
       <p className="text-3xl font-extrabold sm:text-4xl">
-        {v.toLocaleString()}
+        {v.toLocaleString("en-US")}
         <span className="text-[color:var(--orzen-blue)]">{suffix}</span>
       </p>
       <p className="mt-1 text-xs font-medium text-[color:var(--orzen-muted)] sm:text-sm">{label}</p>
