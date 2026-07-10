@@ -26,7 +26,7 @@ import {
   Menu,
   X,
   Check,
-  Minus,
+  Play,
   Play,
   Store,
   ShoppingBag,
