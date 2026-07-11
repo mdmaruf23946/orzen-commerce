@@ -562,3 +562,207 @@ export const updateTheme = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ---------- DASHBOARD OVERVIEW (redesign) ----------
+export const myDashboardOverview = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId, claims } = context;
+    const { data: store } = await supabase
+      .from("stores")
+      .select("id,name,slug,status,subscription_status,expires_at,updated_at,package_id,subscription_packages(name)")
+      .eq("owner_user_id", userId)
+      .maybeSingle();
+
+    const ownerName =
+      (claims.user_metadata as { full_name?: string; name?: string } | undefined)?.full_name ??
+      (claims.user_metadata as { name?: string } | undefined)?.name ??
+      (claims.email as string | undefined)?.split("@")[0] ??
+      "there";
+
+    if (!store) {
+      return {
+        store: null,
+        owner: { name: ownerName },
+        today: { sales: 0, orders: 0, visitors: 0, pendingOrders: 0, salesPct: 0, ordersPct: 0 },
+        visitorsAvailable: false,
+        series: { "7d": [], "30d": [], today: [], month: [] },
+        orderStatus: { pending: 0, confirmed: 0, processing: 0, delivered: 0, cancelled: 0, returned: 0 },
+        products: { total: 0, active: 0, lowStock: 0, outOfStock: 0 },
+        performance: { conversionRate: 0, healthScore: 0, customerRating: null as number | null },
+        recentOrders: [] as any[],
+        notifications: [] as any[],
+      };
+    }
+
+    const now = new Date();
+    const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
+    const today0 = startOfDay(now);
+    const yest0 = new Date(today0); yest0.setDate(yest0.getDate() - 1);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const d30 = new Date(now); d30.setDate(d30.getDate() - 29); d30.setHours(0,0,0,0);
+    const windowStart = d30 < monthStart ? d30 : monthStart;
+
+    const [ordersRes, productsRes, bannersRes, feedbackRes] = await Promise.all([
+      supabase.from("orders")
+        .select("id,invoice_no,customer_name,subtotal,status,created_at")
+        .eq("store_id", store.id)
+        .gte("created_at", new Date(yest0.getTime() - 24*3600*1000).toISOString())
+        .order("created_at", { ascending: false }),
+      supabase.from("products")
+        .select("id,name,stock,low_stock_threshold,status")
+        .eq("store_id", store.id),
+      supabase.from("banners").select("id", { count: "exact", head: true }).eq("store_id", store.id),
+      supabase.from("feedback").select("rating").eq("store_id", store.id).limit(500),
+    ]);
+
+    // Also pull all-time counts by status (cheap head:count queries)
+    const statuses = ["pending","confirmed","processing","delivered","cancelled","returned"] as const;
+    const statusCounts: Record<string, number> = { pending:0, confirmed:0, processing:0, delivered:0, cancelled:0, returned:0 };
+    await Promise.all(statuses.map(async (s) => {
+      const { count } = await supabase.from("orders")
+        .select("*", { count: "exact", head: true })
+        .eq("store_id", store.id)
+        .eq("status", s as any);
+      statusCounts[s] = count ?? 0;
+    }));
+
+    const orders = ordersRes.data ?? [];
+    // Today / yesterday
+    let todaySales = 0, todayOrders = 0, todayPending = 0;
+    let yestSales = 0, yestOrders = 0;
+    for (const o of orders) {
+      const t = new Date(o.created_at);
+      const amt = Number(o.subtotal) || 0;
+      if (t >= today0) {
+        if (o.status !== "cancelled") { todaySales += amt; todayOrders++; }
+        if (o.status === "pending") todayPending++;
+      } else if (t >= yest0 && t < today0) {
+        if (o.status !== "cancelled") { yestSales += amt; yestOrders++; }
+      }
+    }
+    const pct = (a: number, b: number) => b === 0 ? (a > 0 ? 100 : 0) : Math.round(((a - b) / b) * 100);
+
+    // Build series over the last 30 days from windowStart-window orders
+    const { data: seriesRows } = await supabase.from("orders")
+      .select("subtotal,status,created_at")
+      .eq("store_id", store.id)
+      .gte("created_at", windowStart.toISOString());
+    type Point = { date: string; sales: number; orders: number; revenue: number };
+    const buckets: Record<string, Point> = {};
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(today0); d.setDate(d.getDate() - (29 - i));
+      const key = d.toISOString().slice(0, 10);
+      buckets[key] = { date: key, sales: 0, orders: 0, revenue: 0 };
+    }
+    for (const r of seriesRows ?? []) {
+      const key = new Date(r.created_at).toISOString().slice(0, 10);
+      if (!buckets[key]) continue;
+      if (r.status === "cancelled") continue;
+      const amt = Number(r.subtotal) || 0;
+      buckets[key].sales += amt;
+      buckets[key].orders += 1;
+      if (r.status === "delivered") buckets[key].revenue += amt;
+    }
+    const all30 = Object.values(buckets);
+    const today1 = all30.slice(-1);
+    const last7 = all30.slice(-7);
+    const monthArr = all30.filter((p) => new Date(p.date) >= monthStart);
+
+    // Products
+    const products = productsRes.data ?? [];
+    const productSummary = {
+      total: products.length,
+      active: products.filter((p) => p.status === "active").length,
+      lowStock: products.filter((p) => (p.stock ?? 0) > 0 && (p.stock ?? 0) <= (p.low_stock_threshold ?? 5)).length,
+      outOfStock: products.filter((p) => (p.stock ?? 0) === 0).length,
+    };
+
+    // Performance
+    const ratings = (feedbackRes.data ?? []).map((f: any) => Number(f.rating)).filter((n) => !isNaN(n));
+    const customerRating = ratings.length ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10 : null;
+    const has = {
+      products: productSummary.total > 0 ? 25 : 0,
+      banner: (bannersRes.count ?? 0) > 0 ? 15 : 0,
+      subActive: store.subscription_status === "active" || store.subscription_status === "trialing" ? 25 : 0,
+      recentOrders: (last7.reduce((a, b) => a + b.orders, 0) > 0 ? 20 : 0),
+      lowStockPenalty: productSummary.total > 0 ? Math.round(15 * (1 - Math.min(1, productSummary.outOfStock / Math.max(1, productSummary.total)))) : 0,
+    };
+    const healthScore = Math.min(100, has.products + has.banner + has.subActive + has.recentOrders + has.lowStockPenalty);
+    const conversionRate = 0; // no visitors data available
+
+    // Recent orders
+    const recentOrders = orders.slice(0, 5).map((o) => ({
+      id: o.id,
+      order_number: o.invoice_no ?? o.id.slice(0, 8),
+      customer_name: o.customer_name,
+      subtotal: Number(o.subtotal) || 0,
+      status: o.status,
+      created_at: o.created_at,
+    }));
+
+    // Notifications
+    const notifications: { type: string; title: string; detail: string; at: string }[] = [];
+    const newOrders = orders.filter((o) => new Date(o.created_at) >= new Date(now.getTime() - 24*3600*1000));
+    if (newOrders[0]) {
+      notifications.push({
+        type: "order",
+        title: `New order from ${newOrders[0].customer_name}`,
+        detail: `৳${(Number(newOrders[0].subtotal) || 0).toFixed(0)} · ${newOrders[0].status}`,
+        at: newOrders[0].created_at,
+      });
+    }
+    const lowSample = products.find((p) => (p.stock ?? 0) > 0 && (p.stock ?? 0) <= (p.low_stock_threshold ?? 5));
+    if (productSummary.lowStock > 0 && lowSample) {
+      notifications.push({
+        type: "low-stock",
+        title: `${productSummary.lowStock} product${productSummary.lowStock > 1 ? "s" : ""} low on stock`,
+        detail: `e.g. ${lowSample.name} · ${lowSample.stock} left`,
+        at: new Date().toISOString(),
+      });
+    }
+    if (store.expires_at) {
+      const days = Math.ceil((new Date(store.expires_at).getTime() - now.getTime()) / (24*3600*1000));
+      if (days <= 7) {
+        notifications.push({
+          type: "subscription",
+          title: days <= 0 ? "Subscription expired" : `Subscription expires in ${days} day${days > 1 ? "s" : ""}`,
+          detail: "Renew to keep your store active",
+          at: store.expires_at,
+        });
+      }
+    }
+
+    return {
+      store: {
+        name: store.name,
+        slug: store.slug,
+        status: store.status,
+        subscription_status: store.subscription_status,
+        expires_at: store.expires_at,
+        updated_at: store.updated_at,
+        package_name: (store as any).subscription_packages?.name ?? null,
+      },
+      owner: { name: ownerName },
+      today: {
+        sales: todaySales,
+        orders: todayOrders,
+        visitors: 0,
+        pendingOrders: todayPending,
+        salesPct: pct(todaySales, yestSales),
+        ordersPct: pct(todayOrders, yestOrders),
+      },
+      visitorsAvailable: false,
+      series: {
+        today: today1,
+        "7d": last7,
+        "30d": all30,
+        month: monthArr,
+      },
+      orderStatus: statusCounts as { pending:number; confirmed:number; processing:number; delivered:number; cancelled:number; returned:number },
+      products: productSummary,
+      performance: { conversionRate, healthScore, customerRating },
+      recentOrders,
+      notifications: notifications.slice(0, 3),
+    };
+  });
