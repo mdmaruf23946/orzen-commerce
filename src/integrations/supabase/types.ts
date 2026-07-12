@@ -1052,6 +1052,7 @@ export type Database = {
           description: string | null
           gallery: Json
           id: string
+          is_featured: boolean
           low_stock_threshold: number | null
           name: string
           old_price: number | null
@@ -1074,6 +1075,7 @@ export type Database = {
           description?: string | null
           gallery?: Json
           id?: string
+          is_featured?: boolean
           low_stock_threshold?: number | null
           name: string
           old_price?: number | null
@@ -1096,6 +1098,7 @@ export type Database = {
           description?: string | null
           gallery?: Json
           id?: string
+          is_featured?: boolean
           low_stock_threshold?: number | null
           name?: string
           old_price?: number | null
