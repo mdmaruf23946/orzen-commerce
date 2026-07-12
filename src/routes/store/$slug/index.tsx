@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Sparkles, Flame, Grid3x3, ChevronRight } from "lucide-react";
 import {
   listStoreBanners,
   listStoreProducts,
   listStoreCategories,
+  listBestSellingProducts,
   getStoreBySlug,
 } from "@/lib/storefront.functions";
 import { useStoreUI } from "@/lib/store-ui";
@@ -40,6 +42,13 @@ const categoriesQuery = (storeId: string) =>
     staleTime: STALE,
   });
 
+const bestSellingQuery = (storeId: string) =>
+  queryOptions({
+    queryKey: ["best-selling", storeId],
+    queryFn: () => listBestSellingProducts({ data: { storeId, limit: 12 } }),
+    staleTime: STALE,
+  });
+
 export const Route = createFileRoute("/store/$slug/")({
   loader: async ({ context, params }) => {
     const store = await context.queryClient.ensureQueryData(storeQuery(params.slug));
@@ -48,6 +57,7 @@ export const Route = createFileRoute("/store/$slug/")({
       context.queryClient.ensureQueryData(bannersQuery(store.id)),
       context.queryClient.ensureQueryData(productsQuery(store.id)),
       context.queryClient.ensureQueryData(categoriesQuery(store.id)),
+      context.queryClient.ensureQueryData(bestSellingQuery(store.id)),
     ]);
     return { storeId: store.id };
   },
@@ -56,6 +66,8 @@ export const Route = createFileRoute("/store/$slug/")({
   component: StoreHome,
 });
 
+const PAGE_SIZE = 12;
+
 function StoreHome() {
   const { slug } = Route.useParams();
   const { data: store } = useSuspenseQuery(storeQuery(slug));
@@ -63,8 +75,15 @@ function StoreHome() {
   const { data: banners } = useSuspenseQuery(bannersQuery(store.id));
   const { data: products } = useSuspenseQuery(productsQuery(store.id));
   const { data: categories } = useSuspenseQuery(categoriesQuery(store.id));
+  const { data: bestSelling } = useSuspenseQuery(bestSellingQuery(store.id));
   const { query } = useStoreUI();
   const [activeCat, setActiveCat] = useState<string | null>(null);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
+
+  const featured = useMemo(
+    () => products.filter((p: any) => p.is_featured).slice(0, 12),
+    [products],
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -75,39 +94,160 @@ function StoreHome() {
     });
   }, [products, query, activeCat]);
 
+  useEffect(() => {
+    setPageSize(PAGE_SIZE);
+  }, [activeCat, query]);
+
+  function scrollToAll() {
+    document.getElementById("all-products")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       {banners.length > 0 && <BannerCarousel banners={banners} />}
 
       {categories.length > 0 && (
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-          <CategoryPill
-            label="All Products"
-            active={activeCat === null}
-            onClick={() => setActiveCat(null)}
-          />
-          {categories.map((c) => (
-            <CategoryPill
-              key={c.id}
-              label={c.name}
-              active={activeCat === c.id}
-              onClick={() => setActiveCat(c.id)}
-            />
-          ))}
-        </div>
+        <CategoryStrip
+          categories={categories}
+          active={activeCat}
+          onSelect={(id) => {
+            setActiveCat(id);
+            scrollToAll();
+          }}
+        />
       )}
 
-      {filtered.length === 0 ? (
-        <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">
-          {products.length === 0 ? "No products yet." : "No products match your search."}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-          {filtered.map((p) => (
-            <ProductCard key={p.id} slug={slug} p={p} />
-          ))}
-        </div>
+      {featured.length > 0 && (
+        <Section
+          title="Featured Products"
+          icon={<Sparkles className="h-4 w-4 text-amber-500" />}
+          onViewAll={() => {
+            setActiveCat(null);
+            scrollToAll();
+          }}
+        >
+          <ProductGrid slug={slug} products={featured} />
+        </Section>
       )}
+
+      {bestSelling.length > 0 && (
+        <Section
+          title="Best Selling"
+          icon={<Flame className="h-4 w-4 text-rose-500" />}
+          onViewAll={() => {
+            setActiveCat(null);
+            scrollToAll();
+          }}
+        >
+          <ProductGrid slug={slug} products={bestSelling} />
+        </Section>
+      )}
+
+      <section id="all-products" className="scroll-mt-32 space-y-4">
+        <div className="flex items-center gap-2">
+          <Grid3x3 className="h-4 w-4 text-neutral-500" />
+          <h2 className="text-lg font-bold tracking-tight text-neutral-900 sm:text-xl">
+            All Products
+          </h2>
+          <span className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-600">
+            {filtered.length}
+          </span>
+        </div>
+
+        {filtered.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-10 text-center text-sm text-neutral-500">
+            {products.length === 0 ? "No products yet." : "No products match your search."}
+          </div>
+        ) : (
+          <>
+            <ProductGrid slug={slug} products={filtered.slice(0, pageSize)} />
+            {filtered.length > pageSize && (
+              <div className="flex justify-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => setPageSize((n) => n + PAGE_SIZE)}
+                  className="rounded-full border border-neutral-200 bg-white px-6 py-2.5 text-sm font-semibold text-neutral-800 shadow-sm transition-colors hover:bg-neutral-50"
+                >
+                  Load more
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function ProductGrid({
+  slug,
+  products,
+}: {
+  slug: string;
+  products: Array<Parameters<typeof ProductCard>[0]["p"]>;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+      {products.map((p) => (
+        <ProductCard key={p.id} slug={slug} p={p} />
+      ))}
+    </div>
+  );
+}
+
+function Section({
+  title,
+  icon,
+  onViewAll,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  onViewAll?: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          {icon}
+          <h2 className="text-lg font-bold tracking-tight text-neutral-900 sm:text-xl">{title}</h2>
+        </div>
+        {onViewAll && (
+          <button
+            type="button"
+            onClick={onViewAll}
+            className="flex shrink-0 items-center gap-0.5 text-xs font-semibold text-neutral-600 hover:text-neutral-900"
+          >
+            View all <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function CategoryStrip({
+  categories,
+  active,
+  onSelect,
+}: {
+  categories: { id: string; name: string }[];
+  active: string | null;
+  onSelect: (id: string | null) => void;
+}) {
+  return (
+    <div className="-mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <CategoryPill label="All" active={active === null} onClick={() => onSelect(null)} />
+      {categories.map((c) => (
+        <CategoryPill
+          key={c.id}
+          label={c.name}
+          active={active === c.id}
+          onClick={() => onSelect(c.id)}
+        />
+      ))}
     </div>
   );
 }
@@ -125,11 +265,15 @@ function CategoryPill({
     <button
       type="button"
       onClick={onClick}
-      className="shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap"
+      className="shrink-0 snap-start rounded-full border px-4 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors"
       style={
         active
-          ? { backgroundColor: "var(--store-btn-bg)", color: "#fff", borderColor: "var(--store-btn-bg)" }
-          : { backgroundColor: "transparent" }
+          ? {
+              backgroundColor: "var(--store-btn-bg, #0f172a)",
+              color: "#fff",
+              borderColor: "var(--store-btn-bg, #0f172a)",
+            }
+          : { backgroundColor: "#fff", borderColor: "#e5e7eb", color: "#111" }
       }
     >
       {label}
@@ -137,39 +281,92 @@ function CategoryPill({
   );
 }
 
-function BannerCarousel({ banners }: { banners: { id: string; image_url: string; link: string | null }[] }) {
+function BannerCarousel({
+  banners,
+}: {
+  banners: { id: string; image_url: string; link: string | null }[];
+}) {
   const [idx, setIdx] = useState(0);
+  const startX = useRef<number | null>(null);
+  const deltaX = useRef(0);
+  const paused = useRef(false);
+
   useEffect(() => {
     if (banners.length <= 1) return;
-    const t = setInterval(() => setIdx((i) => (i + 1) % banners.length), 4000);
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (mq.matches) return;
+    const t = setInterval(() => {
+      if (!paused.current) setIdx((i) => (i + 1) % banners.length);
+    }, 4500);
     return () => clearInterval(t);
   }, [banners.length]);
-  const b = banners[idx];
-  const img = (
-    <img
-      src={b.image_url}
-      alt=""
-      fetchPriority="high"
-      className="aspect-[16/7] w-full rounded-xl object-cover sm:aspect-[21/8]"
-    />
-  );
+
+  function onDown(e: React.PointerEvent) {
+    startX.current = e.clientX;
+    deltaX.current = 0;
+    paused.current = true;
+  }
+  function onMove(e: React.PointerEvent) {
+    if (startX.current == null) return;
+    deltaX.current = e.clientX - startX.current;
+  }
+  function onUp() {
+    if (startX.current == null) return;
+    const d = deltaX.current;
+    startX.current = null;
+    paused.current = false;
+    if (Math.abs(d) < 40) return;
+    setIdx((i) => (d < 0 ? (i + 1) % banners.length : (i - 1 + banners.length) % banners.length));
+  }
+
   return (
-    <div className="relative overflow-hidden">
-      {b.link ? (
-        <a href={b.link} target="_blank" rel="noreferrer">
-          {img}
-        </a>
-      ) : (
-        img
-      )}
+    <div
+      className="relative -mx-4 overflow-hidden rounded-none sm:mx-0 sm:rounded-2xl"
+      onPointerDown={onDown}
+      onPointerMove={onMove}
+      onPointerUp={onUp}
+      onPointerCancel={onUp}
+    >
+      <div
+        className="flex transition-transform duration-500 ease-out"
+        style={{ transform: `translateX(-${idx * 100}%)` }}
+      >
+        {banners.map((b, i) => {
+          const img = (
+            <img
+              src={b.image_url}
+              alt=""
+              draggable={false}
+              loading={i === 0 ? "eager" : "lazy"}
+              fetchPriority={i === 0 ? "high" : "auto"}
+              decoding="async"
+              className="aspect-[16/8] w-full flex-shrink-0 select-none object-cover sm:aspect-[21/8]"
+            />
+          );
+          return (
+            <div key={b.id} className="w-full flex-shrink-0">
+              {b.link ? (
+                <a href={b.link} target="_blank" rel="noreferrer">
+                  {img}
+                </a>
+              ) : (
+                img
+              )}
+            </div>
+          );
+        })}
+      </div>
       {banners.length > 1 && (
         <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1.5">
           {banners.map((_, i) => (
             <button
               key={i}
+              type="button"
               onClick={() => setIdx(i)}
               aria-label={`Banner ${i + 1}`}
-              className={`h-1.5 rounded-full transition-all ${i === idx ? "w-5 bg-white" : "w-1.5 bg-white/60"}`}
+              className={`h-1.5 rounded-full transition-all ${
+                i === idx ? "w-6 bg-white" : "w-1.5 bg-white/60"
+              }`}
             />
           ))}
         </div>
