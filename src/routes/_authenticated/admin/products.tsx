@@ -429,9 +429,24 @@ function ProductDialog({
             <Label htmlFor="sh">Shipping information</Label>
             <Textarea id="sh" rows={2} value={shippingInfo} onChange={(e) => setShippingInfo(e.target.value)} />
           </div>
+          <label className="flex cursor-pointer items-start gap-3 rounded-lg border bg-muted/30 p-3">
+            <input
+              type="checkbox"
+              checked={isFeatured}
+              onChange={(e) => setIsFeatured(e.target.checked)}
+              className="mt-0.5 h-4 w-4"
+            />
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium">Feature this product ⭐</p>
+              <p className="text-xs text-muted-foreground">
+                Show in the Featured Products section on your storefront homepage.
+              </p>
+            </div>
+          </label>
           <Button type="submit" disabled={saving} className="w-full">
             {saving ? "Saving…" : "Save"}
           </Button>
+
         </form>
       </DialogContent>
     </Dialog>
