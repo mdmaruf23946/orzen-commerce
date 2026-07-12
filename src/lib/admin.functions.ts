@@ -120,7 +120,9 @@ const productSchema = z.object({
   warranty: z.string().trim().max(2000).optional().nullable(),
   return_policy: z.string().trim().max(2000).optional().nullable(),
   shipping_info: z.string().trim().max(2000).optional().nullable(),
+  is_featured: z.boolean().optional().default(false),
 });
+
 
 export const upsertProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -150,7 +152,9 @@ export const upsertProduct = createServerFn({ method: "POST" })
       warranty: data.warranty ?? null,
       return_policy: data.return_policy ?? null,
       shipping_info: data.shipping_info ?? null,
-    };
+      is_featured: data.is_featured ?? false,
+    } as any;
+
 
     if (data.id) {
       const { error } = await supabase

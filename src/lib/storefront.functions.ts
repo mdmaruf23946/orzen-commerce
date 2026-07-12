@@ -53,13 +53,50 @@ export const listStoreProducts = createServerFn({ method: "GET" })
     const sb = publicClient();
     const { data: products, error } = await sb
       .from("products")
-      .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id")
+      .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id,is_featured")
       .eq("store_id", data.storeId)
       .neq("status", "draft")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return (products ?? []).map((p) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }));
   });
+
+export const listBestSellingProducts = createServerFn({ method: "GET" })
+  .inputValidator((d) => z.object({ storeId: z.string().uuid(), limit: z.number().int().min(1).max(24).optional() }).parse(d))
+  .handler(async ({ data }) => {
+    const sb = publicClient();
+    const limit = data.limit ?? 12;
+    // Pull qty per product from non-cancelled orders for this store.
+    const { data: rows, error } = await sb
+      .from("order_items")
+      .select("product_id,qty,orders!inner(status,store_id)")
+      .eq("orders.store_id", data.storeId)
+      .neq("orders.status", "cancelled")
+      .not("product_id", "is", null);
+    if (error) throw new Error(error.message);
+    const totals = new Map<string, number>();
+    for (const r of rows ?? []) {
+      if (!r.product_id) continue;
+      totals.set(r.product_id, (totals.get(r.product_id) ?? 0) + Number(r.qty ?? 0));
+    }
+    const topIds = Array.from(totals.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([id]) => id);
+    if (topIds.length === 0) return [];
+    const { data: products, error: pErr } = await sb
+      .from("products")
+      .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id,is_featured")
+      .in("id", topIds)
+      .eq("store_id", data.storeId)
+      .neq("status", "draft");
+    if (pErr) throw new Error(pErr.message);
+    const order = new Map(topIds.map((id, i) => [id, i]));
+    return (products ?? [])
+      .map((p) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }))
+      .sort((a, b) => (order.get(a.id)! - order.get(b.id)!));
+  });
+
 
 export const listStoreCategories = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ storeId: z.string().uuid() }).parse(d))

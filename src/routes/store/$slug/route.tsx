@@ -1,12 +1,13 @@
 import { createFileRoute, Link, Outlet, notFound } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ShoppingCart, Search, Phone, MessageCircle, Facebook } from "lucide-react";
+import { ShoppingCart, Search, Phone, MessageCircle, Facebook, Menu, X, Mail } from "lucide-react";
 import { getStoreBySlug } from "@/lib/storefront.functions";
 import { getStoreAgentPublic } from "@/lib/ai.functions";
 import { cartCount } from "@/lib/cart";
 import { StoreUIProvider, useStoreUI } from "@/lib/store-ui";
 import { AIChatLauncher } from "@/components/storefront/AIChatLauncher";
+
 
 const storeQuery = (slug: string) =>
   queryOptions({
@@ -88,12 +89,28 @@ function StoreLayout() {
         </main>
         <StoreFooter store={store} />
         {agent && (
-          <AIChatLauncher slug={slug} agentName={agent.agent_name} welcome={agent.welcome_message} />
+          <AIChatLauncher
+            slug={slug}
+            agentName={agent.agent_name}
+            welcome={agent.welcome_message}
+            messengerUrl={toMessengerUrl(store.facebook)}
+          />
         )}
       </div>
     </StoreUIProvider>
   );
 }
+
+function toMessengerUrl(fb: string | null): string | null {
+  if (!fb) return null;
+  const trimmed = fb.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith("http://m.me/") || trimmed.startsWith("https://m.me/")) return trimmed;
+  const m = trimmed.match(/facebook\.com\/([^/?#]+)/i);
+  if (m) return `https://m.me/${m[1]}`;
+  return trimmed;
+}
+
 
 function TrackingScripts({ marketing }: { marketing: any }) {
   const m = marketing ?? {};
@@ -151,6 +168,7 @@ function StoreHeader({
   logoUrl: string | null;
 }) {
   const [count, setCount] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
   const { query, setQuery } = useStoreUI();
 
   useEffect(() => {
@@ -166,8 +184,8 @@ function StoreHeader({
 
   return (
     <header
-      className="sticky top-0 z-20 border-b"
-      style={{ backgroundColor: "var(--store-header-bg)" }}
+      className="sticky top-0 z-30 border-b border-black/5 backdrop-blur"
+      style={{ backgroundColor: "var(--store-header-bg, rgba(255,255,255,0.9))" }}
     >
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
         <div className="flex h-14 items-center gap-3">
@@ -197,14 +215,14 @@ function StoreHeader({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search products…"
-              className="h-9 w-full rounded-md border bg-background pl-8 pr-3 text-sm outline-none focus:ring-1 focus:ring-ring"
+              className="h-9 w-full rounded-full border bg-background pl-8 pr-3 text-sm outline-none focus:ring-1 focus:ring-ring"
             />
           </div>
 
           <Link
             to="/store/$slug/cart"
             params={{ slug }}
-            className="relative ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full sm:ml-0"
+            className="relative ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-neutral-100 sm:ml-0"
             aria-label="Cart"
           >
             <ShoppingCart className="h-5 w-5" />
@@ -217,6 +235,16 @@ function StoreHeader({
               </span>
             )}
           </Link>
+
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-neutral-100 sm:hidden"
+            aria-label="Menu"
+            aria-expanded={menuOpen}
+          >
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
 
         <div className="pb-2 sm:hidden">
@@ -227,14 +255,43 @@ function StoreHeader({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search products…"
-              className="h-9 w-full rounded-md border bg-background pl-8 pr-3 text-sm outline-none focus:ring-1 focus:ring-ring"
+              className="h-9 w-full rounded-full border bg-background pl-8 pr-3 text-sm outline-none focus:ring-1 focus:ring-ring"
             />
           </div>
         </div>
+
+        {menuOpen && (
+          <div className="border-t py-2 text-sm sm:hidden">
+            <Link
+              to="/store/$slug"
+              params={{ slug }}
+              onClick={() => setMenuOpen(false)}
+              className="block rounded-md px-3 py-2 hover:bg-neutral-100"
+            >
+              Home
+            </Link>
+            <Link
+              to="/store/$slug/cart"
+              params={{ slug }}
+              onClick={() => setMenuOpen(false)}
+              className="block rounded-md px-3 py-2 hover:bg-neutral-100"
+            >
+              Cart {count > 0 && <span className="ml-1 text-xs text-neutral-500">({count})</span>}
+            </Link>
+            <a href="#contact" onClick={() => setMenuOpen(false)} className="block rounded-md px-3 py-2 hover:bg-neutral-100">
+              Contact
+            </a>
+            <a href="#policies" onClick={() => setMenuOpen(false)} className="block rounded-md px-3 py-2 hover:bg-neutral-100">
+              Policies
+            </a>
+          </div>
+        )}
       </div>
     </header>
   );
 }
+
+
 
 function StoreFooter({
   store,
@@ -246,20 +303,24 @@ function StoreFooter({
     phone: string | null;
     whatsapp: string | null;
     facebook: string | null;
+    address: string | null;
+    seo?: any;
   };
 }) {
+  const email = (store.seo && (store.seo.contact_email || store.seo.email)) || null;
   return (
     <footer
-      className="mt-8 text-white/90"
+      id="contact"
+      className="mt-10 text-white/90"
       style={{ backgroundColor: "var(--store-footer-bg)" }}
     >
       <div className="mx-auto grid max-w-5xl gap-8 px-4 py-10 sm:grid-cols-3 sm:px-6">
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             {store.logo_url ? (
-              <img src={store.logo_url} alt="" className="h-9 w-9 rounded-full object-cover" />
+              <img src={store.logo_url} alt="" className="h-10 w-10 rounded-full object-cover" />
             ) : (
-              <div className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-sm font-bold">
+              <div className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-sm font-bold">
                 {store.name.charAt(0)}
               </div>
             )}
@@ -268,6 +329,9 @@ function StoreFooter({
           {store.description && (
             <p className="text-sm text-white/70 line-clamp-4">{store.description}</p>
           )}
+          {store.address && (
+            <p className="text-xs text-white/60">{store.address}</p>
+          )}
         </div>
 
         <div className="space-y-2 text-sm">
@@ -275,6 +339,11 @@ function StoreFooter({
           {store.phone && (
             <a href={`tel:${store.phone}`} className="flex items-center gap-2 text-white/80 hover:text-white">
               <Phone className="h-4 w-4" /> {store.phone}
+            </a>
+          )}
+          {email && (
+            <a href={`mailto:${email}`} className="flex items-center gap-2 text-white/80 hover:text-white">
+              <Mail className="h-4 w-4" /> {email}
             </a>
           )}
           {store.whatsapp && (
@@ -299,7 +368,7 @@ function StoreFooter({
           )}
         </div>
 
-        <div className="space-y-2 text-sm">
+        <div id="policies" className="space-y-2 text-sm">
           <h3 className="text-sm font-semibold text-white">Quick Links</h3>
           <a href="#privacy" className="block text-white/80 hover:text-white">Privacy Policy</a>
           <a href="#terms" className="block text-white/80 hover:text-white">Terms &amp; Conditions</a>
@@ -314,3 +383,4 @@ function StoreFooter({
     </footer>
   );
 }
+

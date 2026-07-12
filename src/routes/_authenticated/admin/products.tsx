@@ -226,9 +226,11 @@ function ProductDialog({
   const [costPrice, setCostPrice] = useState<string>((editing as any)?.cost_price != null ? String((editing as any).cost_price) : "");
   const [sku, setSku] = useState<string>((editing as any)?.sku ?? "");
   const [lowThreshold, setLowThreshold] = useState<number>((editing as any)?.low_stock_threshold ?? 5);
+  const [isFeatured, setIsFeatured] = useState<boolean>(!!(editing as any)?.is_featured);
   const [newCatName, setNewCatName] = useState("");
   const [addingCat, setAddingCat] = useState(false);
   const [saving, setSaving] = useState(false);
+
 
 
   const reg = Number(regularPrice) || 0;
@@ -282,7 +284,9 @@ function ProductDialog({
         warranty: warranty || null,
         return_policy: returnPolicy || null,
         shipping_info: shippingInfo || null,
+        is_featured: isFeatured,
       });
+
 
     } catch (err) {
       toast.error((err as Error).message);
@@ -425,9 +429,24 @@ function ProductDialog({
             <Label htmlFor="sh">Shipping information</Label>
             <Textarea id="sh" rows={2} value={shippingInfo} onChange={(e) => setShippingInfo(e.target.value)} />
           </div>
+          <label className="flex cursor-pointer items-start gap-3 rounded-lg border bg-muted/30 p-3">
+            <input
+              type="checkbox"
+              checked={isFeatured}
+              onChange={(e) => setIsFeatured(e.target.checked)}
+              className="mt-0.5 h-4 w-4"
+            />
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium">Feature this product ⭐</p>
+              <p className="text-xs text-muted-foreground">
+                Show in the Featured Products section on your storefront homepage.
+              </p>
+            </div>
+          </label>
           <Button type="submit" disabled={saving} className="w-full">
             {saving ? "Saving…" : "Save"}
           </Button>
+
         </form>
       </DialogContent>
     </Dialog>
