@@ -168,6 +168,7 @@ function StoreHeader({
   logoUrl: string | null;
 }) {
   const [count, setCount] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
   const { query, setQuery } = useStoreUI();
 
   useEffect(() => {
@@ -183,8 +184,8 @@ function StoreHeader({
 
   return (
     <header
-      className="sticky top-0 z-20 border-b"
-      style={{ backgroundColor: "var(--store-header-bg)" }}
+      className="sticky top-0 z-30 border-b border-black/5 backdrop-blur"
+      style={{ backgroundColor: "var(--store-header-bg, rgba(255,255,255,0.9))" }}
     >
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
         <div className="flex h-14 items-center gap-3">
@@ -214,14 +215,14 @@ function StoreHeader({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search products…"
-              className="h-9 w-full rounded-md border bg-background pl-8 pr-3 text-sm outline-none focus:ring-1 focus:ring-ring"
+              className="h-9 w-full rounded-full border bg-background pl-8 pr-3 text-sm outline-none focus:ring-1 focus:ring-ring"
             />
           </div>
 
           <Link
             to="/store/$slug/cart"
             params={{ slug }}
-            className="relative ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full sm:ml-0"
+            className="relative ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-neutral-100 sm:ml-0"
             aria-label="Cart"
           >
             <ShoppingCart className="h-5 w-5" />
@@ -234,6 +235,16 @@ function StoreHeader({
               </span>
             )}
           </Link>
+
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-neutral-100 sm:hidden"
+            aria-label="Menu"
+            aria-expanded={menuOpen}
+          >
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
 
         <div className="pb-2 sm:hidden">
@@ -244,14 +255,43 @@ function StoreHeader({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search products…"
-              className="h-9 w-full rounded-md border bg-background pl-8 pr-3 text-sm outline-none focus:ring-1 focus:ring-ring"
+              className="h-9 w-full rounded-full border bg-background pl-8 pr-3 text-sm outline-none focus:ring-1 focus:ring-ring"
             />
           </div>
         </div>
+
+        {menuOpen && (
+          <div className="border-t py-2 text-sm sm:hidden">
+            <Link
+              to="/store/$slug"
+              params={{ slug }}
+              onClick={() => setMenuOpen(false)}
+              className="block rounded-md px-3 py-2 hover:bg-neutral-100"
+            >
+              Home
+            </Link>
+            <Link
+              to="/store/$slug/cart"
+              params={{ slug }}
+              onClick={() => setMenuOpen(false)}
+              className="block rounded-md px-3 py-2 hover:bg-neutral-100"
+            >
+              Cart {count > 0 && <span className="ml-1 text-xs text-neutral-500">({count})</span>}
+            </Link>
+            <a href="#contact" onClick={() => setMenuOpen(false)} className="block rounded-md px-3 py-2 hover:bg-neutral-100">
+              Contact
+            </a>
+            <a href="#policies" onClick={() => setMenuOpen(false)} className="block rounded-md px-3 py-2 hover:bg-neutral-100">
+              Policies
+            </a>
+          </div>
+        )}
       </div>
     </header>
   );
 }
+
+
 
 function StoreFooter({
   store,
