@@ -89,12 +89,28 @@ function StoreLayout() {
         </main>
         <StoreFooter store={store} />
         {agent && (
-          <AIChatLauncher slug={slug} agentName={agent.agent_name} welcome={agent.welcome_message} />
+          <AIChatLauncher
+            slug={slug}
+            agentName={agent.agent_name}
+            welcome={agent.welcome_message}
+            messengerUrl={toMessengerUrl(store.facebook)}
+          />
         )}
       </div>
     </StoreUIProvider>
   );
 }
+
+function toMessengerUrl(fb: string | null): string | null {
+  if (!fb) return null;
+  const trimmed = fb.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith("http://m.me/") || trimmed.startsWith("https://m.me/")) return trimmed;
+  const m = trimmed.match(/facebook\.com\/([^/?#]+)/i);
+  if (m) return `https://m.me/${m[1]}`;
+  return trimmed;
+}
+
 
 function TrackingScripts({ marketing }: { marketing: any }) {
   const m = marketing ?? {};
