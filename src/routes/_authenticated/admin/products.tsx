@@ -284,7 +284,9 @@ function ProductDialog({
         warranty: warranty || null,
         return_policy: returnPolicy || null,
         shipping_info: shippingInfo || null,
+        is_featured: isFeatured,
       });
+
 
     } catch (err) {
       toast.error((err as Error).message);
