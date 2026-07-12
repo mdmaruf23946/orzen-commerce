@@ -152,7 +152,9 @@ export const upsertProduct = createServerFn({ method: "POST" })
       warranty: data.warranty ?? null,
       return_policy: data.return_policy ?? null,
       shipping_info: data.shipping_info ?? null,
-    };
+      is_featured: data.is_featured ?? false,
+    } as any;
+
 
     if (data.id) {
       const { error } = await supabase
