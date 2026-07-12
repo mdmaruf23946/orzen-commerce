@@ -10,33 +10,13 @@ type Product = {
   primary_image_url: string | null;
 };
 
-function readPanelColor(): string {
-  if (typeof window === "undefined") return "#0f172a";
-  const v = getComputedStyle(document.documentElement)
-    .getPropertyValue("--store-title-bar-bg")
-    .trim();
-  return v || "#0f172a";
-}
-
-function isLight(hex: string): boolean {
-  const m = hex.replace("#", "");
-  if (m.length !== 3 && m.length !== 6) return false;
-  const h = m.length === 3 ? m.split("").map((c) => c + c).join("") : m;
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  // Relative luminance (sRGB approx)
-  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return lum > 0.6;
-}
-
 export function ProductCard({ slug, p }: { slug: string; p: Product }) {
   const navigate = useNavigate();
+  const price = Number(p.price);
+  const oldPrice = p.old_price != null ? Number(p.old_price) : null;
+  const hasDiscount = oldPrice != null && oldPrice > price;
+  const discountPct = hasDiscount ? Math.round(((oldPrice! - price) / oldPrice!) * 100) : 0;
   const outOfStock = p.stock <= 0;
-  const light = typeof window !== "undefined" ? isLight(readPanelColor()) : false;
-  const fg = light ? "#0f172a" : "#ffffff";
-  const muted = light ? "rgba(15,23,42,0.6)" : "rgba(255,255,255,0.7)";
-  const outlineBorder = light ? "rgba(15,23,42,0.35)" : "rgba(255,255,255,0.55)";
 
   function handleAdd(e: React.MouseEvent) {
     e.preventDefault();
@@ -45,7 +25,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
     addToCart(slug, {
       productId: p.id,
       name: p.name,
-      price: Number(p.price),
+      price,
       image: p.primary_image_url,
       qty: 1,
     });
@@ -58,7 +38,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
     addToCart(slug, {
       productId: p.id,
       name: p.name,
-      price: Number(p.price),
+      price,
       image: p.primary_image_url,
       qty: 1,
     });
@@ -66,11 +46,11 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
   }
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-xl border bg-card">
+    <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_16px_-6px_rgba(0,0,0,0.08)] transition-shadow hover:shadow-[0_2px_4px_rgba(0,0,0,0.04),0_10px_24px_-8px_rgba(0,0,0,0.12)]">
       <Link
         to="/store/$slug/product/$productId"
         params={{ slug, productId: p.id }}
-        className="block aspect-square overflow-hidden bg-muted"
+        className="relative block aspect-square overflow-hidden bg-neutral-100"
       >
         {p.primary_image_url ? (
           <img
@@ -81,63 +61,65 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+          <div className="flex h-full w-full items-center justify-center text-xs text-neutral-400">
             No image
           </div>
         )}
+        {hasDiscount && (
+          <span className="absolute left-2 top-2 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+            −{discountPct}%
+          </span>
+        )}
+        {outOfStock && (
+          <span className="absolute right-2 top-2 rounded-full bg-neutral-900/85 px-2 py-0.5 text-[10px] font-bold text-white">
+            Sold out
+          </span>
+        )}
       </Link>
 
-      <div
-        className="flex flex-1 flex-col gap-2 p-2.5 sm:p-3"
-        style={{ backgroundColor: "var(--store-title-bar-bg, #0f172a)", color: fg }}
-      >
+      <div className="flex flex-1 flex-col gap-2 p-2.5 sm:p-3">
         <Link
           to="/store/$slug/product/$productId"
           params={{ slug, productId: p.id }}
-          className="line-clamp-2 text-center text-xs font-semibold sm:text-sm"
-          style={{ color: fg }}
+          className="line-clamp-2 text-[13px] font-semibold leading-snug text-neutral-900 sm:text-sm"
         >
           {p.name}
         </Link>
 
-        <div className="flex items-baseline justify-center gap-2">
-          <span className="text-base font-bold" style={{ color: fg }}>
-            ৳{Number(p.price).toFixed(0)}
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-[15px] font-bold text-neutral-900 sm:text-base">
+            ৳{price.toFixed(0)}
           </span>
-          {p.old_price && (
-            <span className="text-xs line-through" style={{ color: muted }}>
-              ৳{Number(p.old_price).toFixed(0)}
+          {hasDiscount && (
+            <span className="text-[11px] text-neutral-400 line-through">
+              ৳{oldPrice!.toFixed(0)}
             </span>
           )}
         </div>
 
-        {outOfStock ? (
-          <span
-            className="mt-auto text-center text-[11px] font-semibold"
-            style={{ color: "#ef4444" }}
-          >
-            Out of stock
-          </span>
-        ) : (
-          <div className="mt-auto flex flex-col gap-1.5">
-            <button
-              type="button"
-              onClick={handleAdd}
-              className="h-8 rounded-md border bg-transparent text-xs font-semibold active:opacity-80"
-              style={{ borderColor: outlineBorder, color: fg }}
-            >
-              Add to Cart
-            </button>
-            <button
-              type="button"
-              onClick={handleBuy}
-              className="h-9 w-full rounded-md text-sm font-semibold text-white active:opacity-80"
-              style={{ backgroundColor: "var(--store-btn-bg, #0f172a)" }}
-            >
-              Buy Now
-            </button>
-          </div>
+        {!outOfStock && p.stock <= 5 && (
+          <span className="text-[10px] font-medium text-amber-600">Only {p.stock} left</span>
         )}
+
+        <div className="mt-auto flex flex-col gap-1.5 pt-1">
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={outOfStock}
+            className="h-8 rounded-lg border border-neutral-200 bg-white text-[11px] font-semibold text-neutral-800 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Add to Cart
+          </button>
+          <button
+            type="button"
+            onClick={handleBuy}
+            disabled={outOfStock}
+            className="h-9 rounded-lg text-[13px] font-semibold text-white shadow-sm transition-opacity active:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            style={{ backgroundColor: "var(--store-btn-bg, #0f172a)" }}
+          >
+            Buy Now
+          </button>
+        </div>
       </div>
     </div>
   );
