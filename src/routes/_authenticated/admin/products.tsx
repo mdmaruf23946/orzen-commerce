@@ -226,9 +226,11 @@ function ProductDialog({
   const [costPrice, setCostPrice] = useState<string>((editing as any)?.cost_price != null ? String((editing as any).cost_price) : "");
   const [sku, setSku] = useState<string>((editing as any)?.sku ?? "");
   const [lowThreshold, setLowThreshold] = useState<number>((editing as any)?.low_stock_threshold ?? 5);
+  const [isFeatured, setIsFeatured] = useState<boolean>(!!(editing as any)?.is_featured);
   const [newCatName, setNewCatName] = useState("");
   const [addingCat, setAddingCat] = useState(false);
   const [saving, setSaving] = useState(false);
+
 
 
   const reg = Number(regularPrice) || 0;
