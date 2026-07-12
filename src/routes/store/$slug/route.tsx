@@ -303,20 +303,24 @@ function StoreFooter({
     phone: string | null;
     whatsapp: string | null;
     facebook: string | null;
+    address: string | null;
+    seo?: any;
   };
 }) {
+  const email = (store.seo && (store.seo.contact_email || store.seo.email)) || null;
   return (
     <footer
-      className="mt-8 text-white/90"
+      id="contact"
+      className="mt-10 text-white/90"
       style={{ backgroundColor: "var(--store-footer-bg)" }}
     >
       <div className="mx-auto grid max-w-5xl gap-8 px-4 py-10 sm:grid-cols-3 sm:px-6">
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             {store.logo_url ? (
-              <img src={store.logo_url} alt="" className="h-9 w-9 rounded-full object-cover" />
+              <img src={store.logo_url} alt="" className="h-10 w-10 rounded-full object-cover" />
             ) : (
-              <div className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-sm font-bold">
+              <div className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-sm font-bold">
                 {store.name.charAt(0)}
               </div>
             )}
@@ -325,6 +329,9 @@ function StoreFooter({
           {store.description && (
             <p className="text-sm text-white/70 line-clamp-4">{store.description}</p>
           )}
+          {store.address && (
+            <p className="text-xs text-white/60">{store.address}</p>
+          )}
         </div>
 
         <div className="space-y-2 text-sm">
@@ -332,6 +339,11 @@ function StoreFooter({
           {store.phone && (
             <a href={`tel:${store.phone}`} className="flex items-center gap-2 text-white/80 hover:text-white">
               <Phone className="h-4 w-4" /> {store.phone}
+            </a>
+          )}
+          {email && (
+            <a href={`mailto:${email}`} className="flex items-center gap-2 text-white/80 hover:text-white">
+              <Mail className="h-4 w-4" /> {email}
             </a>
           )}
           {store.whatsapp && (
@@ -356,7 +368,7 @@ function StoreFooter({
           )}
         </div>
 
-        <div className="space-y-2 text-sm">
+        <div id="policies" className="space-y-2 text-sm">
           <h3 className="text-sm font-semibold text-white">Quick Links</h3>
           <a href="#privacy" className="block text-white/80 hover:text-white">Privacy Policy</a>
           <a href="#terms" className="block text-white/80 hover:text-white">Terms &amp; Conditions</a>
@@ -371,3 +383,4 @@ function StoreFooter({
     </footer>
   );
 }
+
