@@ -37,9 +37,14 @@ function PackagesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Packages</h1>
-        <Button onClick={() => { setEditing(null); setOpen(true); }}>
-          <Plus className="mr-1 h-4 w-4" /> New package
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link to="/owner/plan-features">
+            <Button variant="outline" size="sm"><SlidersHorizontal className="mr-1 h-4 w-4" />Feature Access</Button>
+          </Link>
+          <Button onClick={() => { setEditing(null); setOpen(true); }}>
+            <Plus className="mr-1 h-4 w-4" /> New package
+          </Button>
+        </div>
       </div>
 
       <DiscountSettingsCard />
