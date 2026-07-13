@@ -28,10 +28,26 @@ export const Route = createFileRoute("/_authenticated/admin/settings")({
 function SettingsPage() {
   const fetchStore = useServerFn(getMyStore);
   const save = useServerFn(updateMyStore);
+  const resetFn = useServerFn(resetStoreToTemplate);
   const qc = useQueryClient();
   const { data: store } = useQuery({ queryKey: ["admin", "store"], queryFn: () => fetchStore() });
   const [form, setForm] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
+  async function reset() {
+    setResetting(true);
+    try {
+      await resetFn();
+      await qc.invalidateQueries();
+      toast.success("Store reset to the latest default template.");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setResetting(false);
+    }
+  }
+
 
   useEffect(() => {
     if (store) setForm({ ...store });
