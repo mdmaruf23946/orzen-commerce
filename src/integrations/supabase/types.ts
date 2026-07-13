@@ -1443,6 +1443,62 @@ export type Database = {
           },
         ]
       }
+      store_domains: {
+        Row: {
+          created_at: string
+          dns_target: string | null
+          hostname: string
+          id: string
+          is_primary: boolean
+          kind: string
+          last_checked_at: string | null
+          ssl_status: string
+          status: string
+          store_id: string
+          updated_at: string
+          verification_token: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          dns_target?: string | null
+          hostname: string
+          id?: string
+          is_primary?: boolean
+          kind?: string
+          last_checked_at?: string | null
+          ssl_status?: string
+          status?: string
+          store_id: string
+          updated_at?: string
+          verification_token?: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          dns_target?: string | null
+          hostname?: string
+          id?: string
+          is_primary?: boolean
+          kind?: string
+          last_checked_at?: string | null
+          ssl_status?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+          verification_token?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_domains_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_template: {
         Row: {
           banners: Json
@@ -1537,6 +1593,7 @@ export type Database = {
           payments_config: Json
           phone: string | null
           primary_color: string
+          primary_domain_id: string | null
           product_defaults: Json
           seo: Json
           slug: string
@@ -1573,6 +1630,7 @@ export type Database = {
           payments_config?: Json
           phone?: string | null
           primary_color?: string
+          primary_domain_id?: string | null
           product_defaults?: Json
           seo?: Json
           slug: string
@@ -1609,6 +1667,7 @@ export type Database = {
           payments_config?: Json
           phone?: string | null
           primary_color?: string
+          primary_domain_id?: string | null
           product_defaults?: Json
           seo?: Json
           slug?: string
@@ -1627,6 +1686,13 @@ export type Database = {
             columns: ["package_id"]
             isOneToOne: false
             referencedRelation: "subscription_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stores_primary_domain_id_fkey"
+            columns: ["primary_domain_id"]
+            isOneToOne: false
+            referencedRelation: "store_domains"
             referencedColumns: ["id"]
           },
         ]
@@ -1900,6 +1966,7 @@ export type Database = {
         Args: { _store_id: string }
         Returns: undefined
       }
+      resolve_domain: { Args: { _host: string }; Returns: Json }
     }
     Enums: {
       app_role: "owner" | "user"
