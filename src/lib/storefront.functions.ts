@@ -66,23 +66,12 @@ export const listBestSellingProducts = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const sb = publicClient();
     const limit = data.limit ?? 12;
-    // Pull qty per product from non-cancelled orders for this store.
-    const { data: rows, error } = await sb
-      .from("order_items")
-      .select("product_id,qty,orders!inner(status,store_id)")
-      .eq("orders.store_id", data.storeId)
-      .neq("orders.status", "cancelled")
-      .not("product_id", "is", null);
+    const { data: rows, error } = await sb.rpc("get_store_bestsellers", {
+      _store_id: data.storeId,
+      _limit: limit,
+    });
     if (error) throw new Error(error.message);
-    const totals = new Map<string, number>();
-    for (const r of rows ?? []) {
-      if (!r.product_id) continue;
-      totals.set(r.product_id, (totals.get(r.product_id) ?? 0) + Number(r.qty ?? 0));
-    }
-    const topIds = Array.from(totals.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, limit)
-      .map(([id]) => id);
+    const topIds = (rows ?? []).map((r: any) => r.product_id).filter(Boolean);
     if (topIds.length === 0) return [];
     const { data: products, error: pErr } = await sb
       .from("products")
@@ -91,11 +80,12 @@ export const listBestSellingProducts = createServerFn({ method: "GET" })
       .eq("store_id", data.storeId)
       .neq("status", "draft");
     if (pErr) throw new Error(pErr.message);
-    const order = new Map(topIds.map((id, i) => [id, i]));
+    const order = new Map(topIds.map((id: string, i: number) => [id, i]));
     return (products ?? [])
       .map((p) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }))
       .sort((a, b) => (order.get(a.id)! - order.get(b.id)!));
   });
+
 
 
 export const listStoreCategories = createServerFn({ method: "GET" })
