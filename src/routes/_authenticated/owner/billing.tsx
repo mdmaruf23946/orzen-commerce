@@ -132,7 +132,7 @@ function BillingPage() {
           </thead>
           <tbody>
             {(payments ?? []).map((p: any) => (
-              <>
+              <RowFragment key={p.id} p={p} expanded={!!expanded[p.id]} onToggle={() => setExpanded((s) => ({ ...s, [p.id]: !s[p.id] }))} onApprove={() => approve(p.id)} onReject={() => { setRejectTarget(p); setRejectReason(""); }} busy={busyId === p.id} doRetry={doRetry} />
                 <tr key={p.id} className="border-b last:border-0 align-top">
                   <td className="p-3">
                     <div className="font-medium">{p.stores?.name ?? "—"}</div>
