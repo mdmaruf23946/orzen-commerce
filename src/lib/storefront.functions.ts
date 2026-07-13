@@ -22,14 +22,10 @@ export const getStoreBySlug = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ slug: z.string().min(1).max(120) }).parse(d))
   .handler(async ({ data }) => {
     const sb = publicClient();
-    const { data: store, error } = await sb
-      .from("stores")
-      .select("id,slug,name,description,logo_url,phone,whatsapp,facebook,address,primary_color,header_color,title_bar_color,footer_color,button_color,bkash_number,nagad_number,status,marketing,seo,theme,delivery,payments_config")
-      .eq("slug", data.slug)
-      .eq("status", "active")
-      .maybeSingle();
+    const { data: row, error } = await sb.rpc("get_public_store_by_slug", { _slug: data.slug });
     if (error) throw new Error(error.message);
-    if (!store) return null;
+    if (!row) return null;
+    const store = row as any;
     return { ...store, logo_url: imgUrl(store.logo_url) };
   });
 

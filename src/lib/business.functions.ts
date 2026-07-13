@@ -4,6 +4,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { assertPlan } from "@/lib/plan-guard";
 
 async function myStoreId(supabase: any, userId: string): Promise<string | null> {
   const { data } = await supabase
@@ -55,6 +56,7 @@ export const adjustStock = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "inventory");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
     const { data: prod } = await context.supabase
@@ -110,6 +112,7 @@ export const upsertCoupon = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid().optional() }).merge(couponSchema).parse(d))
   .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "coupons");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
     const row = {
@@ -136,6 +139,7 @@ export const deleteCoupon = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "coupons");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
     const { error } = await context.supabase.from("coupons").delete().eq("id", data.id).eq("store_id", sid);
@@ -268,6 +272,7 @@ export const upsertReturn = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "returns");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
     const row = {
@@ -356,6 +361,7 @@ export const upsertCustomerNote = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "customer_notes");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
     const { error } = await context.supabase.from("customer_notes").upsert({
@@ -380,6 +386,7 @@ export const bulkUpdateProducts = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "bulk_actions");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
     const { error } = await context.supabase.from("products").update(data.patch).in("id", data.ids).eq("store_id", sid);
@@ -391,6 +398,7 @@ export const bulkDeleteProducts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ ids: z.array(z.string().uuid()).min(1).max(500) }).parse(d))
   .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "bulk_actions");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
     const { error } = await context.supabase.from("products").delete().in("id", data.ids).eq("store_id", sid);
@@ -416,6 +424,7 @@ export const bulkImportProducts = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "import_export");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
     const rows = data.rows.map((r) => ({
@@ -438,6 +447,7 @@ export const bulkImportProducts = createServerFn({ method: "POST" })
 export const exportProductsCsv = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await assertPlan(context.supabase, context.userId, "import_export");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) return "";
     const { data } = await context.supabase
@@ -458,6 +468,7 @@ export const exportProductsCsv = createServerFn({ method: "GET" })
 export const businessAnalytics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await assertPlan(context.supabase, context.userId, "analytics");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) return null;
     const [{ data: orders }, { data: items }] = await Promise.all([

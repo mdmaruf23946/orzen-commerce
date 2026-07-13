@@ -2,6 +2,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertPlan } from "@/lib/plan-guard";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -144,6 +145,7 @@ export const updateMyAgent = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
+    await assertPlan(context.supabase, context.userId, "ai_agent");
     const storeId = await getOwnedStoreId(context.supabase, context.userId);
     const { error } = await context.supabase
       .from("store_ai_agents")
@@ -161,7 +163,8 @@ export const getStoreAgentPublic = createServerFn({ method: "GET" })
       process.env.SUPABASE_PUBLISHABLE_KEY!,
       { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
     );
-    const { data: store } = await sb.from("stores").select("id").eq("slug", data.slug).eq("status", "active").maybeSingle();
+    const { data: row } = await sb.rpc("get_public_store_by_slug", { _slug: data.slug });
+    const store = row as { id: string } | null;
     if (!store) return null;
     const { data: agent } = await sb
       .from("store_ai_agents")
@@ -196,6 +199,7 @@ export const connectMessenger = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
+    await assertPlan(context.supabase, context.userId, "ai_messenger");
     const storeId = await getOwnedStoreId(context.supabase, context.userId);
     const verify_token = `vt_${Math.random().toString(36).slice(2, 12)}`;
     const { error } = await context.supabase
@@ -218,6 +222,7 @@ export const connectMessenger = createServerFn({ method: "POST" })
 export const disconnectMessenger = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await assertPlan(context.supabase, context.userId, "ai_messenger");
     const storeId = await getOwnedStoreId(context.supabase, context.userId);
     await context.supabase.from("messenger_integrations").delete().eq("store_id", storeId);
     return { ok: true };
