@@ -24,7 +24,9 @@ export const Route = createFileRoute("/_authenticated/owner/plan-features")({
   component: PlanFeaturesPage,
 });
 
-type Matrix = Awaited<ReturnType<typeof getPlanFeatureMatrix>>;
+type FeatureRow = { key: string; label: string; description?: string | null; category: string };
+type PkgRow = { id: string; name: string; is_trial: boolean; is_active: boolean; features: Record<string, boolean> };
+type Matrix = { packages: PkgRow[]; features: FeatureRow[] };
 
 function PlanFeaturesPage() {
   const load = useServerFn(getPlanFeatureMatrix);
@@ -47,8 +49,8 @@ function PlanFeaturesPage() {
   });
 
   const grouped = useMemo(() => {
-    const g: Record<string, Matrix["features"]> = {};
-    (data?.features ?? []).forEach((f) => {
+    const g: Record<string, FeatureRow[]> = {};
+    (data?.features ?? []).forEach((f: FeatureRow) => {
       (g[f.category] ??= []).push(f);
     });
     return g;

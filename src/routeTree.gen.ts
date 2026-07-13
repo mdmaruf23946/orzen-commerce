@@ -30,6 +30,7 @@ import { Route as AuthenticatedOwnerSupportRouteImport } from './routes/_authent
 import { Route as AuthenticatedOwnerSubscriptionsRouteImport } from './routes/_authenticated/owner/subscriptions'
 import { Route as AuthenticatedOwnerStoresRouteImport } from './routes/_authenticated/owner/stores'
 import { Route as AuthenticatedOwnerReportsRouteImport } from './routes/_authenticated/owner/reports'
+import { Route as AuthenticatedOwnerPlanFeaturesRouteImport } from './routes/_authenticated/owner/plan-features'
 import { Route as AuthenticatedOwnerPaymentSettingsRouteImport } from './routes/_authenticated/owner/payment-settings'
 import { Route as AuthenticatedOwnerPackagesRouteImport } from './routes/_authenticated/owner/packages'
 import { Route as AuthenticatedOwnerNotificationsRouteImport } from './routes/_authenticated/owner/notifications'
@@ -184,6 +185,12 @@ const AuthenticatedOwnerReportsRoute =
   AuthenticatedOwnerReportsRouteImport.update({
     id: '/reports',
     path: '/reports',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerPlanFeaturesRoute =
+  AuthenticatedOwnerPlanFeaturesRouteImport.update({
+    id: '/plan-features',
+    path: '/plan-features',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
 const AuthenticatedOwnerPaymentSettingsRoute =
@@ -496,6 +503,7 @@ export interface FileRoutesByFullPath {
   '/owner/notifications': typeof AuthenticatedOwnerNotificationsRoute
   '/owner/packages': typeof AuthenticatedOwnerPackagesRoute
   '/owner/payment-settings': typeof AuthenticatedOwnerPaymentSettingsRoute
+  '/owner/plan-features': typeof AuthenticatedOwnerPlanFeaturesRoute
   '/owner/reports': typeof AuthenticatedOwnerReportsRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
   '/owner/subscriptions': typeof AuthenticatedOwnerSubscriptionsRoute
@@ -559,6 +567,7 @@ export interface FileRoutesByTo {
   '/owner/notifications': typeof AuthenticatedOwnerNotificationsRoute
   '/owner/packages': typeof AuthenticatedOwnerPackagesRoute
   '/owner/payment-settings': typeof AuthenticatedOwnerPaymentSettingsRoute
+  '/owner/plan-features': typeof AuthenticatedOwnerPlanFeaturesRoute
   '/owner/reports': typeof AuthenticatedOwnerReportsRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
   '/owner/subscriptions': typeof AuthenticatedOwnerSubscriptionsRoute
@@ -628,6 +637,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/notifications': typeof AuthenticatedOwnerNotificationsRoute
   '/_authenticated/owner/packages': typeof AuthenticatedOwnerPackagesRoute
   '/_authenticated/owner/payment-settings': typeof AuthenticatedOwnerPaymentSettingsRoute
+  '/_authenticated/owner/plan-features': typeof AuthenticatedOwnerPlanFeaturesRoute
   '/_authenticated/owner/reports': typeof AuthenticatedOwnerReportsRoute
   '/_authenticated/owner/stores': typeof AuthenticatedOwnerStoresRoute
   '/_authenticated/owner/subscriptions': typeof AuthenticatedOwnerSubscriptionsRoute
@@ -697,6 +707,7 @@ export interface FileRouteTypes {
     | '/owner/notifications'
     | '/owner/packages'
     | '/owner/payment-settings'
+    | '/owner/plan-features'
     | '/owner/reports'
     | '/owner/stores'
     | '/owner/subscriptions'
@@ -760,6 +771,7 @@ export interface FileRouteTypes {
     | '/owner/notifications'
     | '/owner/packages'
     | '/owner/payment-settings'
+    | '/owner/plan-features'
     | '/owner/reports'
     | '/owner/stores'
     | '/owner/subscriptions'
@@ -828,6 +840,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/notifications'
     | '/_authenticated/owner/packages'
     | '/_authenticated/owner/payment-settings'
+    | '/_authenticated/owner/plan-features'
     | '/_authenticated/owner/reports'
     | '/_authenticated/owner/stores'
     | '/_authenticated/owner/subscriptions'
@@ -1008,6 +1021,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/owner/reports'
       preLoaderRoute: typeof AuthenticatedOwnerReportsRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/plan-features': {
+      id: '/_authenticated/owner/plan-features'
+      path: '/plan-features'
+      fullPath: '/owner/plan-features'
+      preLoaderRoute: typeof AuthenticatedOwnerPlanFeaturesRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/owner/payment-settings': {
@@ -1428,6 +1448,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerNotificationsRoute: typeof AuthenticatedOwnerNotificationsRoute
   AuthenticatedOwnerPackagesRoute: typeof AuthenticatedOwnerPackagesRoute
   AuthenticatedOwnerPaymentSettingsRoute: typeof AuthenticatedOwnerPaymentSettingsRoute
+  AuthenticatedOwnerPlanFeaturesRoute: typeof AuthenticatedOwnerPlanFeaturesRoute
   AuthenticatedOwnerReportsRoute: typeof AuthenticatedOwnerReportsRoute
   AuthenticatedOwnerStoresRoute: typeof AuthenticatedOwnerStoresRoute
   AuthenticatedOwnerSubscriptionsRoute: typeof AuthenticatedOwnerSubscriptionsRoute
@@ -1456,6 +1477,7 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerPackagesRoute: AuthenticatedOwnerPackagesRoute,
     AuthenticatedOwnerPaymentSettingsRoute:
       AuthenticatedOwnerPaymentSettingsRoute,
+    AuthenticatedOwnerPlanFeaturesRoute: AuthenticatedOwnerPlanFeaturesRoute,
     AuthenticatedOwnerReportsRoute: AuthenticatedOwnerReportsRoute,
     AuthenticatedOwnerStoresRoute: AuthenticatedOwnerStoresRoute,
     AuthenticatedOwnerSubscriptionsRoute: AuthenticatedOwnerSubscriptionsRoute,
