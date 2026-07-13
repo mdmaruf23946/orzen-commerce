@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { toast } from "sonner";
 import {
   revenueStats,
@@ -132,8 +132,8 @@ function BillingPage() {
           </thead>
           <tbody>
             {(payments ?? []).map((p: any) => (
-              <RowFragment key={p.id} p={p} expanded={!!expanded[p.id]} onToggle={() => setExpanded((s) => ({ ...s, [p.id]: !s[p.id] }))} onApprove={() => approve(p.id)} onReject={() => { setRejectTarget(p); setRejectReason(""); }} busy={busyId === p.id} doRetry={doRetry} />
-                <tr key={p.id} className="border-b last:border-0 align-top">
+              <Fragment key={p.id}>
+                <tr className="border-b last:border-0 align-top">
                   <td className="p-3">
                     <div className="font-medium">{p.stores?.name ?? "—"}</div>
                     {p.invoice_no && <div className="text-[11px] text-muted-foreground">{p.invoice_no}</div>}
@@ -173,7 +173,7 @@ function BillingPage() {
                   </td>
                 </tr>
                 {expanded[p.id] && (
-                  <tr className="border-b bg-muted/30" key={p.id + "-x"}>
+                  <tr className="border-b bg-muted/30">
                     <td colSpan={10} className="p-3">
                       <div className="grid gap-4 sm:grid-cols-2">
                         <div>
@@ -222,7 +222,7 @@ function BillingPage() {
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             ))}
             {(payments ?? []).length === 0 && (
               <tr><td colSpan={10} className="p-8 text-center text-sm text-muted-foreground">No payments</td></tr>
