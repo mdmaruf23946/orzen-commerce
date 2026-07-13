@@ -204,16 +204,17 @@ function PackageDialog({ editing, onClose, onSaved }: { editing: any; onClose: (
             </TabsContent>
 
             <TabsContent value="features" className="space-y-2">
-              <p className="text-xs text-muted-foreground">Enable individual features for this package. Trial packages unlock everything automatically.</p>
+              <p className="text-xs text-muted-foreground">Enable individual features for this package. Trial packages unlock everything automatically. Add new features from the Feature Access page.</p>
               <div className="grid gap-2 sm:grid-cols-2">
-                {FEATURE_KEYS.map((k) => (
-                  <label key={k} className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm">
-                    <span>{FEATURE_LABELS[k]}</span>
-                    <Switch checked={!!form.features[k]} onCheckedChange={() => toggleFeature(k)} />
+                {(catalog as any[]).map((f: any) => (
+                  <label key={f.flag_key} className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm">
+                    <span>{f.label ?? f.flag_key}</span>
+                    <Switch checked={!!form.features[f.flag_key]} onCheckedChange={() => toggleFeature(f.flag_key)} />
                   </label>
                 ))}
               </div>
             </TabsContent>
+
 
             <TabsContent value="trial" className="space-y-3">
               <label className="flex items-center gap-2 text-sm"><Switch checked={form.is_trial} onCheckedChange={(v) => set("is_trial", v)} /> This is a trial package</label>
