@@ -7,7 +7,7 @@ import {
   TrendingUp, ShoppingBag, Users, Clock, ArrowUpRight, ArrowDownRight,
   Package, PackageCheck, PackageX, AlertTriangle,
   CheckCircle2, Truck, Ban, RotateCcw, Loader2,
-  Plus, Share2, ExternalLink, Bell, Star,
+  Plus, Share2, ExternalLink, Bell, Star, Sparkles,
 } from "lucide-react";
 import { myDashboardOverview } from "@/lib/admin.functions";
 import { cn } from "@/lib/utils";
@@ -289,6 +289,7 @@ function Dashboard() {
 
       {/* 9. Quick Actions */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <QuickAction to="/admin/billing" icon={Sparkles} label="আপডেট করুন" />
         <QuickAction to="/admin/products" icon={Plus} label="Add Product" />
         <QuickAction to="/admin/orders" icon={ShoppingBag} label="View Orders" />
         <QuickAction onClick={shareStore} icon={Share2} label="Share Store" />
