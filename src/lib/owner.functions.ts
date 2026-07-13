@@ -277,51 +277,110 @@ export const listPayments = createServerFn({ method: "POST" })
     if (data.to) q = q.lte("created_at", data.to);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    // Attach email log summaries per payment (best-effort)
+    const ids = (rows ?? []).map((r: any) => r.id);
+    let logs: any[] = [];
+    if (ids.length) {
+      const { data: lrows } = await (context.supabase.from("email_logs" as any) as any)
+        .select("id,related_payment_id,template,status,last_error,sent_at,attempts,created_at")
+        .in("related_payment_id", ids);
+      logs = lrows ?? [];
+    }
+    return (rows ?? []).map((r: any) => ({
+      ...r,
+      email_logs: logs.filter((l: any) => l.related_payment_id === r.id),
+    }));
   });
 
 export const verifyPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ id: z.string().uuid(), approve: z.boolean(), notes: z.string().max(500).optional() }).parse(d),
+    z
+      .object({
+        id: z.string().uuid(),
+        approve: z.boolean(),
+        notes: z.string().max(500).optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId);
     const sb: any = context.supabase;
     const { data: pay } = await sb
       .from("payments")
-      .select("id,store_id,package_id,amount,status")
+      .select(
+        "id,store_id,package_id,amount,status,customer_email,method,txn_id",
+      )
       .eq("id", data.id)
       .maybeSingle();
     if (!pay) throw new Error("Payment not found");
     if (pay.status === "paid") throw new Error("Already verified");
 
-    if (!data.approve) {
-      const { error } = await sb
-        .from("payments")
-        .update({ status: "rejected", verified_by: context.userId, verified_at: new Date().toISOString(), notes: data.notes ?? null })
-        .eq("id", data.id);
-      if (error) throw new Error(error.message);
-      await sb.from("subscription_notifications").insert({
-        store_id: pay.store_id,
-        type: "payment_failed",
-        meta: { payment_id: pay.id, reason: data.notes ?? "rejected" },
-      });
-      return { ok: true };
-    }
-
-    // Approve: load package, advance expiry
+    const { data: store } = await sb
+      .from("stores")
+      .select("id,name,slug,expires_at,owner_user_id")
+      .eq("id", pay.store_id)
+      .maybeSingle();
     const { data: pkg } = await sb
       .from("subscription_packages")
       .select("id,duration_days,name")
       .eq("id", pay.package_id)
       .maybeSingle();
-    if (!pkg) throw new Error("Package missing");
-    const { data: store } = await sb
-      .from("stores")
-      .select("id,expires_at")
-      .eq("id", pay.store_id)
+
+    // Load platform bkash config for support email
+    const { data: pset } = await (sb.from("platform_payment_settings") as any)
+      .select("bkash")
+      .eq("id", "global")
       .maybeSingle();
+    const supportEmail: string =
+      (pset?.bkash as any)?.notification_email || "support@orzen.app";
+
+    // Import email helpers lazily
+    const { enqueueEmail, tplPaymentApproved, tplPaymentRejected } = await import(
+      "./emails.server"
+    );
+
+    if (!data.approve) {
+      const reason = (data.notes ?? "").trim();
+      if (reason.length < 10) throw new Error("Please provide a rejection reason (at least 10 characters).");
+      const { error } = await sb
+        .from("payments")
+        .update({
+          status: "rejected",
+          verified_by: context.userId,
+          verified_at: new Date().toISOString(),
+          notes: reason,
+          rejection_reason: reason,
+        })
+        .eq("id", data.id);
+      if (error) throw new Error(error.message);
+      await sb.from("subscription_notifications").insert({
+        store_id: pay.store_id,
+        type: "payment_failed",
+        meta: { payment_id: pay.id, reason },
+      });
+      if (pay.customer_email) {
+        const tpl = tplPaymentRejected({
+          ownerName: null,
+          planName: pkg?.name ?? "your plan",
+          amount: Number(pay.amount),
+          reason,
+          supportEmail,
+          retryUrl: "/admin/billing",
+        });
+        await enqueueEmail({
+          to: pay.customer_email,
+          template: "payment_rejected",
+          subject: tpl.subject,
+          html: tpl.html,
+          payload: { payment_id: pay.id, reason },
+          relatedPaymentId: pay.id,
+        });
+      }
+      return { ok: true };
+    }
+
+    if (!pkg) throw new Error("Package missing");
     const now = new Date();
     const base =
       store?.expires_at && new Date(store.expires_at) > now ? new Date(store.expires_at) : now;
@@ -361,8 +420,39 @@ export const verifyPayment = createServerFn({ method: "POST" })
       type: "payment_success",
       meta: { payment_id: pay.id, invoice_no: invoiceNo, package: pkg.name },
     });
+
+    if (pay.customer_email) {
+      const tpl = tplPaymentApproved({
+        ownerName: null,
+        planName: pkg.name,
+        amount: Number(pay.amount),
+        activationDate: now.toLocaleDateString(),
+        expiryDate: newExpiry.toLocaleDateString(),
+        storeUrl: store?.slug ? `/store/${store.slug}` : "/",
+        loginUrl: "/admin",
+        invoiceNo,
+      });
+      await enqueueEmail({
+        to: pay.customer_email,
+        template: "payment_approved",
+        subject: tpl.subject,
+        html: tpl.html,
+        payload: { payment_id: pay.id, invoice_no: invoiceNo },
+        relatedPaymentId: pay.id,
+      });
+    }
     return { ok: true, invoice_no: invoiceNo };
   });
+
+export const retryEmailLog = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { trySendLog } = await import("./emails.server");
+    return trySendLog(data.id);
+  });
+
 
 export const extendSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
