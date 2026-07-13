@@ -221,7 +221,7 @@ function BillingPage() {
       {/* 4-6. Plan Cards */}
       <section>
         <h2 className="mb-2 text-sm font-semibold sm:mb-3 sm:text-lg">Available plans</h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
           {TIER_ORDER.map((tier) => {
             const p = tierMap.get(tier);
             const isCurrent = currentTier === tier && !isTrialing;
@@ -231,9 +231,9 @@ function BillingPage() {
 
             if (!p) {
               return (
-                <div key={tier} className="rounded-xl border border-dashed bg-card/40 p-4 text-sm text-muted-foreground">
+                <div key={tier} className="rounded-xl border border-dashed bg-card/40 p-3 text-xs text-muted-foreground sm:p-4 sm:text-sm">
                   <div className="font-semibold text-foreground">{TIER_NAME[tier]}</div>
-                  <p className="mt-2">Coming soon.</p>
+                  <p className="mt-1 sm:mt-2">Coming soon.</p>
                 </div>
               );
             }
@@ -243,43 +243,43 @@ function BillingPage() {
             return (
               <div
                 key={tier}
-                className={`relative flex flex-col rounded-xl border bg-card p-4 ${
+                className={`relative flex flex-col rounded-xl border bg-card p-3 sm:p-4 ${
                   isPopular ? "border-primary ring-2 ring-primary/30" : ""
                 } ${isCurrent ? "border-emerald-500" : ""}`}
               >
                 {isPopular && (
-                  <div className="absolute -top-2 left-4 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase text-primary-foreground">
-                    <Sparkles className="h-3 w-3" /> Most Popular
+                  <div className="absolute -top-2 left-3 inline-flex items-center gap-1 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold uppercase text-primary-foreground sm:left-4 sm:px-2 sm:text-[10px]">
+                    <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Popular
                   </div>
                 )}
                 {isCurrent && (
-                  <div className="absolute -top-2 right-4 inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
-                    <Crown className="h-3 w-3" /> Current Plan
+                  <div className="absolute -top-2 right-3 inline-flex items-center gap-1 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white sm:right-4 sm:px-2 sm:text-[10px]">
+                    <Crown className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Current
                   </div>
                 )}
 
-                <div className="mt-1 truncate text-base font-semibold">{TIER_NAME[tier]}</div>
-                {p.description && <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{p.description}</p>}
+                <div className="mt-0.5 truncate text-sm font-semibold sm:text-base">{TIER_NAME[tier]}</div>
+                {p.description && <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-2 sm:text-xs">{p.description}</p>}
 
-                <div className="mt-3">
+                <div className="mt-2 sm:mt-3">
                   {isCustom ? (
-                    <div className="text-xl font-extrabold sm:text-2xl">Custom</div>
+                    <div className="text-lg font-extrabold sm:text-2xl">Custom</div>
                   ) : isFree ? (
-                    <div className="text-xl font-extrabold sm:text-2xl">
-                      ৳0<span className="text-xs font-normal text-muted-foreground sm:text-sm"> / forever</span>
+                    <div className="text-lg font-extrabold sm:text-2xl">
+                      ৳0<span className="text-[11px] font-normal text-muted-foreground sm:text-sm"> / forever</span>
                     </div>
                   ) : (
                     <>
                       <div className="flex items-baseline gap-2">
-                        <div className="text-xl font-extrabold sm:text-2xl">৳{calc!.total.toLocaleString()}</div>
+                        <div className="text-lg font-extrabold sm:text-2xl">৳{calc!.total.toLocaleString()}</div>
                         {calc!.discountPct > 0 && (
-                          <div className="text-xs text-muted-foreground line-through">
+                          <div className="text-[11px] text-muted-foreground line-through sm:text-xs">
                             ৳{(Number(p.price) * calc!.months).toLocaleString()}
                           </div>
                         )}
                       </div>
-                      <div className="mt-0.5 text-[11px] text-muted-foreground">
-                        ৳{calc!.perMonth.toLocaleString()}/mo · billed every {calc!.months} mo
+                      <div className="mt-0.5 text-[10px] text-muted-foreground sm:text-[11px]">
+                        ৳{calc!.perMonth.toLocaleString()}/mo · every {calc!.months} mo
                       </div>
                       {calc!.saved > 0 && (
                         <div className="mt-1 inline-block rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
@@ -291,7 +291,7 @@ function BillingPage() {
                 </div>
 
                 {/* Limits */}
-                <ul className="mt-4 space-y-1.5 text-xs">
+                <ul className="mt-3 space-y-1 text-[11px] sm:space-y-1.5 sm:text-xs">
                   <LimitRow label="Products" value={formatLimit(p.product_limit, undefined)} />
                   <LimitRow label="Orders / month" value={formatLimit(p.order_limit, undefined)} />
                   <LimitRow label="Storage" value={formatLimit(p.storage_mb, "MB")} />
@@ -300,8 +300,8 @@ function BillingPage() {
 
                 {/* Summary bullets */}
                 {p.feature_summary && p.feature_summary.length > 0 && (
-                  <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
-                    {p.feature_summary.map((s, i) => (
+                  <ul className="mt-2 space-y-0.5 text-[11px] text-muted-foreground sm:mt-3 sm:space-y-1 sm:text-xs">
+                    {p.feature_summary.slice(0, 3).map((s, i) => (
                       <li key={i} className="flex items-start gap-1.5">
                         <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-primary/60" />
                         <span className="min-w-0">{s}</span>
@@ -310,8 +310,8 @@ function BillingPage() {
                   </ul>
                 )}
 
-                {/* Features */}
-                <ul className="mt-3 space-y-1 border-t pt-3 text-xs">
+                {/* Features — always visible on ≥sm, collapsible on mobile */}
+                <ul className="mt-2 hidden space-y-1 border-t pt-2 text-xs sm:mt-3 sm:block sm:pt-3">
                   {FEATURE_KEYS.map((k) => {
                     const on = isCustom ? true : !!p.features?.[k];
                     return (
@@ -329,20 +329,41 @@ function BillingPage() {
                   })}
                 </ul>
 
-                <div className="mt-4">
+                <details className="mt-2 border-t pt-2 sm:hidden">
+                  <summary className="cursor-pointer text-[11px] font-medium text-primary">Show all features</summary>
+                  <ul className="mt-2 space-y-1 text-[11px]">
+                    {FEATURE_KEYS.map((k) => {
+                      const on = isCustom ? true : !!p.features?.[k];
+                      return (
+                        <li key={k} className="flex items-start gap-1.5">
+                          {on ? (
+                            <Check className="mt-0.5 h-3 w-3 shrink-0 text-emerald-600" />
+                          ) : (
+                            <X className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground/50" />
+                          )}
+                          <span className={on ? "min-w-0" : "min-w-0 text-muted-foreground/70 line-through"}>
+                            {FEATURE_LABELS[k]}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </details>
+
+                <div className="mt-3 sm:mt-4">
                   {isCurrent ? (
-                    <Button disabled className="w-full" variant="secondary">Current Plan</Button>
+                    <Button disabled className="h-9 w-full text-xs sm:h-10 sm:text-sm" variant="secondary">Current Plan</Button>
                   ) : isCustom ? (
                     <a href="mailto:support@example.com?subject=Custom%20Plan%20Inquiry" className="block">
-                      <Button variant="outline" className="w-full">Contact Sales</Button>
+                      <Button variant="outline" className="h-9 w-full text-xs sm:h-10 sm:text-sm">Contact Sales</Button>
                     </a>
                   ) : isFree ? (
-                    <Button disabled className="w-full" variant="outline">
+                    <Button disabled className="h-9 w-full text-xs sm:h-10 sm:text-sm" variant="outline">
                       {isTrialing ? "After trial" : "Free Forever"}
                     </Button>
                   ) : (
                     <Link to="/admin/billing/checkout/$packageId" params={{ packageId: p.id }} search={{ cycle } as any} className="block">
-                      <Button className="w-full">Upgrade</Button>
+                      <Button className="h-9 w-full text-xs sm:h-10 sm:text-sm">Upgrade</Button>
                     </Link>
                   )}
                 </div>
@@ -351,6 +372,7 @@ function BillingPage() {
           })}
         </div>
       </section>
+
 
       {/* 7. Compare Plans */}
       <section>
