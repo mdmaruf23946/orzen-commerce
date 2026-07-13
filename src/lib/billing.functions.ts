@@ -159,14 +159,12 @@ export const submitManualPayment = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!pkg) throw new Error("Package not found");
 
-    // Pull discounts server-side using the public client (settings are public)
-    const sbPub = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
-      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-    });
-    const { data: settings } = await (sbPub.from("platform_billing_settings" as any) as any)
+    // Pull discounts using the authenticated context (RLS-protected)
+    const { data: settings } = await (supabase.from("platform_billing_settings" as any) as any)
       .select("discount_3m,discount_6m,discount_yearly")
       .eq("id", "global")
       .maybeSingle();
+
     const s = {
       discount_3m: Number(settings?.discount_3m ?? 5),
       discount_6m: Number(settings?.discount_6m ?? 10),
