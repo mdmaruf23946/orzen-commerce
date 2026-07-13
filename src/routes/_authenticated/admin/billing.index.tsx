@@ -460,7 +460,9 @@ function BillingPage() {
       {/* 9. Payment history */}
       <section>
         <h2 className="mb-2 text-sm font-semibold sm:mb-3 sm:text-lg">Payment history</h2>
-        <div className="overflow-x-auto rounded-xl border bg-card">
+
+        {/* Desktop table */}
+        <div className="hidden overflow-x-auto rounded-xl border bg-card sm:block">
           <table className="w-full text-sm">
             <thead className="border-b bg-muted/50 text-left text-xs uppercase text-muted-foreground">
               <tr>
@@ -515,7 +517,47 @@ function BillingPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile: card list */}
+        <div className="space-y-2 sm:hidden">
+          {(status?.payments ?? []).length === 0 ? (
+            <div className="rounded-xl border bg-card p-4 text-center text-xs text-muted-foreground">No payments yet</div>
+          ) : (
+            (status?.payments ?? []).map((p: any) => (
+              <div key={p.id} className="rounded-xl border bg-card p-3">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                  <div className="min-w-0">
+                    <div className="truncate text-xs font-semibold">{p.subscription_packages?.name ?? "—"}</div>
+                    <div className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">{p.invoice_no ?? "—"}</div>
+                    <div className="mt-0.5 text-[10px] text-muted-foreground">
+                      {new Date(p.created_at).toLocaleDateString()} · <span className="uppercase">{p.method ?? "—"}</span>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="text-sm font-bold">৳{Number(p.amount).toFixed(0)}</div>
+                    <Badge
+                      variant={p.status === "paid" ? "default" : p.status === "pending" ? "secondary" : "destructive"}
+                      className="mt-1 h-4 px-1.5 text-[9px] capitalize"
+                    >
+                      {p.status}
+                    </Badge>
+                  </div>
+                </div>
+                {p.status === "paid" && (
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="mt-2 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                  >
+                    <Download className="h-3 w-3" /> Invoice
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
       </section>
+
     </div>
   );
 }
