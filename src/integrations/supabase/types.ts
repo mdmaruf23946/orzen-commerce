@@ -508,6 +508,62 @@ export type Database = {
           },
         ]
       }
+      email_logs: {
+        Row: {
+          attempts: number
+          created_at: string
+          html: string
+          id: string
+          last_error: string | null
+          payload: Json
+          related_payment_id: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+          template: string
+          to_email: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          html: string
+          id?: string
+          last_error?: string | null
+          payload?: Json
+          related_payment_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject: string
+          template: string
+          to_email: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          html?: string
+          id?: string
+          last_error?: string | null
+          payload?: Json
+          related_payment_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          template?: string
+          to_email?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_logs_related_payment_id_fkey"
+            columns: ["related_payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expenses: {
         Row: {
           amount: number
@@ -859,6 +915,8 @@ export type Database = {
         Row: {
           amount: number
           created_at: string
+          customer_email: string | null
+          customer_note: string | null
           cycle_end: string | null
           cycle_start: string | null
           id: string
@@ -866,6 +924,7 @@ export type Database = {
           method: string | null
           notes: string | null
           package_id: string | null
+          rejection_reason: string | null
           sender_number: string | null
           status: string
           store_id: string
@@ -876,6 +935,8 @@ export type Database = {
         Insert: {
           amount: number
           created_at?: string
+          customer_email?: string | null
+          customer_note?: string | null
           cycle_end?: string | null
           cycle_start?: string | null
           id?: string
@@ -883,6 +944,7 @@ export type Database = {
           method?: string | null
           notes?: string | null
           package_id?: string | null
+          rejection_reason?: string | null
           sender_number?: string | null
           status?: string
           store_id: string
@@ -893,6 +955,8 @@ export type Database = {
         Update: {
           amount?: number
           created_at?: string
+          customer_email?: string | null
+          customer_note?: string | null
           cycle_end?: string | null
           cycle_start?: string | null
           id?: string
@@ -900,6 +964,7 @@ export type Database = {
           method?: string | null
           notes?: string | null
           package_id?: string | null
+          rejection_reason?: string | null
           sender_number?: string | null
           status?: string
           store_id?: string
