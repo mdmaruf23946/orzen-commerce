@@ -2,6 +2,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { assertPlan } from "@/lib/plan-guard";
 
 function slugify(s: string) {
   return s
@@ -440,9 +441,10 @@ const marketingSchema = z.object({
 export const updateMarketing = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => marketingSchema.parse(d))
-  .handler(async ({ data, context }) =>
-    updateStoreColumn(context.supabase, context.userId, "marketing", data),
-  );
+  .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "pixel");
+    return updateStoreColumn(context.supabase, context.userId, "marketing", data);
+  });
 
 const courierProvider = z.object({
   api_key: z.string().trim().max(300).optional().nullable(),
@@ -460,9 +462,10 @@ const couriersSchema = z.object({
 export const updateCouriers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => couriersSchema.parse(d))
-  .handler(async ({ data, context }) =>
-    updateStoreColumn(context.supabase, context.userId, "couriers", data),
-  );
+  .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "courier");
+    return updateStoreColumn(context.supabase, context.userId, "couriers", data);
+  });
 
 const seoSchema = z.object({
   title: z.string().trim().max(160).optional().nullable(),
