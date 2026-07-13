@@ -7,7 +7,7 @@ import {
   TrendingUp, ShoppingBag, Users, Clock, ArrowUpRight, ArrowDownRight,
   Package, PackageCheck, PackageX, AlertTriangle,
   CheckCircle2, Truck, Ban, RotateCcw, Loader2,
-  Plus, Share2, ExternalLink, Bell, Star,
+  Plus, Share2, ExternalLink, Bell, Star, Sparkles,
 } from "lucide-react";
 import { myDashboardOverview } from "@/lib/admin.functions";
 import { cn } from "@/lib/utils";
