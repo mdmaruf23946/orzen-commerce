@@ -169,6 +169,35 @@ function SettingsPage() {
       <Button type="submit" disabled={saving} className="w-full sm:w-auto">
         {saving ? "Saving…" : "Save changes"}
       </Button>
+
+      <section className="space-y-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+        <h2 className="text-sm font-semibold text-destructive">Danger zone</h2>
+        <p className="text-xs text-muted-foreground">
+          Replace your current design, theme, banners, categories and products with the latest default template
+          set by the platform. This cannot be undone.
+        </p>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button type="button" variant="destructive" size="sm" disabled={resetting}>
+              {resetting ? "Resetting…" : "Reset to Default Template"}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Reset to default template?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Your current banners, categories and products will be deleted and replaced with the platform's
+                latest default template. Your store settings (design, theme, defaults) will also be overwritten.
+                This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={reset}>Yes, reset</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </section>
     </form>
   );
 }
