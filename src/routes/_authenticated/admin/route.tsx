@@ -28,6 +28,7 @@ import {
   RotateCcw,
   BarChart3,
   FileUp,
+  Globe,
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,6 +61,7 @@ const links: { to: string; label: string; icon: typeof LayoutDashboard; exact?: 
   { to: "/admin/ai-agent", label: "AI Sales Agent", icon: Bot },
   { to: "/admin/messenger", label: "Messenger", icon: MessageSquare },
   { to: "/admin/settings", label: "Store Settings", icon: Settings },
+  { to: "/admin/domains", label: "Domains", icon: Globe },
   { to: "/admin/subscription", label: "Subscription", icon: CreditCard },
   { to: "/admin/billing", label: "Billing & Plans", icon: Wallet },
 ];

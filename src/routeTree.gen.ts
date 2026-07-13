@@ -39,6 +39,7 @@ import { Route as AuthenticatedOwnerMarketingRouteImport } from './routes/_authe
 import { Route as AuthenticatedOwnerLogsRouteImport } from './routes/_authenticated/owner/logs'
 import { Route as AuthenticatedOwnerHealthRouteImport } from './routes/_authenticated/owner/health'
 import { Route as AuthenticatedOwnerFeaturesRouteImport } from './routes/_authenticated/owner/features'
+import { Route as AuthenticatedOwnerDomainsRouteImport } from './routes/_authenticated/owner/domains'
 import { Route as AuthenticatedOwnerDevLogsRouteImport } from './routes/_authenticated/owner/dev-logs'
 import { Route as AuthenticatedOwnerCouriersRouteImport } from './routes/_authenticated/owner/couriers'
 import { Route as AuthenticatedOwnerBillingRouteImport } from './routes/_authenticated/owner/billing'
@@ -62,6 +63,7 @@ import { Route as AuthenticatedAdminMarketingRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminInventoryRouteImport } from './routes/_authenticated/admin/inventory'
 import { Route as AuthenticatedAdminImportExportRouteImport } from './routes/_authenticated/admin/import-export'
 import { Route as AuthenticatedAdminFinanceRouteImport } from './routes/_authenticated/admin/finance'
+import { Route as AuthenticatedAdminDomainsRouteImport } from './routes/_authenticated/admin/domains'
 import { Route as AuthenticatedAdminDeliveryRouteImport } from './routes/_authenticated/admin/delivery'
 import { Route as AuthenticatedAdminCustomersRouteImport } from './routes/_authenticated/admin/customers'
 import { Route as AuthenticatedAdminCouriersRouteImport } from './routes/_authenticated/admin/couriers'
@@ -241,6 +243,12 @@ const AuthenticatedOwnerFeaturesRoute =
     path: '/features',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
+const AuthenticatedOwnerDomainsRoute =
+  AuthenticatedOwnerDomainsRouteImport.update({
+    id: '/domains',
+    path: '/domains',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
 const AuthenticatedOwnerDevLogsRoute =
   AuthenticatedOwnerDevLogsRouteImport.update({
     id: '/dev-logs',
@@ -374,6 +382,12 @@ const AuthenticatedAdminFinanceRoute =
     path: '/finance',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminDomainsRoute =
+  AuthenticatedAdminDomainsRouteImport.update({
+    id: '/domains',
+    path: '/domains',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminDeliveryRoute =
   AuthenticatedAdminDeliveryRouteImport.update({
     id: '/delivery',
@@ -480,6 +494,7 @@ export interface FileRoutesByFullPath {
   '/admin/couriers': typeof AuthenticatedAdminCouriersRoute
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/delivery': typeof AuthenticatedAdminDeliveryRoute
+  '/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/admin/finance': typeof AuthenticatedAdminFinanceRoute
   '/admin/import-export': typeof AuthenticatedAdminImportExportRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryRoute
@@ -503,6 +518,7 @@ export interface FileRoutesByFullPath {
   '/owner/billing': typeof AuthenticatedOwnerBillingRoute
   '/owner/couriers': typeof AuthenticatedOwnerCouriersRoute
   '/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
+  '/owner/domains': typeof AuthenticatedOwnerDomainsRoute
   '/owner/features': typeof AuthenticatedOwnerFeaturesRoute
   '/owner/health': typeof AuthenticatedOwnerHealthRoute
   '/owner/logs': typeof AuthenticatedOwnerLogsRoute
@@ -545,6 +561,7 @@ export interface FileRoutesByTo {
   '/admin/couriers': typeof AuthenticatedAdminCouriersRoute
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/delivery': typeof AuthenticatedAdminDeliveryRoute
+  '/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/admin/finance': typeof AuthenticatedAdminFinanceRoute
   '/admin/import-export': typeof AuthenticatedAdminImportExportRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryRoute
@@ -568,6 +585,7 @@ export interface FileRoutesByTo {
   '/owner/billing': typeof AuthenticatedOwnerBillingRoute
   '/owner/couriers': typeof AuthenticatedOwnerCouriersRoute
   '/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
+  '/owner/domains': typeof AuthenticatedOwnerDomainsRoute
   '/owner/features': typeof AuthenticatedOwnerFeaturesRoute
   '/owner/health': typeof AuthenticatedOwnerHealthRoute
   '/owner/logs': typeof AuthenticatedOwnerLogsRoute
@@ -616,6 +634,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/couriers': typeof AuthenticatedAdminCouriersRoute
   '/_authenticated/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/_authenticated/admin/delivery': typeof AuthenticatedAdminDeliveryRoute
+  '/_authenticated/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/_authenticated/admin/finance': typeof AuthenticatedAdminFinanceRoute
   '/_authenticated/admin/import-export': typeof AuthenticatedAdminImportExportRoute
   '/_authenticated/admin/inventory': typeof AuthenticatedAdminInventoryRoute
@@ -639,6 +658,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/billing': typeof AuthenticatedOwnerBillingRoute
   '/_authenticated/owner/couriers': typeof AuthenticatedOwnerCouriersRoute
   '/_authenticated/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
+  '/_authenticated/owner/domains': typeof AuthenticatedOwnerDomainsRoute
   '/_authenticated/owner/features': typeof AuthenticatedOwnerFeaturesRoute
   '/_authenticated/owner/health': typeof AuthenticatedOwnerHealthRoute
   '/_authenticated/owner/logs': typeof AuthenticatedOwnerLogsRoute
@@ -687,6 +707,7 @@ export interface FileRouteTypes {
     | '/admin/couriers'
     | '/admin/customers'
     | '/admin/delivery'
+    | '/admin/domains'
     | '/admin/finance'
     | '/admin/import-export'
     | '/admin/inventory'
@@ -710,6 +731,7 @@ export interface FileRouteTypes {
     | '/owner/billing'
     | '/owner/couriers'
     | '/owner/dev-logs'
+    | '/owner/domains'
     | '/owner/features'
     | '/owner/health'
     | '/owner/logs'
@@ -752,6 +774,7 @@ export interface FileRouteTypes {
     | '/admin/couriers'
     | '/admin/customers'
     | '/admin/delivery'
+    | '/admin/domains'
     | '/admin/finance'
     | '/admin/import-export'
     | '/admin/inventory'
@@ -775,6 +798,7 @@ export interface FileRouteTypes {
     | '/owner/billing'
     | '/owner/couriers'
     | '/owner/dev-logs'
+    | '/owner/domains'
     | '/owner/features'
     | '/owner/health'
     | '/owner/logs'
@@ -822,6 +846,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/couriers'
     | '/_authenticated/admin/customers'
     | '/_authenticated/admin/delivery'
+    | '/_authenticated/admin/domains'
     | '/_authenticated/admin/finance'
     | '/_authenticated/admin/import-export'
     | '/_authenticated/admin/inventory'
@@ -845,6 +870,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/billing'
     | '/_authenticated/owner/couriers'
     | '/_authenticated/owner/dev-logs'
+    | '/_authenticated/owner/domains'
     | '/_authenticated/owner/features'
     | '/_authenticated/owner/health'
     | '/_authenticated/owner/logs'
@@ -1099,6 +1125,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerFeaturesRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
+    '/_authenticated/owner/domains': {
+      id: '/_authenticated/owner/domains'
+      path: '/domains'
+      fullPath: '/owner/domains'
+      preLoaderRoute: typeof AuthenticatedOwnerDomainsRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
     '/_authenticated/owner/dev-logs': {
       id: '/_authenticated/owner/dev-logs'
       path: '/dev-logs'
@@ -1260,6 +1293,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminFinanceRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/domains': {
+      id: '/_authenticated/admin/domains'
+      path: '/domains'
+      fullPath: '/admin/domains'
+      preLoaderRoute: typeof AuthenticatedAdminDomainsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/delivery': {
       id: '/_authenticated/admin/delivery'
       path: '/delivery'
@@ -1395,6 +1435,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminCouriersRoute: typeof AuthenticatedAdminCouriersRoute
   AuthenticatedAdminCustomersRoute: typeof AuthenticatedAdminCustomersRoute
   AuthenticatedAdminDeliveryRoute: typeof AuthenticatedAdminDeliveryRoute
+  AuthenticatedAdminDomainsRoute: typeof AuthenticatedAdminDomainsRoute
   AuthenticatedAdminFinanceRoute: typeof AuthenticatedAdminFinanceRoute
   AuthenticatedAdminImportExportRoute: typeof AuthenticatedAdminImportExportRoute
   AuthenticatedAdminInventoryRoute: typeof AuthenticatedAdminInventoryRoute
@@ -1426,6 +1467,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminCouriersRoute: AuthenticatedAdminCouriersRoute,
     AuthenticatedAdminCustomersRoute: AuthenticatedAdminCustomersRoute,
     AuthenticatedAdminDeliveryRoute: AuthenticatedAdminDeliveryRoute,
+    AuthenticatedAdminDomainsRoute: AuthenticatedAdminDomainsRoute,
     AuthenticatedAdminFinanceRoute: AuthenticatedAdminFinanceRoute,
     AuthenticatedAdminImportExportRoute: AuthenticatedAdminImportExportRoute,
     AuthenticatedAdminInventoryRoute: AuthenticatedAdminInventoryRoute,
@@ -1461,6 +1503,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerBillingRoute: typeof AuthenticatedOwnerBillingRoute
   AuthenticatedOwnerCouriersRoute: typeof AuthenticatedOwnerCouriersRoute
   AuthenticatedOwnerDevLogsRoute: typeof AuthenticatedOwnerDevLogsRoute
+  AuthenticatedOwnerDomainsRoute: typeof AuthenticatedOwnerDomainsRoute
   AuthenticatedOwnerFeaturesRoute: typeof AuthenticatedOwnerFeaturesRoute
   AuthenticatedOwnerHealthRoute: typeof AuthenticatedOwnerHealthRoute
   AuthenticatedOwnerLogsRoute: typeof AuthenticatedOwnerLogsRoute
@@ -1490,6 +1533,7 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerBillingRoute: AuthenticatedOwnerBillingRoute,
     AuthenticatedOwnerCouriersRoute: AuthenticatedOwnerCouriersRoute,
     AuthenticatedOwnerDevLogsRoute: AuthenticatedOwnerDevLogsRoute,
+    AuthenticatedOwnerDomainsRoute: AuthenticatedOwnerDomainsRoute,
     AuthenticatedOwnerFeaturesRoute: AuthenticatedOwnerFeaturesRoute,
     AuthenticatedOwnerHealthRoute: AuthenticatedOwnerHealthRoute,
     AuthenticatedOwnerLogsRoute: AuthenticatedOwnerLogsRoute,
@@ -1561,13 +1605,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

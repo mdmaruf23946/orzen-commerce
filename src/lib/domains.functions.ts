@@ -1,0 +1,206 @@
+// Domain management server functions.
+// Store-scoped: subdomain edit + custom domain lifecycle + primary selection.
+// Owner-scoped: platform-wide domain view + settings.
+import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { z } from "zod";
+import { assertPlan } from "@/lib/plan-guard";
+
+const HOSTNAME_RE = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/;
+
+function normalizeHost(h: string) {
+  return h.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/:\d+$/, "");
+}
+
+async function requireMyStore(supabase: any, userId: string) {
+  const { data: store } = await supabase
+    .from("stores")
+    .select("id, slug, primary_domain_id")
+    .eq("owner_user_id", userId)
+    .maybeSingle();
+  if (!store) throw new Error("No store found for this account");
+  return store as { id: string; slug: string; primary_domain_id: string | null };
+}
+
+async function requireOwner(supabase: any, userId: string) {
+  const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "owner" });
+  if (!data) throw new Error("Forbidden");
+}
+
+// ---------- Store admin ----------
+
+export const listMyDomains = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const store = await requireMyStore(context.supabase, context.userId);
+    const { data } = await context.supabase
+      .from("store_domains")
+      .select("*")
+      .eq("store_id", store.id)
+      .order("created_at", { ascending: false });
+    return { store, domains: (data ?? []) as any[] };
+  });
+
+export const addCustomDomain = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { hostname: string }) =>
+    z.object({ hostname: z.string().min(3).max(253) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertPlan(supabase, userId, "custom_domain" as any);
+    const store = await requireMyStore(supabase, userId);
+    const host = normalizeHost(data.hostname);
+    if (!HOSTNAME_RE.test(host)) throw new Error("Invalid hostname format");
+
+    // Reject platform / login host reuse
+    const { data: pSettings } = await supabase
+      .from("platform_settings")
+      .select("settings")
+      .eq("id", 1)
+      .maybeSingle();
+    const s = (pSettings?.settings as any) ?? {};
+    const rootDomain = (s.root_domain ?? "").toLowerCase();
+    const loginHost = (s.login_host ?? "").toLowerCase();
+    const dnsTarget = s.dns_target ?? (rootDomain ? `stores.${rootDomain}` : "stores.orzen.top");
+    if (rootDomain && (host === rootDomain || host.endsWith(`.${rootDomain}`))) {
+      throw new Error("This hostname is on the platform root — use your subdomain instead.");
+    }
+    if (loginHost && host === loginHost) throw new Error("Reserved hostname");
+
+    const { data: created, error } = await supabase
+      .from("store_domains")
+      .insert({ store_id: store.id, hostname: host, kind: "custom", status: "pending", dns_target: dnsTarget })
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return created;
+  });
+
+export const checkDomainVerification = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { domainId: string }) => z.object({ domainId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: row } = await supabase
+      .from("store_domains")
+      .select("*")
+      .eq("id", data.domainId)
+      .maybeSingle();
+    if (!row) throw new Error("Not found");
+    if (row.last_checked_at && Date.now() - new Date(row.last_checked_at).getTime() < 30_000) {
+      throw new Error("Please wait a few seconds before checking again");
+    }
+    const { promises: dns } = await import("dns");
+    let ok = false;
+    let reason = "";
+    try {
+      const txtRecs = await dns.resolveTxt(`_orzen-verify.${row.hostname}`).catch(() => []);
+      const flat = txtRecs.map((r) => r.join("")).map((s) => s.trim());
+      const txtOk = flat.includes(row.verification_token);
+      const cnameRecs = await dns.resolveCname(row.hostname).catch(() => [] as string[]);
+      const cnameOk = row.dns_target
+        ? cnameRecs.some((c) => c.toLowerCase().replace(/\.$/, "") === row.dns_target!.toLowerCase())
+        : true;
+      ok = txtOk && cnameOk;
+      if (!txtOk) reason = "TXT record missing or wrong";
+      else if (!cnameOk) reason = "CNAME not pointing to platform";
+    } catch (e) {
+      reason = (e as Error).message;
+    }
+    const patch: any = { last_checked_at: new Date().toISOString() };
+    if (ok) {
+      patch.status = "verified";
+      patch.verified_at = new Date().toISOString();
+      patch.ssl_status = "issuing";
+    } else if (row.status === "pending") {
+      patch.status = "pending";
+    }
+    await supabase.from("store_domains").update(patch).eq("id", row.id);
+    return { ok, reason };
+  });
+
+export const removeDomain = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { domainId: string }) => z.object({ domainId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    // If it's currently primary, clear stores.primary_domain_id first
+    await supabase.from("stores").update({ primary_domain_id: null }).eq("primary_domain_id", data.domainId);
+    const { error } = await supabase.from("store_domains").delete().eq("id", data.domainId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// Pass domainId = null to fall back to the subdomain.
+export const setPrimaryDomain = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { domainId: string | null }) =>
+    z.object({ domainId: z.string().uuid().nullable() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const store = await requireMyStore(supabase, userId);
+    // Clear existing primary flags
+    await supabase.from("store_domains").update({ is_primary: false }).eq("store_id", store.id);
+    if (data.domainId) {
+      const { data: row } = await supabase
+        .from("store_domains")
+        .select("id, store_id, status")
+        .eq("id", data.domainId)
+        .maybeSingle();
+      if (!row || row.store_id !== store.id) throw new Error("Not found");
+      if (!["verified", "active"].includes(row.status)) {
+        throw new Error("Domain must be verified before it can be primary");
+      }
+      await supabase.from("store_domains").update({ is_primary: true }).eq("id", row.id);
+      await supabase.from("stores").update({ primary_domain_id: row.id }).eq("id", store.id);
+    } else {
+      await supabase.from("stores").update({ primary_domain_id: null }).eq("id", store.id);
+    }
+    return { ok: true };
+  });
+
+// ---------- Owner (platform-wide) ----------
+
+export const listAllDomains = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireOwner(context.supabase, context.userId);
+    const { data } = await context.supabase
+      .from("store_domains")
+      .select("*, stores(name, slug)")
+      .order("created_at", { ascending: false });
+    return (data ?? []) as any[];
+  });
+
+export const setDomainSslStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { domainId: string; ssl_status: string; activate?: boolean }) =>
+    z
+      .object({
+        domainId: z.string().uuid(),
+        ssl_status: z.enum(["none", "issuing", "issued", "failed"]),
+        activate: z.boolean().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await requireOwner(context.supabase, context.userId);
+    const patch: any = { ssl_status: data.ssl_status };
+    if (data.activate && data.ssl_status === "issued") patch.status = "active";
+    const { error } = await context.supabase.from("store_domains").update(patch).eq("id", data.domainId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const ownerRemoveDomain = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { domainId: string }) => z.object({ domainId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await requireOwner(context.supabase, context.userId);
+    await context.supabase.from("stores").update({ primary_domain_id: null }).eq("primary_domain_id", data.domainId);
+    const { error } = await context.supabase.from("store_domains").delete().eq("id", data.domainId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
