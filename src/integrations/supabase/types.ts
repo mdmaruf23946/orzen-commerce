@@ -1020,6 +1020,8 @@ export type Database = {
           description: string | null
           enabled: boolean
           flag_key: string
+          label: string | null
+          sort_order: number
           updated_at: string
         }
         Insert: {
@@ -1028,6 +1030,8 @@ export type Database = {
           description?: string | null
           enabled?: boolean
           flag_key: string
+          label?: string | null
+          sort_order?: number
           updated_at?: string
         }
         Update: {
@@ -1036,6 +1040,8 @@ export type Database = {
           description?: string | null
           enabled?: boolean
           flag_key?: string
+          label?: string | null
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []

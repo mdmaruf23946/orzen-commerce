@@ -284,8 +284,11 @@ export const markNotificationRead = createServerFn({ method: "POST" })
 
 export const getEnabledPaymentMethods = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { data } = await (context.supabase.from("platform_payment_settings" as any) as any)
+  .handler(async () => {
+    // Payment settings hold credentials/notification email — restricted to owner via RLS.
+    // Read via admin client and project ONLY safe display fields.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await (supabaseAdmin.from("platform_payment_settings" as any) as any)
       .select("bkash,nagad,rocket,sslcommerz")
       .eq("id", "global")
       .maybeSingle();

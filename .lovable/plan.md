@@ -1,158 +1,88 @@
-## Manual Subscription Payment Verification System
+# Feature Access Manager for Subscription Plans
 
-Redesign the checkout into a dedicated bKash-first payment page, add duplicate-txn protection, and wire Lovable Emails on submit / approve / reject. Reuses the existing `payments` + `platform_payment_settings` tables — no schema rebuild.
+## Goal
 
-### 1. Migration (small, additive)
+Give the Owner one place to manage which features every subscription plan unlocks. Toggles are stored in the database (not hard-coded), apply immediately to every store on that plan, and adding a new feature never requires editing core gating logic.
 
-```sql
--- Email + note on payment requests
-ALTER TABLE public.payments
-  ADD COLUMN customer_email text,
-  ADD COLUMN customer_note  text,
-  ADD COLUMN rejection_reason text;
+## Current state
 
--- Prevent duplicate transaction IDs within the same method
-CREATE UNIQUE INDEX payments_method_txn_unique
-  ON public.payments (method, txn_id)
-  WHERE txn_id IS NOT NULL AND status <> 'rejected';
+- `platform_feature_flags` table already exists (Owner → Features page) as a global on/off registry of features.
+- Each plan stores its own `features` JSON on `subscription_packages`, edited inside the package dialog's "Features" tab.
+- `FeatureGate` / `hasFeature` read a hard-coded `FEATURE_KEYS` array in `src/lib/features.ts`. Adding a feature today means editing that constant + the package dialog.
 
--- Store owner needs to see their own payment on the success page
--- (existing "store owner reads payments" policy already covers this)
+The two systems don't talk to each other, and the feature list isn't scalable.
 
--- Email log for retry + audit
-CREATE TABLE public.email_logs (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  to_email text NOT NULL,
-  template text NOT NULL,          -- 'payment_submitted_admin' | 'payment_submitted_customer' | 'payment_approved' | 'payment_rejected'
-  subject text NOT NULL,
-  payload jsonb NOT NULL DEFAULT '{}',
-  status text NOT NULL DEFAULT 'pending',  -- pending | sent | failed
-  attempts int NOT NULL DEFAULT 0,
-  last_error text,
-  sent_at timestamptz,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-GRANT SELECT ON public.email_logs TO authenticated;
-GRANT ALL ON public.email_logs TO service_role;
-ALTER TABLE public.email_logs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "owner reads email logs" ON public.email_logs FOR SELECT TO authenticated
-  USING (has_role(auth.uid(), 'owner'));
+## What changes
 
--- Add notification_email + merchant_name to platform_payment_settings.bkash JSON (no schema change, handled in code)
+### 1. Feature registry becomes the source of truth
+- `platform_feature_flags` is promoted to the master catalog of features (key, label, description, category, default_enabled, sort_order).
+- `FEATURE_KEYS` / `FEATURE_LABELS` in `src/lib/features.ts` are replaced by a runtime-loaded list fetched from the registry (still typed as `string` keys). Existing hard-coded keys are seeded into the table via a migration so nothing breaks.
+
+### 2. New Feature Access Manager UI (Owner)
+New page: **Owner → Plans → Feature Access** (added as a tab on `owner/packages.tsx`, or a dedicated route `owner/plan-features.tsx`).
+
+Layout:
+
+```text
+                    Starter   Basic   Pro   Business   Trial
+AI Sales Agent        ☐        ☐      ☑       ☑         ☑
+AI Messenger          ☐        ☐      ☑       ☑         ☑
+Coupons               ☐        ☑      ☑       ☑         ☑
+Inventory             ☐        ☑      ☑       ☑         ☑
+...
+[+ Add feature]                                     [Save all]
 ```
 
-### 2. Server functions — `src/lib/billing.functions.ts`
+- Rows = features from the registry (grouped by category).
+- Columns = every active subscription package.
+- Each cell is an independent toggle; changes are batched and saved with one "Save" action (or auto-saved per toggle with optimistic UI + toast).
+- "Add feature" opens a dialog to register a brand-new feature (key + label + category); it appears as a new row instantly and can then be toggled per plan — no code change needed.
+- Trial packages keep the existing "unlocks everything" behaviour; row is shown as read-only ☑ for trial columns.
 
-Extend `submitManualPayment`:
-- Accept `customer_email`, `customer_note`.
-- Validate BD phone (`/^01[3-9]\d{8}$/`) on sender number.
-- Validate txn_id length 6–32 alphanumeric.
-- On unique-index violation → friendly "This transaction ID has already been submitted" error.
-- After insert, enqueue two email_logs rows: `payment_submitted_admin` + `payment_submitted_customer`, then fire-and-forget `sendPendingEmails()`.
+The existing per-package Features tab inside the package dialog stays and reads from the same registry so both flows edit the same data.
 
-New `getPaymentForConfirmation({ paymentId })` — used by success page.
+### 3. Runtime enforcement
+- `hasFeature(store, key)` keeps its signature but reads `store.subscription_packages.features[key]`, which is what the manager writes. No consumer changes required.
+- `FeatureGate` and every gated admin page (ai-agent, analytics, coupons, couriers, inventory, messenger, returns, import-export) already funnel through `hasFeature` — they pick up new toggles automatically.
+- Because the store's plan row is queried live (with a short React Query staleTime), owner toggles propagate to all users of that plan on their next page/query refresh.
 
-### 3. Server functions — `src/lib/owner.functions.ts`
+### 4. Scalability
+- Adding a feature = insert one row in `platform_feature_flags` via the UI. Every plan gets it as "disabled" by default until the owner toggles it on.
+- To gate a new UI section in code, developers just call `<FeatureGate feature="new_key">` — no enum edits.
 
-Extend `verifyPayment`:
-- On approve: existing activation logic + enqueue `payment_approved` email.
-- On reject: require `notes` (rejection_reason), save to `rejection_reason`, enqueue `payment_rejected` email.
+## Technical details
 
-New `retryEmailLog({ id })` — owner-only.
+### Migration
+- `platform_feature_flags`: add `label text`, `sort_order int default 0` if missing; keep `flag_key`, `enabled` (used as `default_enabled`), `description`, `category`.
+- Seed rows for every existing key in `FEATURE_KEYS` with their current labels (idempotent `ON CONFLICT (flag_key) DO NOTHING`).
+- RLS: already owner-only writes, authenticated read.
 
-### 4. Email sender — `src/lib/emails.server.ts` (new)
+### Server functions (new / extended in `src/lib/owner.functions.ts`)
+- `listFeatureCatalog()` — returns registry rows, ordered by category + sort_order. Authenticated read.
+- `listPlanFeatureMatrix()` — returns `{ packages: [{id,name,is_trial}], features: [{key,label,category}], matrix: { [packageId]: { [featureKey]: boolean } } }`.
+- `setPlanFeature({ packageId, featureKey, enabled })` — owner-only, updates the package's `features` JSON with a JSONB merge.
+- `bulkSetPlanFeatures({ updates: [{packageId, featureKey, enabled}] })` — for "Save all" batch mode.
+- `registerFeature({ flag_key, label, category, description })` — owner-only insert into registry.
 
-Single `sendEmail({ to, subject, html })` via **Lovable Emails** (built-in). Wraps in try/catch and updates `email_logs` row (`status`, `attempts`, `last_error`, `sent_at`). Templates are pure functions returning branded responsive HTML (ORZEN logo, `--store-btn-bg`, mobile-first table layout):
-- `payment_submitted_admin(payment, store)` — full details table + "Review Payment Request" button → `/owner/billing?status=pending`.
-- `payment_submitted_customer(payment)` — "under verification" message.
-- `payment_approved(payment, store, plan, expires_at)` — plan, activation date, expiry, store URL, Login button.
-- `payment_rejected(payment, reason, support_email)` — reason + resubmit instructions.
+### Client changes
+- `src/lib/features.ts`: keep `hasFeature` / `isReadOnly`; deprecate the const `FEATURE_KEYS`/`FEATURE_LABELS` (kept as fallback but no longer the source of truth for the UI).
+- New route `src/routes/_authenticated/owner/plan-features.tsx` with the matrix grid, using shadcn `Table` + `Switch`.
+- Update `packages.tsx` Features tab to render checkboxes from `listFeatureCatalog()` instead of the constant.
+- Add a link to the new page from the packages page header.
 
-`processPendingEmails()` — loops pending rows in `email_logs`, sends, updates status. Called inline after each enqueue; owner has "Retry" button for failed rows.
+### Immediate propagation
+- On save, invalidate `["owner","packages"]`, `["admin","billing"]`, and broadcast via existing React Query staleTime (5 min). For faster propagation, drop `admin/billing` staleTime to 60 s so users see toggles within a minute without a manual reload.
 
-### 5. UI — dedicated bKash-first payment page
+## Out of scope
 
-Replace `src/routes/_authenticated/admin/billing.checkout.$packageId.tsx` with a redesigned layout (single route, same URL):
+- Per-store feature overrides (only per-plan for now).
+- Feature usage analytics / audit log for toggles (can be added later using the existing `role_audit_log` pattern).
+- Removing a feature key from the registry when it's still referenced in code (soft-delete only).
 
-```
-┌────────────────────────────────────────┐
-│  ← Back                                │
-│  Complete your payment                 │
-├────────────────────────────────────────┤
-│  Plan summary card                     │
-│    Business • Monthly                  │
-│    Amount ৳500                         │
-│    Duration 30 days                    │
-├────────────────────────────────────────┤
-│  Billing cycle chips (Monthly/3m/6m/Y) │
-├────────────────────────────────────────┤
-│  Payment method tabs                   │
-│  [ bKash ] Nagad  Rocket  SSLCommerz   │
-├────────────────────────────────────────┤
-│  bKash Send Money to                   │
-│   ┌──────────────────────────┐  [Copy] │
-│   │  01XXXXXXXXX             │         │
-│   └──────────────────────────┘         │
-│  Amount                                │
-│   ┌──────────┐  [Copy]                 │
-│   │  ৳500    │                         │
-│   └──────────┘                         │
-│                                        │
-│  Instructions (from settings)          │
-│  1. Open bKash app                     │
-│  2. Send Money to above number         │
-│  3. Copy Transaction ID                │
-│  4. Fill the form below                │
-├────────────────────────────────────────┤
-│  Payment form                          │
-│    Sender bKash Number*  (BD validator)│
-│    Transaction ID*                     │
-│    Email Address* (auto-filled)        │
-│    Note (optional)                     │
-│    [ Submit Payment Request ]          │
-└────────────────────────────────────────┘
-```
+## Deliverables
 
-- Copy buttons use `navigator.clipboard.writeText` + toast.
-- Nagad/Rocket/SSLCommerz tabs hidden when disabled; SSLCommerz keeps its "coming soon" note.
-- Success state (after submit) replaces the card with a confirmation panel: "Your payment request has been submitted. Subscription activates after manual verification." + "View my requests" → `/admin/subscription`.
-- All Tailwind utilities, no new deps. Mobile-first (single column below `sm`).
-
-### 6. UI — Owner "Subscription Requests" page
-
-Reuse `src/routes/_authenticated/owner/billing.tsx` (already lists payments + Approve/Reject). Enhancements:
-- Add columns for Sender Number, Customer Email, and a "View" expand row showing Note + Rejection Reason.
-- Reject action opens a small dialog asking for a **required** reason (min 10 chars), replacing the current `prompt()`.
-- Add a small "Email log" strip under each row showing sent/failed with a Retry button on failure.
-
-### 7. Owner Settings — `src/routes/_authenticated/owner/payment-settings.tsx`
-
-Extend the bKash section with:
-- Merchant Name (text)
-- Merchant bKash Number (existing)
-- Instructions (textarea, multiline — rendered on payment page)
-- Notification Email (where "New Payment Received" mail goes)
-
-All stored inside `platform_payment_settings.bkash` JSON — no migration.
-
-### 8. Security & performance
-
-- Server-side Zod validation on every server fn (`sender_number`, `txn_id`, `customer_email`, `packageId`, `cycle`).
-- Duplicate txn blocked by unique index (DB-level, race-safe).
-- All emails sent from server functions (never client). Failures logged, not thrown to user.
-- No new npm dependencies. Uses existing Lovable Emails, existing shadcn Dialog, existing lucide icons.
-- Payment page loads with a single `useSuspenseQuery` for `{plans, methods, settings}` batched via one server fn.
-
-### 9. Future gateway readiness
-
-Payment method is already a discriminated field (`method`). Adding a real gateway = new `method` value + a `createGatewayCheckout(packageId, cycle, method)` server fn that returns a redirect URL. The `payments` row + email pipeline stays identical; verification flips from manual owner action to gateway webhook writing `status='paid'`. No table changes needed for bKash Gateway / PipraPay / SSLCommerz / Stripe / PayPal.
-
-### Files touched
-
-- Migration: add columns + unique index + `email_logs` table
-- `src/lib/billing.functions.ts` — validation, email enqueue, `getPaymentForConfirmation`
-- `src/lib/owner.functions.ts` — approve/reject email hooks, `retryEmailLog`
-- `src/lib/emails.server.ts` — NEW (Lovable Emails sender + templates + `processPendingEmails`)
-- `src/routes/_authenticated/admin/billing.checkout.$packageId.tsx` — redesigned page
-- `src/routes/_authenticated/owner/billing.tsx` — reject dialog + email log strip + new columns
-- `src/routes/_authenticated/owner/payment-settings.tsx` — merchant name, instructions, notification email
+1. Migration seeding the feature registry and ensuring schema.
+2. New/extended server functions listed above.
+3. New Owner "Feature Access" page with per-plan matrix + add-feature dialog.
+4. Updated package dialog Features tab reading from the registry.
+5. `hasFeature` unchanged externally, so all existing gates keep working.

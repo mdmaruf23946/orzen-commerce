@@ -1,10 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, SlidersHorizontal } from "lucide-react";
 import { listPackages, upsertPackage, deletePackage, getOwnerBillingSettings, updateBillingSettings } from "@/lib/owner.functions";
+import { listFeatureFlags } from "@/lib/owner-ext.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { FEATURE_KEYS, FEATURE_LABELS, BILLING_CYCLES, type FeatureKey } from "@/lib/features";
+import { BILLING_CYCLES } from "@/lib/features";
 
 export const Route = createFileRoute("/_authenticated/owner/packages")({
   component: PackagesPage,
@@ -36,9 +37,14 @@ function PackagesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Packages</h1>
-        <Button onClick={() => { setEditing(null); setOpen(true); }}>
-          <Plus className="mr-1 h-4 w-4" /> New package
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link to="/owner/plan-features">
+            <Button variant="outline" size="sm"><SlidersHorizontal className="mr-1 h-4 w-4" />Feature Access</Button>
+          </Link>
+          <Button onClick={() => { setEditing(null); setOpen(true); }}>
+            <Plus className="mr-1 h-4 w-4" /> New package
+          </Button>
+        </div>
       </div>
 
       <DiscountSettingsCard />
@@ -72,9 +78,12 @@ function PackagesPage() {
               <div>Sort: {p.sort_order ?? 0}</div>
             </div>
             <div className="mt-2 flex flex-wrap gap-1">
-              {FEATURE_KEYS.filter((k) => p.is_trial || p.features?.[k]).slice(0, 6).map((k) => (
-                <span key={k} className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] text-emerald-700">{FEATURE_LABELS[k]}</span>
-              ))}
+              {Object.entries((p.features ?? {}) as Record<string, boolean>)
+                .filter(([, v]) => p.is_trial || v)
+                .slice(0, 6)
+                .map(([k]) => (
+                  <span key={k} className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] text-emerald-700">{k}</span>
+                ))}
             </div>
           </div>
         ))}
@@ -116,7 +125,9 @@ function PackageDialog({ editing, onClose, onSaved }: { editing: any; onClose: (
   }));
   const [saving, setSaving] = useState(false);
   const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
-  const toggleFeature = (k: FeatureKey) => set("features", { ...form.features, [k]: !form.features[k] });
+  const toggleFeature = (k: string) => set("features", { ...form.features, [k]: !form.features[k] });
+  const flagsFn = useServerFn(listFeatureFlags);
+  const { data: catalog = [] } = useQuery({ queryKey: ["owner", "flags"], queryFn: () => flagsFn() });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -193,16 +204,17 @@ function PackageDialog({ editing, onClose, onSaved }: { editing: any; onClose: (
             </TabsContent>
 
             <TabsContent value="features" className="space-y-2">
-              <p className="text-xs text-muted-foreground">Enable individual features for this package. Trial packages unlock everything automatically.</p>
+              <p className="text-xs text-muted-foreground">Enable individual features for this package. Trial packages unlock everything automatically. Add new features from the Feature Access page.</p>
               <div className="grid gap-2 sm:grid-cols-2">
-                {FEATURE_KEYS.map((k) => (
-                  <label key={k} className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm">
-                    <span>{FEATURE_LABELS[k]}</span>
-                    <Switch checked={!!form.features[k]} onCheckedChange={() => toggleFeature(k)} />
+                {(catalog as any[]).map((f: any) => (
+                  <label key={f.flag_key} className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm">
+                    <span>{f.label ?? f.flag_key}</span>
+                    <Switch checked={!!form.features[f.flag_key]} onCheckedChange={() => toggleFeature(f.flag_key)} />
                   </label>
                 ))}
               </div>
             </TabsContent>
+
 
             <TabsContent value="trial" className="space-y-3">
               <label className="flex items-center gap-2 text-sm"><Switch checked={form.is_trial} onCheckedChange={(v) => set("is_trial", v)} /> This is a trial package</label>

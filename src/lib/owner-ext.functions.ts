@@ -15,17 +15,24 @@ export const listFeatureFlags = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertOwner(context.supabase, context.userId);
-    const { data } = await (context.supabase as any).from("platform_feature_flags").select("*").order("category").order("flag_key");
+    const { data } = await (context.supabase as any)
+      .from("platform_feature_flags")
+      .select("*")
+      .order("category")
+      .order("sort_order")
+      .order("flag_key");
     return data ?? [];
   });
 
 export const upsertFeatureFlag = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({
-    flag_key: z.string().min(1).max(80),
-    enabled: z.boolean(),
+    flag_key: z.string().min(1).max(80).regex(/^[a-z0-9_]+$/i, "Only letters, numbers and underscore"),
+    enabled: z.boolean().default(false),
+    label: z.string().max(120).nullish(),
     description: z.string().max(500).nullish(),
     category: z.string().max(40).default("general"),
+    sort_order: z.number().int().default(0),
   }).parse(d))
   .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId);
@@ -41,6 +48,84 @@ export const deleteFeatureFlag = createServerFn({ method: "POST" })
     await assertOwner(context.supabase, context.userId);
     const { error } = await (context.supabase as any).from("platform_feature_flags").delete().eq("flag_key", data.flag_key);
     if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------- PLAN × FEATURE ACCESS MATRIX ----------
+export const getPlanFeatureMatrix = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const [pkgs, flags] = await Promise.all([
+      sb.from("subscription_packages")
+        .select("id,name,is_trial,is_active,features,sort_order,price")
+        .order("sort_order")
+        .order("price"),
+      sb.from("platform_feature_flags")
+        .select("flag_key,label,description,category,sort_order")
+        .order("category")
+        .order("sort_order")
+        .order("flag_key"),
+    ]);
+    return {
+      packages: (pkgs.data ?? []).map((p: any) => ({
+        id: p.id, name: p.name, is_trial: !!p.is_trial, is_active: !!p.is_active,
+        features: (p.features ?? {}) as Record<string, boolean>,
+      })),
+      features: (flags.data ?? []).map((f: any) => ({
+        key: f.flag_key,
+        label: f.label ?? f.flag_key,
+        description: f.description,
+        category: f.category ?? "general",
+      })),
+    };
+  });
+
+export const setPlanFeature = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    packageId: z.string().uuid(),
+    featureKey: z.string().min(1),
+    enabled: z.boolean(),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const { data: pkg, error: e1 } = await sb
+      .from("subscription_packages")
+      .select("features")
+      .eq("id", data.packageId)
+      .single();
+    if (e1) throw new Error(e1.message);
+    const features = { ...(pkg?.features ?? {}), [data.featureKey]: data.enabled };
+    const { error } = await sb
+      .from("subscription_packages")
+      .update({ features })
+      .eq("id", data.packageId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const bulkSetPlanFeatures = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    updates: z.array(z.object({
+      packageId: z.string().uuid(),
+      features: z.record(z.string(), z.boolean()),
+    })).max(50),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    for (const u of data.updates) {
+      const { data: pkg } = await sb
+        .from("subscription_packages").select("features").eq("id", u.packageId).single();
+      const merged = { ...(pkg?.features ?? {}), ...u.features };
+      const { error } = await sb
+        .from("subscription_packages").update({ features: merged }).eq("id", u.packageId);
+      if (error) throw new Error(error.message);
+    }
     return { ok: true };
   });
 
