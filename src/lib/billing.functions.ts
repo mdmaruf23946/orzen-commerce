@@ -119,6 +119,10 @@ export const myBillingStatus = createServerFn({ method: "GET" })
     return { store, payments: payments ?? [], notifications: notifications ?? [], days_left };
   });
 
+const BD_PHONE = /^01[3-9]\d{8}$/;
+const TXN_RE = /^[A-Za-z0-9]{6,32}$/;
+const CYCLE_LABEL = { monthly: "Monthly", "3m": "3 Months", "6m": "6 Months", yearly: "Yearly" } as const;
+
 export const submitManualPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
@@ -127,8 +131,16 @@ export const submitManualPayment = createServerFn({ method: "POST" })
         packageId: z.string().uuid(),
         cycle: z.enum(["monthly", "3m", "6m", "yearly"]).default("monthly"),
         method: z.enum(["bkash", "nagad", "rocket"]),
-        txn_id: z.string().trim().min(3).max(80),
-        sender_number: z.string().trim().min(5).max(40),
+        txn_id: z
+          .string()
+          .trim()
+          .regex(TXN_RE, "Transaction ID must be 6–32 letters or digits"),
+        sender_number: z
+          .string()
+          .trim()
+          .regex(BD_PHONE, "Enter a valid Bangladesh mobile number"),
+        customer_email: z.string().trim().email().max(255),
+        customer_note: z.string().trim().max(500).optional().nullable(),
       })
       .parse(d),
   )
@@ -136,7 +148,7 @@ export const submitManualPayment = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: store } = await supabase
       .from("stores")
-      .select("id")
+      .select("id,name,owner_user_id,slug")
       .eq("owner_user_id", userId)
       .maybeSingle();
     if (!store) throw new Error("Store not found");
@@ -170,19 +182,95 @@ export const submitManualPayment = createServerFn({ method: "POST" })
         method: data.method,
         txn_id: data.txn_id,
         sender_number: data.sender_number,
+        customer_email: data.customer_email,
+        customer_note: data.customer_note ?? null,
         status: "pending",
         notes: `Cycle: ${data.cycle} (${months} mo). Awaiting verification.`,
       })
       .select("id")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      if ((error.message || "").toLowerCase().includes("payments_method_txn_unique") ||
+          (error.code === "23505")) {
+        throw new Error("This transaction ID has already been submitted.");
+      }
+      throw new Error(error.message);
+    }
 
     await (supabase.from("subscription_notifications" as any) as any).insert({
       store_id: store.id,
       type: "payment_pending",
       meta: { payment_id: payment.id, package: pkg.name, cycle: data.cycle, amount: total },
     });
+
+    // Queue emails (owner + customer). Do not block on delivery failures.
+    try {
+      const { enqueueEmail, tplPaymentSubmittedAdmin, tplPaymentSubmittedCustomer } = await import(
+        "./emails.server"
+      );
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: pset } = await (supabaseAdmin.from("platform_payment_settings" as any) as any)
+        .select("bkash")
+        .eq("id", "global")
+        .maybeSingle();
+      const notifyEmail: string | null = (pset?.bkash as any)?.notification_email ?? null;
+
+      const submittedAt = new Date().toLocaleString();
+      const cycleLabel = CYCLE_LABEL[data.cycle];
+      const ctxBase = {
+        storeName: store.name,
+        ownerName: null,
+        customerEmail: data.customer_email,
+        planName: pkg.name,
+        cycleLabel,
+        amount: total,
+        method: data.method,
+        senderNumber: data.sender_number,
+        txnId: data.txn_id,
+        submittedAt,
+        customerNote: data.customer_note ?? null,
+        reviewUrl: "/owner/billing?status=pending",
+      };
+      const cust = tplPaymentSubmittedCustomer(ctxBase);
+      await enqueueEmail({
+        to: data.customer_email,
+        template: "payment_submitted_customer",
+        subject: cust.subject,
+        html: cust.html,
+        payload: { payment_id: payment.id },
+        relatedPaymentId: payment.id,
+      });
+      if (notifyEmail) {
+        const adm = tplPaymentSubmittedAdmin(ctxBase);
+        await enqueueEmail({
+          to: notifyEmail,
+          template: "payment_submitted_admin",
+          subject: adm.subject,
+          html: adm.html,
+          payload: { payment_id: payment.id, store_id: store.id },
+          relatedPaymentId: payment.id,
+        });
+      }
+    } catch (e) {
+      console.error("[submitManualPayment] email queue error", e);
+    }
+
     return { ok: true, paymentId: payment.id };
+  });
+
+export const getPaymentForConfirmation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ paymentId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: pay } = await context.supabase
+      .from("payments")
+      .select(
+        "id,amount,method,txn_id,sender_number,customer_email,status,created_at,subscription_packages(name)",
+      )
+      .eq("id", data.paymentId)
+      .maybeSingle();
+    if (!pay) throw new Error("Payment not found");
+    return pay;
   });
 
 export const markNotificationRead = createServerFn({ method: "POST" })
@@ -207,6 +295,7 @@ export const getEnabledPaymentMethods = createServerFn({ method: "GET" })
       enabled: !!v?.enabled,
       number: v?.number ?? null,
       instructions: v?.instructions ?? null,
+      merchant_name: v?.merchant_name ?? null,
     });
     return {
       bkash: pick(data?.bkash),
@@ -215,3 +304,4 @@ export const getEnabledPaymentMethods = createServerFn({ method: "GET" })
       sslcommerz: { enabled: !!(data?.sslcommerz as any)?.enabled },
     };
   });
+

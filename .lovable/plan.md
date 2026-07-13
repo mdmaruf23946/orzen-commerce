@@ -1,78 +1,158 @@
-## Storefront Homepage Redesign — ORZEN
+## Manual Subscription Payment Verification System
 
-Redesign `/store/$slug` into a premium, single-page eCommerce homepage. Everything stays on one route (`src/routes/store/$slug/index.tsx`) + shell (`src/routes/store/$slug/route.tsx`). No new pages. No client-heavy libraries.
+Redesign the checkout into a dedicated bKash-first payment page, add duplicate-txn protection, and wire Lovable Emails on submit / approve / reject. Reuses the existing `payments` + `platform_payment_settings` tables — no schema rebuild.
 
-### 1. Schema (one small migration)
-
-Add a featured flag to products:
+### 1. Migration (small, additive)
 
 ```sql
-ALTER TABLE public.products ADD COLUMN is_featured boolean NOT NULL DEFAULT false;
-CREATE INDEX products_store_featured_idx ON public.products (store_id) WHERE is_featured;
+-- Email + note on payment requests
+ALTER TABLE public.payments
+  ADD COLUMN customer_email text,
+  ADD COLUMN customer_note  text,
+  ADD COLUMN rejection_reason text;
+
+-- Prevent duplicate transaction IDs within the same method
+CREATE UNIQUE INDEX payments_method_txn_unique
+  ON public.payments (method, txn_id)
+  WHERE txn_id IS NOT NULL AND status <> 'rejected';
+
+-- Store owner needs to see their own payment on the success page
+-- (existing "store owner reads payments" policy already covers this)
+
+-- Email log for retry + audit
+CREATE TABLE public.email_logs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  to_email text NOT NULL,
+  template text NOT NULL,          -- 'payment_submitted_admin' | 'payment_submitted_customer' | 'payment_approved' | 'payment_rejected'
+  subject text NOT NULL,
+  payload jsonb NOT NULL DEFAULT '{}',
+  status text NOT NULL DEFAULT 'pending',  -- pending | sent | failed
+  attempts int NOT NULL DEFAULT 0,
+  last_error text,
+  sent_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+GRANT SELECT ON public.email_logs TO authenticated;
+GRANT ALL ON public.email_logs TO service_role;
+ALTER TABLE public.email_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "owner reads email logs" ON public.email_logs FOR SELECT TO authenticated
+  USING (has_role(auth.uid(), 'owner'));
+
+-- Add notification_email + merchant_name to platform_payment_settings.bkash JSON (no schema change, handled in code)
 ```
 
-No GRANT / RLS changes (column added to existing table; existing policies apply).
+### 2. Server functions — `src/lib/billing.functions.ts`
 
-### 2. Server functions (`src/lib/storefront.functions.ts`)
+Extend `submitManualPayment`:
+- Accept `customer_email`, `customer_note`.
+- Validate BD phone (`/^01[3-9]\d{8}$/`) on sender number.
+- Validate txn_id length 6–32 alphanumeric.
+- On unique-index violation → friendly "This transaction ID has already been submitted" error.
+- After insert, enqueue two email_logs rows: `payment_submitted_admin` + `payment_submitted_customer`, then fire-and-forget `sendPendingEmails()`.
 
-- Extend `listStoreProducts` return to include `is_featured`.
-- Add `listBestSellingProducts({ storeId, limit=12 })`: aggregate `order_items.qty` for the store's confirmed/processing/shipped/delivered orders, join to `products`, filter `status != 'draft'`, order by total qty desc, limit 12. Returns the same product shape as `listStoreProducts` (id, name, price, old_price, stock, primary_image_url, category_id).
+New `getPaymentForConfirmation({ paymentId })` — used by success page.
 
-Admin toggle on Featured: extend existing product save/update in `src/lib/admin.functions.ts` + a "Featured" switch in `src/routes/_authenticated/admin/products.tsx` (single checkbox, minimal UI change).
+### 3. Server functions — `src/lib/owner.functions.ts`
 
-### 3. Shell tweaks — `src/routes/store/$slug/route.tsx`
+Extend `verifyPayment`:
+- On approve: existing activation logic + enqueue `payment_approved` email.
+- On reject: require `notes` (rejection_reason), save to `rejection_reason`, enqueue `payment_rejected` email.
 
-- Header: keep sticky, compact. Add mobile hamburger that opens a lightweight drop-panel (pure CSS + `useState`) with Home / Cart / Contact / Policies anchors. Desktop unchanged.
-- Footer: expand to include Logo, Name, Phone, Email, and the three policy links (Privacy / Terms / Return) as in-page anchors (`#privacy`, `#terms`, `#returns`) already present. No new routes.
-- Floating chat launcher: upgrade `AIChatLauncher` — when `store.facebook` or a `messenger_url` exists, the FAB expands into a two-item mini-menu (AI Chat, Messenger); otherwise stays single-button. All lazy-loaded, no extra deps.
+New `retryEmailLog({ id })` — owner-only.
 
-### 4. Homepage layout — `src/routes/store/$slug/index.tsx`
+### 4. Email sender — `src/lib/emails.server.ts` (new)
 
-Sections in this exact order, all client-side filterable, single page:
+Single `sendEmail({ to, subject, html })` via **Lovable Emails** (built-in). Wraps in try/catch and updates `email_logs` row (`status`, `attempts`, `last_error`, `sent_at`). Templates are pure functions returning branded responsive HTML (ORZEN logo, `--store-btn-bg`, mobile-first table layout):
+- `payment_submitted_admin(payment, store)` — full details table + "Review Payment Request" button → `/owner/billing?status=pending`.
+- `payment_submitted_customer(payment)` — "under verification" message.
+- `payment_approved(payment, store, plan, expires_at)` — plan, activation date, expiry, store URL, Login button.
+- `payment_rejected(payment, reason, support_email)` — reason + resubmit instructions.
 
-1. **Hero banner slider** — reuse existing `BannerCarousel`; add touch swipe via native `pointerdown/move/up` (~30 lines, no library). Keep 4s auto-advance, respect `prefers-reduced-motion`.
-2. **Category strip** — horizontal `overflow-x-auto snap-x` row of pill chips with lucide icon + name; first pill is "All". Selecting sets `activeCat` state and scrolls to `#products`.
-3. **Featured Products ⭐** — grid of up to 12 products where `is_featured=true`. Section hidden if empty. Header row shows title + "View All" button that clears filters + scrolls to All Products.
-4. **Best Selling 🔥** — grid of up to 12 from `listBestSellingProducts`. Section hidden if empty. Same "View All" behavior.
-5. **All Products** — id=`products`. Renders `filtered` (search + category). Client-side "Load More" (initial 12, +12 per click). No in-section search — uses header search via `useStoreUI`.
+`processPendingEmails()` — loops pending rows in `email_logs`, sends, updates status. Called inline after each enqueue; owner has "Retry" button for failed rows.
 
-All three product grids share the redesigned `ProductCard`.
+### 5. UI — dedicated bKash-first payment page
 
-### 5. ProductCard redesign — `src/components/storefront/ProductCard.tsx`
+Replace `src/routes/_authenticated/admin/billing.checkout.$packageId.tsx` with a redesigned layout (single route, same URL):
 
-Fixed-height card, white surface (no title-bar background), soft shadow, rounded-2xl:
+```
+┌────────────────────────────────────────┐
+│  ← Back                                │
+│  Complete your payment                 │
+├────────────────────────────────────────┤
+│  Plan summary card                     │
+│    Business • Monthly                  │
+│    Amount ৳500                         │
+│    Duration 30 days                    │
+├────────────────────────────────────────┤
+│  Billing cycle chips (Monthly/3m/6m/Y) │
+├────────────────────────────────────────┤
+│  Payment method tabs                   │
+│  [ bKash ] Nagad  Rocket  SSLCommerz   │
+├────────────────────────────────────────┤
+│  bKash Send Money to                   │
+│   ┌──────────────────────────┐  [Copy] │
+│   │  01XXXXXXXXX             │         │
+│   └──────────────────────────┘         │
+│  Amount                                │
+│   ┌──────────┐  [Copy]                 │
+│   │  ৳500    │                         │
+│   └──────────┘                         │
+│                                        │
+│  Instructions (from settings)          │
+│  1. Open bKash app                     │
+│  2. Send Money to above number         │
+│  3. Copy Transaction ID                │
+│  4. Fill the form below                │
+├────────────────────────────────────────┤
+│  Payment form                          │
+│    Sender bKash Number*  (BD validator)│
+│    Transaction ID*                     │
+│    Email Address* (auto-filled)        │
+│    Note (optional)                     │
+│    [ Submit Payment Request ]          │
+└────────────────────────────────────────┘
+```
 
-- Square image, `loading="lazy"`, `decoding="async"`.
-- Discount badge (top-left) when `old_price > price`: `-XX%`.
-- Out-of-stock badge (top-right) when `stock <= 0`.
-- Body: name (2-line clamp), price row (current bold + old strikethrough), stock status text.
-- Two buttons always visible at bottom: outline "Add to Cart" + filled "Buy Now". Disabled when out of stock. Uses `--store-btn-bg` for brand color.
-- Equal heights via `flex flex-col` + `mt-auto` on button row.
+- Copy buttons use `navigator.clipboard.writeText` + toast.
+- Nagad/Rocket/SSLCommerz tabs hidden when disabled; SSLCommerz keeps its "coming soon" note.
+- Success state (after submit) replaces the card with a confirmation panel: "Your payment request has been submitted. Subscription activates after manual verification." + "View my requests" → `/admin/subscription`.
+- All Tailwind utilities, no new deps. Mobile-first (single column below `sm`).
 
-Rating is optional per spec — omitted (no ratings table exists; adding one is out of scope).
+### 6. UI — Owner "Subscription Requests" page
 
-### 6. Data loading
+Reuse `src/routes/_authenticated/owner/billing.tsx` (already lists payments + Approve/Reject). Enhancements:
+- Add columns for Sender Number, Customer Email, and a "View" expand row showing Note + Rejection Reason.
+- Reject action opens a small dialog asking for a **required** reason (min 10 chars), replacing the current `prompt()`.
+- Add a small "Email log" strip under each row showing sent/failed with a Retry button on failure.
 
-Loader in `index.tsx` prefetches: store, banners, categories, products, best-selling — all via `queryClient.ensureQueryData` in parallel. `useSuspenseQuery` in the component. Stale time 5min. No `useEffect` fetches.
+### 7. Owner Settings — `src/routes/_authenticated/owner/payment-settings.tsx`
 
-### 7. Performance guardrails
+Extend the bKash section with:
+- Merchant Name (text)
+- Merchant bKash Number (existing)
+- Instructions (textarea, multiline — rendered on payment page)
+- Notification Email (where "New Payment Received" mail goes)
 
-- No new npm deps.
-- Icons: only lucide icons already imported.
-- Images: `loading="lazy"` + `decoding="async"` on all product/banner images except the first banner (`fetchPriority="high"`).
-- Slider: CSS transform, `setInterval`, cleared on unmount; touch via native pointer events.
-- Category filter: pure `useMemo`, no route change.
-- Load More: local `useState` count; no refetch.
+All stored inside `platform_payment_settings.bkash` JSON — no migration.
 
-### 8. Files touched
+### 8. Security & performance
 
-- Migration: add `is_featured` column
-- `src/lib/storefront.functions.ts` — extend product select, add `listBestSellingProducts`
-- `src/lib/admin.functions.ts` — accept `is_featured` in product create/update
-- `src/routes/_authenticated/admin/products.tsx` — add Featured toggle
-- `src/routes/store/$slug/route.tsx` — mobile menu, footer additions, launcher wiring
-- `src/routes/store/$slug/index.tsx` — new homepage layout
-- `src/components/storefront/ProductCard.tsx` — redesign
-- `src/components/storefront/AIChatLauncher.tsx` — optional Messenger action
+- Server-side Zod validation on every server fn (`sender_number`, `txn_id`, `customer_email`, `packageId`, `cycle`).
+- Duplicate txn blocked by unique index (DB-level, race-safe).
+- All emails sent from server functions (never client). Failures logged, not thrown to user.
+- No new npm dependencies. Uses existing Lovable Emails, existing shadcn Dialog, existing lucide icons.
+- Payment page loads with a single `useSuspenseQuery` for `{plans, methods, settings}` batched via one server fn.
 
-No new routes. No new pages. No new dependencies.
+### 9. Future gateway readiness
+
+Payment method is already a discriminated field (`method`). Adding a real gateway = new `method` value + a `createGatewayCheckout(packageId, cycle, method)` server fn that returns a redirect URL. The `payments` row + email pipeline stays identical; verification flips from manual owner action to gateway webhook writing `status='paid'`. No table changes needed for bKash Gateway / PipraPay / SSLCommerz / Stripe / PayPal.
+
+### Files touched
+
+- Migration: add columns + unique index + `email_logs` table
+- `src/lib/billing.functions.ts` — validation, email enqueue, `getPaymentForConfirmation`
+- `src/lib/owner.functions.ts` — approve/reject email hooks, `retryEmailLog`
+- `src/lib/emails.server.ts` — NEW (Lovable Emails sender + templates + `processPendingEmails`)
+- `src/routes/_authenticated/admin/billing.checkout.$packageId.tsx` — redesigned page
+- `src/routes/_authenticated/owner/billing.tsx` — reject dialog + email log strip + new columns
+- `src/routes/_authenticated/owner/payment-settings.tsx` — merchant name, instructions, notification email
