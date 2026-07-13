@@ -1800,6 +1800,14 @@ export type Database = {
     Functions: {
       expire_trials: { Args: never; Returns: undefined }
       generate_invoice_no: { Args: { _store_id: string }; Returns: string }
+      get_public_order: { Args: { _order_id: string }; Returns: Json }
+      get_store_bestsellers: {
+        Args: { _limit?: number; _store_id: string }
+        Returns: {
+          product_id: string
+          total_qty: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
