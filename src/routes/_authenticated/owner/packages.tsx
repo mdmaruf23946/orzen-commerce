@@ -125,7 +125,9 @@ function PackageDialog({ editing, onClose, onSaved }: { editing: any; onClose: (
   }));
   const [saving, setSaving] = useState(false);
   const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
-  const toggleFeature = (k: FeatureKey) => set("features", { ...form.features, [k]: !form.features[k] });
+  const toggleFeature = (k: string) => set("features", { ...form.features, [k]: !form.features[k] });
+  const flagsFn = useServerFn(listFeatureFlags);
+  const { data: catalog = [] } = useQuery({ queryKey: ["owner", "flags"], queryFn: () => flagsFn() });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
