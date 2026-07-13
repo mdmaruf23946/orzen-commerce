@@ -145,6 +145,7 @@ export const updateMyAgent = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
+    await assertPlan(context.supabase, context.userId, "ai_agent");
     const storeId = await getOwnedStoreId(context.supabase, context.userId);
     const { error } = await context.supabase
       .from("store_ai_agents")
@@ -197,6 +198,7 @@ export const connectMessenger = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
+    await assertPlan(context.supabase, context.userId, "ai_messenger");
     const storeId = await getOwnedStoreId(context.supabase, context.userId);
     const verify_token = `vt_${Math.random().toString(36).slice(2, 12)}`;
     const { error } = await context.supabase
@@ -219,6 +221,7 @@ export const connectMessenger = createServerFn({ method: "POST" })
 export const disconnectMessenger = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await assertPlan(context.supabase, context.userId, "ai_messenger");
     const storeId = await getOwnedStoreId(context.supabase, context.userId);
     await context.supabase.from("messenger_integrations").delete().eq("store_id", storeId);
     return { ok: true };
