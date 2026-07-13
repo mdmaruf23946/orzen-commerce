@@ -56,6 +56,7 @@ export const adjustStock = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "inventory");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
     const { data: prod } = await context.supabase
@@ -111,6 +112,7 @@ export const upsertCoupon = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid().optional() }).merge(couponSchema).parse(d))
   .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "coupons");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
     const row = {
