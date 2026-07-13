@@ -68,6 +68,7 @@ import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminBannersRouteImport } from './routes/_authenticated/admin/banners'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin/analytics'
 import { Route as AuthenticatedAdminAiAgentRouteImport } from './routes/_authenticated/admin/ai-agent'
+import { Route as AuthenticatedAdminBillingRouteRouteImport } from './routes/_authenticated/admin/billing.route'
 import { Route as AuthenticatedAdminBillingIndexRouteImport } from './routes/_authenticated/admin/billing.index'
 import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
 import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/order.$orderId'
@@ -407,11 +408,17 @@ const AuthenticatedAdminAiAgentRoute =
     path: '/ai-agent',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminBillingRouteRoute =
+  AuthenticatedAdminBillingRouteRouteImport.update({
+    id: '/billing',
+    path: '/billing',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminBillingIndexRoute =
   AuthenticatedAdminBillingIndexRouteImport.update({
-    id: '/billing/',
-    path: '/billing/',
-    getParentRoute: () => AuthenticatedAdminRouteRoute,
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAdminBillingRouteRoute,
   } as any)
 const StoreSlugProductProductIdRoute =
   StoreSlugProductProductIdRouteImport.update({
@@ -438,9 +445,9 @@ const AuthenticatedAdminInvoiceOrderIdRoute =
   } as any)
 const AuthenticatedAdminBillingCheckoutPackageIdRoute =
   AuthenticatedAdminBillingCheckoutPackageIdRouteImport.update({
-    id: '/billing/checkout/$packageId',
-    path: '/billing/checkout/$packageId',
-    getParentRoute: () => AuthenticatedAdminRouteRoute,
+    id: '/checkout/$packageId',
+    path: '/checkout/$packageId',
+    getParentRoute: () => AuthenticatedAdminBillingRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -450,6 +457,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/owner': typeof AuthenticatedOwnerRouteRouteWithChildren
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
+  '/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
@@ -581,6 +589,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/_authenticated/owner': typeof AuthenticatedOwnerRouteRouteWithChildren
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
+  '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
   '/_authenticated/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/banners': typeof AuthenticatedAdminBannersRoute
@@ -649,6 +658,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/owner'
     | '/store/$slug'
+    | '/admin/billing'
     | '/admin/ai-agent'
     | '/admin/analytics'
     | '/admin/banners'
@@ -779,6 +789,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/owner'
     | '/store/$slug'
+    | '/_authenticated/admin/billing'
     | '/_authenticated/admin/ai-agent'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/banners'
@@ -1265,12 +1276,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAiAgentRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/billing': {
+      id: '/_authenticated/admin/billing'
+      path: '/billing'
+      fullPath: '/admin/billing'
+      preLoaderRoute: typeof AuthenticatedAdminBillingRouteRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/billing/': {
       id: '/_authenticated/admin/billing/'
-      path: '/billing'
+      path: '/'
       fullPath: '/admin/billing/'
       preLoaderRoute: typeof AuthenticatedAdminBillingIndexRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
+      parentRoute: typeof AuthenticatedAdminBillingRouteRoute
     }
     '/store/$slug/product/$productId': {
       id: '/store/$slug/product/$productId'
@@ -1302,15 +1320,33 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/admin/billing/checkout/$packageId': {
       id: '/_authenticated/admin/billing/checkout/$packageId'
-      path: '/billing/checkout/$packageId'
+      path: '/checkout/$packageId'
       fullPath: '/admin/billing/checkout/$packageId'
       preLoaderRoute: typeof AuthenticatedAdminBillingCheckoutPackageIdRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
+      parentRoute: typeof AuthenticatedAdminBillingRouteRoute
     }
   }
 }
 
+interface AuthenticatedAdminBillingRouteRouteChildren {
+  AuthenticatedAdminBillingIndexRoute: typeof AuthenticatedAdminBillingIndexRoute
+  AuthenticatedAdminBillingCheckoutPackageIdRoute: typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
+}
+
+const AuthenticatedAdminBillingRouteRouteChildren: AuthenticatedAdminBillingRouteRouteChildren =
+  {
+    AuthenticatedAdminBillingIndexRoute: AuthenticatedAdminBillingIndexRoute,
+    AuthenticatedAdminBillingCheckoutPackageIdRoute:
+      AuthenticatedAdminBillingCheckoutPackageIdRoute,
+  }
+
+const AuthenticatedAdminBillingRouteRouteWithChildren =
+  AuthenticatedAdminBillingRouteRoute._addFileChildren(
+    AuthenticatedAdminBillingRouteRouteChildren,
+  )
+
 interface AuthenticatedAdminRouteRouteChildren {
+  AuthenticatedAdminBillingRouteRoute: typeof AuthenticatedAdminBillingRouteRouteWithChildren
   AuthenticatedAdminAiAgentRoute: typeof AuthenticatedAdminAiAgentRoute
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
   AuthenticatedAdminBannersRoute: typeof AuthenticatedAdminBannersRoute
@@ -1336,12 +1372,12 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminThemeRoute: typeof AuthenticatedAdminThemeRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminInvoiceOrderIdRoute: typeof AuthenticatedAdminInvoiceOrderIdRoute
-  AuthenticatedAdminBillingIndexRoute: typeof AuthenticatedAdminBillingIndexRoute
-  AuthenticatedAdminBillingCheckoutPackageIdRoute: typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
 }
 
 const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
   {
+    AuthenticatedAdminBillingRouteRoute:
+      AuthenticatedAdminBillingRouteRouteWithChildren,
     AuthenticatedAdminAiAgentRoute: AuthenticatedAdminAiAgentRoute,
     AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
     AuthenticatedAdminBannersRoute: AuthenticatedAdminBannersRoute,
@@ -1369,9 +1405,6 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
     AuthenticatedAdminInvoiceOrderIdRoute:
       AuthenticatedAdminInvoiceOrderIdRoute,
-    AuthenticatedAdminBillingIndexRoute: AuthenticatedAdminBillingIndexRoute,
-    AuthenticatedAdminBillingCheckoutPackageIdRoute:
-      AuthenticatedAdminBillingCheckoutPackageIdRoute,
   }
 
 const AuthenticatedAdminRouteRouteWithChildren =
