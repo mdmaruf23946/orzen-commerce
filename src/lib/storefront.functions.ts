@@ -276,16 +276,9 @@ export const getOrder = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ orderId: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     const sb = publicClient();
-    const { data: order, error } = await sb
-      .from("orders")
-      .select("id,customer_name,phone,address,area,payment_method,txn_id,subtotal,status,created_at,store_id")
-      .eq("id", data.orderId)
-      .maybeSingle();
+    const { data: row, error } = await sb.rpc("get_public_order", { _order_id: data.orderId });
     if (error) throw new Error(error.message);
-    if (!order) return null;
-    const { data: items } = await sb
-      .from("order_items")
-      .select("name_snapshot,price_snapshot,qty")
-      .eq("order_id", order.id);
-    return { ...order, items: items ?? [] };
+    if (!row) return null;
+    return row as any;
   });
+
