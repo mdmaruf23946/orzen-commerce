@@ -174,7 +174,10 @@ export const placeOrder = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
-    const sb = publicClient();
+    // Use service-role admin client so writes bypass RLS; all pricing is
+    // recomputed server-side below from trusted product/coupon rows.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const sb = supabaseAdmin;
     const { data: store } = await sb
       .from("stores")
       .select("id,status,delivery")
