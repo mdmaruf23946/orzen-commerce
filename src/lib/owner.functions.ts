@@ -984,3 +984,53 @@ export const updateGlobalAiKeys = createServerFn({ method: "POST" })
 
 
 
+
+// ---------- GLOBAL STORE TEMPLATE ----------
+export const getStoreTemplate = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { data, error } = await context.supabase
+      .from("store_template")
+      .select("*")
+      .eq("id", "global")
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data;
+  });
+
+const templateSchema = z.object({
+  description: z.string().max(2000).optional().nullable(),
+  primary_color: z.string().max(20).optional().nullable(),
+  header_color: z.string().max(20).optional().nullable(),
+  title_bar_color: z.string().max(20).optional().nullable(),
+  footer_color: z.string().max(20).optional().nullable(),
+  button_color: z.string().max(20).optional().nullable(),
+  theme: z.any().optional(),
+  seo: z.any().optional(),
+  marketing: z.any().optional(),
+  delivery: z.any().optional(),
+  payments_config: z.any().optional(),
+  product_defaults: z.any().optional(),
+  banners: z.array(z.any()).optional(),
+  categories: z.array(z.any()).optional(),
+  products: z.array(z.any()).optional(),
+  pages: z.array(z.any()).optional(),
+});
+
+export const updateStoreTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => templateSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const patch: Record<string, unknown> = { updated_by: context.userId };
+    for (const [k, v] of Object.entries(data)) if (v !== undefined) patch[k] = v;
+    const { data: updated, error } = await context.supabase
+      .from("store_template")
+      .update(patch)
+      .eq("id", "global")
+      .select("*")
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return updated;
+  });
