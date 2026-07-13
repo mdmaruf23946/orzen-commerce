@@ -272,6 +272,7 @@ export const upsertReturn = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "returns");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
     const row = {
@@ -360,6 +361,7 @@ export const upsertCustomerNote = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "customer_notes");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
     const { error } = await context.supabase.from("customer_notes").upsert({
@@ -384,6 +386,7 @@ export const bulkUpdateProducts = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "bulk_actions");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
     const { error } = await context.supabase.from("products").update(data.patch).in("id", data.ids).eq("store_id", sid);
@@ -395,6 +398,7 @@ export const bulkDeleteProducts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ ids: z.array(z.string().uuid()).min(1).max(500) }).parse(d))
   .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "bulk_actions");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
     const { error } = await context.supabase.from("products").delete().in("id", data.ids).eq("store_id", sid);
