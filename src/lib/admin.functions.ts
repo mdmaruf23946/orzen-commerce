@@ -44,6 +44,8 @@ export const getMyStore = createServerFn({ method: "GET" })
         if (!existing) break;
         slug = `${base}-${Math.floor(Math.random() * 9999)}`;
       }
+      const tpl = await fetchTemplate(supabase);
+      const tplFields = templateStoreFields(tpl);
       const { data: created, error } = await supabase
         .from("stores")
         .insert({
@@ -51,13 +53,45 @@ export const getMyStore = createServerFn({ method: "GET" })
           slug,
           name: `${base.charAt(0).toUpperCase() + base.slice(1)}'s Store`,
           status: "active",
+          ...tplFields,
         })
         .select("*")
         .single();
       if (error) throw new Error(error.message);
+      if (tpl && created?.id) {
+        try {
+          await seedStoreFromTemplate(supabase, created.id, tpl);
+        } catch {
+          // Non-fatal: store still exists; owner can Reset to Default later.
+        }
+      }
       store = created;
     }
     return store;
+  });
+
+// Reset the current owner's store to the latest global template.
+// Wipes categories/products/banners and reseeds. Overwrites design/theme/etc.
+export const resetStoreToTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data: store } = await supabase
+      .from("stores")
+      .select("id")
+      .eq("owner_user_id", userId)
+      .maybeSingle();
+    if (!store) throw new Error("No store");
+    const tpl = await fetchTemplate(supabase);
+    if (!tpl) throw new Error("No default template configured");
+    await wipeStoreChildren(supabase, store.id);
+    const { error: upErr } = await supabase
+      .from("stores")
+      .update(templateStoreFields(tpl))
+      .eq("id", store.id);
+    if (upErr) throw new Error(upErr.message);
+    await seedStoreFromTemplate(supabase, store.id, tpl);
+    return { ok: true };
   });
 
 export const updateMyStore = createServerFn({ method: "POST" })
