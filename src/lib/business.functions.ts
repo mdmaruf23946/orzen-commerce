@@ -139,6 +139,7 @@ export const deleteCoupon = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "coupons");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
     const { error } = await context.supabase.from("coupons").delete().eq("id", data.id).eq("store_id", sid);
