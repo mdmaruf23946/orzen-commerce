@@ -34,7 +34,7 @@ function OrderConfirmation() {
         <div className="text-xs text-muted-foreground">Order ID</div>
         <div className="font-mono text-sm">{order.id.slice(0, 8).toUpperCase()}</div>
         <ul className="mt-4 space-y-2 text-sm">
-          {order.items.map((i, idx) => (
+          {(order.items as any[]).map((i: any, idx: number) => (
             <li key={idx} className="flex justify-between gap-3">
               <span>
                 {i.name_snapshot} × {i.qty}
