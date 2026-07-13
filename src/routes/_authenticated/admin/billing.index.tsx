@@ -94,21 +94,21 @@ function BillingPage() {
   ];
 
   return (
-    <div className="space-y-4 pb-10 max-w-full overflow-x-hidden sm:space-y-6">
+    <div className="space-y-3 pb-6 max-w-full overflow-x-hidden sm:space-y-6 sm:pb-10">
 
       {/* 1. Free Trial Banner — only when trialing */}
       {isTrialing && (
-        <div className="rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-3 sm:rounded-xl sm:p-4 dark:border-amber-900/50 dark:from-amber-950/30 dark:to-orange-950/30">
+        <div className="rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-2.5 sm:rounded-xl sm:p-4 dark:border-amber-900/50 dark:from-amber-950/30 dark:to-orange-950/30">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:gap-3">
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5 text-amber-900 dark:text-amber-200">
-                <Sparkle className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate text-xs font-semibold sm:text-sm">🎉 Free Trial Active</span>
+              <div className="flex items-center gap-1 text-amber-900 dark:text-amber-200">
+                <Sparkle className="h-3 w-3 shrink-0" />
+                <span className="truncate text-[11px] font-semibold sm:text-sm">🎉 Trial Active</span>
               </div>
-              <div className="mt-0.5 text-base font-bold text-amber-950 sm:text-lg dark:text-amber-100">
-                {daysLeft} Day{daysLeft === 1 ? "" : "s"} Remaining
+              <div className="mt-0.5 truncate text-sm font-bold text-amber-950 sm:text-lg dark:text-amber-100">
+                {daysLeft} Day{daysLeft === 1 ? "" : "s"} Left
               </div>
-              <p className="mt-0.5 text-[11px] text-amber-800/80 sm:text-xs dark:text-amber-200/80">
+              <p className="mt-0.5 truncate text-[10px] text-amber-800/80 sm:text-xs dark:text-amber-200/80">
                 All Premium Features unlocked.
               </p>
             </div>
@@ -117,6 +117,7 @@ function BillingPage() {
                 to="/admin/billing/checkout/$packageId"
                 params={{ packageId: tierMap.get("business")!.id }}
                 search={{ cycle } as any}
+                className="shrink-0"
               >
                 <Button size="sm" className="h-8 bg-amber-600 px-2.5 text-xs hover:bg-amber-700 sm:h-9 sm:px-3 sm:text-sm">Upgrade</Button>
               </Link>
@@ -126,51 +127,58 @@ function BillingPage() {
       )}
 
       <div>
-        <h1 className="text-lg font-semibold sm:text-2xl">Billing & Subscription</h1>
-        <p className="text-xs text-muted-foreground sm:text-sm">Pick the plan that fits your business — change anytime.</p>
+        <h1 className="text-base font-semibold sm:text-2xl">Billing & Subscription</h1>
+        <p className="text-[11px] text-muted-foreground sm:text-sm">Pick the plan that fits your business — change anytime.</p>
       </div>
 
       {/* 8. Current Plan Section */}
-      <div className="rounded-lg border bg-card p-3 sm:rounded-xl sm:p-5">
-        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-3">
+      <div className="rounded-lg border bg-card p-2.5 sm:rounded-xl sm:p-5">
+        <div className="grid gap-1 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-3">
           <div className="min-w-0">
             <div className="text-[10px] uppercase tracking-wide text-muted-foreground sm:text-xs">Current plan</div>
-            <div className="mt-0.5 flex flex-wrap items-center gap-1.5 sm:gap-2">
-              <span className="truncate text-base font-bold sm:text-xl">
+            <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+              <span className="truncate text-sm font-bold sm:text-xl">
                 {isTrialing ? "Free Plan" : (currentTier ? TIER_NAME[currentTier] : "Free Plan")}
               </span>
               <Badge
                 variant={subStatus === "active" ? "default" : isTrialing ? "secondary" : "destructive"}
-                className="h-5 px-1.5 text-[10px] capitalize sm:h-6 sm:text-xs"
+                className="h-4 px-1.5 text-[9px] capitalize sm:h-6 sm:text-xs"
               >
-                {isTrialing ? "Trial Active" : subStatus}
+                {isTrialing ? "Trial" : subStatus}
               </Badge>
             </div>
-            <div className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
+            <div className="mt-0.5 text-[11px] text-muted-foreground sm:text-sm">
               {isTrialing
                 ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} remaining · all premium unlocked`
                 : pkg
                   ? `৳${Number(pkg.price).toFixed(0)} · ${pkg.billing_cycle ?? "monthly"}`
                   : "Limited features. Upgrade for more."}
             </div>
+            {((isTrialing && store?.trial_ends_at) || store?.expires_at) && (
+              <div className="mt-0.5 text-[10px] text-muted-foreground sm:hidden">
+                {isTrialing && store?.trial_ends_at
+                  ? `Trial ends ${new Date(store.trial_ends_at).toLocaleDateString()}`
+                  : `Renews ${new Date(store.expires_at).toLocaleDateString()}`}
+              </div>
+            )}
           </div>
-          <div className="text-left sm:text-right">
+          <div className="hidden text-right sm:block">
             {isTrialing && store?.trial_ends_at ? (
               <>
-                <div className="text-[10px] uppercase text-muted-foreground sm:text-xs">Trial ends</div>
-                <div className="text-xs font-medium sm:text-sm">{new Date(store.trial_ends_at).toLocaleDateString()}</div>
+                <div className="text-xs uppercase text-muted-foreground">Trial ends</div>
+                <div className="text-sm font-medium">{new Date(store.trial_ends_at).toLocaleDateString()}</div>
               </>
             ) : store?.expires_at ? (
               <>
-                <div className="text-[10px] uppercase text-muted-foreground sm:text-xs">Renews / expires</div>
-                <div className="text-xs font-medium sm:text-sm">{new Date(store.expires_at).toLocaleDateString()}</div>
+                <div className="text-xs uppercase text-muted-foreground">Renews / expires</div>
+                <div className="text-sm font-medium">{new Date(store.expires_at).toLocaleDateString()}</div>
               </>
             ) : null}
           </div>
         </div>
 
         {(subStatus === "expired" || subStatus === "cancelled") && (
-          <div className="mt-2 rounded-md bg-red-50 p-2 text-xs text-red-900 sm:mt-3 sm:rounded-lg sm:p-3 sm:text-sm dark:bg-red-950/30 dark:text-red-200">
+          <div className="mt-2 rounded-md bg-red-50 p-2 text-[11px] text-red-900 sm:mt-3 sm:rounded-lg sm:p-3 sm:text-sm dark:bg-red-950/30 dark:text-red-200">
             Your subscription has expired. Upgrade to restore full access.
           </div>
         )}
@@ -178,10 +186,10 @@ function BillingPage() {
 
       {/* 3. Billing Cycle Selector */}
       <section>
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-sm font-semibold sm:text-lg">Choose your billing cycle</h2>
+        <div className="mb-1.5 flex items-center justify-between sm:mb-2">
+          <h2 className="sr-only text-sm font-semibold sm:not-sr-only sm:text-lg">Choose your billing cycle</h2>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 sm:gap-2">
           {cycleOptions.map((c) => {
             const active = cycle === c.key;
             return (
@@ -193,12 +201,12 @@ function BillingPage() {
                   active ? "border-primary bg-primary/5 ring-2 ring-primary/30" : "hover:border-foreground/30"
                 }`}
               >
-                <div className="text-xs font-semibold sm:text-sm">{c.label}</div>
-                <div className="mt-0.5 text-[10px] text-muted-foreground sm:text-[11px]">
+                <div className="truncate text-[11px] font-semibold sm:text-sm">{c.label}</div>
+                <div className="mt-0.5 truncate text-[10px] text-muted-foreground sm:text-[11px]">
                   {c.discount > 0 ? `Save ${c.discount}%` : "No discount"}
                 </div>
                 {c.discount > 0 && (
-                  <span className="absolute -top-2 right-2 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-bold text-white sm:text-[10px]">
+                  <span className="absolute -top-1.5 right-1.5 rounded-full bg-emerald-500 px-1 py-0.5 text-[8px] font-bold text-white sm:-top-2 sm:right-2 sm:px-1.5 sm:text-[10px]">
                     -{c.discount}%
                   </span>
                 )}
@@ -209,10 +217,11 @@ function BillingPage() {
       </section>
 
 
+
       {/* 4-6. Plan Cards */}
       <section>
         <h2 className="mb-2 text-sm font-semibold sm:mb-3 sm:text-lg">Available plans</h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
           {TIER_ORDER.map((tier) => {
             const p = tierMap.get(tier);
             const isCurrent = currentTier === tier && !isTrialing;
@@ -222,9 +231,9 @@ function BillingPage() {
 
             if (!p) {
               return (
-                <div key={tier} className="rounded-xl border border-dashed bg-card/40 p-4 text-sm text-muted-foreground">
+                <div key={tier} className="rounded-xl border border-dashed bg-card/40 p-3 text-xs text-muted-foreground sm:p-4 sm:text-sm">
                   <div className="font-semibold text-foreground">{TIER_NAME[tier]}</div>
-                  <p className="mt-2">Coming soon.</p>
+                  <p className="mt-1 sm:mt-2">Coming soon.</p>
                 </div>
               );
             }
@@ -234,43 +243,43 @@ function BillingPage() {
             return (
               <div
                 key={tier}
-                className={`relative flex flex-col rounded-xl border bg-card p-4 ${
+                className={`relative flex flex-col rounded-xl border bg-card p-3 sm:p-4 ${
                   isPopular ? "border-primary ring-2 ring-primary/30" : ""
                 } ${isCurrent ? "border-emerald-500" : ""}`}
               >
                 {isPopular && (
-                  <div className="absolute -top-2 left-4 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase text-primary-foreground">
-                    <Sparkles className="h-3 w-3" /> Most Popular
+                  <div className="absolute -top-2 left-3 inline-flex items-center gap-1 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold uppercase text-primary-foreground sm:left-4 sm:px-2 sm:text-[10px]">
+                    <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Popular
                   </div>
                 )}
                 {isCurrent && (
-                  <div className="absolute -top-2 right-4 inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
-                    <Crown className="h-3 w-3" /> Current Plan
+                  <div className="absolute -top-2 right-3 inline-flex items-center gap-1 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white sm:right-4 sm:px-2 sm:text-[10px]">
+                    <Crown className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Current
                   </div>
                 )}
 
-                <div className="mt-1 truncate text-base font-semibold">{TIER_NAME[tier]}</div>
-                {p.description && <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{p.description}</p>}
+                <div className="mt-0.5 truncate text-sm font-semibold sm:text-base">{TIER_NAME[tier]}</div>
+                {p.description && <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-2 sm:text-xs">{p.description}</p>}
 
-                <div className="mt-3">
+                <div className="mt-2 sm:mt-3">
                   {isCustom ? (
-                    <div className="text-xl font-extrabold sm:text-2xl">Custom</div>
+                    <div className="text-lg font-extrabold sm:text-2xl">Custom</div>
                   ) : isFree ? (
-                    <div className="text-xl font-extrabold sm:text-2xl">
-                      ৳0<span className="text-xs font-normal text-muted-foreground sm:text-sm"> / forever</span>
+                    <div className="text-lg font-extrabold sm:text-2xl">
+                      ৳0<span className="text-[11px] font-normal text-muted-foreground sm:text-sm"> / forever</span>
                     </div>
                   ) : (
                     <>
                       <div className="flex items-baseline gap-2">
-                        <div className="text-xl font-extrabold sm:text-2xl">৳{calc!.total.toLocaleString()}</div>
+                        <div className="text-lg font-extrabold sm:text-2xl">৳{calc!.total.toLocaleString()}</div>
                         {calc!.discountPct > 0 && (
-                          <div className="text-xs text-muted-foreground line-through">
+                          <div className="text-[11px] text-muted-foreground line-through sm:text-xs">
                             ৳{(Number(p.price) * calc!.months).toLocaleString()}
                           </div>
                         )}
                       </div>
-                      <div className="mt-0.5 text-[11px] text-muted-foreground">
-                        ৳{calc!.perMonth.toLocaleString()}/mo · billed every {calc!.months} mo
+                      <div className="mt-0.5 text-[10px] text-muted-foreground sm:text-[11px]">
+                        ৳{calc!.perMonth.toLocaleString()}/mo · every {calc!.months} mo
                       </div>
                       {calc!.saved > 0 && (
                         <div className="mt-1 inline-block rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
@@ -282,7 +291,7 @@ function BillingPage() {
                 </div>
 
                 {/* Limits */}
-                <ul className="mt-4 space-y-1.5 text-xs">
+                <ul className="mt-3 space-y-1 text-[11px] sm:space-y-1.5 sm:text-xs">
                   <LimitRow label="Products" value={formatLimit(p.product_limit, undefined)} />
                   <LimitRow label="Orders / month" value={formatLimit(p.order_limit, undefined)} />
                   <LimitRow label="Storage" value={formatLimit(p.storage_mb, "MB")} />
@@ -291,8 +300,8 @@ function BillingPage() {
 
                 {/* Summary bullets */}
                 {p.feature_summary && p.feature_summary.length > 0 && (
-                  <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
-                    {p.feature_summary.map((s, i) => (
+                  <ul className="mt-2 space-y-0.5 text-[11px] text-muted-foreground sm:mt-3 sm:space-y-1 sm:text-xs">
+                    {p.feature_summary.slice(0, 3).map((s, i) => (
                       <li key={i} className="flex items-start gap-1.5">
                         <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-primary/60" />
                         <span className="min-w-0">{s}</span>
@@ -301,8 +310,8 @@ function BillingPage() {
                   </ul>
                 )}
 
-                {/* Features */}
-                <ul className="mt-3 space-y-1 border-t pt-3 text-xs">
+                {/* Features — always visible on ≥sm, collapsible on mobile */}
+                <ul className="mt-2 hidden space-y-1 border-t pt-2 text-xs sm:mt-3 sm:block sm:pt-3">
                   {FEATURE_KEYS.map((k) => {
                     const on = isCustom ? true : !!p.features?.[k];
                     return (
@@ -320,20 +329,41 @@ function BillingPage() {
                   })}
                 </ul>
 
-                <div className="mt-4">
+                <details className="mt-2 border-t pt-2 sm:hidden">
+                  <summary className="cursor-pointer text-[11px] font-medium text-primary">Show all features</summary>
+                  <ul className="mt-2 space-y-1 text-[11px]">
+                    {FEATURE_KEYS.map((k) => {
+                      const on = isCustom ? true : !!p.features?.[k];
+                      return (
+                        <li key={k} className="flex items-start gap-1.5">
+                          {on ? (
+                            <Check className="mt-0.5 h-3 w-3 shrink-0 text-emerald-600" />
+                          ) : (
+                            <X className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground/50" />
+                          )}
+                          <span className={on ? "min-w-0" : "min-w-0 text-muted-foreground/70 line-through"}>
+                            {FEATURE_LABELS[k]}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </details>
+
+                <div className="mt-3 sm:mt-4">
                   {isCurrent ? (
-                    <Button disabled className="w-full" variant="secondary">Current Plan</Button>
+                    <Button disabled className="h-9 w-full text-xs sm:h-10 sm:text-sm" variant="secondary">Current Plan</Button>
                   ) : isCustom ? (
                     <a href="mailto:support@example.com?subject=Custom%20Plan%20Inquiry" className="block">
-                      <Button variant="outline" className="w-full">Contact Sales</Button>
+                      <Button variant="outline" className="h-9 w-full text-xs sm:h-10 sm:text-sm">Contact Sales</Button>
                     </a>
                   ) : isFree ? (
-                    <Button disabled className="w-full" variant="outline">
+                    <Button disabled className="h-9 w-full text-xs sm:h-10 sm:text-sm" variant="outline">
                       {isTrialing ? "After trial" : "Free Forever"}
                     </Button>
                   ) : (
                     <Link to="/admin/billing/checkout/$packageId" params={{ packageId: p.id }} search={{ cycle } as any} className="block">
-                      <Button className="w-full">Upgrade</Button>
+                      <Button className="h-9 w-full text-xs sm:h-10 sm:text-sm">Upgrade</Button>
                     </Link>
                   )}
                 </div>
@@ -343,8 +373,9 @@ function BillingPage() {
         </div>
       </section>
 
-      {/* 7. Compare Plans */}
-      <section>
+
+      {/* 7. Compare Plans — desktop only */}
+      <section className="hidden sm:block">
         <h2 className="mb-2 text-sm font-semibold sm:mb-3 sm:text-lg">Compare plans</h2>
 
         {/* Desktop table */}
@@ -429,7 +460,9 @@ function BillingPage() {
       {/* 9. Payment history */}
       <section>
         <h2 className="mb-2 text-sm font-semibold sm:mb-3 sm:text-lg">Payment history</h2>
-        <div className="overflow-x-auto rounded-xl border bg-card">
+
+        {/* Desktop table */}
+        <div className="hidden overflow-x-auto rounded-xl border bg-card sm:block">
           <table className="w-full text-sm">
             <thead className="border-b bg-muted/50 text-left text-xs uppercase text-muted-foreground">
               <tr>
@@ -484,7 +517,47 @@ function BillingPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile: card list */}
+        <div className="space-y-2 sm:hidden">
+          {(status?.payments ?? []).length === 0 ? (
+            <div className="rounded-xl border bg-card p-4 text-center text-xs text-muted-foreground">No payments yet</div>
+          ) : (
+            (status?.payments ?? []).map((p: any) => (
+              <div key={p.id} className="rounded-xl border bg-card p-3">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                  <div className="min-w-0">
+                    <div className="truncate text-xs font-semibold">{p.subscription_packages?.name ?? "—"}</div>
+                    <div className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">{p.invoice_no ?? "—"}</div>
+                    <div className="mt-0.5 text-[10px] text-muted-foreground">
+                      {new Date(p.created_at).toLocaleDateString()} · <span className="uppercase">{p.method ?? "—"}</span>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="text-sm font-bold">৳{Number(p.amount).toFixed(0)}</div>
+                    <Badge
+                      variant={p.status === "paid" ? "default" : p.status === "pending" ? "secondary" : "destructive"}
+                      className="mt-1 h-4 px-1.5 text-[9px] capitalize"
+                    >
+                      {p.status}
+                    </Badge>
+                  </div>
+                </div>
+                {p.status === "paid" && (
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="mt-2 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                  >
+                    <Download className="h-3 w-3" /> Invoice
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
       </section>
+
     </div>
   );
 }
