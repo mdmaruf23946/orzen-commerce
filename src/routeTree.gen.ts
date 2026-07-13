@@ -29,6 +29,7 @@ import { Route as AuthenticatedOwnerSystemRouteImport } from './routes/_authenti
 import { Route as AuthenticatedOwnerSupportRouteImport } from './routes/_authenticated/owner/support'
 import { Route as AuthenticatedOwnerSubscriptionsRouteImport } from './routes/_authenticated/owner/subscriptions'
 import { Route as AuthenticatedOwnerStoresRouteImport } from './routes/_authenticated/owner/stores'
+import { Route as AuthenticatedOwnerStoreTemplateRouteImport } from './routes/_authenticated/owner/store-template'
 import { Route as AuthenticatedOwnerReportsRouteImport } from './routes/_authenticated/owner/reports'
 import { Route as AuthenticatedOwnerPlanFeaturesRouteImport } from './routes/_authenticated/owner/plan-features'
 import { Route as AuthenticatedOwnerPaymentSettingsRouteImport } from './routes/_authenticated/owner/payment-settings'
@@ -179,6 +180,12 @@ const AuthenticatedOwnerStoresRoute =
   AuthenticatedOwnerStoresRouteImport.update({
     id: '/stores',
     path: '/stores',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerStoreTemplateRoute =
+  AuthenticatedOwnerStoreTemplateRouteImport.update({
+    id: '/store-template',
+    path: '/store-template',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
 const AuthenticatedOwnerReportsRoute =
@@ -505,6 +512,7 @@ export interface FileRoutesByFullPath {
   '/owner/payment-settings': typeof AuthenticatedOwnerPaymentSettingsRoute
   '/owner/plan-features': typeof AuthenticatedOwnerPlanFeaturesRoute
   '/owner/reports': typeof AuthenticatedOwnerReportsRoute
+  '/owner/store-template': typeof AuthenticatedOwnerStoreTemplateRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
   '/owner/subscriptions': typeof AuthenticatedOwnerSubscriptionsRoute
   '/owner/support': typeof AuthenticatedOwnerSupportRoute
@@ -569,6 +577,7 @@ export interface FileRoutesByTo {
   '/owner/payment-settings': typeof AuthenticatedOwnerPaymentSettingsRoute
   '/owner/plan-features': typeof AuthenticatedOwnerPlanFeaturesRoute
   '/owner/reports': typeof AuthenticatedOwnerReportsRoute
+  '/owner/store-template': typeof AuthenticatedOwnerStoreTemplateRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
   '/owner/subscriptions': typeof AuthenticatedOwnerSubscriptionsRoute
   '/owner/support': typeof AuthenticatedOwnerSupportRoute
@@ -639,6 +648,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/payment-settings': typeof AuthenticatedOwnerPaymentSettingsRoute
   '/_authenticated/owner/plan-features': typeof AuthenticatedOwnerPlanFeaturesRoute
   '/_authenticated/owner/reports': typeof AuthenticatedOwnerReportsRoute
+  '/_authenticated/owner/store-template': typeof AuthenticatedOwnerStoreTemplateRoute
   '/_authenticated/owner/stores': typeof AuthenticatedOwnerStoresRoute
   '/_authenticated/owner/subscriptions': typeof AuthenticatedOwnerSubscriptionsRoute
   '/_authenticated/owner/support': typeof AuthenticatedOwnerSupportRoute
@@ -709,6 +719,7 @@ export interface FileRouteTypes {
     | '/owner/payment-settings'
     | '/owner/plan-features'
     | '/owner/reports'
+    | '/owner/store-template'
     | '/owner/stores'
     | '/owner/subscriptions'
     | '/owner/support'
@@ -773,6 +784,7 @@ export interface FileRouteTypes {
     | '/owner/payment-settings'
     | '/owner/plan-features'
     | '/owner/reports'
+    | '/owner/store-template'
     | '/owner/stores'
     | '/owner/subscriptions'
     | '/owner/support'
@@ -842,6 +854,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/payment-settings'
     | '/_authenticated/owner/plan-features'
     | '/_authenticated/owner/reports'
+    | '/_authenticated/owner/store-template'
     | '/_authenticated/owner/stores'
     | '/_authenticated/owner/subscriptions'
     | '/_authenticated/owner/support'
@@ -1014,6 +1027,13 @@ declare module '@tanstack/react-router' {
       path: '/stores'
       fullPath: '/owner/stores'
       preLoaderRoute: typeof AuthenticatedOwnerStoresRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/store-template': {
+      id: '/_authenticated/owner/store-template'
+      path: '/store-template'
+      fullPath: '/owner/store-template'
+      preLoaderRoute: typeof AuthenticatedOwnerStoreTemplateRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/owner/reports': {
@@ -1450,6 +1470,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerPaymentSettingsRoute: typeof AuthenticatedOwnerPaymentSettingsRoute
   AuthenticatedOwnerPlanFeaturesRoute: typeof AuthenticatedOwnerPlanFeaturesRoute
   AuthenticatedOwnerReportsRoute: typeof AuthenticatedOwnerReportsRoute
+  AuthenticatedOwnerStoreTemplateRoute: typeof AuthenticatedOwnerStoreTemplateRoute
   AuthenticatedOwnerStoresRoute: typeof AuthenticatedOwnerStoresRoute
   AuthenticatedOwnerSubscriptionsRoute: typeof AuthenticatedOwnerSubscriptionsRoute
   AuthenticatedOwnerSupportRoute: typeof AuthenticatedOwnerSupportRoute
@@ -1479,6 +1500,7 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
       AuthenticatedOwnerPaymentSettingsRoute,
     AuthenticatedOwnerPlanFeaturesRoute: AuthenticatedOwnerPlanFeaturesRoute,
     AuthenticatedOwnerReportsRoute: AuthenticatedOwnerReportsRoute,
+    AuthenticatedOwnerStoreTemplateRoute: AuthenticatedOwnerStoreTemplateRoute,
     AuthenticatedOwnerStoresRoute: AuthenticatedOwnerStoresRoute,
     AuthenticatedOwnerSubscriptionsRoute: AuthenticatedOwnerSubscriptionsRoute,
     AuthenticatedOwnerSupportRoute: AuthenticatedOwnerSupportRoute,

@@ -1025,7 +1025,7 @@ export const updateStoreTemplate = createServerFn({ method: "POST" })
     await assertOwner(context.supabase, context.userId);
     const patch: Record<string, unknown> = { updated_by: context.userId };
     for (const [k, v] of Object.entries(data)) if (v !== undefined) patch[k] = v;
-    const { data: updated, error } = await context.supabase
+    const { data: updated, error } = await (context.supabase as any)
       .from("store_template")
       .update(patch)
       .eq("id", "global")
