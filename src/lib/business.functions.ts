@@ -424,6 +424,7 @@ export const bulkImportProducts = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "import_export");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
     const rows = data.rows.map((r) => ({
@@ -446,6 +447,7 @@ export const bulkImportProducts = createServerFn({ method: "POST" })
 export const exportProductsCsv = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await assertPlan(context.supabase, context.userId, "import_export");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) return "";
     const { data } = await context.supabase
@@ -466,6 +468,7 @@ export const exportProductsCsv = createServerFn({ method: "GET" })
 export const businessAnalytics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await assertPlan(context.supabase, context.userId, "analytics");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) return null;
     const [{ data: orders }, { data: items }] = await Promise.all([
