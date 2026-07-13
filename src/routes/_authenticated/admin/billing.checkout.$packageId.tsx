@@ -121,11 +121,11 @@ function CheckoutPage() {
   const merchantName = (m as any)?.merchant_name ?? "";
   const rawInstructions = m?.instructions ?? "";
 
-  const instructions = useMemo(() => {
+  const instructions = useMemo<string[]>(() => {
     if (rawInstructions?.trim()) {
       return rawInstructions
         .split(/\r?\n/)
-        .map((x) => x.trim())
+        .map((x: string) => x.trim())
         .filter(Boolean);
     }
     return [
@@ -312,7 +312,7 @@ function CheckoutPage() {
                 Instructions
               </div>
               <ol className="space-y-1.5 text-sm">
-                {instructions.map((step, i) => (
+                {instructions.map((step: string, i: number) => (
                   <li key={i} className="flex gap-2">
                     <span className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
                       {i + 1}
