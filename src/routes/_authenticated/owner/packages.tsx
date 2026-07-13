@@ -78,9 +78,12 @@ function PackagesPage() {
               <div>Sort: {p.sort_order ?? 0}</div>
             </div>
             <div className="mt-2 flex flex-wrap gap-1">
-              {FEATURE_KEYS.filter((k) => p.is_trial || p.features?.[k]).slice(0, 6).map((k) => (
-                <span key={k} className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] text-emerald-700">{FEATURE_LABELS[k]}</span>
-              ))}
+              {Object.entries((p.features ?? {}) as Record<string, boolean>)
+                .filter(([, v]) => p.is_trial || v)
+                .slice(0, 6)
+                .map(([k]) => (
+                  <span key={k} className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] text-emerald-700">{k}</span>
+                ))}
             </div>
           </div>
         ))}
