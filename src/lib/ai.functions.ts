@@ -163,7 +163,8 @@ export const getStoreAgentPublic = createServerFn({ method: "GET" })
       process.env.SUPABASE_PUBLISHABLE_KEY!,
       { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
     );
-    const { data: store } = await sb.from("stores").select("id").eq("slug", data.slug).eq("status", "active").maybeSingle();
+    const { data: row } = await sb.rpc("get_public_store_by_slug", { _slug: data.slug });
+    const store = row as { id: string } | null;
     if (!store) return null;
     const { data: agent } = await sb
       .from("store_ai_agents")

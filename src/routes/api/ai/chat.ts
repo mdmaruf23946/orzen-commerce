@@ -17,7 +17,8 @@ export const Route = createFileRoute("/api/ai/chat")({
           process.env.SUPABASE_PUBLISHABLE_KEY!,
           { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
         );
-        const { data: store } = await sb.from("stores").select("id").eq("slug", body.slug).eq("status", "active").maybeSingle();
+        const { data: storeRow } = await sb.rpc("get_public_store_by_slug", { _slug: body.slug });
+        const store = storeRow as { id: string } | null;
         if (!store) return new Response("Store not found", { status: 404 });
 
         try {
