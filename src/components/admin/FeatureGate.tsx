@@ -31,13 +31,13 @@ export function FeatureGate({ feature, children, inline = false }: Props) {
       <div className="grid h-12 w-12 place-items-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
         <Lock className="h-6 w-6" />
       </div>
-      <div className="text-lg font-semibold">Upgrade Required</div>
+      <div className="text-lg font-semibold">আপগ্রেড প্রয়োজন</div>
       <p className="text-sm text-muted-foreground">
-        <span className="font-medium text-foreground">{label}</span> is not included in your current plan.
+        <span className="font-medium text-foreground">{label}</span> আপনার বর্তমান প্ল্যানে অন্তর্ভুক্ত নয়।
       </p>
-      <Link to="/admin/billing" className="w-full">
+      <Link to="/admin/subscription" className="w-full">
         <Button className="w-full gap-1.5">
-          <Sparkles className="h-4 w-4" /> View Plans
+          <Sparkles className="h-4 w-4" /> আপডেট করুন
         </Button>
       </Link>
     </div>
