@@ -4,6 +4,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { assertPlan } from "@/lib/plan-guard";
 
 async function myStoreId(supabase: any, userId: string): Promise<string | null> {
   const { data } = await supabase
