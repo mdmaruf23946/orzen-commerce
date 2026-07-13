@@ -1,70 +1,165 @@
 
-# Redesigned Store Registration
+# Domain Management System
 
-## New form (`src/routes/auth.tsx`, sign-up mode)
+Adds a full domain layer on top of the existing `stores.slug` subdomain.
+Store admins manage their own subdomain and (plan-gated) custom domains.
+The Winner Admin controls the root/login domain and wildcard/SSL policy.
+Login always happens on a fixed system host, independent of any store domain.
 
-Fields, in order:
-1. Owner Name — required, 2–80 chars
-2. Store Name — required, 2–80 chars
-3. Store Subdomain — required, `^[a-z0-9-]+$`, 3–40 chars, no leading/trailing hyphen
-4. Email
-5. Password (min 6)
-6. Confirm Password (must match)
+## Concepts
 
-Sign-in mode stays as it is today (email + password only).
+- **System login host** — fixed (default `admin.orzen.top`), stored in
+  `platform_settings.login_host`. `/auth` only serves 200 on this host;
+  any other host visiting `/auth` is redirected to it. Owner-editable, not
+  store-editable.
+- **Store subdomain** — `stores.slug` on the platform root (e.g.
+  `myshop.orzen.top`). Editable by store admin, uniqueness enforced by
+  existing `is_slug_taken` RPC. Always exists, always covered by the
+  wildcard cert.
+- **Custom domain** — one or more user-owned hostnames (e.g. `shop.acme.com`)
+  attached to a store, each with a verification lifecycle. Plan-gated.
+- **Primary domain** — per store, either the subdomain or a verified+active
+  custom domain. Used for canonical URLs, SEO, and outbound links (emails,
+  invoices, share links). Non-primary hostnames 301 to the primary.
 
-### Subdomain UX
-- Auto-generate from Store Name via existing `slugify()` on every keystroke, until the user manually edits the subdomain field (then stop auto-syncing).
-- Sanitize input on change: lowercase, replace invalid chars with `-`, collapse repeats.
-- Debounced (350 ms) availability check via a new **public** server fn `checkStoreSlugAvailable({ slug })` that uses a server-side publishable Supabase client and queries `stores` for that slug. Requires a narrow anon SELECT policy exposing only `id, slug` (see Data section).
-- Status pill next to the field: `Checking…` / `Available` (green) / `Already taken` (red) / `Invalid format` (amber). Submit disabled unless status is `Available` and passwords match.
+## Data model (single migration)
 
-### Submit flow
-1. Client-side Zod validation of all fields.
-2. Final `checkStoreSlugAvailable` call before submit (guards against races; server fn below also re-checks).
-3. `supabase.auth.signUp({ email, password, options: { data: { owner_name, store_name, store_slug }, emailRedirectTo: origin + "/admin" } })`.
-4. On success (session returned — email confirmation is off in this project), call new authenticated server fn `createMyStoreWithSlug({ storeName, slug, ownerName })`.
-5. Navigate to `/admin` (Store Admin Dashboard).
+New table `public.store_domains`:
+- `store_id uuid` → `stores(id)` on delete cascade
+- `hostname text` unique, lowercase, no scheme/port
+- `kind text` — `'subdomain' | 'custom'`
+- `status text` — `'pending' | 'verified' | 'active' | 'failed'`
+- `verification_token text` — random, used for TXT + HTTP challenge
+- `verified_at timestamptz`, `last_checked_at timestamptz`
+- `ssl_status text` — `'none' | 'issuing' | 'issued' | 'failed'`
+- `is_primary bool` — exactly one true per store (partial unique index)
+- standard `created_at / updated_at` + touch trigger
 
-## Server functions (`src/lib/admin.functions.ts`)
+`stores` gains: `primary_domain_id uuid null` → `store_domains(id)`
+(nullable = subdomain default). `platform_settings` gains:
+`login_host text`, `root_domain text`, `wildcard_enabled bool`,
+`custom_domains_enabled bool`, `ssl_provider text` (informational).
 
-### `checkStoreSlugAvailable` (new, public)
-- `createServerFn({ method: "GET" })` with `.inputValidator(z.object({ slug: z.string().regex(/^[a-z0-9-]+$/).min(3).max(40) }))`.
-- Uses a server publishable client (pattern from `tanstack-supabase-integration`) to `select id from stores where slug = ? limit 1`.
-- Returns `{ available: boolean }`.
+RLS:
+- `store_domains`: store owner full CRUD on their rows (`is_store_owner`),
+  owner role full access, `anon` gets narrow SELECT of
+  `(hostname, store_id, status, is_primary)` via a SECURITY DEFINER RPC
+  `resolve_domain(_host text)` — no direct anon table policy.
+- `platform_settings`: owner-only writes; public GET via existing pattern
+  for the small subset of fields already exposed (unchanged).
 
-### `createMyStoreWithSlug` (new, authenticated)
-- `.middleware([requireSupabaseAuth])`, input: `{ storeName, slug, ownerName }` (Zod, same slug regex).
-- If a store already exists for `userId`, return it (idempotent — handles retries).
-- Re-check slug uniqueness; if taken, throw `Slug already taken`.
-- Fetch template via `fetchTemplate(supabase)`; insert `stores` row with `owner_user_id`, `name = storeName`, `slug`, `status: "active"`, and `...templateStoreFields(tpl)`.
-- `seedStoreFromTemplate(supabase, store.id, tpl)` (non-fatal on failure, same as `getMyStore`).
-- Also upsert `ownerName` into user metadata via `supabase.auth.updateUser({ data: { owner_name } })` (best-effort, ignore error).
-- Return the created store.
+Grants: `authenticated` full CRUD on `store_domains`, `service_role` all,
+`anon` execute on `resolve_domain` and `is_slug_taken` only.
 
-`getMyStore` stays as-is (auto-create fallback for users that arrived through some other path).
+## Verification flow
 
-## Data (single migration)
+Server function `startDomainVerification({ storeId, hostname })`:
+- validates hostname (RFC-1123, no wildcards, not the root/login host,
+  not another store's domain), plan-checks via `assertPlan(..., 'custom_domain')`
+  (new feature key), inserts `store_domains` row with `status='pending'` and
+  a fresh `verification_token`.
+- Returns the two DNS records the user must add:
+  - `TXT _orzen-verify.<host>` = `<token>`
+  - `CNAME <host>` → `stores.orzen.top` (platform apex CNAME target)
 
-- Add a narrow anon SELECT policy on `stores` limited to `slug` lookups. Simplest: policy `USING (true)` but the server publishable client only ever projects `id, slug` in `checkStoreSlugAvailable`. To keep exposure minimal, prefer a `SECURITY DEFINER` RPC `is_slug_taken(_slug text) returns boolean` granted to `anon, authenticated`. Use the RPC from `checkStoreSlugAvailable` — no new table policy needed.
-- No schema changes to `stores`.
+Server function `checkDomainVerification({ domainId })`:
+- Server-side DNS lookup (Node `dns/promises`, available in Worker runtime)
+  for TXT + CNAME. On success: `status='verified'`, `verified_at=now()`,
+  kicks off `ssl_status='issuing'` (informational — actual cert issuance
+  is handled by platform infra; UI just reflects state).
+- Owner cron/server fn `sweepDomainStatuses()` re-checks pending/verified
+  rows hourly and flips `verified→active` once `ssl_status='issued'` is
+  set by the owner (manual flip for now; documented as the extension point
+  for automated ACME).
 
-## Page styling
+Rate limiting: at most one check per domain per 30s (enforced by
+`last_checked_at`).
 
-Keep the existing card layout in `src/routes/auth.tsx` but:
-- Widen sign-up card to `max-w-md`, keep sign-in at `max-w-sm`.
-- Tight spacing (`space-y-3`), inputs `h-10`, single-column, works down to 320px.
-- Subdomain field renders as `Input` with a right-aligned suffix `.<host>` (read-only visual hint) and the availability pill below.
-- Preserve existing branding, no new fonts/colors.
+## Plan gate
 
-## Files touched
+Add `custom_domain` to `FEATURE_KEYS` in `src/lib/features.ts` with label
+"Custom Domain". Server functions that create custom domains call
+`assertPlan(supabase, userId, 'custom_domain')`. The UI wraps the custom
+domain panel in `<FeatureGate feature="custom_domain">`. Subdomain editing
+is available on every plan.
 
-- `src/routes/auth.tsx` — new sign-up form, subdomain live-check, post-signup store creation.
-- `src/lib/admin.functions.ts` — add `checkStoreSlugAvailable`, `createMyStoreWithSlug`.
-- Migration — add `is_slug_taken(text)` SECURITY DEFINER function + grants.
+## Primary domain selection
+
+Server function `setPrimaryDomain({ domainId | null })`:
+- `null` → primary is the subdomain (clears `stores.primary_domain_id`).
+- Otherwise requires the domain to be `status='active'` and owned by the
+  caller's store. Updates `stores.primary_domain_id`, flips `is_primary`
+  atomically inside a transaction (single-row partial unique index).
+
+## Request routing
+
+New helper `src/lib/domain-router.ts` (used by `src/routes/__root.tsx` head
++ a lightweight server route middleware):
+- Resolves the incoming host via `resolve_domain` RPC (cached in-memory per
+  worker for 60s).
+- If host is the login host → serve normally, allow `/auth`.
+- If host matches a store domain →
+  - non-primary → 301 to primary + same path
+  - `/auth` → 302 to `https://<login_host>/auth?next=<original>`
+- Unknown host → falls back to platform landing.
+
+Canonical `<link rel="canonical">` and `og:url` in route `head()` are
+derived from the store's primary domain, not `window.location`.
+
+## Store admin UI
+
+New route `src/routes/_authenticated/admin/domains.tsx`:
+- **Subdomain card** — edit `stores.slug` with live availability
+  (reuses `is_slug_taken`), shows full URL `https://<slug>.<root>`.
+- **Custom domains card** (gated) — list existing rows with status pill
+  (Pending / Verified / Active / Failed), "Add domain" dialog showing the
+  two DNS records + copy buttons, "Check now" button per row, "Remove".
+- **Primary domain card** — radio list: subdomain + each `active` custom
+  domain. Saving calls `setPrimaryDomain`.
+- Sidebar entry "Domains" under admin nav.
+
+## Winner Admin UI
+
+New route `src/routes/_authenticated/owner/domains.tsx`:
+- Root domain, login host, wildcard toggle, custom domains master switch,
+  SSL provider label, apex CNAME target — all persisted in
+  `platform_settings`.
+- Table of all `store_domains` across stores with status + last-checked,
+  filter by status, force-recheck, force-activate (sets `ssl_status`),
+  revoke.
+
+## Server functions (new file `src/lib/domains.functions.ts`)
+
+Store-scoped, all `.middleware([requireSupabaseAuth])`:
+`listMyDomains`, `addCustomDomain`, `checkDomainVerification`,
+`removeDomain`, `setPrimaryDomain`.
+
+Owner-scoped, guarded with `has_role('owner')`:
+`listAllDomains`, `forceRecheckDomain`, `setDomainSslStatus`,
+`revokeDomain`, `getPlatformDomainSettings`, `updatePlatformDomainSettings`.
+
+Public (no auth) helper via existing publishable-key server client:
+`resolvePublicDomain({ host })` for SSR head/canonical.
+
+## Files touched / added
+
+- migration: `store_domains` table + grants + RLS + `resolve_domain` RPC +
+  `stores.primary_domain_id` + `platform_settings` columns.
+- `src/lib/features.ts` — add `custom_domain` key + label.
+- `src/lib/domains.functions.ts` — new.
+- `src/lib/domain-router.ts` — new, used by root route.
+- `src/routes/__root.tsx` — canonical/og URL from primary domain, host-based
+  `/auth` redirect wiring.
+- `src/routes/_authenticated/admin/domains.tsx` — new store-admin page.
+- `src/routes/_authenticated/admin/route.tsx` — add sidebar entry.
+- `src/routes/_authenticated/owner/domains.tsx` — new owner page.
+- `src/routes/_authenticated/owner/route.tsx` — add sidebar entry.
+- `src/routes/auth.tsx` — reject render when host ≠ login host; redirect.
+- `src/lib/store-ui.tsx` — use primary domain when building store URLs.
 
 ## Out of scope
 
-- Custom subdomain DNS wiring (slug is stored; hosting mapping is a separate feature).
-- Changing sign-in mode.
-- Email confirmation flow changes.
+- Automated ACME/Let's Encrypt issuance — `ssl_status` is a status field
+  the platform flips; the UI and data are ready for automation later.
+- Email DNS (MX/DKIM/DMARC) on custom domains.
+- Multi-region domain routing.
