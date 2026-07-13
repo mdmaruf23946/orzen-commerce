@@ -35,7 +35,7 @@ export function FeatureGate({ feature, children, inline = false }: Props) {
       <p className="text-sm text-muted-foreground">
         <span className="font-medium text-foreground">{label}</span> আপনার বর্তমান প্ল্যানে অন্তর্ভুক্ত নয়।
       </p>
-      <Link to="/admin/subscription" className="w-full">
+      <Link to="/admin/billing" className="w-full">
         <Button className="w-full gap-1.5">
           <Sparkles className="h-4 w-4" /> আপডেট করুন
         </Button>
