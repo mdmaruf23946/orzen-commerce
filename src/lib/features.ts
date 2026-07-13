@@ -13,6 +13,7 @@ export const FEATURE_KEYS = [
   "staff",
   "customer_notes",
   "returns",
+  "custom_domain",
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
