@@ -14,7 +14,7 @@ import { FEATURE_KEYS, FEATURE_LABELS, formatLimit } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-export const Route = createFileRoute("/_authenticated/admin/billing")({
+export const Route = createFileRoute("/_authenticated/admin/billing/")({
   component: BillingPage,
 });
 
