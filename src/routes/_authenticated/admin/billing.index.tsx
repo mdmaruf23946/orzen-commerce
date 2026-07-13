@@ -374,8 +374,8 @@ function BillingPage() {
       </section>
 
 
-      {/* 7. Compare Plans */}
-      <section>
+      {/* 7. Compare Plans — desktop only */}
+      <section className="hidden sm:block">
         <h2 className="mb-2 text-sm font-semibold sm:mb-3 sm:text-lg">Compare plans</h2>
 
         {/* Desktop table */}
