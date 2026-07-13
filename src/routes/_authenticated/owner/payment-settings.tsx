@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_authenticated/owner/payment-settings")({
   component: PaymentSettingsPage,
 });
 
-type MobileCfg = { enabled?: boolean; number?: string; instructions?: string };
+type MobileCfg = { enabled?: boolean; number?: string; instructions?: string; merchant_name?: string; notification_email?: string };
 type SslCfg = { enabled?: boolean; store_id?: string; api_key?: string; sandbox?: boolean; instructions?: string };
 
 function PaymentSettingsPage() {
@@ -67,10 +67,18 @@ function PaymentSettingsPage() {
               <Switch checked={!!c.enabled} onCheckedChange={(v) => update(k, { enabled: v })} />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5"><Label>Merchant name</Label><Input value={c.merchant_name ?? ""} onChange={(e) => update(k, { merchant_name: e.target.value })} placeholder="e.g. ORZEN Ltd" /></div>
               <div className="space-y-1.5"><Label>Receiving number</Label><Input value={c.number ?? ""} onChange={(e) => update(k, { number: e.target.value })} placeholder="01XXXXXXXXX" /></div>
+              {k === "bkash" && (
+                <div className="space-y-1.5 sm:col-span-2"><Label>Notification email</Label>
+                  <Input type="email" value={c.notification_email ?? ""} onChange={(e) => update(k, { notification_email: e.target.value })} placeholder="admin@orzen.app" />
+                  <p className="text-xs text-muted-foreground">New payment requests will be emailed here for verification.</p>
+                </div>
+              )}
             </div>
-            <div className="space-y-1.5"><Label>Instructions for store owners</Label>
-              <Textarea rows={2} value={c.instructions ?? ""} onChange={(e) => update(k, { instructions: e.target.value })} placeholder={`Send Money to ${label} merchant number, then paste the Transaction ID below.`} />
+            <div className="space-y-1.5"><Label>Payment instructions (shown to customers)</Label>
+              <Textarea rows={4} value={c.instructions ?? ""} onChange={(e) => update(k, { instructions: e.target.value })} placeholder={`Open the ${label} app.\nSend Money to the number above.\nCopy the Transaction ID and paste it below.`} />
+              <p className="text-xs text-muted-foreground">One step per line.</p>
             </div>
           </div>
         );
