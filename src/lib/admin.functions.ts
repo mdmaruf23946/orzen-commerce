@@ -3,6 +3,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { assertPlan } from "@/lib/plan-guard";
+import {
+  fetchTemplate,
+  templateStoreFields,
+  seedStoreFromTemplate,
+  wipeStoreChildren,
+} from "@/lib/store-template";
 
 function slugify(s: string) {
   return s
