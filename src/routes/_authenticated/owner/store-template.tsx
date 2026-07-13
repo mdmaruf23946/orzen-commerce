@@ -72,25 +72,25 @@ function StoreTemplatePage() {
 
   useEffect(() => {
     if (!data) return;
+    const d = data as any;
     setForm({
       ...empty,
-      ...data,
-      theme: { ...empty.theme, ...(data.theme ?? {}) },
-      seo: data.seo ?? {},
-      marketing: data.marketing ?? {},
-      delivery: data.delivery ?? {},
-      payments_config: data.payments_config ?? {},
-      product_defaults: (data.product_defaults ?? {}) as any,
-      banners: (data.banners as any) ?? [],
-      categories: (data.categories as any) ?? [],
-      products: (data.products as any) ?? [],
-      pages: (data.pages as any) ?? [],
-      description: data.description ?? "",
-      primary_color: data.primary_color ?? "#0f172a",
-      header_color: data.header_color ?? "#ffffff",
-      title_bar_color: data.title_bar_color ?? "#0f172a",
-      footer_color: data.footer_color ?? "#0f172a",
-      button_color: data.button_color ?? "#0f172a",
+      theme: { ...empty.theme, ...((d.theme as any) ?? {}) },
+      seo: (d.seo as any) ?? {},
+      marketing: (d.marketing as any) ?? {},
+      delivery: (d.delivery as any) ?? {},
+      payments_config: (d.payments_config as any) ?? {},
+      product_defaults: (d.product_defaults as any) ?? {},
+      banners: (d.banners as any) ?? [],
+      categories: (d.categories as any) ?? [],
+      products: (d.products as any) ?? [],
+      pages: (d.pages as any) ?? [],
+      description: d.description ?? "",
+      primary_color: d.primary_color ?? "#0f172a",
+      header_color: d.header_color ?? "#ffffff",
+      title_bar_color: d.title_bar_color ?? "#0f172a",
+      footer_color: d.footer_color ?? "#0f172a",
+      button_color: d.button_color ?? "#0f172a",
     });
   }, [data]);
 
