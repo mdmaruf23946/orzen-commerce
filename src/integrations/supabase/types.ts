@@ -1443,6 +1443,75 @@ export type Database = {
           },
         ]
       }
+      store_template: {
+        Row: {
+          banners: Json
+          button_color: string | null
+          categories: Json
+          created_at: string
+          delivery: Json
+          description: string | null
+          footer_color: string | null
+          header_color: string | null
+          id: string
+          marketing: Json
+          pages: Json
+          payments_config: Json
+          primary_color: string | null
+          product_defaults: Json
+          products: Json
+          seo: Json
+          theme: Json
+          title_bar_color: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          banners?: Json
+          button_color?: string | null
+          categories?: Json
+          created_at?: string
+          delivery?: Json
+          description?: string | null
+          footer_color?: string | null
+          header_color?: string | null
+          id: string
+          marketing?: Json
+          pages?: Json
+          payments_config?: Json
+          primary_color?: string | null
+          product_defaults?: Json
+          products?: Json
+          seo?: Json
+          theme?: Json
+          title_bar_color?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          banners?: Json
+          button_color?: string | null
+          categories?: Json
+          created_at?: string
+          delivery?: Json
+          description?: string | null
+          footer_color?: string | null
+          header_color?: string | null
+          id?: string
+          marketing?: Json
+          pages?: Json
+          payments_config?: Json
+          primary_color?: string | null
+          product_defaults?: Json
+          products?: Json
+          seo?: Json
+          theme?: Json
+          title_bar_color?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       stores: {
         Row: {
           address: string | null
@@ -1473,6 +1542,7 @@ export type Database = {
           slug: string
           status: Database["public"]["Enums"]["store_status"]
           subscription_status: string
+          template_version: string | null
           theme: Json
           title_bar_color: string | null
           trial_ends_at: string | null
@@ -1508,6 +1578,7 @@ export type Database = {
           slug: string
           status?: Database["public"]["Enums"]["store_status"]
           subscription_status?: string
+          template_version?: string | null
           theme?: Json
           title_bar_color?: string | null
           trial_ends_at?: string | null
@@ -1543,6 +1614,7 @@ export type Database = {
           slug?: string
           status?: Database["public"]["Enums"]["store_status"]
           subscription_status?: string
+          template_version?: string | null
           theme?: Json
           title_bar_color?: string | null
           trial_ends_at?: string | null

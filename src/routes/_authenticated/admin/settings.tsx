@@ -3,12 +3,23 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getMyStore, updateMyStore } from "@/lib/admin.functions";
+import { getMyStore, updateMyStore, resetStoreToTemplate } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUploader } from "@/components/admin/ImageUploader";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/settings")({
   component: SettingsPage,
@@ -17,10 +28,26 @@ export const Route = createFileRoute("/_authenticated/admin/settings")({
 function SettingsPage() {
   const fetchStore = useServerFn(getMyStore);
   const save = useServerFn(updateMyStore);
+  const resetFn = useServerFn(resetStoreToTemplate);
   const qc = useQueryClient();
   const { data: store } = useQuery({ queryKey: ["admin", "store"], queryFn: () => fetchStore() });
   const [form, setForm] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
+  async function reset() {
+    setResetting(true);
+    try {
+      await resetFn();
+      await qc.invalidateQueries();
+      toast.success("Store reset to the latest default template.");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setResetting(false);
+    }
+  }
+
 
   useEffect(() => {
     if (store) setForm({ ...store });
@@ -142,6 +169,35 @@ function SettingsPage() {
       <Button type="submit" disabled={saving} className="w-full sm:w-auto">
         {saving ? "Saving…" : "Save changes"}
       </Button>
+
+      <section className="space-y-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+        <h2 className="text-sm font-semibold text-destructive">Danger zone</h2>
+        <p className="text-xs text-muted-foreground">
+          Replace your current design, theme, banners, categories and products with the latest default template
+          set by the platform. This cannot be undone.
+        </p>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button type="button" variant="destructive" size="sm" disabled={resetting}>
+              {resetting ? "Resetting…" : "Reset to Default Template"}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Reset to default template?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Your current banners, categories and products will be deleted and replaced with the platform's
+                latest default template. Your store settings (design, theme, defaults) will also be overwritten.
+                This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={reset}>Yes, reset</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </section>
     </form>
   );
 }

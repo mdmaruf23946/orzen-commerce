@@ -39,6 +39,7 @@ const groups: NavGroup[] = [
     { to: "/owner/marketing", label: "Marketing", icon: Megaphone },
   ]},
   { label: "Platform", links: [
+    { to: "/owner/store-template", label: "Store Template", icon: StoreIcon },
     { to: "/owner/features", label: "Feature Flags", icon: ToggleLeft },
     { to: "/owner/system", label: "System Settings", icon: Settings },
     { to: "/owner/users", label: "Users", icon: UserCog },
