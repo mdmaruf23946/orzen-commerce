@@ -566,10 +566,23 @@ export const updatePaymentSettings = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId);
     const sb: any = context.supabase;
+    // Merge with existing row so partial updates don't wipe other gateways.
+    const { data: existing } = await sb
+      .from("platform_payment_settings")
+      .select("bkash,nagad,rocket,sslcommerz")
+      .eq("id", "global")
+      .maybeSingle();
+    const merged = {
+      id: "global",
+      bkash: { ...(existing?.bkash ?? {}), ...(data.bkash ?? {}) },
+      nagad: { ...(existing?.nagad ?? {}), ...(data.nagad ?? {}) },
+      rocket: { ...(existing?.rocket ?? {}), ...(data.rocket ?? {}) },
+      sslcommerz: { ...(existing?.sslcommerz ?? {}), ...(data.sslcommerz ?? {}) },
+      updated_at: new Date().toISOString(),
+    };
     const { error } = await sb
       .from("platform_payment_settings")
-      .update({ ...data, updated_at: new Date().toISOString() })
-      .eq("id", "global");
+      .upsert(merged, { onConflict: "id" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
