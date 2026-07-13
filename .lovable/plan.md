@@ -1,87 +1,70 @@
-# Global Default Store Template
 
-Winner Admin (owner) maintains a single global template. New stores auto-inherit it on first creation. Existing stores are untouched unless their admin clicks "Reset to Default Template".
+# Redesigned Store Registration
 
-## Data model
+## New form (`src/routes/auth.tsx`, sign-up mode)
 
-New table `public.store_template` — singleton row (id fixed = `'global'`):
+Fields, in order:
+1. Owner Name — required, 2–80 chars
+2. Store Name — required, 2–80 chars
+3. Store Subdomain — required, `^[a-z0-9-]+$`, 3–40 chars, no leading/trailing hyphen
+4. Email
+5. Password (min 6)
+6. Confirm Password (must match)
 
-- `id text primary key check (id = 'global')`
-- `theme jsonb`, `seo jsonb`, `marketing jsonb`, `delivery jsonb`, `payments_config jsonb`, `product_defaults jsonb`
-- `primary_color`, `header_color`, `title_bar_color`, `footer_color`, `button_color` (text)
-- `description text`
-- `banners jsonb` — array of `{ image_url, link_url, sort_order, is_active }`
-- `categories jsonb` — array of `{ name, sort_order }`
-- `products jsonb` — array of `{ name, description, price, image_url, images, stock, sku, is_active, category_name }` (category_name resolves to created category by name)
-- `pages jsonb` — array of `{ slug, title, content }` (reserved; pages table not yet in schema — stored for future use)
-- `updated_at timestamptz`, `updated_by uuid`
+Sign-in mode stays as it is today (email + password only).
 
-Grants: `SELECT` to `authenticated` (owners need to preview/reset), `ALL` to `service_role`. RLS: SELECT allowed to authenticated; UPDATE restricted via `has_role(auth.uid(),'admin')`.
+### Subdomain UX
+- Auto-generate from Store Name via existing `slugify()` on every keystroke, until the user manually edits the subdomain field (then stop auto-syncing).
+- Sanitize input on change: lowercase, replace invalid chars with `-`, collapse repeats.
+- Debounced (350 ms) availability check via a new **public** server fn `checkStoreSlugAvailable({ slug })` that uses a server-side publishable Supabase client and queries `stores` for that slug. Requires a narrow anon SELECT policy exposing only `id, slug` (see Data section).
+- Status pill next to the field: `Checking…` / `Available` (green) / `Already taken` (red) / `Invalid format` (amber). Submit disabled unless status is `Available` and passwords match.
 
-A migration seeds one row with sensible defaults derived from current placeholder theme values.
+### Submit flow
+1. Client-side Zod validation of all fields.
+2. Final `checkStoreSlugAvailable` call before submit (guards against races; server fn below also re-checks).
+3. `supabase.auth.signUp({ email, password, options: { data: { owner_name, store_name, store_slug }, emailRedirectTo: origin + "/admin" } })`.
+4. On success (session returned — email confirmation is off in this project), call new authenticated server fn `createMyStoreWithSlug({ storeName, slug, ownerName })`.
+5. Navigate to `/admin` (Store Admin Dashboard).
 
-## Owner (Winner Admin) UI
+## Server functions (`src/lib/admin.functions.ts`)
 
-New route `src/routes/_authenticated/owner/store-template.tsx` — a single tabbed editor:
+### `checkStoreSlugAvailable` (new, public)
+- `createServerFn({ method: "GET" })` with `.inputValidator(z.object({ slug: z.string().regex(/^[a-z0-9-]+$/).min(3).max(40) }))`.
+- Uses a server publishable client (pattern from `tanstack-supabase-integration`) to `select id from stores where slug = ? limit 1`.
+- Returns `{ available: boolean }`.
 
-1. **Design & Theme** — colors, radius, header/footer/button colors
-2. **Header / Footer** — description, contact defaults
-3. **Banners** — reuse existing banner uploader pattern (edits JSON array)
-4. **Categories** — add/remove names
-5. **Products** — add starter product entries (image, price, stock, category)
-6. **Pages** — slug/title/content editor (stored for future pages feature)
-7. **Defaults** — product_defaults, seo, marketing, delivery, payments_config
+### `createMyStoreWithSlug` (new, authenticated)
+- `.middleware([requireSupabaseAuth])`, input: `{ storeName, slug, ownerName }` (Zod, same slug regex).
+- If a store already exists for `userId`, return it (idempotent — handles retries).
+- Re-check slug uniqueness; if taken, throw `Slug already taken`.
+- Fetch template via `fetchTemplate(supabase)`; insert `stores` row with `owner_user_id`, `name = storeName`, `slug`, `status: "active"`, and `...templateStoreFields(tpl)`.
+- `seedStoreFromTemplate(supabase, store.id, tpl)` (non-fatal on failure, same as `getMyStore`).
+- Also upsert `ownerName` into user metadata via `supabase.auth.updateUser({ data: { owner_name } })` (best-effort, ignore error).
+- Return the created store.
 
-Server fns in `src/lib/owner.functions.ts`:
-- `getStoreTemplate` — admin-only, returns the single row
-- `updateStoreTemplate` — admin-only, patches provided sections
+`getMyStore` stays as-is (auto-create fallback for users that arrived through some other path).
 
-Add nav entry in owner sidebar.
+## Data (single migration)
 
-## Applying template to NEW stores only
+- Add a narrow anon SELECT policy on `stores` limited to `slug` lookups. Simplest: policy `USING (true)` but the server publishable client only ever projects `id, slug` in `checkStoreSlugAvailable`. To keep exposure minimal, prefer a `SECURITY DEFINER` RPC `is_slug_taken(_slug text) returns boolean` granted to `anon, authenticated`. Use the RPC from `checkStoreSlugAvailable` — no new table policy needed.
+- No schema changes to `stores`.
 
-In `getMyStore` (auto-create branch) and any explicit create path:
-1. Fetch template row via `supabaseAdmin` (loaded inside handler).
-2. Insert `stores` row copying scalar fields + jsonb blobs (theme, seo, marketing, delivery, payments_config, product_defaults, colors, description).
-3. After insert, seed child rows in the same transaction-style sequence:
-   - `categories` — insert each with `store_id`
-   - `products` — insert each, mapping `category_name` → created category id
-   - `banners` — insert each with `store_id`
-4. Stamp `stores.template_version = template.updated_at` for traceability.
+## Page styling
 
-Add column `stores.template_version timestamptz null` via migration.
-
-Existing stores keep `template_version = null` and are never auto-touched.
-
-## Reset to Default Template (store admin)
-
-New server fn `resetStoreToTemplate` in `src/lib/admin.functions.ts` (auth: store owner only, confirmed via `is_store_owner`):
-
-- Wipes current `banners`, `categories`, `products` for the store (soft: delete rows where `store_id = ...`).
-- Rewrites store scalar/jsonb fields from template.
-- Re-seeds children exactly like new-store flow.
-- Stamps `template_version = template.updated_at`.
-
-UI: button on `src/routes/_authenticated/admin/settings.tsx` in a "Danger zone" card with a confirmation dialog ("This replaces your current design, banners, categories and products with the latest default template. This cannot be undone.").
-
-## Performance & scalability notes
-
-- Template stored as JSONB blobs so reads/writes are O(1) and one query hydrates the entire template.
-- Seeding uses batched `.insert(array)` calls (one per child table), not per-row loops.
-- Existing stores are never scanned on template update — zero write amplification.
-- Template read only happens at store creation / manual reset, so no hot-path cost for storefront traffic.
+Keep the existing card layout in `src/routes/auth.tsx` but:
+- Widen sign-up card to `max-w-md`, keep sign-in at `max-w-sm`.
+- Tight spacing (`space-y-3`), inputs `h-10`, single-column, works down to 320px.
+- Subdomain field renders as `Input` with a right-aligned suffix `.<host>` (read-only visual hint) and the availability pill below.
+- Preserve existing branding, no new fonts/colors.
 
 ## Files touched
 
-- Migration: create `store_template`, seed row, add `stores.template_version`, RLS + grants.
-- `src/lib/owner.functions.ts` — `getStoreTemplate`, `updateStoreTemplate`.
-- `src/lib/admin.functions.ts` — extend `getMyStore` seeding; add `resetStoreToTemplate`.
-- `src/routes/_authenticated/owner/store-template.tsx` — new editor page.
-- `src/routes/_authenticated/owner/route.tsx` — add sidebar link.
-- `src/routes/_authenticated/admin/settings.tsx` — add "Reset to Default Template" action.
+- `src/routes/auth.tsx` — new sign-up form, subdomain live-check, post-signup store creation.
+- `src/lib/admin.functions.ts` — add `checkStoreSlugAvailable`, `createMyStoreWithSlug`.
+- Migration — add `is_slug_taken(text)` SECURITY DEFINER function + grants.
 
 ## Out of scope
 
-- No retroactive updates to existing stores (by requirement).
-- No versioned template history (single latest row); can be added later if needed.
-- `pages` table not created yet — stored in template JSON for when a pages feature ships.
+- Custom subdomain DNS wiring (slug is stored; hosting mapping is a separate feature).
+- Changing sign-in mode.
+- Email confirmation flow changes.
