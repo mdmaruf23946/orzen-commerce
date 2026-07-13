@@ -65,10 +65,10 @@ import { Route as AuthenticatedAdminCustomersRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminCouriersRouteImport } from './routes/_authenticated/admin/couriers'
 import { Route as AuthenticatedAdminCouponsRouteImport } from './routes/_authenticated/admin/coupons'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
-import { Route as AuthenticatedAdminBillingRouteImport } from './routes/_authenticated/admin/billing'
 import { Route as AuthenticatedAdminBannersRouteImport } from './routes/_authenticated/admin/banners'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin/analytics'
 import { Route as AuthenticatedAdminAiAgentRouteImport } from './routes/_authenticated/admin/ai-agent'
+import { Route as AuthenticatedAdminBillingIndexRouteImport } from './routes/_authenticated/admin/billing.index'
 import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
 import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/order.$orderId'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
@@ -389,12 +389,6 @@ const AuthenticatedAdminCategoriesRoute =
     path: '/categories',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
-const AuthenticatedAdminBillingRoute =
-  AuthenticatedAdminBillingRouteImport.update({
-    id: '/billing',
-    path: '/billing',
-    getParentRoute: () => AuthenticatedAdminRouteRoute,
-  } as any)
 const AuthenticatedAdminBannersRoute =
   AuthenticatedAdminBannersRouteImport.update({
     id: '/banners',
@@ -411,6 +405,12 @@ const AuthenticatedAdminAiAgentRoute =
   AuthenticatedAdminAiAgentRouteImport.update({
     id: '/ai-agent',
     path: '/ai-agent',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminBillingIndexRoute =
+  AuthenticatedAdminBillingIndexRouteImport.update({
+    id: '/billing/',
+    path: '/billing/',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const StoreSlugProductProductIdRoute =
@@ -438,9 +438,9 @@ const AuthenticatedAdminInvoiceOrderIdRoute =
   } as any)
 const AuthenticatedAdminBillingCheckoutPackageIdRoute =
   AuthenticatedAdminBillingCheckoutPackageIdRouteImport.update({
-    id: '/checkout/$packageId',
-    path: '/checkout/$packageId',
-    getParentRoute: () => AuthenticatedAdminBillingRoute,
+    id: '/billing/checkout/$packageId',
+    path: '/billing/checkout/$packageId',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -453,7 +453,6 @@ export interface FileRoutesByFullPath {
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
-  '/admin/billing': typeof AuthenticatedAdminBillingRouteWithChildren
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/admin/couriers': typeof AuthenticatedAdminCouriersRoute
@@ -507,6 +506,7 @@ export interface FileRoutesByFullPath {
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
+  '/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
 }
 export interface FileRoutesByTo {
@@ -516,7 +516,6 @@ export interface FileRoutesByTo {
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
-  '/admin/billing': typeof AuthenticatedAdminBillingRouteWithChildren
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/admin/couriers': typeof AuthenticatedAdminCouriersRoute
@@ -570,6 +569,7 @@ export interface FileRoutesByTo {
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
+  '/admin/billing': typeof AuthenticatedAdminBillingIndexRoute
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
 }
 export interface FileRoutesById {
@@ -584,7 +584,6 @@ export interface FileRoutesById {
   '/_authenticated/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/banners': typeof AuthenticatedAdminBannersRoute
-  '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRouteWithChildren
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/_authenticated/admin/couriers': typeof AuthenticatedAdminCouriersRoute
@@ -638,6 +637,7 @@ export interface FileRoutesById {
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
+  '/_authenticated/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
   '/_authenticated/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
 }
 export interface FileRouteTypes {
@@ -652,7 +652,6 @@ export interface FileRouteTypes {
     | '/admin/ai-agent'
     | '/admin/analytics'
     | '/admin/banners'
-    | '/admin/billing'
     | '/admin/categories'
     | '/admin/coupons'
     | '/admin/couriers'
@@ -706,6 +705,7 @@ export interface FileRouteTypes {
     | '/api/public/messenger/webhook'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
+    | '/admin/billing/'
     | '/admin/billing/checkout/$packageId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -715,7 +715,6 @@ export interface FileRouteTypes {
     | '/admin/ai-agent'
     | '/admin/analytics'
     | '/admin/banners'
-    | '/admin/billing'
     | '/admin/categories'
     | '/admin/coupons'
     | '/admin/couriers'
@@ -769,6 +768,7 @@ export interface FileRouteTypes {
     | '/api/public/messenger/webhook'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
+    | '/admin/billing'
     | '/admin/billing/checkout/$packageId'
   id:
     | '__root__'
@@ -782,7 +782,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/ai-agent'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/banners'
-    | '/_authenticated/admin/billing'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/coupons'
     | '/_authenticated/admin/couriers'
@@ -836,6 +835,7 @@ export interface FileRouteTypes {
     | '/api/public/messenger/webhook'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
+    | '/_authenticated/admin/billing/'
     | '/_authenticated/admin/billing/checkout/$packageId'
   fileRoutesById: FileRoutesById
 }
@@ -1244,13 +1244,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCategoriesRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
-    '/_authenticated/admin/billing': {
-      id: '/_authenticated/admin/billing'
-      path: '/billing'
-      fullPath: '/admin/billing'
-      preLoaderRoute: typeof AuthenticatedAdminBillingRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
-    }
     '/_authenticated/admin/banners': {
       id: '/_authenticated/admin/banners'
       path: '/banners'
@@ -1270,6 +1263,13 @@ declare module '@tanstack/react-router' {
       path: '/ai-agent'
       fullPath: '/admin/ai-agent'
       preLoaderRoute: typeof AuthenticatedAdminAiAgentRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/billing/': {
+      id: '/_authenticated/admin/billing/'
+      path: '/billing'
+      fullPath: '/admin/billing/'
+      preLoaderRoute: typeof AuthenticatedAdminBillingIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/store/$slug/product/$productId': {
@@ -1302,34 +1302,18 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/admin/billing/checkout/$packageId': {
       id: '/_authenticated/admin/billing/checkout/$packageId'
-      path: '/checkout/$packageId'
+      path: '/billing/checkout/$packageId'
       fullPath: '/admin/billing/checkout/$packageId'
       preLoaderRoute: typeof AuthenticatedAdminBillingCheckoutPackageIdRouteImport
-      parentRoute: typeof AuthenticatedAdminBillingRoute
+      parentRoute: typeof AuthenticatedAdminRouteRoute
     }
   }
 }
-
-interface AuthenticatedAdminBillingRouteChildren {
-  AuthenticatedAdminBillingCheckoutPackageIdRoute: typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
-}
-
-const AuthenticatedAdminBillingRouteChildren: AuthenticatedAdminBillingRouteChildren =
-  {
-    AuthenticatedAdminBillingCheckoutPackageIdRoute:
-      AuthenticatedAdminBillingCheckoutPackageIdRoute,
-  }
-
-const AuthenticatedAdminBillingRouteWithChildren =
-  AuthenticatedAdminBillingRoute._addFileChildren(
-    AuthenticatedAdminBillingRouteChildren,
-  )
 
 interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminAiAgentRoute: typeof AuthenticatedAdminAiAgentRoute
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
   AuthenticatedAdminBannersRoute: typeof AuthenticatedAdminBannersRoute
-  AuthenticatedAdminBillingRoute: typeof AuthenticatedAdminBillingRouteWithChildren
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminCouponsRoute: typeof AuthenticatedAdminCouponsRoute
   AuthenticatedAdminCouriersRoute: typeof AuthenticatedAdminCouriersRoute
@@ -1352,6 +1336,8 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminThemeRoute: typeof AuthenticatedAdminThemeRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminInvoiceOrderIdRoute: typeof AuthenticatedAdminInvoiceOrderIdRoute
+  AuthenticatedAdminBillingIndexRoute: typeof AuthenticatedAdminBillingIndexRoute
+  AuthenticatedAdminBillingCheckoutPackageIdRoute: typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
 }
 
 const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
@@ -1359,7 +1345,6 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminAiAgentRoute: AuthenticatedAdminAiAgentRoute,
     AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
     AuthenticatedAdminBannersRoute: AuthenticatedAdminBannersRoute,
-    AuthenticatedAdminBillingRoute: AuthenticatedAdminBillingRouteWithChildren,
     AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
     AuthenticatedAdminCouponsRoute: AuthenticatedAdminCouponsRoute,
     AuthenticatedAdminCouriersRoute: AuthenticatedAdminCouriersRoute,
@@ -1384,6 +1369,9 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
     AuthenticatedAdminInvoiceOrderIdRoute:
       AuthenticatedAdminInvoiceOrderIdRoute,
+    AuthenticatedAdminBillingIndexRoute: AuthenticatedAdminBillingIndexRoute,
+    AuthenticatedAdminBillingCheckoutPackageIdRoute:
+      AuthenticatedAdminBillingCheckoutPackageIdRoute,
   }
 
 const AuthenticatedAdminRouteRouteWithChildren =
@@ -1496,13 +1484,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
