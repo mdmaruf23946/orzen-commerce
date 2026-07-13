@@ -94,6 +94,92 @@ export const resetStoreToTemplate = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const slugSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(3)
+  .max(40)
+  .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "Lowercase letters, numbers, and hyphens only");
+
+// Public: check whether a store subdomain slug is already taken.
+export const checkStoreSlugAvailable = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ slug: slugSchema }).parse(d))
+  .handler(async ({ data }) => {
+    const { createClient } = await import("@supabase/supabase-js");
+    const key = process.env.SUPABASE_PUBLISHABLE_KEY!;
+    const url = process.env.SUPABASE_URL!;
+    const sb = createClient(url, key, {
+      auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
+      global: {
+        fetch: (input, init) => {
+          const h = new Headers(init?.headers);
+          if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) h.delete("Authorization");
+          h.set("apikey", key);
+          return fetch(input, { ...init, headers: h });
+        },
+      },
+    });
+    const { data: res, error } = await sb.rpc("is_slug_taken", { _slug: data.slug });
+    if (error) throw new Error(error.message);
+    return { available: !res };
+  });
+
+// Authenticated: create the current user's store using a chosen slug + name,
+// applying the global default template. Idempotent: returns existing store if any.
+export const createMyStoreWithSlug = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        storeName: z.string().trim().min(2).max(80),
+        slug: slugSchema,
+        ownerName: z.string().trim().min(2).max(80),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: existing } = await supabase
+      .from("stores")
+      .select("*")
+      .eq("owner_user_id", userId)
+      .maybeSingle();
+    if (existing) return existing;
+
+    const { data: taken } = await supabase.rpc("is_slug_taken", { _slug: data.slug });
+    if (taken) throw new Error("Subdomain already taken");
+
+    const tpl = await fetchTemplate(supabase);
+    const tplFields = templateStoreFields(tpl);
+    const { data: created, error } = await supabase
+      .from("stores")
+      .insert({
+        owner_user_id: userId,
+        slug: data.slug,
+        name: data.storeName,
+        status: "active",
+        ...tplFields,
+      })
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+
+    if (tpl && created?.id) {
+      try {
+        await seedStoreFromTemplate(supabase, created.id, tpl);
+      } catch {
+        // Non-fatal
+      }
+    }
+    try {
+      await supabase.auth.updateUser({ data: { owner_name: data.ownerName } });
+    } catch {
+      // Non-fatal
+    }
+    return created;
+  });
+
 export const updateMyStore = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
