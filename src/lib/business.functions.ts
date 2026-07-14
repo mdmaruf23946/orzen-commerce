@@ -476,7 +476,7 @@ export const businessAnalytics = createServerFn({ method: "GET" })
       context.supabase.from("order_items").select("product_id,qty,name_snapshot,orders!inner(store_id,status)").eq("orders.store_id", sid),
     ]);
     const live = (orders ?? []).filter((o) => o.status !== "cancelled");
-    const totalSales = live.reduce((a, o) => a + Number(o.subtotal) - Number(o.discount_amount ?? 0), 0);
+    const totalSales = live.reduce((a, o) => a + Number(o.subtotal), 0);
     const totalOrders = live.length;
     const aov = totalOrders ? totalSales / totalOrders : 0;
 
