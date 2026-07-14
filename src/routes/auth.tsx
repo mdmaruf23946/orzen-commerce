@@ -126,12 +126,7 @@ function AuthPage() {
     }
   }
 
-  const rootDomain = useMemo(() => {
-    if (typeof window === "undefined") return "orzen.top";
-    const h = window.location.hostname;
-    const parts = h.split(".");
-    return parts.length > 2 ? parts.slice(-2).join(".") : h;
-  }, []);
+  const rootDomain = "orzen.com";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4 py-8">
