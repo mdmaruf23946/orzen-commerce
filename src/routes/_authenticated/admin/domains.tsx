@@ -64,7 +64,7 @@ function Page() {
 
   if (isLoading || !data) return <div className="text-sm text-muted-foreground">Loading…</div>;
 
-  const rootDomain = "orzen.top";
+  const rootDomain = "orzen.com";
   const subdomainUrl = `https://${data.store.slug}.${rootDomain}`;
 
   async function add() {
