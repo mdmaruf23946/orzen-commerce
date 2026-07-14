@@ -36,9 +36,9 @@ function Page() {
   useEffect(() => {
     if (sData && !f) {
       setF({
-        root_domain: sData.root_domain ?? "orzen.top",
-        login_host: sData.login_host ?? "admin.orzen.top",
-        dns_target: sData.dns_target ?? "stores.orzen.top",
+        root_domain: sData.root_domain ?? "orzen.com",
+        login_host: sData.login_host ?? "admin.orzen.com",
+        dns_target: sData.dns_target ?? "stores.orzen.com",
         wildcard_enabled: sData.wildcard_enabled ?? true,
         custom_domains_enabled: sData.custom_domains_enabled ?? true,
         ssl_provider: sData.ssl_provider ?? "Let's Encrypt",
@@ -87,17 +87,17 @@ function Page() {
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <Label>Root domain</Label>
-                <Input value={f.root_domain} onChange={(e) => setF({ ...f, root_domain: e.target.value })} placeholder="orzen.top" />
+                <Input value={f.root_domain} onChange={(e) => setF({ ...f, root_domain: e.target.value })} placeholder="orzen.com" />
                 <p className="mt-1 text-xs text-muted-foreground">Stores get <code>&lt;slug&gt;.{f.root_domain}</code></p>
               </div>
               <div>
                 <Label>System login host</Label>
-                <Input value={f.login_host} onChange={(e) => setF({ ...f, login_host: e.target.value })} placeholder="admin.orzen.top" />
+                <Input value={f.login_host} onChange={(e) => setF({ ...f, login_host: e.target.value })} placeholder="admin.orzen.com" />
                 <p className="mt-1 text-xs text-muted-foreground">Store admins log in here. Never changes per store.</p>
               </div>
               <div>
                 <Label>Custom-domain CNAME target</Label>
-                <Input value={f.dns_target} onChange={(e) => setF({ ...f, dns_target: e.target.value })} placeholder="stores.orzen.top" />
+                <Input value={f.dns_target} onChange={(e) => setF({ ...f, dns_target: e.target.value })} placeholder="stores.orzen.com" />
               </div>
               <div>
                 <Label>SSL provider (label)</Label>
