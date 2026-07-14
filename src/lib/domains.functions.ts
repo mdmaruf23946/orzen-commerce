@@ -204,3 +204,73 @@ export const ownerRemoveDomain = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ---------- DNS diagnostics ----------
+
+export const checkDnsResolution = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { hostname?: string }) =>
+    z.object({ hostname: z.string().min(1).max(253).optional() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const store = await requireMyStore(supabase, userId);
+
+    const { data: pSettings } = await supabase
+      .from("platform_settings")
+      .select("settings")
+      .eq("id", 1)
+      .maybeSingle();
+    const s = (pSettings?.settings as any) ?? {};
+    const rootDomain = (s.root_domain ?? "orzen.top").toLowerCase();
+    const dnsTarget = (s.dns_target ?? `stores.${rootDomain}`).toLowerCase();
+    const expectedIp = "185.158.133.1";
+
+    const host = data.hostname
+      ? normalizeHost(data.hostname)
+      : `${store.slug}.${rootDomain}`;
+
+    const { promises: dns } = await import("dns");
+    const safe = async <T,>(p: Promise<T>): Promise<{ ok: true; value: T } | { ok: false; error: string }> => {
+      try { return { ok: true, value: await p }; }
+      catch (e) { return { ok: false, error: (e as Error).message }; }
+    };
+
+    const [aHost, aWildcardProbe, cnameHost, aRoot, aDnsTarget] = await Promise.all([
+      safe(dns.resolve4(host)),
+      safe(dns.resolve4(`wildcard-probe-${Date.now().toString(36)}.${rootDomain}`)),
+      safe(dns.resolveCname(host)),
+      safe(dns.resolve4(rootDomain)),
+      safe(dns.resolve4(dnsTarget)),
+    ]);
+
+    const aList = aHost.ok ? aHost.value : [];
+    const wildcardList = aWildcardProbe.ok ? aWildcardProbe.value : [];
+    const cnameList = cnameHost.ok ? cnameHost.value : [];
+
+    return {
+      host,
+      rootDomain,
+      dnsTarget,
+      expectedIp,
+      hostResolves: aList.length > 0 || cnameList.length > 0,
+      pointsToPlatform: aList.includes(expectedIp),
+      wildcardWorks: wildcardList.length > 0,
+      wildcardCorrect: wildcardList.includes(expectedIp),
+      records: {
+        a: aList,
+        cname: cnameList,
+        wildcardProbe: wildcardList,
+        rootA: aRoot.ok ? aRoot.value : [],
+        dnsTargetA: aDnsTarget.ok ? aDnsTarget.value : [],
+      },
+      errors: {
+        a: aHost.ok ? null : aHost.error,
+        cname: cnameHost.ok ? null : cnameHost.error,
+        wildcard: aWildcardProbe.ok ? null : aWildcardProbe.error,
+        root: aRoot.ok ? null : aRoot.error,
+        dnsTarget: aDnsTarget.ok ? null : aDnsTarget.error,
+      },
+      checkedAt: new Date().toISOString(),
+    };
+  });
