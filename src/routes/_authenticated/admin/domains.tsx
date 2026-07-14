@@ -143,6 +143,16 @@ function Page() {
             <h2 className="text-sm font-semibold">Custom Domains</h2>
           </div>
 
+          <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+            <p className="font-semibold">কীভাবে কানেক্ট করবেন — ৪ ধাপ:</p>
+            <ol className="mt-1 list-decimal space-y-0.5 pl-4">
+              <li>যেকোনো registrar (GoDaddy, Namecheap, Cloudflare) থেকে ডোমেইন কিনুন।</li>
+              <li>নিচে ডোমেইন যোগ করে দেখানো TXT + A/CNAME record গুলো registrar এর DNS panel এ বসান।</li>
+              <li>"Check now" চাপুন — verify হলে status "Verified" হবে।</li>
+              <li>SSL issue হওয়ার পর "Make primary" দিয়ে সেট করলে ওই ডোমেইনে স্টোর ওপেন হবে।</li>
+            </ol>
+          </div>
+
           <div className="flex flex-col gap-2 sm:flex-row">
             <Input
               placeholder="shop.example.com"
@@ -152,6 +162,7 @@ function Page() {
             />
             <Button onClick={add} disabled={busy || !host}>Add domain</Button>
           </div>
+
 
           <div className="space-y-3">
             {data.domains.length === 0 && (
