@@ -211,7 +211,7 @@ export const financeSummary = createServerFn({ method: "GET" })
     let todaySales = 0, monthSales = 0, totalSales = 0;
     for (const o of orders ?? []) {
       if (o.status === "cancelled") continue;
-      const v = Number(o.subtotal) - Number(o.discount_amount ?? 0);
+      const v = Number(o.subtotal);
       totalSales += v;
       const dt = new Date(o.created_at);
       if (dt >= today) todaySales += v;
@@ -476,7 +476,7 @@ export const businessAnalytics = createServerFn({ method: "GET" })
       context.supabase.from("order_items").select("product_id,qty,name_snapshot,orders!inner(store_id,status)").eq("orders.store_id", sid),
     ]);
     const live = (orders ?? []).filter((o) => o.status !== "cancelled");
-    const totalSales = live.reduce((a, o) => a + Number(o.subtotal) - Number(o.discount_amount ?? 0), 0);
+    const totalSales = live.reduce((a, o) => a + Number(o.subtotal), 0);
     const totalOrders = live.length;
     const aov = totalOrders ? totalSales / totalOrders : 0;
 
@@ -508,7 +508,7 @@ export const businessAnalytics = createServerFn({ method: "GET" })
     for (const o of live) {
       const k = new Date(o.created_at).toISOString().slice(0, 10);
       const row = dayMap.get(k);
-      if (row) { row.sales += Number(o.subtotal) - Number(o.discount_amount ?? 0); row.orders += 1; }
+      if (row) { row.sales += Number(o.subtotal); row.orders += 1; }
     }
 
     return {
