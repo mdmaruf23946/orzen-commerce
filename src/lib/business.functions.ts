@@ -211,7 +211,7 @@ export const financeSummary = createServerFn({ method: "GET" })
     let todaySales = 0, monthSales = 0, totalSales = 0;
     for (const o of orders ?? []) {
       if (o.status === "cancelled") continue;
-      const v = Number(o.subtotal) - Number(o.discount_amount ?? 0);
+      const v = Number(o.subtotal);
       totalSales += v;
       const dt = new Date(o.created_at);
       if (dt >= today) todaySales += v;
