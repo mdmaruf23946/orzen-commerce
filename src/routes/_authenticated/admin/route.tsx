@@ -29,6 +29,7 @@ import {
   BarChart3,
   FileUp,
   Globe,
+  Radar,
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
