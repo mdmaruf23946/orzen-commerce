@@ -508,7 +508,7 @@ export const businessAnalytics = createServerFn({ method: "GET" })
     for (const o of live) {
       const k = new Date(o.created_at).toISOString().slice(0, 10);
       const row = dayMap.get(k);
-      if (row) { row.sales += Number(o.subtotal) - Number(o.discount_amount ?? 0); row.orders += 1; }
+      if (row) { row.sales += Number(o.subtotal); row.orders += 1; }
     }
 
     return {
