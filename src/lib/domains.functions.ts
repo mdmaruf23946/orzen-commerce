@@ -62,7 +62,7 @@ export const addCustomDomain = createServerFn({ method: "POST" })
     const s = (pSettings?.settings as any) ?? {};
     const rootDomain = (s.root_domain ?? "").toLowerCase();
     const loginHost = (s.login_host ?? "").toLowerCase();
-    const dnsTarget = s.dns_target ?? (rootDomain ? `stores.${rootDomain}` : "stores.orzen.com");
+    const dnsTarget = s.dns_target ?? (rootDomain ? `stores.${rootDomain}` : "stores.orzen.top");
     if (rootDomain && (host === rootDomain || host.endsWith(`.${rootDomain}`))) {
       throw new Error("This hostname is on the platform root — use your subdomain instead.");
     }
