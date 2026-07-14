@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
@@ -43,10 +43,26 @@ import {
 } from "@/components/ui/accordion";
 import { useCountUp, useReveal } from "@/hooks/use-reveal";
 import { cn } from "@/lib/utils";
+import { resolveHost } from "@/lib/domains.functions";
 
 export const Route = createFileRoute("/")({
+  // If the request host is a store subdomain or a verified custom domain,
+  // route the visitor directly into the storefront instead of the landing.
+  beforeLoad: async () => {
+    try {
+      const r = await resolveHost();
+      if (r?.slug) {
+        throw redirect({ to: "/store/$slug", params: { slug: r.slug } });
+      }
+    } catch (e) {
+      // rethrow redirect so router handles it
+      if (e && typeof e === "object" && "isRedirect" in (e as any)) throw e;
+      // swallow lookup errors — fall through to landing
+    }
+  },
   component: Landing,
 });
+
 
 /* -------------------------------------------------------------------------- */
 /* Page                                                                        */

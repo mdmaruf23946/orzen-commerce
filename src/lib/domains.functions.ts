@@ -2,9 +2,13 @@
 // Store-scoped: subdomain edit + custom domain lifecycle + primary selection.
 // Owner-scoped: platform-wide domain view + settings.
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { assertPlan } from "@/lib/plan-guard";
+
 
 const HOSTNAME_RE = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/;
 
@@ -274,3 +278,75 @@ export const checkDnsResolution = createServerFn({ method: "POST" })
       checkedAt: new Date().toISOString(),
     };
   });
+
+// ---------- Host-based routing resolver ----------
+// Reads the incoming request Host header and maps it to a store slug.
+// Used by the landing/auth loaders so that hitting a store's custom domain
+// or store subdomain (e.g. mystore.example.com or mystore.orzen.top) opens
+// the storefront directly instead of the marketing landing page.
+
+function publicSbClient() {
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY!;
+  return createClient<Database>(process.env.SUPABASE_URL!, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      fetch: (input, init) => {
+        const h = new Headers(init?.headers);
+        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) h.delete("Authorization");
+        h.set("apikey", key);
+        return fetch(input, { ...init, headers: h });
+      },
+    },
+  });
+}
+
+export const resolveHost = createServerFn({ method: "GET" }).handler(async () => {
+  let host = "";
+  try {
+    const req = getRequest();
+    host = (req.headers.get("host") ?? "").toLowerCase().replace(/:\d+$/, "");
+  } catch {
+    // no request context (client nav) — nothing to resolve
+    return { host: "", slug: null as string | null, isPlatform: true };
+  }
+  if (!host) return { host: "", slug: null, isPlatform: true };
+
+  const sb = publicSbClient();
+  const { data: pSettings } = await sb
+    .from("platform_settings")
+    .select("settings")
+    .eq("id", 1)
+    .maybeSingle();
+  const s = ((pSettings?.settings as any) ?? {}) as Record<string, string>;
+  const rootDomain = (s.root_domain ?? "orzen.top").toLowerCase();
+  const loginHost = (s.login_host ?? "").toLowerCase();
+
+  const platformHosts = new Set(
+    [rootDomain, `www.${rootDomain}`, loginHost].filter(Boolean),
+  );
+  const isEphemeral =
+    host === "localhost" ||
+    host.endsWith(".lovable.app") ||
+    host.endsWith(".lovable.dev") ||
+    host.endsWith(".sslip.io");
+
+  if (isEphemeral || platformHosts.has(host)) {
+    return { host, slug: null, isPlatform: true };
+  }
+
+  // <slug>.<root_domain>
+  if (host.endsWith(`.${rootDomain}`)) {
+    const slug = host.slice(0, -(rootDomain.length + 1));
+    if (slug && !slug.includes(".") && slug !== "www") {
+      return { host, slug, isPlatform: false };
+    }
+  }
+
+  // Custom domain lookup
+  const { data: resolved } = await sb.rpc("resolve_domain", { _host: host });
+  const r = resolved as any;
+  if (r && r.slug) return { host, slug: r.slug as string, isPlatform: false };
+
+  return { host, slug: null, isPlatform: true };
+});
+
