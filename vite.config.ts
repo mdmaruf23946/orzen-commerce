@@ -10,7 +10,7 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 // compatible with Cloudflare Pages (emits `.output/public/_worker.js` +
 // static assets under `.output/public/`), not the Workers-only preset
 // (which emits `.output/server/index.mjs` and requires `wrangler deploy`).
-process.env.NITRO_PRESET ||= "cloudflare-pages";
+process.env.NITRO_PRESET ||= "cloudflare_module";
 
 export default defineConfig({
   tanstackStart: {

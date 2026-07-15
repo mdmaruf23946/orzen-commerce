@@ -1,20 +1,32 @@
 #:schema node_modules/wrangler/config-schema.json
-# Cloudflare Pages deploy config for the Nitro `cloudflare-pages` preset output.
-# The build emits `.output/public/` containing static assets plus a
-# `_worker.js` bundle that Pages runs at the edge for SSR + server functions.
+# Cloudflare Workers deploy config using Workers Static Assets.
+# Nitro builds with the `cloudflare_module` preset, producing:
+#   .output/server/index.mjs   ← SSR Worker entry (main)
+#   .output/public/            ← static assets served by the [assets] binding
 #
-# Pages project name in the Cloudflare dashboard: orzen-commerce-3ea3838d
+# Deploy with:  bunx wrangler deploy
 name = "orzen-commerce-3ea3838d"
+main = ".output/server/index.mjs"
 compatibility_date = "2025-09-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Pages-specific: point Pages at the Nitro output folder.
-pages_build_output_dir = ".output/public"
+[assets]
+directory = ".output/public"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
 
-# Runtime environment variables. Secrets (CF_API_TOKEN, CF_ZONE_ID,
-# CF_ACCOUNT_ID, SUPABASE_SERVICE_ROLE_KEY, LOVABLE_API_KEY, etc.) must be
-# set in the Cloudflare dashboard → Pages → Settings → Environment variables
-# (Production) as "Encrypted" — never commit them here.
+# Route the Worker on the apex + wildcard subdomains once DNS points at CF.
+# Comment these out for the first deploy; enable after DNS is proxied.
+# [[routes]]
+# pattern = "orzen.top"
+# custom_domain = true
+# [[routes]]
+# pattern = "*.orzen.top/*"
+# zone_name = "orzen.top"
+
+# Public runtime vars (safe to ship in the client bundle).
+# Secrets (CF_API_TOKEN, CF_ZONE_ID, CF_ACCOUNT_ID, SUPABASE_SERVICE_ROLE_KEY,
+# LOVABLE_API_KEY) must be pushed with `wrangler secret put` — never commit.
 [vars]
 VITE_SUPABASE_URL = "https://dqhfxvhzagitytpvildw.supabase.co"
 VITE_SUPABASE_PROJECT_ID = "dqhfxvhzagitytpvildw"
