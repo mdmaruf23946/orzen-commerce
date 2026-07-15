@@ -1,46 +1,26 @@
 #:schema node_modules/wrangler/config-schema.json
-# Cloudflare Workers deploy config for the Nitro `cloudflare` preset output.
-# The Lovable Vite config builds TanStack Start via Nitro's `cloudflare`
-# preset, which emits `.output/server/index.mjs` + `.output/public/*`.
-# We deploy that as a single Worker with a static-assets binding.
-
-name = "orzen-commerce"
-main = ".output/server/index.mjs"
+# Cloudflare Pages deploy config for the Nitro `cloudflare-pages` preset output.
+# The build emits `.output/public/` containing static assets plus a
+# `_worker.js` bundle that Pages runs at the edge for SSR + server functions.
+#
+# Pages project name in the Cloudflare dashboard: orzen-commerce-3ea3838d
+name = "orzen-commerce-3ea3838d"
 compatibility_date = "2025-09-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Serve the built public/ directory (Vite output + Nitro public assets)
-# straight from Cloudflare's edge; the Worker only runs for non-asset paths.
-[assets]
-directory = ".output/public"
-binding = "ASSETS"
-not_found_handling = "single-page-application"
-
-# Route ALL hostnames pointed at this Worker (root, wildcard subdomains,
-# and every customer custom hostname added via SSL for SaaS) to this Worker.
-# The apex + wildcard live on the zone you own (orzen.top). Customer domains
-# are attached via the SSL-for-SaaS custom hostnames API at runtime and
-# don't need to be listed here.
-[[routes]]
-pattern = "orzen.top/*"
-zone_name = "orzen.top"
-custom_domain = true
-
-[[routes]]
-pattern = "*.orzen.top/*"
-zone_name = "orzen.top"
+# Pages-specific: point Pages at the Nitro output folder.
+pages_build_output_dir = ".output/public"
 
 # Runtime environment variables. Secrets (CF_API_TOKEN, CF_ZONE_ID,
-# CF_ACCOUNT_ID, SUPABASE_*, LOVABLE_API_KEY, etc.) must be set with
-# `wrangler secret put <NAME>` — never commit them here.
+# CF_ACCOUNT_ID, SUPABASE_SERVICE_ROLE_KEY, LOVABLE_API_KEY, etc.) must be
+# set in the Cloudflare dashboard → Pages → Settings → Environment variables
+# (Production) as "Encrypted" — never commit them here.
 [vars]
 VITE_SUPABASE_URL = "https://dqhfxvhzagitytpvildw.supabase.co"
 VITE_SUPABASE_PROJECT_ID = "dqhfxvhzagitytpvildw"
-# Publishable key is safe to ship in the client bundle.
 VITE_SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxaGZ4dmh6YWdpdHl0cHZpbGR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0NTY2NzgsImV4cCI6MjA5ODAzMjY3OH0.keRBpXr2vygR-pWK4KQ2WaCHJOlYd99stEKyqMbJMDg"
 SUPABASE_URL = "https://dqhfxvhzagitytpvildw.supabase.co"
 SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxaGZ4dmh6YWdpdHl0cHZpbGR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0NTY2NzgsImV4cCI6MjA5ODAzMjY3OH0.keRBpXr2vygR-pWK4KQ2WaCHJOlYd99stEKyqMbJMDg"
 
-# Observability
 [observability]
 enabled = true
