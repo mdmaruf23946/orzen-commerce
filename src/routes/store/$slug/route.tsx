@@ -9,7 +9,7 @@ import { StoreUIProvider, useStoreUI } from "@/lib/store-ui";
 import { AIChatLauncher } from "@/components/storefront/AIChatLauncher";
 
 
-const storeQuery = (slug: string) =>
+export const storeQuery = (slug: string) =>
   queryOptions({
     queryKey: ["store", slug],
     queryFn: () => getStoreBySlug({ data: { slug } }),
