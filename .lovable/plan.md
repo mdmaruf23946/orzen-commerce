@@ -1,103 +1,50 @@
+## কাস্টম Supabase-এ মাইগ্রেশন প্ল্যান
 
-# Per-Store Custom Domain / Subdomain সংযোগের সম্পূর্ণ পরিকল্পনা
-
-লক্ষ্য: যেকোনো registrar (GoDaddy, Namecheap, Cloudflare, Hostinger, ইত্যাদি) থেকে কেনা ডোমেইন বা সাবডোমেইন একজন store owner তার নিজের store এ যুক্ত করতে পারবে, DNS verify হবে, SSL issue হবে, এবং সেই ডোমেইনে store টি খুলবে।
-
-## বর্তমানে কী আছে (কোডে)
-- `store_domains` টেবিল — hostname, status, verification_token, dns_target, ssl_status, is_primary
-- `resolve_domain(host)` DB function — host থেকে store খুঁজে দেয়
-- Admin `/admin/domains` — owner add/verify/primary করতে পারে
-- Owner `/owner/domains` — global list ও SSL activate
-- `store/$slug` routing — subdomain থেকে slug extract হয়
-- `custom_domain` feature flag — plan-gated
-
-অর্থাৎ **application layer মোটামুটি প্রস্তুত**। যেটা বাকি সেটা মূলত **platform/infrastructure layer** এবং কিছু **automation gap**।
+আপনি Lovable Cloud-এর ম্যানেজড ব্যাকএন্ড থেকে নিজের Supabase প্রজেক্টে (`vnvxidisirbsxpmmlclh`) সুইচ করতে চান। এটা করার আগে কিছু গুরুত্বপূর্ণ বিষয় জেনে নিন।
 
 ---
 
-## ১. Platform (Lovable) দিকের প্রয়োজনীয়তা
+### ⚠️ গুরুত্বপূর্ণ সীমাবদ্ধতা
 
-এটা সবচেয়ে গুরুত্বপূর্ণ — কোড দিয়ে সমাধান হবে না, Lovable Project Settings-এ সেটআপ লাগবে:
+1. **Lovable Cloud ডিসকানেক্ট করা যায় না** — একবার প্রজেক্টে Lovable Cloud এনাবল হলে সেটা এই প্রজেক্ট থেকে সরানো যায় না। আপনার কোড শুধু `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` এনভায়রনমেন্ট ভেরিয়েবল পড়ে, তাই আমরা কোডকে নতুন Supabase-এ পয়েন্ট করাতে পারি, কিন্তু পুরনো Cloud ইনস্ট্যান্স "ডিসকানেক্টেড" অবস্থায় রয়ে যাবে।
 
-1. **Wildcard subdomain connect** — `*.orzen.top` কে Lovable Project Settings → Domains এ যুক্ত করা (Paid plan লাগবে)। এটা ছাড়া `<slug>.orzen.top` কাজ করবে না।
-2. **Custom domain per store** — প্রতিটি store owner তার নিজের ডোমেইন (যেমন `shop.example.com` বা `mystore.com`) Lovable এ যুক্ত করার আগে সেটা প্ল্যাটফর্মকেও চিনতে হবে। দুইটা পথ:
-   - **(a) Manual**: প্রতিটি custom domain owner নিজে Lovable Project Settings এ add করবে না — Platform owner (আপনি) কে যোগ করতে হবে, অথবা
-   - **(b) API-based**: Lovable এর domain API (যদি available থাকে) দিয়ে server function থেকে auto-add। বর্তমানে Lovable এ public domain-management API নেই, তাই এই মুহূর্তে **manual approval workflow** ই বাস্তব সমাধান।
-3. **SSL** — Lovable auto-provision করে Let's Encrypt দিয়ে, যখন DNS ঠিক থাকে।
+2. **Service Role Key প্রয়োজন** — আপনি শুধু Anon key দিয়েছেন। কিন্তু কোডে অনেক জায়গায় `SUPABASE_SERVICE_ROLE_KEY` ব্যবহার হয় (edge functions, admin operations, `client.server.ts`, `api/img`, webhook handlers, storage uploads ইত্যাদি)। এটা ছাড়া অ্যাপের প্রায় অর্ধেক কাজ করবে না।
 
-## ২. DNS দিকের প্রয়োজনীয়তা (End user / store owner এর কাজ)
-
-Store owner কে তার registrar এ যা করতে হবে:
-
-- **Root domain (example.com)**: `A` record → `185.158.133.1`
-- **Subdomain (shop.example.com)**: `CNAME` → `stores.orzen.top` (বা `A` → `185.158.133.1`)
-- **Ownership verify**: `TXT` record → `_orzen-verify.<hostname>` → `verification_token`
-- Cloudflare হলে proxy DNS-only mode (grey cloud) প্রথমে
-
-এগুলো `/admin/domains` UI তে already দেখানো হয়। শুধু copy-paste করে বসাবে।
-
-## ৩. Application code side এ যা যোগ/উন্নত করতে হবে
-
-আপনার প্রশ্নের ভিত্তিতে বর্তমান কোডে যা **নেই বা দুর্বল**:
-
-### (ক) Real DNS verification
-এখন `checkDomainVerification` সম্ভবত শুধু status flip করে। প্রয়োজন:
-- Server function থেকে সত্যিকারের DNS lookup (Node `dns` module — Workers এ available)
-- TXT record মিলিয়ে verify → status = `verified`
-- A/CNAME record মিলিয়ে check → SSL trigger
-
-### (খ) Host-based routing entry point
-`src/routes/store/$slug/*` ছাড়াও একটা middleware/root-level resolver লাগবে যেটা:
-- Request এর `Host` header পড়বে
-- যদি host `<slug>.orzen.top` হয় → slug extract → store render
-- যদি host custom domain হয় → `resolve_domain(host)` দিয়ে store খুঁজে render
-- অর্থাৎ URL এ `/store/<slug>` না থাকলেও ডোমেইন দিয়ে সরাসরি store খুলবে
-
-এটা `__root.tsx` অথবা একটা catch-all route এ SSR context থেকে host পড়ে করতে হবে।
-
-### (গ) Primary domain redirect
-Primary domain সেট থাকলে অন্য hostname থেকে requests গুলো 301 redirect হবে primary তে।
-
-### (ঘ) Owner approval queue
-Store owner add করার পর platform owner (আপনি) কে notify করে একটা approval step — এরপর আপনি Lovable Settings এ সেই domain manually যোগ করবেন। Status: `pending_platform_approval` → `active`।
-
-### (ঙ) Automated recheck cron
-`pg_cron` বা `/api/public/cron/recheck-domains` — প্রতি ঘণ্টায় pending domains এর DNS retry করবে।
-
-### (চ) Plan gating enforcement
-`custom_domain` feature flag এখন UI তে দেখা যায়, কিন্তু server function এও enforce করতে হবে (`addCustomDomain` এ)।
+3. **অটো-জেনারেটেড ফাইল** — `.env`, `src/integrations/supabase/client.ts`, `types.ts`, `auth-middleware.ts`, `auth-attacher.ts`, `client.server.ts`, এবং `supabase/config.toml` সব Lovable-ম্যানেজড। এগুলো ম্যানুয়ালি এডিট করলে পরের বিল্ডে ওভাররাইট হতে পারে।
 
 ---
 
-## Deliverables (build mode এ যা তৈরি হবে)
+### মাইগ্রেশনে কী কী দরকার
 
-1. `src/lib/dns.server.ts` — real DNS lookup (`dns.promises.resolveTxt`, `resolveCname`, `resolve4`)
-2. `checkDomainVerification` upgrade — actual TXT/A/CNAME check, status transition
-3. Host-based store resolver — `__root.tsx` এ `useServerFn` দিয়ে host → store lookup, mismatch হলে redirect
-4. Primary domain redirect logic
-5. `addCustomDomain` এ server-side plan gate + owner approval status
-6. Owner `/owner/domains` এ pending approval queue + "Mark Lovable-connected" button
-7. `/api/public/cron/recheck-domains` route + pg_cron schedule
-8. Store owner UI তে clear DNS instruction (already ভালো, শুধু "waiting for platform approval" state যোগ)
-9. Documentation card / help text: "Buy domain → point DNS → verify → notify platform owner → live"
+**A. ডেটাবেস স্কিমা ট্রান্সফার (৪২টি টেবিল + ফাংশন + RLS + ট্রিগার):**
+- বর্তমান Cloud DB থেকে full schema dump (tables, enums, functions, triggers, policies, grants, storage buckets)
+- সেই SQL আপনার নতুন Supabase-এ (`vnvxidisirbsxpmmlclh`) SQL Editor-এ চালানো
+- এটা **আপনাকে ম্যানুয়ালি করতে হবে** — Lovable-এর কাছে আপনার কাস্টম Supabase-এ migration চালানোর টুল নেই
 
-## Technical details
+**B. ডেটা ট্রান্সফার (যদি বর্তমান ডেটা রাখতে চান):**
+- Cloud → Advanced settings → Export data দিয়ে CSV এক্সপোর্ট করে নতুন প্রজেক্টে ইম্পোর্ট করা লাগবে
 
-- DNS lookup Cloudflare Worker runtime এ `node:dns` supported (nodejs_compat)
-- Host detection: TanStack SSR এ `request.headers.get('host')` from server function context
-- Redirect: `throw redirect({ to, statusCode: 301 })` in loader
-- pg_cron trigger: `select cron.schedule(...)` migration যা internal secret দিয়ে `/api/public/cron/*` কে হিট করবে
+**C. Storage bucket (`store-assets`) রি-ক্রিয়েট এবং ফাইলগুলো নতুন প্রজেক্টে কপি করা।**
 
-## Out of scope (এই plan এ নেই)
+**D. Auth সেটিংস কনফিগার** — নতুন Supabase-এ Google OAuth, email templates, redirect URLs নিজে সেট করতে হবে।
 
-- Lovable এ auto domain-add API (public API নেই)
-- Domain reseller/purchase flow within your app (আলাদা বড় feature)
-- Email (MX/SPF/DKIM) সেটআপ per store
+**E. Secrets** — `LOVABLE_API_KEY`, ও অন্য যেকোনো integration key নতুন প্রজেক্টে যোগ করা।
 
-## সংক্ষেপে উত্তর
+**F. কোড পরিবর্তন:**
+- `.env` আপডেট: নতুন URL/Anon key + Service Role key
+- `supabase/config.toml` → `project_id = "vnvxidisirbsxpmmlclh"`
+- সব `createServerFn` handler-এ Service Role key কাজ করছে কিনা যাচাই
 
-**হ্যাঁ, সম্ভব।** আপনার কোড ~৭০% প্রস্তুত। বাকি ৩০% =
-- (Infra) Lovable এ wildcard `*.orzen.top` connect + প্রতিটি custom domain manually connect
-- (Code) real DNS check, host-based routing, approval queue, cron recheck, primary redirect, server-side plan gate
+---
 
-Approve করলে build mode এ উপরের ৯টা deliverable একে একে implement করা হবে।
+### সিদ্ধান্তের প্রয়োজন
+
+এগোনোর আগে দয়া করে নিশ্চিত করুন:
+
+1. **আপনার Service Role Key দিন** (Supabase Dashboard → Project Settings → API → `service_role` secret)। এটা ছাড়া মাইগ্রেশন সম্পূর্ণ হবে না।
+
+2. **বর্তমান ডেটা কি নতুন প্রজেক্টে দরকার?** (স্টোর, প্রোডাক্ট, অর্ডার, ইউজার) নাকি খালি স্কিমা দিয়েই শুরু?
+
+3. **কেন সুইচ করছেন?** যদি কারণ হয় — ডেটাবেস অ্যাক্সেস, বেশি কন্ট্রোল, বা প্রাইসিং — তাহলে আমাকে জানান, বিকল্প থাকতে পারে (যেমন Lovable Cloud-এই কাস্টম কনফিগ)। Cloud ছেড়ে গেলে Lovable-এর ম্যানেজড টুলগুলো (auto types, migrations, secrets UI) আর ওয়ার্ক করবে না।
+
+উত্তর পেলে আমি ধাপে ধাপে schema dump, code rewire, এবং verification-এর বিস্তারিত প্ল্যান তৈরি করব।
