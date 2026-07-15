@@ -6,6 +6,12 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+// Force Nitro to build with the `cloudflare-pages` preset so the output is
+// compatible with Cloudflare Pages (emits `.output/public/_worker.js` +
+// static assets under `.output/public/`), not the Workers-only preset
+// (which emits `.output/server/index.mjs` and requires `wrangler deploy`).
+process.env.NITRO_PRESET ||= "cloudflare-pages";
+
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
