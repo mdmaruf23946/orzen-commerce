@@ -1445,6 +1445,11 @@ export type Database = {
       }
       store_domains: {
         Row: {
+          cf_hostname_id: string | null
+          cf_ownership: Json | null
+          cf_ssl_status: string | null
+          cf_ssl_validation: Json | null
+          cf_status: string | null
           created_at: string
           dns_target: string | null
           hostname: string
@@ -1460,6 +1465,11 @@ export type Database = {
           verified_at: string | null
         }
         Insert: {
+          cf_hostname_id?: string | null
+          cf_ownership?: Json | null
+          cf_ssl_status?: string | null
+          cf_ssl_validation?: Json | null
+          cf_status?: string | null
           created_at?: string
           dns_target?: string | null
           hostname: string
@@ -1475,6 +1485,11 @@ export type Database = {
           verified_at?: string | null
         }
         Update: {
+          cf_hostname_id?: string | null
+          cf_ownership?: Json | null
+          cf_ssl_status?: string | null
+          cf_ssl_validation?: Json | null
+          cf_status?: string | null
           created_at?: string
           dns_target?: string | null
           hostname?: string
