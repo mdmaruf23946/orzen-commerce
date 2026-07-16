@@ -14,9 +14,11 @@ function slugify(s: string) {
 }
 
 export async function fetchTemplate(supabase: SB) {
-  const { data, error } = await supabase.from("store_template").select("*").eq("id", "global").maybeSingle();
+  // Use the SECURITY DEFINER RPC which strips sensitive fields (marketing pixels,
+  // payment config). RLS on store_template restricts direct SELECT to owners only.
+  const { data, error } = await supabase.rpc("get_store_template_for_seed");
   if (error) throw new Error(error.message);
-  return data;
+  return data ?? null;
 }
 
 /**

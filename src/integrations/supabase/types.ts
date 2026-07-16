@@ -1968,6 +1968,7 @@ export type Database = {
           total_qty: number
         }[]
       }
+      get_store_template_for_seed: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
