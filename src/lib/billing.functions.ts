@@ -28,14 +28,14 @@ export const listPublicPlans = createServerFn({ method: "GET" }).handler(async (
 export const getBillingSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data } = await (context.supabase.from("platform_billing_settings" as any) as any)
-      .select("discount_3m,discount_6m,discount_yearly")
-      .eq("id", "global")
-      .maybeSingle();
+    // Discounts are readable by any signed-in user via a SECURITY DEFINER RPC
+    // (the underlying table is restricted to the platform 'owner' role only).
+    const { data } = await (context.supabase as any).rpc("get_billing_discounts");
+    const d: any = data ?? {};
     return {
-      discount_3m: Number(data?.discount_3m ?? 5),
-      discount_6m: Number(data?.discount_6m ?? 10),
-      discount_yearly: Number(data?.discount_yearly ?? 20),
+      discount_3m: Number(d?.discount_3m ?? 5),
+      discount_6m: Number(d?.discount_6m ?? 10),
+      discount_yearly: Number(d?.discount_yearly ?? 20),
     };
   });
 
