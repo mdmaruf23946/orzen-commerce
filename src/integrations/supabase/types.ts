@@ -1959,6 +1959,7 @@ export type Database = {
     Functions: {
       expire_trials: { Args: never; Returns: undefined }
       generate_invoice_no: { Args: { _store_id: string }; Returns: string }
+      get_billing_discounts: { Args: never; Returns: Json }
       get_public_order: { Args: { _order_id: string }; Returns: Json }
       get_public_store_by_slug: { Args: { _slug: string }; Returns: Json }
       get_store_bestsellers: {
