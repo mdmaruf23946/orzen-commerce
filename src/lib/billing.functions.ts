@@ -159,16 +159,13 @@ export const submitManualPayment = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!pkg) throw new Error("Package not found");
 
-    // Pull discounts using the authenticated context (RLS-protected)
-    const { data: settings } = await (supabase.from("platform_billing_settings" as any) as any)
-      .select("discount_3m,discount_6m,discount_yearly")
-      .eq("id", "global")
-      .maybeSingle();
+    // Pull discounts via SECURITY DEFINER RPC (table is owner-only)
+    const { data: settings } = await (supabase as any).rpc("get_billing_discounts");
 
     const s = {
-      discount_3m: Number(settings?.discount_3m ?? 5),
-      discount_6m: Number(settings?.discount_6m ?? 10),
-      discount_yearly: Number(settings?.discount_yearly ?? 20),
+      discount_3m: Number((settings as any)?.discount_3m ?? 5),
+      discount_6m: Number((settings as any)?.discount_6m ?? 10),
+      discount_yearly: Number((settings as any)?.discount_yearly ?? 20),
     };
     const { months, total } = computeCycleTotal(Number(pkg.price), data.cycle, s);
 
