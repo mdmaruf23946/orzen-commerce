@@ -60,6 +60,9 @@ export const Route = createFileRoute("/")({
       // swallow lookup errors — fall through to landing
     }
   },
+  head: () => ({
+    links: [{ rel: "canonical", href: "https://orzen.top/" }],
+  }),
   component: Landing,
 });
 
