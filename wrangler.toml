@@ -15,8 +15,8 @@ directory = ".output/public"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
 
-# Route the Worker on the apex + wildcard subdomains.
-# Requires DNS for orzen.top and *.orzen.top proxied through Cloudflare.
+# Route the Worker on the apex and www subdomain via custom domains.
+# Custom domains do not support wildcard operators or paths.
 [[routes]]
 pattern = "orzen.top"
 custom_domain = true
@@ -24,10 +24,6 @@ custom_domain = true
 [[routes]]
 pattern = "www.orzen.top"
 custom_domain = true
-
-[[routes]]
-pattern = "*.orzen.top/*"
-zone_name = "orzen.top"
 
 
 # Public runtime vars (safe to ship in the client bundle).
