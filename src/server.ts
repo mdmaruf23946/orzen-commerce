@@ -40,6 +40,13 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      // Canonical host: redirect www.orzen.top → orzen.top (301, preserve path + query)
+      const url = new URL(request.url);
+      if (url.hostname === "www.orzen.top") {
+        url.hostname = "orzen.top";
+        return Response.redirect(url.toString(), 301);
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
