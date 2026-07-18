@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getStoreBySlug, placeOrder, validateCoupon } from "@/lib/storefront.functions";
+import { getStoreBySlug, getStoreActiveGateway, placeOrder, validateCoupon } from "@/lib/storefront.functions";
 import { readCart, clearCart, type CartItem } from "@/lib/cart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,12 @@ function CheckoutPage() {
   const { data: store } = useSuspenseQuery(storeQuery(slug));
   const place = useServerFn(placeOrder);
   const valCoupon = useServerFn(validateCoupon);
+  const getGw = useServerFn(getStoreActiveGateway);
+  const { data: activeGateway } = useQuery({
+    enabled: !!store?.id,
+    queryKey: ["activeGateway", store?.id],
+    queryFn: () => getGw({ data: { storeId: store!.id } }),
+  });
 
   type PM = "cod" | "bkash" | "nagad" | "rocket" | "bank";
   const [items, setItems] = useState<CartItem[]>([]);
@@ -169,6 +175,16 @@ function CheckoutPage() {
         </div>
 
         <h2 className="mt-6 text-sm font-semibold">Payment method</h2>
+        {activeGateway ? (
+          <div className="mt-2 rounded-md border border-emerald-200 bg-emerald-50 p-2 text-xs text-emerald-800">
+            Online payment available via <b>{(activeGateway as any).label}</b>
+            {(activeGateway as any).sandbox ? " (sandbox)" : ""}.
+          </div>
+        ) : (
+          <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
+            No online payment gateway is configured for this store. Please use one of the manual options below.
+          </div>
+        )}
         <div className="mt-2 grid gap-2">
           {methods.map((m) => (
             <label

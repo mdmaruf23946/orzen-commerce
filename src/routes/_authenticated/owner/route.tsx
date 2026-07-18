@@ -32,6 +32,7 @@ const groups: NavGroup[] = [
     { to: "/owner/billing", label: "Manual Payments", icon: Wallet },
     { to: "/owner/packages", label: "Packages", icon: Package },
     { to: "/owner/payment-settings", label: "Payment Settings", icon: CreditCard },
+    { to: "/owner/payment-gateways", label: "Storefront Gateways", icon: Wallet },
   ]},
   { label: "AI", links: [
     { to: "/owner/ai", label: "AI Control", icon: Sparkles },
