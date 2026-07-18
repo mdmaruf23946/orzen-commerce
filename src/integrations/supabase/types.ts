@@ -640,6 +640,123 @@ export type Database = {
           },
         ]
       }
+      fraud_checks: {
+        Row: {
+          cancelled: number
+          checked_at: string
+          checked_by: string | null
+          cod_success_rate: number | null
+          courier_history: Json
+          created_at: string
+          id: string
+          last_delivery: string | null
+          order_id: string | null
+          phone: string
+          raw: Json | null
+          returned: number
+          risk: Database["public"]["Enums"]["fraud_risk"]
+          score: number | null
+          store_id: string
+          successful: number
+          total_orders: number
+        }
+        Insert: {
+          cancelled?: number
+          checked_at?: string
+          checked_by?: string | null
+          cod_success_rate?: number | null
+          courier_history?: Json
+          created_at?: string
+          id?: string
+          last_delivery?: string | null
+          order_id?: string | null
+          phone: string
+          raw?: Json | null
+          returned?: number
+          risk: Database["public"]["Enums"]["fraud_risk"]
+          score?: number | null
+          store_id: string
+          successful?: number
+          total_orders?: number
+        }
+        Update: {
+          cancelled?: number
+          checked_at?: string
+          checked_by?: string | null
+          cod_success_rate?: number | null
+          courier_history?: Json
+          created_at?: string
+          id?: string
+          last_delivery?: string | null
+          order_id?: string | null
+          phone?: string
+          raw?: Json | null
+          returned?: number
+          risk?: Database["public"]["Enums"]["fraud_risk"]
+          score?: number | null
+          store_id?: string
+          successful?: number
+          total_orders?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fraud_checks_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fraud_checks_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fraud_settings: {
+        Row: {
+          api_key: string | null
+          api_secret: string | null
+          enable_analytics: boolean
+          enable_auto_check_before_courier: boolean
+          enable_manual_check: boolean
+          enabled: boolean
+          id: string
+          provider: string
+          show_in_order_details: boolean
+          thresholds: Json
+          updated_at: string
+        }
+        Insert: {
+          api_key?: string | null
+          api_secret?: string | null
+          enable_analytics?: boolean
+          enable_auto_check_before_courier?: boolean
+          enable_manual_check?: boolean
+          enabled?: boolean
+          id?: string
+          provider?: string
+          show_in_order_details?: boolean
+          thresholds?: Json
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string | null
+          api_secret?: string | null
+          enable_analytics?: boolean
+          enable_auto_check_before_courier?: boolean
+          enable_manual_check?: boolean
+          enabled?: boolean
+          id?: string
+          provider?: string
+          show_in_order_details?: boolean
+          thresholds?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       marketing_pixel_defaults: {
         Row: {
           capi_token: string | null
@@ -1960,6 +2077,7 @@ export type Database = {
       expire_trials: { Args: never; Returns: undefined }
       generate_invoice_no: { Args: { _store_id: string }; Returns: string }
       get_billing_discounts: { Args: never; Returns: Json }
+      get_fraud_public_status: { Args: never; Returns: Json }
       get_public_order: { Args: { _order_id: string }; Returns: Json }
       get_public_store_by_slug: { Args: { _slug: string }; Returns: Json }
       get_store_bestsellers: {
@@ -1989,6 +2107,7 @@ export type Database = {
       app_role: "owner" | "user"
       coupon_type: "percent" | "fixed" | "free_shipping"
       expense_category: "fb_ads" | "courier" | "packaging" | "salary" | "misc"
+      fraud_risk: "safe" | "medium" | "high"
       order_stage:
         | "placed"
         | "confirmed"
@@ -2150,6 +2269,7 @@ export const Constants = {
       app_role: ["owner", "user"],
       coupon_type: ["percent", "fixed", "free_shipping"],
       expense_category: ["fb_ads", "courier", "packaging", "salary", "misc"],
+      fraud_risk: ["safe", "medium", "high"],
       order_stage: [
         "placed",
         "confirmed",

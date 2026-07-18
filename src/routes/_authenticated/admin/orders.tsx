@@ -3,11 +3,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, Printer, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Printer, Trash2, ShieldCheck, Eye } from "lucide-react";
 import { listMyOrders, updateOrderStatus } from "@/lib/admin.functions";
 import { getOrderDetails, addInternalNote, deleteInternalNote } from "@/lib/business.functions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { FraudCheckModal } from "@/components/admin/FraudCheckModal";
+import { OrderDetailsDrawer } from "@/components/admin/OrderDetailsDrawer";
+import { useFeature } from "@/components/admin/FeatureGate";
 
 const STATUSES = ["pending", "confirmed", "processing", "delivered", "cancelled"] as const;
 type Status = (typeof STATUSES)[number];
@@ -23,6 +26,9 @@ function OrdersPage() {
   const { data: orders } = useQuery({ queryKey: ["admin", "orders"], queryFn: () => list() });
   const [filter, setFilter] = useState<Status | "all">("all");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [fraudFor, setFraudFor] = useState<{ id: string; phone: string } | null>(null);
+  const [detailsFor, setDetailsFor] = useState<string | null>(null);
+  const { allowed: fraudAllowed } = useFeature("fraud_checker");
 
   async function setStatus(id: string, status: Status) {
     try {
@@ -84,6 +90,21 @@ function OrdersPage() {
                     <Link to="/admin/invoice/$orderId" params={{ orderId: o.id }} target="_blank" className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted">
                       <Printer className="h-3 w-3" /> Invoice
                     </Link>
+                    <button
+                      onClick={() => setDetailsFor(o.id)}
+                      className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted"
+                    >
+                      <Eye className="h-3 w-3" /> Details
+                    </button>
+                    <button
+                      onClick={() => fraudAllowed
+                        ? setFraudFor({ id: o.id, phone: o.phone })
+                        : toast.error("Upgrade your plan to use Fraud Checker")}
+                      className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${fraudAllowed ? "hover:bg-muted" : "opacity-60"}`}
+                      title={fraudAllowed ? "Check customer risk" : "আপগ্রেড প্রয়োজন"}
+                    >
+                      <ShieldCheck className="h-3 w-3" /> Fraud Check
+                    </button>
                   </div>
                 </div>
                 {expanded === o.id && <OrderDetails orderId={o.id} />}
@@ -92,6 +113,21 @@ function OrdersPage() {
           </ul>
         )}
       </div>
+      {fraudFor && (
+        <FraudCheckModal
+          open={!!fraudFor}
+          onOpenChange={(v) => !v && setFraudFor(null)}
+          phone={fraudFor.phone}
+          orderId={fraudFor.id}
+        />
+      )}
+      {detailsFor && (
+        <OrderDetailsDrawer
+          open={!!detailsFor}
+          onOpenChange={(v) => !v && setDetailsFor(null)}
+          orderId={detailsFor}
+        />
+      )}
     </div>
   );
 }

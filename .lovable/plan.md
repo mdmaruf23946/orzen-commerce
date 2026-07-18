@@ -1,50 +1,101 @@
-## কাস্টম Supabase-এ মাইগ্রেশন প্ল্যান
 
-আপনি Lovable Cloud-এর ম্যানেজড ব্যাকএন্ড থেকে নিজের Supabase প্রজেক্টে (`vnvxidisirbsxpmmlclh`) সুইচ করতে চান। এটা করার আগে কিছু গুরুত্বপূর্ণ বিষয় জেনে নিন।
+# Fraud Checker Management System
 
----
+A centralized fraud-checking module driven from the Owner panel, with per-store consumption from the Orders page. Store admins never see provider credentials.
 
-### ⚠️ গুরুত্বপূর্ণ সীমাবদ্ধতা
+## 1. Database (new migration)
 
-1. **Lovable Cloud ডিসকানেক্ট করা যায় না** — একবার প্রজেক্টে Lovable Cloud এনাবল হলে সেটা এই প্রজেক্ট থেকে সরানো যায় না। আপনার কোড শুধু `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` এনভায়রনমেন্ট ভেরিয়েবল পড়ে, তাই আমরা কোডকে নতুন Supabase-এ পয়েন্ট করাতে পারি, কিন্তু পুরনো Cloud ইনস্ট্যান্স "ডিসকানেক্টেড" অবস্থায় রয়ে যাবে।
+**`public.fraud_settings`** (single global row, `id = 'global'`)
+- enabled (bool), provider (text, default `bd_courier`)
+- api_key, api_secret (text, nullable — owner-only read)
+- enable_manual_check, enable_auto_check_before_courier, show_in_order_details, enable_analytics (bool)
+- thresholds jsonb: `{ safe_max: 10, medium_max: 30 }` (% return-rate cutoffs)
+- Grants: `service_role` full; `authenticated` — no direct read.
+- RLS: owner-only via `has_role(auth.uid(),'owner')`.
 
-2. **Service Role Key প্রয়োজন** — আপনি শুধু Anon key দিয়েছেন। কিন্তু কোডে অনেক জায়গায় `SUPABASE_SERVICE_ROLE_KEY` ব্যবহার হয় (edge functions, admin operations, `client.server.ts`, `api/img`, webhook handlers, storage uploads ইত্যাদি)। এটা ছাড়া অ্যাপের প্রায় অর্ধেক কাজ করবে না।
+**`public.fraud_checks`** (cache + history)
+- id, store_id (fk stores), order_id (fk orders, nullable for manual lookups)
+- phone (text, indexed), risk (enum: safe/medium/high), score numeric
+- total_orders, successful, returned, cancelled, cod_success_rate numeric, last_delivery timestamptz
+- raw jsonb (full provider response), courier_history jsonb
+- checked_by uuid, checked_at timestamptz
+- Unique index on (store_id, phone) with upsert on re-check within TTL.
+- RLS: store owners can `SELECT` where `is_store_owner(store_id)`; inserts via server fn only (service_role).
 
-3. **অটো-জেনারেটেড ফাইল** — `.env`, `src/integrations/supabase/client.ts`, `types.ts`, `auth-middleware.ts`, `auth-attacher.ts`, `client.server.ts`, এবং `supabase/config.toml` সব Lovable-ম্যানেজড। এগুলো ম্যানুয়ালি এডিট করলে পরের বিল্ডে ওভাররাইট হতে পারে।
+**`platform_feature_flags`**: add `fraud_checker` flag so owner can gate per package. **`features.ts`**: add `"fraud_checker"` FeatureKey + label.
 
----
+## 2. Server functions
 
-### মাইগ্রেশনে কী কী দরকার
+**`src/lib/fraud.server.ts`** — BD Courier adapter
+- `callBdCourier(phone, creds)` → normalized `{ total, success, cancelled, returned, cod_rate, last_delivery, courier_history[] }`.
+- `computeRisk(stats, thresholds)` → `safe | medium | high`.
 
-**A. ডেটাবেস স্কিমা ট্রান্সফার (৪২টি টেবিল + ফাংশন + RLS + ট্রিগার):**
-- বর্তমান Cloud DB থেকে full schema dump (tables, enums, functions, triggers, policies, grants, storage buckets)
-- সেই SQL আপনার নতুন Supabase-এ (`vnvxidisirbsxpmmlclh`) SQL Editor-এ চালানো
-- এটা **আপনাকে ম্যানুয়ালি করতে হবে** — Lovable-এর কাছে আপনার কাস্টম Supabase-এ migration চালানোর টুল নেই
+**`src/lib/fraud.functions.ts`** (createServerFn, all `requireSupabaseAuth`)
+- `getFraudSettingsPublic()` — returns `{ enabled, show_in_order_details, enable_manual_check, enable_auto_check_before_courier }` only (no keys). Any authenticated user.
+- `getFraudSettingsAdmin()` — owner-only, returns full config incl. masked key.
+- `updateFraudSettings({...})` — owner-only.
+- `testFraudConnection()` — owner-only, pings BD Courier with a sample phone.
+- `runFraudCheck({ order_id?, phone })` — store owner scoped; uses `supabaseAdmin` inside handler to read credentials + write cache; enforces `assertPlan('fraud_checker')`; returns cached row if fresh (<24h) else calls provider.
+- `fraudAnalytics({ range })` — owner-only aggregate counts across `fraud_checks`.
 
-**B. ডেটা ট্রান্সফার (যদি বর্তমান ডেটা রাখতে চান):**
-- Cloud → Advanced settings → Export data দিয়ে CSV এক্সপোর্ট করে নতুন প্রজেক্টে ইম্পোর্ট করা লাগবে
+## 3. Owner panel — new route
 
-**C. Storage bucket (`store-assets`) রি-ক্রিয়েট এবং ফাইলগুলো নতুন প্রজেক্টে কপি করা।**
+**`src/routes/_authenticated/owner/fraud.tsx`** with tabs:
+1. **Provider Settings** — enable toggle, provider select (BD Courier), API key + secret (password field, "reveal" masked), Test Connection button, live status pill.
+2. **Global Configuration** — 4 switches (manual, auto pre-courier, show in details, analytics) + Save.
+3. **Risk Rules** — sliders for safe_max / medium_max return-rate %, color-coded preview.
+4. **Analytics** — cards (Total Checks, Safe, Medium, High, Prevented Orders) + simple daily/weekly/monthly bar (reuse existing chart util).
+5. **Store Access** — link to plan-features page pre-scrolled to `fraud_checker` toggle across packages.
 
-**D. Auth সেটিংস কনফিগার** — নতুন Supabase-এ Google OAuth, email templates, redirect URLs নিজে সেট করতে হবে।
+Add sidebar entry in owner nav (`ShieldCheck` icon).
 
-**E. Secrets** — `LOVABLE_API_KEY`, ও অন্য যেকোনো integration key নতুন প্রজেক্টে যোগ করা।
+## 4. Store admin — Orders page enhancement
 
-**F. কোড পরিবর্তন:**
-- `.env` আপডেট: নতুন URL/Anon key + Service Role key
-- `supabase/config.toml` → `project_id = "vnvxidisirbsxpmmlclh"`
-- সব `createServerFn` handler-এ Service Role key কাজ করছে কিনা যাচাই
+**Do not redesign** `src/routes/_authenticated/admin/orders.tsx`. Only add two icon-buttons per row (next to existing Invoice link):
+- **Fraud Check** (ShieldCheck icon) — opens a shadcn `Dialog` (`FraudCheckModal`) that lazy-loads `runFraudCheck({ order_id, phone })`.
+- **Order Details** (Eye icon) — opens a shadcn `Sheet` from the right on desktop / full-screen on mobile (`OrderDetailsDrawer`) that lazy-loads full order via existing `getOrderDetails` + product join.
 
----
+Both are gated by `useFeature('fraud_checker')` for the fraud button; details is always available. Feature-off users see the button disabled with tooltip "আপগ্রেড প্রয়োজন" linking to `/admin/billing`.
 
-### সিদ্ধান্তের প্রয়োজন
+### `FraudCheckModal` contents
+- Risk badge (colored), stat grid: Total / Success / Returned / Cancelled / COD % / Last delivery.
+- Collapsible "Courier History" list.
+- "Re-check" button (invalidates cache).
+- Cached indicator + timestamp.
 
-এগোনোর আগে দয়া করে নিশ্চিত করুন:
+### `OrderDetailsDrawer` contents (collapsible sections)
+- **Product** — thumb, name, SKU, qty, price, discount, delivery charge, total.
+- **Customer** — name, phone (tap-to-call), full address.
+- **Order** — id, invoice_no, datetime, payment, status, courier status, tracking no.
+- **Courier** — history + inline fraud result (if already cached; button to check).
+- **Admin** — internal notes (reuse existing add/delete), timeline (reuse).
 
-1. **আপনার Service Role Key দিন** (Supabase Dashboard → Project Settings → API → `service_role` secret)। এটা ছাড়া মাইগ্রেশন সম্পূর্ণ হবে না।
+Mobile-first: `Sheet side="bottom"` on `<sm`, `side="right"` w/ 480px on `≥sm`. Uses `@/components/ui/{sheet,dialog,collapsible,badge}`.
 
-2. **বর্তমান ডেটা কি নতুন প্রজেক্টে দরকার?** (স্টোর, প্রোডাক্ট, অর্ডার, ইউজার) নাকি খালি স্কিমা দিয়েই শুরু?
+## 5. Files touched
 
-3. **কেন সুইচ করছেন?** যদি কারণ হয় — ডেটাবেস অ্যাক্সেস, বেশি কন্ট্রোল, বা প্রাইসিং — তাহলে আমাকে জানান, বিকল্প থাকতে পারে (যেমন Lovable Cloud-এই কাস্টম কনফিগ)। Cloud ছেড়ে গেলে Lovable-এর ম্যানেজড টুলগুলো (auto types, migrations, secrets UI) আর ওয়ার্ক করবে না।
+**New**
+- `supabase/migrations/…_fraud_checker.sql`
+- `src/lib/fraud.server.ts`
+- `src/lib/fraud.functions.ts`
+- `src/routes/_authenticated/owner/fraud.tsx`
+- `src/components/admin/FraudCheckModal.tsx`
+- `src/components/admin/OrderDetailsDrawer.tsx`
 
-উত্তর পেলে আমি ধাপে ধাপে schema dump, code rewire, এবং verification-এর বিস্তারিত প্ল্যান তৈরি করব।
+**Edited**
+- `src/lib/features.ts` — add `fraud_checker`.
+- `src/routes/_authenticated/admin/orders.tsx` — add 2 action buttons per row.
+- `src/routes/_authenticated/owner/route.tsx` — sidebar link.
+- `src/routes/_authenticated/owner/plan-features.tsx` — expose fraud_checker toggle (auto since it reads FEATURE_KEYS).
+
+## 6. Performance & safety
+
+- 24h cache on fraud lookups; unique (store_id, phone) upsert.
+- Lazy queries via `useQuery(..., { enabled: open })` — nothing loads until modal/drawer opens.
+- Credentials only accessed inside `runFraudCheck` handler with `supabaseAdmin`; never sent to client.
+- `assertPlan('fraud_checker')` server-side gate.
+- Rate-limit re-check button (60s cooldown per phone).
+
+## Open confirmations
+- **BD Courier endpoint**: I'll implement against the public `https://bdcourier.com/api/courier-check` endpoint (POST `{ phone }`, header `Authorization: Bearer <API_KEY>`). Confirm if you use a different provider URL/auth scheme.
+- Cache TTL default **24h** — OK?

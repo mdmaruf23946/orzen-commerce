@@ -14,6 +14,7 @@ export const FEATURE_KEYS = [
   "customer_notes",
   "returns",
   "custom_domain",
+  "fraud_checker",
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -33,6 +34,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   customer_notes: "Customer Notes",
   returns: "Returns & Exchanges",
   custom_domain: "Custom Domain",
+  fraud_checker: "Fraud Checker",
 };
 
 export type PackageRow = {

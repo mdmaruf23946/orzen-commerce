@@ -38,6 +38,7 @@ import { Route as AuthenticatedOwnerNotificationsRouteImport } from './routes/_a
 import { Route as AuthenticatedOwnerMarketingRouteImport } from './routes/_authenticated/owner/marketing'
 import { Route as AuthenticatedOwnerLogsRouteImport } from './routes/_authenticated/owner/logs'
 import { Route as AuthenticatedOwnerHealthRouteImport } from './routes/_authenticated/owner/health'
+import { Route as AuthenticatedOwnerFraudRouteImport } from './routes/_authenticated/owner/fraud'
 import { Route as AuthenticatedOwnerFeaturesRouteImport } from './routes/_authenticated/owner/features'
 import { Route as AuthenticatedOwnerDomainsRouteImport } from './routes/_authenticated/owner/domains'
 import { Route as AuthenticatedOwnerDevLogsRouteImport } from './routes/_authenticated/owner/dev-logs'
@@ -238,6 +239,11 @@ const AuthenticatedOwnerHealthRoute =
     path: '/health',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
+const AuthenticatedOwnerFraudRoute = AuthenticatedOwnerFraudRouteImport.update({
+  id: '/fraud',
+  path: '/fraud',
+  getParentRoute: () => AuthenticatedOwnerRouteRoute,
+} as any)
 const AuthenticatedOwnerFeaturesRoute =
   AuthenticatedOwnerFeaturesRouteImport.update({
     id: '/features',
@@ -528,6 +534,7 @@ export interface FileRoutesByFullPath {
   '/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
   '/owner/domains': typeof AuthenticatedOwnerDomainsRoute
   '/owner/features': typeof AuthenticatedOwnerFeaturesRoute
+  '/owner/fraud': typeof AuthenticatedOwnerFraudRoute
   '/owner/health': typeof AuthenticatedOwnerHealthRoute
   '/owner/logs': typeof AuthenticatedOwnerLogsRoute
   '/owner/marketing': typeof AuthenticatedOwnerMarketingRoute
@@ -596,6 +603,7 @@ export interface FileRoutesByTo {
   '/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
   '/owner/domains': typeof AuthenticatedOwnerDomainsRoute
   '/owner/features': typeof AuthenticatedOwnerFeaturesRoute
+  '/owner/fraud': typeof AuthenticatedOwnerFraudRoute
   '/owner/health': typeof AuthenticatedOwnerHealthRoute
   '/owner/logs': typeof AuthenticatedOwnerLogsRoute
   '/owner/marketing': typeof AuthenticatedOwnerMarketingRoute
@@ -670,6 +678,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
   '/_authenticated/owner/domains': typeof AuthenticatedOwnerDomainsRoute
   '/_authenticated/owner/features': typeof AuthenticatedOwnerFeaturesRoute
+  '/_authenticated/owner/fraud': typeof AuthenticatedOwnerFraudRoute
   '/_authenticated/owner/health': typeof AuthenticatedOwnerHealthRoute
   '/_authenticated/owner/logs': typeof AuthenticatedOwnerLogsRoute
   '/_authenticated/owner/marketing': typeof AuthenticatedOwnerMarketingRoute
@@ -744,6 +753,7 @@ export interface FileRouteTypes {
     | '/owner/dev-logs'
     | '/owner/domains'
     | '/owner/features'
+    | '/owner/fraud'
     | '/owner/health'
     | '/owner/logs'
     | '/owner/marketing'
@@ -812,6 +822,7 @@ export interface FileRouteTypes {
     | '/owner/dev-logs'
     | '/owner/domains'
     | '/owner/features'
+    | '/owner/fraud'
     | '/owner/health'
     | '/owner/logs'
     | '/owner/marketing'
@@ -885,6 +896,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/dev-logs'
     | '/_authenticated/owner/domains'
     | '/_authenticated/owner/features'
+    | '/_authenticated/owner/fraud'
     | '/_authenticated/owner/health'
     | '/_authenticated/owner/logs'
     | '/_authenticated/owner/marketing'
@@ -1129,6 +1141,13 @@ declare module '@tanstack/react-router' {
       path: '/health'
       fullPath: '/owner/health'
       preLoaderRoute: typeof AuthenticatedOwnerHealthRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/fraud': {
+      id: '/_authenticated/owner/fraud'
+      path: '/fraud'
+      fullPath: '/owner/fraud'
+      preLoaderRoute: typeof AuthenticatedOwnerFraudRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/owner/features': {
@@ -1527,6 +1546,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerDevLogsRoute: typeof AuthenticatedOwnerDevLogsRoute
   AuthenticatedOwnerDomainsRoute: typeof AuthenticatedOwnerDomainsRoute
   AuthenticatedOwnerFeaturesRoute: typeof AuthenticatedOwnerFeaturesRoute
+  AuthenticatedOwnerFraudRoute: typeof AuthenticatedOwnerFraudRoute
   AuthenticatedOwnerHealthRoute: typeof AuthenticatedOwnerHealthRoute
   AuthenticatedOwnerLogsRoute: typeof AuthenticatedOwnerLogsRoute
   AuthenticatedOwnerMarketingRoute: typeof AuthenticatedOwnerMarketingRoute
@@ -1557,6 +1577,7 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerDevLogsRoute: AuthenticatedOwnerDevLogsRoute,
     AuthenticatedOwnerDomainsRoute: AuthenticatedOwnerDomainsRoute,
     AuthenticatedOwnerFeaturesRoute: AuthenticatedOwnerFeaturesRoute,
+    AuthenticatedOwnerFraudRoute: AuthenticatedOwnerFraudRoute,
     AuthenticatedOwnerHealthRoute: AuthenticatedOwnerHealthRoute,
     AuthenticatedOwnerLogsRoute: AuthenticatedOwnerLogsRoute,
     AuthenticatedOwnerMarketingRoute: AuthenticatedOwnerMarketingRoute,
@@ -1627,13 +1648,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
