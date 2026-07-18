@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { assertPlan } from "@/lib/plan-guard";
 
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const MAX_CHECKS = 2;
 
 async function ownerOnly(supabase: any, userId: string) {
   const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "owner" });
