@@ -1,8 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, CheckCircle2, RefreshCw, ShieldAlert, ShieldCheck } from "lucide-react";
+import { AlertTriangle, CheckCircle2, RefreshCw, ShieldAlert, ShieldCheck, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { runFraudCheck } from "@/lib/fraud.functions";
+import { runFraudCheck, getCachedFraudCheck, ensureAutoFraudCheck } from "@/lib/fraud.functions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
