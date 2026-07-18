@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   ShieldCheck, Settings2, Sliders, BarChart3, KeyRound,
-  CheckCircle2, XCircle, Loader2,
+  CheckCircle2, XCircle, Loader2, AlertTriangle, Clock, Zap,
 } from "lucide-react";
 import {
   getFraudSettingsAdmin, updateFraudSettings, testFraudConnection, fraudAnalytics,
@@ -33,7 +33,10 @@ function FraudPage() {
 
   const [form, setForm] = useState<any>(null);
   const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ ok: boolean; error?: string } | null>(null);
+  const [testPhone, setTestPhone] = useState("01700000000");
+  const [testResult, setTestResult] = useState<{
+    ok: boolean; error?: string; sample?: any; latency_ms?: number; tested_at?: string; phone?: string;
+  } | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -63,6 +66,7 @@ function FraudPage() {
     try {
       await saveFn({ data: form });
       toast.success("Saved");
+      setForm((f: any) => ({ ...f, api_key: "", api_secret: "" }));
       qc.invalidateQueries({ queryKey: ["owner", "fraud-cfg"] });
     } catch (e) {
       toast.error((e as Error).message);
@@ -75,14 +79,25 @@ function FraudPage() {
     setTesting(true);
     setTestResult(null);
     try {
-      const r = await testFn({ data: { phone: "01700000000" } });
+      const r = await testFn({ data: { phone: testPhone.trim(), api_key: form.api_key || undefined } });
       setTestResult(r);
+      if (r.ok) toast.success("Connection successful");
+      else toast.error(r.error ?? "Connection failed");
+      qc.invalidateQueries({ queryKey: ["owner", "fraud-cfg"] });
     } catch (e) {
-      setTestResult({ ok: false, error: (e as Error).message });
+      const err = (e as Error).message;
+      setTestResult({ ok: false, error: err });
+      toast.error(err);
     } finally {
       setTesting(false);
     }
   }
+
+  const lastTestAt = cfg?.last_test_at as string | undefined;
+  const lastTestOk = cfg?.last_test_ok as boolean | null | undefined;
+  const lastTestError = cfg?.last_test_error as string | null | undefined;
+  const lastTestSample = cfg?.last_test_sample as any;
+
 
   return (
     <div className="space-y-6">
@@ -115,6 +130,45 @@ function FraudPage() {
             </div>
             <Switch checked={form.enabled} onCheckedChange={(v) => set("enabled", v)} />
           </div>
+
+          {/* Persisted provider status banner */}
+          <div
+            className={`rounded-lg border p-3 text-sm ${
+              lastTestOk === true
+                ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400"
+                : lastTestOk === false
+                ? "border-destructive/30 bg-destructive/5 text-destructive"
+                : "border-muted bg-muted/30 text-muted-foreground"
+            }`}
+          >
+            <div className="flex items-start gap-2">
+              {lastTestOk === true ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                : lastTestOk === false ? <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                : <Clock className="mt-0.5 h-4 w-4 shrink-0" />}
+              <div className="min-w-0 flex-1">
+                <div className="font-medium">
+                  {lastTestOk === true ? "Provider connected"
+                    : lastTestOk === false ? "Provider connection failed"
+                    : "Provider not tested yet"}
+                </div>
+                <div className="mt-0.5 text-xs opacity-90">
+                  {lastTestAt ? `Last checked ${new Date(lastTestAt).toLocaleString()}` : "Run a test to verify credentials."}
+                  {cfg.has_api_key ? "" : " • No API key stored"}
+                </div>
+                {lastTestOk === false && lastTestError && (
+                  <pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap break-words rounded bg-background/60 p-2 font-mono text-[11px] leading-relaxed">
+                    {lastTestError}
+                  </pre>
+                )}
+                {lastTestOk === true && lastTestSample && (
+                  <div className="mt-1 text-xs">
+                    Sample: {lastTestSample.total} orders • {lastTestSample.success} success • {lastTestSample.returned} returned • {lastTestSample.couriers} courier(s)
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Provider</Label>
@@ -130,7 +184,9 @@ function FraudPage() {
                 value={form.api_key}
                 onChange={(e) => set("api_key", e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">Leave blank to keep existing key.</p>
+              <p className="text-xs text-muted-foreground">
+                {cfg.has_api_key ? "A key is stored — leave blank to keep it, or paste a new one." : "No key stored yet — paste your BD Courier token."}
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label>API Secret (optional)</Label>
@@ -142,23 +198,68 @@ function FraudPage() {
                 onChange={(e) => set("api_secret", e.target.value)}
               />
             </div>
+            <div className="space-y-1.5">
+              <Label>Test phone number</Label>
+              <Input
+                inputMode="tel"
+                placeholder="01700000000"
+                value={testPhone}
+                onChange={(e) => setTestPhone(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Used only for the Test Connection call.</p>
+            </div>
           </div>
+
           <div className="flex flex-wrap items-center gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={runTest} disabled={testing}>
-              {testing ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+            <Button type="button" variant="outline" onClick={runTest} disabled={testing || testPhone.trim().length < 6}>
+              {testing ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Zap className="mr-1.5 h-4 w-4" />}
               Test Connection
             </Button>
-            {testResult && (
-              <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs ${testResult.ok ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive"}`}>
-                {testResult.ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
-                {testResult.ok ? "Connected" : testResult.error}
-              </span>
-            )}
             <Button onClick={save} disabled={saving} className="ml-auto">
               {saving ? "Saving…" : "Save"}
             </Button>
           </div>
+
+          {/* Live test result */}
+          {testResult && (
+            <div
+              className={`rounded-lg border p-3 text-sm ${
+                testResult.ok
+                  ? "border-emerald-500/30 bg-emerald-500/5"
+                  : "border-destructive/30 bg-destructive/5"
+              }`}
+            >
+              <div className="flex items-start gap-2">
+                {testResult.ok
+                  ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                  : <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />}
+                <div className="min-w-0 flex-1">
+                  <div className={`font-medium ${testResult.ok ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}`}>
+                    {testResult.ok ? "Test succeeded" : "Test failed"}
+                  </div>
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    Phone {testResult.phone ?? testPhone}
+                    {typeof testResult.latency_ms === "number" ? ` • ${testResult.latency_ms} ms` : ""}
+                    {testResult.tested_at ? ` • ${new Date(testResult.tested_at).toLocaleTimeString()}` : ""}
+                  </div>
+                  {testResult.ok && testResult.sample ? (
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+                      <TestStat label="Total" value={testResult.sample.total} />
+                      <TestStat label="Success" value={testResult.sample.success} />
+                      <TestStat label="Returned" value={testResult.sample.returned} />
+                      <TestStat label="Cancelled" value={testResult.sample.cancelled} />
+                    </div>
+                  ) : testResult.error ? (
+                    <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-background/60 p-2 font-mono text-[11px] leading-relaxed text-destructive">
+                      {testResult.error}
+                    </pre>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          )}
         </TabsContent>
+
 
         {/* GLOBAL */}
         <TabsContent value="global" className="space-y-4 rounded-xl border bg-card p-4 sm:p-6">
@@ -237,6 +338,16 @@ function Metric({ label, value, tone }: { label: string; value: number; tone: "d
     </div>
   );
 }
+
+function TestStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md border bg-background/60 p-2">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-sm font-semibold tabular-nums">{Number(value ?? 0).toLocaleString()}</div>
+    </div>
+  );
+}
+
 
 function BarBlock({ title, rows }: { title: string; rows: [string, number][] }) {
   const max = Math.max(1, ...rows.map(([, v]) => v));

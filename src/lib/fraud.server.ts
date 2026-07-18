@@ -25,20 +25,34 @@ function toNum(v: any): number {
  */
 export async function callBdCourier(phone: string, apiKey: string): Promise<NormalizedFraud> {
   if (!apiKey) throw new Error("Fraud checker API key is not configured");
-  const resp = await fetch("https://bdcourier.com/api/courier-check", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({ phone }),
-  });
-  const raw = await resp.json().catch(() => ({}));
-  if (!resp.ok) {
-    const msg = (raw as any)?.message || `BD Courier error (${resp.status})`;
-    throw new Error(msg);
+  let resp: Response;
+  try {
+    resp = await fetch("https://bdcourier.com/api/courier-check", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ phone }),
+    });
+  } catch (e) {
+    throw new Error(`Network error reaching bdcourier.com: ${(e as Error).message}`);
   }
+  const rawText = await resp.text();
+  let raw: any = {};
+  try { raw = rawText ? JSON.parse(rawText) : {}; } catch { raw = { body: rawText.slice(0, 400) }; }
+  if (!resp.ok) {
+    const providerMsg = (raw as any)?.message || (raw as any)?.error || rawText.slice(0, 200);
+    const hint =
+      resp.status === 401 || resp.status === 403 ? " (check that the API token is valid and active)"
+      : resp.status === 404 ? " (endpoint not found — verify BD Courier API URL)"
+      : resp.status === 429 ? " (rate limit reached — wait and retry)"
+      : resp.status >= 500 ? " (BD Courier server is down, try again shortly)"
+      : "";
+    throw new Error(`HTTP ${resp.status}: ${providerMsg}${hint}`);
+  }
+
 
   // The response usually has shape { courierData: { pathao: {...}, steadfast: {...}, ... }, summary: {...} }
   const summary = (raw as any)?.summary ?? (raw as any)?.total ?? {};

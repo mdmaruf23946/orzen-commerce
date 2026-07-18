@@ -724,6 +724,10 @@ export type Database = {
           enable_manual_check: boolean
           enabled: boolean
           id: string
+          last_test_at: string | null
+          last_test_error: string | null
+          last_test_ok: boolean | null
+          last_test_sample: Json | null
           provider: string
           show_in_order_details: boolean
           thresholds: Json
@@ -737,6 +741,10 @@ export type Database = {
           enable_manual_check?: boolean
           enabled?: boolean
           id?: string
+          last_test_at?: string | null
+          last_test_error?: string | null
+          last_test_ok?: boolean | null
+          last_test_sample?: Json | null
           provider?: string
           show_in_order_details?: boolean
           thresholds?: Json
@@ -750,6 +758,10 @@ export type Database = {
           enable_manual_check?: boolean
           enabled?: boolean
           id?: string
+          last_test_at?: string | null
+          last_test_error?: string | null
+          last_test_ok?: boolean | null
+          last_test_sample?: Json | null
           provider?: string
           show_in_order_details?: boolean
           thresholds?: Json
