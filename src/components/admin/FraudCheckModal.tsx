@@ -1,12 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  AlertTriangle, CheckCircle2, RefreshCw, ShieldAlert, ShieldCheck, Lock, Info,
+  AlertTriangle, CheckCircle2, RefreshCw, ShieldAlert, ShieldCheck, Lock, Info, RotateCw,
 } from "lucide-react";
 import { toast } from "sonner";
-import { runFraudCheck, getCachedFraudCheck, ensureAutoFraudCheck } from "@/lib/fraud.functions";
+import { runFraudCheck, getCachedFraudCheck, ensureAutoFraudCheck, resyncFraudCheck } from "@/lib/fraud.functions";
+import { amIOwner } from "@/lib/owner.functions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+
 
 type Props = {
   open: boolean;
@@ -83,7 +85,18 @@ export function FraudCheckModal({ open, onOpenChange, phone, orderId }: Props) {
   const runFn = useServerFn(runFraudCheck);
   const cacheFn = useServerFn(getCachedFraudCheck);
   const autoFn = useServerFn(ensureAutoFraudCheck);
+  const resyncFn = useServerFn(resyncFraudCheck);
+  const amIOwnerFn = useServerFn(amIOwner);
   const qc = useQueryClient();
+
+  const { data: ownerInfo } = useQuery({
+    queryKey: ["am-i-owner"],
+    queryFn: () => amIOwnerFn({}),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+  const isOwner = !!ownerInfo?.isOwner;
+
 
   const { data, isLoading, error, isFetching } = useQuery({
     queryKey: ["fraud-check", phone, orderId],
@@ -123,6 +136,14 @@ export function FraudCheckModal({ open, onOpenChange, phone, orderId }: Props) {
     };
   });
 
+  // Cross-check computed courier totals against the cached summary.
+  const computedTotal = rows.reduce((s, r) => s + r.total, 0);
+  const computedSuccess = rows.reduce((s, r) => s + r.success, 0);
+  const computedCancelled = rows.reduce((s, r) => s + r.cancelled, 0);
+  const mismatch = data
+    ? computedTotal !== total || computedSuccess !== success || computedCancelled !== cancelled
+    : false;
+
   const recommendation =
     risk === "safe"
       ? { tone: "ok" as const, title: "Safe to proceed", msg: "High delivery success rate. This customer is reliable." }
@@ -131,6 +152,7 @@ export function FraudCheckModal({ open, onOpenChange, phone, orderId }: Props) {
       : risk === "high"
       ? { tone: "bad" as const, title: "Contact customer before courier booking", msg: "Low success rate. High risk of return/cancellation — verify order before shipping." }
       : { tone: "warn" as const, title: "No data", msg: "No delivery history found for this number." };
+
 
   async function recheck() {
     if (limitReached) return;
@@ -143,6 +165,18 @@ export function FraudCheckModal({ open, onOpenChange, phone, orderId }: Props) {
       toast.error((e as Error).message);
     }
   }
+
+  async function resync() {
+    try {
+      await resyncFn({ data: { phone } });
+      qc.invalidateQueries({ queryKey: ["fraud-check", phone, orderId] });
+      qc.invalidateQueries({ queryKey: ["fraud-cache", phone] });
+      toast.success("Fraud check resynced from BD Courier");
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  }
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -199,6 +233,24 @@ export function FraudCheckModal({ open, onOpenChange, phone, orderId }: Props) {
                   <div className="opacity-90">{recommendation.msg}</div>
                 </div>
               </div>
+
+              {/* Totals validation banner */}
+              {mismatch && (
+                <div className="flex items-start gap-2 rounded-2xl border border-red-500/40 bg-red-500/5 p-3 text-xs text-red-700 dark:text-red-500">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold">Totals mismatch detected</div>
+                    <div className="opacity-90">
+                      Cached summary (Total {total} · Success {success} · Cancel {cancelled}) does not match the sum of
+                      courier rows (Total {computedTotal} · Success {computedSuccess} · Cancel {computedCancelled}).
+                      {isOwner
+                        ? " Click Resync Fraud Check to recalculate from the latest BD Courier data."
+                        : " Ask a Winner Admin to resync this fraud check."}
+                    </div>
+                  </div>
+                </div>
+              )}
+
 
               {/* Stats cards */}
               <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
@@ -273,17 +325,32 @@ export function FraudCheckModal({ open, onOpenChange, phone, orderId }: Props) {
                   First checked: {d.first_checked_at ? new Date(d.first_checked_at).toLocaleString() : "—"}
                   {" · "}Source: <span className="capitalize">{d.last_check_source ?? "system"}</span>
                 </div>
-                {limitReached ? (
-                  <div className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-1.5 text-xs text-amber-700 dark:text-amber-500">
-                    <Lock className="h-3.5 w-3.5" /> Maximum Fraud Check limit reached
-                  </div>
-                ) : (
-                  <Button size="sm" variant="outline" onClick={recheck} disabled={isFetching}>
-                    <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
-                    Re-check ({count}/{max})
-                  </Button>
-                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  {isOwner && (
+                    <Button
+                      size="sm"
+                      variant={mismatch ? "default" : "outline"}
+                      onClick={resync}
+                      disabled={isFetching}
+                      title="Owner-only: recalculate totals from BD Courier and update the cached result"
+                    >
+                      <RotateCw className={`mr-1.5 h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
+                      Resync Fraud Check
+                    </Button>
+                  )}
+                  {limitReached ? (
+                    <div className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-1.5 text-xs text-amber-700 dark:text-amber-500">
+                      <Lock className="h-3.5 w-3.5" /> Maximum Fraud Check limit reached
+                    </div>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={recheck} disabled={isFetching}>
+                      <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
+                      Re-check ({count}/{max})
+                    </Button>
+                  )}
+                </div>
               </div>
+
             </>
           )}
         </div>
