@@ -166,6 +166,18 @@ export function FraudCheckModal({ open, onOpenChange, phone, orderId }: Props) {
     }
   }
 
+  async function resync() {
+    try {
+      await resyncFn({ data: { phone } });
+      qc.invalidateQueries({ queryKey: ["fraud-check", phone, orderId] });
+      qc.invalidateQueries({ queryKey: ["fraud-cache", phone] });
+      toast.success("Fraud check resynced from BD Courier");
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  }
+
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92vh] max-w-4xl overflow-y-auto p-0">
