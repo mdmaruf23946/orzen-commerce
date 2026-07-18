@@ -33,7 +33,10 @@ function FraudPage() {
 
   const [form, setForm] = useState<any>(null);
   const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ ok: boolean; error?: string } | null>(null);
+  const [testPhone, setTestPhone] = useState("01700000000");
+  const [testResult, setTestResult] = useState<{
+    ok: boolean; error?: string; sample?: any; latency_ms?: number; tested_at?: string; phone?: string;
+  } | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -63,6 +66,7 @@ function FraudPage() {
     try {
       await saveFn({ data: form });
       toast.success("Saved");
+      setForm((f: any) => ({ ...f, api_key: "", api_secret: "" }));
       qc.invalidateQueries({ queryKey: ["owner", "fraud-cfg"] });
     } catch (e) {
       toast.error((e as Error).message);
@@ -75,14 +79,25 @@ function FraudPage() {
     setTesting(true);
     setTestResult(null);
     try {
-      const r = await testFn({ data: { phone: "01700000000" } });
+      const r = await testFn({ data: { phone: testPhone.trim(), api_key: form.api_key || undefined } });
       setTestResult(r);
+      if (r.ok) toast.success("Connection successful");
+      else toast.error(r.error ?? "Connection failed");
+      qc.invalidateQueries({ queryKey: ["owner", "fraud-cfg"] });
     } catch (e) {
-      setTestResult({ ok: false, error: (e as Error).message });
+      const err = (e as Error).message;
+      setTestResult({ ok: false, error: err });
+      toast.error(err);
     } finally {
       setTesting(false);
     }
   }
+
+  const lastTestAt = cfg?.last_test_at as string | undefined;
+  const lastTestOk = cfg?.last_test_ok as boolean | null | undefined;
+  const lastTestError = cfg?.last_test_error as string | null | undefined;
+  const lastTestSample = cfg?.last_test_sample as any;
+
 
   return (
     <div className="space-y-6">
