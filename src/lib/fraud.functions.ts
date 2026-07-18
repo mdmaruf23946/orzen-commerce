@@ -47,10 +47,12 @@ export const getFraudSettingsAdmin = createServerFn({ method: "GET" })
       .eq("id", "global")
       .maybeSingle();
     if (error) throw new Error(error.message);
+    const row = (data as any) ?? {};
     return {
-      ...(data as any),
-      api_key_masked: mask((data as any)?.api_key),
-      api_secret_masked: mask((data as any)?.api_secret),
+      ...row,
+      api_key_masked: mask(row.api_key),
+      api_secret_masked: mask(row.api_secret),
+      has_api_key: !!row.api_key,
       api_key: undefined,
       api_secret: undefined,
     };
@@ -84,7 +86,6 @@ export const updateFraudSettings = createServerFn({ method: "POST" })
     const patch: Record<string, any> = {};
     for (const [k, v] of Object.entries(data)) {
       if (v === undefined) continue;
-      // Preserve stored credential when the client submits an empty string
       if ((k === "api_key" || k === "api_secret") && (v === "" || v === null)) continue;
       patch[k] = v;
     }
@@ -100,7 +101,12 @@ export const updateFraudSettings = createServerFn({ method: "POST" })
 export const testFraudConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ phone: z.string().trim().min(6).max(20).default("01700000000") }).parse(d ?? {}),
+    z
+      .object({
+        phone: z.string().trim().min(6).max(20).default("01700000000"),
+        api_key: z.string().trim().max(500).optional(),
+      })
+      .parse(d ?? {}),
   )
   .handler(async ({ data, context }) => {
     await ownerOnly(context.supabase, context.userId);
@@ -110,16 +116,42 @@ export const testFraudConnection = createServerFn({ method: "POST" })
       .select("api_key")
       .eq("id", "global")
       .maybeSingle();
-    const apiKey = (cfg as any)?.api_key as string | null;
-    if (!apiKey) return { ok: false, error: "API key not set" };
+    const storedKey = (cfg as any)?.api_key as string | null;
+    const apiKey = (data.api_key && data.api_key.length > 0) ? data.api_key : storedKey;
+    const now = new Date().toISOString();
+    if (!apiKey) {
+      const err = "API key not set — enter a BD Courier token above or save one first";
+      await supabaseAdmin.from("fraud_settings").update({
+        last_test_at: now, last_test_ok: false, last_test_error: err, last_test_sample: null,
+      }).eq("id", "global");
+      return { ok: false as const, error: err, tested_at: now, phone: data.phone };
+    }
+    const started = Date.now();
     try {
       const { callBdCourier } = await import("@/lib/fraud.server");
       const stats = await callBdCourier(data.phone, apiKey);
-      return { ok: true, sample: { total: stats.total_orders, success: stats.successful } };
+      const latency_ms = Date.now() - started;
+      const sample = {
+        total: stats.total_orders,
+        success: stats.successful,
+        returned: stats.returned,
+        cancelled: stats.cancelled,
+        couriers: stats.courier_history?.length ?? 0,
+      };
+      await supabaseAdmin.from("fraud_settings").update({
+        last_test_at: now, last_test_ok: true, last_test_error: null, last_test_sample: sample,
+      }).eq("id", "global");
+      return { ok: true as const, sample, latency_ms, tested_at: now, phone: data.phone };
     } catch (e) {
-      return { ok: false, error: (e as Error).message };
+      const err = (e as Error).message;
+      const latency_ms = Date.now() - started;
+      await supabaseAdmin.from("fraud_settings").update({
+        last_test_at: now, last_test_ok: false, last_test_error: err, last_test_sample: null,
+      }).eq("id", "global");
+      return { ok: false as const, error: err, latency_ms, tested_at: now, phone: data.phone };
     }
   });
+
 
 // ---------------- STORE OWNER ----------------
 export const runFraudCheck = createServerFn({ method: "POST" })
