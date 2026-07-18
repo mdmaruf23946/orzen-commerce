@@ -126,14 +126,14 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
               <Section icon={Package} title="Product">
                 <ul className="divide-y">
                   {items.map((it, i) => (
-                    <li key={i} className="flex gap-3 py-2">
-                      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
-                        {it.products?.primary_image_url && <img src={it.products.primary_image_url} alt={it.name_snapshot} className="h-full w-full object-cover" />}
+                    <li key={i} className="space-y-3 py-3">
+                      <div className="mx-auto h-32 w-32 shrink-0 overflow-hidden rounded-xl border bg-muted sm:h-36 sm:w-36">
+                        <ProductImage url={it.products?.primary_image_url} alt={it.name_snapshot} />
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium">{it.name_snapshot}</div>
+                      <div className="text-center">
+                        <div className="text-sm font-medium">{it.name_snapshot}</div>
                         {it.products?.sku && <div className="text-[10px] text-muted-foreground">SKU: {it.products.sku}</div>}
-                        <div className="mt-0.5 flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="mt-1 flex items-center justify-center gap-2 text-xs text-muted-foreground">
                           <span>Qty {it.qty} · ৳{Number(it.price_snapshot).toFixed(0)}</span>
                           <span className="font-semibold text-foreground">৳{(Number(it.price_snapshot) * it.qty).toFixed(0)}</span>
                         </div>
