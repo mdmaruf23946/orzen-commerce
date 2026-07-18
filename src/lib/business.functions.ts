@@ -303,7 +303,7 @@ export const getOrderDetails = createServerFn({ method: "GET" })
     if (!sid) throw new Error("No store");
     const [{ data: order }, { data: items }, { data: timeline }, { data: notes }, { data: store }] = await Promise.all([
       context.supabase.from("orders").select("*").eq("id", data.orderId).eq("store_id", sid).maybeSingle(),
-      context.supabase.from("order_items").select("*").eq("order_id", data.orderId),
+      context.supabase.from("order_items").select("*, products(primary_image_url, sku)").eq("order_id", data.orderId),
       context.supabase.from("order_timeline").select("*").eq("order_id", data.orderId).order("created_at"),
       context.supabase.from("order_internal_notes").select("*").eq("order_id", data.orderId).order("created_at"),
       context.supabase.from("stores").select("name,phone,address,logo_url,whatsapp").eq("id", sid).maybeSingle(),
