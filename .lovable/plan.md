@@ -1,101 +1,151 @@
+## Goal
 
-# Fraud Checker Management System
+A dedicated **Subscription Payment Gateway** module in the Winner Admin Panel that handles ORZEN plan payments (Free / Basic / Business / Custom) end-to-end. Modular provider architecture so the Winner Admin can add / replace / enable / disable providers at any time without touching the subscription logic. Store customer payments remain untouched.
 
-A centralized fraud-checking module driven from the Owner panel, with per-store consumption from the Orders page. Store admins never see provider credentials.
+## Architecture (pluggable providers)
 
-## 1. Database (new migration)
+```text
+src/lib/subscription-pay/
+  providers/
+    types.ts              # SubscriptionPaymentProvider interface
+    registry.ts           # id -> provider adapter map
+    sslcommerz.ts         # first shipped adapter (server-only)
+    bkash.ts              # stub adapter (disabled)
+    manual.ts             # manual/offline verify fallback
+  pay.functions.ts        # initiatePayment / verifyPayment / handleWebhook
+  pay.server.ts           # provider dispatch + secret loading
+  invoice.server.ts       # PDF invoice generation
+  email.server.ts         # Resend email send
+```
 
-**`public.fraud_settings`** (single global row, `id = 'global'`)
-- enabled (bool), provider (text, default `bd_courier`)
-- api_key, api_secret (text, nullable — owner-only read)
-- enable_manual_check, enable_auto_check_before_courier, show_in_order_details, enable_analytics (bool)
-- thresholds jsonb: `{ safe_max: 10, medium_max: 30 }` (% return-rate cutoffs)
-- Grants: `service_role` full; `authenticated` — no direct read.
-- RLS: owner-only via `has_role(auth.uid(),'owner')`.
+Each adapter implements:
 
-**`public.fraud_checks`** (cache + history)
-- id, store_id (fk stores), order_id (fk orders, nullable for manual lookups)
-- phone (text, indexed), risk (enum: safe/medium/high), score numeric
-- total_orders, successful, returned, cancelled, cod_success_rate numeric, last_delivery timestamptz
-- raw jsonb (full provider response), courier_history jsonb
-- checked_by uuid, checked_at timestamptz
-- Unique index on (store_id, phone) with upsert on re-check within TTL.
-- RLS: store owners can `SELECT` where `is_store_owner(store_id)`; inserts via server fn only (service_role).
+```ts
+interface SubscriptionPaymentProvider {
+  id: string;              // "sslcommerz", "bkash", ...
+  label: string;
+  methods: string[];       // ["bkash","nagad","visa",...]
+  supportsSandbox: boolean;
+  testConnection(cfg): Promise<{ok:boolean; message:string; latency_ms:number}>;
+  createCheckout(ctx): Promise<{redirect_url:string; provider_ref:string}>;
+  verifyPayment(ctx): Promise<{status:"paid"|"failed"|"pending"; amount:number; currency:string; raw:any}>;
+  parseWebhook?(req): Promise<{provider_ref:string; status:string; raw:any}>;
+}
+```
 
-**`platform_feature_flags`**: add `fraud_checker` flag so owner can gate per package. **`features.ts`**: add `"fraud_checker"` FeatureKey + label.
+Subscription activation code never imports a provider directly — it calls `pay.server.ts`, which dispatches to the active provider via `registry`.
 
-## 2. Server functions
+## Data model (one migration)
 
-**`src/lib/fraud.server.ts`** — BD Courier adapter
-- `callBdCourier(phone, creds)` → normalized `{ total, success, cancelled, returned, cod_rate, last_delivery, courier_history[] }`.
-- `computeRisk(stats, thresholds)` → `safe | medium | high`.
+New tables (all with GRANTs + RLS + `TO service_role` full access):
 
-**`src/lib/fraud.functions.ts`** (createServerFn, all `requireSupabaseAuth`)
-- `getFraudSettingsPublic()` — returns `{ enabled, show_in_order_details, enable_manual_check, enable_auto_check_before_courier }` only (no keys). Any authenticated user.
-- `getFraudSettingsAdmin()` — owner-only, returns full config incl. masked key.
-- `updateFraudSettings({...})` — owner-only.
-- `testFraudConnection()` — owner-only, pings BD Courier with a sample phone.
-- `runFraudCheck({ order_id?, phone })` — store owner scoped; uses `supabaseAdmin` inside handler to read credentials + write cache; enforces `assertPlan('fraud_checker')`; returns cached row if fresh (<24h) else calls provider.
-- `fraudAnalytics({ range })` — owner-only aggregate counts across `fraud_checks`.
+- `subscription_payment_providers` — one row per registered provider (id, label, is_active, enabled, sandbox, credentials jsonb, status, last_tested_at, latency_ms). Only one row may have `is_active=true`. Owner-only SELECT/UPDATE.
+- `subscription_invoices` — invoice_no, store_id, user_id, package_id, billing_cycle (monthly/3m/6m/yearly), amount, discount, coupon_id, tax, total, currency, status (pending/paid/failed/refunded), pdf_path, issued_at, paid_at.
+- `subscription_transactions` — invoice_id, provider_id, provider_ref, method, amount, status (initiated/pending/success/failed/cancelled), sandbox bool, raw jsonb, created_at, verified_at. Indexed by (provider_id, provider_ref).
+- `subscription_coupons` — code (unique upper), type (percent/fixed), value, min_amount, applies_to_packages uuid[], applies_to_cycles text[], usage_limit, used_count, starts_at, expires_at, active. Owner-managed.
+- `subscription_coupon_redemptions` — coupon_id, invoice_id, user_id, amount_off, redeemed_at.
 
-## 3. Owner panel — new route
+RPC `validate_subscription_coupon(_code, _package_id, _cycle, _amount)` mirrors existing `validate_coupon` shape.
 
-**`src/routes/_authenticated/owner/fraud.tsx`** with tabs:
-1. **Provider Settings** — enable toggle, provider select (BD Courier), API key + secret (password field, "reveal" masked), Test Connection button, live status pill.
-2. **Global Configuration** — 4 switches (manual, auto pre-courier, show in details, analytics) + Save.
-3. **Risk Rules** — sliders for safe_max / medium_max return-rate %, color-coded preview.
-4. **Analytics** — cards (Total Checks, Safe, Medium, High, Prevented Orders) + simple daily/weekly/monthly bar (reuse existing chart util).
-5. **Store Access** — link to plan-features page pre-scrolled to `fraud_checker` toggle across packages.
+Store owners have SELECT on their own `subscription_invoices` / `subscription_transactions` (via `owner_user_id`). Coupons + provider config are owner-only.
 
-Add sidebar entry in owner nav (`ShieldCheck` icon).
+## Server functions (`src/lib/subscription-pay/pay.functions.ts`)
 
-## 4. Store admin — Orders page enhancement
+All `requireSupabaseAuth` (owner-only where noted):
 
-**Do not redesign** `src/routes/_authenticated/admin/orders.tsx`. Only add two icon-buttons per row (next to existing Invoice link):
-- **Fraud Check** (ShieldCheck icon) — opens a shadcn `Dialog` (`FraudCheckModal`) that lazy-loads `runFraudCheck({ order_id, phone })`.
-- **Order Details** (Eye icon) — opens a shadcn `Sheet` from the right on desktop / full-screen on mobile (`OrderDetailsDrawer`) that lazy-loads full order via existing `getOrderDetails` + product join.
+- `listProviders()` / `getActiveProvider()` — owner only.
+- `saveProvider({id, credentials, sandbox, enabled})` — owner only. Credentials stored server-side; never returned to client (only masked preview + `has_credentials` boolean).
+- `setActiveProvider(id)` — owner only.
+- `testProviderConnection(id)` — owner only; calls adapter `testConnection`, persists status/latency.
+- `initiateSubscriptionCheckout({package_id, cycle, coupon_code?})` — authenticated store owner. Computes amount from `subscription_packages` + billing cycle discount (`get_billing_discounts`) + coupon. Creates `subscription_invoices` (pending) + `subscription_transactions` (initiated). Calls active adapter `createCheckout`, returns `redirect_url`.
+- `verifyAndActivate({provider_ref})` — called from the return URL. Verifies via adapter, on success: marks invoice paid, updates `stores.package_id / expires_at / last_renewed_at / subscription_status='active'`, generates PDF invoice, emails receipt, records coupon redemption.
+- `listSubscriptionPayments({filters})` — owner dashboard feed.
+- `subscriptionPaymentsStats()` — totals + monthly revenue + counts by status for the dashboard.
 
-Both are gated by `useFeature('fraud_checker')` for the fraud button; details is always available. Feature-off users see the button disabled with tooltip "আপগ্রেড প্রয়োজন" linking to `/admin/billing`.
+## Server routes (raw HTTP)
 
-### `FraudCheckModal` contents
-- Risk badge (colored), stat grid: Total / Success / Returned / Cancelled / COD % / Last delivery.
-- Collapsible "Courier History" list.
-- "Re-check" button (invalidates cache).
-- Cached indicator + timestamp.
+- `src/routes/api/public/subscription-pay/webhook.$provider.ts` — POST endpoint per provider. Verifies signature inside the adapter, then calls `verifyAndActivate`. Public prefix, self-authenticated per provider.
+- `src/routes/api/public/subscription-pay/return.ts` — GET callback used by hosted checkouts; forwards to a client route that calls `verifyAndActivate`.
 
-### `OrderDetailsDrawer` contents (collapsible sections)
-- **Product** — thumb, name, SKU, qty, price, discount, delivery charge, total.
-- **Customer** — name, phone (tap-to-call), full address.
-- **Order** — id, invoice_no, datetime, payment, status, courier status, tracking no.
-- **Courier** — history + inline fraud result (if already cached; button to check).
-- **Admin** — internal notes (reuse existing add/delete), timeline (reuse).
+## Coupons
 
-Mobile-first: `Sheet side="bottom"` on `<sm`, `side="right"` w/ 480px on `≥sm`. Uses `@/components/ui/{sheet,dialog,collapsible,badge}`.
+New table + owner CRUD UI at `/owner/subscription-coupons` (list, create, toggle active, edit). Storefront-facing coupon entry lives on the store-admin checkout page. Reuses the `validate_subscription_coupon` RPC. Redemption row written atomically inside `verifyAndActivate`.
 
-## 5. Files touched
+## Invoice + email
 
-**New**
-- `supabase/migrations/…_fraud_checker.sql`
-- `src/lib/fraud.server.ts`
-- `src/lib/fraud.functions.ts`
-- `src/routes/_authenticated/owner/fraud.tsx`
-- `src/components/admin/FraudCheckModal.tsx`
-- `src/components/admin/OrderDetailsDrawer.tsx`
+- `invoice.server.ts` builds an HTML invoice with brand tokens, renders to PDF via `@react-pdf/renderer` (Worker-compatible; falls back to a Puppeteer-free path). PDF stored in Supabase Storage bucket `subscription-invoices` (private). Signed URL returned to owner.
+- `email.server.ts` uses the existing Resend connector to send:
+  - Payment receipt (with PDF attachment + signed link).
+  - Payment failure notice.
+  Subject/body pulled from a template file, brand color from `platform_settings`.
 
-**Edited**
-- `src/lib/features.ts` — add `fraud_checker`.
-- `src/routes/_authenticated/admin/orders.tsx` — add 2 action buttons per row.
-- `src/routes/_authenticated/owner/route.tsx` — sidebar link.
-- `src/routes/_authenticated/owner/plan-features.tsx` — expose fraud_checker toggle (auto since it reads FEATURE_KEYS).
+If Resend connector is not linked yet, the plan surfaces a step to link it before enabling emails; module works without it (email step is a no-op with a warning).
 
-## 6. Performance & safety
+## Winner Admin UI
 
-- 24h cache on fraud lookups; unique (store_id, phone) upsert.
-- Lazy queries via `useQuery(..., { enabled: open })` — nothing loads until modal/drawer opens.
-- Credentials only accessed inside `runFraudCheck` handler with `supabaseAdmin`; never sent to client.
-- `assertPlan('fraud_checker')` server-side gate.
-- Rate-limit re-check button (60s cooldown per phone).
+New menu group **"Subscription Payments"** in `src/routes/_authenticated/owner/route.tsx` with three routes:
 
-## Open confirmations
-- **BD Courier endpoint**: I'll implement against the public `https://bdcourier.com/api/courier-check` endpoint (POST `{ phone }`, header `Authorization: Bearer <API_KEY>`). Confirm if you use a different provider URL/auth scheme.
-- Cache TTL default **24h** — OK?
+1. `/owner/subscription-pay` — **Dashboard**
+   - Cards: Gateway Status, Connected Provider (+ mode badge), Total Payments, Successful, Failed, Pending, Monthly Revenue.
+   - Recent Transactions table (customer, plan, cycle, amount, method, status, date, actions: view invoice, resend email, mark refunded).
+   - Mobile: cards stack, transactions become card list.
+
+2. `/owner/subscription-pay/providers` — **Provider Management**
+   - List of registered providers with status pills (Connected / Disabled / Missing credentials / Sandbox).
+   - Connect / Configure drawer per provider: credential fields defined by adapter metadata, sandbox switch, enable switch, Test Connection button with latency + error banner, Set Active button. Disconnect clears credentials.
+
+3. `/owner/subscription-coupons` — **Coupons**
+   - CRUD table for subscription-only coupons, scoped to packages + billing cycles, with usage stats.
+
+Design: reuse existing owner card style, Sonner toasts, mobile-first (single column < 640px), Sparkles/CreditCard icons.
+
+## Store-owner checkout flow
+
+Update `/admin/billing/checkout/$packageId`:
+
+1. Select billing cycle (monthly / 3m / 6m / yearly). Discount pulled from `get_billing_discounts` RPC.
+2. Optional coupon input → `validate_subscription_coupon`.
+3. Show final total + method icons from active provider.
+4. "Pay & Activate" → `initiateSubscriptionCheckout` → redirect to provider.
+5. Return route hits `verifyAndActivate`, shows success screen with invoice download + email confirmation status, then routes to `/admin/billing`.
+
+Failure path: shows retry + "Try different method" + link back to plans.
+
+If no active provider is configured, checkout shows a soft banner: "Payments are being set up. Please contact support." and the Pay button is disabled — subscription table is untouched.
+
+## First shipped provider
+
+**SSLCommerz** adapter (`sslcommerz.ts`):
+
+- Fields: `store_id`, `api_key`, `sandbox`.
+- `createCheckout` posts to SSLCommerz Session API, returns `GatewayPageURL`.
+- `verifyPayment` calls Validator API with `val_id` from return payload.
+- `parseWebhook` verifies IPN signature.
+- Methods advertised: bKash, Nagad, Rocket, Visa, Mastercard, Amex, Bank, Internet Banking.
+
+Stubs registered but disabled: `bkash`, `nagad`, `manual`. Adding a new provider = one file in `providers/` + one row in registry — no other code changes.
+
+## Security
+
+- Provider credentials stored in `subscription_payment_providers.credentials` (jsonb) accessed only from server functions via `supabaseAdmin`. Never returned to the client raw.
+- Webhook routes verify provider signature before writes; use `supabaseAdmin` inside handler only.
+- Coupon validation server-side; client only sees `{ok, discount}`.
+- Invoice storage bucket private; access via signed URL from server function.
+- `assertPlan` untouched — this module manages plan activation itself and updates `stores` via `supabaseAdmin` after verified payment.
+
+## Out of scope (explicit)
+
+- Store customer checkout / payments_config / SSLCommerz-for-storefront — untouched.
+- Migrating existing manual bKash/Nagad owner "Payment Settings" (kept as-is for backward compatibility; a follow-up can retire it).
+- Refund workflow beyond a manual "mark refunded" toggle.
+- Multi-currency (BDT only for now).
+
+## Deliverables checklist
+
+- [ ] Migration: 5 tables + `validate_subscription_coupon` RPC + storage bucket + policies + grants.
+- [ ] `src/lib/subscription-pay/*` (types, registry, adapters, functions, server helpers, invoice, email).
+- [ ] Server routes: webhook per provider + return handler.
+- [ ] Owner UI: dashboard, providers, coupons + nav entry.
+- [ ] Admin billing checkout upgrade (cycle + coupon + real gateway).
+- [ ] Resend template + PDF invoice generator.
+- [ ] Typecheck + build clean.
