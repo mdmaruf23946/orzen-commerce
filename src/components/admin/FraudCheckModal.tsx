@@ -85,7 +85,18 @@ export function FraudCheckModal({ open, onOpenChange, phone, orderId }: Props) {
   const runFn = useServerFn(runFraudCheck);
   const cacheFn = useServerFn(getCachedFraudCheck);
   const autoFn = useServerFn(ensureAutoFraudCheck);
+  const resyncFn = useServerFn(resyncFraudCheck);
+  const amIOwnerFn = useServerFn(amIOwner);
   const qc = useQueryClient();
+
+  const { data: ownerInfo } = useQuery({
+    queryKey: ["am-i-owner"],
+    queryFn: () => amIOwnerFn({}),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+  const isOwner = !!ownerInfo?.isOwner;
+
 
   const { data, isLoading, error, isFetching } = useQuery({
     queryKey: ["fraud-check", phone, orderId],
