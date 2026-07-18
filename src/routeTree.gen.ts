@@ -80,6 +80,7 @@ import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$s
 import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/order.$orderId'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
 import { Route as AuthenticatedAdminInvoiceOrderIdRouteImport } from './routes/_authenticated/admin/invoice.$orderId'
+import { Route as ApiPublicSubscriptionPayWebhookProviderRouteImport } from './routes/api/public/subscription-pay/webhook.$provider'
 import { Route as AuthenticatedAdminBillingCheckoutPackageIdRouteImport } from './routes/_authenticated/admin/billing.checkout.$packageId'
 
 const AuthRoute = AuthRouteImport.update({
@@ -484,6 +485,12 @@ const AuthenticatedAdminInvoiceOrderIdRoute =
     path: '/invoice/$orderId',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const ApiPublicSubscriptionPayWebhookProviderRoute =
+  ApiPublicSubscriptionPayWebhookProviderRouteImport.update({
+    id: '/api/public/subscription-pay/webhook/$provider',
+    path: '/api/public/subscription-pay/webhook/$provider',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedAdminBillingCheckoutPackageIdRoute =
   AuthenticatedAdminBillingCheckoutPackageIdRouteImport.update({
     id: '/checkout/$packageId',
@@ -563,6 +570,7 @@ export interface FileRoutesByFullPath {
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
+  '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -632,6 +640,7 @@ export interface FileRoutesByTo {
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing': typeof AuthenticatedAdminBillingIndexRoute
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
+  '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -707,6 +716,7 @@ export interface FileRoutesById {
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/_authenticated/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
   '/_authenticated/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
+  '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -782,6 +792,7 @@ export interface FileRouteTypes {
     | '/store/$slug/product/$productId'
     | '/admin/billing/'
     | '/admin/billing/checkout/$packageId'
+    | '/api/public/subscription-pay/webhook/$provider'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -851,6 +862,7 @@ export interface FileRouteTypes {
     | '/store/$slug/product/$productId'
     | '/admin/billing'
     | '/admin/billing/checkout/$packageId'
+    | '/api/public/subscription-pay/webhook/$provider'
   id:
     | '__root__'
     | '/'
@@ -925,6 +937,7 @@ export interface FileRouteTypes {
     | '/store/$slug/product/$productId'
     | '/_authenticated/admin/billing/'
     | '/_authenticated/admin/billing/checkout/$packageId'
+    | '/api/public/subscription-pay/webhook/$provider'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -936,6 +949,7 @@ export interface RootRouteChildren {
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiImgSplatRoute: typeof ApiImgSplatRoute
   ApiPublicMessengerWebhookRoute: typeof ApiPublicMessengerWebhookRoute
+  ApiPublicSubscriptionPayWebhookProviderRoute: typeof ApiPublicSubscriptionPayWebhookProviderRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1437,6 +1451,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminInvoiceOrderIdRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/api/public/subscription-pay/webhook/$provider': {
+      id: '/api/public/subscription-pay/webhook/$provider'
+      path: '/api/public/subscription-pay/webhook/$provider'
+      fullPath: '/api/public/subscription-pay/webhook/$provider'
+      preLoaderRoute: typeof ApiPublicSubscriptionPayWebhookProviderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/admin/billing/checkout/$packageId': {
       id: '/_authenticated/admin/billing/checkout/$packageId'
       path: '/checkout/$packageId'
@@ -1644,6 +1665,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiChatRoute: ApiAiChatRoute,
   ApiImgSplatRoute: ApiImgSplatRoute,
   ApiPublicMessengerWebhookRoute: ApiPublicMessengerWebhookRoute,
+  ApiPublicSubscriptionPayWebhookProviderRoute:
+    ApiPublicSubscriptionPayWebhookProviderRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

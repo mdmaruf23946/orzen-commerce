@@ -508,13 +508,15 @@ export const verifyAndActivateSubscription = createServerFn({ method: "POST" })
         user_id: (inv as any).user_id,
         amount_off: Number((inv as any).discount ?? 0),
       });
-      await (supabaseAdmin as any).rpc("increment_coupon_usage", { _id: (inv as any).coupon_id }).catch(() => {
-        // Best-effort: RPC may not exist yet; do a plain update instead.
-        void supabaseAdmin
-          .from("subscription_coupons")
-          .update({ used_count: 1 } as any)
-          .eq("id", (inv as any).coupon_id);
-      });
+      const { data: cur } = await supabaseAdmin
+        .from("subscription_coupons")
+        .select("used_count")
+        .eq("id", (inv as any).coupon_id)
+        .maybeSingle();
+      await supabaseAdmin
+        .from("subscription_coupons")
+        .update({ used_count: Number((cur as any)?.used_count ?? 0) + 1 })
+        .eq("id", (inv as any).coupon_id);
     }
 
     // Generate + store invoice HTML, email receipt
