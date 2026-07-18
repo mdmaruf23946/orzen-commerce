@@ -3,7 +3,7 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getStoreBySlug, placeOrder, validateCoupon } from "@/lib/storefront.functions";
+import { getStoreBySlug, getStoreActiveGateway, placeOrder, validateCoupon } from "@/lib/storefront.functions";
 import { readCart, clearCart, type CartItem } from "@/lib/cart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
