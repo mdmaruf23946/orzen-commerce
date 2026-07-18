@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Package, User, ScrollText, Truck, ShieldCheck, Phone, MapPin,
-  Trash2, Printer,
+  Trash2, Printer, ImageOff,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { getOrderDetails, addInternalNote, deleteInternalNote } from "@/lib/business.functions";
@@ -12,6 +12,25 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { FraudCheckModal, RiskBadge } from "@/components/admin/FraudCheckModal";
+
+function resolveProductImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  return url.startsWith("http") ? url : `/api/img/${url}`;
+}
+
+function ProductImage({ url, alt }: { url: string | null | undefined; alt: string }) {
+  const [error, setError] = useState(false);
+  const src = resolveProductImageUrl(url);
+  if (!src || error) {
+    return (
+      <div className="grid h-full w-full place-items-center bg-muted">
+        <ImageOff className="h-5 w-5 text-muted-foreground" />
+        <span className="sr-only">{alt}</span>
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} className="h-full w-full object-cover" onError={() => setError(true)} />;
+}
 
 type Props = {
   open: boolean;
@@ -107,14 +126,14 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
               <Section icon={Package} title="Product">
                 <ul className="divide-y">
                   {items.map((it, i) => (
-                    <li key={i} className="flex gap-3 py-2">
-                      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
-                        {it.products?.primary_image_url && <img src={it.products.primary_image_url} alt={it.name_snapshot} className="h-full w-full object-cover" />}
+                    <li key={i} className="space-y-3 py-3">
+                      <div className="mx-auto h-32 w-32 shrink-0 overflow-hidden rounded-xl border bg-muted sm:h-36 sm:w-36">
+                        <ProductImage url={it.products?.primary_image_url} alt={it.name_snapshot} />
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium">{it.name_snapshot}</div>
+                      <div className="text-center">
+                        <div className="text-sm font-medium">{it.name_snapshot}</div>
                         {it.products?.sku && <div className="text-[10px] text-muted-foreground">SKU: {it.products.sku}</div>}
-                        <div className="mt-0.5 flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="mt-1 flex items-center justify-center gap-2 text-xs text-muted-foreground">
                           <span>Qty {it.qty} · ৳{Number(it.price_snapshot).toFixed(0)}</span>
                           <span className="font-semibold text-foreground">৳{(Number(it.price_snapshot) * it.qty).toFixed(0)}</span>
                         </div>
