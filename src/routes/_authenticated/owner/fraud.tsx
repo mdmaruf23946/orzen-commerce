@@ -339,6 +339,16 @@ function Metric({ label, value, tone }: { label: string; value: number; tone: "d
   );
 }
 
+function TestStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md border bg-background/60 p-2">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-sm font-semibold tabular-nums">{Number(value ?? 0).toLocaleString()}</div>
+    </div>
+  );
+}
+
+
 function BarBlock({ title, rows }: { title: string; rows: [string, number][] }) {
   const max = Math.max(1, ...rows.map(([, v]) => v));
   return (
