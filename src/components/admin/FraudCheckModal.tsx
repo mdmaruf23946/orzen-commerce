@@ -325,17 +325,32 @@ export function FraudCheckModal({ open, onOpenChange, phone, orderId }: Props) {
                   First checked: {d.first_checked_at ? new Date(d.first_checked_at).toLocaleString() : "—"}
                   {" · "}Source: <span className="capitalize">{d.last_check_source ?? "system"}</span>
                 </div>
-                {limitReached ? (
-                  <div className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-1.5 text-xs text-amber-700 dark:text-amber-500">
-                    <Lock className="h-3.5 w-3.5" /> Maximum Fraud Check limit reached
-                  </div>
-                ) : (
-                  <Button size="sm" variant="outline" onClick={recheck} disabled={isFetching}>
-                    <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
-                    Re-check ({count}/{max})
-                  </Button>
-                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  {isOwner && (
+                    <Button
+                      size="sm"
+                      variant={mismatch ? "default" : "outline"}
+                      onClick={resync}
+                      disabled={isFetching}
+                      title="Owner-only: recalculate totals from BD Courier and update the cached result"
+                    >
+                      <RotateCw className={`mr-1.5 h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
+                      Resync Fraud Check
+                    </Button>
+                  )}
+                  {limitReached ? (
+                    <div className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-1.5 text-xs text-amber-700 dark:text-amber-500">
+                      <Lock className="h-3.5 w-3.5" /> Maximum Fraud Check limit reached
+                    </div>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={recheck} disabled={isFetching}>
+                      <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
+                      Re-check ({count}/{max})
+                    </Button>
+                  )}
+                </div>
               </div>
+
             </>
           )}
         </div>
