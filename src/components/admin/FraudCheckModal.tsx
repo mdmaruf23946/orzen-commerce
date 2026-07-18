@@ -132,12 +132,6 @@ export function FraudCheckModal({ open, onOpenChange, phone, orderId }: Props) {
     </Dialog>
   );
 }
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 function Stat({ label, value, tone }: { label: string; value: any; tone?: "ok" | "bad" }) {
   const cls = tone === "ok" ? "text-emerald-600" : tone === "bad" ? "text-red-600" : "";
