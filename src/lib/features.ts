@@ -34,6 +34,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   customer_notes: "Customer Notes",
   returns: "Returns & Exchanges",
   custom_domain: "Custom Domain",
+  fraud_checker: "Fraud Checker",
 };
 
 export type PackageRow = {

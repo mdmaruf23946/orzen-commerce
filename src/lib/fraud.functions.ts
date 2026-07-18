@@ -91,7 +91,7 @@ export const updateFraudSettings = createServerFn({ method: "POST" })
     if (Object.keys(patch).length === 0) return { ok: true };
     const { error } = await supabaseAdmin
       .from("fraud_settings")
-      .update(patch)
+      .update(patch as any)
       .eq("id", "global");
     if (error) throw new Error(error.message);
     return { ok: true };
