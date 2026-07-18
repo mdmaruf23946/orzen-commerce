@@ -1,151 +1,103 @@
-## Goal
+# Store Payment Gateway Management
 
-A dedicated **Subscription Payment Gateway** module in the Winner Admin Panel that handles ORZEN plan payments (Free / Basic / Business / Custom) end-to-end. Modular provider architecture so the Winner Admin can add / replace / enable / disable providers at any time without touching the subscription logic. Store customer payments remain untouched.
+A per-store payment gateway module that lets each store owner connect their own merchant account for any provider the Winner Admin has enabled. Customer payments go directly to the store owner's account — the platform never touches funds.
 
-## Architecture (pluggable providers)
+## Scope
 
-```text
-src/lib/subscription-pay/
-  providers/
-    types.ts              # SubscriptionPaymentProvider interface
-    registry.ts           # id -> provider adapter map
-    sslcommerz.ts         # first shipped adapter (server-only)
-    bkash.ts              # stub adapter (disabled)
-    manual.ts             # manual/offline verify fallback
-  pay.functions.ts        # initiatePayment / verifyPayment / handleWebhook
-  pay.server.ts           # provider dispatch + secret loading
-  invoice.server.ts       # PDF invoice generation
-  email.server.ts         # Resend email send
-```
+- New store-admin page: **Payment Gateway** (`/admin/payment-gateway`).
+- Winner Admin defines which providers exist and are enabled globally (reuses the existing modular provider registry from Subscription Payments).
+- Store owner: connect / disconnect / switch / update / test / enable-disable per provider. Only one gateway is `active` per store at a time.
+- Checkout: online methods appear only when an active, connected gateway exists; otherwise show a clear warning and offer manual methods (COD / bKash / Nagad already in `payments_config`).
+- Credentials encrypted at rest, never returned to the client.
 
-Each adapter implements:
+## Providers
 
-```ts
-interface SubscriptionPaymentProvider {
-  id: string;              // "sslcommerz", "bkash", ...
-  label: string;
-  methods: string[];       // ["bkash","nagad","visa",...]
-  supportsSandbox: boolean;
-  testConnection(cfg): Promise<{ok:boolean; message:string; latency_ms:number}>;
-  createCheckout(ctx): Promise<{redirect_url:string; provider_ref:string}>;
-  verifyPayment(ctx): Promise<{status:"paid"|"failed"|"pending"; amount:number; currency:string; raw:any}>;
-  parseWebhook?(req): Promise<{provider_ref:string; status:string; raw:any}>;
-}
-```
+Reuse and extend `src/lib/subscription-pay/providers/` as a shared modular provider layer (rename conceptually to `payment-providers/`, keep subscription-pay adapters working). Ship adapters:
 
-Subscription activation code never imports a provider directly — it calls `pay.server.ts`, which dispatches to the active provider via `registry`.
+- SSLCommerz (already implemented)
+- ShurjoPay
+- AmarPay
+- PortWallet
+- Stripe (BDT/USD via `enable_stripe` BYOK style — store-owner enters own keys)
+- PayPal
+- Manual (fallback, disabled by default)
+
+Each adapter declares `credentialFields` (Merchant ID, Store ID, API Key, Secret, Username, Password, Sandbox toggle — only the fields it actually needs). Adding a new provider = one file + one registry line. No changes to checkout or store logic.
 
 ## Data model (one migration)
 
-New tables (all with GRANTs + RLS + `TO service_role` full access):
+New tables:
 
-- `subscription_payment_providers` — one row per registered provider (id, label, is_active, enabled, sandbox, credentials jsonb, status, last_tested_at, latency_ms). Only one row may have `is_active=true`. Owner-only SELECT/UPDATE.
-- `subscription_invoices` — invoice_no, store_id, user_id, package_id, billing_cycle (monthly/3m/6m/yearly), amount, discount, coupon_id, tax, total, currency, status (pending/paid/failed/refunded), pdf_path, issued_at, paid_at.
-- `subscription_transactions` — invoice_id, provider_id, provider_ref, method, amount, status (initiated/pending/success/failed/cancelled), sandbox bool, raw jsonb, created_at, verified_at. Indexed by (provider_id, provider_ref).
-- `subscription_coupons` — code (unique upper), type (percent/fixed), value, min_amount, applies_to_packages uuid[], applies_to_cycles text[], usage_limit, used_count, starts_at, expires_at, active. Owner-managed.
-- `subscription_coupon_redemptions` — coupon_id, invoice_id, user_id, amount_off, redeemed_at.
+- `platform_payment_gateways` — Winner Admin catalog. Columns: `id` (provider slug, PK), `label`, `enabled` (bool), `sort_order`, `logo_url`, `notes`, timestamps. Owner-only writes; **all authenticated users can SELECT enabled rows** so store admins see what's available.
+- `store_payment_gateways` — per-store connections. Columns: `id`, `store_id`, `provider_id`, `credentials_ciphertext` (text, AES-256-GCM), `sandbox` (bool), `enabled` (bool), `is_active` (bool — only one true per store, partial unique index), `status` (`connected` / `disconnected` / `error` / `untested`), `last_tested_at`, `last_test_result` (jsonb, no secrets), `connected_at`, `updated_at`. RLS: `store_id` owner via `is_store_owner`. **`credentials_ciphertext` is never returned to the client** — server functions return only a masked preview (last 4 chars) + `has_credentials` boolean.
 
-RPC `validate_subscription_coupon(_code, _package_id, _cycle, _amount)` mirrors existing `validate_coupon` shape.
+Grants: `authenticated` SELECT/INSERT/UPDATE/DELETE scoped by RLS; `service_role` full. `anon` gets no access.
 
-Store owners have SELECT on their own `subscription_invoices` / `subscription_transactions` (via `owner_user_id`). Coupons + provider config are owner-only.
+Encryption key: reuse the existing `APP_USER_CONNECTION_KEY_SECRET` env (already documented in the connector knowledge) via a new `src/lib/crypto/credentials.server.ts` helper (`encrypt` / `decrypt`, AES-256-GCM). Plaintext credentials only touch server-fn handlers.
 
-## Server functions (`src/lib/subscription-pay/pay.functions.ts`)
+## Server functions — `src/lib/store-payments.functions.ts`
 
-All `requireSupabaseAuth` (owner-only where noted):
+All `requireSupabaseAuth`, scoped to the caller's store:
 
-- `listProviders()` / `getActiveProvider()` — owner only.
-- `saveProvider({id, credentials, sandbox, enabled})` — owner only. Credentials stored server-side; never returned to client (only masked preview + `has_credentials` boolean).
-- `setActiveProvider(id)` — owner only.
-- `testProviderConnection(id)` — owner only; calls adapter `testConnection`, persists status/latency.
-- `initiateSubscriptionCheckout({package_id, cycle, coupon_code?})` — authenticated store owner. Computes amount from `subscription_packages` + billing cycle discount (`get_billing_discounts`) + coupon. Creates `subscription_invoices` (pending) + `subscription_transactions` (initiated). Calls active adapter `createCheckout`, returns `redirect_url`.
-- `verifyAndActivate({provider_ref})` — called from the return URL. Verifies via adapter, on success: marks invoice paid, updates `stores.package_id / expires_at / last_renewed_at / subscription_status='active'`, generates PDF invoice, emails receipt, records coupon redemption.
-- `listSubscriptionPayments({filters})` — owner dashboard feed.
-- `subscriptionPaymentsStats()` — totals + monthly revenue + counts by status for the dashboard.
+- `listAvailableGateways()` — joins `platform_payment_gateways` (enabled) with the caller's `store_payment_gateways` row per provider. Returns provider meta + `credentialFields` (from registry) + connection summary (masked, no secrets).
+- `saveStoreGateway({ provider_id, credentials, sandbox, enabled })` — validates credential shape against adapter, encrypts, upserts row. Runs `testConnection` before persisting (`validate credentials before saving`); on failure returns the error without writing. Sets `status`, `connected_at`.
+- `testStoreGateway({ provider_id })` — decrypts, calls adapter `testConnection`, stores result. Returns `{ ok, message, latency_ms }`.
+- `setActiveStoreGateway({ provider_id })` — flips `is_active`, ensures single active row (transaction).
+- `toggleStoreGateway({ provider_id, enabled })` — enable/disable without disconnecting.
+- `disconnectStoreGateway({ provider_id })` — clears credentials + row, or wipes `credentials_ciphertext` and marks disconnected.
+- `getActiveStoreGatewayForCheckout(store_id)` — server-only helper (no `requireSupabaseAuth`, called from `placeOrder`) returning `{ provider_id, sandbox }` or `null`. Used by checkout to know whether online payments are available.
 
-## Server routes (raw HTTP)
+Winner-Admin functions in `src/lib/owner.functions.ts` (owner-gated): `listPlatformGateways`, `togglePlatformGateway`, `upsertPlatformGateway`.
 
-- `src/routes/api/public/subscription-pay/webhook.$provider.ts` — POST endpoint per provider. Verifies signature inside the adapter, then calls `verifyAndActivate`. Public prefix, self-authenticated per provider.
-- `src/routes/api/public/subscription-pay/return.ts` — GET callback used by hosted checkouts; forwards to a client route that calls `verifyAndActivate`.
+## Store-admin UI — `src/routes/_authenticated/admin/payment-gateway.tsx`
 
-## Coupons
+- Header: current active gateway pill (name + mode badge + status dot), "No active gateway" empty state.
+- Grid of provider cards (one per enabled platform gateway). Each card:
+  - Logo, label, methods badges.
+  - Status pill: `Connected` / `Disconnected` / `Missing credentials` / `Sandbox` / `Error`.
+  - Last connected time, last test result.
+  - Actions: **Connect** (opens drawer) / **Test** / **Set active** / **Enable-Disable** switch / **Disconnect** / **Update credentials**.
+- Configure drawer: fields rendered from adapter `credentialFields` (password inputs masked, existing values shown as `••••1234`), Sandbox switch, "Test connection" button, Save. Save runs test → persists on success.
+- Mobile-first: single column < 640px, sticky action bar, compact cards. Reuse existing admin card style + Sonner toasts.
 
-New table + owner CRUD UI at `/owner/subscription-coupons` (list, create, toggle active, edit). Storefront-facing coupon entry lives on the store-admin checkout page. Reuses the `validate_subscription_coupon` RPC. Redemption row written atomically inside `verifyAndActivate`.
+Nav: add "Payment Gateway" entry to `src/routes/_authenticated/admin/route.tsx` sidebar (icon: CreditCard).
 
-## Invoice + email
+## Winner-Admin UI — `src/routes/_authenticated/owner/payment-gateways.tsx`
 
-- `invoice.server.ts` builds an HTML invoice with brand tokens, renders to PDF via `@react-pdf/renderer` (Worker-compatible; falls back to a Puppeteer-free path). PDF stored in Supabase Storage bucket `subscription-invoices` (private). Signed URL returned to owner.
-- `email.server.ts` uses the existing Resend connector to send:
-  - Payment receipt (with PDF attachment + signed link).
-  - Payment failure notice.
-  Subject/body pulled from a template file, brand color from `platform_settings`.
+- Table of all providers in the registry with global enable toggle, sort order, edit label/notes/logo. Only enabled rows appear to store owners. Add nav entry under existing owner "Payments" group.
 
-If Resend connector is not linked yet, the plan surfaces a step to link it before enabling emails; module works without it (email step is a no-op with a warning).
+## Checkout integration — `src/routes/store/$slug/checkout.tsx` + `src/lib/storefront.functions.ts`
 
-## Winner Admin UI
+- On checkout page load, call `getActiveStoreGatewayForCheckout` (via a new public server fn that returns only `{ provider_id, sandbox, label, methods } | null` — no credentials).
+- If `null` → hide the "Pay online" section, show a `<Alert>`: "Online payment is not configured for this store yet. Please choose Cash on Delivery or another manual method." Manual methods (`payments_config`) remain untouched.
+- If present → render "Pay with {label}" button. Selecting online payment routes `placeOrder` to a new `initiateStoreCheckout(orderId)` server fn that: loads the active gateway server-side, decrypts, calls adapter `createCheckout`, returns `redirect_url`. Return URL hits a store-scoped landing route (`/store/$slug/pay/return`) that verifies via adapter `verifyPayment` and marks the order paid.
+- Webhook: reuse the existing `/api/public/subscription-pay/webhook.$provider.ts` pattern with a new route `/api/public/store-pay/webhook.$provider.ts` that resolves the store from the signed payload/`tran_id` prefix, verifies signature via adapter, marks the order paid via `supabaseAdmin`.
 
-New menu group **"Subscription Payments"** in `src/routes/_authenticated/owner/route.tsx` with three routes:
-
-1. `/owner/subscription-pay` — **Dashboard**
-   - Cards: Gateway Status, Connected Provider (+ mode badge), Total Payments, Successful, Failed, Pending, Monthly Revenue.
-   - Recent Transactions table (customer, plan, cycle, amount, method, status, date, actions: view invoice, resend email, mark refunded).
-   - Mobile: cards stack, transactions become card list.
-
-2. `/owner/subscription-pay/providers` — **Provider Management**
-   - List of registered providers with status pills (Connected / Disabled / Missing credentials / Sandbox).
-   - Connect / Configure drawer per provider: credential fields defined by adapter metadata, sandbox switch, enable switch, Test Connection button with latency + error banner, Set Active button. Disconnect clears credentials.
-
-3. `/owner/subscription-coupons` — **Coupons**
-   - CRUD table for subscription-only coupons, scoped to packages + billing cycles, with usage stats.
-
-Design: reuse existing owner card style, Sonner toasts, mobile-first (single column < 640px), Sparkles/CreditCard icons.
-
-## Store-owner checkout flow
-
-Update `/admin/billing/checkout/$packageId`:
-
-1. Select billing cycle (monthly / 3m / 6m / yearly). Discount pulled from `get_billing_discounts` RPC.
-2. Optional coupon input → `validate_subscription_coupon`.
-3. Show final total + method icons from active provider.
-4. "Pay & Activate" → `initiateSubscriptionCheckout` → redirect to provider.
-5. Return route hits `verifyAndActivate`, shows success screen with invoice download + email confirmation status, then routes to `/admin/billing`.
-
-Failure path: shows retry + "Try different method" + link back to plans.
-
-If no active provider is configured, checkout shows a soft banner: "Payments are being set up. Please contact support." and the Pay button is disabled — subscription table is untouched.
-
-## First shipped provider
-
-**SSLCommerz** adapter (`sslcommerz.ts`):
-
-- Fields: `store_id`, `api_key`, `sandbox`.
-- `createCheckout` posts to SSLCommerz Session API, returns `GatewayPageURL`.
-- `verifyPayment` calls Validator API with `val_id` from return payload.
-- `parseWebhook` verifies IPN signature.
-- Methods advertised: bKash, Nagad, Rocket, Visa, Mastercard, Amex, Bank, Internet Banking.
-
-Stubs registered but disabled: `bkash`, `nagad`, `manual`. Adding a new provider = one file in `providers/` + one row in registry — no other code changes.
+Order table already has `payment_method`, `txn_id`, `payments` table. Add `payment_provider` text column and `payment_status` if not already present (verify in migration; only add missing columns).
 
 ## Security
 
-- Provider credentials stored in `subscription_payment_providers.credentials` (jsonb) accessed only from server functions via `supabaseAdmin`. Never returned to the client raw.
-- Webhook routes verify provider signature before writes; use `supabaseAdmin` inside handler only.
-- Coupon validation server-side; client only sees `{ok, discount}`.
-- Invoice storage bucket private; access via signed URL from server function.
-- `assertPlan` untouched — this module manages plan activation itself and updates `stores` via `supabaseAdmin` after verified payment.
+- Credentials encrypted server-side with `APP_USER_CONNECTION_KEY_SECRET`; ciphertext never leaves server functions.
+- `saveStoreGateway` validates + tests before persisting (`validate credentials before saving`).
+- RLS on `store_payment_gateways` scoped strictly by store ownership; no `anon` grants.
+- Client only ever sees masked previews + `has_credentials` + `status`.
+- Webhooks verify signature via adapter before any DB write, use `supabaseAdmin` inside handler only.
+- Rate-limit `testStoreGateway` per store (in-fn simple check on `last_tested_at`).
 
-## Out of scope (explicit)
+## Out of scope
 
-- Store customer checkout / payments_config / SSLCommerz-for-storefront — untouched.
-- Migrating existing manual bKash/Nagad owner "Payment Settings" (kept as-is for backward compatibility; a follow-up can retire it).
-- Refund workflow beyond a manual "mark refunded" toggle.
-- Multi-currency (BDT only for now).
+- Migrating the existing Subscription Payments module (kept as-is; this module is for storefront checkout only).
+- Refunds beyond a manual "mark refunded" (future).
+- Multi-active gateways per store (single active by design; can be extended later via `payment_methods` array on the row).
 
 ## Deliverables checklist
 
-- [ ] Migration: 5 tables + `validate_subscription_coupon` RPC + storage bucket + policies + grants.
-- [ ] `src/lib/subscription-pay/*` (types, registry, adapters, functions, server helpers, invoice, email).
-- [ ] Server routes: webhook per provider + return handler.
-- [ ] Owner UI: dashboard, providers, coupons + nav entry.
-- [ ] Admin billing checkout upgrade (cycle + coupon + real gateway).
-- [ ] Resend template + PDF invoice generator.
+- [ ] Migration: `platform_payment_gateways` + `store_payment_gateways` + grants + RLS + partial unique index on `(store_id) where is_active`.
+- [ ] `src/lib/crypto/credentials.server.ts` (AES-256-GCM helpers).
+- [ ] Extend provider registry with ShurjoPay, AmarPay, PortWallet, Stripe, PayPal adapters (SSLCommerz + Manual reused).
+- [ ] `src/lib/store-payments.functions.ts` + `store-payments.server.ts` dispatch.
+- [ ] `src/routes/api/public/store-pay/webhook.$provider.ts` + return route.
+- [ ] Store-admin UI page + nav entry.
+- [ ] Winner-admin UI page + nav entry.
+- [ ] Checkout page + `placeOrder` integration, "no gateway" alert.
 - [ ] Typecheck + build clean.
