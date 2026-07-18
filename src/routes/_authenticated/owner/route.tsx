@@ -25,8 +25,11 @@ const groups: NavGroup[] = [
     { to: "/owner/health", label: "Store Health", icon: Activity },
   ]},
   { label: "Billing", links: [
+    { to: "/owner/subscription-pay", label: "Subscription Payments", icon: CreditCard },
+    { to: "/owner/subscription-pay/providers", label: "Payment Providers", icon: Settings },
+    { to: "/owner/subscription-coupons", label: "Subscription Coupons", icon: Sparkles },
     { to: "/owner/subscriptions", label: "Subscriptions", icon: Users },
-    { to: "/owner/billing", label: "Payments", icon: Wallet },
+    { to: "/owner/billing", label: "Manual Payments", icon: Wallet },
     { to: "/owner/packages", label: "Packages", icon: Package },
     { to: "/owner/payment-settings", label: "Payment Settings", icon: CreditCard },
   ]},

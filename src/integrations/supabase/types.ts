@@ -1853,6 +1853,184 @@ export type Database = {
           },
         ]
       }
+      subscription_coupon_redemptions: {
+        Row: {
+          amount_off: number
+          coupon_id: string
+          id: string
+          invoice_id: string
+          redeemed_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_off?: number
+          coupon_id: string
+          id?: string
+          invoice_id: string
+          redeemed_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_off?: number
+          coupon_id?: string
+          id?: string
+          invoice_id?: string
+          redeemed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_coupon_redemptions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_coupons: {
+        Row: {
+          active: boolean
+          applies_to_cycles: string[]
+          applies_to_packages: string[]
+          code: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          min_amount: number
+          starts_at: string | null
+          type: string
+          updated_at: string
+          usage_limit: number | null
+          used_count: number
+          value: number
+        }
+        Insert: {
+          active?: boolean
+          applies_to_cycles?: string[]
+          applies_to_packages?: string[]
+          code: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          min_amount?: number
+          starts_at?: string | null
+          type: string
+          updated_at?: string
+          usage_limit?: number | null
+          used_count?: number
+          value: number
+        }
+        Update: {
+          active?: boolean
+          applies_to_cycles?: string[]
+          applies_to_packages?: string[]
+          code?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          min_amount?: number
+          starts_at?: string | null
+          type?: string
+          updated_at?: string
+          usage_limit?: number | null
+          used_count?: number
+          value?: number
+        }
+        Relationships: []
+      }
+      subscription_invoices: {
+        Row: {
+          amount: number
+          billing_cycle: string
+          coupon_id: string | null
+          created_at: string
+          currency: string
+          discount: number
+          id: string
+          invoice_no: string
+          issued_at: string
+          package_id: string | null
+          paid_at: string | null
+          pdf_path: string | null
+          status: string
+          store_id: string | null
+          tax: number
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          billing_cycle: string
+          coupon_id?: string | null
+          created_at?: string
+          currency?: string
+          discount?: number
+          id?: string
+          invoice_no: string
+          issued_at?: string
+          package_id?: string | null
+          paid_at?: string | null
+          pdf_path?: string | null
+          status?: string
+          store_id?: string | null
+          tax?: number
+          total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          billing_cycle?: string
+          coupon_id?: string | null
+          created_at?: string
+          currency?: string
+          discount?: number
+          id?: string
+          invoice_no?: string
+          issued_at?: string
+          package_id?: string | null
+          paid_at?: string | null
+          pdf_path?: string | null
+          status?: string
+          store_id?: string | null
+          tax?: number
+          total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_invoices_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_invoices_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_notifications: {
         Row: {
           created_at: string
@@ -1953,6 +2131,108 @@ export type Database = {
           trial_days?: number
         }
         Relationships: []
+      }
+      subscription_payment_providers: {
+        Row: {
+          created_at: string
+          credentials: Json
+          enabled: boolean
+          id: string
+          is_active: boolean
+          label: string
+          last_tested_at: string | null
+          latency_ms: number | null
+          sandbox: boolean
+          status: string | null
+          status_message: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credentials?: Json
+          enabled?: boolean
+          id: string
+          is_active?: boolean
+          label: string
+          last_tested_at?: string | null
+          latency_ms?: number | null
+          sandbox?: boolean
+          status?: string | null
+          status_message?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credentials?: Json
+          enabled?: boolean
+          id?: string
+          is_active?: boolean
+          label?: string
+          last_tested_at?: string | null
+          latency_ms?: number | null
+          sandbox?: boolean
+          status?: string | null
+          status_message?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subscription_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          invoice_id: string | null
+          method: string | null
+          provider_id: string | null
+          provider_ref: string | null
+          raw: Json | null
+          sandbox: boolean
+          status: string
+          verified_at: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          method?: string | null
+          provider_id?: string | null
+          provider_ref?: string | null
+          raw?: Json | null
+          sandbox?: boolean
+          status?: string
+          verified_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          method?: string | null
+          provider_id?: string | null
+          provider_ref?: string | null
+          raw?: Json | null
+          sandbox?: boolean
+          status?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_transactions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_transactions_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_payment_providers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       support_tickets: {
         Row: {
@@ -2128,6 +2408,15 @@ export type Database = {
       resolve_domain: { Args: { _host: string }; Returns: Json }
       validate_coupon: {
         Args: { _code: string; _store_id: string; _subtotal: number }
+        Returns: Json
+      }
+      validate_subscription_coupon: {
+        Args: {
+          _amount: number
+          _code: string
+          _cycle: string
+          _package_id: string
+        }
         Returns: Json
       }
     }

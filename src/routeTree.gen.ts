@@ -28,6 +28,7 @@ import { Route as AuthenticatedOwnerUsersRouteImport } from './routes/_authentic
 import { Route as AuthenticatedOwnerSystemRouteImport } from './routes/_authenticated/owner/system'
 import { Route as AuthenticatedOwnerSupportRouteImport } from './routes/_authenticated/owner/support'
 import { Route as AuthenticatedOwnerSubscriptionsRouteImport } from './routes/_authenticated/owner/subscriptions'
+import { Route as AuthenticatedOwnerSubscriptionCouponsRouteImport } from './routes/_authenticated/owner/subscription-coupons'
 import { Route as AuthenticatedOwnerStoresRouteImport } from './routes/_authenticated/owner/stores'
 import { Route as AuthenticatedOwnerStoreTemplateRouteImport } from './routes/_authenticated/owner/store-template'
 import { Route as AuthenticatedOwnerReportsRouteImport } from './routes/_authenticated/owner/reports'
@@ -74,12 +75,17 @@ import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminBannersRouteImport } from './routes/_authenticated/admin/banners'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin/analytics'
 import { Route as AuthenticatedAdminAiAgentRouteImport } from './routes/_authenticated/admin/ai-agent'
+import { Route as AuthenticatedOwnerSubscriptionPayRouteRouteImport } from './routes/_authenticated/owner/subscription-pay.route'
 import { Route as AuthenticatedAdminBillingRouteRouteImport } from './routes/_authenticated/admin/billing.route'
+import { Route as AuthenticatedOwnerSubscriptionPayIndexRouteImport } from './routes/_authenticated/owner/subscription-pay.index'
 import { Route as AuthenticatedAdminBillingIndexRouteImport } from './routes/_authenticated/admin/billing.index'
 import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
 import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/order.$orderId'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
+import { Route as AuthenticatedOwnerSubscriptionPayProvidersRouteImport } from './routes/_authenticated/owner/subscription-pay.providers'
 import { Route as AuthenticatedAdminInvoiceOrderIdRouteImport } from './routes/_authenticated/admin/invoice.$orderId'
+import { Route as AuthenticatedAdminBillingReturnRouteImport } from './routes/_authenticated/admin/billing.return'
+import { Route as ApiPublicSubscriptionPayWebhookProviderRouteImport } from './routes/api/public/subscription-pay/webhook.$provider'
 import { Route as AuthenticatedAdminBillingCheckoutPackageIdRouteImport } from './routes/_authenticated/admin/billing.checkout.$packageId'
 
 const AuthRoute = AuthRouteImport.update({
@@ -178,6 +184,12 @@ const AuthenticatedOwnerSubscriptionsRoute =
   AuthenticatedOwnerSubscriptionsRouteImport.update({
     id: '/subscriptions',
     path: '/subscriptions',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerSubscriptionCouponsRoute =
+  AuthenticatedOwnerSubscriptionCouponsRouteImport.update({
+    id: '/subscription-coupons',
+    path: '/subscription-coupons',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
 const AuthenticatedOwnerStoresRoute =
@@ -449,11 +461,23 @@ const AuthenticatedAdminAiAgentRoute =
     path: '/ai-agent',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedOwnerSubscriptionPayRouteRoute =
+  AuthenticatedOwnerSubscriptionPayRouteRouteImport.update({
+    id: '/subscription-pay',
+    path: '/subscription-pay',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
 const AuthenticatedAdminBillingRouteRoute =
   AuthenticatedAdminBillingRouteRouteImport.update({
     id: '/billing',
     path: '/billing',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedOwnerSubscriptionPayIndexRoute =
+  AuthenticatedOwnerSubscriptionPayIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedOwnerSubscriptionPayRouteRoute,
   } as any)
 const AuthenticatedAdminBillingIndexRoute =
   AuthenticatedAdminBillingIndexRouteImport.update({
@@ -478,11 +502,29 @@ const ApiPublicMessengerWebhookRoute =
     path: '/api/public/messenger/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedOwnerSubscriptionPayProvidersRoute =
+  AuthenticatedOwnerSubscriptionPayProvidersRouteImport.update({
+    id: '/providers',
+    path: '/providers',
+    getParentRoute: () => AuthenticatedOwnerSubscriptionPayRouteRoute,
+  } as any)
 const AuthenticatedAdminInvoiceOrderIdRoute =
   AuthenticatedAdminInvoiceOrderIdRouteImport.update({
     id: '/invoice/$orderId',
     path: '/invoice/$orderId',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminBillingReturnRoute =
+  AuthenticatedAdminBillingReturnRouteImport.update({
+    id: '/return',
+    path: '/return',
+    getParentRoute: () => AuthenticatedAdminBillingRouteRoute,
+  } as any)
+const ApiPublicSubscriptionPayWebhookProviderRoute =
+  ApiPublicSubscriptionPayWebhookProviderRouteImport.update({
+    id: '/api/public/subscription-pay/webhook/$provider',
+    path: '/api/public/subscription-pay/webhook/$provider',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const AuthenticatedAdminBillingCheckoutPackageIdRoute =
   AuthenticatedAdminBillingCheckoutPackageIdRouteImport.update({
@@ -499,6 +541,7 @@ export interface FileRoutesByFullPath {
   '/owner': typeof AuthenticatedOwnerRouteRouteWithChildren
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
   '/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
+  '/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
@@ -545,6 +588,7 @@ export interface FileRoutesByFullPath {
   '/owner/reports': typeof AuthenticatedOwnerReportsRoute
   '/owner/store-template': typeof AuthenticatedOwnerStoreTemplateRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
+  '/owner/subscription-coupons': typeof AuthenticatedOwnerSubscriptionCouponsRoute
   '/owner/subscriptions': typeof AuthenticatedOwnerSubscriptionsRoute
   '/owner/support': typeof AuthenticatedOwnerSupportRoute
   '/owner/system': typeof AuthenticatedOwnerSystemRoute
@@ -557,12 +601,16 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/owner/': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
+  '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
+  '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
+  '/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
+  '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -614,6 +662,7 @@ export interface FileRoutesByTo {
   '/owner/reports': typeof AuthenticatedOwnerReportsRoute
   '/owner/store-template': typeof AuthenticatedOwnerStoreTemplateRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
+  '/owner/subscription-coupons': typeof AuthenticatedOwnerSubscriptionCouponsRoute
   '/owner/subscriptions': typeof AuthenticatedOwnerSubscriptionsRoute
   '/owner/support': typeof AuthenticatedOwnerSupportRoute
   '/owner/system': typeof AuthenticatedOwnerSystemRoute
@@ -626,12 +675,16 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/owner': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug': typeof StoreSlugIndexRoute
+  '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
+  '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing': typeof AuthenticatedAdminBillingIndexRoute
+  '/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
+  '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -643,6 +696,7 @@ export interface FileRoutesById {
   '/_authenticated/owner': typeof AuthenticatedOwnerRouteRouteWithChildren
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
   '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
+  '/_authenticated/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
   '/_authenticated/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/banners': typeof AuthenticatedAdminBannersRoute
@@ -689,6 +743,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/reports': typeof AuthenticatedOwnerReportsRoute
   '/_authenticated/owner/store-template': typeof AuthenticatedOwnerStoreTemplateRoute
   '/_authenticated/owner/stores': typeof AuthenticatedOwnerStoresRoute
+  '/_authenticated/owner/subscription-coupons': typeof AuthenticatedOwnerSubscriptionCouponsRoute
   '/_authenticated/owner/subscriptions': typeof AuthenticatedOwnerSubscriptionsRoute
   '/_authenticated/owner/support': typeof AuthenticatedOwnerSupportRoute
   '/_authenticated/owner/system': typeof AuthenticatedOwnerSystemRoute
@@ -701,12 +756,16 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/owner/': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
+  '/_authenticated/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/_authenticated/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
+  '/_authenticated/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/_authenticated/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
+  '/_authenticated/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/_authenticated/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
+  '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -718,6 +777,7 @@ export interface FileRouteTypes {
     | '/owner'
     | '/store/$slug'
     | '/admin/billing'
+    | '/owner/subscription-pay'
     | '/admin/ai-agent'
     | '/admin/analytics'
     | '/admin/banners'
@@ -764,6 +824,7 @@ export interface FileRouteTypes {
     | '/owner/reports'
     | '/owner/store-template'
     | '/owner/stores'
+    | '/owner/subscription-coupons'
     | '/owner/subscriptions'
     | '/owner/support'
     | '/owner/system'
@@ -776,12 +837,16 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/owner/'
     | '/store/$slug/'
+    | '/admin/billing/return'
     | '/admin/invoice/$orderId'
+    | '/owner/subscription-pay/providers'
     | '/api/public/messenger/webhook'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/admin/billing/'
+    | '/owner/subscription-pay/'
     | '/admin/billing/checkout/$packageId'
+    | '/api/public/subscription-pay/webhook/$provider'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -833,6 +898,7 @@ export interface FileRouteTypes {
     | '/owner/reports'
     | '/owner/store-template'
     | '/owner/stores'
+    | '/owner/subscription-coupons'
     | '/owner/subscriptions'
     | '/owner/support'
     | '/owner/system'
@@ -845,12 +911,16 @@ export interface FileRouteTypes {
     | '/admin'
     | '/owner'
     | '/store/$slug'
+    | '/admin/billing/return'
     | '/admin/invoice/$orderId'
+    | '/owner/subscription-pay/providers'
     | '/api/public/messenger/webhook'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/admin/billing'
+    | '/owner/subscription-pay'
     | '/admin/billing/checkout/$packageId'
+    | '/api/public/subscription-pay/webhook/$provider'
   id:
     | '__root__'
     | '/'
@@ -861,6 +931,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner'
     | '/store/$slug'
     | '/_authenticated/admin/billing'
+    | '/_authenticated/owner/subscription-pay'
     | '/_authenticated/admin/ai-agent'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/banners'
@@ -907,6 +978,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/reports'
     | '/_authenticated/owner/store-template'
     | '/_authenticated/owner/stores'
+    | '/_authenticated/owner/subscription-coupons'
     | '/_authenticated/owner/subscriptions'
     | '/_authenticated/owner/support'
     | '/_authenticated/owner/system'
@@ -919,12 +991,16 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/owner/'
     | '/store/$slug/'
+    | '/_authenticated/admin/billing/return'
     | '/_authenticated/admin/invoice/$orderId'
+    | '/_authenticated/owner/subscription-pay/providers'
     | '/api/public/messenger/webhook'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/_authenticated/admin/billing/'
+    | '/_authenticated/owner/subscription-pay/'
     | '/_authenticated/admin/billing/checkout/$packageId'
+    | '/api/public/subscription-pay/webhook/$provider'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -936,6 +1012,7 @@ export interface RootRouteChildren {
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiImgSplatRoute: typeof ApiImgSplatRoute
   ApiPublicMessengerWebhookRoute: typeof ApiPublicMessengerWebhookRoute
+  ApiPublicSubscriptionPayWebhookProviderRoute: typeof ApiPublicSubscriptionPayWebhookProviderRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1071,6 +1148,13 @@ declare module '@tanstack/react-router' {
       path: '/subscriptions'
       fullPath: '/owner/subscriptions'
       preLoaderRoute: typeof AuthenticatedOwnerSubscriptionsRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/subscription-coupons': {
+      id: '/_authenticated/owner/subscription-coupons'
+      path: '/subscription-coupons'
+      fullPath: '/owner/subscription-coupons'
+      preLoaderRoute: typeof AuthenticatedOwnerSubscriptionCouponsRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/owner/stores': {
@@ -1395,12 +1479,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAiAgentRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/owner/subscription-pay': {
+      id: '/_authenticated/owner/subscription-pay'
+      path: '/subscription-pay'
+      fullPath: '/owner/subscription-pay'
+      preLoaderRoute: typeof AuthenticatedOwnerSubscriptionPayRouteRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
     '/_authenticated/admin/billing': {
       id: '/_authenticated/admin/billing'
       path: '/billing'
       fullPath: '/admin/billing'
       preLoaderRoute: typeof AuthenticatedAdminBillingRouteRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/owner/subscription-pay/': {
+      id: '/_authenticated/owner/subscription-pay/'
+      path: '/'
+      fullPath: '/owner/subscription-pay/'
+      preLoaderRoute: typeof AuthenticatedOwnerSubscriptionPayIndexRouteImport
+      parentRoute: typeof AuthenticatedOwnerSubscriptionPayRouteRoute
     }
     '/_authenticated/admin/billing/': {
       id: '/_authenticated/admin/billing/'
@@ -1430,12 +1528,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMessengerWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/owner/subscription-pay/providers': {
+      id: '/_authenticated/owner/subscription-pay/providers'
+      path: '/providers'
+      fullPath: '/owner/subscription-pay/providers'
+      preLoaderRoute: typeof AuthenticatedOwnerSubscriptionPayProvidersRouteImport
+      parentRoute: typeof AuthenticatedOwnerSubscriptionPayRouteRoute
+    }
     '/_authenticated/admin/invoice/$orderId': {
       id: '/_authenticated/admin/invoice/$orderId'
       path: '/invoice/$orderId'
       fullPath: '/admin/invoice/$orderId'
       preLoaderRoute: typeof AuthenticatedAdminInvoiceOrderIdRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/billing/return': {
+      id: '/_authenticated/admin/billing/return'
+      path: '/return'
+      fullPath: '/admin/billing/return'
+      preLoaderRoute: typeof AuthenticatedAdminBillingReturnRouteImport
+      parentRoute: typeof AuthenticatedAdminBillingRouteRoute
+    }
+    '/api/public/subscription-pay/webhook/$provider': {
+      id: '/api/public/subscription-pay/webhook/$provider'
+      path: '/api/public/subscription-pay/webhook/$provider'
+      fullPath: '/api/public/subscription-pay/webhook/$provider'
+      preLoaderRoute: typeof ApiPublicSubscriptionPayWebhookProviderRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/billing/checkout/$packageId': {
       id: '/_authenticated/admin/billing/checkout/$packageId'
@@ -1448,12 +1567,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAdminBillingRouteRouteChildren {
+  AuthenticatedAdminBillingReturnRoute: typeof AuthenticatedAdminBillingReturnRoute
   AuthenticatedAdminBillingIndexRoute: typeof AuthenticatedAdminBillingIndexRoute
   AuthenticatedAdminBillingCheckoutPackageIdRoute: typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
 }
 
 const AuthenticatedAdminBillingRouteRouteChildren: AuthenticatedAdminBillingRouteRouteChildren =
   {
+    AuthenticatedAdminBillingReturnRoute: AuthenticatedAdminBillingReturnRoute,
     AuthenticatedAdminBillingIndexRoute: AuthenticatedAdminBillingIndexRoute,
     AuthenticatedAdminBillingCheckoutPackageIdRoute:
       AuthenticatedAdminBillingCheckoutPackageIdRoute,
@@ -1535,7 +1656,26 @@ const AuthenticatedAdminRouteRouteWithChildren =
     AuthenticatedAdminRouteRouteChildren,
   )
 
+interface AuthenticatedOwnerSubscriptionPayRouteRouteChildren {
+  AuthenticatedOwnerSubscriptionPayProvidersRoute: typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  AuthenticatedOwnerSubscriptionPayIndexRoute: typeof AuthenticatedOwnerSubscriptionPayIndexRoute
+}
+
+const AuthenticatedOwnerSubscriptionPayRouteRouteChildren: AuthenticatedOwnerSubscriptionPayRouteRouteChildren =
+  {
+    AuthenticatedOwnerSubscriptionPayProvidersRoute:
+      AuthenticatedOwnerSubscriptionPayProvidersRoute,
+    AuthenticatedOwnerSubscriptionPayIndexRoute:
+      AuthenticatedOwnerSubscriptionPayIndexRoute,
+  }
+
+const AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren =
+  AuthenticatedOwnerSubscriptionPayRouteRoute._addFileChildren(
+    AuthenticatedOwnerSubscriptionPayRouteRouteChildren,
+  )
+
 interface AuthenticatedOwnerRouteRouteChildren {
+  AuthenticatedOwnerSubscriptionPayRouteRoute: typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
   AuthenticatedOwnerAiRoute: typeof AuthenticatedOwnerAiRoute
   AuthenticatedOwnerAiUsageRoute: typeof AuthenticatedOwnerAiUsageRoute
   AuthenticatedOwnerApiRoute: typeof AuthenticatedOwnerApiRoute
@@ -1557,6 +1697,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerReportsRoute: typeof AuthenticatedOwnerReportsRoute
   AuthenticatedOwnerStoreTemplateRoute: typeof AuthenticatedOwnerStoreTemplateRoute
   AuthenticatedOwnerStoresRoute: typeof AuthenticatedOwnerStoresRoute
+  AuthenticatedOwnerSubscriptionCouponsRoute: typeof AuthenticatedOwnerSubscriptionCouponsRoute
   AuthenticatedOwnerSubscriptionsRoute: typeof AuthenticatedOwnerSubscriptionsRoute
   AuthenticatedOwnerSupportRoute: typeof AuthenticatedOwnerSupportRoute
   AuthenticatedOwnerSystemRoute: typeof AuthenticatedOwnerSystemRoute
@@ -1567,6 +1708,8 @@ interface AuthenticatedOwnerRouteRouteChildren {
 
 const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren =
   {
+    AuthenticatedOwnerSubscriptionPayRouteRoute:
+      AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren,
     AuthenticatedOwnerAiRoute: AuthenticatedOwnerAiRoute,
     AuthenticatedOwnerAiUsageRoute: AuthenticatedOwnerAiUsageRoute,
     AuthenticatedOwnerApiRoute: AuthenticatedOwnerApiRoute,
@@ -1589,6 +1732,8 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerReportsRoute: AuthenticatedOwnerReportsRoute,
     AuthenticatedOwnerStoreTemplateRoute: AuthenticatedOwnerStoreTemplateRoute,
     AuthenticatedOwnerStoresRoute: AuthenticatedOwnerStoresRoute,
+    AuthenticatedOwnerSubscriptionCouponsRoute:
+      AuthenticatedOwnerSubscriptionCouponsRoute,
     AuthenticatedOwnerSubscriptionsRoute: AuthenticatedOwnerSubscriptionsRoute,
     AuthenticatedOwnerSupportRoute: AuthenticatedOwnerSupportRoute,
     AuthenticatedOwnerSystemRoute: AuthenticatedOwnerSystemRoute,
@@ -1644,17 +1789,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiChatRoute: ApiAiChatRoute,
   ApiImgSplatRoute: ApiImgSplatRoute,
   ApiPublicMessengerWebhookRoute: ApiPublicMessengerWebhookRoute,
+  ApiPublicSubscriptionPayWebhookProviderRoute:
+    ApiPublicSubscriptionPayWebhookProviderRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
