@@ -29,6 +29,17 @@ export const getStoreBySlug = createServerFn({ method: "GET" })
     return { ...store, logo_url: imgUrl(store.logo_url) };
   });
 
+export const getStoreActiveGateway = createServerFn({ method: "GET" })
+  .inputValidator((d) => z.object({ storeId: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const sb = publicClient();
+    const { data: row, error } = await sb.rpc("get_active_store_gateway_public", {
+      _store_id: data.storeId,
+    });
+    if (error) return null;
+    return (row as any) ?? null;
+  });
+
 export const listStoreBanners = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ storeId: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
