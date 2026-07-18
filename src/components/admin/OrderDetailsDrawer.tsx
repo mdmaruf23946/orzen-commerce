@@ -18,6 +18,20 @@ function resolveProductImageUrl(url: string | null | undefined): string | null {
   return url.startsWith("http") ? url : `/api/img/${url}`;
 }
 
+function ProductImage({ url, alt }: { url: string | null | undefined; alt: string }) {
+  const [error, setError] = useState(false);
+  const src = resolveProductImageUrl(url);
+  if (!src || error) {
+    return (
+      <div className="grid h-full w-full place-items-center bg-muted">
+        <ImageOff className="h-5 w-5 text-muted-foreground" />
+        <span className="sr-only">{alt}</span>
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} className="h-full w-full object-cover" onError={() => setError(true)} />;
+}
+
 type Props = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
