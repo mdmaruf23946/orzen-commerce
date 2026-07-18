@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   ShieldCheck, Settings2, Sliders, BarChart3, KeyRound,
-  CheckCircle2, XCircle, Loader2,
+  CheckCircle2, XCircle, Loader2, AlertTriangle, Clock, Zap,
 } from "lucide-react";
 import {
   getFraudSettingsAdmin, updateFraudSettings, testFraudConnection, fraudAnalytics,
