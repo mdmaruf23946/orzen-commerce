@@ -348,6 +348,83 @@ export const resetFraudCheck = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// Owner-only: recalculate totals from BD Courier and overwrite cached result
+// without consuming the store's check limit.
+export const resyncFraudCheck = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      id: z.string().uuid().optional(),
+      store_id: z.string().uuid().optional(),
+      phone: z.string().trim().min(6).max(20).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await ownerOnly(context.supabase, context.userId);
+    if (!data.id && !(data.store_id && data.phone)) {
+      throw new Error("Provide id or store_id + phone");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    let q = supabaseAdmin.from("fraud_checks").select("*").limit(1);
+    if (data.id) q = q.eq("id", data.id);
+    else q = q.eq("store_id", data.store_id!).eq("phone", data.phone!);
+    const { data: rows, error: selErr } = await q;
+    if (selErr) throw new Error(selErr.message);
+    const existing = (rows?.[0] as any) ?? null;
+    const storeId = existing?.store_id ?? data.store_id;
+    const phone = existing?.phone ?? data.phone;
+    if (!storeId || !phone) throw new Error("No matching fraud check row");
+
+    const { data: cfg } = await supabaseAdmin
+      .from("fraud_settings")
+      .select("enabled, api_key, thresholds")
+      .eq("id", "global")
+      .maybeSingle();
+    if (!cfg || !(cfg as any).enabled) throw new Error("Fraud checker is not enabled");
+    const apiKey = (cfg as any).api_key as string | null;
+    if (!apiKey) throw new Error("Fraud checker API key is not configured");
+    const thresholds = ((cfg as any).thresholds ?? { safe_max: 10, medium_max: 30 }) as {
+      safe_max: number; medium_max: number;
+    };
+
+    const { callBdCourier, computeRisk } = await import("@/lib/fraud.server");
+    const stats = await callBdCourier(phone, apiKey);
+    const risk = computeRisk(stats, thresholds);
+    const now = new Date().toISOString();
+
+    const row: Record<string, any> = {
+      store_id: storeId,
+      phone,
+      order_id: existing?.order_id ?? null,
+      check_count: existing?.check_count ?? 1,
+      first_checked_at: existing?.first_checked_at ?? existing?.checked_at ?? now,
+      risk,
+      score: stats.cod_success_rate,
+      total_orders: stats.total_orders,
+      successful: stats.successful,
+      returned: stats.returned,
+      cancelled: stats.cancelled,
+      cod_success_rate: stats.cod_success_rate,
+      last_delivery: stats.last_delivery,
+      courier_history: stats.courier_history,
+      raw: stats.raw,
+      checked_by: context.userId,
+      checked_at: now,
+      last_check_source: "admin",
+      last_check_by: context.userId,
+    };
+    const { data: up, error } = await supabaseAdmin
+      .from("fraud_checks")
+      .upsert(row, { onConflict: "store_id,phone" })
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return { ...(up as any), cached: false, max_checks: MAX_CHECKS, resynced: true };
+  });
+
+
+
 // ---------------- ANALYTICS (owner) ----------------
 export const fraudAnalytics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
