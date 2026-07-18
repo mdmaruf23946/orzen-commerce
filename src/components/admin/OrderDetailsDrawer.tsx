@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { getOrderDetails, addInternalNote, deleteInternalNote } from "@/lib/business.functions";
-import { getCachedFraudCheck } from "@/lib/fraud.functions";
+import { getCachedFraudCheck, ensureAutoFraudCheck } from "@/lib/fraud.functions";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,6 +28,7 @@ const STAGE_LABEL: Record<string, string> = {
 export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
   const fn = useServerFn(getOrderDetails);
   const cacheFn = useServerFn(getCachedFraudCheck);
+  const autoFn = useServerFn(ensureAutoFraudCheck);
   const addNote = useServerFn(addInternalNote);
   const delNote = useServerFn(deleteInternalNote);
   const qc = useQueryClient();
@@ -42,9 +43,15 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
 
   const phone = data?.order?.phone ?? "";
   const { data: cachedFraud } = useQuery({
-    queryKey: ["fraud-cache", phone],
-    queryFn: () => cacheFn({ data: { phone } }),
+    queryKey: ["fraud-cache", phone, orderId],
+    queryFn: async () => {
+      const cached = await cacheFn({ data: { phone } });
+      if (cached) return cached;
+      return await autoFn({ data: { order_id: orderId } });
+    },
     enabled: open && !!phone,
+    staleTime: 60_000,
+    retry: false,
   });
 
   async function submitNote(e: React.FormEvent) {
@@ -155,19 +162,42 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
 
               {/* Courier + fraud */}
               <Section icon={Truck} title="Courier & Risk">
-                <div className="flex items-center justify-between">
-                  {cachedFraud ? <RiskBadge risk={(cachedFraud as any).risk} /> : <span className="text-xs text-muted-foreground">Not checked yet</span>}
+                <div className="flex items-center justify-between gap-2">
+                  {cachedFraud ? <RiskBadge risk={(cachedFraud as any).risk} /> : <span className="text-xs text-muted-foreground">Checking…</span>}
                   <Button size="sm" variant="outline" onClick={() => setFraudOpen(true)}>
-                    <ShieldCheck className="mr-1 h-3 w-3" /> {cachedFraud ? "Re-check" : "Fraud Check"}
+                    <ShieldCheck className="mr-1 h-3 w-3" /> {cachedFraud ? "View / Re-check" : "Fraud Check"}
                   </Button>
                 </div>
                 {cachedFraud && (
-                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                    <MiniStat label="Success" value={(cachedFraud as any).successful} />
-                    <MiniStat label="Returned" value={(cachedFraud as any).returned} />
-                    <MiniStat label="Cancelled" value={(cachedFraud as any).cancelled} />
-                    <MiniStat label="COD Rate" value={`${(cachedFraud as any).cod_success_rate ?? 0}%`} />
-                  </div>
+                  <>
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                      <MiniStat label="Total Orders" value={(cachedFraud as any).total_orders ?? 0} />
+                      <MiniStat label="Successful" value={(cachedFraud as any).successful ?? 0} />
+                      <MiniStat label="Returned" value={(cachedFraud as any).returned ?? 0} />
+                      <MiniStat label="Cancelled" value={(cachedFraud as any).cancelled ?? 0} />
+                      <MiniStat label="COD Success" value={`${(cachedFraud as any).cod_success_rate ?? 0}%`} />
+                      <MiniStat label="Last Delivery" value={(cachedFraud as any).last_delivery ? new Date((cachedFraud as any).last_delivery).toLocaleDateString() : "—"} />
+                    </div>
+                    {Array.isArray((cachedFraud as any).courier_history) && (cachedFraud as any).courier_history.length > 0 && (
+                      <details className="mt-2 rounded-lg border p-2.5">
+                        <summary className="cursor-pointer text-[11px] font-medium">Courier History</summary>
+                        <ul className="mt-1.5 space-y-1 text-[11px]">
+                          {(cachedFraud as any).courier_history.map((c: any, i: number) => (
+                            <li key={i} className="flex items-center justify-between">
+                              <span className="capitalize">{c.courier}</span>
+                              <span className="text-muted-foreground">{c.success}/{c.total} · {c.rate}%</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-1 text-[10px] text-muted-foreground">
+                      <span>Last Checked: {new Date((cachedFraud as any).checked_at).toLocaleString()}</span>
+                      <span>
+                        {Math.min((cachedFraud as any).check_count ?? 1, (cachedFraud as any).max_checks ?? 2)}/{(cachedFraud as any).max_checks ?? 2} · <span className="capitalize">{(cachedFraud as any).last_check_source ?? "system"}</span>
+                      </span>
+                    </div>
+                  </>
                 )}
               </Section>
 

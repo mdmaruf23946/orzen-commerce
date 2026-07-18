@@ -1,8 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, CheckCircle2, RefreshCw, ShieldAlert, ShieldCheck } from "lucide-react";
+import { AlertTriangle, CheckCircle2, RefreshCw, ShieldAlert, ShieldCheck, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { runFraudCheck } from "@/lib/fraud.functions";
+import { runFraudCheck, getCachedFraudCheck, ensureAutoFraudCheck } from "@/lib/fraud.functions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
@@ -30,19 +30,35 @@ export function RiskBadge({ risk }: { risk: "safe" | "medium" | "high" | null | 
 
 export function FraudCheckModal({ open, onOpenChange, phone, orderId }: Props) {
   const runFn = useServerFn(runFraudCheck);
+  const cacheFn = useServerFn(getCachedFraudCheck);
+  const autoFn = useServerFn(ensureAutoFraudCheck);
   const qc = useQueryClient();
-  const { data, isLoading, error, refetch, isFetching } = useQuery({
+
+  // Always load cached first. If nothing cached and we have an order, auto-run system check.
+  const { data, isLoading, error, isFetching } = useQuery({
     queryKey: ["fraud-check", phone, orderId],
-    queryFn: () => runFn({ data: { phone, order_id: orderId } }),
+    queryFn: async () => {
+      const cached = await cacheFn({ data: { phone } });
+      if (cached) return cached;
+      if (orderId) return await autoFn({ data: { order_id: orderId } });
+      // Manual mode with no order id — perform admin check
+      return await runFn({ data: { phone } });
+    },
     enabled: open && !!phone,
-    staleTime: 5 * 60_000,
+    staleTime: 60_000,
     retry: false,
   });
 
+  const count = Number((data as any)?.check_count ?? 0);
+  const max = Number((data as any)?.max_checks ?? 2);
+  const limitReached = count >= max;
+
   async function recheck() {
+    if (limitReached) return;
     try {
       await runFn({ data: { phone, order_id: orderId, force: true } });
       qc.invalidateQueries({ queryKey: ["fraud-check", phone, orderId] });
+      qc.invalidateQueries({ queryKey: ["fraud-cache", phone] });
       toast.success("Rechecked");
     } catch (e) {
       toast.error((e as Error).message);
@@ -67,9 +83,10 @@ export function FraudCheckModal({ open, onOpenChange, phone, orderId }: Props) {
             <>
               <div className="flex items-center justify-between rounded-xl border p-3">
                 <RiskBadge risk={(data as any).risk} />
-                {(data as any).cached && (
-                  <span className="text-[10px] text-muted-foreground">Cached · {new Date((data as any).checked_at).toLocaleString()}</span>
-                )}
+                <div className="text-right">
+                  <div className="text-[10px] font-medium text-muted-foreground">Check {Math.min(count, max)}/{max}</div>
+                  <div className="text-[10px] text-muted-foreground">Last: {new Date((data as any).checked_at).toLocaleString()}</div>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <Stat label="Total Orders" value={(data as any).total_orders} />
@@ -94,9 +111,20 @@ export function FraudCheckModal({ open, onOpenChange, phone, orderId }: Props) {
                   </ul>
                 </details>
               )}
-              <Button size="sm" variant="outline" onClick={recheck} disabled={isFetching} className="w-full">
-                <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} /> Re-check
-              </Button>
+              <div className="text-[10px] text-muted-foreground">
+                First checked: {(data as any).first_checked_at ? new Date((data as any).first_checked_at).toLocaleString() : "—"}
+                {" · "}Source: <span className="capitalize">{(data as any).last_check_source ?? "system"}</span>
+              </div>
+              {limitReached ? (
+                <div className="flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 p-2.5 text-xs text-amber-700 dark:text-amber-500">
+                  <Lock className="h-3.5 w-3.5" />
+                  Maximum Fraud Check limit reached.
+                </div>
+              ) : (
+                <Button size="sm" variant="outline" onClick={recheck} disabled={isFetching} className="w-full">
+                  <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} /> Re-check ({count}/{max})
+                </Button>
+              )}
             </>
           )}
         </div>

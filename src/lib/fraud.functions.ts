@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { assertPlan } from "@/lib/plan-guard";
 
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const MAX_CHECKS = 2;
 
 async function ownerOnly(supabase: any, userId: string) {
   const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "owner" });
@@ -154,6 +154,85 @@ export const testFraudConnection = createServerFn({ method: "POST" })
 
 
 // ---------------- STORE OWNER ----------------
+// Internal core: performs (or reuses) a fraud check with strict count enforcement.
+async function performFraudCheck(opts: {
+  supabaseAdmin: any;
+  storeId: string;
+  phone: string;
+  orderId?: string | null;
+  source: "system" | "admin";
+  actorId: string;
+  force: boolean;
+  isOwner: boolean;
+}) {
+  const { supabaseAdmin, storeId, phone, orderId, source, actorId, force, isOwner } = opts;
+
+  const { data: cfg } = await supabaseAdmin
+    .from("fraud_settings")
+    .select("enabled, api_key, thresholds")
+    .eq("id", "global")
+    .maybeSingle();
+  if (!cfg || !(cfg as any).enabled) throw new Error("Fraud checker is not enabled by the platform");
+  const apiKey = (cfg as any).api_key as string | null;
+  if (!apiKey) throw new Error("Fraud checker API key is not configured");
+  const thresholds = ((cfg as any).thresholds ?? { safe_max: 10, medium_max: 30 }) as {
+    safe_max: number; medium_max: number;
+  };
+
+  // Existing cached row (if any)
+  const { data: cached } = await supabaseAdmin
+    .from("fraud_checks")
+    .select("*")
+    .eq("store_id", storeId)
+    .eq("phone", phone)
+    .maybeSingle();
+
+  // No force => return cached as-is
+  if (cached && !force) {
+    return { ...(cached as any), cached: true, max_checks: MAX_CHECKS };
+  }
+
+  // Force path: enforce max unless owner
+  if (cached && force && !isOwner && ((cached as any).check_count ?? 0) >= MAX_CHECKS) {
+    throw new Error("Maximum Fraud Check limit reached.");
+  }
+
+  const { callBdCourier, computeRisk } = await import("@/lib/fraud.server");
+  const stats = await callBdCourier(phone, apiKey);
+  const risk = computeRisk(stats, thresholds);
+  const now = new Date().toISOString();
+  const nextCount = cached ? Math.min(((cached as any).check_count ?? 0) + 1, MAX_CHECKS) : 1;
+
+  const row: Record<string, any> = {
+    store_id: storeId,
+    order_id: orderId ?? (cached as any)?.order_id ?? null,
+    phone,
+    risk,
+    score: stats.cod_success_rate,
+    total_orders: stats.total_orders,
+    successful: stats.successful,
+    returned: stats.returned,
+    cancelled: stats.cancelled,
+    cod_success_rate: stats.cod_success_rate,
+    last_delivery: stats.last_delivery,
+    courier_history: stats.courier_history,
+    raw: stats.raw,
+    checked_by: actorId,
+    checked_at: now,
+    last_check_source: source,
+    last_check_by: actorId,
+    check_count: nextCount,
+    first_checked_at: cached ? (cached as any).first_checked_at ?? (cached as any).checked_at : now,
+  };
+  const { data: up, error } = await supabaseAdmin
+    .from("fraud_checks")
+    .upsert(row, { onConflict: "store_id,phone" })
+    .select("*")
+    .single();
+  if (error) throw new Error(error.message);
+  return { ...(up as any), cached: false, max_checks: MAX_CHECKS };
+}
+
 export const runFraudCheck = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
@@ -169,64 +248,64 @@ export const runFraudCheck = createServerFn({ method: "POST" })
     await assertPlan(context.supabase, context.userId, "fraud_checker" as any);
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
+    const { data: isOwner } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "owner" });
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    return performFraudCheck({
+      supabaseAdmin,
+      storeId: sid,
+      phone: data.phone,
+      orderId: data.order_id,
+      source: "admin",
+      actorId: context.userId,
+      force: !!data.force,
+      isOwner: !!isOwner,
+    });
+  });
+
+// Auto-runs the first fraud check for an order (system source) if none exists yet.
+// Silently no-ops if fraud checker is disabled or plan not entitled.
+export const ensureAutoFraudCheck = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ order_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) return null;
+    // Load order to get phone under RLS
+    const { data: order } = await context.supabase
+      .from("orders")
+      .select("id, phone, store_id")
+      .eq("id", data.order_id)
+      .maybeSingle();
+    if (!order || (order as any).store_id !== sid) return null;
+    const phone = (order as any).phone as string;
+    if (!phone) return null;
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: cfg } = await supabaseAdmin
-      .from("fraud_settings")
-      .select("enabled, api_key, thresholds")
-      .eq("id", "global")
-      .maybeSingle();
-    if (!cfg || !(cfg as any).enabled) {
-      throw new Error("Fraud checker is not enabled by the platform");
-    }
-    const apiKey = (cfg as any).api_key as string | null;
-    if (!apiKey) throw new Error("Fraud checker API key is not configured");
-    const thresholds = ((cfg as any).thresholds ?? { safe_max: 10, medium_max: 30 }) as {
-      safe_max: number;
-      medium_max: number;
-    };
-
-    // Cache lookup
-    if (!data.force) {
-      const { data: cached } = await supabaseAdmin
-        .from("fraud_checks")
-        .select("*")
-        .eq("store_id", sid)
-        .eq("phone", data.phone)
-        .maybeSingle();
-      if (cached && Date.now() - new Date((cached as any).checked_at).getTime() < CACHE_TTL_MS) {
-        return { ...(cached as any), cached: true };
-      }
-    }
-
-    const { callBdCourier, computeRisk } = await import("@/lib/fraud.server");
-    const stats = await callBdCourier(data.phone, apiKey);
-    const risk = computeRisk(stats, thresholds);
-
-    const row = {
-      store_id: sid,
-      order_id: data.order_id ?? null,
-      phone: data.phone,
-      risk,
-      score: stats.cod_success_rate,
-      total_orders: stats.total_orders,
-      successful: stats.successful,
-      returned: stats.returned,
-      cancelled: stats.cancelled,
-      cod_success_rate: stats.cod_success_rate,
-      last_delivery: stats.last_delivery,
-      courier_history: stats.courier_history,
-      raw: stats.raw,
-      checked_by: context.userId,
-      checked_at: new Date().toISOString(),
-    };
-    const { data: up, error } = await supabaseAdmin
+    // If already exists, return cached (don't call provider)
+    const { data: cached } = await supabaseAdmin
       .from("fraud_checks")
-      .upsert(row, { onConflict: "store_id,phone" })
       .select("*")
-      .single();
-    if (error) throw new Error(error.message);
-    return { ...(up as any), cached: false };
+      .eq("store_id", sid)
+      .eq("phone", phone)
+      .maybeSingle();
+    if (cached) return { ...(cached as any), cached: true, max_checks: MAX_CHECKS };
+
+    // Only auto-run if plan + feature enabled; swallow errors so UI doesn't break
+    try {
+      await assertPlan(context.supabase, context.userId, "fraud_checker" as any);
+      return await performFraudCheck({
+        supabaseAdmin,
+        storeId: sid,
+        phone,
+        orderId: data.order_id,
+        source: "system",
+        actorId: context.userId,
+        force: true, // first check
+        isOwner: false,
+      });
+    } catch {
+      return null;
+    }
   });
 
 export const getCachedFraudCheck = createServerFn({ method: "GET" })
@@ -241,7 +320,32 @@ export const getCachedFraudCheck = createServerFn({ method: "GET" })
       .eq("store_id", sid)
       .eq("phone", data.phone)
       .maybeSingle();
-    return row ?? null;
+    if (!row) return null;
+    return { ...(row as any), max_checks: MAX_CHECKS };
+  });
+
+// Owner-only: reset the check counter for a phone (or by check id) so admin can re-check again.
+export const resetFraudCheck = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      id: z.string().uuid().optional(),
+      store_id: z.string().uuid().optional(),
+      phone: z.string().trim().min(6).max(20).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await ownerOnly(context.supabase, context.userId);
+    if (!data.id && !(data.store_id && data.phone)) {
+      throw new Error("Provide id or store_id + phone");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let q = supabaseAdmin.from("fraud_checks").update({ check_count: 0 });
+    if (data.id) q = q.eq("id", data.id);
+    else q = q.eq("store_id", data.store_id!).eq("phone", data.phone!);
+    const { error } = await q;
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 // ---------------- ANALYTICS (owner) ----------------

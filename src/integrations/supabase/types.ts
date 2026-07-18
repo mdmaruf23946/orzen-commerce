@@ -643,12 +643,16 @@ export type Database = {
       fraud_checks: {
         Row: {
           cancelled: number
+          check_count: number
           checked_at: string
           checked_by: string | null
           cod_success_rate: number | null
           courier_history: Json
           created_at: string
+          first_checked_at: string | null
           id: string
+          last_check_by: string | null
+          last_check_source: string
           last_delivery: string | null
           order_id: string | null
           phone: string
@@ -662,12 +666,16 @@ export type Database = {
         }
         Insert: {
           cancelled?: number
+          check_count?: number
           checked_at?: string
           checked_by?: string | null
           cod_success_rate?: number | null
           courier_history?: Json
           created_at?: string
+          first_checked_at?: string | null
           id?: string
+          last_check_by?: string | null
+          last_check_source?: string
           last_delivery?: string | null
           order_id?: string | null
           phone: string
@@ -681,12 +689,16 @@ export type Database = {
         }
         Update: {
           cancelled?: number
+          check_count?: number
           checked_at?: string
           checked_by?: string | null
           cod_success_rate?: number | null
           courier_history?: Json
           created_at?: string
+          first_checked_at?: string | null
           id?: string
+          last_check_by?: string | null
+          last_check_source?: string
           last_delivery?: string | null
           order_id?: string | null
           phone?: string
