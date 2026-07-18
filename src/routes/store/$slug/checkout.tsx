@@ -31,6 +31,12 @@ function CheckoutPage() {
   const { data: store } = useSuspenseQuery(storeQuery(slug));
   const place = useServerFn(placeOrder);
   const valCoupon = useServerFn(validateCoupon);
+  const getGw = useServerFn(getStoreActiveGateway);
+  const { data: activeGateway } = useQuery({
+    enabled: !!store?.id,
+    queryKey: ["activeGateway", store?.id],
+    queryFn: () => getGw({ data: { storeId: store!.id } }),
+  });
 
   type PM = "cod" | "bkash" | "nagad" | "rocket" | "bank";
   const [items, setItems] = useState<CartItem[]>([]);
