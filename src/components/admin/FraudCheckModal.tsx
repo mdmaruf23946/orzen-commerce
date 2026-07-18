@@ -136,6 +136,14 @@ export function FraudCheckModal({ open, onOpenChange, phone, orderId }: Props) {
     };
   });
 
+  // Cross-check computed courier totals against the cached summary.
+  const computedTotal = rows.reduce((s, r) => s + r.total, 0);
+  const computedSuccess = rows.reduce((s, r) => s + r.success, 0);
+  const computedCancelled = rows.reduce((s, r) => s + r.cancelled, 0);
+  const mismatch = data
+    ? computedTotal !== total || computedSuccess !== success || computedCancelled !== cancelled
+    : false;
+
   const recommendation =
     risk === "safe"
       ? { tone: "ok" as const, title: "Safe to proceed", msg: "High delivery success rate. This customer is reliable." }
@@ -144,6 +152,7 @@ export function FraudCheckModal({ open, onOpenChange, phone, orderId }: Props) {
       : risk === "high"
       ? { tone: "bad" as const, title: "Contact customer before courier booking", msg: "Low success rate. High risk of return/cancellation — verify order before shipping." }
       : { tone: "warn" as const, title: "No data", msg: "No delivery history found for this number." };
+
 
   async function recheck() {
     if (limitReached) return;
