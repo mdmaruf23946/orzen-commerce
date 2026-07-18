@@ -1211,6 +1211,39 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_payment_gateways: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          label: string
+          logo_url: string | null
+          notes: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id: string
+          label: string
+          logo_url?: string | null
+          notes?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          label?: string
+          logo_url?: string | null
+          notes?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_payment_settings: {
         Row: {
           bkash: Json
@@ -1648,6 +1681,72 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "store_domains_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_payment_gateways: {
+        Row: {
+          connected_at: string | null
+          created_at: string
+          credentials_ciphertext: string | null
+          credentials_preview: string | null
+          enabled: boolean
+          id: string
+          is_active: boolean
+          last_test_result: Json | null
+          last_tested_at: string | null
+          provider_id: string
+          sandbox: boolean
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          connected_at?: string | null
+          created_at?: string
+          credentials_ciphertext?: string | null
+          credentials_preview?: string | null
+          enabled?: boolean
+          id?: string
+          is_active?: boolean
+          last_test_result?: Json | null
+          last_tested_at?: string | null
+          provider_id: string
+          sandbox?: boolean
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          connected_at?: string | null
+          created_at?: string
+          credentials_ciphertext?: string | null
+          credentials_preview?: string | null
+          enabled?: boolean
+          id?: string
+          is_active?: boolean
+          last_test_result?: Json | null
+          last_tested_at?: string | null
+          provider_id?: string
+          sandbox?: boolean
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_payment_gateways_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "platform_payment_gateways"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_payment_gateways_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
@@ -2380,6 +2479,10 @@ export type Database = {
     Functions: {
       expire_trials: { Args: never; Returns: undefined }
       generate_invoice_no: { Args: { _store_id: string }; Returns: string }
+      get_active_store_gateway_public: {
+        Args: { _store_id: string }
+        Returns: Json
+      }
       get_billing_discounts: { Args: never; Returns: Json }
       get_fraud_public_status: { Args: never; Returns: Json }
       get_public_order: { Args: { _order_id: string }; Returns: Json }
