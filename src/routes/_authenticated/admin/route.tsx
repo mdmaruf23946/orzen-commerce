@@ -57,6 +57,7 @@ const links: { to: string; label: string; icon: typeof LayoutDashboard; exact?: 
   { to: "/admin/seo", label: "SEO", icon: SearchIcon },
   { to: "/admin/delivery", label: "Delivery", icon: PackageOpen },
   { to: "/admin/payments", label: "Payments", icon: Wallet },
+  { to: "/admin/payment-gateway", label: "Payment Gateway", icon: CreditCard },
   { to: "/admin/notifications", label: "Notifications", icon: Bell },
   { to: "/admin/product-defaults", label: "Product Defaults", icon: ClipboardList },
   { to: "/admin/ai-agent", label: "AI Sales Agent", icon: Bot },
