@@ -234,6 +234,24 @@ export function FraudCheckModal({ open, onOpenChange, phone, orderId }: Props) {
                 </div>
               </div>
 
+              {/* Totals validation banner */}
+              {mismatch && (
+                <div className="flex items-start gap-2 rounded-2xl border border-red-500/40 bg-red-500/5 p-3 text-xs text-red-700 dark:text-red-500">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold">Totals mismatch detected</div>
+                    <div className="opacity-90">
+                      Cached summary (Total {total} · Success {success} · Cancel {cancelled}) does not match the sum of
+                      courier rows (Total {computedTotal} · Success {computedSuccess} · Cancel {computedCancelled}).
+                      {isOwner
+                        ? " Click Resync Fraud Check to recalculate from the latest BD Courier data."
+                        : " Ask a Winner Admin to resync this fraud check."}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+
               {/* Stats cards */}
               <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
                 <StatCard label="Total Orders" value={total} sub="All time" tone="blue" />
