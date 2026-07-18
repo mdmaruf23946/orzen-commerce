@@ -34,6 +34,7 @@ import { Route as AuthenticatedOwnerStoreTemplateRouteImport } from './routes/_a
 import { Route as AuthenticatedOwnerReportsRouteImport } from './routes/_authenticated/owner/reports'
 import { Route as AuthenticatedOwnerPlanFeaturesRouteImport } from './routes/_authenticated/owner/plan-features'
 import { Route as AuthenticatedOwnerPaymentSettingsRouteImport } from './routes/_authenticated/owner/payment-settings'
+import { Route as AuthenticatedOwnerPaymentGatewaysRouteImport } from './routes/_authenticated/owner/payment-gateways'
 import { Route as AuthenticatedOwnerPackagesRouteImport } from './routes/_authenticated/owner/packages'
 import { Route as AuthenticatedOwnerNotificationsRouteImport } from './routes/_authenticated/owner/notifications'
 import { Route as AuthenticatedOwnerMarketingRouteImport } from './routes/_authenticated/owner/marketing'
@@ -58,6 +59,7 @@ import { Route as AuthenticatedAdminReturnsRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authenticated/admin/products'
 import { Route as AuthenticatedAdminProductDefaultsRouteImport } from './routes/_authenticated/admin/product-defaults'
 import { Route as AuthenticatedAdminPaymentsRouteImport } from './routes/_authenticated/admin/payments'
+import { Route as AuthenticatedAdminPaymentGatewayRouteImport } from './routes/_authenticated/admin/payment-gateway'
 import { Route as AuthenticatedAdminOrdersRouteImport } from './routes/_authenticated/admin/orders'
 import { Route as AuthenticatedAdminNotificationsRouteImport } from './routes/_authenticated/admin/notifications'
 import { Route as AuthenticatedAdminMessengerRouteImport } from './routes/_authenticated/admin/messenger'
@@ -222,6 +224,12 @@ const AuthenticatedOwnerPaymentSettingsRoute =
     path: '/payment-settings',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
+const AuthenticatedOwnerPaymentGatewaysRoute =
+  AuthenticatedOwnerPaymentGatewaysRouteImport.update({
+    id: '/payment-gateways',
+    path: '/payment-gateways',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
 const AuthenticatedOwnerPackagesRoute =
   AuthenticatedOwnerPackagesRouteImport.update({
     id: '/packages',
@@ -357,6 +365,12 @@ const AuthenticatedAdminPaymentsRoute =
   AuthenticatedAdminPaymentsRouteImport.update({
     id: '/payments',
     path: '/payments',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminPaymentGatewayRoute =
+  AuthenticatedAdminPaymentGatewayRouteImport.update({
+    id: '/payment-gateway',
+    path: '/payment-gateway',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminOrdersRoute =
@@ -559,6 +573,7 @@ export interface FileRoutesByFullPath {
   '/admin/messenger': typeof AuthenticatedAdminMessengerRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
+  '/admin/payment-gateway': typeof AuthenticatedAdminPaymentGatewayRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/admin/product-defaults': typeof AuthenticatedAdminProductDefaultsRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
@@ -583,6 +598,7 @@ export interface FileRoutesByFullPath {
   '/owner/marketing': typeof AuthenticatedOwnerMarketingRoute
   '/owner/notifications': typeof AuthenticatedOwnerNotificationsRoute
   '/owner/packages': typeof AuthenticatedOwnerPackagesRoute
+  '/owner/payment-gateways': typeof AuthenticatedOwnerPaymentGatewaysRoute
   '/owner/payment-settings': typeof AuthenticatedOwnerPaymentSettingsRoute
   '/owner/plan-features': typeof AuthenticatedOwnerPlanFeaturesRoute
   '/owner/reports': typeof AuthenticatedOwnerReportsRoute
@@ -633,6 +649,7 @@ export interface FileRoutesByTo {
   '/admin/messenger': typeof AuthenticatedAdminMessengerRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
+  '/admin/payment-gateway': typeof AuthenticatedAdminPaymentGatewayRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/admin/product-defaults': typeof AuthenticatedAdminProductDefaultsRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
@@ -657,6 +674,7 @@ export interface FileRoutesByTo {
   '/owner/marketing': typeof AuthenticatedOwnerMarketingRoute
   '/owner/notifications': typeof AuthenticatedOwnerNotificationsRoute
   '/owner/packages': typeof AuthenticatedOwnerPackagesRoute
+  '/owner/payment-gateways': typeof AuthenticatedOwnerPaymentGatewaysRoute
   '/owner/payment-settings': typeof AuthenticatedOwnerPaymentSettingsRoute
   '/owner/plan-features': typeof AuthenticatedOwnerPlanFeaturesRoute
   '/owner/reports': typeof AuthenticatedOwnerReportsRoute
@@ -714,6 +732,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/messenger': typeof AuthenticatedAdminMessengerRoute
   '/_authenticated/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
+  '/_authenticated/admin/payment-gateway': typeof AuthenticatedAdminPaymentGatewayRoute
   '/_authenticated/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/_authenticated/admin/product-defaults': typeof AuthenticatedAdminProductDefaultsRoute
   '/_authenticated/admin/products': typeof AuthenticatedAdminProductsRoute
@@ -738,6 +757,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/marketing': typeof AuthenticatedOwnerMarketingRoute
   '/_authenticated/owner/notifications': typeof AuthenticatedOwnerNotificationsRoute
   '/_authenticated/owner/packages': typeof AuthenticatedOwnerPackagesRoute
+  '/_authenticated/owner/payment-gateways': typeof AuthenticatedOwnerPaymentGatewaysRoute
   '/_authenticated/owner/payment-settings': typeof AuthenticatedOwnerPaymentSettingsRoute
   '/_authenticated/owner/plan-features': typeof AuthenticatedOwnerPlanFeaturesRoute
   '/_authenticated/owner/reports': typeof AuthenticatedOwnerReportsRoute
@@ -795,6 +815,7 @@ export interface FileRouteTypes {
     | '/admin/messenger'
     | '/admin/notifications'
     | '/admin/orders'
+    | '/admin/payment-gateway'
     | '/admin/payments'
     | '/admin/product-defaults'
     | '/admin/products'
@@ -819,6 +840,7 @@ export interface FileRouteTypes {
     | '/owner/marketing'
     | '/owner/notifications'
     | '/owner/packages'
+    | '/owner/payment-gateways'
     | '/owner/payment-settings'
     | '/owner/plan-features'
     | '/owner/reports'
@@ -869,6 +891,7 @@ export interface FileRouteTypes {
     | '/admin/messenger'
     | '/admin/notifications'
     | '/admin/orders'
+    | '/admin/payment-gateway'
     | '/admin/payments'
     | '/admin/product-defaults'
     | '/admin/products'
@@ -893,6 +916,7 @@ export interface FileRouteTypes {
     | '/owner/marketing'
     | '/owner/notifications'
     | '/owner/packages'
+    | '/owner/payment-gateways'
     | '/owner/payment-settings'
     | '/owner/plan-features'
     | '/owner/reports'
@@ -949,6 +973,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/messenger'
     | '/_authenticated/admin/notifications'
     | '/_authenticated/admin/orders'
+    | '/_authenticated/admin/payment-gateway'
     | '/_authenticated/admin/payments'
     | '/_authenticated/admin/product-defaults'
     | '/_authenticated/admin/products'
@@ -973,6 +998,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/marketing'
     | '/_authenticated/owner/notifications'
     | '/_authenticated/owner/packages'
+    | '/_authenticated/owner/payment-gateways'
     | '/_authenticated/owner/payment-settings'
     | '/_authenticated/owner/plan-features'
     | '/_authenticated/owner/reports'
@@ -1192,6 +1218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerPaymentSettingsRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
+    '/_authenticated/owner/payment-gateways': {
+      id: '/_authenticated/owner/payment-gateways'
+      path: '/payment-gateways'
+      fullPath: '/owner/payment-gateways'
+      preLoaderRoute: typeof AuthenticatedOwnerPaymentGatewaysRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
     '/_authenticated/owner/packages': {
       id: '/_authenticated/owner/packages'
       path: '/packages'
@@ -1358,6 +1391,13 @@ declare module '@tanstack/react-router' {
       path: '/payments'
       fullPath: '/admin/payments'
       preLoaderRoute: typeof AuthenticatedAdminPaymentsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/payment-gateway': {
+      id: '/_authenticated/admin/payment-gateway'
+      path: '/payment-gateway'
+      fullPath: '/admin/payment-gateway'
+      preLoaderRoute: typeof AuthenticatedAdminPaymentGatewayRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/orders': {
@@ -1604,6 +1644,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminMessengerRoute: typeof AuthenticatedAdminMessengerRoute
   AuthenticatedAdminNotificationsRoute: typeof AuthenticatedAdminNotificationsRoute
   AuthenticatedAdminOrdersRoute: typeof AuthenticatedAdminOrdersRoute
+  AuthenticatedAdminPaymentGatewayRoute: typeof AuthenticatedAdminPaymentGatewayRoute
   AuthenticatedAdminPaymentsRoute: typeof AuthenticatedAdminPaymentsRoute
   AuthenticatedAdminProductDefaultsRoute: typeof AuthenticatedAdminProductDefaultsRoute
   AuthenticatedAdminProductsRoute: typeof AuthenticatedAdminProductsRoute
@@ -1637,6 +1678,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminMessengerRoute: AuthenticatedAdminMessengerRoute,
     AuthenticatedAdminNotificationsRoute: AuthenticatedAdminNotificationsRoute,
     AuthenticatedAdminOrdersRoute: AuthenticatedAdminOrdersRoute,
+    AuthenticatedAdminPaymentGatewayRoute:
+      AuthenticatedAdminPaymentGatewayRoute,
     AuthenticatedAdminPaymentsRoute: AuthenticatedAdminPaymentsRoute,
     AuthenticatedAdminProductDefaultsRoute:
       AuthenticatedAdminProductDefaultsRoute,
@@ -1692,6 +1735,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerMarketingRoute: typeof AuthenticatedOwnerMarketingRoute
   AuthenticatedOwnerNotificationsRoute: typeof AuthenticatedOwnerNotificationsRoute
   AuthenticatedOwnerPackagesRoute: typeof AuthenticatedOwnerPackagesRoute
+  AuthenticatedOwnerPaymentGatewaysRoute: typeof AuthenticatedOwnerPaymentGatewaysRoute
   AuthenticatedOwnerPaymentSettingsRoute: typeof AuthenticatedOwnerPaymentSettingsRoute
   AuthenticatedOwnerPlanFeaturesRoute: typeof AuthenticatedOwnerPlanFeaturesRoute
   AuthenticatedOwnerReportsRoute: typeof AuthenticatedOwnerReportsRoute
@@ -1726,6 +1770,8 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerMarketingRoute: AuthenticatedOwnerMarketingRoute,
     AuthenticatedOwnerNotificationsRoute: AuthenticatedOwnerNotificationsRoute,
     AuthenticatedOwnerPackagesRoute: AuthenticatedOwnerPackagesRoute,
+    AuthenticatedOwnerPaymentGatewaysRoute:
+      AuthenticatedOwnerPaymentGatewaysRoute,
     AuthenticatedOwnerPaymentSettingsRoute:
       AuthenticatedOwnerPaymentSettingsRoute,
     AuthenticatedOwnerPlanFeaturesRoute: AuthenticatedOwnerPlanFeaturesRoute,
@@ -1795,13 +1841,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
