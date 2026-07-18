@@ -54,34 +54,56 @@ export async function callBdCourier(phone: string, apiKey: string): Promise<Norm
   }
 
 
-  // The response usually has shape { courierData: { pathao: {...}, steadfast: {...}, ... }, summary: {...} }
-  const summary = (raw as any)?.summary ?? (raw as any)?.total ?? {};
+  // Shape: { courierData: { pathao, steadfast, redx, paperfly, parceldex, ecourier, summary }, ... }
+  // NOTE: BD Courier nests a "summary" key inside `courierData` — it must NOT be treated
+  // as a courier (doing so double-counts totals).
   const couriers = (raw as any)?.courierData ?? (raw as any)?.data ?? {};
+  const nestedSummary =
+    couriers && typeof couriers === "object" ? (couriers as any).summary : null;
+  const topSummary = (raw as any)?.summary ?? (raw as any)?.total ?? null;
+  const summary = nestedSummary ?? topSummary ?? {};
 
-  let total = toNum(summary.total_parcel);
-  let success = toNum(summary.success_parcel);
-  let cancelled = toNum(summary.cancelled_parcel);
+  // Always show the standard BD Courier providers, even when the response omits them.
+  const KNOWN = ["pathao", "steadfast", "redx", "paperfly", "parceldex", "ecourier"];
   const history: any[] = [];
+  let sumTotal = 0, sumSuccess = 0, sumCancelled = 0;
 
-  if (!total && couriers && typeof couriers === "object") {
-    for (const [key, val] of Object.entries<any>(couriers)) {
-      if (!val || typeof val !== "object") continue;
+  if (couriers && typeof couriers === "object") {
+    const seen = new Set<string>();
+    const pushCourier = (key: string, val: any) => {
+      if (!val || typeof val !== "object") return;
       const t = toNum(val.total_parcel);
       const s = toNum(val.success_parcel);
       const c = toNum(val.cancelled_parcel);
-      total += t;
-      success += s;
-      cancelled += c;
+      sumTotal += t; sumSuccess += s; sumCancelled += c;
       history.push({
         courier: key,
         total: t,
         success: s,
         cancelled: c,
-        rate:
-          t > 0 ? Math.round((s / t) * 100) : 0,
+        rate: t > 0 ? Math.round((s / t) * 100) : 0,
       });
+      seen.add(key);
+    };
+    // Known couriers first (in stable order)
+    for (const key of KNOWN) {
+      if ((couriers as any)[key]) pushCourier(key, (couriers as any)[key]);
+      else {
+        history.push({ courier: key, total: 0, success: 0, cancelled: 0, rate: 0 });
+        seen.add(key);
+      }
+    }
+    // Any additional couriers the API adds later (skip the "summary" bucket)
+    for (const [key, val] of Object.entries<any>(couriers)) {
+      if (key === "summary" || seen.has(key)) continue;
+      pushCourier(key, val);
     }
   }
+
+  // Prefer provider-reported summary; fall back to computed sum
+  const total = toNum(summary.total_parcel) || sumTotal;
+  const success = toNum(summary.success_parcel) || sumSuccess;
+  const cancelled = toNum(summary.cancelled_parcel) || sumCancelled;
 
   const returned = Math.max(0, total - success - cancelled);
   const cod_success_rate = total > 0 ? (success / total) * 100 : 0;
