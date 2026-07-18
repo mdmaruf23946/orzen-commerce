@@ -2102,6 +2102,10 @@ export type Database = {
         Returns: undefined
       }
       resolve_domain: { Args: { _host: string }; Returns: Json }
+      validate_coupon: {
+        Args: { _code: string; _store_id: string; _subtotal: number }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "owner" | "user"
