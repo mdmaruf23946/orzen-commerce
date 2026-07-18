@@ -134,21 +134,22 @@ export const validateCoupon = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const sb = publicClient();
-    const { data: c } = await sb
-      .from("coupons")
-      .select("id,code,type,value,min_order,usage_limit,used_count,expires_at,active")
-      .eq("store_id", data.storeId)
-      .eq("code", data.code.toUpperCase())
-      .maybeSingle();
-    if (!c || !c.active) return { ok: false as const, error: "Invalid coupon" };
-    if (c.expires_at && new Date(c.expires_at) < new Date()) return { ok: false as const, error: "Coupon expired" };
-    if (c.usage_limit != null && c.used_count >= c.usage_limit) return { ok: false as const, error: "Usage limit reached" };
-    if (data.subtotal < Number(c.min_order ?? 0)) return { ok: false as const, error: `Minimum order ৳${c.min_order}` };
-    let discount = 0; let freeShipping = false;
-    if (c.type === "percent") discount = Math.round(data.subtotal * Number(c.value) / 100);
-    else if (c.type === "fixed") discount = Math.min(Number(c.value), data.subtotal);
-    else if (c.type === "free_shipping") freeShipping = true;
-    return { ok: true as const, couponId: c.id, code: c.code, type: c.type, discount, freeShipping };
+    const { data: res, error } = await sb.rpc("validate_coupon", {
+      _store_id: data.storeId,
+      _code: data.code,
+      _subtotal: data.subtotal,
+    });
+    if (error) return { ok: false as const, error: "Invalid coupon" };
+    const r = res as any;
+    if (!r || !r.ok) return { ok: false as const, error: r?.error ?? "Invalid coupon" };
+    return {
+      ok: true as const,
+      couponId: r.couponId,
+      code: r.code,
+      type: r.type,
+      discount: Number(r.discount ?? 0),
+      freeShipping: !!r.freeShipping,
+    };
   });
 
 export const placeOrder = createServerFn({ method: "POST" })
