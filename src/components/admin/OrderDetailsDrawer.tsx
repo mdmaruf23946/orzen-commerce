@@ -28,6 +28,7 @@ const STAGE_LABEL: Record<string, string> = {
 export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
   const fn = useServerFn(getOrderDetails);
   const cacheFn = useServerFn(getCachedFraudCheck);
+  const autoFn = useServerFn(ensureAutoFraudCheck);
   const addNote = useServerFn(addInternalNote);
   const delNote = useServerFn(deleteInternalNote);
   const qc = useQueryClient();
@@ -42,9 +43,15 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
 
   const phone = data?.order?.phone ?? "";
   const { data: cachedFraud } = useQuery({
-    queryKey: ["fraud-cache", phone],
-    queryFn: () => cacheFn({ data: { phone } }),
+    queryKey: ["fraud-cache", phone, orderId],
+    queryFn: async () => {
+      const cached = await cacheFn({ data: { phone } });
+      if (cached) return cached;
+      return await autoFn({ data: { order_id: orderId } });
+    },
     enabled: open && !!phone,
+    staleTime: 60_000,
+    retry: false,
   });
 
   async function submitNote(e: React.FormEvent) {
