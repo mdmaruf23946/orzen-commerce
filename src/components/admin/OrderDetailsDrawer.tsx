@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { getOrderDetails, addInternalNote, deleteInternalNote } from "@/lib/business.functions";
-import { getCachedFraudCheck } from "@/lib/fraud.functions";
+import { getCachedFraudCheck, ensureAutoFraudCheck } from "@/lib/fraud.functions";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
