@@ -239,6 +239,27 @@ function StoreHeader({
             )}
           </Link>
 
+          {customer ? (
+            <Link
+              to="/store/$slug/account"
+              params={{ slug }}
+              className="hidden h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium hover:bg-neutral-100 sm:flex"
+              aria-label="Account"
+            >
+              <User className="h-4 w-4" />
+              <span className="max-w-[8rem] truncate">{customer.full_name.split(" ")[0]}</span>
+            </Link>
+          ) : (
+            <Link
+              to="/store/$slug/auth/login"
+              params={{ slug }}
+              className="hidden h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium hover:bg-neutral-100 sm:flex"
+            >
+              <User className="h-4 w-4" /> Sign in
+            </Link>
+          )}
+
+
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
