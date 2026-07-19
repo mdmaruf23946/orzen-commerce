@@ -179,6 +179,8 @@ export const placeOrder = createServerFn({ method: "POST" })
         couponCode: z.string().trim().max(40).optional(),
         insideCity: z.boolean().optional(),
         customerToken: z.string().min(16).max(128).optional(),
+        fingerprint: z.string().trim().max(128).optional(),
+        deviceId: z.string().trim().max(128).optional(),
       })
       .parse(d),
   )
