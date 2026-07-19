@@ -21,6 +21,7 @@ import { Route as AuthenticatedOwnerIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as StoreSlugCheckoutRouteImport } from './routes/store/$slug/checkout'
 import { Route as StoreSlugCartRouteImport } from './routes/store/$slug/cart'
+import { Route as StoreSlugAccountRouteImport } from './routes/store/$slug/account'
 import { Route as ApiImgSplatRouteImport } from './routes/api/img.$'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
 import { Route as AuthenticatedOwnerWebhooksRouteImport } from './routes/_authenticated/owner/webhooks'
@@ -83,6 +84,9 @@ import { Route as AuthenticatedOwnerSubscriptionPayIndexRouteImport } from './ro
 import { Route as AuthenticatedAdminBillingIndexRouteImport } from './routes/_authenticated/admin/billing.index'
 import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
 import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/order.$orderId'
+import { Route as StoreSlugAuthSignupRouteImport } from './routes/store/$slug/auth.signup'
+import { Route as StoreSlugAuthLoginRouteImport } from './routes/store/$slug/auth.login'
+import { Route as StoreSlugAuthForgotRouteImport } from './routes/store/$slug/auth.forgot'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
 import { Route as AuthenticatedOwnerSubscriptionPayProvidersRouteImport } from './routes/_authenticated/owner/subscription-pay.providers'
 import { Route as AuthenticatedAdminInvoiceOrderIdRouteImport } from './routes/_authenticated/admin/invoice.$orderId'
@@ -147,6 +151,11 @@ const StoreSlugCheckoutRoute = StoreSlugCheckoutRouteImport.update({
 const StoreSlugCartRoute = StoreSlugCartRouteImport.update({
   id: '/cart',
   path: '/cart',
+  getParentRoute: () => StoreSlugRouteRoute,
+} as any)
+const StoreSlugAccountRoute = StoreSlugAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => StoreSlugRouteRoute,
 } as any)
 const ApiImgSplatRoute = ApiImgSplatRouteImport.update({
@@ -510,6 +519,21 @@ const StoreSlugOrderOrderIdRoute = StoreSlugOrderOrderIdRouteImport.update({
   path: '/order/$orderId',
   getParentRoute: () => StoreSlugRouteRoute,
 } as any)
+const StoreSlugAuthSignupRoute = StoreSlugAuthSignupRouteImport.update({
+  id: '/auth/signup',
+  path: '/auth/signup',
+  getParentRoute: () => StoreSlugRouteRoute,
+} as any)
+const StoreSlugAuthLoginRoute = StoreSlugAuthLoginRouteImport.update({
+  id: '/auth/login',
+  path: '/auth/login',
+  getParentRoute: () => StoreSlugRouteRoute,
+} as any)
+const StoreSlugAuthForgotRoute = StoreSlugAuthForgotRouteImport.update({
+  id: '/auth/forgot',
+  path: '/auth/forgot',
+  getParentRoute: () => StoreSlugRouteRoute,
+} as any)
 const ApiPublicMessengerWebhookRoute =
   ApiPublicMessengerWebhookRouteImport.update({
     id: '/api/public/messenger/webhook',
@@ -612,6 +636,7 @@ export interface FileRoutesByFullPath {
   '/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
+  '/store/$slug/account': typeof StoreSlugAccountRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -621,6 +646,9 @@ export interface FileRoutesByFullPath {
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
+  '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
+  '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
+  '/store/$slug/auth/signup': typeof StoreSlugAuthSignupRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
@@ -688,6 +716,7 @@ export interface FileRoutesByTo {
   '/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
+  '/store/$slug/account': typeof StoreSlugAccountRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -697,6 +726,9 @@ export interface FileRoutesByTo {
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
+  '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
+  '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
+  '/store/$slug/auth/signup': typeof StoreSlugAuthSignupRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing': typeof AuthenticatedAdminBillingIndexRoute
@@ -771,6 +803,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
+  '/store/$slug/account': typeof StoreSlugAccountRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -780,6 +813,9 @@ export interface FileRoutesById {
   '/_authenticated/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/_authenticated/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
+  '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
+  '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
+  '/store/$slug/auth/signup': typeof StoreSlugAuthSignupRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/_authenticated/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
@@ -854,6 +890,7 @@ export interface FileRouteTypes {
     | '/owner/webhooks'
     | '/api/ai/chat'
     | '/api/img/$'
+    | '/store/$slug/account'
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
     | '/admin/'
@@ -863,6 +900,9 @@ export interface FileRouteTypes {
     | '/admin/invoice/$orderId'
     | '/owner/subscription-pay/providers'
     | '/api/public/messenger/webhook'
+    | '/store/$slug/auth/forgot'
+    | '/store/$slug/auth/login'
+    | '/store/$slug/auth/signup'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/admin/billing/'
@@ -930,6 +970,7 @@ export interface FileRouteTypes {
     | '/owner/webhooks'
     | '/api/ai/chat'
     | '/api/img/$'
+    | '/store/$slug/account'
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
     | '/admin'
@@ -939,6 +980,9 @@ export interface FileRouteTypes {
     | '/admin/invoice/$orderId'
     | '/owner/subscription-pay/providers'
     | '/api/public/messenger/webhook'
+    | '/store/$slug/auth/forgot'
+    | '/store/$slug/auth/login'
+    | '/store/$slug/auth/signup'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/admin/billing'
@@ -1012,6 +1056,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/webhooks'
     | '/api/ai/chat'
     | '/api/img/$'
+    | '/store/$slug/account'
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
     | '/_authenticated/admin/'
@@ -1021,6 +1066,9 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/invoice/$orderId'
     | '/_authenticated/owner/subscription-pay/providers'
     | '/api/public/messenger/webhook'
+    | '/store/$slug/auth/forgot'
+    | '/store/$slug/auth/login'
+    | '/store/$slug/auth/signup'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/_authenticated/admin/billing/'
@@ -1125,6 +1173,13 @@ declare module '@tanstack/react-router' {
       path: '/cart'
       fullPath: '/store/$slug/cart'
       preLoaderRoute: typeof StoreSlugCartRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
+    }
+    '/store/$slug/account': {
+      id: '/store/$slug/account'
+      path: '/account'
+      fullPath: '/store/$slug/account'
+      preLoaderRoute: typeof StoreSlugAccountRouteImport
       parentRoute: typeof StoreSlugRouteRoute
     }
     '/api/img/$': {
@@ -1561,6 +1616,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreSlugOrderOrderIdRouteImport
       parentRoute: typeof StoreSlugRouteRoute
     }
+    '/store/$slug/auth/signup': {
+      id: '/store/$slug/auth/signup'
+      path: '/auth/signup'
+      fullPath: '/store/$slug/auth/signup'
+      preLoaderRoute: typeof StoreSlugAuthSignupRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
+    }
+    '/store/$slug/auth/login': {
+      id: '/store/$slug/auth/login'
+      path: '/auth/login'
+      fullPath: '/store/$slug/auth/login'
+      preLoaderRoute: typeof StoreSlugAuthLoginRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
+    }
+    '/store/$slug/auth/forgot': {
+      id: '/store/$slug/auth/forgot'
+      path: '/auth/forgot'
+      fullPath: '/store/$slug/auth/forgot'
+      preLoaderRoute: typeof StoreSlugAuthForgotRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
+    }
     '/api/public/messenger/webhook': {
       id: '/api/public/messenger/webhook'
       path: '/api/public/messenger/webhook'
@@ -1807,17 +1883,25 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface StoreSlugRouteRouteChildren {
+  StoreSlugAccountRoute: typeof StoreSlugAccountRoute
   StoreSlugCartRoute: typeof StoreSlugCartRoute
   StoreSlugCheckoutRoute: typeof StoreSlugCheckoutRoute
   StoreSlugIndexRoute: typeof StoreSlugIndexRoute
+  StoreSlugAuthForgotRoute: typeof StoreSlugAuthForgotRoute
+  StoreSlugAuthLoginRoute: typeof StoreSlugAuthLoginRoute
+  StoreSlugAuthSignupRoute: typeof StoreSlugAuthSignupRoute
   StoreSlugOrderOrderIdRoute: typeof StoreSlugOrderOrderIdRoute
   StoreSlugProductProductIdRoute: typeof StoreSlugProductProductIdRoute
 }
 
 const StoreSlugRouteRouteChildren: StoreSlugRouteRouteChildren = {
+  StoreSlugAccountRoute: StoreSlugAccountRoute,
   StoreSlugCartRoute: StoreSlugCartRoute,
   StoreSlugCheckoutRoute: StoreSlugCheckoutRoute,
   StoreSlugIndexRoute: StoreSlugIndexRoute,
+  StoreSlugAuthForgotRoute: StoreSlugAuthForgotRoute,
+  StoreSlugAuthLoginRoute: StoreSlugAuthLoginRoute,
+  StoreSlugAuthSignupRoute: StoreSlugAuthSignupRoute,
   StoreSlugOrderOrderIdRoute: StoreSlugOrderOrderIdRoute,
   StoreSlugProductProductIdRoute: StoreSlugProductProductIdRoute,
 }
@@ -1841,13 +1925,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

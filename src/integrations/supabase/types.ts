@@ -990,6 +990,7 @@ export type Database = {
           area: string | null
           coupon_id: string | null
           created_at: string
+          customer_id: string | null
           customer_name: string
           delivery_amount: number | null
           discount_amount: number | null
@@ -1009,6 +1010,7 @@ export type Database = {
           area?: string | null
           coupon_id?: string | null
           created_at?: string
+          customer_id?: string | null
           customer_name: string
           delivery_amount?: number | null
           discount_amount?: number | null
@@ -1028,6 +1030,7 @@ export type Database = {
           area?: string | null
           coupon_id?: string | null
           created_at?: string
+          customer_id?: string | null
           customer_name?: string
           delivery_amount?: number | null
           discount_amount?: number | null
@@ -1043,6 +1046,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "store_customers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_store_id_fkey"
             columns: ["store_id"]
@@ -1617,6 +1627,155 @@ export type Database = {
           },
         ]
       }
+      store_customer_addresses: {
+        Row: {
+          address: string
+          area: string | null
+          created_at: string
+          customer_id: string
+          id: string
+          is_default: boolean
+          label: string | null
+          name: string | null
+          phone: string | null
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          area?: string | null
+          created_at?: string
+          customer_id: string
+          id?: string
+          is_default?: boolean
+          label?: string | null
+          name?: string | null
+          phone?: string | null
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          area?: string | null
+          created_at?: string
+          customer_id?: string
+          id?: string
+          is_default?: boolean
+          label?: string | null
+          name?: string | null
+          phone?: string | null
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_customer_addresses_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "store_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_customer_addresses_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_customer_sessions: {
+        Row: {
+          created_at: string
+          customer_id: string
+          expires_at: string
+          ip: string | null
+          store_id: string
+          token_hash: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          expires_at: string
+          ip?: string | null
+          store_id: string
+          token_hash: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          expires_at?: string
+          ip?: string | null
+          store_id?: string
+          token_hash?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_customer_sessions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "store_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_customer_sessions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_customers: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          is_active: boolean
+          last_login_at: string | null
+          password_hash: string
+          phone: string | null
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          is_active?: boolean
+          last_login_at?: string | null
+          password_hash: string
+          phone?: string | null
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          last_login_at?: string | null
+          password_hash?: string
+          phone?: string | null
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_customers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_domains: {
         Row: {
           cf_hostname_id: string | null
@@ -1850,6 +2009,7 @@ export type Database = {
           primary_color: string
           primary_domain_id: string | null
           product_defaults: Json
+          require_customer_login: boolean
           seo: Json
           slug: string
           status: Database["public"]["Enums"]["store_status"]
@@ -1887,6 +2047,7 @@ export type Database = {
           primary_color?: string
           primary_domain_id?: string | null
           product_defaults?: Json
+          require_customer_login?: boolean
           seo?: Json
           slug: string
           status?: Database["public"]["Enums"]["store_status"]
@@ -1924,6 +2085,7 @@ export type Database = {
           primary_color?: string
           primary_domain_id?: string | null
           product_defaults?: Json
+          require_customer_login?: boolean
           seo?: Json
           slug?: string
           status?: Database["public"]["Enums"]["store_status"]
@@ -2477,6 +2639,57 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _new_session_token: {
+        Args: {
+          _customer_id: string
+          _ip: string
+          _store_id: string
+          _ua: string
+        }
+        Returns: string
+      }
+      _normalize_phone: { Args: { _phone: string }; Returns: string }
+      customer_change_password: {
+        Args: { _new: string; _old: string; _store_id: string; _token: string }
+        Returns: Json
+      }
+      customer_from_token: {
+        Args: { _store_id: string; _token: string }
+        Returns: Json
+      }
+      customer_login: {
+        Args: {
+          _identifier: string
+          _ip?: string
+          _password: string
+          _store_id: string
+          _ua?: string
+        }
+        Returns: Json
+      }
+      customer_logout: { Args: { _token: string }; Returns: undefined }
+      customer_signup: {
+        Args: {
+          _email: string
+          _ip?: string
+          _name: string
+          _password: string
+          _phone: string
+          _store_id: string
+          _ua?: string
+        }
+        Returns: Json
+      }
+      customer_update_profile: {
+        Args: {
+          _email: string
+          _name: string
+          _phone: string
+          _store_id: string
+          _token: string
+        }
+        Returns: Json
+      }
       expire_trials: { Args: never; Returns: undefined }
       generate_invoice_no: { Args: { _store_id: string }; Returns: string }
       get_active_store_gateway_public: {

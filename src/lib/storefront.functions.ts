@@ -178,6 +178,7 @@ export const placeOrder = createServerFn({ method: "POST" })
         items: z.array(itemSchema).min(1).max(50),
         couponCode: z.string().trim().max(40).optional(),
         insideCity: z.boolean().optional(),
+        customerToken: z.string().min(16).max(128).optional(),
       })
       .parse(d),
   )
@@ -188,10 +189,23 @@ export const placeOrder = createServerFn({ method: "POST" })
     const sb = supabaseAdmin;
     const { data: store } = await sb
       .from("stores")
-      .select("id,status,delivery")
+      .select("id,status,delivery,require_customer_login")
       .eq("id", data.storeId)
       .maybeSingle();
     if (!store || store.status !== "active") throw new Error("Store unavailable");
+
+    // Resolve logged-in customer (if any) and enforce store's login rule.
+    let customerId: string | null = null;
+    if (data.customerToken) {
+      const { data: c } = await sb.rpc("customer_from_token", {
+        _token: data.customerToken,
+        _store_id: data.storeId,
+      } as any);
+      if (c) customerId = (c as any).id;
+    }
+    if ((store as any).require_customer_login && !customerId) {
+      throw new Error("Please sign in to place an order");
+    }
 
     const ids = data.items.map((i) => i.productId);
     const { data: products, error: pErr } = await sb
@@ -247,6 +261,7 @@ export const placeOrder = createServerFn({ method: "POST" })
       .from("orders")
       .insert({
         store_id: data.storeId,
+        customer_id: customerId,
         customer_name: data.customerName,
         phone: data.phone,
         address: data.address,
