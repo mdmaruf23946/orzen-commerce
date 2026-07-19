@@ -122,6 +122,34 @@ function CheckoutPage() {
     );
   }
 
+  if (requireLogin && !customer) {
+    return (
+      <div className="mx-auto max-w-md py-16 text-center">
+        <h1 className="text-xl font-semibold">Sign in to continue</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          This store requires a customer account before placing an order.
+        </p>
+        <div className="mt-6 flex justify-center gap-2">
+          <Link
+            to="/store/$slug/auth/login"
+            params={{ slug }}
+            className="inline-flex h-10 items-center rounded-md px-4 text-sm font-medium text-white"
+            style={{ backgroundColor: "var(--primary)" }}
+          >
+            Sign in
+          </Link>
+          <Link
+            to="/store/$slug/auth/signup"
+            params={{ slug }}
+            className="inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium"
+          >
+            Create account
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
