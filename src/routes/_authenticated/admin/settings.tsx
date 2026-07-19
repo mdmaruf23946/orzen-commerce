@@ -197,6 +197,26 @@ function SettingsPage() {
         {saving ? "Saving…" : "Save changes"}
       </Button>
 
+      <section className="space-y-3 rounded-xl border bg-card p-4">
+        <h2 className="text-sm font-semibold">Customer accounts</h2>
+        <label className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4"
+            checked={!!reqLogin?.enabled}
+            disabled={savingLogin}
+            onChange={(e) => toggleRequireLogin(e.target.checked)}
+          />
+          <span className="text-sm">
+            <span className="font-medium">Require customer login before checkout</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              When enabled, shoppers must sign in or create a customer account before placing an order.
+            </span>
+          </span>
+        </label>
+      </section>
+
+
       <section className="space-y-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
         <h2 className="text-sm font-semibold text-destructive">Danger zone</h2>
         <p className="text-xs text-muted-foreground">
