@@ -3,7 +3,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getMyStore, updateMyStore, resetStoreToTemplate } from "@/lib/admin.functions";
+import {
+  getMyStore,
+  updateMyStore,
+  resetStoreToTemplate,
+  adminGetRequireCustomerLogin,
+  adminSetRequireCustomerLogin,
+} from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
