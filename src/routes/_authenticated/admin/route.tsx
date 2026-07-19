@@ -110,7 +110,7 @@ function AdminLayout() {
           )}
         >
           <div className="flex h-14 shrink-0 items-center border-b px-5 font-semibold">Store Admin</div>
-          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
+          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3 pb-[100px] md:pb-3">
 
             {links.map((l) => (
               <Link
