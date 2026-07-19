@@ -14,6 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_settings: {
+        Row: {
+          enabled: boolean
+          id: string
+          provider: string
+          show_on_plans: string[]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          enabled?: boolean
+          id?: string
+          provider?: string
+          show_on_plans?: string[]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          enabled?: boolean
+          id?: string
+          provider?: string
+          show_on_plans?: string[]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      ad_slots: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          ends_at: string | null
+          format: string
+          id: string
+          is_active: boolean
+          name: string
+          provider: string
+          slot_key: string
+          starts_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          ends_at?: string | null
+          format?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          provider?: string
+          slot_key: string
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          ends_at?: string | null
+          format?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          provider?: string
+          slot_key?: string
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_conversations: {
         Row: {
           address: string | null
@@ -2918,6 +2990,7 @@ export type Database = {
       }
       get_billing_discounts: { Args: never; Returns: Json }
       get_fraud_public_status: { Args: never; Returns: Json }
+      get_my_active_ads: { Args: never; Returns: Json }
       get_public_order: { Args: { _order_id: string }; Returns: Json }
       get_public_store_by_slug: { Args: { _slug: string }; Returns: Json }
       get_store_bestsellers: {

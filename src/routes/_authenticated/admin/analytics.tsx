@@ -3,6 +3,7 @@ import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { businessAnalytics } from "@/lib/business.functions";
+import { AdSlot } from "@/components/admin/AdSlot";
 
 export const Route = createFileRoute("/_authenticated/admin/analytics")({
   component: () => <FeatureGate feature="analytics"><AnalyticsPage /></FeatureGate>,
@@ -75,6 +76,7 @@ function AnalyticsPage() {
           Conversion rate, add-to-cart rate, and checkout success rate require client-side event tracking. Configure Facebook Pixel or GA4 in <b>Marketing</b> to populate these metrics from your provider's dashboard.
         </p>
       </section>
+      <AdSlot slotKey="admin_analytics_bottom" />
     </div>
   );
 }

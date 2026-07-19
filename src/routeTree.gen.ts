@@ -53,6 +53,7 @@ import { Route as AuthenticatedOwnerAuditRouteImport } from './routes/_authentic
 import { Route as AuthenticatedOwnerApiRouteImport } from './routes/_authenticated/owner/api'
 import { Route as AuthenticatedOwnerAiUsageRouteImport } from './routes/_authenticated/owner/ai-usage'
 import { Route as AuthenticatedOwnerAiRouteImport } from './routes/_authenticated/owner/ai'
+import { Route as AuthenticatedOwnerAdsRouteImport } from './routes/_authenticated/owner/ads'
 import { Route as AuthenticatedAdminThemeRouteImport } from './routes/_authenticated/admin/theme'
 import { Route as AuthenticatedAdminSubscriptionRouteImport } from './routes/_authenticated/admin/subscription'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin/settings'
@@ -337,6 +338,11 @@ const AuthenticatedOwnerAiUsageRoute =
 const AuthenticatedOwnerAiRoute = AuthenticatedOwnerAiRouteImport.update({
   id: '/ai',
   path: '/ai',
+  getParentRoute: () => AuthenticatedOwnerRouteRoute,
+} as any)
+const AuthenticatedOwnerAdsRoute = AuthenticatedOwnerAdsRouteImport.update({
+  id: '/ads',
+  path: '/ads',
   getParentRoute: () => AuthenticatedOwnerRouteRoute,
 } as any)
 const AuthenticatedAdminThemeRoute = AuthenticatedAdminThemeRouteImport.update({
@@ -629,6 +635,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
+  '/owner/ads': typeof AuthenticatedOwnerAdsRoute
   '/owner/ai': typeof AuthenticatedOwnerAiRoute
   '/owner/ai-usage': typeof AuthenticatedOwnerAiUsageRoute
   '/owner/api': typeof AuthenticatedOwnerApiRoute
@@ -712,6 +719,7 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
+  '/owner/ads': typeof AuthenticatedOwnerAdsRoute
   '/owner/ai': typeof AuthenticatedOwnerAiRoute
   '/owner/ai-usage': typeof AuthenticatedOwnerAiUsageRoute
   '/owner/api': typeof AuthenticatedOwnerApiRoute
@@ -802,6 +810,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/_authenticated/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/_authenticated/admin/theme': typeof AuthenticatedAdminThemeRoute
+  '/_authenticated/owner/ads': typeof AuthenticatedOwnerAdsRoute
   '/_authenticated/owner/ai': typeof AuthenticatedOwnerAiRoute
   '/_authenticated/owner/ai-usage': typeof AuthenticatedOwnerAiUsageRoute
   '/_authenticated/owner/api': typeof AuthenticatedOwnerApiRoute
@@ -892,6 +901,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/subscription'
     | '/admin/theme'
+    | '/owner/ads'
     | '/owner/ai'
     | '/owner/ai-usage'
     | '/owner/api'
@@ -975,6 +985,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/subscription'
     | '/admin/theme'
+    | '/owner/ads'
     | '/owner/ai'
     | '/owner/ai-usage'
     | '/owner/api'
@@ -1064,6 +1075,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/settings'
     | '/_authenticated/admin/subscription'
     | '/_authenticated/admin/theme'
+    | '/_authenticated/owner/ads'
     | '/_authenticated/owner/ai'
     | '/_authenticated/owner/ai-usage'
     | '/_authenticated/owner/api'
@@ -1436,6 +1448,13 @@ declare module '@tanstack/react-router' {
       path: '/ai'
       fullPath: '/owner/ai'
       preLoaderRoute: typeof AuthenticatedOwnerAiRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/ads': {
+      id: '/_authenticated/owner/ads'
+      path: '/ads'
+      fullPath: '/owner/ads'
+      preLoaderRoute: typeof AuthenticatedOwnerAdsRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/admin/theme': {
@@ -1861,6 +1880,7 @@ const AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren =
 
 interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerSubscriptionPayRouteRoute: typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
+  AuthenticatedOwnerAdsRoute: typeof AuthenticatedOwnerAdsRoute
   AuthenticatedOwnerAiRoute: typeof AuthenticatedOwnerAiRoute
   AuthenticatedOwnerAiUsageRoute: typeof AuthenticatedOwnerAiUsageRoute
   AuthenticatedOwnerApiRoute: typeof AuthenticatedOwnerApiRoute
@@ -1897,6 +1917,7 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
   {
     AuthenticatedOwnerSubscriptionPayRouteRoute:
       AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren,
+    AuthenticatedOwnerAdsRoute: AuthenticatedOwnerAdsRoute,
     AuthenticatedOwnerAiRoute: AuthenticatedOwnerAiRoute,
     AuthenticatedOwnerAiUsageRoute: AuthenticatedOwnerAiUsageRoute,
     AuthenticatedOwnerApiRoute: AuthenticatedOwnerApiRoute,
@@ -1993,13 +2014,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
