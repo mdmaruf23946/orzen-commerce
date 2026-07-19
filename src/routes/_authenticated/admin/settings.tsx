@@ -40,6 +40,26 @@ function SettingsPage() {
   const [form, setForm] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const getReqLogin = useServerFn(adminGetRequireCustomerLogin);
+  const setReqLogin = useServerFn(adminSetRequireCustomerLogin);
+  const { data: reqLogin } = useQuery({
+    queryKey: ["admin", "require-customer-login"],
+    queryFn: () => getReqLogin(),
+  });
+  const [savingLogin, setSavingLogin] = useState(false);
+
+  async function toggleRequireLogin(enabled: boolean) {
+    setSavingLogin(true);
+    try {
+      await setReqLogin({ data: { enabled } });
+      await qc.invalidateQueries({ queryKey: ["admin", "require-customer-login"] });
+      toast.success(enabled ? "Login now required at checkout" : "Login no longer required");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSavingLogin(false);
+    }
+  }
 
   async function reset() {
     setResetting(true);
@@ -53,6 +73,7 @@ function SettingsPage() {
       setResetting(false);
     }
   }
+
 
 
   useEffect(() => {
