@@ -30,6 +30,7 @@ import {
   FileUp,
   Globe,
   Radar,
+  ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
