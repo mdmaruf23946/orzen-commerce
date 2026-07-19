@@ -38,6 +38,7 @@ import { amIOwner } from "@/lib/owner.functions";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SubscriptionStatusBanner } from "@/components/admin/SubscriptionStatusBanner";
+import { StickyMobileAdBar } from "@/components/admin/StickyMobileAdBar";
 
 const links: { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -143,11 +144,12 @@ function AdminLayout() {
         {open && (
           <div className="fixed inset-0 z-30 bg-black/40 md:hidden" onClick={() => setOpen(false)} />
         )}
-        <main className="flex-1 p-4 md:p-8">
+        <main className="flex-1 p-4 pb-[70px] md:p-8 md:pb-8">
           <SubscriptionStatusBanner />
           <Outlet />
         </main>
       </div>
+      <StickyMobileAdBar />
     </div>
   );
 }

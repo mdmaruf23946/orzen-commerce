@@ -30,6 +30,7 @@ const SLOT_KEYS = [
   { key: "admin_analytics_bottom", label: "Admin Analytics – Bottom" },
   { key: "admin_reports_bottom", label: "Admin Reports – Bottom" },
   { key: "admin_settings_bottom", label: "Admin Settings – Bottom" },
+  { key: "admin_mobile_sticky_bottom", label: "Admin Mobile – Sticky Bottom (320×50)" },
 ];
 const FORMATS = [
   { v: "responsive", l: "Responsive" },
