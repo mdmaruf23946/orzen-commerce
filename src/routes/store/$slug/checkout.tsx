@@ -166,6 +166,7 @@ function CheckoutPage() {
           items: items.map((i) => ({ productId: i.productId, qty: i.qty })),
           couponCode: coupon?.code,
           insideCity,
+          customerToken: customerToken ?? undefined,
         },
       });
 
