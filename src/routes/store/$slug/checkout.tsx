@@ -58,6 +58,16 @@ function CheckoutPage() {
 
   useEffect(() => setItems(readCart(slug)), [slug]);
 
+  // Prefill from signed-in customer profile
+  useEffect(() => {
+    if (customer) {
+      if (!name && customer.full_name) setName(customer.full_name);
+      if (!phone && customer.phone) setPhone(customer.phone);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customer]);
+
+
   if (!store) return null;
   const s: any = store;
   const pc = s.payments_config ?? {};
