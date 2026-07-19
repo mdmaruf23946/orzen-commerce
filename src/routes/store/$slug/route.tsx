@@ -170,7 +170,7 @@ function StoreHeader({
 }) {
   const [count, setCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { query, setQuery } = useStoreUI();
+  const { customer, signOut } = useCustomerSession(slug);
 
   useEffect(() => {
     const update = () => setCount(cartCount(slug));
