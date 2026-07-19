@@ -1034,3 +1034,45 @@ export const updateStoreTemplate = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return updated;
   });
+
+// ============================================================
+// Customer accounts (cross-store) — Winner Admin stats
+// ============================================================
+export const ownerCustomerStats = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [totalRes, activeRes, recentRes, perStoreRes, storesRes] = await Promise.all([
+      supabaseAdmin.from("store_customers").select("id", { count: "exact", head: true }),
+      supabaseAdmin.from("store_customers").select("id", { count: "exact", head: true }).eq("is_active", true),
+      supabaseAdmin
+        .from("store_customers")
+        .select("id,full_name,email,phone,store_id,created_at")
+        .order("created_at", { ascending: false })
+        .limit(20),
+      supabaseAdmin.from("store_customers").select("store_id"),
+      supabaseAdmin.from("stores").select("id,name,slug"),
+    ]);
+    const storeMap = new Map<string, { name: string; slug: string }>();
+    for (const s of storesRes.data ?? []) storeMap.set((s as any).id, { name: (s as any).name, slug: (s as any).slug });
+    const perStore: Record<string, number> = {};
+    for (const r of perStoreRes.data ?? []) {
+      const sid = (r as any).store_id as string;
+      perStore[sid] = (perStore[sid] ?? 0) + 1;
+    }
+    const byStore = Object.entries(perStore)
+      .map(([id, count]) => ({ store_id: id, count, name: storeMap.get(id)?.name ?? id, slug: storeMap.get(id)?.slug ?? "" }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 25);
+    const recent = (recentRes.data ?? []).map((r: any) => ({
+      ...r,
+      store_name: storeMap.get(r.store_id)?.name ?? r.store_id,
+    }));
+    return {
+      total: totalRes.count ?? 0,
+      active: activeRes.count ?? 0,
+      byStore,
+      recent,
+    };
+  });

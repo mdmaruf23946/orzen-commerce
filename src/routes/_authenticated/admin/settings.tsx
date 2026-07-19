@@ -3,7 +3,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getMyStore, updateMyStore, resetStoreToTemplate } from "@/lib/admin.functions";
+import {
+  getMyStore,
+  updateMyStore,
+  resetStoreToTemplate,
+  adminGetRequireCustomerLogin,
+  adminSetRequireCustomerLogin,
+} from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +40,26 @@ function SettingsPage() {
   const [form, setForm] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const getReqLogin = useServerFn(adminGetRequireCustomerLogin);
+  const setReqLogin = useServerFn(adminSetRequireCustomerLogin);
+  const { data: reqLogin } = useQuery({
+    queryKey: ["admin", "require-customer-login"],
+    queryFn: () => getReqLogin(),
+  });
+  const [savingLogin, setSavingLogin] = useState(false);
+
+  async function toggleRequireLogin(enabled: boolean) {
+    setSavingLogin(true);
+    try {
+      await setReqLogin({ data: { enabled } });
+      await qc.invalidateQueries({ queryKey: ["admin", "require-customer-login"] });
+      toast.success(enabled ? "Login now required at checkout" : "Login no longer required");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSavingLogin(false);
+    }
+  }
 
   async function reset() {
     setResetting(true);
@@ -47,6 +73,7 @@ function SettingsPage() {
       setResetting(false);
     }
   }
+
 
 
   useEffect(() => {
@@ -169,6 +196,26 @@ function SettingsPage() {
       <Button type="submit" disabled={saving} className="w-full sm:w-auto">
         {saving ? "Saving…" : "Save changes"}
       </Button>
+
+      <section className="space-y-3 rounded-xl border bg-card p-4">
+        <h2 className="text-sm font-semibold">Customer accounts</h2>
+        <label className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4"
+            checked={!!reqLogin?.enabled}
+            disabled={savingLogin}
+            onChange={(e) => toggleRequireLogin(e.target.checked)}
+          />
+          <span className="text-sm">
+            <span className="font-medium">Require customer login before checkout</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              When enabled, shoppers must sign in or create a customer account before placing an order.
+            </span>
+          </span>
+        </label>
+      </section>
+
 
       <section className="space-y-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
         <h2 className="text-sm font-semibold text-destructive">Danger zone</h2>

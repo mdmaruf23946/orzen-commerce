@@ -48,6 +48,7 @@ const links: { to: string; label: string; icon: typeof LayoutDashboard; exact?: 
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { to: "/admin/returns", label: "Returns", icon: RotateCcw },
   { to: "/admin/customers", label: "Customers", icon: Users },
+  { to: "/admin/customers-accounts", label: "Customer Accounts", icon: Users },
   { to: "/admin/coupons", label: "Coupons", icon: Ticket },
   { to: "/admin/finance", label: "Finance", icon: Wallet },
   { to: "/admin/banners", label: "Banners", icon: ImageIcon },

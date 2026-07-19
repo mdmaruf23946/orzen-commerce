@@ -1,12 +1,13 @@
 import { createFileRoute, Link, Outlet, notFound } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ShoppingCart, Search, Phone, MessageCircle, Facebook, Menu, X, Mail } from "lucide-react";
+import { ShoppingCart, Search, Phone, MessageCircle, Facebook, Menu, X, Mail, User, LogOut } from "lucide-react";
 import { getStoreBySlug } from "@/lib/storefront.functions";
 import { getStoreAgentPublic } from "@/lib/ai.functions";
 import { cartCount } from "@/lib/cart";
 import { StoreUIProvider, useStoreUI } from "@/lib/store-ui";
 import { AIChatLauncher } from "@/components/storefront/AIChatLauncher";
+import { useCustomerSession } from "@/lib/customer-session";
 
 
 export const storeQuery = (slug: string) =>
@@ -170,6 +171,8 @@ function StoreHeader({
   const [count, setCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const { query, setQuery } = useStoreUI();
+  const { customer, signOut } = useCustomerSession(slug);
+
 
   useEffect(() => {
     const update = () => setCount(cartCount(slug));
@@ -236,6 +239,27 @@ function StoreHeader({
             )}
           </Link>
 
+          {customer ? (
+            <Link
+              to="/store/$slug/account"
+              params={{ slug }}
+              className="hidden h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium hover:bg-neutral-100 sm:flex"
+              aria-label="Account"
+            >
+              <User className="h-4 w-4" />
+              <span className="max-w-[8rem] truncate">{customer.full_name.split(" ")[0]}</span>
+            </Link>
+          ) : (
+            <Link
+              to="/store/$slug/auth/login"
+              params={{ slug }}
+              className="hidden h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium hover:bg-neutral-100 sm:flex"
+            >
+              <User className="h-4 w-4" /> Sign in
+            </Link>
+          )}
+
+
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
@@ -284,6 +308,34 @@ function StoreHeader({
             <a href="#policies" onClick={() => setMenuOpen(false)} className="block rounded-md px-3 py-2 hover:bg-neutral-100">
               Policies
             </a>
+            {customer ? (
+              <>
+                <Link
+                  to="/store/$slug/account"
+                  params={{ slug }}
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-neutral-100"
+                >
+                  <User className="h-4 w-4" /> My account ({customer.full_name.split(" ")[0]})
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => { setMenuOpen(false); signOut(); }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-destructive hover:bg-destructive/10"
+                >
+                  <LogOut className="h-4 w-4" /> Sign out
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/store/$slug/auth/login"
+                params={{ slug }}
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-neutral-100"
+              >
+                <User className="h-4 w-4" /> Sign in
+              </Link>
+            )}
           </div>
         )}
       </div>

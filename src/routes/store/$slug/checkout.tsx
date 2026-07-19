@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useCustomerSession } from "@/lib/customer-session";
 
 
 const storeQuery = (slug: string) =>
@@ -38,6 +39,9 @@ function CheckoutPage() {
     queryFn: () => getGw({ data: { storeId: store!.id } }),
   });
 
+  const { customer, token: customerToken } = useCustomerSession(slug);
+  const requireLogin = !!(store as any)?.require_customer_login;
+
   type PM = "cod" | "bkash" | "nagad" | "rocket" | "bank";
   const [items, setItems] = useState<CartItem[]>([]);
   const [name, setName] = useState("");
@@ -53,6 +57,16 @@ function CheckoutPage() {
   const [applyingCoupon, setApplyingCoupon] = useState(false);
 
   useEffect(() => setItems(readCart(slug)), [slug]);
+
+  // Prefill from signed-in customer profile
+  useEffect(() => {
+    if (customer) {
+      if (!name && customer.full_name) setName(customer.full_name);
+      if (!phone && customer.phone) setPhone(customer.phone);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customer]);
+
 
   if (!store) return null;
   const s: any = store;
@@ -108,6 +122,34 @@ function CheckoutPage() {
     );
   }
 
+  if (requireLogin && !customer) {
+    return (
+      <div className="mx-auto max-w-md py-16 text-center">
+        <h1 className="text-xl font-semibold">Sign in to continue</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          This store requires a customer account before placing an order.
+        </p>
+        <div className="mt-6 flex justify-center gap-2">
+          <Link
+            to="/store/$slug/auth/login"
+            params={{ slug }}
+            className="inline-flex h-10 items-center rounded-md px-4 text-sm font-medium text-white"
+            style={{ backgroundColor: "var(--primary)" }}
+          >
+            Sign in
+          </Link>
+          <Link
+            to="/store/$slug/auth/signup"
+            params={{ slug }}
+            className="inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium"
+          >
+            Create account
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
@@ -124,6 +166,7 @@ function CheckoutPage() {
           items: items.map((i) => ({ productId: i.productId, qty: i.qty })),
           couponCode: coupon?.code,
           insideCity,
+          customerToken: customerToken ?? undefined,
         },
       });
 
