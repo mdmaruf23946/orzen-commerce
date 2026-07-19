@@ -1,12 +1,13 @@
 import { createFileRoute, Link, Outlet, notFound } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ShoppingCart, Search, Phone, MessageCircle, Facebook, Menu, X, Mail } from "lucide-react";
+import { ShoppingCart, Search, Phone, MessageCircle, Facebook, Menu, X, Mail, User, LogOut } from "lucide-react";
 import { getStoreBySlug } from "@/lib/storefront.functions";
 import { getStoreAgentPublic } from "@/lib/ai.functions";
 import { cartCount } from "@/lib/cart";
 import { StoreUIProvider, useStoreUI } from "@/lib/store-ui";
 import { AIChatLauncher } from "@/components/storefront/AIChatLauncher";
+import { useCustomerSession } from "@/lib/customer-session";
 
 
 export const storeQuery = (slug: string) =>
