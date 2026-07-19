@@ -899,3 +899,133 @@ export const myDashboardOverview = createServerFn({ method: "GET" })
       notifications: notifications.slice(0, 3),
     };
   });
+
+// ============================================================
+// Registered customer accounts (per-store)
+// ============================================================
+
+async function currentStoreId(context: any) {
+  const { data } = await context.supabase
+    .from("stores")
+    .select("id")
+    .eq("owner_user_id", context.userId)
+    .maybeSingle();
+  if (!data) throw new Error("Store not found");
+  return data.id as string;
+}
+
+export const adminListCustomerAccounts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ search: z.string().max(120).optional() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const storeId = await currentStoreId(context);
+    let q = context.supabase
+      .from("store_customers")
+      .select("id,full_name,email,phone,is_active,last_login_at,created_at")
+      .eq("store_id", storeId)
+      .order("created_at", { ascending: false })
+      .limit(500);
+    if (data.search && data.search.trim()) {
+      const s = data.search.trim();
+      q = q.or(`full_name.ilike.%${s}%,email.ilike.%${s}%,phone.ilike.%${s}%`);
+    }
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    // attach order counts
+    const ids = (rows ?? []).map((r) => r.id);
+    let counts: Record<string, number> = {};
+    if (ids.length > 0) {
+      const { data: os } = await context.supabase
+        .from("orders")
+        .select("customer_id")
+        .eq("store_id", storeId)
+        .in("customer_id", ids);
+      counts = {};
+      for (const o of os ?? []) {
+        const cid = (o as any).customer_id as string;
+        counts[cid] = (counts[cid] ?? 0) + 1;
+      }
+    }
+    return (rows ?? []).map((r) => ({ ...r, order_count: counts[r.id] ?? 0 }));
+  });
+
+export const adminGetCustomerAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ customerId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const storeId = await currentStoreId(context);
+    const { data: row } = await context.supabase
+      .from("store_customers")
+      .select("id,full_name,email,phone,is_active,last_login_at,created_at")
+      .eq("store_id", storeId)
+      .eq("id", data.customerId)
+      .maybeSingle();
+    if (!row) throw new Error("Not found");
+    const { data: orders } = await context.supabase
+      .from("orders")
+      .select("id,invoice_no,status,subtotal,created_at")
+      .eq("store_id", storeId)
+      .eq("customer_id", data.customerId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    const { data: addresses } = await context.supabase
+      .from("store_customer_addresses")
+      .select("id,label,name,phone,address,area,is_default")
+      .eq("store_id", storeId)
+      .eq("customer_id", data.customerId);
+    return { ...row, orders: orders ?? [], addresses: addresses ?? [] };
+  });
+
+export const adminSetCustomerActive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ customerId: z.string().uuid(), active: z.boolean() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const storeId = await currentStoreId(context);
+    const { error } = await context.supabase
+      .from("store_customers")
+      .update({ is_active: data.active })
+      .eq("store_id", storeId)
+      .eq("id", data.customerId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminDeleteCustomerAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ customerId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const storeId = await currentStoreId(context);
+    const { error } = await context.supabase
+      .from("store_customers")
+      .delete()
+      .eq("store_id", storeId)
+      .eq("id", data.customerId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminSetRequireCustomerLogin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ enabled: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const storeId = await currentStoreId(context);
+    const { error } = await context.supabase
+      .from("stores")
+      .update({ require_customer_login: data.enabled })
+      .eq("id", storeId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminGetRequireCustomerLogin = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data } = await context.supabase
+      .from("stores")
+      .select("require_customer_login")
+      .eq("owner_user_id", context.userId)
+      .maybeSingle();
+    return { enabled: !!(data as any)?.require_customer_login };
+  });
