@@ -259,6 +259,64 @@ export const placeOrder = createServerFn({ method: "POST" })
       }
     }
 
+    // Duplicate order protection
+    const { checkDuplicate, DUPLICATE_MESSAGE } = await import("@/lib/duplicate-guard.server");
+    const dup = await checkDuplicate({
+      storeId: data.storeId,
+      phone: data.phone,
+      customerId,
+      fingerprint: data.fingerprint ?? null,
+      deviceId: data.deviceId ?? null,
+      productIds: ids,
+    });
+    if (dup.action === "block") {
+      await sb.from("store_duplicate_blocks").insert({
+        store_id: data.storeId,
+        matched_rules: dup.matchedRules,
+        matched_order_id: dup.matchedOrderId,
+        phone: data.phone,
+        customer_id: customerId,
+        fingerprint: data.fingerprint ?? null,
+        device_id: data.deviceId ?? null,
+        product_ids: ids,
+        payload: {
+          customerName: data.customerName,
+          phone: data.phone,
+          address: data.address,
+          area: data.area,
+          paymentMethod: data.paymentMethod,
+          txnId: data.txnId,
+          notes: data.notes,
+          insideCity: data.insideCity,
+          itemRows,
+          subtotal,
+          delivery_amount,
+          discount_amount,
+          total: subtotal + delivery_amount - discount_amount,
+        },
+        status: "blocked",
+      });
+      const err: any = new Error(DUPLICATE_MESSAGE);
+      err.code = "DUPLICATE_BLOCKED";
+      throw err;
+    }
+    let warned = false;
+    if (dup.action === "warn") {
+      warned = true;
+      await sb.from("store_duplicate_blocks").insert({
+        store_id: data.storeId,
+        matched_rules: dup.matchedRules,
+        matched_order_id: dup.matchedOrderId,
+        phone: data.phone,
+        customer_id: customerId,
+        fingerprint: data.fingerprint ?? null,
+        device_id: data.deviceId ?? null,
+        product_ids: ids,
+        payload: { customerName: data.customerName, phone: data.phone, notes: "warn-only" },
+        status: "warned",
+      });
+    }
+
     const { data: order, error: oErr } = await sb
       .from("orders")
       .insert({
@@ -276,6 +334,8 @@ export const placeOrder = createServerFn({ method: "POST" })
         discount_amount,
         coupon_id,
         status: "pending",
+        fingerprint: data.fingerprint ?? null,
+        device_id: data.deviceId ?? null,
       })
       .select("id")
       .single();
