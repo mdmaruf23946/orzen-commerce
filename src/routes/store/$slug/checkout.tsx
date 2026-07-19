@@ -39,6 +39,9 @@ function CheckoutPage() {
     queryFn: () => getGw({ data: { storeId: store!.id } }),
   });
 
+  const { customer, token: customerToken } = useCustomerSession(slug);
+  const requireLogin = !!(store as any)?.require_customer_login;
+
   type PM = "cod" | "bkash" | "nagad" | "rocket" | "bank";
   const [items, setItems] = useState<CartItem[]>([]);
   const [name, setName] = useState("");
