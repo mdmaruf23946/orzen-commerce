@@ -155,6 +155,7 @@ function CheckoutPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
+      const [fingerprint, deviceId] = [await computeFingerprint(), getDeviceId()];
       const res = await place({
         data: {
           storeId: store!.id,
@@ -168,13 +169,21 @@ function CheckoutPage() {
           couponCode: coupon?.code,
           insideCity,
           customerToken: customerToken ?? undefined,
+          fingerprint: fingerprint || undefined,
+          deviceId: deviceId || undefined,
         },
       });
 
+      if ((res as any)?.warning) toast.warning((res as any).warning);
       clearCart(slug);
       navigate({ to: "/store/$slug/order/$orderId", params: { slug, orderId: res.orderId } });
     } catch (err) {
-      toast.error((err as Error).message);
+      const msg = (err as Error).message;
+      if (msg && msg.toLowerCase().includes("already ordered")) {
+        toast.error(msg, { duration: 8000 });
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setSubmitting(false);
     }
