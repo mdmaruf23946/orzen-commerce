@@ -261,6 +261,7 @@ export const placeOrder = createServerFn({ method: "POST" })
       .from("orders")
       .insert({
         store_id: data.storeId,
+        customer_id: customerId,
         customer_name: data.customerName,
         phone: data.phone,
         address: data.address,
