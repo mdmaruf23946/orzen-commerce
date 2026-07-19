@@ -41,6 +41,7 @@ const groups: NavGroup[] = [
   { label: "Integrations", links: [
     { to: "/owner/couriers", label: "Couriers", icon: Truck },
     { to: "/owner/marketing", label: "Marketing", icon: Megaphone },
+    { to: "/owner/ads", label: "Advertisement Management", icon: Megaphone },
   ]},
   { label: "Platform", links: [
     { to: "/owner/store-template", label: "Store Template", icon: StoreIcon },
