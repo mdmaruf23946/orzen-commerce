@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUploader } from "@/components/admin/ImageUploader";
+import { AdSlot } from "@/components/admin/AdSlot";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -245,6 +246,7 @@ function SettingsPage() {
           </AlertDialogContent>
         </AlertDialog>
       </section>
+      <AdSlot slotKey="admin_settings_bottom" />
     </form>
   );
 }

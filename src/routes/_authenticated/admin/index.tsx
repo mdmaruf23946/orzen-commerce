@@ -10,6 +10,7 @@ import {
   Plus, Share2, ExternalLink, Bell, Star, Sparkles,
 } from "lucide-react";
 import { myDashboardOverview } from "@/lib/admin.functions";
+import { AdSlot } from "@/components/admin/AdSlot";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -295,6 +296,8 @@ function Dashboard() {
         <QuickAction onClick={shareStore} icon={Share2} label="Share Store" />
         <QuickAction href={storeUrl} external icon={ExternalLink} label="Open Store" />
       </div>
+
+      <AdSlot slotKey="admin_dashboard_bottom" />
     </div>
   );
 }
