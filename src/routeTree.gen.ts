@@ -85,6 +85,7 @@ import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$s
 import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/order.$orderId'
 import { Route as StoreSlugAuthSignupRouteImport } from './routes/store/$slug/auth.signup'
 import { Route as StoreSlugAuthLoginRouteImport } from './routes/store/$slug/auth.login'
+import { Route as StoreSlugAuthForgotRouteImport } from './routes/store/$slug/auth.forgot'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
 import { Route as AuthenticatedOwnerSubscriptionPayProvidersRouteImport } from './routes/_authenticated/owner/subscription-pay.providers'
 import { Route as AuthenticatedAdminInvoiceOrderIdRouteImport } from './routes/_authenticated/admin/invoice.$orderId'
@@ -522,6 +523,11 @@ const StoreSlugAuthLoginRoute = StoreSlugAuthLoginRouteImport.update({
   path: '/auth/login',
   getParentRoute: () => StoreSlugRouteRoute,
 } as any)
+const StoreSlugAuthForgotRoute = StoreSlugAuthForgotRouteImport.update({
+  id: '/auth/forgot',
+  path: '/auth/forgot',
+  getParentRoute: () => StoreSlugRouteRoute,
+} as any)
 const ApiPublicMessengerWebhookRoute =
   ApiPublicMessengerWebhookRouteImport.update({
     id: '/api/public/messenger/webhook',
@@ -633,6 +639,7 @@ export interface FileRoutesByFullPath {
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
+  '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
   '/store/$slug/auth/signup': typeof StoreSlugAuthSignupRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
@@ -711,6 +718,7 @@ export interface FileRoutesByTo {
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
+  '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
   '/store/$slug/auth/signup': typeof StoreSlugAuthSignupRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
@@ -796,6 +804,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/_authenticated/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
+  '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
   '/store/$slug/auth/signup': typeof StoreSlugAuthSignupRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
@@ -881,6 +890,7 @@ export interface FileRouteTypes {
     | '/admin/invoice/$orderId'
     | '/owner/subscription-pay/providers'
     | '/api/public/messenger/webhook'
+    | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
     | '/store/$slug/auth/signup'
     | '/store/$slug/order/$orderId'
@@ -959,6 +969,7 @@ export interface FileRouteTypes {
     | '/admin/invoice/$orderId'
     | '/owner/subscription-pay/providers'
     | '/api/public/messenger/webhook'
+    | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
     | '/store/$slug/auth/signup'
     | '/store/$slug/order/$orderId'
@@ -1043,6 +1054,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/invoice/$orderId'
     | '/_authenticated/owner/subscription-pay/providers'
     | '/api/public/messenger/webhook'
+    | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
     | '/store/$slug/auth/signup'
     | '/store/$slug/order/$orderId'
@@ -1599,6 +1611,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreSlugAuthLoginRouteImport
       parentRoute: typeof StoreSlugRouteRoute
     }
+    '/store/$slug/auth/forgot': {
+      id: '/store/$slug/auth/forgot'
+      path: '/auth/forgot'
+      fullPath: '/store/$slug/auth/forgot'
+      preLoaderRoute: typeof StoreSlugAuthForgotRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
+    }
     '/api/public/messenger/webhook': {
       id: '/api/public/messenger/webhook'
       path: '/api/public/messenger/webhook'
@@ -1848,6 +1867,7 @@ interface StoreSlugRouteRouteChildren {
   StoreSlugCartRoute: typeof StoreSlugCartRoute
   StoreSlugCheckoutRoute: typeof StoreSlugCheckoutRoute
   StoreSlugIndexRoute: typeof StoreSlugIndexRoute
+  StoreSlugAuthForgotRoute: typeof StoreSlugAuthForgotRoute
   StoreSlugAuthLoginRoute: typeof StoreSlugAuthLoginRoute
   StoreSlugAuthSignupRoute: typeof StoreSlugAuthSignupRoute
   StoreSlugOrderOrderIdRoute: typeof StoreSlugOrderOrderIdRoute
@@ -1858,6 +1878,7 @@ const StoreSlugRouteRouteChildren: StoreSlugRouteRouteChildren = {
   StoreSlugCartRoute: StoreSlugCartRoute,
   StoreSlugCheckoutRoute: StoreSlugCheckoutRoute,
   StoreSlugIndexRoute: StoreSlugIndexRoute,
+  StoreSlugAuthForgotRoute: StoreSlugAuthForgotRoute,
   StoreSlugAuthLoginRoute: StoreSlugAuthLoginRoute,
   StoreSlugAuthSignupRoute: StoreSlugAuthSignupRoute,
   StoreSlugOrderOrderIdRoute: StoreSlugOrderOrderIdRoute,
