@@ -21,6 +21,7 @@ import { Route as AuthenticatedOwnerIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as StoreSlugCheckoutRouteImport } from './routes/store/$slug/checkout'
 import { Route as StoreSlugCartRouteImport } from './routes/store/$slug/cart'
+import { Route as StoreSlugAccountRouteImport } from './routes/store/$slug/account'
 import { Route as ApiImgSplatRouteImport } from './routes/api/img.$'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
 import { Route as AuthenticatedOwnerWebhooksRouteImport } from './routes/_authenticated/owner/webhooks'
@@ -150,6 +151,11 @@ const StoreSlugCheckoutRoute = StoreSlugCheckoutRouteImport.update({
 const StoreSlugCartRoute = StoreSlugCartRouteImport.update({
   id: '/cart',
   path: '/cart',
+  getParentRoute: () => StoreSlugRouteRoute,
+} as any)
+const StoreSlugAccountRoute = StoreSlugAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => StoreSlugRouteRoute,
 } as any)
 const ApiImgSplatRoute = ApiImgSplatRouteImport.update({
@@ -630,6 +636,7 @@ export interface FileRoutesByFullPath {
   '/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
+  '/store/$slug/account': typeof StoreSlugAccountRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -709,6 +716,7 @@ export interface FileRoutesByTo {
   '/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
+  '/store/$slug/account': typeof StoreSlugAccountRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -795,6 +803,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
+  '/store/$slug/account': typeof StoreSlugAccountRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -881,6 +890,7 @@ export interface FileRouteTypes {
     | '/owner/webhooks'
     | '/api/ai/chat'
     | '/api/img/$'
+    | '/store/$slug/account'
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
     | '/admin/'
@@ -960,6 +970,7 @@ export interface FileRouteTypes {
     | '/owner/webhooks'
     | '/api/ai/chat'
     | '/api/img/$'
+    | '/store/$slug/account'
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
     | '/admin'
@@ -1045,6 +1056,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/webhooks'
     | '/api/ai/chat'
     | '/api/img/$'
+    | '/store/$slug/account'
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
     | '/_authenticated/admin/'
@@ -1161,6 +1173,13 @@ declare module '@tanstack/react-router' {
       path: '/cart'
       fullPath: '/store/$slug/cart'
       preLoaderRoute: typeof StoreSlugCartRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
+    }
+    '/store/$slug/account': {
+      id: '/store/$slug/account'
+      path: '/account'
+      fullPath: '/store/$slug/account'
+      preLoaderRoute: typeof StoreSlugAccountRouteImport
       parentRoute: typeof StoreSlugRouteRoute
     }
     '/api/img/$': {
@@ -1864,6 +1883,7 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface StoreSlugRouteRouteChildren {
+  StoreSlugAccountRoute: typeof StoreSlugAccountRoute
   StoreSlugCartRoute: typeof StoreSlugCartRoute
   StoreSlugCheckoutRoute: typeof StoreSlugCheckoutRoute
   StoreSlugIndexRoute: typeof StoreSlugIndexRoute
@@ -1875,6 +1895,7 @@ interface StoreSlugRouteRouteChildren {
 }
 
 const StoreSlugRouteRouteChildren: StoreSlugRouteRouteChildren = {
+  StoreSlugAccountRoute: StoreSlugAccountRoute,
   StoreSlugCartRoute: StoreSlugCartRoute,
   StoreSlugCheckoutRoute: StoreSlugCheckoutRoute,
   StoreSlugIndexRoute: StoreSlugIndexRoute,
