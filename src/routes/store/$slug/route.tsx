@@ -308,6 +308,34 @@ function StoreHeader({
             <a href="#policies" onClick={() => setMenuOpen(false)} className="block rounded-md px-3 py-2 hover:bg-neutral-100">
               Policies
             </a>
+            {customer ? (
+              <>
+                <Link
+                  to="/store/$slug/account"
+                  params={{ slug }}
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-neutral-100"
+                >
+                  <User className="h-4 w-4" /> My account ({customer.full_name.split(" ")[0]})
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => { setMenuOpen(false); signOut(); }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-destructive hover:bg-destructive/10"
+                >
+                  <LogOut className="h-4 w-4" /> Sign out
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/store/$slug/auth/login"
+                params={{ slug }}
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-neutral-100"
+              >
+                <User className="h-4 w-4" /> Sign in
+              </Link>
+            )}
           </div>
         )}
       </div>
