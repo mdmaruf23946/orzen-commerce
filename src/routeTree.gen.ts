@@ -83,6 +83,7 @@ import { Route as AuthenticatedOwnerSubscriptionPayIndexRouteImport } from './ro
 import { Route as AuthenticatedAdminBillingIndexRouteImport } from './routes/_authenticated/admin/billing.index'
 import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
 import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/order.$orderId'
+import { Route as StoreSlugAuthLoginRouteImport } from './routes/store/$slug/auth.login'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
 import { Route as AuthenticatedOwnerSubscriptionPayProvidersRouteImport } from './routes/_authenticated/owner/subscription-pay.providers'
 import { Route as AuthenticatedAdminInvoiceOrderIdRouteImport } from './routes/_authenticated/admin/invoice.$orderId'
@@ -510,6 +511,11 @@ const StoreSlugOrderOrderIdRoute = StoreSlugOrderOrderIdRouteImport.update({
   path: '/order/$orderId',
   getParentRoute: () => StoreSlugRouteRoute,
 } as any)
+const StoreSlugAuthLoginRoute = StoreSlugAuthLoginRouteImport.update({
+  id: '/auth/login',
+  path: '/auth/login',
+  getParentRoute: () => StoreSlugRouteRoute,
+} as any)
 const ApiPublicMessengerWebhookRoute =
   ApiPublicMessengerWebhookRouteImport.update({
     id: '/api/public/messenger/webhook',
@@ -621,6 +627,7 @@ export interface FileRoutesByFullPath {
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
+  '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
@@ -697,6 +704,7 @@ export interface FileRoutesByTo {
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
+  '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing': typeof AuthenticatedAdminBillingIndexRoute
@@ -780,6 +788,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/_authenticated/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
+  '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/_authenticated/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
@@ -863,6 +872,7 @@ export interface FileRouteTypes {
     | '/admin/invoice/$orderId'
     | '/owner/subscription-pay/providers'
     | '/api/public/messenger/webhook'
+    | '/store/$slug/auth/login'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/admin/billing/'
@@ -939,6 +949,7 @@ export interface FileRouteTypes {
     | '/admin/invoice/$orderId'
     | '/owner/subscription-pay/providers'
     | '/api/public/messenger/webhook'
+    | '/store/$slug/auth/login'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/admin/billing'
@@ -1021,6 +1032,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/invoice/$orderId'
     | '/_authenticated/owner/subscription-pay/providers'
     | '/api/public/messenger/webhook'
+    | '/store/$slug/auth/login'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/_authenticated/admin/billing/'
@@ -1561,6 +1573,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreSlugOrderOrderIdRouteImport
       parentRoute: typeof StoreSlugRouteRoute
     }
+    '/store/$slug/auth/login': {
+      id: '/store/$slug/auth/login'
+      path: '/auth/login'
+      fullPath: '/store/$slug/auth/login'
+      preLoaderRoute: typeof StoreSlugAuthLoginRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
+    }
     '/api/public/messenger/webhook': {
       id: '/api/public/messenger/webhook'
       path: '/api/public/messenger/webhook'
@@ -1810,6 +1829,7 @@ interface StoreSlugRouteRouteChildren {
   StoreSlugCartRoute: typeof StoreSlugCartRoute
   StoreSlugCheckoutRoute: typeof StoreSlugCheckoutRoute
   StoreSlugIndexRoute: typeof StoreSlugIndexRoute
+  StoreSlugAuthLoginRoute: typeof StoreSlugAuthLoginRoute
   StoreSlugOrderOrderIdRoute: typeof StoreSlugOrderOrderIdRoute
   StoreSlugProductProductIdRoute: typeof StoreSlugProductProductIdRoute
 }
@@ -1818,6 +1838,7 @@ const StoreSlugRouteRouteChildren: StoreSlugRouteRouteChildren = {
   StoreSlugCartRoute: StoreSlugCartRoute,
   StoreSlugCheckoutRoute: StoreSlugCheckoutRoute,
   StoreSlugIndexRoute: StoreSlugIndexRoute,
+  StoreSlugAuthLoginRoute: StoreSlugAuthLoginRoute,
   StoreSlugOrderOrderIdRoute: StoreSlugOrderOrderIdRoute,
   StoreSlugProductProductIdRoute: StoreSlugProductProductIdRoute,
 }
