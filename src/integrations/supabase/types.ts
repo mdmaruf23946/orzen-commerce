@@ -993,7 +993,9 @@ export type Database = {
           customer_id: string | null
           customer_name: string
           delivery_amount: number | null
+          device_id: string | null
           discount_amount: number | null
+          fingerprint: string | null
           id: string
           invoice_no: string | null
           notes: string | null
@@ -1013,7 +1015,9 @@ export type Database = {
           customer_id?: string | null
           customer_name: string
           delivery_amount?: number | null
+          device_id?: string | null
           discount_amount?: number | null
+          fingerprint?: string | null
           id?: string
           invoice_no?: string | null
           notes?: string | null
@@ -1033,7 +1037,9 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string
           delivery_amount?: number | null
+          device_id?: string | null
           discount_amount?: number | null
+          fingerprint?: string | null
           id?: string
           invoice_no?: string | null
           notes?: string | null
@@ -1840,6 +1846,220 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "store_domains_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_duplicate_blocks: {
+        Row: {
+          created_at: string
+          created_order_id: string | null
+          customer_id: string | null
+          device_id: string | null
+          fingerprint: string | null
+          id: string
+          matched_order_id: string | null
+          matched_rules: string[]
+          payload: Json
+          phone: string | null
+          product_ids: string[]
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_order_id?: string | null
+          customer_id?: string | null
+          device_id?: string | null
+          fingerprint?: string | null
+          id?: string
+          matched_order_id?: string | null
+          matched_rules?: string[]
+          payload: Json
+          phone?: string | null
+          product_ids?: string[]
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          created_order_id?: string | null
+          customer_id?: string | null
+          device_id?: string | null
+          fingerprint?: string | null
+          id?: string
+          matched_order_id?: string | null
+          matched_rules?: string[]
+          payload?: Json
+          phone?: string | null
+          product_ids?: string[]
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_duplicate_blocks_created_order_id_fkey"
+            columns: ["created_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_duplicate_blocks_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "store_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_duplicate_blocks_matched_order_id_fkey"
+            columns: ["matched_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_duplicate_blocks_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_duplicate_excluded_products: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_duplicate_excluded_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_duplicate_excluded_products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_duplicate_protection: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          match_logic: string
+          mode: string
+          period_days: number
+          rule_customer: boolean
+          rule_device: boolean
+          rule_fingerprint: boolean
+          rule_phone: boolean
+          rule_product: boolean
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          match_logic?: string
+          mode?: string
+          period_days?: number
+          rule_customer?: boolean
+          rule_device?: boolean
+          rule_fingerprint?: boolean
+          rule_phone?: boolean
+          rule_product?: boolean
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          match_logic?: string
+          mode?: string
+          period_days?: number
+          rule_customer?: boolean
+          rule_device?: boolean
+          rule_fingerprint?: boolean
+          rule_phone?: boolean
+          rule_product?: boolean
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_duplicate_protection_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_duplicate_whitelist_customers: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          id: string
+          note: string | null
+          phone: string | null
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          note?: string | null
+          phone?: string | null
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          note?: string | null
+          phone?: string | null
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_duplicate_whitelist_customers_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "store_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_duplicate_whitelist_customers_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"

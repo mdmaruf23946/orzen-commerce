@@ -30,6 +30,7 @@ import {
   FileUp,
   Globe,
   Radar,
+  ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,6 +47,7 @@ const links: { to: string; label: string; icon: typeof LayoutDashboard; exact?: 
   { to: "/admin/inventory", label: "Inventory", icon: Boxes },
   { to: "/admin/import-export", label: "Import / Export", icon: FileUp },
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag },
+  { to: "/admin/duplicate-protection", label: "Duplicate Protection", icon: ShieldCheck },
   { to: "/admin/returns", label: "Returns", icon: RotateCcw },
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/customers-accounts", label: "Customer Accounts", icon: Users },

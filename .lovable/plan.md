@@ -1,134 +1,109 @@
-## Store Customer Authentication System (Per-Store Isolated)
+## Duplicate Order Protection System (per-store)
 
-Build a self-contained customer auth system for storefronts, fully separate from the existing Supabase `auth.users` (which is only for store owners / Winner Admin). Customers belong to exactly one store; the same email/phone may re-register in a different store without conflict.
+Add a store-scoped duplicate-order guard that runs inside `placeOrder`, with a full admin UI to configure rules, review blocks, whitelist customers, and exclude products.
 
 ---
 
-### 1. Database (new migration)
+### 1. Database (single migration)
 
-**`store_customers`** — one row per (store, customer):
-- `id uuid pk`
-- `store_id uuid → stores(id) on delete cascade`
-- `full_name text`
-- `email text` (nullable)
-- `phone text` (nullable, normalized)
-- `password_hash text` (bcrypt via `pgcrypto` `crypt()`)
-- `is_active bool default true`
-- `last_login_at timestamptz`
+**`store_duplicate_protection`** — one row per store (settings):
+- `store_id uuid pk → stores(id) on delete cascade`
+- `enabled bool default false`
+- `mode text check in ('block','warn','off') default 'block'`
+- `period_days int check in (1,3,7,15,30) default 7`
+- `rule_phone bool default true`
+- `rule_product bool default true`
+- `rule_fingerprint bool default false`
+- `rule_device bool default false`
+- `rule_customer bool default true`
+- `match_logic text check in ('any','all') default 'any'` — how rules combine
 - `created_at`, `updated_at`
-- CHECK: `email is not null OR phone is not null`
-- Partial unique indexes: `(store_id, lower(email))` where email not null; `(store_id, phone)` where phone not null.
 
-**`store_customer_addresses`** — saved delivery addresses (name, phone, address, area, is_default, store_id, customer_id).
+**`store_duplicate_whitelist_customers`** — `(store_id, customer_id | phone)`, unique per store.
 
-**`store_customer_sessions`** — opaque session tokens:
-- `token_hash text pk` (sha256 of the random token)
-- `customer_id`, `store_id`, `expires_at`, `created_at`, `user_agent`, `ip`.
+**`store_duplicate_excluded_products`** — `(store_id, product_id)`, unique per store.
 
-**Add to `orders`**: `customer_id uuid null → store_customers(id)` (nullable to preserve guest checkout).
+**`store_duplicate_blocks`** — audit + review queue:
+- `id`, `store_id`, `matched_rules text[]`, `matched_order_id uuid` (the earlier order), `phone`, `customer_id`, `fingerprint`, `device_id`, `product_ids uuid[]`, `payload jsonb` (full attempted order snapshot for manual approval), `status text check in ('blocked','approved','dismissed') default 'blocked'`, `created_at`, `resolved_at`, `resolved_by uuid`.
 
-**Add to `stores.checkout_config` jsonb**: `require_customer_login bool` (default false). No schema change if we reuse an existing jsonb column; otherwise add `require_customer_login bool default false` on `stores`.
+**Add to `orders`**: `fingerprint text null`, `device_id text null` (already has `customer_id`, `phone`).
 
-**RLS + GRANTs**:
-- `store_customers`, `store_customer_addresses`, `store_customer_sessions`: RLS enabled. No `anon`/`authenticated` policies for direct access — all storefront reads/writes go through `SECURITY DEFINER` RPCs or server functions using `supabaseAdmin` (scoped by `store_id` in code). Store-owner reads/updates: policy `is_store_owner(store_id)` for SELECT/UPDATE/DELETE on `store_customers` (owner sees their own store's customers only). Winner Admin: `has_role(auth.uid(),'owner')` policy for read-only aggregate.
-- `orders.customer_id`: existing owner policies already scope by store; no change needed beyond the FK.
+**Indexes**: `orders(store_id, phone, created_at desc)`, `orders(store_id, customer_id, created_at desc)`, `orders(store_id, fingerprint, created_at desc)`, `order_items(product_id)` for the recent-window lookup.
 
-**RPCs (SECURITY DEFINER, search_path=public)**:
-- `customer_signup(_store_id, _name, _email, _phone, _password) → jsonb {ok, customer_id, token}` — validates uniqueness in store, hashes with `crypt(_password, gen_salt('bf'))`, creates session.
-- `customer_login(_store_id, _identifier, _password) → jsonb {ok, token, customer}` — looks up by email OR phone in that store, verifies with `crypt`.
-- `customer_logout(_token)`, `customer_from_token(_token) → jsonb` — used by server functions to resolve the current customer.
-- `customer_change_password(_token, _old, _new)`.
-
-All RPCs revoked from `anon`/`authenticated` and only executed via server functions.
+**RLS + GRANTs**: standard `is_store_owner(store_id)` for all four tables (SELECT/INSERT/UPDATE/DELETE). `authenticated` grants only; no `anon`. `service_role` full. Storefront never reads these directly — all checks go through the `placeOrder` server function using `supabaseAdmin`.
 
 ---
 
 ### 2. Server layer
 
-**`src/lib/customer-auth.functions.ts`** (public server fns — no `requireSupabaseAuth`, resolve store from slug/host, use `supabaseAdmin` inside handler):
-- `signupCustomer({ storeSlug, fullName, email?, phone?, password })`
-- `loginCustomer({ storeSlug, identifier, password })`
-- `logoutCustomer({ token })`
-- `getCurrentCustomer({ token })` → profile + store scope check
-- `updateCustomerProfile`, `changeCustomerPassword`
-- `listCustomerOrders({ token })` — joins orders on `customer_id` + store_id.
-- `listCustomerAddresses`, `upsertCustomerAddress`, `deleteCustomerAddress`.
+**`src/lib/duplicate-guard.server.ts`** — pure server helper:
+- `checkDuplicate({ storeId, phone, customerId, fingerprint, deviceId, productIds })` → `{ blocked, warn, matchedRules[], matchedOrderId }`.
+- Loads settings; short-circuits when `enabled=false` or `mode='off'`.
+- Applies whitelist (customer_id or phone) and excluded products first.
+- Queries `orders` within `period_days` filtered by `store_id` + each enabled rule; joins `order_items` for product rule. `match_logic='any'` = OR, `'all'` = AND.
 
-Token stored client-side in `localStorage` under a store-scoped key: `orzen_customer_token__<storeSlug>` (so switching stores in same browser doesn't cross sessions).
+**`src/lib/storefront.functions.ts` — `placeOrder`**:
+- Accept new optional inputs `fingerprint`, `deviceId` (already accepts `customerToken`).
+- After validation, before insert: call `checkDuplicate`.
+- On `block`: insert a `store_duplicate_blocks` row with the full payload, throw a typed error the client shows as the friendly message.
+- On `warn`: insert block row with `status='dismissed'` (informational), proceed, and return `{ warning: true, message }` so UI can toast.
+- Stamp `fingerprint`/`device_id` on the created order.
 
-**`src/lib/admin.functions.ts`** additions (protected via `requireSupabaseAuth` + `is_store_owner`):
-- `adminListCustomers({ search? })`, `adminGetCustomer`, `adminSetCustomerActive`, `adminDeleteCustomer`, `adminGetCustomerOrders`.
-
-**Owner** (`src/lib/owner.functions.ts`): `ownerCustomerStats()` → per-store counts only, no cross-store row mixing.
-
-**Extend `getStoreActiveGateway` / public store fetch** to include `require_customer_login` so checkout knows the rule.
-
-**Update `placeOrder`** in `src/lib/storefront.functions.ts`:
-- Accept optional `customerToken`; if store requires login, reject when missing.
-- If token present, resolve `customer_id` and stamp it on the order.
+**`src/lib/duplicate-protection.functions.ts`** — admin-only (`requireSupabaseAuth` + `is_store_owner`):
+- `getDuplicateSettings`, `updateDuplicateSettings`
+- `listDuplicateBlocks({ status?, search? })`, `approveBlockedOrder(blockId)` (creates the real order from `payload`), `dismissBlockedOrder(blockId)`
+- `listWhitelist`, `addWhitelist`, `removeWhitelist`
+- `listExcludedProducts`, `addExcludedProduct`, `removeExcludedProduct`
 
 ---
 
-### 3. Storefront UI (`src/routes/store/$slug/`)
+### 3. Storefront
 
-New routes (all mobile-first, matching current storefront theme tokens):
-- `auth.login.tsx` — email/phone + password, forgot-password link.
-- `auth.signup.tsx` — full name, email OR phone (at least one), password + confirm, validation with zod.
-- `auth.forgot.tsx` — placeholder (email reset link is out of scope unless email infra exists; if not, show "contact store admin" flow — confirm below).
-- `account.route.tsx` (layout with sidebar/tabs) + children:
-  - `account.index.tsx` — profile summary
-  - `account.orders.tsx` — order history + track
-  - `account.addresses.tsx` — CRUD saved addresses
-  - `account.profile.tsx` — edit name/email/phone
-  - `account.password.tsx` — change password
+**`src/lib/fingerprint.ts`** — lightweight client fingerprint (canvas + UA + screen + timezone hash via SubtleCrypto). No third-party lib. Persist a random `deviceId` in `localStorage` under `orzen_device_id`.
 
-**`src/lib/customer-session.ts`** — small client hook `useCustomerSession(storeSlug)` reading the scoped localStorage token, exposing `customer`, `login`, `logout`, `refresh`.
-
-**Storefront header** (`store/$slug/route.tsx`): show "Login / Signup" when logged out; account menu (name, orders, logout) when logged in.
-
-**Checkout (`checkout.tsx`)**:
-- Fetch `require_customer_login` from public store data.
-- If ON and no session → redirect to `/store/$slug/auth/login?redirect=/store/$slug/checkout`.
-- If logged in: prefill name/phone/address from profile + saved addresses (address picker), attach `customerToken` to `placeOrder`.
-- If OFF: unchanged guest flow.
+**`checkout.tsx`**: compute fingerprint + read deviceId, pass into `placeOrder`. On thrown "duplicate blocked" error, render the friendly message in a modal with a "Contact store" button (uses store phone/whatsapp). On `warning`, show a toast but continue to order success.
 
 ---
 
-### 4. Store Admin Panel
+### 4. Store Admin UI
 
-New route: `src/routes/_authenticated/admin/customers-accounts.tsx` (keep existing `customers.tsx` for the phone-based order-derived list; new page is for registered accounts):
-- Search bar (name/email/phone).
-- Table: name, email, phone, orders count, last login, status.
-- Row actions: view profile drawer (details + order history), toggle active, delete (with confirm).
-- Mobile: card layout.
+New route `src/routes/_authenticated/admin/duplicate-protection.tsx` with three tabs (mobile-first, matches existing admin patterns via `SettingsPage`-style layout):
 
-**Settings** (`src/routes/_authenticated/admin/settings.tsx` or a new "Checkout" tab): toggle "Require Customer Login Before Checkout".
+1. **Settings** — enable toggle, mode radio (Block / Warn / Off), period select (1/3/7/15/30), rules checkboxes, `any/all` logic toggle.
+2. **Blocked orders** — table (cards on mobile): date, phone, matched rules, earlier order link, actions: Approve (creates order) / Dismiss / View payload drawer.
+3. **Whitelist & Exclusions** — add/remove customers (by phone or account search) and products (search picker).
 
-Sidebar link added under Customers group.
+Sidebar link "Duplicate Protection" added under Orders group in `src/routes/_authenticated/admin/route.tsx`.
 
 ---
 
-### 5. Winner Admin Panel
+### 5. Security & performance
 
-New route: `src/routes/_authenticated/owner/customers.tsx` — per-store customer counts, totals, growth. Read via `ownerCustomerStats()`; no row-level cross-store listing.
-
----
-
-### 6. Security notes
-
-- Passwords hashed with bcrypt via pgcrypto `crypt()` inside RPCs; plaintext never leaves the server function.
-- Session tokens are 32-byte random hex; only their SHA-256 hash stored.
-- Every server fn re-validates `store_id` against the slug/host — a token from Store A cannot address Store B even if replayed.
-- Rate-limit login attempts (simple in-table counter or defer to later; note in follow-ups).
-- No changes to Supabase `auth.users`; store owners and customers are entirely separate identity systems.
+- All settings/whitelist/exclusion reads and writes go through `is_store_owner` policies; `store_id` re-verified server-side on every mutation.
+- Duplicate check runs with `supabaseAdmin` inside `placeOrder` only after resolving `store_id` from slug — a token/fingerprint from Store A can never query Store B.
+- Recent-window queries hit the new composite indexes; each rule = one indexed lookup, capped to the block payload write.
+- No cross-store fingerprint linkage — every query is `WHERE store_id = _store_id`.
 
 ---
+
+### Technical details
+
+```text
+placeOrder flow:
+  validate → resolve store → resolve customer (if token)
+  → checkDuplicate(storeId, phone, customerId, fp, deviceId, productIds)
+      ├─ settings.enabled=false            → skip
+      ├─ whitelist match                   → skip
+      ├─ all productIds excluded           → skip
+      └─ run enabled rule queries (window=period_days)
+          ├─ mode=block + match            → insert block row, throw
+          ├─ mode=warn  + match            → insert dismissed block row, flag warning
+          └─ no match                      → proceed
+  → insert order (with fingerprint, device_id)
+```
 
 ### Open questions before I build
 
-1. **Forgot password**: email infra isn't set up for customer flows here. Options:
-   (a) Ship auth without forgot-password (customers contact store admin who resets from admin panel — I'll add a "Reset password" action there).
-   (b) Wire Lovable Emails + a per-store transactional template (adds email-domain setup).
-   Which do you want?
-2. **Login identifier**: single field that accepts email OR phone (auto-detected), or two separate tabs "Email" / "Phone"?
-3. **Phone format**: normalize to digits-only (e.g. strip `+`, spaces) and treat `01712345678` and `+8801712345678` as the same? Assuming yes unless you say otherwise.
+1. **Approve action** — should "Approve" from the blocked queue create a real order using the saved payload (my default), or just mark it approved and expect the customer to re-checkout?
+2. **Match logic default** — I'm defaulting to `any` (any enabled rule triggers a block). Do you want `all` (every enabled rule must match) instead, or keep both as an admin toggle?
+3. **Fingerprint scope** — OK to compute a lightweight canvas+UA fingerprint client-side (no external SDK)? Accuracy is ~good, not forensic. Say if you want to skip that rule for now.
