@@ -53,6 +53,7 @@ const groups: NavGroup[] = [
   ]},
   { label: "Insights", links: [
     { to: "/owner/reports", label: "Reports", icon: BarChart3 },
+    { to: "/owner/customers", label: "Customer Accounts", icon: Users },
     { to: "/owner/support", label: "Support", icon: LifeBuoy },
     { to: "/owner/notifications", label: "Notifications", icon: Bell },
   ]},
