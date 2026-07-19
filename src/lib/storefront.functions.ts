@@ -356,7 +356,7 @@ export const placeOrder = createServerFn({ method: "POST" })
       if (c2) await sb.from("coupons").update({ used_count: (c2.used_count ?? 0) + 1 }).eq("id", coupon_id);
     }
 
-    return { orderId: order.id };
+    return { orderId: order.id, warning: warned ? DUPLICATE_MESSAGE : null };
   });
 
 
