@@ -1,7 +1,9 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { getOrder } from "@/lib/storefront.functions";
+import { fbTrack, purchaseEventId } from "@/lib/fb-track";
 
 const orderQuery = (orderId: string) =>
   queryOptions({ queryKey: ["order", orderId], queryFn: () => getOrder({ data: { orderId } }) });
@@ -21,6 +23,27 @@ export const Route = createFileRoute("/store/$slug/order/$orderId")({
 function OrderConfirmation() {
   const { slug, orderId } = Route.useParams();
   const { data: order } = useSuspenseQuery(orderQuery(orderId));
+  useEffect(() => {
+    if (!order) return;
+    const key = `fb:purchase:${order.id}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    const items = (order.items as any[]) ?? [];
+    fbTrack(
+      "Purchase",
+      {
+        value: Number(order.subtotal),
+        currency: "BDT",
+        content_ids: items.map((i) => i.product_id ?? i.name_snapshot),
+        contents: items.map((i) => ({ id: i.product_id, quantity: i.qty, item_price: Number(i.price_snapshot) })),
+        num_items: items.reduce((a, i) => a + i.qty, 0),
+      },
+      {
+        eventId: purchaseEventId(order.id),
+        userData: { phone: order.phone },
+      },
+    );
+  }, [order?.id]);
   if (!order) return null;
 
   return (

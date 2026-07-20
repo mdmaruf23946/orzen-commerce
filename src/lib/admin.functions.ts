@@ -547,22 +547,36 @@ async function updateStoreColumn(
   return { ok: true };
 }
 
-const marketingSchema = z.object({
-  fb_pixel_id: z.string().trim().max(60).optional().nullable(),
-  fb_capi_token: z.string().trim().max(300).optional().nullable(),
-  fb_capi_enabled: z.boolean().optional(),
-  ga4_id: z.string().trim().max(40).optional().nullable(),
-  gtm_id: z.string().trim().max(40).optional().nullable(),
-  tiktok_pixel_id: z.string().trim().max(60).optional().nullable(),
-  enabled: z
-    .object({
-      fb_pixel: z.boolean().optional(),
-      ga4: z.boolean().optional(),
-      gtm: z.boolean().optional(),
-      tiktok: z.boolean().optional(),
-    })
-    .optional(),
-});
+const marketingSchema = z
+  .object({
+    fb_pixel_id: z.string().trim().max(60).optional().nullable(),
+    fb_pixel_enabled: z.boolean().optional(),
+    fb_capi_token: z.string().trim().max(300).optional().nullable(),
+    fb_capi_enabled: z.boolean().optional(),
+    fb_test_event_code: z.string().trim().max(40).optional().nullable(),
+    ga4_id: z.string().trim().max(40).optional().nullable(),
+    gtm_id: z.string().trim().max(40).optional().nullable(),
+    tiktok_pixel_id: z.string().trim().max(60).optional().nullable(),
+    enabled: z
+      .object({
+        fb_pixel: z.boolean().optional(),
+        ga4: z.boolean().optional(),
+        gtm: z.boolean().optional(),
+        tiktok: z.boolean().optional(),
+      })
+      .optional(),
+  })
+  .superRefine((v, ctx) => {
+    if (v.fb_pixel_id && !/^\d{15,17}$/.test(v.fb_pixel_id)) {
+      ctx.addIssue({ code: "custom", path: ["fb_pixel_id"], message: "Facebook Pixel ID must be 15–17 digits" });
+    }
+    if (v.fb_capi_enabled && (!v.fb_capi_token || v.fb_capi_token.length < 40)) {
+      ctx.addIssue({ code: "custom", path: ["fb_capi_token"], message: "CAPI access token looks too short" });
+    }
+    if (v.fb_test_event_code && !/^[A-Za-z0-9_-]{4,40}$/.test(v.fb_test_event_code)) {
+      ctx.addIssue({ code: "custom", path: ["fb_test_event_code"], message: "Invalid test event code" });
+    }
+  });
 
 export const updateMarketing = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -570,6 +584,58 @@ export const updateMarketing = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertPlan(context.supabase, context.userId, "pixel");
     return updateStoreColumn(context.supabase, context.userId, "marketing", data);
+  });
+
+export const getFacebookStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: store } = await context.supabase
+      .from("stores")
+      .select("marketing")
+      .eq("owner_user_id", context.userId)
+      .maybeSingle();
+    const m: any = (store as any)?.marketing ?? {};
+    const hasPixel = !!m.fb_pixel_id;
+    const capiOn = !!m.fb_capi_enabled && !!m.fb_capi_token;
+    const mode: "off" | "live" | "test" =
+      !hasPixel && !capiOn ? "off" : m.fb_test_event_code ? "test" : "live";
+    return {
+      mode,
+      pixel_enabled: m.fb_pixel_enabled !== false && hasPixel,
+      capi_enabled: capiOn,
+      pixel_id: m.fb_pixel_id ?? null,
+      test_event_code: m.fb_test_event_code ?? null,
+    };
+  });
+
+export const sendFbTestEvent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: store } = await context.supabase
+      .from("stores")
+      .select("marketing, slug")
+      .eq("owner_user_id", context.userId)
+      .maybeSingle();
+    const m: any = (store as any)?.marketing ?? {};
+    if (!m.fb_pixel_id || !m.fb_capi_token) {
+      return { ok: false as const, error: "Pixel ID and CAPI token are required for a test event.", mode: "live" as const };
+    }
+    const { sendFbEvents } = await import("@/lib/fb-capi.server");
+    const testCode = (m.fb_test_event_code as string | undefined) || "TEST_LOVABLE";
+    const res = await sendFbEvents({
+      pixelId: m.fb_pixel_id,
+      accessToken: m.fb_capi_token,
+      testCode,
+      events: [
+        {
+          event_name: "PageView",
+          event_id: `test-${Date.now()}`,
+          event_source_url: `https://orzen.top/store/${(store as any)?.slug ?? ""}`,
+          user_data: { external_id: context.userId },
+        },
+      ],
+    });
+    return res;
   });
 
 const courierProvider = z.object({

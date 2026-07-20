@@ -32,6 +32,16 @@ export function addToCart(slug: string, item: CartItem) {
   if (idx >= 0) items[idx].qty += item.qty;
   else items.push(item);
   writeCart(slug, items);
+  // Fire Meta AddToCart (browser + CAPI)
+  import("./fb-track").then(({ fbTrack }) =>
+    fbTrack("AddToCart", {
+      content_ids: [item.productId],
+      content_type: "product",
+      contents: [{ id: item.productId, quantity: item.qty, item_price: item.price }],
+      value: item.price * item.qty,
+      currency: "BDT",
+    }),
+  ).catch(() => {});
 }
 
 export function updateQty(slug: string, productId: string, qty: number) {

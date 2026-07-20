@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, notFound, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { fbTrack } from "@/lib/fb-track";
 import { toast } from "sonner";
 import { Minus, Plus } from "lucide-react";
 import { getProduct, getStoreBySlug } from "@/lib/storefront.functions";
@@ -45,6 +46,16 @@ function ProductPage() {
   const { data: product } = useSuspenseQuery(productQuery(store!.id, productId));
   const [qty, setQty] = useState(1);
   const [activeImg, setActiveImg] = useState(product!.primary_image_url ?? product!.gallery[0] ?? null);
+  useEffect(() => {
+    if (!product) return;
+    fbTrack("ViewContent", {
+      content_ids: [product.id],
+      content_name: product.name,
+      content_type: "product",
+      value: Number(product.price),
+      currency: "BDT",
+    });
+  }, [product?.id]);
 
   if (!product) return null;
   const inStock = product.stock > 0 && product.status !== "draft";
