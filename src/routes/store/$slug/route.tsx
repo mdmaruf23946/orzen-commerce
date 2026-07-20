@@ -114,9 +114,10 @@ function toMessengerUrl(fb: string | null): string | null {
 }
 
 
-function TrackingScripts({ marketing }: { marketing: any }) {
+function TrackingScripts({ marketing, slug }: { marketing: any; slug: string }) {
   const m = marketing ?? {};
   const en = m.enabled ?? {};
+  const slugForInit = slug;
   useEffect(() => {
     if (typeof window === "undefined") return;
     const added: HTMLScriptElement[] = [];
@@ -147,6 +148,8 @@ function TrackingScripts({ marketing }: { marketing: any }) {
         "",
         `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${m.fb_pixel_id}');`,
       );
+      // Fire PageView (browser + CAPI) once init module has attached.
+      import("@/lib/fb-track").then(({ fbTrack }) => fbTrack("PageView"));
     }
     if (m.tiktok_pixel_id && en.tiktok !== false) {
       add(
@@ -157,7 +160,7 @@ function TrackingScripts({ marketing }: { marketing: any }) {
     return () => {
       for (const s of added) s.remove();
     };
-  }, [m.gtm_id, m.ga4_id, m.fb_pixel_id, m.tiktok_pixel_id, en.gtm, en.ga4, en.fb_pixel, en.tiktok]);
+  }, [m.gtm_id, m.ga4_id, m.fb_pixel_id, m.fb_pixel_enabled, m.tiktok_pixel_id, en.gtm, en.ga4, en.fb_pixel, en.tiktok, slugForInit]);
   return null;
 }
 
