@@ -23,6 +23,27 @@ export const Route = createFileRoute("/store/$slug/order/$orderId")({
 function OrderConfirmation() {
   const { slug, orderId } = Route.useParams();
   const { data: order } = useSuspenseQuery(orderQuery(orderId));
+  useEffect(() => {
+    if (!order) return;
+    const key = `fb:purchase:${order.id}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    const items = (order.items as any[]) ?? [];
+    fbTrack(
+      "Purchase",
+      {
+        value: Number(order.subtotal),
+        currency: "BDT",
+        content_ids: items.map((i) => i.product_id ?? i.name_snapshot),
+        contents: items.map((i) => ({ id: i.product_id, quantity: i.qty, item_price: Number(i.price_snapshot) })),
+        num_items: items.reduce((a, i) => a + i.qty, 0),
+      },
+      {
+        eventId: purchaseEventId(order.id),
+        userData: { phone: order.phone },
+      },
+    );
+  }, [order?.id]);
   if (!order) return null;
 
   return (
