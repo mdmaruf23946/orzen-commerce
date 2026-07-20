@@ -82,8 +82,9 @@ function StoreLayout() {
 
   return (
     <StoreUIProvider>
-      <TrackingScripts marketing={s.marketing} />
+      <TrackingScripts marketing={s.marketing} slug={slug} />
       <div className="min-h-screen bg-background" style={themeVars}>
+
         <StoreHeader slug={slug} name={store.name} logoUrl={store.logo_url} />
         <main className="mx-auto max-w-5xl px-4 pb-12 pt-4 sm:px-6">
           <Outlet />
