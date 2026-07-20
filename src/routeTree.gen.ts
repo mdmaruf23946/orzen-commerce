@@ -92,6 +92,7 @@ import { Route as StoreSlugAuthSignupRouteImport } from './routes/store/$slug/au
 import { Route as StoreSlugAuthLoginRouteImport } from './routes/store/$slug/auth.login'
 import { Route as StoreSlugAuthForgotRouteImport } from './routes/store/$slug/auth.forgot'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
+import { Route as ApiPublicFbCapiTrackRouteImport } from './routes/api/public/fb-capi/track'
 import { Route as AuthenticatedOwnerSubscriptionPayProvidersRouteImport } from './routes/_authenticated/owner/subscription-pay.providers'
 import { Route as AuthenticatedAdminInvoiceOrderIdRouteImport } from './routes/_authenticated/admin/invoice.$orderId'
 import { Route as AuthenticatedAdminBillingReturnRouteImport } from './routes/_authenticated/admin/billing.return'
@@ -567,6 +568,11 @@ const ApiPublicMessengerWebhookRoute =
     path: '/api/public/messenger/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicFbCapiTrackRoute = ApiPublicFbCapiTrackRouteImport.update({
+  id: '/api/public/fb-capi/track',
+  path: '/api/public/fb-capi/track',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedOwnerSubscriptionPayProvidersRoute =
   AuthenticatedOwnerSubscriptionPayProvidersRouteImport.update({
     id: '/providers',
@@ -676,6 +682,7 @@ export interface FileRoutesByFullPath {
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
@@ -760,6 +767,7 @@ export interface FileRoutesByTo {
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
@@ -851,6 +859,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/_authenticated/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/_authenticated/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
@@ -942,6 +951,7 @@ export interface FileRouteTypes {
     | '/admin/billing/return'
     | '/admin/invoice/$orderId'
     | '/owner/subscription-pay/providers'
+    | '/api/public/fb-capi/track'
     | '/api/public/messenger/webhook'
     | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
@@ -1026,6 +1036,7 @@ export interface FileRouteTypes {
     | '/admin/billing/return'
     | '/admin/invoice/$orderId'
     | '/owner/subscription-pay/providers'
+    | '/api/public/fb-capi/track'
     | '/api/public/messenger/webhook'
     | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
@@ -1116,6 +1127,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/billing/return'
     | '/_authenticated/admin/invoice/$orderId'
     | '/_authenticated/owner/subscription-pay/providers'
+    | '/api/public/fb-capi/track'
     | '/api/public/messenger/webhook'
     | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
@@ -1136,6 +1148,7 @@ export interface RootRouteChildren {
   StoreSlugRouteRoute: typeof StoreSlugRouteRouteWithChildren
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiImgSplatRoute: typeof ApiImgSplatRoute
+  ApiPublicFbCapiTrackRoute: typeof ApiPublicFbCapiTrackRoute
   ApiPublicMessengerWebhookRoute: typeof ApiPublicMessengerWebhookRoute
   ApiPublicSubscriptionPayWebhookProviderRoute: typeof ApiPublicSubscriptionPayWebhookProviderRoute
 }
@@ -1723,6 +1736,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMessengerWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/fb-capi/track': {
+      id: '/api/public/fb-capi/track'
+      path: '/api/public/fb-capi/track'
+      fullPath: '/api/public/fb-capi/track'
+      preLoaderRoute: typeof ApiPublicFbCapiTrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/owner/subscription-pay/providers': {
       id: '/_authenticated/owner/subscription-pay/providers'
       path: '/providers'
@@ -2007,6 +2027,7 @@ const rootRouteChildren: RootRouteChildren = {
   StoreSlugRouteRoute: StoreSlugRouteRouteWithChildren,
   ApiAiChatRoute: ApiAiChatRoute,
   ApiImgSplatRoute: ApiImgSplatRoute,
+  ApiPublicFbCapiTrackRoute: ApiPublicFbCapiTrackRoute,
   ApiPublicMessengerWebhookRoute: ApiPublicMessengerWebhookRoute,
   ApiPublicSubscriptionPayWebhookProviderRoute:
     ApiPublicSubscriptionPayWebhookProviderRoute,
