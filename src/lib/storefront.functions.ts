@@ -356,6 +356,39 @@ export const placeOrder = createServerFn({ method: "POST" })
       if (c2) await sb.from("coupons").update({ used_count: (c2.used_count ?? 0) + 1 }).eq("id", coupon_id);
     }
 
+    // Fire server-side Purchase event via Meta CAPI (best-effort, deduped with browser event).
+    try {
+      const { data: st } = await sb
+        .from("stores")
+        .select("marketing, slug")
+        .eq("id", data.storeId)
+        .maybeSingle();
+      const m: any = (st as any)?.marketing ?? {};
+      if (m.fb_pixel_id && m.fb_capi_token && m.fb_capi_enabled !== false) {
+        const { sendFbEvents } = await import("@/lib/fb-capi.server");
+        await sendFbEvents({
+          pixelId: m.fb_pixel_id,
+          accessToken: m.fb_capi_token,
+          testCode: m.fb_test_event_code || null,
+          events: [
+            {
+              event_name: "Purchase",
+              event_id: `purchase-${order.id}`,
+              event_source_url: `https://orzen.top/store/${(st as any)?.slug ?? ""}/order/${order.id}`,
+              user_data: { phone: data.phone, external_id: customerId ?? undefined },
+              custom_data: {
+                value: subtotal + delivery_amount - discount_amount,
+                currency: "BDT",
+                content_ids: ids,
+                contents: itemRows.map((r) => ({ id: r.product_id, quantity: r.qty, item_price: Number(r.price_snapshot) })),
+                num_items: itemRows.reduce((a, r) => a + r.qty, 0),
+              },
+            },
+          ],
+        });
+      }
+    } catch { /* non-fatal */ }
+
     return { orderId: order.id, warning: warned ? DUPLICATE_MESSAGE : null };
   });
 
