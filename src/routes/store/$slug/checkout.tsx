@@ -58,7 +58,19 @@ function CheckoutPage() {
   const [coupon, setCoupon] = useState<{ code: string; discount: number; freeShipping: boolean } | null>(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
 
-  useEffect(() => setItems(readCart(slug)), [slug]);
+  useEffect(() => {
+    const c = readCart(slug);
+    setItems(c);
+    if (c.length) {
+      fbTrack("InitiateCheckout", {
+        content_ids: c.map((i) => i.productId),
+        contents: c.map((i) => ({ id: i.productId, quantity: i.qty, item_price: i.price })),
+        num_items: c.reduce((a, i) => a + i.qty, 0),
+        value: c.reduce((a, i) => a + i.qty * i.price, 0),
+        currency: "BDT",
+      });
+    }
+  }, [slug]);
 
   // Prefill from signed-in customer profile
   useEffect(() => {
