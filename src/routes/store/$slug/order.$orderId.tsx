@@ -1,7 +1,9 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { getOrder } from "@/lib/storefront.functions";
+import { fbTrack, purchaseEventId } from "@/lib/fb-track";
 
 const orderQuery = (orderId: string) =>
   queryOptions({ queryKey: ["order", orderId], queryFn: () => getOrder({ data: { orderId } }) });
