@@ -9,20 +9,30 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Send, RefreshCw, User as UserIcon, Bot, Search, ArrowLeft } from "lucide-react";
+import {
+  Send, RefreshCw, User as UserIcon, Bot, Search, ArrowLeft,
+  Paperclip, Smile, Zap, Package, X, Plus, BookMarked,
+} from "lucide-react";
 import {
   listConversations,
   listMessages,
   getConversation,
   markRead,
   setHandoffMode,
+  setTags,
+  setLeadStatus,
   sendManualMessage,
   retryFailedMessage,
   listNotes,
   saveNote,
   listCustomerOrders,
   getInboxStats,
+  listSavedReplies,
+  upsertSavedReply,
+  deleteSavedReply,
+  searchStoreProducts,
 } from "@/lib/messenger-inbox.functions";
+import { compressImage } from "@/lib/compress-image";
 
 export const Route = createFileRoute("/_authenticated/admin/messenger-inbox")({
   component: MessengerInbox,
@@ -32,6 +42,15 @@ export const Route = createFileRoute("/_authenticated/admin/messenger-inbox")({
 });
 
 type Filter = "all" | "unread" | "ai" | "human" | "orders";
+type LeadStatus = "interested" | "pending" | "ready" | "ordered" | "cancelled" | null;
+const EMOJIS = ["😀","😁","😂","🤣","😊","😍","🥰","😘","😎","🤩","🙌","👍","👎","🙏","👏","🔥","✨","💯","❤️","💔","😢","😭","😡","🤔","😴","🎉","🎁","🛒","💰","📦","✅","❌","⏰","📞","💬"];
+const LEAD_OPTIONS: { v: Exclude<LeadStatus, null>; label: string; tone: string }[] = [
+  { v: "interested", label: "Interested", tone: "bg-blue-100 text-blue-700" },
+  { v: "pending", label: "Pending", tone: "bg-amber-100 text-amber-700" },
+  { v: "ready", label: "Ready to order", tone: "bg-violet-100 text-violet-700" },
+  { v: "ordered", label: "Ordered", tone: "bg-emerald-100 text-emerald-700" },
+  { v: "cancelled", label: "Cancelled", tone: "bg-rose-100 text-rose-700" },
+];
 
 function timeShort(iso?: string | null) {
   if (!iso) return "";
@@ -43,6 +62,30 @@ function timeShort(iso?: string | null) {
   return d.toLocaleDateString();
 }
 
+// Public HTTPS URL for Meta — served by /api/img/$ (bucket-agnostic proxy).
+function toPublicUrl(path: string) {
+  if (path.startsWith("http")) return path;
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  return `${origin}/api/img/${path}`;
+}
+
+// Tiny notification beep — no asset needed.
+let audioCtx: AudioContext | null = null;
+function beep() {
+  try {
+    if (typeof window === "undefined") return;
+    audioCtx = audioCtx || new (window.AudioContext || (window as any).webkitAudioContext)();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = "sine";
+    o.frequency.value = 880;
+    g.gain.value = 0.05;
+    o.connect(g).connect(audioCtx.destination);
+    o.start();
+    o.stop(audioCtx.currentTime + 0.16);
+  } catch { /* noop */ }
+}
+
 function MessengerInbox() {
   const qc = useQueryClient();
   const listFn = useServerFn(listConversations);
@@ -50,6 +93,7 @@ function MessengerInbox() {
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const lastMsgAtRef = useRef<number>(0);
 
   const conversations = useQuery({
     queryKey: ["mi", "conversations", filter, search],
@@ -58,7 +102,6 @@ function MessengerInbox() {
   });
   const stats = useQuery({ queryKey: ["mi", "stats"], queryFn: () => statsFn(), refetchInterval: 30_000 });
 
-  // Realtime — refresh list on any change
   useEffect(() => {
     const ch = supabase
       .channel("mi-conversations")
@@ -66,6 +109,20 @@ function MessengerInbox() {
         qc.invalidateQueries({ queryKey: ["mi", "conversations"] });
         qc.invalidateQueries({ queryKey: ["mi", "stats"] });
       })
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "ai_messages" },
+        (payload: any) => {
+          const row = payload?.new;
+          if (row?.direction === "in") {
+            const t = Date.now();
+            if (t - lastMsgAtRef.current > 1500) {
+              lastMsgAtRef.current = t;
+              beep();
+            }
+          }
+        },
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
@@ -167,6 +224,9 @@ function MessengerInbox() {
                       {c.unread_count > 0 && (
                         <Badge className="text-[10px]">{c.unread_count}</Badge>
                       )}
+                      {c.lead_status && (
+                        <Badge variant="outline" className="text-[10px] capitalize">{c.lead_status}</Badge>
+                      )}
                     </div>
                   </div>
                 </button>
@@ -208,6 +268,8 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
   const listMsgFn = useServerFn(listMessages);
   const markReadFn = useServerFn(markRead);
   const setModeFn = useServerFn(setHandoffMode);
+  const setTagsFn = useServerFn(setTags);
+  const setLeadFn = useServerFn(setLeadStatus);
   const sendFn = useServerFn(sendManualMessage);
   const retryFn = useServerFn(retryFailedMessage);
   const listNotesFn = useServerFn(listNotes);
@@ -252,15 +314,24 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
 
   const [text, setText] = useState("");
   const [newNote, setNewNote] = useState("");
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
+  const [showProducts, setShowProducts] = useState(false);
+  const [showQuick, setShowQuick] = useState(false);
+  const [quickReplies, setQuickRepliesState] = useState<{ title: string; payload: string }[]>([]);
+  const [uploading, setUploading] = useState<string | null>(null); // label of upload in progress
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadKind, setUploadKind] = useState<"image" | "video" | "audio" | "file">("image");
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [msgs.data?.length]);
 
   const send = useMutation({
-    mutationFn: (v: { text: string }) => sendFn({ data: { conversationId, text: v.text } }),
+    mutationFn: (v: Parameters<typeof sendFn>[0]["data"]) => sendFn({ data: v }),
     onSuccess: () => {
       setText("");
+      setQuickRepliesState([]);
       qc.invalidateQueries({ queryKey: ["mi", "msgs", conversationId] });
       qc.invalidateQueries({ queryKey: ["mi", "conversations"] });
     },
@@ -290,9 +361,61 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
   });
 
   const c = conv.data?.conv as any;
+  const storeId: string | undefined = c?.store_id;
   const profile = c?.psid_profile ?? {};
   const name = c?.customer_name || profile.first_name || `PSID ${c?.external_id?.slice(-6)}`;
   const mode = c?.handoff_mode ?? "ai";
+
+  async function handleUpload(file: File) {
+    if (!storeId) {
+      toast.error("Store not ready");
+      return;
+    }
+    setUploading(file.name);
+    try {
+      let toUpload = file;
+      let kind: "image" | "video" | "audio" | "file" = uploadKind;
+      if (file.type.startsWith("image/")) {
+        kind = "image";
+        toUpload = await compressImage(file);
+      } else if (file.type.startsWith("video/")) kind = "video";
+      else if (file.type.startsWith("audio/")) kind = "audio";
+      else kind = "file";
+
+      const rawExt = (file.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const ext = rawExt.slice(0, 5) || "bin";
+      const path = `${storeId}/messenger/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error } = await supabase.storage.from("store-assets").upload(path, toUpload, {
+        upsert: false,
+        contentType: toUpload.type || "application/octet-stream",
+      });
+      if (error) throw new Error(error.message);
+      const url = toPublicUrl(path);
+      await send.mutateAsync({
+        conversationId,
+        attachmentUrl: url,
+        attachmentType: kind,
+      });
+      toast.success("Attachment sent");
+    } catch (e: any) {
+      toast.error(e.message || "Upload failed");
+    } finally {
+      setUploading(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  function openPicker(kind: "image" | "video" | "audio" | "file") {
+    setUploadKind(kind);
+    if (fileInputRef.current) {
+      fileInputRef.current.accept =
+        kind === "image" ? "image/*"
+        : kind === "video" ? "video/*"
+        : kind === "audio" ? "audio/*"
+        : "*/*";
+      fileInputRef.current.click();
+    }
+  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -322,12 +445,13 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
       </div>
 
       {/* messages + profile */}
-      <div className="grid flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[1fr_260px]">
+      <div className="grid flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[1fr_280px]">
         <div className="flex flex-col overflow-hidden">
           <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto p-3">
             {(msgs.data ?? []).map((m: any) => {
               const out = m.direction === "out";
               const failed = m.delivery_status === "failed";
+              const att = Array.isArray(m.attachments) ? m.attachments[0] : null;
               return (
                 <div key={m.id} className={cn("flex", out ? "justify-end" : "justify-start")}>
                   <div
@@ -340,27 +464,28 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
                         : "bg-muted",
                     )}
                   >
-                    {m.message_type === "image" && m.attachments?.[0]?.url ? (
-                      <img
-                        src={m.attachments[0].url}
-                        alt=""
-                        className="mb-1 max-h-60 rounded-md object-cover"
-                      />
-                    ) : m.message_type === "video" && m.attachments?.[0]?.url ? (
-                      <video src={m.attachments[0].url} controls className="mb-1 max-h-60 rounded-md" />
-                    ) : m.message_type === "audio" && m.attachments?.[0]?.url ? (
-                      <audio src={m.attachments[0].url} controls className="mb-1 w-full" />
-                    ) : m.message_type === "file" && m.attachments?.[0]?.url ? (
-                      <a
-                        href={m.attachments[0].url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline"
-                      >
-                        Attachment
-                      </a>
+                    {m.message_type === "image" && att?.url ? (
+                      <img src={att.url} alt="" className="mb-1 max-h-60 rounded-md object-cover" />
+                    ) : m.message_type === "video" && att?.url ? (
+                      <video src={att.url} controls className="mb-1 max-h-60 rounded-md" />
+                    ) : m.message_type === "audio" && att?.url ? (
+                      <audio src={att.url} controls className="mb-1 w-full" />
+                    ) : m.message_type === "file" && att?.url ? (
+                      <a href={att.url} target="_blank" rel="noreferrer" className="underline">Attachment</a>
+                    ) : m.message_type === "template" && att?.element ? (
+                      <div className="mb-1 overflow-hidden rounded-md border bg-background text-foreground">
+                        {att.element.image_url && (
+                          <img src={att.element.image_url} alt="" className="h-32 w-full object-cover" />
+                        )}
+                        <div className="p-2">
+                          <div className="text-sm font-medium">{att.element.title}</div>
+                          {att.element.subtitle && (
+                            <div className="text-xs text-muted-foreground">{att.element.subtitle}</div>
+                          )}
+                        </div>
+                      </div>
                     ) : null}
-                    <div className="whitespace-pre-wrap">{m.content}</div>
+                    {m.content && <div className="whitespace-pre-wrap">{m.content}</div>}
                     <div className="mt-1 flex items-center gap-2 text-[10px] opacity-70">
                       <span>{new Date(m.created_at).toLocaleTimeString()}</span>
                       {out && <span>{m.delivery_status}</span>}
@@ -384,26 +509,122 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
           </div>
 
           {/* composer */}
-          <div className="border-t p-3">
-            <div className="flex gap-2">
-              <Input
+          <div className="border-t p-3 space-y-2">
+            {quickReplies.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {quickReplies.map((q, i) => (
+                  <span key={i} className="inline-flex items-center gap-1 rounded-full border bg-muted/50 px-2 py-0.5 text-xs">
+                    {q.title}
+                    <button onClick={() => setQuickRepliesState(quickReplies.filter((_, j) => j !== i))}>
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            {uploading && (
+              <div className="text-xs text-muted-foreground">Uploading {uploading}…</div>
+            )}
+            <div className="flex items-end gap-2">
+              <div className="flex items-center gap-1">
+                <IconBtn title="Image" onClick={() => openPicker("image")}><Paperclip className="h-4 w-4" /></IconBtn>
+                <IconBtn title="Emoji" onClick={() => setShowEmoji((v) => !v)}><Smile className="h-4 w-4" /></IconBtn>
+                <IconBtn title="Quick replies" onClick={() => setShowQuick((v) => !v)}><Zap className="h-4 w-4" /></IconBtn>
+                <IconBtn title="Saved replies" onClick={() => setShowSaved((v) => !v)}><BookMarked className="h-4 w-4" /></IconBtn>
+                <IconBtn title="Product card" onClick={() => setShowProducts((v) => !v)}><Package className="h-4 w-4" /></IconBtn>
+              </div>
+              <Textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="Type a reply..."
+                rows={1}
+                className="min-h-[38px] max-h-32 resize-none"
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey && text.trim()) {
+                  if (e.key === "Enter" && !e.shiftKey && (text.trim() || quickReplies.length)) {
                     e.preventDefault();
-                    send.mutate({ text: text.trim() });
+                    send.mutate({
+                      conversationId,
+                      text: text.trim() || undefined,
+                      quickReplies: quickReplies.length ? quickReplies : undefined,
+                    });
                   }
                 }}
               />
               <Button
-                disabled={!text.trim() || send.isPending}
-                onClick={() => send.mutate({ text: text.trim() })}
+                disabled={(!text.trim() && !quickReplies.length) || send.isPending}
+                onClick={() =>
+                  send.mutate({
+                    conversationId,
+                    text: text.trim() || undefined,
+                    quickReplies: quickReplies.length ? quickReplies : undefined,
+                  })
+                }
               >
                 <Send className="h-4 w-4" />
               </Button>
             </div>
+
+            {showEmoji && (
+              <div className="rounded-md border bg-background p-2">
+                <div className="flex flex-wrap gap-1">
+                  {EMOJIS.map((e) => (
+                    <button
+                      key={e}
+                      onClick={() => setText((t) => t + e)}
+                      className="rounded p-1 text-lg hover:bg-muted"
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {showQuick && (
+              <QuickReplyBuilder
+                value={quickReplies}
+                onChange={setQuickRepliesState}
+                onClose={() => setShowQuick(false)}
+              />
+            )}
+
+            {showSaved && (
+              <SavedRepliesPanel
+                onPick={(body) => {
+                  setText((t) => (t ? t + "\n" : "") + body);
+                  setShowSaved(false);
+                }}
+              />
+            )}
+
+            {showProducts && (
+              <ProductPickerPanel
+                onPick={(p) => {
+                  send.mutate({
+                    conversationId,
+                    productCard: {
+                      title: p.name,
+                      subtitle: `৳${Number(p.price ?? 0).toLocaleString()}`,
+                      imageUrl: p.primary_image_url ? toPublicUrl(p.primary_image_url) : undefined,
+                      url: p.slug && typeof window !== "undefined"
+                        ? `${window.location.origin}/store/${p.storeSlug || ""}/product/${p.id}`
+                        : undefined,
+                    },
+                  });
+                  setShowProducts(false);
+                }}
+              />
+            )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleUpload(f);
+              }}
+            />
           </div>
         </div>
 
@@ -422,13 +643,72 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
           </div>
 
           <div className="mb-3">
+            <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Lead status</div>
+            <div className="flex flex-wrap gap-1">
+              {LEAD_OPTIONS.map((o) => {
+                const active = c?.lead_status === o.v;
+                return (
+                  <button
+                    key={o.v}
+                    onClick={() => {
+                      setLeadFn({ data: { conversationId, status: active ? null : o.v } }).then(() => {
+                        qc.invalidateQueries({ queryKey: ["mi", "conv", conversationId] });
+                        qc.invalidateQueries({ queryKey: ["mi", "conversations"] });
+                      });
+                    }}
+                    className={cn(
+                      "rounded-full border px-2 py-0.5 text-[11px]",
+                      active ? o.tone + " border-transparent" : "hover:bg-muted",
+                    )}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mb-3">
+            <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Tags</div>
+            <TagsEditor
+              value={(c?.tags as string[]) ?? []}
+              onChange={(tags) => {
+                setTagsFn({ data: { conversationId, tags } }).then(() => {
+                  qc.invalidateQueries({ queryKey: ["mi", "conv", conversationId] });
+                  qc.invalidateQueries({ queryKey: ["mi", "conversations"] });
+                });
+              }}
+            />
+          </div>
+
+          <div className="mb-3">
             <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Orders</div>
             {(orders.data ?? []).length === 0 && (
               <div className="text-xs text-muted-foreground">No matched orders.</div>
             )}
             {(orders.data ?? []).map((o: any) => (
               <div key={o.id} className="mb-1 rounded border p-2 text-xs">
-                <div className="font-medium">{o.invoice_no || o.id.slice(0, 8)}</div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-medium">{o.invoice_no || o.id.slice(0, 8)}</div>
+                  <button
+                    className="text-[10px] underline"
+                    onClick={() =>
+                      send.mutate({
+                        conversationId,
+                        orderCard: {
+                          orderId: o.invoice_no || o.id,
+                          status: o.status,
+                          total: Number(o.subtotal ?? 0),
+                          url: typeof window !== "undefined"
+                            ? `${window.location.origin}/admin/orders`
+                            : undefined,
+                        },
+                      })
+                    }
+                  >
+                    Send
+                  </button>
+                </div>
                 <div className="text-muted-foreground">
                   {o.status} · ৳{Number(o.subtotal ?? 0)}
                 </div>
@@ -464,6 +744,194 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
             </div>
           </div>
         </aside>
+      </div>
+    </div>
+  );
+}
+
+function IconBtn({
+  title, children, onClick,
+}: { title: string; children: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={onClick}
+      className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+    >
+      {children}
+    </button>
+  );
+}
+
+function TagsEditor({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const [input, setInput] = useState("");
+  return (
+    <div className="space-y-1">
+      <div className="flex flex-wrap gap-1">
+        {value.map((t) => (
+          <span key={t} className="inline-flex items-center gap-1 rounded-full border bg-muted px-2 py-0.5 text-[11px]">
+            {t}
+            <button onClick={() => onChange(value.filter((x) => x !== t))}>
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-1">
+        <Input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && input.trim()) {
+              e.preventDefault();
+              const v = input.trim().slice(0, 40);
+              if (!value.includes(v)) onChange([...value, v].slice(0, 20));
+              setInput("");
+            }
+          }}
+          placeholder="Add tag"
+          className="h-7 text-xs"
+        />
+      </div>
+    </div>
+  );
+}
+
+function QuickReplyBuilder({
+  value, onChange, onClose,
+}: {
+  value: { title: string; payload: string }[];
+  onChange: (v: { title: string; payload: string }[]) => void;
+  onClose: () => void;
+}) {
+  const [title, setTitle] = useState("");
+  return (
+    <div className="rounded-md border bg-background p-2 text-xs">
+      <div className="mb-1 flex items-center justify-between">
+        <span className="font-medium">Quick replies (max 13)</span>
+        <button onClick={onClose}><X className="h-3 w-3" /></button>
+      </div>
+      <div className="flex gap-1">
+        <Input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Button label"
+          className="h-8 text-xs"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && title.trim()) {
+              e.preventDefault();
+              const t = title.trim().slice(0, 20);
+              if (value.length < 13) onChange([...value, { title: t, payload: t.toUpperCase() }]);
+              setTitle("");
+            }
+          }}
+        />
+        <Button
+          size="sm"
+          type="button"
+          disabled={!title.trim() || value.length >= 13}
+          onClick={() => {
+            const t = title.trim().slice(0, 20);
+            onChange([...value, { title: t, payload: t.toUpperCase() }]);
+            setTitle("");
+          }}
+        >
+          <Plus className="h-3 w-3" />
+        </Button>
+      </div>
+      <p className="mt-1 text-[10px] text-muted-foreground">
+        Send with your message to show tappable buttons under the reply.
+      </p>
+    </div>
+  );
+}
+
+function SavedRepliesPanel({ onPick }: { onPick: (body: string) => void }) {
+  const qc = useQueryClient();
+  const listFn = useServerFn(listSavedReplies);
+  const upsertFn = useServerFn(upsertSavedReply);
+  const delFn = useServerFn(deleteSavedReply);
+  const q = useQuery({ queryKey: ["mi", "saved"], queryFn: () => listFn() });
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const add = useMutation({
+    mutationFn: () => upsertFn({ data: { title: title.trim(), body: body.trim(), sort: 0 } }),
+    onSuccess: () => {
+      setTitle(""); setBody("");
+      qc.invalidateQueries({ queryKey: ["mi", "saved"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const remove = useMutation({
+    mutationFn: (id: string) => delFn({ data: { id } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["mi", "saved"] }),
+  });
+  return (
+    <div className="max-h-64 overflow-y-auto rounded-md border bg-background p-2 text-xs">
+      <div className="mb-2 space-y-1">
+        {(q.data ?? []).map((r: any) => (
+          <div key={r.id} className="flex items-start justify-between gap-2 rounded border p-2">
+            <button className="flex-1 text-left" onClick={() => onPick(r.body)}>
+              <div className="font-medium">{r.title}</div>
+              <div className="line-clamp-2 text-muted-foreground">{r.body}</div>
+            </button>
+            <button className="text-muted-foreground hover:text-destructive" onClick={() => remove.mutate(r.id)}>
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        ))}
+        {q.data?.length === 0 && (
+          <div className="p-2 text-center text-muted-foreground">No saved replies yet.</div>
+        )}
+      </div>
+      <div className="space-y-1 border-t pt-2">
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="h-8 text-xs" />
+        <Textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Body" className="min-h-[50px] text-xs" />
+        <Button size="sm" disabled={!title.trim() || !body.trim() || add.isPending} onClick={() => add.mutate()}>
+          <Plus className="mr-1 h-3 w-3" /> Save reply
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ProductPickerPanel({ onPick }: { onPick: (p: any) => void }) {
+  const searchFn = useServerFn(searchStoreProducts);
+  const [q, setQ] = useState("");
+  const products = useQuery({
+    queryKey: ["mi", "products", q],
+    queryFn: () => searchFn({ data: { query: q } }),
+  });
+  return (
+    <div className="max-h-64 overflow-y-auto rounded-md border bg-background p-2 text-xs">
+      <Input
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Search products"
+        className="mb-2 h-8 text-xs"
+      />
+      <div className="space-y-1">
+        {(products.data ?? []).map((p: any) => (
+          <button
+            key={p.id}
+            onClick={() => onPick(p)}
+            className="flex w-full items-center gap-2 rounded border p-2 text-left hover:bg-muted/50"
+          >
+            {p.primary_image_url ? (
+              <img src={toPublicUrl(p.primary_image_url)} alt="" className="h-10 w-10 rounded object-cover" />
+            ) : (
+              <div className="h-10 w-10 rounded bg-muted" />
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="truncate font-medium">{p.name}</div>
+              <div className="text-muted-foreground">৳{Number(p.price ?? 0).toLocaleString()}</div>
+            </div>
+          </button>
+        ))}
+        {products.data?.length === 0 && (
+          <div className="p-2 text-center text-muted-foreground">No products.</div>
+        )}
       </div>
     </div>
   );
