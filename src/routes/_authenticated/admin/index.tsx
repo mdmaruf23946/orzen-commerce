@@ -10,6 +10,7 @@ import {
   Plus, Share2, ExternalLink, Bell, Star, Sparkles,
 } from "lucide-react";
 import { myDashboardOverview } from "@/lib/admin.functions";
+import { getInboxStats } from "@/lib/messenger-inbox.functions";
 import { AdSlot } from "@/components/admin/AdSlot";
 import { cn } from "@/lib/utils";
 
