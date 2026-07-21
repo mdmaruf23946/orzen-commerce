@@ -308,6 +308,21 @@ export const connectMessenger = createServerFn({ method: "POST" })
         page_access_token: z.string().trim().min(10).max(1000),
         app_id: z.string().trim().max(64).optional().nullable(),
         app_secret: z.string().trim().max(200).optional().nullable(),
+        privacy_policy_url: z
+          .string()
+          .trim()
+          .url()
+          .max(500)
+          .refine((u) => u.startsWith("https://"), { message: "Privacy Policy URL must use HTTPS" }),
+        terms_of_service_url: z
+          .string()
+          .trim()
+          .max(500)
+          .optional()
+          .nullable()
+          .refine((u) => !u || (/^https:\/\//.test(u) && z.string().url().safeParse(u).success), {
+            message: "Terms of Service URL must be a valid HTTPS URL",
+          }),
       })
       .parse(d),
   )
