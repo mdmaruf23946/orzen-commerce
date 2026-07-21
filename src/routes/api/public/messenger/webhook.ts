@@ -296,7 +296,13 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                 : [];
               const messages = history.map((m) => ({ role: m.role as any, content: m.content }));
               const reply = await generateAgentReply({
-                storeId: integ.store_id,
+                ctx: {
+                  storeId: integ.store_id,
+                  storeSlug: (store as any).slug,
+                  conversationId: conv!.id,
+                  psid: senderId,
+                  pageToken: token,
+                },
                 messages,
                 system: buildSystemPrompt(store, agent),
               });

@@ -28,7 +28,7 @@ export const Route = createFileRoute("/api/ai/chat")({
             model,
             system: buildSystemPrompt(s, agent),
             messages: await convertToModelMessages(body.messages),
-            tools: buildTools(store.id),
+            tools: buildTools({ storeId: store.id, storeSlug: body.slug }),
             stopWhen: stepCountIs(50),
             onFinish: ({ usage }) => {
               void logUsage(store.id, modelId, usage, "chat");

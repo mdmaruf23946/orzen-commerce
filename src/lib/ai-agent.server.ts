@@ -1,10 +1,13 @@
-// Core AI agent logic — used by both the storefront chat route and the Messenger webhook.
-// Strictly scoped to a single store_id.
+// AI Commerce Engine — core agent logic used by storefront chat and Messenger webhook.
 import { createClient } from "@supabase/supabase-js";
 import { generateText, streamText, tool, stepCountIs } from "ai";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
+import {
+  sendProductCard as fbSendProductCard,
+  sendProductCarousel as fbSendProductCarousel,
+} from "./messenger-send.server";
 
 function admin() {
   return createClient<Database>(
@@ -14,10 +17,19 @@ function admin() {
   );
 }
 
+export type AgentContext = {
+  storeId: string;
+  storeSlug?: string;
+  conversationId?: string; // Messenger/web conversation row
+  psid?: string; // Messenger PSID
+  pageToken?: string; // decrypted page access token
+  siteOrigin?: string; // e.g. https://mystore.orzen.top
+};
+
 export async function loadAiContext(storeId: string) {
   const sb = admin();
   const [{ data: store }, { data: agent }, { data: settings }] = await Promise.all([
-    sb.from("stores").select("id,name,description,address,phone,whatsapp,facebook,delivery,payments_config").eq("id", storeId).maybeSingle(),
+    sb.from("stores").select("id,slug,name,description,address,phone,whatsapp,facebook,delivery,payments_config").eq("id", storeId).maybeSingle(),
     sb.from("store_ai_agents").select("*").eq("store_id", storeId).maybeSingle(),
     sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle(),
   ]);
@@ -44,11 +56,27 @@ export function buildSystemPrompt(store: any, agent: any) {
 ${lang} ${emoji} ${human}
 Style: ${agent.style}.
 
-You MUST only discuss this store's products and policies. Use the available tools to look up products, prices, and stock. Never invent information.
+# Hard rules — never violate
+- NEVER invent product names, prices, stock, features, or policies. Every product fact must come from a tool call in this turn.
+- Before recommending or discussing any product, call searchProducts or getProduct.
+- When recommending products, call sendProductCard (one product) or sendProductCarousel (multiple). Do NOT describe products in plain text when a card can be sent.
+- If a product is out of stock, tell the customer and call searchProducts in the same category to suggest alternatives.
+- If you cannot answer confidently or the customer asks for a human, call escalateToHuman.
 
-When a customer wants to buy, collect product+qty, full name, phone, and delivery address, then call placeOrder. Confirm the order id after success.
+# Order flow
+When the customer wants to buy:
+1. Use collectOrderInfo to save each field as the customer gives it (name, phone, district, upazila, union, village, full_address, product_id, variant, qty, delivery_method, payment_method).
+2. Ask only for fields that are still missing — never re-ask what you already have.
+3. Once every required field is present, call finalizeOrder. It creates the order and returns the confirmation.
+4. After finalizeOrder succeeds, use getRelatedProducts and offer 2-3 add-ons via sendProductCarousel.
 
-Store info: ${k.store_info || store.description || ""}
+# Tracking
+If asked "where is my order" / "track my order", call trackOrder with orderId, invoice_no, or phone.
+
+# Memory
+At the start of each conversation call getCustomerMemory to see previous orders and preferences. Personalise your greeting.
+
+# Store facts
 Address: ${store.address || "n/a"}
 Phone: ${store.phone || "n/a"}
 Delivery: ${k.delivery_policy || JSON.stringify(store.delivery ?? {})}
@@ -56,97 +84,542 @@ Returns: ${k.return_policy || ""}
 Warranty: ${k.warranty_policy || ""}
 Payment: ${k.payment_methods || ""}
 Business hours: ${k.business_hours || ""}
+Store info: ${k.store_info || store.description || ""}
 
 FAQs:
 ${faqs}`;
 }
 
-export function buildTools(storeId: string) {
+// ---------- Helpers ----------
+function productUrl(ctx: AgentContext, slug: string | null | undefined, productId: string) {
+  const base = ctx.siteOrigin || `https://${ctx.storeSlug || slug || "store"}.orzen.top`;
+  const s = ctx.storeSlug || slug || "";
+  return s ? `${base.replace(/\/$/, "")}/store/${s}/product/${productId}` : `${base}/product/${productId}`;
+}
+
+async function getConversationSlot(conversationId: string): Promise<Record<string, any>> {
   const sb = admin();
-  return {
+  const { data } = await sb
+    .from("ai_conversations")
+    .select("psid_profile")
+    .eq("id", conversationId)
+    .maybeSingle();
+  const profile = (data?.psid_profile ?? {}) as Record<string, any>;
+  return (profile.pending_order ?? {}) as Record<string, any>;
+}
+
+async function updateConversationSlot(
+  conversationId: string,
+  patch: Record<string, any>,
+) {
+  const sb = admin();
+  const { data } = await sb
+    .from("ai_conversations")
+    .select("psid_profile")
+    .eq("id", conversationId)
+    .maybeSingle();
+  const profile = { ...((data?.psid_profile ?? {}) as Record<string, any>) };
+  profile.pending_order = { ...(profile.pending_order ?? {}), ...patch };
+  await sb.from("ai_conversations").update({ psid_profile: profile }).eq("id", conversationId);
+  return profile.pending_order as Record<string, any>;
+}
+
+async function clearConversationSlot(conversationId: string) {
+  const sb = admin();
+  const { data } = await sb
+    .from("ai_conversations")
+    .select("psid_profile")
+    .eq("id", conversationId)
+    .maybeSingle();
+  const profile = { ...((data?.psid_profile ?? {}) as Record<string, any>) };
+  delete profile.pending_order;
+  await sb.from("ai_conversations").update({ psid_profile: profile }).eq("id", conversationId);
+}
+
+// ---------- Tools ----------
+export function buildTools(ctx: AgentContext) {
+  const sb = admin();
+  const storeId = ctx.storeId;
+
+  const productSelect =
+    "id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,status,primary_image_url,gallery,features,specifications,variants,video_url,delivery_charge,delivery_time_days,rating,total_sold,warranty,return_policy,shipping_info";
+
+  const tools: Record<string, any> = {
     searchProducts: tool({
-      description: "Search this store's products by name/keyword. Returns id, name, price, stock.",
-      inputSchema: z.object({ query: z.string().min(1).max(120) }),
-      execute: async ({ query }) => {
-        const { data } = await sb
+      description:
+        "Search this store's products. Use for any natural-language product intent (e.g. 'mini projector', 'waterproof bedsheet under 1000', 'cheapest fan'). Returns matching products with price, stock, image.",
+      inputSchema: z.object({
+        query: z.string().min(1).max(200).describe("Customer's search phrase or keyword"),
+        category: z.string().optional().describe("Optional category name"),
+        brand: z.string().optional(),
+        minPrice: z.number().nonnegative().optional(),
+        maxPrice: z.number().nonnegative().optional(),
+        inStockOnly: z.boolean().optional().default(true),
+        sort: z.enum(["relevance", "price_asc", "price_desc", "bestseller", "newest"]).optional().default("relevance"),
+        limit: z.number().int().min(1).max(10).optional().default(6),
+      }),
+      execute: async (input) => {
+        let q = sb
           .from("products")
-          .select("id,name,price,old_price,stock,status")
+          .select(productSelect)
           .eq("store_id", storeId)
-          .neq("status", "draft")
-          .ilike("name", `%${query}%`)
-          .limit(10);
-        return data ?? [];
+          .eq("status", "active");
+        // OR match across name/brand/sku/short_description
+        const like = `%${input.query.replace(/[%_]/g, " ")}%`;
+        q = q.or(
+          `name.ilike.${like},brand.ilike.${like},sku.ilike.${like},product_code.ilike.${like},short_description.ilike.${like},description.ilike.${like}`,
+        );
+        if (input.brand) q = q.ilike("brand", `%${input.brand}%`);
+        if (input.minPrice != null) q = q.gte("price", input.minPrice);
+        if (input.maxPrice != null) q = q.lte("price", input.maxPrice);
+        if (input.inStockOnly) q = q.gt("stock", 0);
+        if (input.category) {
+          const { data: cat } = await sb
+            .from("categories")
+            .select("id")
+            .eq("store_id", storeId)
+            .ilike("name", `%${input.category}%`)
+            .maybeSingle();
+          if (cat) q = q.eq("category_id", cat.id);
+        }
+        if (input.sort === "price_asc") q = q.order("price", { ascending: true });
+        else if (input.sort === "price_desc") q = q.order("price", { ascending: false });
+        else if (input.sort === "bestseller") q = q.order("total_sold", { ascending: false });
+        else if (input.sort === "newest") q = q.order("created_at", { ascending: false });
+        else q = q.order("is_featured", { ascending: false }).order("total_sold", { ascending: false });
+        const { data } = await q.limit(input.limit ?? 6);
+        return { products: data ?? [] };
       },
     }),
+
     getProduct: tool({
-      description: "Get full details of one product by id.",
+      description: "Get full details of one product by id. Use before quoting exact price or specs.",
       inputSchema: z.object({ productId: z.string().uuid() }),
       execute: async ({ productId }) => {
         const { data } = await sb
           .from("products")
-          .select("id,name,description,price,old_price,stock,status")
+          .select(productSelect)
           .eq("store_id", storeId)
           .eq("id", productId)
           .maybeSingle();
         return data;
       },
     }),
+
     listCategories: tool({
       description: "List product categories in this store.",
       inputSchema: z.object({}),
       execute: async () => {
-        const { data } = await sb.from("categories").select("id,name").eq("store_id", storeId);
+        const { data } = await sb
+          .from("categories")
+          .select("id,name")
+          .eq("store_id", storeId);
         return data ?? [];
       },
     }),
-    placeOrder: tool({
-      description: "Create an order for this store after collecting all required info from the customer.",
+
+    listBrands: tool({
+      description: "List distinct product brands sold in this store.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const { data } = await sb
+          .from("products")
+          .select("brand")
+          .eq("store_id", storeId)
+          .not("brand", "is", null);
+        const set = new Set((data ?? []).map((r: any) => r.brand).filter(Boolean));
+        return Array.from(set);
+      },
+    }),
+
+    checkStock: tool({
+      description: "Check real-time stock for a product (and variant if given).",
       inputSchema: z.object({
-        customer_name: z.string().min(1).max(120),
-        phone: z.string().min(5).max(40),
-        address: z.string().min(3).max(500),
-        payment_method: z.enum(["cod", "bkash", "nagad", "rocket", "bank"]).default("cod"),
-        items: z
-          .array(z.object({ productId: z.string().uuid(), qty: z.number().int().min(1).max(99) }))
-          .min(1)
-          .max(20),
+        productId: z.string().uuid(),
+        variant: z.string().optional().describe("e.g. 'Red / M'"),
+      }),
+      execute: async ({ productId, variant }) => {
+        const { data } = await sb
+          .from("products")
+          .select("id,name,stock,variants,low_stock_threshold")
+          .eq("store_id", storeId)
+          .eq("id", productId)
+          .maybeSingle();
+        if (!data) return { found: false };
+        let variantStock: number | null = null;
+        if (variant && Array.isArray(data.variants)) {
+          const v = (data.variants as any[]).find(
+            (x) => String(x.label || x.name || "").toLowerCase() === variant.toLowerCase(),
+          );
+          if (v) variantStock = Number(v.stock ?? 0);
+        }
+        return {
+          found: true,
+          name: data.name,
+          stock: variantStock ?? data.stock,
+          low_stock: (variantStock ?? data.stock) <= (data.low_stock_threshold ?? 5),
+        };
+      },
+    }),
+
+    getRelatedProducts: tool({
+      description:
+        "Get related products for upsell/cross-sell. kind='similar' returns same-category products; 'accessory'/'upsell' returns curated related_product_ids.",
+      inputSchema: z.object({
+        productId: z.string().uuid(),
+        kind: z.enum(["similar", "accessory", "upsell"]).default("similar"),
+        limit: z.number().int().min(1).max(6).default(4),
+      }),
+      execute: async ({ productId, kind, limit }) => {
+        const { data: p } = await sb
+          .from("products")
+          .select("id,category_id,related_product_ids")
+          .eq("store_id", storeId)
+          .eq("id", productId)
+          .maybeSingle();
+        if (!p) return [];
+        if (kind !== "similar" && Array.isArray(p.related_product_ids) && p.related_product_ids.length) {
+          const { data } = await sb
+            .from("products")
+            .select(productSelect)
+            .eq("store_id", storeId)
+            .in("id", p.related_product_ids as any)
+            .eq("status", "active")
+            .gt("stock", 0)
+            .limit(limit);
+          return data ?? [];
+        }
+        if (!p.category_id) return [];
+        const { data } = await sb
+          .from("products")
+          .select(productSelect)
+          .eq("store_id", storeId)
+          .eq("category_id", p.category_id)
+          .neq("id", productId)
+          .eq("status", "active")
+          .gt("stock", 0)
+          .limit(limit);
+        return data ?? [];
+      },
+    }),
+
+    compareProducts: tool({
+      description:
+        "Compare 2-4 products side by side (price, features, stock, rating) and get a recommended pick.",
+      inputSchema: z.object({
+        productIds: z.array(z.string().uuid()).min(2).max(4),
+      }),
+      execute: async ({ productIds }) => {
+        const { data } = await sb
+          .from("products")
+          .select("id,name,price,old_price,stock,features,specifications,rating,total_sold")
+          .eq("store_id", storeId)
+          .in("id", productIds);
+        const rows = data ?? [];
+        // Score: rating * 20 + in-stock bonus + normalized price (lower better)
+        const maxPrice = Math.max(...rows.map((r) => Number(r.price) || 0), 1);
+        const scored = rows.map((r) => {
+          const s =
+            (Number(r.rating) || 0) * 20 +
+            (r.stock > 0 ? 15 : 0) +
+            (1 - Number(r.price) / maxPrice) * 30 +
+            (Number(r.total_sold) || 0) * 0.1;
+          return { ...r, score: s };
+        });
+        scored.sort((a, b) => (b as any).score - (a as any).score);
+        return { comparison: scored, recommended: scored[0]?.id };
+      },
+    }),
+  };
+
+  // Messenger-only tools that need PSID + token
+  if (ctx.psid && ctx.pageToken) {
+    tools.sendProductCard = tool({
+      description:
+        "Send one product to the customer as a rich Messenger card with Buy Now / View Product buttons. Prefer this over describing a product in plain text.",
+      inputSchema: z.object({ productId: z.string().uuid() }),
+      execute: async ({ productId }) => {
+        const { data: p } = await sb
+          .from("products")
+          .select("id,name,slug,short_description,price,old_price,stock,primary_image_url")
+          .eq("store_id", storeId)
+          .eq("id", productId)
+          .maybeSingle();
+        if (!p) return { sent: false, error: "not_found" };
+        const priceLine = p.old_price
+          ? `৳${p.price} (was ৳${p.old_price})`
+          : `৳${p.price}`;
+        const stockLine = p.stock > 0 ? "In stock" : "Out of stock";
+        const subtitle = `${priceLine} · ${stockLine}${p.short_description ? " — " + p.short_description : ""}`;
+        try {
+          await fbSendProductCard(ctx.pageToken!, ctx.psid!, {
+            title: p.name,
+            subtitle,
+            image_url: p.primary_image_url ?? undefined,
+            buy_url: productUrl(ctx, p.slug, p.id),
+            product_id: p.id,
+          });
+          if (ctx.conversationId) {
+            await sb.from("ai_messages").insert({
+              conversation_id: ctx.conversationId,
+              role: "assistant",
+              direction: "out",
+              message_type: "product_card",
+              content: `[card] ${p.name}`,
+              attachments: [{ type: "product_card", product_id: p.id }],
+            } as any);
+          }
+          return { sent: true };
+        } catch (e) {
+          return { sent: false, error: (e as Error).message };
+        }
+      },
+    });
+
+    tools.sendProductCarousel = tool({
+      description:
+        "Send multiple products as a scrollable carousel. Use for search results, comparisons, and upsell suggestions.",
+      inputSchema: z.object({
+        productIds: z.array(z.string().uuid()).min(1).max(10),
+      }),
+      execute: async ({ productIds }) => {
+        const { data } = await sb
+          .from("products")
+          .select("id,name,slug,short_description,price,old_price,stock,primary_image_url")
+          .eq("store_id", storeId)
+          .in("id", productIds);
+        const items = (data ?? []).map((p) => ({
+          title: p.name,
+          subtitle: `${p.old_price ? `৳${p.price} (was ৳${p.old_price})` : `৳${p.price}`} · ${p.stock > 0 ? "In stock" : "Out of stock"}`,
+          image_url: p.primary_image_url ?? undefined,
+          buy_url: productUrl(ctx, p.slug, p.id),
+          product_id: p.id,
+        }));
+        if (!items.length) return { sent: false, error: "no_products" };
+        try {
+          await fbSendProductCarousel(ctx.pageToken!, ctx.psid!, items);
+          if (ctx.conversationId) {
+            await sb.from("ai_messages").insert({
+              conversation_id: ctx.conversationId,
+              role: "assistant",
+              direction: "out",
+              message_type: "product_carousel",
+              content: `[carousel] ${items.length} products`,
+              attachments: items.map((i) => ({ type: "product_card", product_id: i.product_id })),
+            } as any);
+          }
+          return { sent: true, count: items.length };
+        } catch (e) {
+          return { sent: false, error: (e as Error).message };
+        }
+      },
+    });
+  }
+
+  // Conversation-aware tools (order flow, memory, escalation)
+  if (ctx.conversationId) {
+    const convId = ctx.conversationId;
+
+    tools.collectOrderInfo = tool({
+      description:
+        "Save one or more fields the customer just provided for their pending order. Only pass fields the customer explicitly gave. Returns which required fields are still missing.",
+      inputSchema: z.object({
+        customer_name: z.string().optional(),
+        phone: z.string().optional(),
+        district: z.string().optional(),
+        upazila: z.string().optional(),
+        union: z.string().optional(),
+        village: z.string().optional(),
+        full_address: z.string().optional(),
+        product_id: z.string().uuid().optional(),
+        variant: z.string().optional(),
+        qty: z.number().int().min(1).max(99).optional(),
+        delivery_method: z.string().optional(),
+        payment_method: z.enum(["cod", "bkash", "nagad", "rocket", "bank"]).optional(),
       }),
       execute: async (input) => {
-        const ids = input.items.map((i) => i.productId);
-        const { data: products } = await sb
-          .from("products")
-          .select("id,name,price,stock,status")
-          .in("id", ids)
-          .eq("store_id", storeId);
-        const byId = new Map((products ?? []).map((p) => [p.id, p]));
-        let subtotal = 0;
-        const rows = input.items.map((i) => {
-          const p = byId.get(i.productId);
-          if (!p) throw new Error("Invalid product");
-          if (p.stock < i.qty) throw new Error(`Out of stock: ${p.name}`);
-          subtotal += Number(p.price) * i.qty;
-          return { product_id: p.id, name_snapshot: p.name, price_snapshot: p.price, qty: i.qty };
+        const patch: Record<string, any> = {};
+        Object.entries(input).forEach(([k, v]) => {
+          if (v !== undefined && v !== null && v !== "") patch[k] = v;
         });
+        const slot = await updateConversationSlot(convId, patch);
+        const required = ["customer_name", "phone", "full_address", "product_id", "qty", "payment_method"];
+        const missing = required.filter((f) => !slot[f]);
+        return { saved: patch, current: slot, missing };
+      },
+    });
+
+    tools.finalizeOrder = tool({
+      description:
+        "Create the order after collectOrderInfo has all required fields. Reserves stock, generates invoice, sends confirmation. Returns orderId and totals.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const slot = await getConversationSlot(convId);
+        const required = ["customer_name", "phone", "full_address", "product_id", "qty", "payment_method"];
+        const missing = required.filter((f) => !slot[f]);
+        if (missing.length) return { ok: false, error: "missing_fields", missing };
+
+        const { data: product } = await sb
+          .from("products")
+          .select("id,name,price,stock,delivery_charge")
+          .eq("store_id", storeId)
+          .eq("id", slot.product_id)
+          .maybeSingle();
+        if (!product) return { ok: false, error: "product_not_found" };
+        if (product.stock < slot.qty) return { ok: false, error: "out_of_stock", available: product.stock };
+
+        const subtotal = Number(product.price) * Number(slot.qty);
+        const delivery = Number(product.delivery_charge ?? 0);
+
+        // Link to store_customers by phone
+        let customerId: string | null = null;
+        const phoneNorm = String(slot.phone).replace(/\D/g, "");
+        if (phoneNorm) {
+          const { data: existing } = await sb
+            .from("store_customers")
+            .select("id")
+            .eq("store_id", storeId)
+            .eq("phone", phoneNorm)
+            .maybeSingle();
+          if (existing) customerId = existing.id;
+        }
+
         const { data: order, error } = await sb
           .from("orders")
           .insert({
             store_id: storeId,
-            customer_name: input.customer_name,
-            phone: input.phone,
-            address: input.address,
-            payment_method: input.payment_method,
+            customer_name: slot.customer_name,
+            phone: slot.phone,
+            address: slot.full_address,
+            area: [slot.village, slot.union, slot.upazila, slot.district].filter(Boolean).join(", ") || null,
+            payment_method: slot.payment_method,
             subtotal,
+            delivery_amount: delivery,
             status: "pending",
-            notes: "Placed via AI Sales Agent",
-          })
-          .select("id")
+            notes: "Placed via AI Sales Agent (Messenger)",
+            customer_id: customerId,
+          } as any)
+          .select("id,invoice_no")
           .single();
-        if (error || !order) throw new Error(error?.message ?? "Order failed");
-        await sb.from("order_items").insert(rows.map((r) => ({ ...r, order_id: order.id })));
-        return { orderId: order.id, subtotal };
+        if (error || !order) return { ok: false, error: error?.message ?? "insert_failed" };
+
+        await sb.from("order_items").insert({
+          order_id: order.id,
+          product_id: product.id,
+          name_snapshot: product.name,
+          price_snapshot: product.price,
+          qty: slot.qty,
+        } as any);
+
+        // Admin notification
+        await sb.from("admin_notifications").insert({
+          store_id: storeId,
+          kind: "new_order",
+          title: "New AI order",
+          body: `${slot.customer_name} ordered ${slot.qty}× ${product.name}`,
+          meta: { order_id: order.id },
+        } as any);
+
+        await clearConversationSlot(convId);
+
+        return {
+          ok: true,
+          orderId: order.id,
+          invoice_no: order.invoice_no,
+          subtotal,
+          delivery,
+          grand_total: subtotal + delivery,
+          product_name: product.name,
+          qty: slot.qty,
+        };
       },
-    }),
-  };
+    });
+
+    tools.trackOrder = tool({
+      description:
+        "Look up an order's live status. Provide orderId, invoice_no, or the customer's phone.",
+      inputSchema: z.object({
+        orderId: z.string().uuid().optional(),
+        invoice_no: z.string().optional(),
+        phone: z.string().optional(),
+      }),
+      execute: async ({ orderId, invoice_no, phone }) => {
+        let q = sb
+          .from("orders")
+          .select("id,invoice_no,status,customer_name,courier_name,courier_tracking_id,courier_status,created_at")
+          .eq("store_id", storeId)
+          .order("created_at", { ascending: false })
+          .limit(3);
+        if (orderId) q = q.eq("id", orderId);
+        else if (invoice_no) q = q.eq("invoice_no", invoice_no);
+        else if (phone) q = q.eq("phone", String(phone).replace(/\D/g, ""));
+        else return { orders: [] };
+        const { data } = await q;
+        return { orders: data ?? [] };
+      },
+    });
+
+    tools.getCustomerMemory = tool({
+      description:
+        "Get what we know about the current customer: previous orders, favourite products, preferred language.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const { data: conv } = await sb
+          .from("ai_conversations")
+          .select("customer_name,phone,psid_profile")
+          .eq("id", convId)
+          .maybeSingle();
+        if (!conv) return {};
+        const phoneNorm = conv.phone ? String(conv.phone).replace(/\D/g, "") : null;
+        let customer: any = null;
+        if (phoneNorm) {
+          const { data } = await sb
+            .from("store_customers")
+            .select("id,full_name,ai_memory,preferred_language")
+            .eq("store_id", storeId)
+            .eq("phone", phoneNorm)
+            .maybeSingle();
+          customer = data;
+        }
+        let recentOrders: any[] = [];
+        if (customer?.id) {
+          const { data } = await sb
+            .from("orders")
+            .select("id,invoice_no,status,subtotal,created_at")
+            .eq("store_id", storeId)
+            .eq("customer_id", customer.id)
+            .order("created_at", { ascending: false })
+            .limit(5);
+          recentOrders = data ?? [];
+        }
+        return {
+          name: conv.customer_name,
+          profile: conv.psid_profile,
+          customer,
+          recent_orders: recentOrders,
+        };
+      },
+    });
+
+    tools.escalateToHuman = tool({
+      description:
+        "Hand this conversation to a human agent. Use when you cannot answer confidently or the customer asks for a person.",
+      inputSchema: z.object({ reason: z.string().min(1).max(500) }),
+      execute: async ({ reason }) => {
+        await sb.from("ai_conversations").update({ handoff_mode: "human" } as any).eq("id", convId);
+        await sb.from("admin_notifications").insert({
+          store_id: storeId,
+          kind: "human_handoff",
+          title: "Customer needs a human",
+          body: reason,
+          meta: { conversation_id: convId },
+        } as any);
+        return { ok: true, message: "Handed off to human agent" };
+      },
+    });
+  }
+
+  return tools;
 }
 
 export async function logUsage(storeId: string | null, model: string, usage: any, kind: string) {
@@ -168,9 +641,6 @@ export async function logUsage(storeId: string | null, model: string, usage: any
 export async function getModelForStore() {
   const sb = admin();
   const { data: settings } = await sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle();
-  // Always use the platform-provisioned Lovable AI key. The optional
-  // provider_api_key from the owner panel is only honored if it looks like a
-  // Lovable key — otherwise the gateway rejects it with 401.
   const saved = (settings?.provider_api_key || "").trim();
   const looksLovable = saved.startsWith("lv_") || saved.startsWith("sk-lovable");
   const apiKey = (looksLovable ? saved : "") || process.env.LOVABLE_API_KEY!;
@@ -181,7 +651,7 @@ export async function getModelForStore() {
 }
 
 export function streamAgentResponse(opts: {
-  storeId: string;
+  ctx: AgentContext;
   messages: any[];
   system: string;
 }) {
@@ -191,25 +661,29 @@ export function streamAgentResponse(opts: {
       model,
       system: opts.system,
       messages: opts.messages,
-      tools: buildTools(opts.storeId),
+      tools: buildTools(opts.ctx),
       stopWhen: stepCountIs(50),
       onFinish: ({ usage }) => {
-        void logUsage(opts.storeId, modelId, usage, "chat");
+        void logUsage(opts.ctx.storeId, modelId, usage, "chat");
       },
     });
     return result;
   };
 }
 
-export async function generateAgentReply(opts: { storeId: string; messages: any[]; system: string }) {
+export async function generateAgentReply(opts: {
+  ctx: AgentContext;
+  messages: any[];
+  system: string;
+}) {
   const { model, modelId } = await getModelForStore();
   const result = await generateText({
     model,
     system: opts.system,
     messages: opts.messages,
-    tools: buildTools(opts.storeId),
+    tools: buildTools(opts.ctx),
     stopWhen: stepCountIs(50),
   });
-  void logUsage(opts.storeId, modelId, result.usage, "messenger");
+  void logUsage(opts.ctx.storeId, modelId, result.usage, "messenger");
   return result.text;
 }
