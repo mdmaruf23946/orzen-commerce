@@ -7,11 +7,14 @@ import {
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { getOrderDetails, addInternalNote, deleteInternalNote } from "@/lib/business.functions";
+import { updateOrderCourierInfo } from "@/lib/ai-review.functions";
 import { getCachedFraudCheck, ensureAutoFraudCheck } from "@/lib/fraud.functions";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FraudCheckModal, RiskBadge } from "@/components/admin/FraudCheckModal";
+import { toast } from "sonner";
 
 function resolveProductImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -50,9 +53,12 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
   const autoFn = useServerFn(ensureAutoFraudCheck);
   const addNote = useServerFn(addInternalNote);
   const delNote = useServerFn(deleteInternalNote);
+  const saveCourier = useServerFn(updateOrderCourierInfo);
   const qc = useQueryClient();
   const [note, setNote] = useState("");
   const [fraudOpen, setFraudOpen] = useState(false);
+  const [courier, setCourier] = useState({ name: "", tracking: "", status: "" });
+  const [savingCourier, setSavingCourier] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["order-drawer", orderId],

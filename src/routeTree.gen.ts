@@ -75,9 +75,11 @@ import { Route as AuthenticatedAdminNotificationsRouteImport } from './routes/_a
 import { Route as AuthenticatedAdminMessengerInboxRouteImport } from './routes/_authenticated/admin/messenger-inbox'
 import { Route as AuthenticatedAdminMessengerRouteImport } from './routes/_authenticated/admin/messenger'
 import { Route as AuthenticatedAdminMarketingRouteImport } from './routes/_authenticated/admin/marketing'
+import { Route as AuthenticatedAdminLowStockRouteImport } from './routes/_authenticated/admin/low-stock'
 import { Route as AuthenticatedAdminLegalRouteImport } from './routes/_authenticated/admin/legal'
 import { Route as AuthenticatedAdminInventoryRouteImport } from './routes/_authenticated/admin/inventory'
 import { Route as AuthenticatedAdminImportExportRouteImport } from './routes/_authenticated/admin/import-export'
+import { Route as AuthenticatedAdminHandoffQueueRouteImport } from './routes/_authenticated/admin/handoff-queue'
 import { Route as AuthenticatedAdminFinanceRouteImport } from './routes/_authenticated/admin/finance'
 import { Route as AuthenticatedAdminDuplicateProtectionRouteImport } from './routes/_authenticated/admin/duplicate-protection'
 import { Route as AuthenticatedAdminDomainsRouteImport } from './routes/_authenticated/admin/domains'
@@ -90,6 +92,7 @@ import { Route as AuthenticatedAdminCouponsRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
 import { Route as AuthenticatedAdminBannersRouteImport } from './routes/_authenticated/admin/banners'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin/analytics'
+import { Route as AuthenticatedAdminAiRecommendationsRouteImport } from './routes/_authenticated/admin/ai-recommendations'
 import { Route as AuthenticatedAdminAiAgentRouteImport } from './routes/_authenticated/admin/ai-agent'
 import { Route as AuthenticatedOwnerSubscriptionPayRouteRouteImport } from './routes/_authenticated/owner/subscription-pay.route'
 import { Route as AuthenticatedAdminBillingRouteRouteImport } from './routes/_authenticated/admin/billing.route'
@@ -473,6 +476,12 @@ const AuthenticatedAdminMarketingRoute =
     path: '/marketing',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminLowStockRoute =
+  AuthenticatedAdminLowStockRouteImport.update({
+    id: '/low-stock',
+    path: '/low-stock',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminLegalRoute = AuthenticatedAdminLegalRouteImport.update({
   id: '/legal',
   path: '/legal',
@@ -488,6 +497,12 @@ const AuthenticatedAdminImportExportRoute =
   AuthenticatedAdminImportExportRouteImport.update({
     id: '/import-export',
     path: '/import-export',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminHandoffQueueRoute =
+  AuthenticatedAdminHandoffQueueRouteImport.update({
+    id: '/handoff-queue',
+    path: '/handoff-queue',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminFinanceRoute =
@@ -560,6 +575,12 @@ const AuthenticatedAdminAnalyticsRoute =
   AuthenticatedAdminAnalyticsRouteImport.update({
     id: '/analytics',
     path: '/analytics',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminAiRecommendationsRoute =
+  AuthenticatedAdminAiRecommendationsRouteImport.update({
+    id: '/ai-recommendations',
+    path: '/ai-recommendations',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminAiAgentRoute =
@@ -683,6 +704,7 @@ export interface FileRoutesByFullPath {
   '/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
   '/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
+  '/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
@@ -695,9 +717,11 @@ export interface FileRoutesByFullPath {
   '/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/admin/duplicate-protection': typeof AuthenticatedAdminDuplicateProtectionRoute
   '/admin/finance': typeof AuthenticatedAdminFinanceRoute
+  '/admin/handoff-queue': typeof AuthenticatedAdminHandoffQueueRoute
   '/admin/import-export': typeof AuthenticatedAdminImportExportRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryRoute
   '/admin/legal': typeof AuthenticatedAdminLegalRoute
+  '/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
   '/admin/marketing': typeof AuthenticatedAdminMarketingRoute
   '/admin/messenger': typeof AuthenticatedAdminMessengerRoute
   '/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
@@ -778,6 +802,7 @@ export interface FileRoutesByTo {
   '/shipping-policy': typeof ShippingPolicyRoute
   '/terms': typeof TermsRoute
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
+  '/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
@@ -790,9 +815,11 @@ export interface FileRoutesByTo {
   '/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/admin/duplicate-protection': typeof AuthenticatedAdminDuplicateProtectionRoute
   '/admin/finance': typeof AuthenticatedAdminFinanceRoute
+  '/admin/handoff-queue': typeof AuthenticatedAdminHandoffQueueRoute
   '/admin/import-export': typeof AuthenticatedAdminImportExportRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryRoute
   '/admin/legal': typeof AuthenticatedAdminLegalRoute
+  '/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
   '/admin/marketing': typeof AuthenticatedAdminMarketingRoute
   '/admin/messenger': typeof AuthenticatedAdminMessengerRoute
   '/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
@@ -880,6 +907,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
   '/_authenticated/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
   '/_authenticated/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
+  '/_authenticated/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/banners': typeof AuthenticatedAdminBannersRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
@@ -892,9 +920,11 @@ export interface FileRoutesById {
   '/_authenticated/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/_authenticated/admin/duplicate-protection': typeof AuthenticatedAdminDuplicateProtectionRoute
   '/_authenticated/admin/finance': typeof AuthenticatedAdminFinanceRoute
+  '/_authenticated/admin/handoff-queue': typeof AuthenticatedAdminHandoffQueueRoute
   '/_authenticated/admin/import-export': typeof AuthenticatedAdminImportExportRoute
   '/_authenticated/admin/inventory': typeof AuthenticatedAdminInventoryRoute
   '/_authenticated/admin/legal': typeof AuthenticatedAdminLegalRoute
+  '/_authenticated/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
   '/_authenticated/admin/marketing': typeof AuthenticatedAdminMarketingRoute
   '/_authenticated/admin/messenger': typeof AuthenticatedAdminMessengerRoute
   '/_authenticated/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
@@ -982,6 +1012,7 @@ export interface FileRouteTypes {
     | '/admin/billing'
     | '/owner/subscription-pay'
     | '/admin/ai-agent'
+    | '/admin/ai-recommendations'
     | '/admin/analytics'
     | '/admin/banners'
     | '/admin/categories'
@@ -994,9 +1025,11 @@ export interface FileRouteTypes {
     | '/admin/domains'
     | '/admin/duplicate-protection'
     | '/admin/finance'
+    | '/admin/handoff-queue'
     | '/admin/import-export'
     | '/admin/inventory'
     | '/admin/legal'
+    | '/admin/low-stock'
     | '/admin/marketing'
     | '/admin/messenger'
     | '/admin/messenger-inbox'
@@ -1077,6 +1110,7 @@ export interface FileRouteTypes {
     | '/shipping-policy'
     | '/terms'
     | '/admin/ai-agent'
+    | '/admin/ai-recommendations'
     | '/admin/analytics'
     | '/admin/banners'
     | '/admin/categories'
@@ -1089,9 +1123,11 @@ export interface FileRouteTypes {
     | '/admin/domains'
     | '/admin/duplicate-protection'
     | '/admin/finance'
+    | '/admin/handoff-queue'
     | '/admin/import-export'
     | '/admin/inventory'
     | '/admin/legal'
+    | '/admin/low-stock'
     | '/admin/marketing'
     | '/admin/messenger'
     | '/admin/messenger-inbox'
@@ -1178,6 +1214,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/billing'
     | '/_authenticated/owner/subscription-pay'
     | '/_authenticated/admin/ai-agent'
+    | '/_authenticated/admin/ai-recommendations'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/banners'
     | '/_authenticated/admin/categories'
@@ -1190,9 +1227,11 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/domains'
     | '/_authenticated/admin/duplicate-protection'
     | '/_authenticated/admin/finance'
+    | '/_authenticated/admin/handoff-queue'
     | '/_authenticated/admin/import-export'
     | '/_authenticated/admin/inventory'
     | '/_authenticated/admin/legal'
+    | '/_authenticated/admin/low-stock'
     | '/_authenticated/admin/marketing'
     | '/_authenticated/admin/messenger'
     | '/_authenticated/admin/messenger-inbox'
@@ -1747,6 +1786,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminMarketingRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/low-stock': {
+      id: '/_authenticated/admin/low-stock'
+      path: '/low-stock'
+      fullPath: '/admin/low-stock'
+      preLoaderRoute: typeof AuthenticatedAdminLowStockRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/legal': {
       id: '/_authenticated/admin/legal'
       path: '/legal'
@@ -1766,6 +1812,13 @@ declare module '@tanstack/react-router' {
       path: '/import-export'
       fullPath: '/admin/import-export'
       preLoaderRoute: typeof AuthenticatedAdminImportExportRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/handoff-queue': {
+      id: '/_authenticated/admin/handoff-queue'
+      path: '/handoff-queue'
+      fullPath: '/admin/handoff-queue'
+      preLoaderRoute: typeof AuthenticatedAdminHandoffQueueRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/finance': {
@@ -1850,6 +1903,13 @@ declare module '@tanstack/react-router' {
       path: '/analytics'
       fullPath: '/admin/analytics'
       preLoaderRoute: typeof AuthenticatedAdminAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/ai-recommendations': {
+      id: '/_authenticated/admin/ai-recommendations'
+      path: '/ai-recommendations'
+      fullPath: '/admin/ai-recommendations'
+      preLoaderRoute: typeof AuthenticatedAdminAiRecommendationsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/ai-agent': {
@@ -2003,6 +2063,7 @@ const AuthenticatedAdminBillingRouteRouteWithChildren =
 interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminBillingRouteRoute: typeof AuthenticatedAdminBillingRouteRouteWithChildren
   AuthenticatedAdminAiAgentRoute: typeof AuthenticatedAdminAiAgentRoute
+  AuthenticatedAdminAiRecommendationsRoute: typeof AuthenticatedAdminAiRecommendationsRoute
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
   AuthenticatedAdminBannersRoute: typeof AuthenticatedAdminBannersRoute
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
@@ -2015,9 +2076,11 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminDomainsRoute: typeof AuthenticatedAdminDomainsRoute
   AuthenticatedAdminDuplicateProtectionRoute: typeof AuthenticatedAdminDuplicateProtectionRoute
   AuthenticatedAdminFinanceRoute: typeof AuthenticatedAdminFinanceRoute
+  AuthenticatedAdminHandoffQueueRoute: typeof AuthenticatedAdminHandoffQueueRoute
   AuthenticatedAdminImportExportRoute: typeof AuthenticatedAdminImportExportRoute
   AuthenticatedAdminInventoryRoute: typeof AuthenticatedAdminInventoryRoute
   AuthenticatedAdminLegalRoute: typeof AuthenticatedAdminLegalRoute
+  AuthenticatedAdminLowStockRoute: typeof AuthenticatedAdminLowStockRoute
   AuthenticatedAdminMarketingRoute: typeof AuthenticatedAdminMarketingRoute
   AuthenticatedAdminMessengerRoute: typeof AuthenticatedAdminMessengerRoute
   AuthenticatedAdminMessengerInboxRoute: typeof AuthenticatedAdminMessengerInboxRoute
@@ -2041,6 +2104,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminBillingRouteRoute:
       AuthenticatedAdminBillingRouteRouteWithChildren,
     AuthenticatedAdminAiAgentRoute: AuthenticatedAdminAiAgentRoute,
+    AuthenticatedAdminAiRecommendationsRoute:
+      AuthenticatedAdminAiRecommendationsRoute,
     AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
     AuthenticatedAdminBannersRoute: AuthenticatedAdminBannersRoute,
     AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
@@ -2055,9 +2120,11 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminDuplicateProtectionRoute:
       AuthenticatedAdminDuplicateProtectionRoute,
     AuthenticatedAdminFinanceRoute: AuthenticatedAdminFinanceRoute,
+    AuthenticatedAdminHandoffQueueRoute: AuthenticatedAdminHandoffQueueRoute,
     AuthenticatedAdminImportExportRoute: AuthenticatedAdminImportExportRoute,
     AuthenticatedAdminInventoryRoute: AuthenticatedAdminInventoryRoute,
     AuthenticatedAdminLegalRoute: AuthenticatedAdminLegalRoute,
+    AuthenticatedAdminLowStockRoute: AuthenticatedAdminLowStockRoute,
     AuthenticatedAdminMarketingRoute: AuthenticatedAdminMarketingRoute,
     AuthenticatedAdminMessengerRoute: AuthenticatedAdminMessengerRoute,
     AuthenticatedAdminMessengerInboxRoute:
