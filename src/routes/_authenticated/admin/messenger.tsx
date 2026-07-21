@@ -57,6 +57,7 @@ function AdminMessenger() {
   const [busy, setBusy] = useState(false);
   const [testPsid, setTestPsid] = useState("");
   const [log, setLog] = useState<LogEntry[]>([]);
+  const [diag, setDiag] = useState<any | null>(null);
 
   useEffect(() => {
     if (!data) return;
@@ -127,21 +128,27 @@ function AdminMessenger() {
     setBusy(true);
     try {
       const r: any = await verifyWh();
+      setDiag(r);
       qc.invalidateQueries({ queryKey: ["admin", "messenger"] });
       if (r?.ok) {
         toast.success("Webhook verified");
-        pushLog("Webhook verified", true);
+        pushLog(`Verified — GET ${r.get_status}, echoed challenge`, true);
       } else {
+        const msg = r?.error
+          ? `Unreachable: ${r.error}`
+          : `GET ${r?.get_status ?? "?"} · body="${(r?.get_body ?? "").slice(0, 40)}"`;
         toast.error("Verification failed");
-        pushLog(`Verify failed (${r?.status})`, false);
+        pushLog(`Verify failed — ${msg}`, false);
       }
     } catch (err) {
+      setDiag({ ok: false, error: (err as Error).message });
       toast.error((err as Error).message);
       pushLog(`Verify error: ${(err as Error).message}`, false);
     } finally {
       setBusy(false);
     }
   }
+
 
   async function onRegenerate() {
     if (!confirm("Regenerate verify token? You'll need to re-verify the webhook on Facebook.")) return;
@@ -407,11 +414,29 @@ function AdminMessenger() {
               {d.last_error}
             </div>
           )}
+          {diag && (
+            <div className="space-y-1.5 rounded-md border bg-muted/30 px-3 py-2 text-xs">
+              <div className="font-semibold">Diagnostics</div>
+              <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+                <div>Endpoint reachable: {diag.reachable ? "✅" : "❌"}</div>
+                <div>Token match: {diag.token_match ? "✅" : "❌"}</div>
+                <div>GET status: {diag.get_status ?? "—"}</div>
+                <div>POST status: {diag.post_status ?? "—"}</div>
+                <div>Bad-token status: {diag.bad_token_status ?? "—"} (expected 403)</div>
+                <div className="truncate">Response: <code>{(diag.get_body ?? "").slice(0, 60) || "—"}</code></div>
+              </div>
+              {diag.endpoint && (
+                <div className="truncate text-muted-foreground">URL: {diag.endpoint}</div>
+              )}
+              {diag.error && <div className="text-destructive">Error: {diag.error}</div>}
+            </div>
+          )}
         </div>
 
 
         {/* Permissions */}
         <div className="space-y-3 rounded-xl border bg-card p-3 sm:p-4">
+
           <div className="flex items-center justify-between">
             <div className="text-sm font-semibold">Permissions</div>
             <Button
