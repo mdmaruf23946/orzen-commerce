@@ -86,6 +86,47 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          kind: string
+          meta: Json
+          read_at: string | null
+          store_id: string
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          meta?: Json
+          read_at?: string | null
+          store_id: string
+          title: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          meta?: Json
+          read_at?: string | null
+          store_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_notifications_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_conversations: {
         Row: {
           address: string | null
@@ -1176,6 +1217,60 @@ export type Database = {
           },
         ]
       }
+      order_notifications_outbox: {
+        Row: {
+          attempt_count: number
+          channel: string
+          created_at: string
+          error: string | null
+          id: string
+          order_id: string
+          payload: Json
+          sent_at: string | null
+          stage: string
+          store_id: string
+        }
+        Insert: {
+          attempt_count?: number
+          channel?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          order_id: string
+          payload?: Json
+          sent_at?: string | null
+          stage: string
+          store_id: string
+        }
+        Update: {
+          attempt_count?: number
+          channel?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          order_id?: string
+          payload?: Json
+          sent_at?: string | null
+          stage?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_notifications_outbox_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_notifications_outbox_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_timeline: {
         Row: {
           created_at: string
@@ -1223,6 +1318,11 @@ export type Database = {
           address: string
           area: string | null
           coupon_id: string | null
+          courier_code: string | null
+          courier_last_synced_at: string | null
+          courier_name: string | null
+          courier_status: string | null
+          courier_tracking_id: string | null
           created_at: string
           customer_id: string | null
           customer_name: string
@@ -1245,6 +1345,11 @@ export type Database = {
           address: string
           area?: string | null
           coupon_id?: string | null
+          courier_code?: string | null
+          courier_last_synced_at?: string | null
+          courier_name?: string | null
+          courier_status?: string | null
+          courier_tracking_id?: string | null
           created_at?: string
           customer_id?: string | null
           customer_name: string
@@ -1267,6 +1372,11 @@ export type Database = {
           address?: string
           area?: string | null
           coupon_id?: string | null
+          courier_code?: string | null
+          courier_last_synced_at?: string | null
+          courier_name?: string | null
+          courier_status?: string | null
+          courier_tracking_id?: string | null
           created_at?: string
           customer_id?: string | null
           customer_name?: string
@@ -1541,10 +1651,14 @@ export type Database = {
       }
       products: {
         Row: {
+          brand: string | null
           category_id: string | null
           cost_price: number | null
           created_at: string
+          delivery_charge: number | null
+          delivery_time_days: string | null
           description: string | null
+          features: Json
           gallery: Json
           id: string
           is_featured: boolean
@@ -1554,21 +1668,33 @@ export type Database = {
           old_price: number | null
           price: number
           primary_image_url: string | null
+          product_code: string | null
+          rating: number | null
+          related_product_ids: string[]
           return_policy: string | null
           shipping_info: string | null
+          short_description: string | null
           sku: string | null
           slug: string
+          specifications: Json
           status: Database["public"]["Enums"]["product_status"]
           stock: number
           store_id: string
+          total_sold: number
           updated_at: string
+          variants: Json
+          video_url: string | null
           warranty: string | null
         }
         Insert: {
+          brand?: string | null
           category_id?: string | null
           cost_price?: number | null
           created_at?: string
+          delivery_charge?: number | null
+          delivery_time_days?: string | null
           description?: string | null
+          features?: Json
           gallery?: Json
           id?: string
           is_featured?: boolean
@@ -1578,21 +1704,33 @@ export type Database = {
           old_price?: number | null
           price?: number
           primary_image_url?: string | null
+          product_code?: string | null
+          rating?: number | null
+          related_product_ids?: string[]
           return_policy?: string | null
           shipping_info?: string | null
+          short_description?: string | null
           sku?: string | null
           slug: string
+          specifications?: Json
           status?: Database["public"]["Enums"]["product_status"]
           stock?: number
           store_id: string
+          total_sold?: number
           updated_at?: string
+          variants?: Json
+          video_url?: string | null
           warranty?: string | null
         }
         Update: {
+          brand?: string | null
           category_id?: string | null
           cost_price?: number | null
           created_at?: string
+          delivery_charge?: number | null
+          delivery_time_days?: string | null
           description?: string | null
+          features?: Json
           gallery?: Json
           id?: string
           is_featured?: boolean
@@ -1602,14 +1740,22 @@ export type Database = {
           old_price?: number | null
           price?: number
           primary_image_url?: string | null
+          product_code?: string | null
+          rating?: number | null
+          related_product_ids?: string[]
           return_policy?: string | null
           shipping_info?: string | null
+          short_description?: string | null
           sku?: string | null
           slug?: string
+          specifications?: Json
           status?: Database["public"]["Enums"]["product_status"]
           stock?: number
           store_id?: string
+          total_sold?: number
           updated_at?: string
+          variants?: Json
+          video_url?: string | null
           warranty?: string | null
         }
         Relationships: [
@@ -2012,6 +2158,7 @@ export type Database = {
       }
       store_customers: {
         Row: {
+          ai_memory: Json
           created_at: string
           email: string | null
           full_name: string
@@ -2020,10 +2167,12 @@ export type Database = {
           last_login_at: string | null
           password_hash: string
           phone: string | null
+          preferred_language: string | null
           store_id: string
           updated_at: string
         }
         Insert: {
+          ai_memory?: Json
           created_at?: string
           email?: string | null
           full_name: string
@@ -2032,10 +2181,12 @@ export type Database = {
           last_login_at?: string | null
           password_hash: string
           phone?: string | null
+          preferred_language?: string | null
           store_id: string
           updated_at?: string
         }
         Update: {
+          ai_memory?: Json
           created_at?: string
           email?: string | null
           full_name?: string
@@ -2044,6 +2195,7 @@ export type Database = {
           last_login_at?: string | null
           password_hash?: string
           phone?: string | null
+          preferred_language?: string | null
           store_id?: string
           updated_at?: string
         }
