@@ -328,7 +328,7 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
   }, [msgs.data?.length]);
 
   const send = useMutation({
-    mutationFn: (v: Parameters<typeof sendFn>[0]["data"]) => sendFn({ data: v }),
+    mutationFn: (v: any) => sendFn({ data: v }),
     onSuccess: () => {
       setText("");
       setQuickRepliesState([]);
