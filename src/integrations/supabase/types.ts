@@ -135,7 +135,9 @@ export type Database = {
           customer_name: string | null
           external_id: string | null
           first_contact_at: string
+          handoff_at: string | null
           handoff_mode: string
+          handoff_reason: string | null
           id: string
           last_message_at: string | null
           last_message_preview: string | null
@@ -157,7 +159,9 @@ export type Database = {
           customer_name?: string | null
           external_id?: string | null
           first_contact_at?: string
+          handoff_at?: string | null
           handoff_mode?: string
+          handoff_reason?: string | null
           id?: string
           last_message_at?: string | null
           last_message_preview?: string | null
@@ -179,7 +183,9 @@ export type Database = {
           customer_name?: string | null
           external_id?: string | null
           first_contact_at?: string
+          handoff_at?: string | null
           handoff_mode?: string
+          handoff_reason?: string | null
           id?: string
           last_message_at?: string | null
           last_message_preview?: string | null
@@ -286,6 +292,97 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_product_blacklist: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          reason: string | null
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          reason?: string | null
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          reason?: string | null
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_product_blacklist_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_product_blacklist_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_product_recommendations: {
+        Row: {
+          context: string | null
+          conversation_id: string | null
+          created_at: string
+          id: string
+          product_id: string | null
+          store_id: string
+          tool_name: string
+        }
+        Insert: {
+          context?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          product_id?: string | null
+          store_id: string
+          tool_name: string
+        }
+        Update: {
+          context?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          product_id?: string | null
+          store_id?: string
+          tool_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_product_recommendations_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_product_recommendations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_product_recommendations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -956,6 +1053,51 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      low_stock_alerts: {
+        Row: {
+          created_at: string
+          current_stock: number
+          id: string
+          product_id: string
+          resolved_at: string | null
+          store_id: string
+          threshold: number
+        }
+        Insert: {
+          created_at?: string
+          current_stock: number
+          id?: string
+          product_id: string
+          resolved_at?: string | null
+          store_id: string
+          threshold: number
+        }
+        Update: {
+          created_at?: string
+          current_stock?: number
+          id?: string
+          product_id?: string
+          resolved_at?: string | null
+          store_id?: string
+          threshold?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "low_stock_alerts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "low_stock_alerts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       marketing_pixel_defaults: {
         Row: {
