@@ -1,5 +1,6 @@
 // AI Sales Agent server functions.
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeader } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertPlan } from "@/lib/plan-guard";
