@@ -348,8 +348,25 @@ function AdminMessenger() {
           </div>
         )}
         {d.last_error && (
-          <div className="mt-2 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
-            Last error: {d.last_error}
+          <div className="mt-2 flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            <div className="flex-1">Last error: {d.last_error}</div>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-6 shrink-0 px-2 text-xs text-destructive hover:bg-destructive/20"
+              onClick={async () => {
+                try {
+                  await clearErr();
+                  toast.success("Error cleared");
+                  qc.invalidateQueries({ queryKey: ["admin", "messenger"] });
+                } catch (e) {
+                  toast.error((e as Error).message);
+                }
+              }}
+            >
+              Clear
+            </Button>
           </div>
         )}
       </div>
