@@ -1,86 +1,69 @@
 
 ## Goal
 
-Bring the Global Store Template (Winner Admin → Store Template) to parity with the Store Admin uploader UX, and expand the default product schema to match a full product form.
+Upgrade the Store Admin → Messenger page from the current 2-field form (Page ID + Page Token) to a complete Meta Messenger integration console covering credentials, webhook, permissions, live status, AI behavior toggles, test tools, and a compact dashboard — mobile-first.
 
-## Current state (verified)
+## Database changes (one migration)
 
-- `src/routes/_authenticated/owner/store-template.tsx` uses plain "Image URL" text inputs for banners, no image for categories, and a minimal product shape (name, price, stock, image_url, category_name, description).
-- `src/components/admin/ImageUploader.tsx` and `GalleryUploader.tsx` already implement the desired upload flow (drag/click, preview, replace/remove, gallery reorder), but hardcode a `storeId` folder in the private `store-assets` bucket.
-- Template data ships to new stores via `seedStoreFromTemplate` in `src/lib/store-template.ts`, which reads `p.image_url`/`p.images` and passes them to `products`/`banners` rows. New product columns beyond the current seed are not yet propagated.
+Extend `public.messenger_integrations` with:
 
-## Storage strategy
+- `page_name text`, `page_picture_url text` — filled from Meta Graph after connect.
+- `app_id text`, `app_secret_encrypted text` — optional, secret encrypted via existing `PAYMENT_CREDENTIALS_KEY` helper (`src/lib/crypto/credentials.server.ts`).
+- `page_access_token_encrypted text` — replaces plaintext storage; keep old `page_access_token` column temporarily, migrate values into the encrypted column, then set old column to `NULL`. Reads always go through decrypt.
+- `token_expires_at timestamptz null` — parsed from Meta `debug_token`.
+- `permissions jsonb default '[]'` — cached scope list from `debug_token`.
+- `last_verified_at timestamptz`, `last_error text`.
+- `ai_auto_reply boolean default true`, `human_takeover boolean default false`, `conversation_history boolean default true`, `order_detection boolean default false`, `product_recommendation boolean default false`, `faq_reply boolean default true`.
+- Daily counters view/RPC `get_messenger_daily_stats(store_id)` returning `{ messages_today, failed_today, last_incoming_at }` from `ai_conversations` + `ai_messages` (channel = `messenger`) plus a new `messenger_delivery_failures` counter written from the webhook / send helper.
 
-Reuse the existing `store-assets` private bucket with a reserved prefix `_template/` for all template media (banners, categories, products, gallery). Rendered via the existing `/api/img/{path}` proxy — no bucket-visibility changes.
+RLS: existing store-owner policy already covers new columns. Add `service_role` grant explicitly (already implicit) — no anon.
 
-Add a storage RLS policy on `storage.objects` allowing the `owner` role (via `public.has_role`) to `INSERT/UPDATE/DELETE/SELECT` objects under `bucket_id = 'store-assets'` where `name LIKE '_template/%'`. Store owners' existing per-store-id policies stay untouched.
+## Server functions (`src/lib/ai.functions.ts`)
 
-## Uploader reuse
+Replace the current 3 messenger fns with a fuller set — all `requireSupabaseAuth` + `assertPlan("ai_messenger")`:
 
-Generalize the two uploaders to accept an arbitrary folder prefix instead of only `storeId`:
+1. `getMessengerIntegration` → returns full row minus raw encrypted blobs, plus derived `webhook_url`, decrypted `verify_token`, `permissions`, `token_expires_at`, `page_name`, `page_picture_url`, `last_error`, `stats` from the RPC.
+2. `connectMessenger({ page_id, page_access_token, app_id?, app_secret? })`:
+   - Call Meta Graph `GET /{page_id}?fields=name,picture{url}` with the token → fills `page_name`, `page_picture_url`. Fail with a clear message on 4xx.
+   - If `app_id` + `app_secret` supplied, call `debug_token` → capture `scopes`, `data_access_expires_at`/`expires_at`.
+   - Encrypt token (and app secret if present) via `encryptJSON`. Generate verify_token if none exists.
+   - Upsert row with `status='connected'`, `last_verified_at=now()`, clear `last_error`.
+3. `verifyMessengerWebhook()` — server-side self-check: GET the app's `/api/public/messenger/webhook?hub.mode=subscribe&hub.verify_token=…&hub.challenge=ping` using the published URL; success writes `last_verified_at`, failure writes `last_error`.
+4. `sendMessengerTestMessage({ recipient_id })` — decrypts token, POSTs to Graph `/me/messages` with a canned "✅ Test from ORZEN".
+5. `regenerateVerifyToken()` — replace `verify_token` (invalidates existing webhook, user must re-verify).
+6. `refreshMessengerPermissions()` — re-hit `debug_token` (needs app_id/app_secret); updates `permissions` + `token_expires_at`.
+7. `updateMessengerAiFlags({ ai_auto_reply, human_takeover, ... })` — updates the 6 boolean toggles.
+8. `disconnectMessenger` — unchanged behavior, also clears cached page metadata.
 
-- `ImageUploader` / `GalleryUploader`: accept a new optional `folder` prop (default derived from `storeId` for backward compatibility). Internally build `${folder}/{timestamp}-{rand}.{ext}`.
-- All existing call sites keep working (they pass `storeId`, which becomes the folder).
-- Template page passes `folder="_template"`.
+Webhook route (`src/routes/api/public/messenger/webhook.ts`):
+- Decrypt token when sending replies.
+- When `human_takeover=true` OR `ai_auto_reply=false`: skip AI, just persist the incoming message.
+- On send failure, `UPDATE messenger_integrations SET last_error=$1` and increment failure counter.
+- Optional `X-Hub-Signature-256` verification when `app_secret_encrypted` is present.
 
-## Template page rewrite (`store-template.tsx`)
+## Admin UI rewrite (`src/routes/_authenticated/admin/messenger.tsx`)
 
-### Banners tab
-Replace the URL text input row with a card containing:
-- `ImageUploader` (folder `_template`) bound to `image_url`
-- Link input, sort order input, delete button
-- "Add banner" button appends `{ image_url: "", link_url: "", sort_order }`
+Mobile-first single-column layout that becomes 2-column ≥ `lg`. Sections top → bottom:
 
-### Categories tab
-Each row becomes a card:
-- Category Name (existing)
-- `ImageUploader` bound to a new `image_url` field
-- Optional description (textarea)
-- Remove button
-- Extend `TemplateForm.categories` to `{ name; image_url?; description? }`
+1. **Dashboard card** — page picture, page name, status pill (Connected/Disconnected/Error), webhook pill, AI pill, 3 mini-stats (Messages today, Failed, Last incoming), token expiry countdown with "Refresh token" reminder when < 7 days.
+2. **Connection form** — Page ID, Long-lived Page Access Token (password + Show/Hide + Copy), App ID (optional), App Secret (password + Show/Hide, optional). Client-side validation (required lengths, digits for page id). Buttons: Connect / Save Changes / Disconnect / Reconnect.
+3. **Webhook card** — Webhook URL (read-only, Copy). Verify Token (read-only, Show/Hide, Copy, Regenerate). Status pill + "Verify Webhook" button (calls `verifyMessengerWebhook`). Shows `last_verified_at` and `last_error`.
+4. **Permissions card** — list of required scopes with green ✓ / red ✗ derived from `permissions`. Note when app_id/app_secret missing that permissions can't be checked. "Refresh permissions" button.
+5. **AI behavior card** — 6 toggle switches (Auto Reply, Human Takeover, Conversation History, Order Detection, Product Recommendation, FAQ Reply). Auto-save on change (debounced) via `updateMessengerAiFlags`.
+6. **Test tools card** — "Send Test Message" (input Messenger PSID), "Verify Webhook", "Send Test Event" (posts a synthetic event to the webhook). Small live log (last 10 entries from `last_error` + verification history stored in-memory client-side per session).
 
-### Products tab
-Replace the minimal card with a collapsible accordion per product (title = product name) containing tabbed sections:
-
-1. **Basic** — name, slug (auto-suggested from name, editable), short_description, description, sku, brand, category_name, subcategory_name, tags (comma-separated → string[])
-2. **Images** — `ImageUploader` for main image (`image_url`), `GalleryUploader` for `gallery` (folder `_template`)
-3. **Pricing** — price (regular), sale_price, cost_price, discount_type (`percent`/`fixed`), discount_value
-4. **Inventory** — stock, low_stock_alert, unlimited_stock (bool), status (`active`/`draft`)
-5. **Variants** — dynamic list of attribute rows `{ name; values: string[] }` with defaults size/color/model/storage/ram + free-form add
-6. **Shipping** — weight, length, width, height, free_shipping (bool)
-7. **Media** — youtube_url, video_url (`ImageUploader`-style upload button, but accept mp4 — see note below)
-8. **SEO** — meta_title, meta_description, seo_image (`ImageUploader`)
-9. **Visibility** — featured, new_arrival, best_seller, visibility (`published`/`draft`/`hidden`)
-
-Expand `TemplateForm.products` element to a superset that covers all fields; keep everything optional so old templates still load.
-
-Video upload note: reuse `ImageUploader` code path but with a `accept="video/*"` variant — implement as a light `FileUploader` component sharing the same code, or add an `accept`/`maxBytes` prop to `ImageUploader`. Recommend: extract shared logic into `FileUploader` and have `ImageUploader` wrap it with `accept="image/*"`.
-
-### Client-side image compression
-Add a small helper `src/lib/compress-image.ts` (canvas-based resize to max 1920px longest edge, JPEG q=0.82) invoked in `ImageUploader`/`GalleryUploader` before upload for files >500 KB and mime type starting with `image/`. Preserve PNGs with transparency (skip compression when PNG and <2 MB, or detect alpha and keep PNG). Show an upload progress state (already shows "Uploading…"; add per-file progress in `GalleryUploader`).
-
-### Seeder update (`src/lib/store-template.ts`)
-Extend `seedStoreFromTemplate` to map the expanded template product fields onto the `products` insert:
-- Copy new columns that already exist on `public.products` as-is (sale/cost price if columns exist; otherwise ignore).
-- For fields with no matching column (variants, brand, tags, shipping dims, videos, SEO), stash them into an existing JSON column on `products` (e.g. `meta` / `product_defaults`) — if no such column exists, add one via a small migration `ALTER TABLE public.products ADD COLUMN meta jsonb DEFAULT '{}'::jsonb`. Confirmation of `products` schema will drive the exact mapping during build.
-- Categories seed uses new `image_url`/`description` (extend `categories` insert if those columns exist; if not, use the existing category migration already done for admin categories, which added `image_url`, `description`, `sort_order`, `is_active`).
-
-Products schema audit will run in build mode via `supabase--read_query` before writing the seeder changes, so we only reference columns that exist.
-
-### Save/load
-- `updateStoreTemplate` in `owner.functions.ts` currently accepts the whole form as `data`; loosen its Zod validator (or ensure it uses `passthrough`) so the new fields flow through into the `store_template` JSON columns. Verify during build.
+Use existing shadcn `Switch`, `Card`, `Button`, `Input`. Reuse toast/pattern from current file. All copy buttons via `navigator.clipboard`. All secrets hidden by default with eye toggle. Responsive: cards stack, buttons full-width < `sm`, mini-stats use `grid-cols-3` at all sizes with truncation.
 
 ## Files to touch
 
-- `src/components/admin/ImageUploader.tsx` — add optional `folder` prop, image-compression call, optional `accept`/`maxBytes`.
-- `src/components/admin/GalleryUploader.tsx` — same `folder` prop, per-file progress, compression.
-- `src/lib/compress-image.ts` — new helper.
-- `src/routes/_authenticated/owner/store-template.tsx` — full rewrite of Banners/Categories/Products tabs, expand `TemplateForm`.
-- `src/lib/store-template.ts` — extend seeder to propagate new fields.
-- `src/lib/owner.functions.ts` — verify/loosen `updateStoreTemplate` input schema.
-- Migration: (a) storage RLS policy allowing owners to manage objects under `store-assets/_template/*`; (b) optional `products.meta jsonb` column if not already present; (c) optional `categories.image_url/description/sort_order/is_active` if missing (admin change may have already added these — will verify).
+- Migration: alter `messenger_integrations` + create `get_messenger_daily_stats` RPC + counter column.
+- `src/lib/ai.functions.ts` — replace messenger section with 8 fns above; import `encryptJSON`/`decryptJSON` inside handlers (dynamic import to keep server-only helpers off client bundle).
+- `src/routes/api/public/messenger/webhook.ts` — decrypt token, respect AI flags, record failures / errors, optional signature check.
+- `src/routes/_authenticated/admin/messenger.tsx` — full UI rewrite as above.
 
 ## Out of scope
 
-- Changing the storefront rendering of new product fields (variants UI, video player). This plan only ensures the fields are captured on the template and copied to new stores; storefront UI upgrades can follow.
-- Retroactively re-seeding existing stores — the existing "Reset to Default Template" button already handles that.
+- Meta OAuth login flow (users still paste a long-lived token; documented in-page).
+- Historical analytics beyond today's counters.
+- Multi-page per store.
+- Storefront-side changes (product recommendation & order detection use the existing AI agent context; no storefront UI change here).

@@ -176,16 +176,79 @@ export const getStoreAgentPublic = createServerFn({ method: "GET" })
   });
 
 // ---------- Messenger ----------
+const REQUIRED_MESSENGER_SCOPES = [
+  "pages_manage_metadata",
+  "pages_messaging",
+  "pages_read_engagement",
+];
+
+function publicOrigin(): string {
+  const explicit = process.env.PUBLIC_APP_URL || process.env.VITE_APP_URL;
+  if (explicit) return explicit.replace(/\/$/, "");
+  const ref = process.env.SUPABASE_PROJECT_ID;
+  if (ref) return `https://project--${ref}.lovable.app`;
+  return "https://orzen.top";
+}
+
+async function loadIntegrationForOwner(context: any) {
+  const storeId = await getOwnedStoreId(context.supabase, context.userId);
+  const { data } = await context.supabase
+    .from("messenger_integrations")
+    .select("*")
+    .eq("store_id", storeId)
+    .maybeSingle();
+  return { storeId, row: data as any };
+}
+
+async function decryptToken(enc: string | null): Promise<string | null> {
+  if (!enc) return null;
+  const mod = await import("@/lib/crypto/credentials.server");
+  try {
+    return mod.decryptJSON<string>(enc);
+  } catch {
+    return null;
+  }
+}
+
 export const getMessengerIntegration = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const storeId = await getOwnedStoreId(context.supabase, context.userId);
-    const { data } = await context.supabase
-      .from("messenger_integrations")
-      .select("page_id,verify_token,status,connected_at")
-      .eq("store_id", storeId)
-      .maybeSingle();
-    return data;
+    const { storeId, row } = await loadIntegrationForOwner(context);
+    const webhookUrl = `${publicOrigin()}/api/public/messenger/webhook`;
+    let stats: any = { messages_today: 0, failed_today: 0, last_incoming_at: null };
+    try {
+      const { data: s } = await context.supabase.rpc("get_messenger_daily_stats", { _store_id: storeId });
+      if (s) stats = s;
+    } catch {}
+    if (!row) {
+      return { connected: false, webhook_url: webhookUrl, stats };
+    }
+    return {
+      connected: row.status === "connected",
+      webhook_url: webhookUrl,
+      page_id: row.page_id,
+      page_name: row.page_name,
+      page_picture_url: row.page_picture_url,
+      app_id: row.app_id,
+      has_app_secret: !!row.app_secret_encrypted,
+      has_token: !!(row.page_access_token_encrypted || row.page_access_token),
+      verify_token: row.verify_token,
+      status: row.status,
+      connected_at: row.connected_at,
+      last_verified_at: row.last_verified_at,
+      token_expires_at: row.token_expires_at,
+      permissions: (row.permissions ?? []) as string[],
+      last_error: row.last_error,
+      delivery_failures: row.delivery_failures ?? 0,
+      ai_auto_reply: row.ai_auto_reply,
+      human_takeover: row.human_takeover,
+      conversation_history: row.conversation_history,
+      order_detection: row.order_detection,
+      product_recommendation: row.product_recommendation,
+      faq_reply: row.faq_reply,
+      required_scopes: REQUIRED_MESSENGER_SCOPES,
+      stats,
+    };
   });
 
 export const connectMessenger = createServerFn({ method: "POST" })
@@ -194,27 +257,74 @@ export const connectMessenger = createServerFn({ method: "POST" })
     z
       .object({
         page_id: z.string().trim().min(2).max(120),
-        page_access_token: z.string().trim().min(10).max(500),
+        page_access_token: z.string().trim().min(10).max(1000),
+        app_id: z.string().trim().max(64).optional().nullable(),
+        app_secret: z.string().trim().max(200).optional().nullable(),
       })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
     await assertPlan(context.supabase, context.userId, "ai_messenger");
-    const storeId = await getOwnedStoreId(context.supabase, context.userId);
-    const verify_token = `vt_${Math.random().toString(36).slice(2, 12)}`;
+    const { storeId, row } = await loadIntegrationForOwner(context);
+    const { encryptJSON } = await import("@/lib/crypto/credentials.server");
+
+    // Verify page + fetch metadata
+    let pageName: string | null = null;
+    let picture: string | null = null;
+    try {
+      const r = await fetch(
+        `https://graph.facebook.com/v19.0/${encodeURIComponent(data.page_id)}?fields=name,picture.type(large)&access_token=${encodeURIComponent(data.page_access_token)}`,
+      );
+      const j = await r.json();
+      if (!r.ok) throw new Error(j?.error?.message || "Unable to reach Facebook Page");
+      pageName = j.name ?? null;
+      picture = j.picture?.data?.url ?? null;
+    } catch (e) {
+      throw new Error((e as Error).message);
+    }
+
+    // Optionally inspect token
+    let permissions: string[] = row?.permissions ?? [];
+    let expiresAt: string | null = null;
+    if (data.app_id && data.app_secret) {
+      try {
+        const appAccess = `${data.app_id}|${data.app_secret}`;
+        const dr = await fetch(
+          `https://graph.facebook.com/v19.0/debug_token?input_token=${encodeURIComponent(data.page_access_token)}&access_token=${encodeURIComponent(appAccess)}`,
+        );
+        const dj = await dr.json();
+        const info = dj?.data;
+        if (info) {
+          permissions = Array.isArray(info.scopes) ? info.scopes : permissions;
+          const exp = info.expires_at || info.data_access_expires_at;
+          if (exp && Number(exp) > 0) expiresAt = new Date(Number(exp) * 1000).toISOString();
+        }
+      } catch {
+        // non-fatal
+      }
+    }
+
+    const verify_token = row?.verify_token || `vt_${Math.random().toString(36).slice(2, 14)}`;
+    const upsertRow: any = {
+      store_id: storeId,
+      page_id: data.page_id,
+      page_access_token: null,
+      page_access_token_encrypted: encryptJSON(data.page_access_token),
+      app_id: data.app_id || null,
+      app_secret_encrypted: data.app_secret ? encryptJSON(data.app_secret) : row?.app_secret_encrypted ?? null,
+      verify_token,
+      page_name: pageName,
+      page_picture_url: picture,
+      permissions,
+      token_expires_at: expiresAt,
+      status: "connected",
+      connected_at: new Date().toISOString(),
+      last_verified_at: new Date().toISOString(),
+      last_error: null,
+    };
     const { error } = await context.supabase
       .from("messenger_integrations")
-      .upsert(
-        {
-          store_id: storeId,
-          page_id: data.page_id,
-          page_access_token: data.page_access_token,
-          verify_token,
-          status: "connected",
-          connected_at: new Date().toISOString(),
-        },
-        { onConflict: "store_id" },
-      );
+      .upsert(upsertRow, { onConflict: "store_id" });
     if (error) throw new Error(error.message);
     return { ok: true, verify_token };
   });
@@ -227,3 +337,127 @@ export const disconnectMessenger = createServerFn({ method: "POST" })
     await context.supabase.from("messenger_integrations").delete().eq("store_id", storeId);
     return { ok: true };
   });
+
+export const verifyMessengerWebhook = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { storeId, row } = await loadIntegrationForOwner(context);
+    if (!row?.verify_token) throw new Error("Not configured");
+    const url = `${publicOrigin()}/api/public/messenger/webhook?hub.mode=subscribe&hub.verify_token=${encodeURIComponent(row.verify_token)}&hub.challenge=ping`;
+    try {
+      const r = await fetch(url);
+      const t = await r.text();
+      const ok = r.ok && t === "ping";
+      await context.supabase
+        .from("messenger_integrations")
+        .update({
+          last_verified_at: ok ? new Date().toISOString() : row.last_verified_at,
+          last_error: ok ? null : `Webhook verify failed (${r.status})`,
+        })
+        .eq("store_id", storeId);
+      return { ok, status: r.status };
+    } catch (e) {
+      await context.supabase
+        .from("messenger_integrations")
+        .update({ last_error: (e as Error).message })
+        .eq("store_id", storeId);
+      throw new Error((e as Error).message);
+    }
+  });
+
+export const sendMessengerTestMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ recipient_id: z.string().trim().min(3).max(64) }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { storeId, row } = await loadIntegrationForOwner(context);
+    if (!row) throw new Error("Not connected");
+    const token = (await decryptToken(row.page_access_token_encrypted)) || row.page_access_token;
+    if (!token) throw new Error("No token on file");
+    const r = await fetch(
+      `https://graph.facebook.com/v19.0/me/messages?access_token=${encodeURIComponent(token)}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          recipient: { id: data.recipient_id },
+          message: { text: "✅ Test message from ORZEN" },
+        }),
+      },
+    );
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      await context.supabase
+        .from("messenger_integrations")
+        .update({ last_error: j?.error?.message || `Send failed (${r.status})` })
+        .eq("store_id", storeId);
+      throw new Error(j?.error?.message || `Send failed (${r.status})`);
+    }
+    return { ok: true };
+  });
+
+export const regenerateMessengerVerifyToken = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const storeId = await getOwnedStoreId(context.supabase, context.userId);
+    const verify_token = `vt_${Math.random().toString(36).slice(2, 14)}`;
+    const { error } = await context.supabase
+      .from("messenger_integrations")
+      .update({ verify_token, last_verified_at: null })
+      .eq("store_id", storeId);
+    if (error) throw new Error(error.message);
+    return { ok: true, verify_token };
+  });
+
+export const refreshMessengerPermissions = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { storeId, row } = await loadIntegrationForOwner(context);
+    if (!row) throw new Error("Not connected");
+    const token = (await decryptToken(row.page_access_token_encrypted)) || row.page_access_token;
+    const secret = await decryptToken(row.app_secret_encrypted);
+    if (!token || !row.app_id || !secret)
+      throw new Error("Provide App ID and App Secret to check permissions");
+    const appAccess = `${row.app_id}|${secret}`;
+    const dr = await fetch(
+      `https://graph.facebook.com/v19.0/debug_token?input_token=${encodeURIComponent(token)}&access_token=${encodeURIComponent(appAccess)}`,
+    );
+    const dj = await dr.json();
+    if (!dr.ok) throw new Error(dj?.error?.message || "debug_token failed");
+    const info = dj?.data || {};
+    const permissions = Array.isArray(info.scopes) ? info.scopes : [];
+    const exp = info.expires_at || info.data_access_expires_at;
+    const expiresAt = exp && Number(exp) > 0 ? new Date(Number(exp) * 1000).toISOString() : null;
+    await context.supabase
+      .from("messenger_integrations")
+      .update({ permissions, token_expires_at: expiresAt })
+      .eq("store_id", storeId);
+    return { ok: true, permissions, token_expires_at: expiresAt };
+  });
+
+export const updateMessengerAiFlags = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        ai_auto_reply: z.boolean().optional(),
+        human_takeover: z.boolean().optional(),
+        conversation_history: z.boolean().optional(),
+        order_detection: z.boolean().optional(),
+        product_recommendation: z.boolean().optional(),
+        faq_reply: z.boolean().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const storeId = await getOwnedStoreId(context.supabase, context.userId);
+    const patch: any = {};
+    for (const k of Object.keys(data)) if ((data as any)[k] !== undefined) patch[k] = (data as any)[k];
+    if (Object.keys(patch).length === 0) return { ok: true };
+    const { error } = await context.supabase
+      .from("messenger_integrations")
+      .update(patch)
+      .eq("store_id", storeId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+

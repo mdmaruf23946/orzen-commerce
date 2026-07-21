@@ -900,35 +900,83 @@ export type Database = {
       }
       messenger_integrations: {
         Row: {
+          ai_auto_reply: boolean
+          app_id: string | null
+          app_secret_encrypted: string | null
           connected_at: string | null
+          conversation_history: boolean
           created_at: string
+          delivery_failures: number
+          faq_reply: boolean
+          human_takeover: boolean
           id: string
+          last_error: string | null
+          last_verified_at: string | null
+          order_detection: boolean
           page_access_token: string | null
+          page_access_token_encrypted: string | null
           page_id: string | null
+          page_name: string | null
+          page_picture_url: string | null
+          permissions: Json
+          product_recommendation: boolean
           status: string
           store_id: string
+          token_expires_at: string | null
           updated_at: string
           verify_token: string | null
         }
         Insert: {
+          ai_auto_reply?: boolean
+          app_id?: string | null
+          app_secret_encrypted?: string | null
           connected_at?: string | null
+          conversation_history?: boolean
           created_at?: string
+          delivery_failures?: number
+          faq_reply?: boolean
+          human_takeover?: boolean
           id?: string
+          last_error?: string | null
+          last_verified_at?: string | null
+          order_detection?: boolean
           page_access_token?: string | null
+          page_access_token_encrypted?: string | null
           page_id?: string | null
+          page_name?: string | null
+          page_picture_url?: string | null
+          permissions?: Json
+          product_recommendation?: boolean
           status?: string
           store_id: string
+          token_expires_at?: string | null
           updated_at?: string
           verify_token?: string | null
         }
         Update: {
+          ai_auto_reply?: boolean
+          app_id?: string | null
+          app_secret_encrypted?: string | null
           connected_at?: string | null
+          conversation_history?: boolean
           created_at?: string
+          delivery_failures?: number
+          faq_reply?: boolean
+          human_takeover?: boolean
           id?: string
+          last_error?: string | null
+          last_verified_at?: string | null
+          order_detection?: boolean
           page_access_token?: string | null
+          page_access_token_encrypted?: string | null
           page_id?: string | null
+          page_name?: string | null
+          page_picture_url?: string | null
+          permissions?: Json
+          product_recommendation?: boolean
           status?: string
           store_id?: string
+          token_expires_at?: string | null
           updated_at?: string
           verify_token?: string | null
         }
@@ -3005,6 +3053,7 @@ export type Database = {
       }
       get_billing_discounts: { Args: never; Returns: Json }
       get_fraud_public_status: { Args: never; Returns: Json }
+      get_messenger_daily_stats: { Args: { _store_id: string }; Returns: Json }
       get_my_active_ads: { Args: never; Returns: Json }
       get_public_order: { Args: { _order_id: string }; Returns: Json }
       get_public_store_by_slug: { Args: { _slug: string }; Returns: Json }
