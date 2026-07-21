@@ -202,15 +202,23 @@ function AdminMessenger() {
   }
 
   async function onSendTest() {
-    if (!testPsid.trim()) {
-      toast.error("Enter a Messenger PSID to test");
+    const psid = testPsid.trim();
+    const msg = testMessage.trim();
+    if (!psid || !/^\d+$/.test(psid)) {
+      toast.error("Please enter a valid recipient PSID.");
+      return;
+    }
+    if (!msg) {
+      toast.error("Please type a message to send.");
       return;
     }
     setBusy(true);
     try {
-      await sendTest({ data: { recipient_id: testPsid.trim() } });
+      await sendTest({ data: { recipient_id: psid, message: msg } });
       toast.success("Test message sent");
-      pushLog(`Sent test to ${testPsid.trim()}`, true);
+      pushLog(`Sent test to ${psid}: ${msg}`, true);
+      setTestMessage("");
+      refetchPsids();
     } catch (err) {
       toast.error((err as Error).message);
       pushLog(`Test send failed: ${(err as Error).message}`, false);
