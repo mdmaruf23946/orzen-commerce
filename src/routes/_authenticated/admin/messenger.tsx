@@ -373,8 +373,73 @@ function AdminMessenger() {
               </IconBtn>
             </div>
           </Field>
+
+          <div className="pt-2 text-xs font-semibold text-muted-foreground">App Information</div>
+          <Field label="Privacy Policy URL" required>
+            <div className="flex gap-2">
+              <Input
+                type="url"
+                value={privacyUrl}
+                onChange={(e) => setPrivacyUrl(e.target.value)}
+                placeholder="https://yourdomain.com/privacy-policy"
+                aria-invalid={!!privacyUrl && !privacyValid}
+              />
+              <IconBtn
+                onClick={() => {
+                  if (privacyValid) window.open(privacyUrl.trim(), "_blank", "noopener");
+                  else toast.error("Enter a valid HTTPS URL first");
+                }}
+                title="Open in new tab"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </IconBtn>
+            </div>
+            {privacyUrl && !privacyValid && (
+              <p className="mt-1 text-xs text-destructive">
+                Must be a valid HTTPS URL (e.g. https://yourdomain.com/privacy-policy)
+              </p>
+            )}
+            {privacySaved && privacyValid && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-emerald-600">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Saved
+              </p>
+            )}
+          </Field>
+          <Field label="Terms of Service URL (optional)">
+            <div className="flex gap-2">
+              <Input
+                type="url"
+                value={termsUrl}
+                onChange={(e) => setTermsUrl(e.target.value)}
+                placeholder="https://yourdomain.com/terms"
+                aria-invalid={!!termsUrl && !termsValid}
+              />
+              <IconBtn
+                onClick={() => {
+                  if (termsUrl && termsValid) window.open(termsUrl.trim(), "_blank", "noopener");
+                  else toast.error("Enter a valid HTTPS URL first");
+                }}
+                title="Open in new tab"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </IconBtn>
+            </div>
+            {termsUrl && !termsValid && (
+              <p className="mt-1 text-xs text-destructive">Must be a valid HTTPS URL</p>
+            )}
+            {termsSaved && termsValid && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-emerald-600">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Saved
+              </p>
+            )}
+          </Field>
+
           <div className="flex flex-wrap gap-2">
-            <Button type="submit" disabled={busy} className="flex-1 sm:flex-none">
+            <Button
+              type="submit"
+              disabled={busy || !privacyValid || !termsValid}
+              className="flex-1 sm:flex-none"
+            >
               {busy ? "Saving…" : connected ? "Save changes" : "Connect"}
             </Button>
             {connected && (
