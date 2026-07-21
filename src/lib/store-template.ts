@@ -56,7 +56,14 @@ export async function seedStoreFromTemplate(supabase: SB, storeId: string, tpl: 
   if (catList.length) {
     const rows = catList
       .filter((c) => typeof c?.name === "string" && c.name.trim())
-      .map((c) => ({ store_id: storeId, name: String(c.name).trim() }));
+      .map((c, i) => ({
+        store_id: storeId,
+        name: String(c.name).trim(),
+        image_url: c.image_url ?? null,
+        description: c.description ?? null,
+        sort_order: Number.isFinite(Number(c.sort_order)) ? Number(c.sort_order) : i,
+        is_active: c.is_active === false ? false : true,
+      }));
     if (rows.length) {
       const { data: created, error } = await supabase.from("categories").insert(rows).select("id,name");
       if (error) throw new Error(error.message);
@@ -68,25 +75,59 @@ export async function seedStoreFromTemplate(supabase: SB, storeId: string, tpl: 
   if (prodList.length) {
     const rows = prodList
       .filter((p) => typeof p?.name === "string" && p.name.trim())
-      .map((p) => ({
-        store_id: storeId,
-        name: String(p.name).trim(),
-        slug: slugify(String(p.name)) + "-" + Math.random().toString(36).slice(2, 6),
-        description: p.description ?? null,
-        price: Number(p.price ?? 0),
-        old_price: p.old_price != null ? Number(p.old_price) : null,
-        stock: Number.isFinite(Number(p.stock)) ? Number(p.stock) : 0,
-        sku: p.sku ?? null,
-        status: (p.is_active === false ? "draft" : "active") as "active" | "draft",
-        primary_image_url: p.image_url ?? p.primary_image_url ?? null,
-        gallery: Array.isArray(p.images) ? p.images : Array.isArray(p.gallery) ? p.gallery : [],
-        category_id: p.category_name ? catNameToId.get(String(p.category_name).trim()) ?? null : null,
-      }));
+      .map((p) => {
+        const gallery = Array.isArray(p.images) ? p.images : Array.isArray(p.gallery) ? p.gallery : [];
+        const price = Number(p.price ?? 0);
+        const salePrice = p.sale_price != null ? Number(p.sale_price) : null;
+        // Anything without a dedicated column gets stashed on `meta`.
+        const meta: Record<string, unknown> = {};
+        if (p.short_description) meta.short_description = p.short_description;
+        if (p.brand) meta.brand = p.brand;
+        if (p.subcategory_name) meta.subcategory_name = p.subcategory_name;
+        if (Array.isArray(p.tags)) meta.tags = p.tags;
+        if (p.discount_type) meta.discount_type = p.discount_type;
+        if (p.discount_value != null) meta.discount_value = Number(p.discount_value);
+        if (p.unlimited_stock) meta.unlimited_stock = true;
+        if (Array.isArray(p.variants)) meta.variants = p.variants;
+        if (p.weight != null) meta.weight = Number(p.weight);
+        if (p.length != null) meta.length = Number(p.length);
+        if (p.width != null) meta.width = Number(p.width);
+        if (p.height != null) meta.height = Number(p.height);
+        if (p.free_shipping) meta.free_shipping = true;
+        if (p.youtube_url) meta.youtube_url = p.youtube_url;
+        if (p.video_url) meta.video_url = p.video_url;
+        if (p.meta_title) meta.meta_title = p.meta_title;
+        if (p.meta_description) meta.meta_description = p.meta_description;
+        if (p.seo_image) meta.seo_image = p.seo_image;
+        if (p.new_arrival) meta.new_arrival = true;
+        if (p.best_seller) meta.best_seller = true;
+        if (p.visibility) meta.visibility = p.visibility;
+
+        return {
+          store_id: storeId,
+          name: String(p.name).trim(),
+          slug: (p.slug ? slugify(String(p.slug)) : slugify(String(p.name))) + "-" + Math.random().toString(36).slice(2, 6),
+          description: p.description ?? null,
+          price,
+          old_price: p.old_price != null ? Number(p.old_price) : salePrice != null && salePrice < price ? price : null,
+          cost_price: p.cost_price != null ? Number(p.cost_price) : null,
+          stock: Number.isFinite(Number(p.stock)) ? Number(p.stock) : 0,
+          low_stock_threshold: p.low_stock_alert != null ? Number(p.low_stock_alert) : null,
+          sku: p.sku ?? null,
+          status: (p.status === "draft" || p.is_active === false ? "draft" : "active") as "active" | "draft",
+          primary_image_url: p.image_url ?? p.primary_image_url ?? null,
+          gallery,
+          is_featured: p.featured === true,
+          category_id: p.category_name ? catNameToId.get(String(p.category_name).trim()) ?? null : null,
+          meta,
+        };
+      });
     if (rows.length) {
       const { error } = await supabase.from("products").insert(rows);
       if (error) throw new Error(error.message);
     }
   }
+
 
   const bannerList: any[] = Array.isArray(tpl.banners) ? tpl.banners : [];
   if (bannerList.length) {

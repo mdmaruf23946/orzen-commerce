@@ -1,47 +1,64 @@
-// Upload multiple gallery images to store-assets/{storeId}/...
+// Upload multiple gallery images to store-assets/{folder}/...
 import { useRef, useState } from "react";
 import { Plus, X, ArrowLeft, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
+import { compressImage } from "@/lib/compress-image";
 
 const MAX_BYTES = 5 * 1024 * 1024;
-const MAX_IMAGES = 5;
+const MAX_IMAGES = 8;
 
 export function GalleryUploader({
   storeId,
+  folder,
   value,
   onChange,
+  max = MAX_IMAGES,
 }: {
-  storeId: string;
+  storeId?: string;
+  folder?: string;
   value: string[];
   onChange: (paths: string[]) => void;
+  max?: number;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const dir = folder || storeId;
 
   async function uploadFiles(files: FileList) {
-    const remaining = MAX_IMAGES - value.length;
+    if (!dir) {
+      toast.error("Upload folder not ready");
+      return;
+    }
+    const remaining = max - value.length;
     if (remaining <= 0) {
-      toast.error(`Maximum ${MAX_IMAGES} images`);
+      toast.error(`Maximum ${max} images`);
       return;
     }
     const toUpload = Array.from(files).slice(0, remaining);
     setUploading(true);
+    setProgress({ done: 0, total: toUpload.length });
     const uploaded: string[] = [];
     try {
-      for (const file of toUpload) {
-        if (!file.type.startsWith("image/")) {
-          toast.error(`${file.name}: not an image`);
+      let done = 0;
+      for (const raw of toUpload) {
+        if (!raw.type.startsWith("image/")) {
+          toast.error(`${raw.name}: not an image`);
+          done++;
+          setProgress({ done, total: toUpload.length });
           continue;
         }
+        const file = await compressImage(raw);
         if (file.size > MAX_BYTES) {
-          toast.error(`${file.name}: too large (max 5 MB)`);
+          toast.error(`${raw.name}: too large (max 5 MB)`);
+          done++;
+          setProgress({ done, total: toUpload.length });
           continue;
         }
         const rawExt = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
         const ext = rawExt.slice(0, 5) || "jpg";
-        const path = `${storeId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const path = `${dir}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
         const { error } = await supabase.storage.from("store-assets").upload(path, file, {
           upsert: false,
           contentType: file.type,
@@ -49,9 +66,11 @@ export function GalleryUploader({
         if (error) {
           console.error("Upload error:", error);
           toast.error(error.message || "Upload failed");
-          continue;
+        } else {
+          uploaded.push(path);
         }
-        uploaded.push(path);
+        done++;
+        setProgress({ done, total: toUpload.length });
       }
       if (uploaded.length) {
         onChange([...value, ...uploaded]);
@@ -59,6 +78,7 @@ export function GalleryUploader({
       }
     } finally {
       setUploading(false);
+      setProgress(null);
       if (inputRef.current) inputRef.current.value = "";
     }
   }
@@ -81,7 +101,7 @@ export function GalleryUploader({
         {value.map((path, idx) => {
           const src = path.startsWith("http") ? path : `/api/img/${path}`;
           return (
-            <div key={path} className="relative h-20 w-20 overflow-hidden rounded-md border bg-muted">
+            <div key={path + idx} className="relative h-20 w-20 overflow-hidden rounded-md border bg-muted">
               <img src={src} alt="" className="h-full w-full object-cover" />
               <button
                 type="button"
@@ -107,7 +127,7 @@ export function GalleryUploader({
             </div>
           );
         })}
-        {value.length < MAX_IMAGES && (
+        {value.length < max && (
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
@@ -130,7 +150,11 @@ export function GalleryUploader({
         }}
       />
       <p className="text-xs text-muted-foreground">
-        {uploading ? "Uploading…" : `Up to ${MAX_IMAGES} images, max 5 MB each.`}
+        {progress
+          ? `Uploading ${progress.done}/${progress.total}…`
+          : uploading
+            ? "Uploading…"
+            : `Up to ${max} images, max 5 MB each.`}
       </p>
     </div>
   );
