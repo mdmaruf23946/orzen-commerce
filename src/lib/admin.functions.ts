@@ -212,6 +212,12 @@ export const updateMyStore = createServerFn({ method: "POST" })
       .select("*")
       .single();
     if (error) throw new Error(error.message);
+    // Refresh generated legal pages so store name / phone / address stay in sync,
+    // without changing their public URLs.
+    try {
+      const { autoRegenerateLegalIfNeeded } = await import("@/lib/legal.functions");
+      await autoRegenerateLegalIfNeeded(supabase, updated.id);
+    } catch {}
     return updated;
   });
 
