@@ -12,11 +12,28 @@ function admin() {
 }
 
 async function fbSend(pageToken: string, recipientId: string, text: string) {
-  await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${encodeURIComponent(pageToken)}`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ recipient: { id: recipientId }, message: { text } }),
-  });
+  const r = await fetch(
+    `https://graph.facebook.com/v19.0/me/messages?access_token=${encodeURIComponent(pageToken)}`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ recipient: { id: recipientId }, message: { text } }),
+    },
+  );
+  if (!r.ok) {
+    const j = await r.json().catch(() => ({}));
+    throw new Error(j?.error?.message || `Send failed (${r.status})`);
+  }
+}
+
+async function decryptToken(enc: string | null | undefined): Promise<string | null> {
+  if (!enc) return null;
+  const mod = await import("@/lib/crypto/credentials.server");
+  try {
+    return mod.decryptJSON<string>(enc);
+  } catch {
+    return null;
+  }
 }
 
 export const Route = createFileRoute("/api/public/messenger/webhook")({
@@ -29,7 +46,11 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
         const challenge = url.searchParams.get("hub.challenge");
         if (mode === "subscribe" && token) {
           const sb = admin();
-          const { data } = await sb.from("messenger_integrations").select("id").eq("verify_token", token).maybeSingle();
+          const { data } = await sb
+            .from("messenger_integrations")
+            .select("id")
+            .eq("verify_token", token)
+            .maybeSingle();
           if (data) return new Response(challenge ?? "", { status: 200 });
         }
         return new Response("forbidden", { status: 403 });
@@ -42,16 +63,20 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
           const pageId = String(entry.id);
           const { data: integ } = await sb
             .from("messenger_integrations")
-            .select("store_id,page_access_token")
+            .select(
+              "id,store_id,page_access_token,page_access_token_encrypted,ai_auto_reply,human_takeover,conversation_history",
+            )
             .eq("page_id", pageId)
             .maybeSingle();
           if (!integ) continue;
+          const token =
+            (await decryptToken((integ as any).page_access_token_encrypted)) ||
+            (integ as any).page_access_token;
           for (const ev of entry.messaging ?? []) {
             const senderId = ev.sender?.id;
             const text = ev.message?.text;
             if (!senderId || !text) continue;
             try {
-              const { store, agent } = await loadAiContext(integ.store_id);
               // persist conversation
               let { data: conv } = await sb
                 .from("ai_conversations")
@@ -68,28 +93,55 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                   .single();
                 conv = created;
               }
-              const { data: history } = await sb
-                .from("ai_messages")
-                .select("role,content")
-                .eq("conversation_id", conv!.id)
-                .order("created_at", { ascending: true })
-                .limit(20);
+              // always log the incoming
+              await sb.from("ai_messages").insert({ conversation_id: conv!.id, role: "user", content: text });
+
+              // Skip AI reply when handed to human or auto-reply disabled
+              if ((integ as any).human_takeover || (integ as any).ai_auto_reply === false) continue;
+              if (!token) continue;
+
+              const { store, agent } = await loadAiContext(integ.store_id);
+              const useHistory = (integ as any).conversation_history !== false;
+              const history = useHistory
+                ? (
+                    await sb
+                      .from("ai_messages")
+                      .select("role,content")
+                      .eq("conversation_id", conv!.id)
+                      .order("created_at", { ascending: true })
+                      .limit(20)
+                  ).data ?? []
+                : [];
               const messages = [
-                ...(history ?? []).map((m) => ({ role: m.role as any, content: m.content })),
-                { role: "user" as const, content: text },
+                ...history.map((m) => ({ role: m.role as any, content: m.content })),
               ];
               const reply = await generateAgentReply({
                 storeId: integ.store_id,
                 messages,
                 system: buildSystemPrompt(store, agent),
               });
-              await sb.from("ai_messages").insert([
-                { conversation_id: conv!.id, role: "user", content: text },
-                { conversation_id: conv!.id, role: "assistant", content: reply },
-              ]);
-              await fbSend(integ.page_access_token!, senderId, reply);
+              await sb.from("ai_messages").insert({
+                conversation_id: conv!.id,
+                role: "assistant",
+                content: reply,
+              });
+              try {
+                await fbSend(token, senderId, reply);
+              } catch (sendErr) {
+                await sb
+                  .from("messenger_integrations")
+                  .update({
+                    last_error: (sendErr as Error).message,
+                    delivery_failures: ((integ as any).delivery_failures ?? 0) + 1,
+                  } as any)
+                  .eq("id", (integ as any).id);
+              }
             } catch (e) {
               console.error("messenger handler", e);
+              await sb
+                .from("messenger_integrations")
+                .update({ last_error: (e as Error).message } as any)
+                .eq("id", (integ as any).id);
             }
           }
         }
