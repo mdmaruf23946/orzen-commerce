@@ -292,6 +292,8 @@ export const getMessengerIntegration = createServerFn({ method: "GET" })
       order_detection: row.order_detection,
       product_recommendation: row.product_recommendation,
       faq_reply: row.faq_reply,
+      privacy_policy_url: row.privacy_policy_url ?? null,
+      terms_of_service_url: row.terms_of_service_url ?? null,
       required_scopes: REQUIRED_MESSENGER_SCOPES,
       stats,
     };
@@ -306,6 +308,21 @@ export const connectMessenger = createServerFn({ method: "POST" })
         page_access_token: z.string().trim().min(10).max(1000),
         app_id: z.string().trim().max(64).optional().nullable(),
         app_secret: z.string().trim().max(200).optional().nullable(),
+        privacy_policy_url: z
+          .string()
+          .trim()
+          .url()
+          .max(500)
+          .refine((u) => u.startsWith("https://"), { message: "Privacy Policy URL must use HTTPS" }),
+        terms_of_service_url: z
+          .string()
+          .trim()
+          .max(500)
+          .optional()
+          .nullable()
+          .refine((u) => !u || (/^https:\/\//.test(u) && z.string().url().safeParse(u).success), {
+            message: "Terms of Service URL must be a valid HTTPS URL",
+          }),
       })
       .parse(d),
   )
@@ -367,6 +384,8 @@ export const connectMessenger = createServerFn({ method: "POST" })
       connected_at: new Date().toISOString(),
       last_verified_at: new Date().toISOString(),
       last_error: null,
+      privacy_policy_url: data.privacy_policy_url,
+      terms_of_service_url: data.terms_of_service_url || null,
     };
     const { error } = await context.supabase
       .from("messenger_integrations")

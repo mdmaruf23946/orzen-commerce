@@ -919,9 +919,11 @@ export type Database = {
           page_name: string | null
           page_picture_url: string | null
           permissions: Json
+          privacy_policy_url: string | null
           product_recommendation: boolean
           status: string
           store_id: string
+          terms_of_service_url: string | null
           token_expires_at: string | null
           updated_at: string
           verify_token: string | null
@@ -946,9 +948,11 @@ export type Database = {
           page_name?: string | null
           page_picture_url?: string | null
           permissions?: Json
+          privacy_policy_url?: string | null
           product_recommendation?: boolean
           status?: string
           store_id: string
+          terms_of_service_url?: string | null
           token_expires_at?: string | null
           updated_at?: string
           verify_token?: string | null
@@ -973,9 +977,11 @@ export type Database = {
           page_name?: string | null
           page_picture_url?: string | null
           permissions?: Json
+          privacy_policy_url?: string | null
           product_recommendation?: boolean
           status?: string
           store_id?: string
+          terms_of_service_url?: string | null
           token_expires_at?: string | null
           updated_at?: string
           verify_token?: string | null

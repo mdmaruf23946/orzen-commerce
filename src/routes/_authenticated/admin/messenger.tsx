@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Eye, EyeOff, RefreshCcw, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { Copy, Eye, EyeOff, RefreshCcw, CheckCircle2, XCircle, AlertTriangle, ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/messenger")({
   component: () => (
@@ -51,6 +51,8 @@ function AdminMessenger() {
   const [token, setToken] = useState("");
   const [appId, setAppId] = useState("");
   const [appSecret, setAppSecret] = useState("");
+  const [privacyUrl, setPrivacyUrl] = useState("");
+  const [termsUrl, setTermsUrl] = useState("");
   const [showToken, setShowToken] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
   const [showVerify, setShowVerify] = useState(false);
@@ -63,8 +65,24 @@ function AdminMessenger() {
     if (!data) return;
     setPageId(d.page_id ?? "");
     setAppId(d.app_id ?? "");
+    setPrivacyUrl(d.privacy_policy_url ?? "");
+    setTermsUrl(d.terms_of_service_url ?? "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
+
+  function isHttpsUrl(v: string) {
+    if (!v) return false;
+    try {
+      const u = new URL(v);
+      return u.protocol === "https:";
+    } catch {
+      return false;
+    }
+  }
+  const privacyValid = isHttpsUrl(privacyUrl.trim());
+  const termsValid = !termsUrl.trim() || isHttpsUrl(termsUrl.trim());
+  const privacySaved = !!d.privacy_policy_url && isHttpsUrl(d.privacy_policy_url);
+  const termsSaved = !!d.terms_of_service_url && isHttpsUrl(d.terms_of_service_url);
 
   function pushLog(text: string, ok = true) {
     setLog((l) => [{ at: new Date().toISOString(), text, ok }, ...l].slice(0, 10));
@@ -86,6 +104,14 @@ function AdminMessenger() {
       toast.error("Page ID and Page Access Token are required");
       return;
     }
+    if (!privacyValid) {
+      toast.error("A valid HTTPS Privacy Policy URL is required");
+      return;
+    }
+    if (!termsValid) {
+      toast.error("Terms of Service URL must be a valid HTTPS URL");
+      return;
+    }
     setBusy(true);
     try {
       await connect({
@@ -94,6 +120,8 @@ function AdminMessenger() {
           page_access_token: token.trim(),
           app_id: appId.trim() || null,
           app_secret: appSecret.trim() || null,
+          privacy_policy_url: privacyUrl.trim(),
+          terms_of_service_url: termsUrl.trim() || null,
         },
       });
       setToken("");
@@ -345,8 +373,73 @@ function AdminMessenger() {
               </IconBtn>
             </div>
           </Field>
+
+          <div className="pt-2 text-xs font-semibold text-muted-foreground">App Information</div>
+          <Field label="Privacy Policy URL" required>
+            <div className="flex gap-2">
+              <Input
+                type="url"
+                value={privacyUrl}
+                onChange={(e) => setPrivacyUrl(e.target.value)}
+                placeholder="https://yourdomain.com/privacy-policy"
+                aria-invalid={!!privacyUrl && !privacyValid}
+              />
+              <IconBtn
+                onClick={() => {
+                  if (privacyValid) window.open(privacyUrl.trim(), "_blank", "noopener");
+                  else toast.error("Enter a valid HTTPS URL first");
+                }}
+                title="Open in new tab"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </IconBtn>
+            </div>
+            {privacyUrl && !privacyValid && (
+              <p className="mt-1 text-xs text-destructive">
+                Must be a valid HTTPS URL (e.g. https://yourdomain.com/privacy-policy)
+              </p>
+            )}
+            {privacySaved && privacyValid && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-emerald-600">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Saved
+              </p>
+            )}
+          </Field>
+          <Field label="Terms of Service URL (optional)">
+            <div className="flex gap-2">
+              <Input
+                type="url"
+                value={termsUrl}
+                onChange={(e) => setTermsUrl(e.target.value)}
+                placeholder="https://yourdomain.com/terms"
+                aria-invalid={!!termsUrl && !termsValid}
+              />
+              <IconBtn
+                onClick={() => {
+                  if (termsUrl && termsValid) window.open(termsUrl.trim(), "_blank", "noopener");
+                  else toast.error("Enter a valid HTTPS URL first");
+                }}
+                title="Open in new tab"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </IconBtn>
+            </div>
+            {termsUrl && !termsValid && (
+              <p className="mt-1 text-xs text-destructive">Must be a valid HTTPS URL</p>
+            )}
+            {termsSaved && termsValid && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-emerald-600">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Saved
+              </p>
+            )}
+          </Field>
+
           <div className="flex flex-wrap gap-2">
-            <Button type="submit" disabled={busy} className="flex-1 sm:flex-none">
+            <Button
+              type="submit"
+              disabled={busy || !privacyValid || !termsValid}
+              className="flex-1 sm:flex-none"
+            >
               {busy ? "Saving…" : connected ? "Save changes" : "Connect"}
             </Button>
             {connected && (
