@@ -1,0 +1,1 @@
+UPDATE public.messenger_integrations SET last_error = NULL WHERE page_id = '835555932979368';

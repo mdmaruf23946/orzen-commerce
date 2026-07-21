@@ -307,14 +307,25 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                 system: buildSystemPrompt(store, agent),
               });
 
+              const replyText = (reply ?? "").trim();
+              if (!replyText) {
+                // AI answered by sending a product card/carousel via tool call;
+                // nothing more to say. Clear stale errors, don't POST empty text.
+                await sb
+                  .from("messenger_integrations")
+                  .update({ last_error: null } as any)
+                  .eq("id", (integ as any).id);
+                continue;
+              }
+
               try {
-                const sent = await fbSend(token, senderId, reply);
+                const sent = await fbSend(token, senderId, replyText);
                 await sb.from("ai_messages").insert({
                   conversation_id: conv!.id,
                   role: "assistant",
                   direction: "out",
                   message_type: "text",
-                  content: reply,
+                  content: replyText,
                   mid: sent.message_id ?? null,
                   delivery_status: "sent",
                 });
@@ -322,16 +333,21 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                   .from("ai_conversations")
                   .update({
                     last_message_at: new Date().toISOString(),
-                    last_message_preview: reply.slice(0, 200),
+                    last_message_preview: replyText.slice(0, 200),
                   })
                   .eq("id", conv!.id);
+                // Clear any previous last_error on successful send.
+                await sb
+                  .from("messenger_integrations")
+                  .update({ last_error: null } as any)
+                  .eq("id", (integ as any).id);
               } catch (sendErr) {
                 await sb.from("ai_messages").insert({
                   conversation_id: conv!.id,
                   role: "assistant",
                   direction: "out",
                   message_type: "text",
-                  content: reply,
+                  content: replyText,
                   delivery_status: "failed",
                   error: (sendErr as Error).message,
                 });
@@ -343,6 +359,7 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                   } as any)
                   .eq("id", (integ as any).id);
               }
+
             } catch (e) {
               console.error("messenger handler", e);
               await sb
