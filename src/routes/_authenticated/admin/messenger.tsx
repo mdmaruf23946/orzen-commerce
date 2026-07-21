@@ -41,6 +41,7 @@ function AdminMessenger() {
   const regen = useServerFn(regenerateMessengerVerifyToken);
   const refreshPerms = useServerFn(refreshMessengerPermissions);
   const updateFlags = useServerFn(updateMessengerAiFlags);
+  const clearErr = useServerFn(clearMessengerLastError);
   const qc = useQueryClient();
   const { data } = useQuery({
     queryKey: ["admin", "messenger"],
