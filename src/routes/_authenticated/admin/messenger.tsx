@@ -51,6 +51,8 @@ function AdminMessenger() {
   const [token, setToken] = useState("");
   const [appId, setAppId] = useState("");
   const [appSecret, setAppSecret] = useState("");
+  const [privacyUrl, setPrivacyUrl] = useState("");
+  const [termsUrl, setTermsUrl] = useState("");
   const [showToken, setShowToken] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
   const [showVerify, setShowVerify] = useState(false);
@@ -63,8 +65,24 @@ function AdminMessenger() {
     if (!data) return;
     setPageId(d.page_id ?? "");
     setAppId(d.app_id ?? "");
+    setPrivacyUrl(d.privacy_policy_url ?? "");
+    setTermsUrl(d.terms_of_service_url ?? "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
+
+  function isHttpsUrl(v: string) {
+    if (!v) return false;
+    try {
+      const u = new URL(v);
+      return u.protocol === "https:";
+    } catch {
+      return false;
+    }
+  }
+  const privacyValid = isHttpsUrl(privacyUrl.trim());
+  const termsValid = !termsUrl.trim() || isHttpsUrl(termsUrl.trim());
+  const privacySaved = !!d.privacy_policy_url && isHttpsUrl(d.privacy_policy_url);
+  const termsSaved = !!d.terms_of_service_url && isHttpsUrl(d.terms_of_service_url);
 
   function pushLog(text: string, ok = true) {
     setLog((l) => [{ at: new Date().toISOString(), text, ok }, ...l].slice(0, 10));
@@ -86,6 +104,14 @@ function AdminMessenger() {
       toast.error("Page ID and Page Access Token are required");
       return;
     }
+    if (!privacyValid) {
+      toast.error("A valid HTTPS Privacy Policy URL is required");
+      return;
+    }
+    if (!termsValid) {
+      toast.error("Terms of Service URL must be a valid HTTPS URL");
+      return;
+    }
     setBusy(true);
     try {
       await connect({
@@ -94,6 +120,8 @@ function AdminMessenger() {
           page_access_token: token.trim(),
           app_id: appId.trim() || null,
           app_secret: appSecret.trim() || null,
+          privacy_policy_url: privacyUrl.trim(),
+          terms_of_service_url: termsUrl.trim() || null,
         },
       });
       setToken("");
