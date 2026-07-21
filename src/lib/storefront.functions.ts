@@ -101,11 +101,20 @@ export const listStoreCategories = createServerFn({ method: "GET" })
     const sb = publicClient();
     const { data: cats, error } = await sb
       .from("categories")
-      .select("id,name")
+      .select("id,name,image_url,description,sort_order,is_active")
       .eq("store_id", data.storeId)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
       .order("name", { ascending: true });
     if (error) throw new Error(error.message);
-    return cats ?? [];
+    return (cats ?? []).map((c) => ({
+      ...c,
+      image_url: c.image_url
+        ? c.image_url.startsWith("http")
+          ? c.image_url
+          : `/api/img/${c.image_url}`
+        : null,
+    }));
   });
 
 export const getProduct = createServerFn({ method: "GET" })
