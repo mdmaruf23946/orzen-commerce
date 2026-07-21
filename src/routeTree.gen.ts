@@ -72,6 +72,7 @@ import { Route as AuthenticatedAdminPaymentsRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminPaymentGatewayRouteImport } from './routes/_authenticated/admin/payment-gateway'
 import { Route as AuthenticatedAdminOrdersRouteImport } from './routes/_authenticated/admin/orders'
 import { Route as AuthenticatedAdminNotificationsRouteImport } from './routes/_authenticated/admin/notifications'
+import { Route as AuthenticatedAdminMessengerInboxRouteImport } from './routes/_authenticated/admin/messenger-inbox'
 import { Route as AuthenticatedAdminMessengerRouteImport } from './routes/_authenticated/admin/messenger'
 import { Route as AuthenticatedAdminMarketingRouteImport } from './routes/_authenticated/admin/marketing'
 import { Route as AuthenticatedAdminLegalRouteImport } from './routes/_authenticated/admin/legal'
@@ -453,6 +454,12 @@ const AuthenticatedAdminNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminMessengerInboxRoute =
+  AuthenticatedAdminMessengerInboxRouteImport.update({
+    id: '/messenger-inbox',
+    path: '/messenger-inbox',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminMessengerRoute =
   AuthenticatedAdminMessengerRouteImport.update({
     id: '/messenger',
@@ -686,6 +693,7 @@ export interface FileRoutesByFullPath {
   '/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/admin/marketing': typeof AuthenticatedAdminMarketingRoute
   '/admin/messenger': typeof AuthenticatedAdminMessengerRoute
+  '/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/payment-gateway': typeof AuthenticatedAdminPaymentGatewayRoute
@@ -779,6 +787,7 @@ export interface FileRoutesByTo {
   '/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/admin/marketing': typeof AuthenticatedAdminMarketingRoute
   '/admin/messenger': typeof AuthenticatedAdminMessengerRoute
+  '/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/payment-gateway': typeof AuthenticatedAdminPaymentGatewayRoute
@@ -879,6 +888,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/_authenticated/admin/marketing': typeof AuthenticatedAdminMarketingRoute
   '/_authenticated/admin/messenger': typeof AuthenticatedAdminMessengerRoute
+  '/_authenticated/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
   '/_authenticated/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/_authenticated/admin/payment-gateway': typeof AuthenticatedAdminPaymentGatewayRoute
@@ -979,6 +989,7 @@ export interface FileRouteTypes {
     | '/admin/legal'
     | '/admin/marketing'
     | '/admin/messenger'
+    | '/admin/messenger-inbox'
     | '/admin/notifications'
     | '/admin/orders'
     | '/admin/payment-gateway'
@@ -1072,6 +1083,7 @@ export interface FileRouteTypes {
     | '/admin/legal'
     | '/admin/marketing'
     | '/admin/messenger'
+    | '/admin/messenger-inbox'
     | '/admin/notifications'
     | '/admin/orders'
     | '/admin/payment-gateway'
@@ -1171,6 +1183,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/legal'
     | '/_authenticated/admin/marketing'
     | '/_authenticated/admin/messenger'
+    | '/_authenticated/admin/messenger-inbox'
     | '/_authenticated/admin/notifications'
     | '/_authenticated/admin/orders'
     | '/_authenticated/admin/payment-gateway'
@@ -1699,6 +1712,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminNotificationsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/messenger-inbox': {
+      id: '/_authenticated/admin/messenger-inbox'
+      path: '/messenger-inbox'
+      fullPath: '/admin/messenger-inbox'
+      preLoaderRoute: typeof AuthenticatedAdminMessengerInboxRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/messenger': {
       id: '/_authenticated/admin/messenger'
       path: '/messenger'
@@ -1979,6 +1999,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminLegalRoute: typeof AuthenticatedAdminLegalRoute
   AuthenticatedAdminMarketingRoute: typeof AuthenticatedAdminMarketingRoute
   AuthenticatedAdminMessengerRoute: typeof AuthenticatedAdminMessengerRoute
+  AuthenticatedAdminMessengerInboxRoute: typeof AuthenticatedAdminMessengerInboxRoute
   AuthenticatedAdminNotificationsRoute: typeof AuthenticatedAdminNotificationsRoute
   AuthenticatedAdminOrdersRoute: typeof AuthenticatedAdminOrdersRoute
   AuthenticatedAdminPaymentGatewayRoute: typeof AuthenticatedAdminPaymentGatewayRoute
@@ -2018,6 +2039,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminLegalRoute: AuthenticatedAdminLegalRoute,
     AuthenticatedAdminMarketingRoute: AuthenticatedAdminMarketingRoute,
     AuthenticatedAdminMessengerRoute: AuthenticatedAdminMessengerRoute,
+    AuthenticatedAdminMessengerInboxRoute:
+      AuthenticatedAdminMessengerInboxRoute,
     AuthenticatedAdminNotificationsRoute: AuthenticatedAdminNotificationsRoute,
     AuthenticatedAdminOrdersRoute: AuthenticatedAdminOrdersRoute,
     AuthenticatedAdminPaymentGatewayRoute:
@@ -2203,13 +2226,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
