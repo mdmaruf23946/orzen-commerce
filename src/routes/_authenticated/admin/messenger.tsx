@@ -128,21 +128,27 @@ function AdminMessenger() {
     setBusy(true);
     try {
       const r: any = await verifyWh();
+      setDiag(r);
       qc.invalidateQueries({ queryKey: ["admin", "messenger"] });
       if (r?.ok) {
         toast.success("Webhook verified");
-        pushLog("Webhook verified", true);
+        pushLog(`Verified — GET ${r.get_status}, echoed challenge`, true);
       } else {
+        const msg = r?.error
+          ? `Unreachable: ${r.error}`
+          : `GET ${r?.get_status ?? "?"} · body="${(r?.get_body ?? "").slice(0, 40)}"`;
         toast.error("Verification failed");
-        pushLog(`Verify failed (${r?.status})`, false);
+        pushLog(`Verify failed — ${msg}`, false);
       }
     } catch (err) {
+      setDiag({ ok: false, error: (err as Error).message });
       toast.error((err as Error).message);
       pushLog(`Verify error: ${(err as Error).message}`, false);
     } finally {
       setBusy(false);
     }
   }
+
 
   async function onRegenerate() {
     if (!confirm("Regenerate verify token? You'll need to re-verify the webhook on Facebook.")) return;
