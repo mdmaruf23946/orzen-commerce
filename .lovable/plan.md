@@ -1,64 +1,33 @@
-# Legal & Business Info Generator
+# Fix Messenger Test Tool
 
-Add a new Store Admin module that collects business information once and auto-generates SEO-ready legal/info pages served under the store's own domain/subdomain.
+## Problem
+- Current test tool has one field only; the same value is used as PSID.
+- Custom message text can't be sent.
+- No way to reuse PSIDs of users who previously messaged the Page.
 
-## 1. Database
+## Changes
 
-New table `public.store_legal_info` (one row per store):
-- store_id (FK, unique)
-- store_name, owner_name, support_email, contact_phone
-- business_address, website_domain, country, currency
-- generated_at, pages_version (int)
-- pages: jsonb `{ privacy, terms, refund, shipping, contact, about, data_deletion }` — each `{ title, description, html, updated_at }`
+### 1. Server function (`src/lib/ai.functions.ts`)
+- Update `sendMessengerTestMessage` inputValidator to accept both fields:
+  - `recipient_id`: trimmed string, 3–64 chars, regex `^\d+$` (Messenger PSIDs are numeric).
+  - `message`: trimmed string, 1–1000 chars.
+- Send to Graph API: `recipient.id = recipient_id`, `message.text = message`.
+- Add new server function `listMessengerRecentPsids` (auth + owner-scoped):
+  - Query `ai_conversations` where `store_id = owner store` and `channel = 'messenger'`, order by `updated_at` (or `created_at`) desc, limit 20.
+  - Return `[{ psid: external_id, last_message_at }]`.
+  - PSIDs are already captured automatically by the existing webhook (`src/routes/api/public/messenger/webhook.ts` inserts an `ai_conversations` row keyed by `external_id = sender.id`), so no webhook change is needed.
 
-RLS: owners manage their own row; public RPC `get_store_legal_page(_slug, _page)` returns a single page for the storefront render.
+### 2. Admin UI (`src/routes/_authenticated/admin/messenger.tsx`)
+- Replace the single input with:
+  - **Recipient PSID** input (required), placeholder `Enter recipient PSID`, numeric-only validation.
+  - **Test Message** textarea, placeholder `Type a message`, required.
+  - **Recent conversations** dropdown/select populated from `listMessengerRecentPsids`; selecting fills the PSID field.
+- On Send:
+  - If PSID empty or non-numeric → toast: `Please enter a valid recipient PSID.`
+  - If message empty → toast: `Please enter a message to send.`
+  - Otherwise call `sendMessengerTestMessage({ data: { recipient_id, message } })`.
+- Refresh the recent-PSID list on page load and after a successful send.
 
-## 2. Server functions (`src/lib/legal.functions.ts`)
-
-- `getMyLegalInfo` — load row for current store owner
-- `saveAndGenerateLegal({ info })` — validates via zod, upserts info, renders all 7 pages via a template renderer, stores in `pages` jsonb, bumps version
-- `regenerateLegalPage({ key })` — regenerates a single page
-- Auto-hook: when store name / domain / support email / phone / address change (in existing store settings), call generator to refresh copy (URLs stay stable because they're route-driven).
-
-Template renderer lives in `src/lib/legal-templates.server.ts` — pure functions that take `info` and return `{ title, description, html }`. Meta-compliant boilerplate for Privacy, ToS, Refund, Shipping, Contact, About, Data Deletion.
-
-## 3. Public routes (per-store)
-
-Add file routes under `src/routes/store/$slug/`:
-- `privacy-policy.tsx`, `terms.tsx`, `refund-policy.tsx`, `shipping-policy.tsx`, `contact.tsx`, `about.tsx`, `data-deletion.tsx`
-
-Each route:
-- Loader calls public RPC to fetch the page for the slug
-- `head()` sets Meta Title, Description, Open Graph, canonical (self-referencing absolute URL built from request origin)
-- Renders sanitized HTML in a shared `<LegalPage>` layout
-- 404 fallback with `notFoundComponent`
-
-On custom domain / subdomain the same routes resolve because storefront routing already normalizes host → slug.
-
-## 4. Admin UI (`src/routes/_authenticated/admin/legal.tsx`)
-
-Sidebar entry "Legal & Info Pages" (near SEO).
-
-Sections:
-- **Business Information form** — all 8 fields with zod validation
-- **Generate button** — runs `saveAndGenerateLegal`; shows success toast
-- **Generated URLs list** — 7 rows, each with:
-  - Path label (`/privacy-policy` etc.)
-  - Green "Generated" badge (if page exists)
-  - Copy URL, Open Page (new tab), Regenerate buttons
-- Mobile-first responsive cards
-
-## 5. Auto update
-
-Hook into existing `updateStoreSettings` / store profile save: if name/domain/email/phone/address changed and legal info exists, call regenerator server-side so pages refresh without touching URLs.
-
-## 6. Future expansion
-
-`pages` is a jsonb map keyed by page slug; adding a new page = add a template + a route file + one entry in the admin URL list. No schema change needed.
-
-## Technical details
-
-- Sanitize generated HTML with a small allowlist (headings, paragraphs, lists, links) — templates produce safe HTML only, no user HTML injected.
-- Canonical + og:url built from `getRequestHeader('host')` inside `head()` via loader-provided origin.
-- Copy button uses `navigator.clipboard`.
-- Regenerate triggers a single-page rerender through `regenerateLegalPage`.
+## Out of scope
+- No webhook changes (already saves sender PSIDs).
+- No schema changes.

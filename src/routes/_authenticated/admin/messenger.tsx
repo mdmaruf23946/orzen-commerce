@@ -13,6 +13,7 @@ import {
   regenerateMessengerVerifyToken,
   refreshMessengerPermissions,
   updateMessengerAiFlags,
+  listMessengerRecentPsids,
 } from "@/lib/ai.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,8 +59,15 @@ function AdminMessenger() {
   const [showVerify, setShowVerify] = useState(false);
   const [busy, setBusy] = useState(false);
   const [testPsid, setTestPsid] = useState("");
+  const [testMessage, setTestMessage] = useState("");
   const [log, setLog] = useState<LogEntry[]>([]);
   const [diag, setDiag] = useState<any | null>(null);
+  const fetchRecentPsids = useServerFn(listMessengerRecentPsids);
+  const { data: recentPsids, refetch: refetchPsids } = useQuery({
+    queryKey: ["admin", "messenger", "recent-psids"],
+    queryFn: () => fetchRecentPsids(),
+    enabled: connected,
+  });
 
   useEffect(() => {
     if (!data) return;
@@ -194,15 +202,23 @@ function AdminMessenger() {
   }
 
   async function onSendTest() {
-    if (!testPsid.trim()) {
-      toast.error("Enter a Messenger PSID to test");
+    const psid = testPsid.trim();
+    const msg = testMessage.trim();
+    if (!psid || !/^\d+$/.test(psid)) {
+      toast.error("Please enter a valid recipient PSID.");
+      return;
+    }
+    if (!msg) {
+      toast.error("Please type a message to send.");
       return;
     }
     setBusy(true);
     try {
-      await sendTest({ data: { recipient_id: testPsid.trim() } });
+      await sendTest({ data: { recipient_id: psid, message: msg } });
       toast.success("Test message sent");
-      pushLog(`Sent test to ${testPsid.trim()}`, true);
+      pushLog(`Sent test to ${psid}: ${msg}`, true);
+      setTestMessage("");
+      refetchPsids();
     } catch (err) {
       toast.error((err as Error).message);
       pushLog(`Test send failed: ${(err as Error).message}`, false);
@@ -583,17 +599,47 @@ function AdminMessenger() {
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="space-y-3 rounded-xl border bg-card p-3 sm:p-4">
           <div className="text-sm font-semibold">Test tools</div>
-          <Field label="Send test message to PSID">
-            <div className="flex gap-2">
-              <Input value={testPsid} onChange={(e) => setTestPsid(e.target.value)} placeholder="Messenger PSID" />
-              <Button onClick={onSendTest} disabled={busy || !connected}>
-                Send
-              </Button>
-            </div>
+          {recentPsids && recentPsids.length > 0 && (
+            <Field label="Recent conversations">
+              <select
+                className="w-full rounded-md border bg-background px-2 py-2 text-sm"
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) setTestPsid(e.target.value);
+                }}
+              >
+                <option value="">Select a recent PSID…</option>
+                {recentPsids.map((r) => (
+                  <option key={r.psid} value={r.psid}>
+                    {r.psid} · {new Date(r.last_at).toLocaleString()}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
+          <Field label="Recipient PSID" required>
+            <Input
+              value={testPsid}
+              onChange={(e) => setTestPsid(e.target.value)}
+              placeholder="Enter recipient PSID"
+              inputMode="numeric"
+            />
           </Field>
+          <Field label="Test Message" required>
+            <textarea
+              value={testMessage}
+              onChange={(e) => setTestMessage(e.target.value)}
+              placeholder="Type a message"
+              rows={3}
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+            />
+          </Field>
+          <Button onClick={onSendTest} disabled={busy || !connected} className="w-full sm:w-auto">
+            Send
+          </Button>
           <p className="text-xs text-muted-foreground">
             The PSID is the recipient's Messenger-scoped ID. It appears in the webhook payload
-            (<code>sender.id</code>) when a user messages your Page.
+            (<code>sender.id</code>) when a user messages your Page and is captured automatically.
           </p>
         </div>
 
