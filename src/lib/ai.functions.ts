@@ -184,10 +184,15 @@ const REQUIRED_MESSENGER_SCOPES = [
 ];
 
 function publicOrigin(): string {
+  // Prefer the origin of the incoming request so the URL always matches the
+  // domain the user is currently on (preview, published, or custom domain).
+  try {
+    const host = getRequestHeader("x-forwarded-host") || getRequestHeader("host");
+    const proto = getRequestHeader("x-forwarded-proto") || "https";
+    if (host) return `${proto}://${host}`.replace(/\/$/, "");
+  } catch {}
   const explicit = process.env.PUBLIC_APP_URL || process.env.VITE_APP_URL;
   if (explicit) return explicit.replace(/\/$/, "");
-  const ref = process.env.SUPABASE_PROJECT_ID;
-  if (ref) return `https://project--${ref}.lovable.app`;
   return "https://orzen.top";
 }
 
