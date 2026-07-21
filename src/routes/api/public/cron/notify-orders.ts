@@ -65,7 +65,7 @@ export const Route = createFileRoute("/api/public/cron/notify-orders")({
               .select("external_id")
               .eq("store_id", row.store_id)
               .eq("channel", "messenger")
-              .eq("phone", phoneNorm)
+              .eq("phone", phoneNorm ?? "")
               .not("external_id", "is", null)
               .order("last_message_at", { ascending: false })
               .limit(1)

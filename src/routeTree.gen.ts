@@ -102,6 +102,7 @@ import { Route as StoreSlugAuthLoginRouteImport } from './routes/store/$slug/aut
 import { Route as StoreSlugAuthForgotRouteImport } from './routes/store/$slug/auth.forgot'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
 import { Route as ApiPublicFbCapiTrackRouteImport } from './routes/api/public/fb-capi/track'
+import { Route as ApiPublicCronNotifyOrdersRouteImport } from './routes/api/public/cron/notify-orders'
 import { Route as AuthenticatedOwnerSubscriptionPayProvidersRouteImport } from './routes/_authenticated/owner/subscription-pay.providers'
 import { Route as AuthenticatedAdminInvoiceOrderIdRouteImport } from './routes/_authenticated/admin/invoice.$orderId'
 import { Route as AuthenticatedAdminBillingReturnRouteImport } from './routes/_authenticated/admin/billing.return'
@@ -628,6 +629,12 @@ const ApiPublicFbCapiTrackRoute = ApiPublicFbCapiTrackRouteImport.update({
   path: '/api/public/fb-capi/track',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCronNotifyOrdersRoute =
+  ApiPublicCronNotifyOrdersRouteImport.update({
+    id: '/api/public/cron/notify-orders',
+    path: '/api/public/cron/notify-orders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedOwnerSubscriptionPayProvidersRoute =
   AuthenticatedOwnerSubscriptionPayProvidersRouteImport.update({
     id: '/providers',
@@ -746,6 +753,7 @@ export interface FileRoutesByFullPath {
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
@@ -840,6 +848,7 @@ export interface FileRoutesByTo {
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
@@ -941,6 +950,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/_authenticated/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/_authenticated/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
@@ -1042,6 +1052,7 @@ export interface FileRouteTypes {
     | '/admin/billing/return'
     | '/admin/invoice/$orderId'
     | '/owner/subscription-pay/providers'
+    | '/api/public/cron/notify-orders'
     | '/api/public/fb-capi/track'
     | '/api/public/messenger/webhook'
     | '/store/$slug/auth/forgot'
@@ -1136,6 +1147,7 @@ export interface FileRouteTypes {
     | '/admin/billing/return'
     | '/admin/invoice/$orderId'
     | '/owner/subscription-pay/providers'
+    | '/api/public/cron/notify-orders'
     | '/api/public/fb-capi/track'
     | '/api/public/messenger/webhook'
     | '/store/$slug/auth/forgot'
@@ -1236,6 +1248,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/billing/return'
     | '/_authenticated/admin/invoice/$orderId'
     | '/_authenticated/owner/subscription-pay/providers'
+    | '/api/public/cron/notify-orders'
     | '/api/public/fb-capi/track'
     | '/api/public/messenger/webhook'
     | '/store/$slug/auth/forgot'
@@ -1264,6 +1277,7 @@ export interface RootRouteChildren {
   StoreSlugRouteRoute: typeof StoreSlugRouteRouteWithChildren
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiImgSplatRoute: typeof ApiImgSplatRoute
+  ApiPublicCronNotifyOrdersRoute: typeof ApiPublicCronNotifyOrdersRoute
   ApiPublicFbCapiTrackRoute: typeof ApiPublicFbCapiTrackRoute
   ApiPublicMessengerWebhookRoute: typeof ApiPublicMessengerWebhookRoute
   ApiPublicSubscriptionPayWebhookProviderRoute: typeof ApiPublicSubscriptionPayWebhookProviderRoute
@@ -1922,6 +1936,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicFbCapiTrackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cron/notify-orders': {
+      id: '/api/public/cron/notify-orders'
+      path: '/api/public/cron/notify-orders'
+      fullPath: '/api/public/cron/notify-orders'
+      preLoaderRoute: typeof ApiPublicCronNotifyOrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/owner/subscription-pay/providers': {
       id: '/_authenticated/owner/subscription-pay/providers'
       path: '/providers'
@@ -2218,6 +2239,7 @@ const rootRouteChildren: RootRouteChildren = {
   StoreSlugRouteRoute: StoreSlugRouteRouteWithChildren,
   ApiAiChatRoute: ApiAiChatRoute,
   ApiImgSplatRoute: ApiImgSplatRoute,
+  ApiPublicCronNotifyOrdersRoute: ApiPublicCronNotifyOrdersRoute,
   ApiPublicFbCapiTrackRoute: ApiPublicFbCapiTrackRoute,
   ApiPublicMessengerWebhookRoute: ApiPublicMessengerWebhookRoute,
   ApiPublicSubscriptionPayWebhookProviderRoute:
