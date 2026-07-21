@@ -606,9 +606,6 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
                       title: p.name,
                       subtitle: `৳${Number(p.price ?? 0).toLocaleString()}`,
                       imageUrl: p.primary_image_url ? toPublicUrl(p.primary_image_url) : undefined,
-                      url: p.slug && typeof window !== "undefined"
-                        ? `${window.location.origin}/store/${p.storeSlug || ""}/product/${p.id}`
-                        : undefined,
                     },
                   });
                   setShowProducts(false);
