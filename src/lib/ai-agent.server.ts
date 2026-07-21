@@ -175,7 +175,7 @@ export async function getModelForStore() {
   const looksLovable = saved.startsWith("lv_") || saved.startsWith("sk-lovable");
   const apiKey = (looksLovable ? saved : "") || process.env.LOVABLE_API_KEY!;
   if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
-  const modelId = settings?.default_model || "google/gemini-3-flash-preview";
+  const modelId = settings?.default_model || "google/gemini-2.5-flash";
   const gateway = createLovableAiGatewayProvider(apiKey);
   return { model: gateway(modelId), modelId };
 }

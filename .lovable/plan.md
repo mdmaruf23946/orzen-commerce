@@ -1,80 +1,70 @@
-## Messenger Inbox for AI Sales Agent
+# সমস্যা কি এবং কেন হচ্ছে
 
-Build a full inbox on top of the existing `messenger_integrations` + `ai_conversations` + `ai_messages` tables and the existing webhook at `src/routes/api/public/messenger/webhook.ts`. Delivered in phases so each ships working.
+স্ক্রিনশট + ডাটাবেস চেক করে ৩টি সমস্যা পাওয়া গেছে যেগুলোই AI reply বন্ধ থাকার আসল কারণ:
 
-### Phase 1 — Database extensions (one migration)
+## ১. `human_takeover = TRUE` চালু আছে (এটাই মূল কারণ)
+আপনার Messenger integration-এ ডাটাবেসে `human_takeover: true` সেট আছে। Webhook কোড (`src/routes/api/public/messenger/webhook.ts`)-এ স্পষ্ট শর্ত:
+```
+if (integ.human_takeover || integ.ai_auto_reply === false) continue;
+```
+মানে — "AI On" ব্যাজ দেখালেও, human_takeover চালু থাকলে AI কোনো reply পাঠাবে না। স্ক্রিনশটে "AI On" চিপ দেখাচ্ছে কারণ UI শুধু `ai_auto_reply` দেখছে, `human_takeover` কে বিবেচনা করছে না।
 
-Extend existing tables (no rename), add supporting tables:
+## ২. লাল box-এ দেখা error স্টেল (পুরনো)
+`Last error: (#100) Param recipient[id] must be a valid ID string` — এটা Test Message tool থেকে এসেছে (কেউ PSID এর জায়গায় Page ID বা ভুল নাম্বার দিয়ে টেস্ট করেছিল)। নতুন কোনো incoming message এই error দেয়নি — `delivery_failures: 0`। কিন্তু error কখনো auto-clear হয় না, তাই সবসময় দেখাচ্ছে।
 
-- `ai_conversations`: add `psid_profile jsonb` (name, profile_pic, locale, timezone, last_seen), `unread_count int default 0`, `last_message_at timestamptz`, `last_message_preview text`, `handoff_mode text default 'ai'` (ai|human), `tags text[] default '{}'`, `lead_status text` (interested|pending|ready|ordered|cancelled|null), `total_orders int default 0`, `total_spent numeric default 0`, `first_contact_at timestamptz default now()`.
-- `ai_messages`: add `direction text` (in|out), `message_type text default 'text'` (text|image|video|audio|file|sticker|template|quick_reply|postback), `attachments jsonb default '[]'`, `mid text` (Facebook message id, unique per conv), `delivery_status text default 'sent'` (sent|delivered|read|failed), `error text`, `sent_by_user_id uuid`.
-- New `messenger_notes` (conversation_id, store_id, body, author_user_id, timestamps) for per-conversation notes.
-- New `saved_replies` (store_id, title, body, sort).
-- Enable Realtime: `alter publication supabase_realtime add table ai_conversations, ai_messages;`
-- Add RLS write policies for store owners on `ai_conversations` (update unread/handoff/tags/notes) and keep insert to service-role only for `ai_messages` (all writes flow through server fns).
-- GRANT per project rules.
+## ৩. AI মডেল ID অবৈধ
+`ai_global_settings.default_model` fallback আছে `google/gemini-3-flash-preview` — এটা AI Gateway catalog-এ নেই (`ai-models` অনুসারে সঠিক id হলো `google/gemini-2.5-flash`)। এই কারণে human_takeover বন্ধ করলেও পরবর্তী step-এ generateAgentReply 400 error দিতো।
 
-### Phase 2 — Webhook expansion (`src/routes/api/public/messenger/webhook.ts`)
+## AI Agent connection স্ট্যাটাস
+- `store_ai_agents`: enabled=true, agent_name="Sales Assistant", language=both — ঠিক আছে ✓
+- `ai_global_settings.enabled` = true — ঠিক আছে ✓
+- LOVABLE_API_KEY provisioned — ঠিক আছে ✓
+- শুধু model id ভুল।
 
-Handle all required events; keep signature/verify flow intact:
+---
 
-- `messages`: text, attachments (image/video/audio/file), stickers, quick_reply payloads. Store with `direction='in'`, `message_type`, `attachments`, `mid`. Update conv `last_message_*`, increment `unread_count`. Fetch sender profile via Graph `/{psid}?fields=first_name,last_name,profile_pic` (cached in `psid_profile`).
-- `message_deliveries`, `message_reads`: update `delivery_status` on matching outgoing rows by `mid` / watermark.
-- `messaging_postbacks`: store as message row (`message_type='postback'`).
-- `messaging_optins`, `messaging_referrals`: log as system rows.
-- `standby`: log only, no auto-reply.
-- AI auto-reply gate: run only when `handoff_mode='ai'` AND `messenger_integrations.ai_auto_reply=true` AND event is `messages`.
-- Send failures: bump `delivery_failures`, write `ai_messages` row with `delivery_status='failed'`, `error=...` for retry UI. Auto-retry once on transient errors.
+# সমাধান পরিকল্পনা
 
-### Phase 3 — Server functions (`src/lib/messenger-inbox.functions.ts`)
+## Fix 1 — Human Takeover বন্ধ + stale error clear
+`src/routes/_authenticated/admin/messenger.tsx` (Connected status card):
+- একটা visible toggle switch যোগ করা: **"Human Takeover (AI reply বন্ধ রাখে)"** — ON/OFF দেখাবে, ক্লিকে database-এ update হবে।
+- Connected কার্ডের ব্যাজ update: `human_takeover=true` হলে "AI On" এর জায়গায় লাল "Paused (Human)" ব্যাজ, না হলে সবুজ "AI On"।
+- "Clear error" ছোট বাটন — `last_error` field null করে দেবে।
+- এখনই এই স্টোরের `human_takeover` false করে দেওয়া হবে migration/server call এ এবং stale `last_error` মুছে দেওয়া হবে।
 
-Owner-scoped via `requireSupabaseAuth`:
+সার্ভার সাইড: `src/lib/ai.functions.ts`-এ নতুন serverFn:
+- `setMessengerHandoff({ human_takeover: boolean })`
+- `clearMessengerLastError()`
 
-- `listConversations({ filter, search, cursor })` — filter: all|unread|ai|human|orders.
-- `getConversation(id)` — conv + integration + profile + counts.
-- `listMessages(conversationId, cursor)` — paginated.
-- `markRead(conversationId)` — zero unread + optional Graph `sender_action=mark_seen`.
-- `setHandoffMode(conversationId, mode)`.
-- `setTags` / `setLeadStatus`.
-- `saveNote` / `listNotes`.
-- `sendManualMessage({ conversationId, text?, attachmentUrl?, attachmentType?, quickReplies?, productId?, orderId? })` — resolves PSID + page token, calls Graph `me/messages` with `recipient.id=PSID`, persists row, updates delivery status.
-- `retryFailedMessage(messageId)`.
-- `listSavedReplies` / `upsertSavedReply` / `deleteSavedReply`.
-- `getInboxStats()` — totals, unread, today, ai_replied, human_replied, failed.
-- `listCustomerOrders(conversationId)` — orders matched by PSID/phone/email if linked.
+## Fix 2 — সঠিক AI মডেল ID
+`src/lib/ai-agent.server.ts` ও `src/lib/ai.functions.ts`-এ hard-coded fallback পাল্টে:
+```
+"google/gemini-3-flash-preview" → "google/gemini-2.5-flash"
+```
+পাশাপাশি ডাটাবেসে `ai_global_settings.default_model` যদি `gemini-3-flash-preview` থাকে, migration দিয়ে `google/gemini-2.5-flash` এ update।
 
-Media uploads reuse `store-assets` bucket, then send by URL to Graph.
+## Fix 3 — Diagnostic উন্নয়ন
+Connected card-এ ছোট "কেন AI reply আসছে না?" checklist সেকশন:
+- ✅/❌ AI Auto-Reply on
+- ✅/❌ Human Takeover off
+- ✅/❌ Webhook verified
+- ✅/❌ Page subscribed to `messages` field (Meta Graph `/subscribed_apps` দিয়ে check করে দেখাবে)
+- ✅/❌ Token expiring soon
 
-### Phase 4 — UI
+`src/lib/ai.functions.ts`-এ `getMessengerHealth()` serverFn — একবারে সব চেক করে return করবে।
 
-New sidebar entry "Messenger Inbox" in `src/routes/_authenticated/admin/route.tsx` (icon: Inbox), placed above "Notifications".
+## Fix 4 — Test tool improvement
+Test message form-এ ছোট hint: "PSID = webhook-এ আসা customer এর sender.id, Page ID নয়।" এবং "Recent conversations" dropdown-এই default select থাকবে যদি অন্তত একটি থাকে।
 
-Route `src/routes/_authenticated/admin/messenger-inbox.tsx` — 3-pane responsive layout:
+---
 
-- **Left**: search + filter chips (Unread / All / AI / Human / Orders); conversation cards (avatar, name, PSID, last preview, time, unread badge, AI/Human pill). Realtime subscription on `ai_conversations` for the store; notification sound on new inbound.
-- **Center**: chat pane. Header with avatar/name/PSID/first-contact + AI ↔ HUMAN switch. Bubbles rendering text/image/video/audio/file/sticker/quick_reply. Composer: text, emoji picker, attach image/file, quick reply builder, "Send product card" (product picker), "Send order status" (order picker), saved-replies dropdown. Failed messages show retry + error.
-- **Right (desktop) / drawer (mobile)**: customer profile — avatar, name, PSID, first contact, last active, totals (messages, orders, spending), tags editor, lead status selector, notes list + add note, order history.
+# পরিবর্তন হবে যেসব ফাইল
+- `src/lib/ai-agent.server.ts` — মডেল fallback ঠিক
+- `src/lib/ai.functions.ts` — নতুন serverFn: handoff toggle, clear error, health check + মডেল fallback
+- `src/routes/_authenticated/admin/messenger.tsx` — Human Takeover toggle, health checklist, badge fix, clear error button
+- Supabase migration — `human_takeover=false` এবং `last_error=null` current store-এ; `ai_global_settings.default_model` update
 
-Mobile: single-pane with back-button navigation between list ↔ chat ↔ profile.
-
-### Phase 5 — Dashboard tile
-
-Extend `src/routes/_authenticated/admin/index.tsx` with an "Inbox" card: totals, unread, today, AI replied, human replied, failed (from `getInboxStats`).
-
-### Live updates
-
-Supabase Realtime `postgres_changes` on `ai_conversations` and `ai_messages` filtered by store_id/conversation_id, inside `useEffect` with `removeChannel` cleanup. Notification audio at `src/assets/notify.mp3`.
-
-### Out of scope
-
-- Instagram DM (Messenger only).
-- Auto-creating `store_customers` from PSID (we only surface totals when a phone/email match already exists).
-- Rich templated buttons beyond product/order card + quick_replies.
-
-### Build order
-
-1. Migration + webhook expansion (Phases 1–2).
-2. Server fns + list/chat UI text-only (Phases 3–4 core).
-3. Attachments, product/order cards, quick replies, saved replies.
-4. Profile pane, notes, tags, lead status.
-5. Dashboard tile + failed-message retry polish.
+# ভেরিফিকেশন
+1. Migration run হলে DB-তে human_takeover=false ও error clear
+2. Messenger থেকে test message পাঠালে AI reply আসবে
+3. Health checklist সব green দেখাবে

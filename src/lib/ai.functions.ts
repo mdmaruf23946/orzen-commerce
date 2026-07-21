@@ -32,7 +32,7 @@ export const getAiGlobalSettings = createServerFn({ method: "GET" })
     await assertOwner(context.supabase, context.userId);
     const sb = adminClient();
     const { data } = await sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle();
-    return data ?? { id: 1, enabled: true, default_model: "google/gemini-3-flash-preview", provider_api_key: "" };
+    return data ?? { id: 1, enabled: true, default_model: "google/gemini-2.5-flash", provider_api_key: "" };
   });
 
 export const updateAiGlobalSettings = createServerFn({ method: "POST" })
@@ -605,4 +605,17 @@ export const updateMessengerAiFlags = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const clearMessengerLastError = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const storeId = await getOwnedStoreId(context.supabase, context.userId);
+    const { error } = await context.supabase
+      .from("messenger_integrations")
+      .update({ last_error: null, delivery_failures: 0 } as any)
+      .eq("store_id", storeId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 
