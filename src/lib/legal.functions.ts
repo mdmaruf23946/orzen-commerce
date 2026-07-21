@@ -117,7 +117,7 @@ export const regenerateLegalPage = createServerFn({ method: "POST" })
     const { error } = await context.supabase
       .from("store_legal_info")
       .update({
-        pages,
+        pages: pages as any,
         pages_version: (row.pages_version ?? 0) + 1,
         generated_at: new Date().toISOString(),
       })
