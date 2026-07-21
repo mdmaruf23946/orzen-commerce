@@ -461,7 +461,19 @@ export const verifyMessengerWebhook = createServerFn({ method: "POST" })
 
 export const sendMessengerTestMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ recipient_id: z.string().trim().min(3).max(64) }).parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        recipient_id: z
+          .string()
+          .trim()
+          .min(3)
+          .max(64)
+          .regex(/^\d+$/, "Recipient PSID must be numeric"),
+        message: z.string().trim().min(1).max(1000),
+      })
+      .parse(d),
+  )
   .handler(async ({ context, data }) => {
     const { storeId, row } = await loadIntegrationForOwner(context);
     if (!row) throw new Error("Not connected");
@@ -474,7 +486,7 @@ export const sendMessengerTestMessage = createServerFn({ method: "POST" })
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           recipient: { id: data.recipient_id },
-          message: { text: "✅ Test message from ORZEN" },
+          message: { text: data.message },
         }),
       },
     );
@@ -487,6 +499,30 @@ export const sendMessengerTestMessage = createServerFn({ method: "POST" })
       throw new Error(j?.error?.message || `Send failed (${r.status})`);
     }
     return { ok: true };
+  });
+
+export const listMessengerRecentPsids = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const storeId = await getOwnedStoreId(context.supabase, context.userId);
+    const sb = adminClient();
+    const { data } = await sb
+      .from("ai_conversations")
+      .select("external_id, updated_at, created_at")
+      .eq("store_id", storeId)
+      .eq("channel", "messenger")
+      .not("external_id", "is", null)
+      .order("updated_at", { ascending: false })
+      .limit(20);
+    const seen = new Set<string>();
+    const out: { psid: string; last_at: string }[] = [];
+    for (const r of (data ?? []) as any[]) {
+      const psid = r.external_id as string | null;
+      if (!psid || seen.has(psid)) continue;
+      seen.add(psid);
+      out.push({ psid, last_at: r.updated_at ?? r.created_at });
+    }
+    return out;
   });
 
 export const regenerateMessengerVerifyToken = createServerFn({ method: "POST" })
