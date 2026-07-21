@@ -384,6 +384,8 @@ export const connectMessenger = createServerFn({ method: "POST" })
       connected_at: new Date().toISOString(),
       last_verified_at: new Date().toISOString(),
       last_error: null,
+      privacy_policy_url: data.privacy_policy_url,
+      terms_of_service_url: data.terms_of_service_url || null,
     };
     const { error } = await context.supabase
       .from("messenger_integrations")
