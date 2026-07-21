@@ -85,8 +85,6 @@ export const saveAndGenerateLegal = createServerFn({ method: "POST" })
         { onConflict: "store_id" },
       );
     if (error) throw new Error(error.message);
-    // bump version if this was an update
-    await context.supabase.rpc("pg_notify" as any).catch(() => {});
     return { ok: true };
   });
 
@@ -114,7 +112,8 @@ export const regenerateLegalPage = createServerFn({ method: "POST" })
       country: row.country,
       currency: row.currency,
     });
-    const pages = { ...(row.pages || {}), [data.key]: page };
+    const existing = (row.pages && typeof row.pages === "object" && !Array.isArray(row.pages)) ? (row.pages as Record<string, unknown>) : {};
+    const pages = { ...existing, [data.key]: page };
     const { error } = await context.supabase
       .from("store_legal_info")
       .update({
