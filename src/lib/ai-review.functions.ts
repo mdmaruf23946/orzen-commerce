@@ -148,7 +148,7 @@ export const updateOrderCourierInfo = createServerFn({ method: "POST" })
     if (data.courier_status !== undefined) patch.courier_status = data.courier_status;
     const { error } = await context.supabase
       .from("orders")
-      .update(patch)
+      .update(patch as any)
       .eq("id", data.order_id)
       .eq("store_id", sid);
     if (error) throw new Error(error.message);
