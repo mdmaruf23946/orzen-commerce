@@ -147,6 +147,7 @@ function CheckoutPage() {
           <Link
             to="/store/$slug/auth/login"
             params={{ slug }}
+            search={{ redirect: `/store/${slug}/checkout` }}
             className="inline-flex h-10 items-center rounded-md px-4 text-sm font-medium text-white"
             style={{ backgroundColor: "var(--primary)" }}
           >
@@ -155,6 +156,7 @@ function CheckoutPage() {
           <Link
             to="/store/$slug/auth/signup"
             params={{ slug }}
+            search={{ redirect: `/store/${slug}/checkout` }}
             className="inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium"
           >
             Create account

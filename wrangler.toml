@@ -16,7 +16,10 @@ binding = "ASSETS"
 not_found_handling = "single-page-application"
 
 # Route the Worker on the apex and www subdomain via custom domains.
-# Custom domains do not support wildcard operators or paths.
+# Custom domains do not support wildcard operators or paths, so wildcard
+# subdomain hosting (per-store subdomains like <slug>.orzen.top plus the
+# shared `stores.orzen.top` fallback used by custom-domain CNAMEs) is
+# covered by a standard zone route below.
 [[routes]]
 pattern = "orzen.top"
 custom_domain = true
@@ -24,6 +27,13 @@ custom_domain = true
 [[routes]]
 pattern = "www.orzen.top"
 custom_domain = true
+
+# Wildcard route: every subdomain of orzen.top (store subdomains and
+# stores.orzen.top) hits the Worker. Requires the zone to be on
+# Cloudflare and a wildcard DNS record (`*.orzen.top` → proxied) to exist.
+[[routes]]
+pattern = "*.orzen.top/*"
+zone_name = "orzen.top"
 
 
 # Public runtime vars (safe to ship in the client bundle).
