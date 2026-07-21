@@ -208,6 +208,10 @@ function Dashboard() {
         </Card>
       </div>
 
+      <InboxTile />
+
+
+
       {/* 7. Recent Orders */}
       <Card>
         <div className="mb-4 flex items-center justify-between">
