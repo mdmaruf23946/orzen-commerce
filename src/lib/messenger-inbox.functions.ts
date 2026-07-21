@@ -732,7 +732,7 @@ export const searchStoreProducts = createServerFn({ method: "POST" })
     const storeId = await getOwnedStoreId(context.supabase, context.userId);
     let q = context.supabase
       .from("products")
-      .select("id,name,price,image_url,slug")
+      .select("id,name,price,primary_image_url,slug")
       .eq("store_id", storeId)
       .neq("status", "draft")
       .limit(20);
