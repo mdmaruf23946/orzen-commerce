@@ -606,3 +606,16 @@ export const updateMessengerAiFlags = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const clearMessengerLastError = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const storeId = await getOwnedStoreId(context.supabase, context.userId);
+    const { error } = await context.supabase
+      .from("messenger_integrations")
+      .update({ last_error: null, delivery_failures: 0 } as any)
+      .eq("store_id", storeId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+
