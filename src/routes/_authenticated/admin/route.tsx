@@ -32,6 +32,9 @@ import {
   Radar,
   ShieldCheck,
   FileText,
+  Sparkles,
+  AlertTriangle,
+  UserCog,
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,6 +67,9 @@ const links: { to: string; label: string; icon: typeof LayoutDashboard; exact?: 
   { to: "/admin/payment-gateway", label: "Payment Gateway", icon: CreditCard },
   { to: "/admin/payments", label: "Payments", icon: Wallet },
   { to: "/admin/ai-agent", label: "AI Sales Agent", icon: Bot },
+  { to: "/admin/ai-recommendations", label: "AI Recommendations", icon: Sparkles },
+  { to: "/admin/handoff-queue", label: "Handoff Queue", icon: UserCog },
+  { to: "/admin/low-stock", label: "Low Stock Alerts", icon: AlertTriangle },
   { to: "/admin/messenger", label: "Messenger", icon: MessageSquare },
   { to: "/admin/messenger-inbox", label: "Messenger Inbox", icon: MessageSquare },
   { to: "/admin/notifications", label: "Notifications", icon: Bell },

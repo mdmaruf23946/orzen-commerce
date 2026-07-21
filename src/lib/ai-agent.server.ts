@@ -144,6 +144,30 @@ export function buildTools(ctx: AgentContext) {
   const productSelect =
     "id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,status,primary_image_url,gallery,features,specifications,variants,video_url,delivery_charge,delivery_time_days,rating,total_sold,warranty,return_policy,shipping_info";
 
+  const convId = ctx.conversationId ?? null;
+
+  async function getBlacklistedIds(): Promise<Set<string>> {
+    const { data } = await sb
+      .from("ai_product_blacklist")
+      .select("product_id")
+      .eq("store_id", storeId);
+    return new Set((data ?? []).map((r: any) => r.product_id));
+  }
+
+  async function logRecommendations(toolName: string, products: any[], contextText: string) {
+    if (!convId || !products?.length) return;
+    try {
+      const rows = products.slice(0, 10).map((p: any) => ({
+        store_id: storeId,
+        conversation_id: convId,
+        product_id: p.id,
+        tool_name: toolName,
+        context: contextText.slice(0, 500),
+      }));
+      await sb.from("ai_product_recommendations").insert(rows as any);
+    } catch { /* non-fatal */ }
+  }
+
   const tools: Record<string, any> = {
     searchProducts: tool({
       description:
@@ -164,7 +188,6 @@ export function buildTools(ctx: AgentContext) {
           .select(productSelect)
           .eq("store_id", storeId)
           .eq("status", "active");
-        // OR match across name/brand/sku/short_description
         const like = `%${input.query.replace(/[%_]/g, " ")}%`;
         q = q.or(
           `name.ilike.${like},brand.ilike.${like},sku.ilike.${like},product_code.ilike.${like},short_description.ilike.${like},description.ilike.${like}`,
@@ -187,8 +210,11 @@ export function buildTools(ctx: AgentContext) {
         else if (input.sort === "bestseller") q = q.order("total_sold", { ascending: false });
         else if (input.sort === "newest") q = q.order("created_at", { ascending: false });
         else q = q.order("is_featured", { ascending: false }).order("total_sold", { ascending: false });
-        const { data } = await q.limit(input.limit ?? 6);
-        return { products: data ?? [] };
+        const { data } = await q.limit((input.limit ?? 6) + 5);
+        const blocked = await getBlacklistedIds();
+        const filtered = (data ?? []).filter((p: any) => !blocked.has(p.id)).slice(0, input.limit ?? 6);
+        await logRecommendations("searchProducts", filtered, input.query);
+        return { products: filtered };
       },
     }),
 
@@ -196,12 +222,17 @@ export function buildTools(ctx: AgentContext) {
       description: "Get full details of one product by id. Use before quoting exact price or specs.",
       inputSchema: z.object({ productId: z.string().uuid() }),
       execute: async ({ productId }) => {
+        const blocked = await getBlacklistedIds();
+        if (blocked.has(productId)) {
+          return { blocked: true, message: "This product is unavailable. Suggest an alternative." };
+        }
         const { data } = await sb
           .from("products")
           .select(productSelect)
           .eq("store_id", storeId)
           .eq("id", productId)
           .maybeSingle();
+        if (data) await logRecommendations("getProduct", [data], "detail_view");
         return data;
       },
     }),
@@ -606,7 +637,11 @@ export function buildTools(ctx: AgentContext) {
         "Hand this conversation to a human agent. Use when you cannot answer confidently or the customer asks for a person.",
       inputSchema: z.object({ reason: z.string().min(1).max(500) }),
       execute: async ({ reason }) => {
-        await sb.from("ai_conversations").update({ handoff_mode: "human" } as any).eq("id", convId);
+        await sb.from("ai_conversations").update({
+          handoff_mode: "human",
+          handoff_reason: reason,
+          handoff_at: new Date().toISOString(),
+        } as any).eq("id", convId);
         await sb.from("admin_notifications").insert({
           store_id: storeId,
           kind: "human_handoff",

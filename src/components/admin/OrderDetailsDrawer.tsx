@@ -7,11 +7,14 @@ import {
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { getOrderDetails, addInternalNote, deleteInternalNote } from "@/lib/business.functions";
+import { updateOrderCourierInfo } from "@/lib/ai-review.functions";
 import { getCachedFraudCheck, ensureAutoFraudCheck } from "@/lib/fraud.functions";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FraudCheckModal, RiskBadge } from "@/components/admin/FraudCheckModal";
+import { toast } from "sonner";
 
 function resolveProductImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -50,9 +53,12 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
   const autoFn = useServerFn(ensureAutoFraudCheck);
   const addNote = useServerFn(addInternalNote);
   const delNote = useServerFn(deleteInternalNote);
+  const saveCourier = useServerFn(updateOrderCourierInfo);
   const qc = useQueryClient();
   const [note, setNote] = useState("");
   const [fraudOpen, setFraudOpen] = useState(false);
+  const [courier, setCourier] = useState({ name: "", tracking: "", status: "" });
+  const [savingCourier, setSavingCourier] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["order-drawer", orderId],
@@ -83,6 +89,22 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
   async function remove(id: string) {
     await delNote({ data: { id } });
     qc.invalidateQueries({ queryKey: ["order-drawer", orderId] });
+  }
+
+  async function submitCourier(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingCourier(true);
+    try {
+      await saveCourier({ data: {
+        order_id: orderId,
+        courier_name: courier.name || null,
+        courier_tracking_id: courier.tracking || null,
+        courier_status: courier.status || null,
+      } });
+      qc.invalidateQueries({ queryKey: ["order-drawer", orderId] });
+      toast.success("Courier updated");
+    } catch (err) { toast.error((err as Error).message); }
+    finally { setSavingCourier(false); }
   }
 
   const order: any = data?.order;
@@ -234,6 +256,24 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                   ))}
                   {timeline.length === 0 && <li className="text-xs text-muted-foreground">No events yet.</li>}
                 </ol>
+              </Section>
+
+              {/* Courier tracking editor */}
+              <Section icon={Truck} title="Courier tracking">
+                {(order.courier_name || order.courier_tracking_id || order.courier_status) && (
+                  <div className="mb-2 rounded-md bg-muted/40 p-2 text-xs">
+                    {order.courier_name && <div><span className="text-muted-foreground">Courier:</span> {order.courier_name}</div>}
+                    {order.courier_tracking_id && <div><span className="text-muted-foreground">Tracking:</span> <span className="font-mono">{order.courier_tracking_id}</span></div>}
+                    {order.courier_status && <div><span className="text-muted-foreground">Status:</span> {order.courier_status}</div>}
+                    {order.courier_last_synced_at && <div className="text-[10px] text-muted-foreground">Updated {new Date(order.courier_last_synced_at).toLocaleString()}</div>}
+                  </div>
+                )}
+                <form onSubmit={submitCourier} className="space-y-2">
+                  <Input placeholder="Courier (e.g. Pathao, Steadfast)" value={courier.name} onChange={(e) => setCourier((c) => ({ ...c, name: e.target.value }))} className="h-8 text-xs" />
+                  <Input placeholder="Tracking ID" value={courier.tracking} onChange={(e) => setCourier((c) => ({ ...c, tracking: e.target.value }))} className="h-8 text-xs" />
+                  <Input placeholder="Status (e.g. In Transit)" value={courier.status} onChange={(e) => setCourier((c) => ({ ...c, status: e.target.value }))} className="h-8 text-xs" />
+                  <Button type="submit" size="sm" variant="outline" disabled={savingCourier}>{savingCourier ? "Saving…" : "Update courier"}</Button>
+                </form>
               </Section>
 
               {/* Notes */}

@@ -240,6 +240,9 @@ export const listMyProducts = createServerFn({ method: "GET" })
 const productSchema = z.object({
   name: z.string().trim().min(1).max(160),
   description: z.string().trim().max(5000).optional().nullable(),
+  short_description: z.string().trim().max(500).optional().nullable(),
+  brand: z.string().trim().max(80).optional().nullable(),
+  product_code: z.string().trim().max(60).optional().nullable(),
   price: z.number().nonnegative(),
   old_price: z.number().nonnegative().optional().nullable(),
   cost_price: z.number().nonnegative().optional().nullable(),
@@ -248,12 +251,26 @@ const productSchema = z.object({
   stock: z.number().int().min(0),
   status: z.enum(["active", "draft", "out_of_stock"]),
   primary_image_url: z.string().max(500).optional().nullable(),
-  gallery: z.array(z.string().max(500)).max(8).optional().default([]),
+  gallery: z.array(z.string().max(500)).max(20).optional().default([]),
+  video_url: z.string().trim().max(500).optional().nullable(),
   category_id: z.string().uuid().optional().nullable(),
   warranty: z.string().trim().max(2000).optional().nullable(),
   return_policy: z.string().trim().max(2000).optional().nullable(),
   shipping_info: z.string().trim().max(2000).optional().nullable(),
   is_featured: z.boolean().optional().default(false),
+  features: z.array(z.string().max(200)).max(30).optional().default([]),
+  specifications: z.array(z.object({ key: z.string().max(60), value: z.string().max(200) })).max(30).optional().default([]),
+  variants: z.array(z.object({
+    name: z.string().max(60),
+    price: z.number().nonnegative().optional().nullable(),
+    stock: z.number().int().min(0).optional().nullable(),
+    sku: z.string().max(60).optional().nullable(),
+  })).max(30).optional().default([]),
+  delivery_charge: z.number().nonnegative().optional().nullable(),
+  delivery_time_days: z.string().trim().max(60).optional().nullable(),
+  rating: z.number().min(0).max(5).optional().nullable(),
+  total_sold: z.number().int().min(0).optional().nullable(),
+  related_product_ids: z.array(z.string().uuid()).max(20).optional().default([]),
 });
 
 
@@ -272,6 +289,9 @@ export const upsertProduct = createServerFn({ method: "POST" })
     const baseFields = {
       name: data.name,
       description: data.description ?? null,
+      short_description: data.short_description ?? null,
+      brand: data.brand ?? null,
+      product_code: data.product_code ?? null,
       price: data.price,
       old_price: data.old_price ?? null,
       cost_price: data.cost_price ?? 0,
@@ -281,11 +301,20 @@ export const upsertProduct = createServerFn({ method: "POST" })
       status: data.status,
       primary_image_url: data.primary_image_url ?? null,
       gallery: data.gallery ?? [],
+      video_url: data.video_url ?? null,
       category_id: data.category_id ?? null,
       warranty: data.warranty ?? null,
       return_policy: data.return_policy ?? null,
       shipping_info: data.shipping_info ?? null,
       is_featured: data.is_featured ?? false,
+      features: data.features ?? [],
+      specifications: data.specifications ?? [],
+      variants: data.variants ?? [],
+      delivery_charge: data.delivery_charge ?? null,
+      delivery_time_days: data.delivery_time_days ?? null,
+      rating: data.rating ?? null,
+      total_sold: data.total_sold ?? null,
+      related_product_ids: data.related_product_ids ?? [],
     } as any;
 
 
