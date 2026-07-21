@@ -10,6 +10,7 @@ import {
   Plus, Share2, ExternalLink, Bell, Star, Sparkles,
 } from "lucide-react";
 import { myDashboardOverview } from "@/lib/admin.functions";
+import { getInboxStats } from "@/lib/messenger-inbox.functions";
 import { AdSlot } from "@/components/admin/AdSlot";
 import { cn } from "@/lib/utils";
 
@@ -207,6 +208,10 @@ function Dashboard() {
           </div>
         </Card>
       </div>
+
+      <InboxTile />
+
+
 
       {/* 7. Recent Orders */}
       <Card>
@@ -510,3 +515,39 @@ function QuickAction({
   if (href) return <a href={href} target={external ? "_blank" : undefined} rel="noreferrer" className={cls}>{inner}</a>;
   return <button type="button" onClick={onClick} className={cn(cls, "text-left")}>{inner}</button>;
 }
+
+function InboxTile() {
+  const statsFn = useServerFn(getInboxStats);
+  const { data } = useQuery({
+    queryKey: ["admin", "inbox-stats"],
+    queryFn: () => statsFn(),
+    refetchInterval: 30_000,
+  });
+  const items: { label: string; value: number; tone: string }[] = [
+    { label: "Total", value: data?.total ?? 0, tone: "text-slate-700" },
+    { label: "Unread", value: data?.unread ?? 0, tone: "text-blue-600" },
+    { label: "Today", value: data?.today ?? 0, tone: "text-emerald-600" },
+    { label: "AI replied", value: data?.ai_replied ?? 0, tone: "text-violet-600" },
+    { label: "Human replied", value: data?.human_replied ?? 0, tone: "text-amber-600" },
+    { label: "Failed", value: data?.failed ?? 0, tone: "text-red-600" },
+  ];
+  return (
+    <Card>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-base font-semibold tracking-tight">Messenger Inbox</h2>
+        <Link to="/admin/messenger-inbox" className="text-xs font-medium text-primary hover:underline">
+          Open Inbox →
+        </Link>
+      </div>
+      <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+        {items.map((i) => (
+          <div key={i.label} className="rounded-xl border p-3">
+            <div className={cn("text-lg font-semibold", i.tone)}>{i.value}</div>
+            <div className="text-[11px] text-muted-foreground">{i.label}</div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
