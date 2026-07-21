@@ -210,6 +210,27 @@ async function decryptToken(enc: string | null): Promise<string | null> {
   }
 }
 
+async function generateSecureVerifyToken(): Promise<string> {
+  const { randomBytes } = await import("crypto");
+  // 24 bytes → 48 hex chars (within 32–64 range)
+  return `vt_${randomBytes(24).toString("hex")}`;
+}
+
+async function ensureUniqueVerifyToken(supabase: any): Promise<string> {
+  for (let i = 0; i < 5; i++) {
+    const t = await generateSecureVerifyToken();
+    const { data } = await supabase
+      .from("messenger_integrations")
+      .select("id")
+      .eq("verify_token", t)
+      .maybeSingle();
+    if (!data) return t;
+  }
+  // fallback (extremely unlikely)
+  return await generateSecureVerifyToken();
+}
+
+
 export const getMessengerIntegration = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
