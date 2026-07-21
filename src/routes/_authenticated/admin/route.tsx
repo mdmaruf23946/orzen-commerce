@@ -65,6 +65,7 @@ const links: { to: string; label: string; icon: typeof LayoutDashboard; exact?: 
   { to: "/admin/payments", label: "Payments", icon: Wallet },
   { to: "/admin/ai-agent", label: "AI Sales Agent", icon: Bot },
   { to: "/admin/messenger", label: "Messenger", icon: MessageSquare },
+  { to: "/admin/messenger-inbox", label: "Messenger Inbox", icon: MessageSquare },
   { to: "/admin/notifications", label: "Notifications", icon: Bell },
   { to: "/admin/product-defaults", label: "Product Defaults", icon: ClipboardList },
   { to: "/admin/domains", label: "Domains", icon: Globe },
