@@ -507,11 +507,13 @@ export const upsertCategory = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
     if (!store) throw new Error("No store");
-    const patch: Record<string, unknown> = { name: data.name };
-    if (data.image_url !== undefined) patch.image_url = data.image_url;
-    if (data.description !== undefined) patch.description = data.description;
-    if (data.sort_order !== undefined) patch.sort_order = data.sort_order;
-    if (data.is_active !== undefined) patch.is_active = data.is_active;
+    const patch = {
+      name: data.name,
+      ...(data.image_url !== undefined ? { image_url: data.image_url } : {}),
+      ...(data.description !== undefined ? { description: data.description } : {}),
+      ...(data.sort_order !== undefined ? { sort_order: data.sort_order } : {}),
+      ...(data.is_active !== undefined ? { is_active: data.is_active } : {}),
+    };
     if (data.id) {
       const { error } = await supabase
         .from("categories")
