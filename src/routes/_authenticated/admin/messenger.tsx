@@ -389,15 +389,26 @@ function AdminMessenger() {
             <Button size="sm" onClick={onVerify} disabled={busy || !d.verify_token}>
               Verify Webhook
             </Button>
-            <Button size="sm" variant="outline" onClick={onRegenerate} disabled={busy || !connected}>
-              <RefreshCcw className="mr-1 h-3.5 w-3.5" /> Regenerate
+            <Button size="sm" variant="outline" onClick={onRegenerate} disabled={busy}>
+              <RefreshCcw className="mr-1 h-3.5 w-3.5" />
+              {d.verify_token ? "Regenerate" : "Generate Token"}
             </Button>
+          </div>
+          <div className="text-[11px] text-muted-foreground">
+            The verify token is generated automatically and stored securely. Copy it into
+            Facebook's Webhook setup — you never need to invent one yourself.
           </div>
           <div className="text-xs text-muted-foreground">
             Last verified:{" "}
             {d.last_verified_at ? new Date(d.last_verified_at).toLocaleString() : "never"}
           </div>
+          {d.last_error && (
+            <div className="rounded-md bg-destructive/10 px-2 py-1.5 text-xs text-destructive">
+              {d.last_error}
+            </div>
+          )}
         </div>
+
 
         {/* Permissions */}
         <div className="space-y-3 rounded-xl border bg-card p-3 sm:p-4">
