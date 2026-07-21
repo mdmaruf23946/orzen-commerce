@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS messenger_integrations_verify_token_uniq ON public.messenger_integrations (verify_token) WHERE verify_token IS NOT NULL;
