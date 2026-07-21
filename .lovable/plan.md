@@ -1,69 +1,64 @@
+# Legal & Business Info Generator
 
-## Goal
+Add a new Store Admin module that collects business information once and auto-generates SEO-ready legal/info pages served under the store's own domain/subdomain.
 
-Upgrade the Store Admin → Messenger page from the current 2-field form (Page ID + Page Token) to a complete Meta Messenger integration console covering credentials, webhook, permissions, live status, AI behavior toggles, test tools, and a compact dashboard — mobile-first.
+## 1. Database
 
-## Database changes (one migration)
+New table `public.store_legal_info` (one row per store):
+- store_id (FK, unique)
+- store_name, owner_name, support_email, contact_phone
+- business_address, website_domain, country, currency
+- generated_at, pages_version (int)
+- pages: jsonb `{ privacy, terms, refund, shipping, contact, about, data_deletion }` — each `{ title, description, html, updated_at }`
 
-Extend `public.messenger_integrations` with:
+RLS: owners manage their own row; public RPC `get_store_legal_page(_slug, _page)` returns a single page for the storefront render.
 
-- `page_name text`, `page_picture_url text` — filled from Meta Graph after connect.
-- `app_id text`, `app_secret_encrypted text` — optional, secret encrypted via existing `PAYMENT_CREDENTIALS_KEY` helper (`src/lib/crypto/credentials.server.ts`).
-- `page_access_token_encrypted text` — replaces plaintext storage; keep old `page_access_token` column temporarily, migrate values into the encrypted column, then set old column to `NULL`. Reads always go through decrypt.
-- `token_expires_at timestamptz null` — parsed from Meta `debug_token`.
-- `permissions jsonb default '[]'` — cached scope list from `debug_token`.
-- `last_verified_at timestamptz`, `last_error text`.
-- `ai_auto_reply boolean default true`, `human_takeover boolean default false`, `conversation_history boolean default true`, `order_detection boolean default false`, `product_recommendation boolean default false`, `faq_reply boolean default true`.
-- Daily counters view/RPC `get_messenger_daily_stats(store_id)` returning `{ messages_today, failed_today, last_incoming_at }` from `ai_conversations` + `ai_messages` (channel = `messenger`) plus a new `messenger_delivery_failures` counter written from the webhook / send helper.
+## 2. Server functions (`src/lib/legal.functions.ts`)
 
-RLS: existing store-owner policy already covers new columns. Add `service_role` grant explicitly (already implicit) — no anon.
+- `getMyLegalInfo` — load row for current store owner
+- `saveAndGenerateLegal({ info })` — validates via zod, upserts info, renders all 7 pages via a template renderer, stores in `pages` jsonb, bumps version
+- `regenerateLegalPage({ key })` — regenerates a single page
+- Auto-hook: when store name / domain / support email / phone / address change (in existing store settings), call generator to refresh copy (URLs stay stable because they're route-driven).
 
-## Server functions (`src/lib/ai.functions.ts`)
+Template renderer lives in `src/lib/legal-templates.server.ts` — pure functions that take `info` and return `{ title, description, html }`. Meta-compliant boilerplate for Privacy, ToS, Refund, Shipping, Contact, About, Data Deletion.
 
-Replace the current 3 messenger fns with a fuller set — all `requireSupabaseAuth` + `assertPlan("ai_messenger")`:
+## 3. Public routes (per-store)
 
-1. `getMessengerIntegration` → returns full row minus raw encrypted blobs, plus derived `webhook_url`, decrypted `verify_token`, `permissions`, `token_expires_at`, `page_name`, `page_picture_url`, `last_error`, `stats` from the RPC.
-2. `connectMessenger({ page_id, page_access_token, app_id?, app_secret? })`:
-   - Call Meta Graph `GET /{page_id}?fields=name,picture{url}` with the token → fills `page_name`, `page_picture_url`. Fail with a clear message on 4xx.
-   - If `app_id` + `app_secret` supplied, call `debug_token` → capture `scopes`, `data_access_expires_at`/`expires_at`.
-   - Encrypt token (and app secret if present) via `encryptJSON`. Generate verify_token if none exists.
-   - Upsert row with `status='connected'`, `last_verified_at=now()`, clear `last_error`.
-3. `verifyMessengerWebhook()` — server-side self-check: GET the app's `/api/public/messenger/webhook?hub.mode=subscribe&hub.verify_token=…&hub.challenge=ping` using the published URL; success writes `last_verified_at`, failure writes `last_error`.
-4. `sendMessengerTestMessage({ recipient_id })` — decrypts token, POSTs to Graph `/me/messages` with a canned "✅ Test from ORZEN".
-5. `regenerateVerifyToken()` — replace `verify_token` (invalidates existing webhook, user must re-verify).
-6. `refreshMessengerPermissions()` — re-hit `debug_token` (needs app_id/app_secret); updates `permissions` + `token_expires_at`.
-7. `updateMessengerAiFlags({ ai_auto_reply, human_takeover, ... })` — updates the 6 boolean toggles.
-8. `disconnectMessenger` — unchanged behavior, also clears cached page metadata.
+Add file routes under `src/routes/store/$slug/`:
+- `privacy-policy.tsx`, `terms.tsx`, `refund-policy.tsx`, `shipping-policy.tsx`, `contact.tsx`, `about.tsx`, `data-deletion.tsx`
 
-Webhook route (`src/routes/api/public/messenger/webhook.ts`):
-- Decrypt token when sending replies.
-- When `human_takeover=true` OR `ai_auto_reply=false`: skip AI, just persist the incoming message.
-- On send failure, `UPDATE messenger_integrations SET last_error=$1` and increment failure counter.
-- Optional `X-Hub-Signature-256` verification when `app_secret_encrypted` is present.
+Each route:
+- Loader calls public RPC to fetch the page for the slug
+- `head()` sets Meta Title, Description, Open Graph, canonical (self-referencing absolute URL built from request origin)
+- Renders sanitized HTML in a shared `<LegalPage>` layout
+- 404 fallback with `notFoundComponent`
 
-## Admin UI rewrite (`src/routes/_authenticated/admin/messenger.tsx`)
+On custom domain / subdomain the same routes resolve because storefront routing already normalizes host → slug.
 
-Mobile-first single-column layout that becomes 2-column ≥ `lg`. Sections top → bottom:
+## 4. Admin UI (`src/routes/_authenticated/admin/legal.tsx`)
 
-1. **Dashboard card** — page picture, page name, status pill (Connected/Disconnected/Error), webhook pill, AI pill, 3 mini-stats (Messages today, Failed, Last incoming), token expiry countdown with "Refresh token" reminder when < 7 days.
-2. **Connection form** — Page ID, Long-lived Page Access Token (password + Show/Hide + Copy), App ID (optional), App Secret (password + Show/Hide, optional). Client-side validation (required lengths, digits for page id). Buttons: Connect / Save Changes / Disconnect / Reconnect.
-3. **Webhook card** — Webhook URL (read-only, Copy). Verify Token (read-only, Show/Hide, Copy, Regenerate). Status pill + "Verify Webhook" button (calls `verifyMessengerWebhook`). Shows `last_verified_at` and `last_error`.
-4. **Permissions card** — list of required scopes with green ✓ / red ✗ derived from `permissions`. Note when app_id/app_secret missing that permissions can't be checked. "Refresh permissions" button.
-5. **AI behavior card** — 6 toggle switches (Auto Reply, Human Takeover, Conversation History, Order Detection, Product Recommendation, FAQ Reply). Auto-save on change (debounced) via `updateMessengerAiFlags`.
-6. **Test tools card** — "Send Test Message" (input Messenger PSID), "Verify Webhook", "Send Test Event" (posts a synthetic event to the webhook). Small live log (last 10 entries from `last_error` + verification history stored in-memory client-side per session).
+Sidebar entry "Legal & Info Pages" (near SEO).
 
-Use existing shadcn `Switch`, `Card`, `Button`, `Input`. Reuse toast/pattern from current file. All copy buttons via `navigator.clipboard`. All secrets hidden by default with eye toggle. Responsive: cards stack, buttons full-width < `sm`, mini-stats use `grid-cols-3` at all sizes with truncation.
+Sections:
+- **Business Information form** — all 8 fields with zod validation
+- **Generate button** — runs `saveAndGenerateLegal`; shows success toast
+- **Generated URLs list** — 7 rows, each with:
+  - Path label (`/privacy-policy` etc.)
+  - Green "Generated" badge (if page exists)
+  - Copy URL, Open Page (new tab), Regenerate buttons
+- Mobile-first responsive cards
 
-## Files to touch
+## 5. Auto update
 
-- Migration: alter `messenger_integrations` + create `get_messenger_daily_stats` RPC + counter column.
-- `src/lib/ai.functions.ts` — replace messenger section with 8 fns above; import `encryptJSON`/`decryptJSON` inside handlers (dynamic import to keep server-only helpers off client bundle).
-- `src/routes/api/public/messenger/webhook.ts` — decrypt token, respect AI flags, record failures / errors, optional signature check.
-- `src/routes/_authenticated/admin/messenger.tsx` — full UI rewrite as above.
+Hook into existing `updateStoreSettings` / store profile save: if name/domain/email/phone/address changed and legal info exists, call regenerator server-side so pages refresh without touching URLs.
 
-## Out of scope
+## 6. Future expansion
 
-- Meta OAuth login flow (users still paste a long-lived token; documented in-page).
-- Historical analytics beyond today's counters.
-- Multi-page per store.
-- Storefront-side changes (product recommendation & order detection use the existing AI agent context; no storefront UI change here).
+`pages` is a jsonb map keyed by page slug; adding a new page = add a template + a route file + one entry in the admin URL list. No schema change needed.
+
+## Technical details
+
+- Sanitize generated HTML with a small allowlist (headings, paragraphs, lists, links) — templates produce safe HTML only, no user HTML injected.
+- Canonical + og:url built from `getRequestHeader('host')` inside `head()` via loader-provided origin.
+- Copy button uses `navigator.clipboard`.
+- Regenerate triggers a single-page rerender through `regenerateLegalPage`.

@@ -2208,6 +2208,68 @@ export type Database = {
           },
         ]
       }
+      store_legal_info: {
+        Row: {
+          business_address: string
+          contact_phone: string
+          country: string
+          created_at: string
+          currency: string
+          generated_at: string | null
+          id: string
+          owner_name: string
+          pages: Json
+          pages_version: number
+          store_id: string
+          store_name: string
+          support_email: string
+          updated_at: string
+          website_domain: string
+        }
+        Insert: {
+          business_address: string
+          contact_phone: string
+          country: string
+          created_at?: string
+          currency: string
+          generated_at?: string | null
+          id?: string
+          owner_name: string
+          pages?: Json
+          pages_version?: number
+          store_id: string
+          store_name: string
+          support_email: string
+          updated_at?: string
+          website_domain: string
+        }
+        Update: {
+          business_address?: string
+          contact_phone?: string
+          country?: string
+          created_at?: string
+          currency?: string
+          generated_at?: string | null
+          id?: string
+          owner_name?: string
+          pages?: Json
+          pages_version?: number
+          store_id?: string
+          store_name?: string
+          support_email?: string
+          updated_at?: string
+          website_domain?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_legal_info_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_payment_gateways: {
         Row: {
           connected_at: string | null
@@ -3069,6 +3131,10 @@ export type Database = {
           product_id: string
           total_qty: number
         }[]
+      }
+      get_store_legal_page: {
+        Args: { _page: string; _slug: string }
+        Returns: Json
       }
       get_store_template_for_seed: { Args: never; Returns: Json }
       has_role: {
