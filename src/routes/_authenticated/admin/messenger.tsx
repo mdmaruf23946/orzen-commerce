@@ -305,7 +305,9 @@ function AdminMessenger() {
           <div className="flex flex-wrap gap-2 sm:ml-auto">
             {statusPill}
             {webhookPill}
-            {d.ai_auto_reply ? (
+            {d.human_takeover ? (
+              <Badge variant="destructive">Paused (Human)</Badge>
+            ) : d.ai_auto_reply ? (
               <Badge className="bg-primary hover:bg-primary">AI On</Badge>
             ) : (
               <Badge variant="outline">AI Off</Badge>
