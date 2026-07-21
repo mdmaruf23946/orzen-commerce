@@ -93,10 +93,20 @@ export type Database = {
           created_at: string
           customer_name: string | null
           external_id: string | null
+          first_contact_at: string
+          handoff_mode: string
           id: string
+          last_message_at: string | null
+          last_message_preview: string | null
+          lead_status: string | null
           phone: string | null
+          psid_profile: Json
           status: string
           store_id: string
+          tags: string[]
+          total_orders: number
+          total_spent: number
+          unread_count: number
           updated_at: string
         }
         Insert: {
@@ -105,10 +115,20 @@ export type Database = {
           created_at?: string
           customer_name?: string | null
           external_id?: string | null
+          first_contact_at?: string
+          handoff_mode?: string
           id?: string
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          lead_status?: string | null
           phone?: string | null
+          psid_profile?: Json
           status?: string
           store_id: string
+          tags?: string[]
+          total_orders?: number
+          total_spent?: number
+          unread_count?: number
           updated_at?: string
         }
         Update: {
@@ -117,10 +137,20 @@ export type Database = {
           created_at?: string
           customer_name?: string | null
           external_id?: string | null
+          first_contact_at?: string
+          handoff_mode?: string
           id?: string
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          lead_status?: string | null
           phone?: string | null
+          psid_profile?: Json
           status?: string
           store_id?: string
+          tags?: string[]
+          total_orders?: number
+          total_spent?: number
+          unread_count?: number
           updated_at?: string
         }
         Relationships: [
@@ -168,25 +198,46 @@ export type Database = {
       }
       ai_messages: {
         Row: {
+          attachments: Json
           content: string
           conversation_id: string
           created_at: string
+          delivery_status: string
+          direction: string
+          error: string | null
           id: string
+          message_type: string
+          mid: string | null
           role: string
+          sent_by_user_id: string | null
         }
         Insert: {
+          attachments?: Json
           content: string
           conversation_id: string
           created_at?: string
+          delivery_status?: string
+          direction?: string
+          error?: string | null
           id?: string
+          message_type?: string
+          mid?: string | null
           role: string
+          sent_by_user_id?: string | null
         }
         Update: {
+          attachments?: Json
           content?: string
           conversation_id?: string
           created_at?: string
+          delivery_status?: string
+          direction?: string
+          error?: string | null
           id?: string
+          message_type?: string
+          mid?: string | null
           role?: string
+          sent_by_user_id?: string | null
         }
         Relationships: [
           {
@@ -996,6 +1047,51 @@ export type Database = {
           },
         ]
       }
+      messenger_notes: {
+        Row: {
+          author_user_id: string | null
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_user_id?: string | null
+          body: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_user_id?: string | null
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messenger_notes_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messenger_notes_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_internal_notes: {
         Row: {
           body: string
@@ -1619,6 +1715,44 @@ export type Database = {
           target_user_id?: string
         }
         Relationships: []
+      }
+      saved_replies: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          sort: number
+          store_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          sort?: number
+          store_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          sort?: number
+          store_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_replies_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stock_movements: {
         Row: {
