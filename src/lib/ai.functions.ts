@@ -440,16 +440,27 @@ export const regenerateMessengerVerifyToken = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const storeId = await getOwnedStoreId(context.supabase, context.userId);
     const verify_token = await ensureUniqueVerifyToken(context.supabase);
-    // Upsert so a token exists even if no row was created yet.
-    const { error } = await context.supabase
+    // Update existing row; if none exists yet, insert a pending one.
+    const { data: existing } = await context.supabase
       .from("messenger_integrations")
-      .upsert(
-        { store_id: storeId, verify_token, last_verified_at: null, last_error: null, status: "pending" },
-        { onConflict: "store_id" },
-      );
-    if (error) throw new Error(error.message);
+      .select("id")
+      .eq("store_id", storeId)
+      .maybeSingle();
+    if (existing) {
+      const { error } = await context.supabase
+        .from("messenger_integrations")
+        .update({ verify_token, last_verified_at: null, last_error: null })
+        .eq("store_id", storeId);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await context.supabase
+        .from("messenger_integrations")
+        .insert({ store_id: storeId, verify_token, status: "pending" });
+      if (error) throw new Error(error.message);
+    }
     return { ok: true, verify_token };
   });
+
 
 
 export const refreshMessengerPermissions = createServerFn({ method: "POST" })
