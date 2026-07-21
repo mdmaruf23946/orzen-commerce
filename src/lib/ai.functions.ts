@@ -439,14 +439,18 @@ export const regenerateMessengerVerifyToken = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const storeId = await getOwnedStoreId(context.supabase, context.userId);
-    const verify_token = `vt_${Math.random().toString(36).slice(2, 14)}`;
+    const verify_token = await ensureUniqueVerifyToken(context.supabase);
+    // Upsert so a token exists even if no row was created yet.
     const { error } = await context.supabase
       .from("messenger_integrations")
-      .update({ verify_token, last_verified_at: null })
-      .eq("store_id", storeId);
+      .upsert(
+        { store_id: storeId, verify_token, last_verified_at: null, last_error: null, status: "pending" },
+        { onConflict: "store_id" },
+      );
     if (error) throw new Error(error.message);
     return { ok: true, verify_token };
   });
+
 
 export const refreshMessengerPermissions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
