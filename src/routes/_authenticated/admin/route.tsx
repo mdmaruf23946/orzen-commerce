@@ -31,6 +31,7 @@ import {
   Globe,
   Radar,
   ShieldCheck,
+  FileText,
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,6 +58,7 @@ const links: { to: string; label: string; icon: typeof LayoutDashboard; exact?: 
   { to: "/admin/banners", label: "Banners", icon: ImageIcon },
   { to: "/admin/theme", label: "Theme", icon: Palette },
   { to: "/admin/seo", label: "SEO", icon: SearchIcon },
+  { to: "/admin/legal", label: "Legal & Info Pages", icon: FileText },
   { to: "/admin/delivery", label: "Delivery", icon: PackageOpen },
   { to: "/admin/couriers", label: "Couriers", icon: Truck },
   { to: "/admin/payment-gateway", label: "Payment Gateway", icon: CreditCard },
