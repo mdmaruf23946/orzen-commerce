@@ -59,8 +59,15 @@ function AdminMessenger() {
   const [showVerify, setShowVerify] = useState(false);
   const [busy, setBusy] = useState(false);
   const [testPsid, setTestPsid] = useState("");
+  const [testMessage, setTestMessage] = useState("");
   const [log, setLog] = useState<LogEntry[]>([]);
   const [diag, setDiag] = useState<any | null>(null);
+  const fetchRecentPsids = useServerFn(listMessengerRecentPsids);
+  const { data: recentPsids, refetch: refetchPsids } = useQuery({
+    queryKey: ["admin", "messenger", "recent-psids"],
+    queryFn: () => fetchRecentPsids(),
+    enabled: connected,
+  });
 
   useEffect(() => {
     if (!data) return;
