@@ -344,7 +344,7 @@ export const connectMessenger = createServerFn({ method: "POST" })
       }
     }
 
-    const verify_token = row?.verify_token || `vt_${Math.random().toString(36).slice(2, 14)}`;
+    const verify_token = row?.verify_token || (await ensureUniqueVerifyToken(context.supabase));
     const upsertRow: any = {
       store_id: storeId,
       page_id: data.page_id,
