@@ -210,19 +210,59 @@ async function decryptToken(enc: string | null): Promise<string | null> {
   }
 }
 
+async function generateSecureVerifyToken(): Promise<string> {
+  const { randomBytes } = await import("crypto");
+  // 24 bytes → 48 hex chars (within 32–64 range)
+  return `vt_${randomBytes(24).toString("hex")}`;
+}
+
+async function ensureUniqueVerifyToken(supabase: any): Promise<string> {
+  for (let i = 0; i < 5; i++) {
+    const t = await generateSecureVerifyToken();
+    const { data } = await supabase
+      .from("messenger_integrations")
+      .select("id")
+      .eq("verify_token", t)
+      .maybeSingle();
+    if (!data) return t;
+  }
+  // fallback (extremely unlikely)
+  return await generateSecureVerifyToken();
+}
+
+
 export const getMessengerIntegration = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { storeId, row } = await loadIntegrationForOwner(context);
+    let { storeId, row } = await loadIntegrationForOwner(context);
     const webhookUrl = `${publicOrigin()}/api/public/messenger/webhook`;
     let stats: any = { messages_today: 0, failed_today: 0, last_incoming_at: null };
     try {
       const { data: s } = await context.supabase.rpc("get_messenger_daily_stats", { _store_id: storeId });
       if (s) stats = s;
     } catch {}
+
+    // Auto-provision a secure verify token the first time this page is opened,
+    // or backfill one if the row exists but has no token.
     if (!row) {
-      return { connected: false, webhook_url: webhookUrl, stats };
+      const verify_token = await ensureUniqueVerifyToken(context.supabase);
+      const { data: created } = await context.supabase
+        .from("messenger_integrations")
+        .insert({ store_id: storeId, verify_token, status: "pending" })
+        .select("*")
+        .single();
+      row = created as any;
+    } else if (!row.verify_token) {
+      const verify_token = await ensureUniqueVerifyToken(context.supabase);
+      const { data: updated } = await context.supabase
+        .from("messenger_integrations")
+        .update({ verify_token })
+        .eq("store_id", storeId)
+        .select("*")
+        .single();
+      if (updated) row = updated as any;
     }
+
     return {
       connected: row.status === "connected",
       webhook_url: webhookUrl,
@@ -304,7 +344,7 @@ export const connectMessenger = createServerFn({ method: "POST" })
       }
     }
 
-    const verify_token = row?.verify_token || `vt_${Math.random().toString(36).slice(2, 14)}`;
+    const verify_token = row?.verify_token || (await ensureUniqueVerifyToken(context.supabase));
     const upsertRow: any = {
       store_id: storeId,
       page_id: data.page_id,
@@ -399,14 +439,29 @@ export const regenerateMessengerVerifyToken = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const storeId = await getOwnedStoreId(context.supabase, context.userId);
-    const verify_token = `vt_${Math.random().toString(36).slice(2, 14)}`;
-    const { error } = await context.supabase
+    const verify_token = await ensureUniqueVerifyToken(context.supabase);
+    // Update existing row; if none exists yet, insert a pending one.
+    const { data: existing } = await context.supabase
       .from("messenger_integrations")
-      .update({ verify_token, last_verified_at: null })
-      .eq("store_id", storeId);
-    if (error) throw new Error(error.message);
+      .select("id")
+      .eq("store_id", storeId)
+      .maybeSingle();
+    if (existing) {
+      const { error } = await context.supabase
+        .from("messenger_integrations")
+        .update({ verify_token, last_verified_at: null, last_error: null })
+        .eq("store_id", storeId);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await context.supabase
+        .from("messenger_integrations")
+        .insert({ store_id: storeId, verify_token, status: "pending" });
+      if (error) throw new Error(error.message);
+    }
     return { ok: true, verify_token };
   });
+
+
 
 export const refreshMessengerPermissions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
