@@ -57,6 +57,7 @@ function AdminMessenger() {
   const [busy, setBusy] = useState(false);
   const [testPsid, setTestPsid] = useState("");
   const [log, setLog] = useState<LogEntry[]>([]);
+  const [diag, setDiag] = useState<any | null>(null);
 
   useEffect(() => {
     if (!data) return;
