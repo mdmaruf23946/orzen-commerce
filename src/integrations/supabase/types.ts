@@ -346,20 +346,32 @@ export type Database = {
       categories: {
         Row: {
           created_at: string
+          description: string | null
           id: string
+          image_url: string | null
+          is_active: boolean
           name: string
+          sort_order: number
           store_id: string
         }
         Insert: {
           created_at?: string
+          description?: string | null
           id?: string
+          image_url?: string | null
+          is_active?: boolean
           name: string
+          sort_order?: number
           store_id: string
         }
         Update: {
           created_at?: string
+          description?: string | null
           id?: string
+          image_url?: string | null
+          is_active?: boolean
           name?: string
+          sort_order?: number
           store_id?: string
         }
         Relationships: [

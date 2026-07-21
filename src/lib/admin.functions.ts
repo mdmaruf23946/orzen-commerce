@@ -483,6 +483,7 @@ export const listMyCategories = createServerFn({ method: "GET" })
       .from("categories")
       .select("*")
       .eq("store_id", store.id)
+      .order("sort_order", { ascending: true })
       .order("name", { ascending: true });
     if (error) throw new Error(error.message);
     return data ?? [];
@@ -495,6 +496,10 @@ export const upsertCategory = createServerFn({ method: "POST" })
       .object({
         id: z.string().uuid().optional(),
         name: z.string().trim().min(1).max(80),
+        image_url: z.string().max(500).nullable().optional(),
+        description: z.string().max(500).nullable().optional(),
+        sort_order: z.number().int().min(0).max(9999).optional(),
+        is_active: z.boolean().optional(),
       })
       .parse(d),
   )
@@ -502,10 +507,17 @@ export const upsertCategory = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
     if (!store) throw new Error("No store");
+    const patch = {
+      name: data.name,
+      ...(data.image_url !== undefined ? { image_url: data.image_url } : {}),
+      ...(data.description !== undefined ? { description: data.description } : {}),
+      ...(data.sort_order !== undefined ? { sort_order: data.sort_order } : {}),
+      ...(data.is_active !== undefined ? { is_active: data.is_active } : {}),
+    };
     if (data.id) {
       const { error } = await supabase
         .from("categories")
-        .update({ name: data.name })
+        .update(patch)
         .eq("id", data.id)
         .eq("store_id", store.id);
       if (error) throw new Error(error.message);
@@ -513,11 +525,29 @@ export const upsertCategory = createServerFn({ method: "POST" })
     }
     const { data: created, error } = await supabase
       .from("categories")
-      .insert({ store_id: store.id, name: data.name })
+      .insert({ store_id: store.id, ...patch })
       .select("id,name,store_id")
       .single();
     if (error) throw new Error(error.message);
     return created;
+  });
+
+export const reorderCategories = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ ids: z.array(z.string().uuid()).max(500) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    if (!store) throw new Error("No store");
+    for (let i = 0; i < data.ids.length; i++) {
+      const { error } = await supabase
+        .from("categories")
+        .update({ sort_order: i })
+        .eq("id", data.ids[i])
+        .eq("store_id", store.id);
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true };
   });
 
 export const deleteCategory = createServerFn({ method: "POST" })

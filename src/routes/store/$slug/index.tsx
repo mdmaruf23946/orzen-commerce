@@ -233,17 +233,18 @@ function CategoryStrip({
   active,
   onSelect,
 }: {
-  categories: { id: string; name: string }[];
+  categories: { id: string; name: string; image_url?: string | null }[];
   active: string | null;
   onSelect: (id: string | null) => void;
 }) {
   return (
-    <div className="-mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <CategoryPill label="All" active={active === null} onClick={() => onSelect(null)} />
+    <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-6 sm:gap-4 sm:overflow-visible sm:px-0 md:grid-cols-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <CategoryTile label="All" active={active === null} onClick={() => onSelect(null)} />
       {categories.map((c) => (
-        <CategoryPill
+        <CategoryTile
           key={c.id}
           label={c.name}
+          image={c.image_url ?? null}
           active={active === c.id}
           onClick={() => onSelect(c.id)}
         />
@@ -252,34 +253,48 @@ function CategoryStrip({
   );
 }
 
-function CategoryPill({
+function CategoryTile({
   label,
+  image,
   active,
   onClick,
 }: {
   label: string;
+  image?: string | null;
   active: boolean;
   onClick: () => void;
 }) {
+  const ring = active ? "var(--store-btn-bg, #0f172a)" : "transparent";
   return (
     <button
       type="button"
       onClick={onClick}
-      className="shrink-0 snap-start rounded-full border px-4 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors"
-      style={
-        active
-          ? {
-              backgroundColor: "var(--store-btn-bg, #0f172a)",
-              color: "#fff",
-              borderColor: "var(--store-btn-bg, #0f172a)",
-            }
-          : { backgroundColor: "#fff", borderColor: "#e5e7eb", color: "#111" }
-      }
+      className="group flex w-20 shrink-0 snap-start flex-col items-center gap-1.5 sm:w-auto"
     >
-      {label}
+      <div
+        className="grid aspect-square w-16 place-items-center overflow-hidden rounded-2xl bg-neutral-100 ring-2 transition-all sm:w-full"
+        style={{ boxShadow: `inset 0 0 0 2px ${ring}` }}
+      >
+        {image ? (
+          <img src={image} alt={label} loading="lazy" className="h-full w-full object-cover" />
+        ) : (
+          <span
+            className="grid h-full w-full place-items-center text-lg font-bold text-neutral-400"
+            aria-hidden
+          >
+            {label.charAt(0).toUpperCase()}
+          </span>
+        )}
+      </div>
+      <span
+        className={`line-clamp-1 w-full text-center text-[11px] font-medium ${active ? "text-neutral-900" : "text-neutral-600"}`}
+      >
+        {label}
+      </span>
     </button>
   );
 }
+
 
 function BannerCarousel({
   banners,
