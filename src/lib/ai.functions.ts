@@ -389,25 +389,54 @@ export const verifyMessengerWebhook = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { storeId, row } = await loadIntegrationForOwner(context);
     if (!row?.verify_token) throw new Error("Not configured");
-    const url = `${publicOrigin()}/api/public/messenger/webhook?hub.mode=subscribe&hub.verify_token=${encodeURIComponent(row.verify_token)}&hub.challenge=ping`;
+    const base = `${publicOrigin()}/api/public/messenger/webhook`;
+    const goodUrl = `${base}?hub.mode=subscribe&hub.verify_token=${encodeURIComponent(row.verify_token)}&hub.challenge=ping`;
+    const badUrl = `${base}?hub.mode=subscribe&hub.verify_token=__invalid__&hub.challenge=ping`;
+    const diag: any = {
+      endpoint: base,
+      reachable: false,
+      get_status: null as number | null,
+      get_body: "",
+      token_match: false,
+      post_status: null as number | null,
+      bad_token_status: null as number | null,
+    };
     try {
-      const r = await fetch(url);
-      const t = await r.text();
-      const ok = r.ok && t === "ping";
+      const r = await fetch(goodUrl);
+      diag.reachable = true;
+      diag.get_status = r.status;
+      diag.get_body = (await r.text()).slice(0, 200);
+      diag.token_match = r.ok && diag.get_body === "ping";
+      try {
+        const rb = await fetch(badUrl);
+        diag.bad_token_status = rb.status;
+      } catch {}
+      try {
+        const rp = await fetch(base, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ object: "page", entry: [] }),
+        });
+        diag.post_status = rp.status;
+      } catch {}
+      const ok = diag.token_match;
       await context.supabase
         .from("messenger_integrations")
         .update({
           last_verified_at: ok ? new Date().toISOString() : row.last_verified_at,
-          last_error: ok ? null : `Webhook verify failed (${r.status})`,
+          last_error: ok
+            ? null
+            : `Webhook verify failed (GET ${diag.get_status}: ${diag.get_body || "no body"})`,
         })
         .eq("store_id", storeId);
-      return { ok, status: r.status };
+      return { ok, ...diag };
     } catch (e) {
+      const msg = (e as Error).message;
       await context.supabase
         .from("messenger_integrations")
-        .update({ last_error: (e as Error).message })
+        .update({ last_error: `Webhook unreachable: ${msg}` })
         .eq("store_id", storeId);
-      throw new Error((e as Error).message);
+      return { ok: false, ...diag, error: msg };
     }
   });
 
