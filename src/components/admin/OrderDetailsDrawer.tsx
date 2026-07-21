@@ -91,6 +91,22 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
     qc.invalidateQueries({ queryKey: ["order-drawer", orderId] });
   }
 
+  async function submitCourier(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingCourier(true);
+    try {
+      await saveCourier({ data: {
+        order_id: orderId,
+        courier_name: courier.name || null,
+        courier_tracking_id: courier.tracking || null,
+        courier_status: courier.status || null,
+      } });
+      qc.invalidateQueries({ queryKey: ["order-drawer", orderId] });
+      toast.success("Courier updated");
+    } catch (err) { toast.error((err as Error).message); }
+    finally { setSavingCourier(false); }
+  }
+
   const order: any = data?.order;
   const items: any[] = data?.items ?? [];
   const timeline: any[] = data?.timeline ?? [];
@@ -240,6 +256,24 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                   ))}
                   {timeline.length === 0 && <li className="text-xs text-muted-foreground">No events yet.</li>}
                 </ol>
+              </Section>
+
+              {/* Courier tracking editor */}
+              <Section icon={Truck} title="Courier tracking">
+                {(order.courier_name || order.courier_tracking_id || order.courier_status) && (
+                  <div className="mb-2 rounded-md bg-muted/40 p-2 text-xs">
+                    {order.courier_name && <div><span className="text-muted-foreground">Courier:</span> {order.courier_name}</div>}
+                    {order.courier_tracking_id && <div><span className="text-muted-foreground">Tracking:</span> <span className="font-mono">{order.courier_tracking_id}</span></div>}
+                    {order.courier_status && <div><span className="text-muted-foreground">Status:</span> {order.courier_status}</div>}
+                    {order.courier_last_synced_at && <div className="text-[10px] text-muted-foreground">Updated {new Date(order.courier_last_synced_at).toLocaleString()}</div>}
+                  </div>
+                )}
+                <form onSubmit={submitCourier} className="space-y-2">
+                  <Input placeholder="Courier (e.g. Pathao, Steadfast)" value={courier.name} onChange={(e) => setCourier((c) => ({ ...c, name: e.target.value }))} className="h-8 text-xs" />
+                  <Input placeholder="Tracking ID" value={courier.tracking} onChange={(e) => setCourier((c) => ({ ...c, tracking: e.target.value }))} className="h-8 text-xs" />
+                  <Input placeholder="Status (e.g. In Transit)" value={courier.status} onChange={(e) => setCourier((c) => ({ ...c, status: e.target.value }))} className="h-8 text-xs" />
+                  <Button type="submit" size="sm" variant="outline" disabled={savingCourier}>{savingCourier ? "Saving…" : "Update courier"}</Button>
+                </form>
               </Section>
 
               {/* Notes */}
