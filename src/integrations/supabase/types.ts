@@ -1399,6 +1399,7 @@ export type Database = {
           id: string
           is_featured: boolean
           low_stock_threshold: number | null
+          meta: Json
           name: string
           old_price: number | null
           price: number
@@ -1422,6 +1423,7 @@ export type Database = {
           id?: string
           is_featured?: boolean
           low_stock_threshold?: number | null
+          meta?: Json
           name: string
           old_price?: number | null
           price?: number
@@ -1445,6 +1447,7 @@ export type Database = {
           id?: string
           is_featured?: boolean
           low_stock_threshold?: number | null
+          meta?: Json
           name?: string
           old_price?: number | null
           price?: number
