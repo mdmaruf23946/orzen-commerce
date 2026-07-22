@@ -979,6 +979,28 @@ export function streamAgentResponse(opts: {
   };
 }
 
+function findDuplicateBlockedReply(value: any, depth = 0, seen = new WeakSet<object>()): string | null {
+  if (!value || depth > 8) return null;
+  if (typeof value !== "object") return null;
+  if (seen.has(value)) return null;
+  seen.add(value);
+  if (value.error === "duplicate_blocked" && typeof value.reply === "string" && value.reply.trim()) {
+    return value.reply;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findDuplicateBlockedReply(item, depth + 1, seen);
+      if (found) return found;
+    }
+    return null;
+  }
+  for (const item of Object.values(value)) {
+    const found = findDuplicateBlockedReply(item, depth + 1, seen);
+    if (found) return found;
+  }
+  return null;
+}
+
 export async function generateAgentReply(opts: {
   ctx: AgentContext;
   messages: any[];
@@ -995,5 +1017,7 @@ export async function generateAgentReply(opts: {
     providerOptions: modelId === "openai/gpt-5.4-mini" ? { lovable: { service_tier: "priority" } } : undefined,
   });
   void logUsage(opts.ctx.storeId, modelId, result.usage, "messenger");
+  const duplicateReply = findDuplicateBlockedReply(result as any);
+  if (duplicateReply) return duplicateReply;
   return result.text;
 }
