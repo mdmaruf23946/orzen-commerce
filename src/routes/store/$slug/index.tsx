@@ -76,9 +76,44 @@ function StoreHome() {
   const { data: products } = useSuspenseQuery(productsQuery(store.id));
   const { data: categories } = useSuspenseQuery(categoriesQuery(store.id));
   const { data: bestSelling } = useSuspenseQuery(bestSellingQuery(store.id));
-  const { query } = useStoreUI();
-  const [activeCat, setActiveCat] = useState<string | null>(null);
+  const { query, activeMainId, activeSubId, source, selectMain, selectSub } = useStoreUI();
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
+
+  const mainCategories = useMemo(
+    () => categories.filter((c: any) => !c.parent_id),
+    [categories],
+  );
+  const subsByParent = useMemo(() => {
+    const m = new Map<string, typeof categories>();
+    for (const c of categories) {
+      const pid = (c as any).parent_id as string | null;
+      if (pid) {
+        if (!m.has(pid)) m.set(pid, [] as any);
+        (m.get(pid) as any).push(c);
+      }
+    }
+    return m;
+  }, [categories]);
+
+  const catParentMap = useMemo(() => {
+    const m = new Map<string, string | null>();
+    for (const c of categories) m.set(c.id, (c as any).parent_id ?? null);
+    return m;
+  }, [categories]);
+
+  const countsByMain = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of products) {
+      const cid = (p as any).category_id as string | null;
+      if (!cid) continue;
+      const parent = catParentMap.get(cid);
+      const mainId = parent ?? cid;
+      m.set(mainId, (m.get(mainId) ?? 0) + 1);
+    }
+    return m;
+  }, [products, catParentMap]);
+
+  const activeSubs = activeMainId ? (subsByParent.get(activeMainId) as any) ?? [] : [];
 
   const featured = useMemo(
     () => products.filter((p: any) => p.is_featured).slice(0, 12),
@@ -88,15 +123,35 @@ function StoreHome() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return products.filter((p) => {
-      if (activeCat && p.category_id !== activeCat) return false;
+      const cid = (p as any).category_id as string | null;
+      if (activeSubId) {
+        if (cid !== activeSubId) return false;
+      } else if (activeMainId) {
+        if (!cid) return false;
+        const parent = catParentMap.get(cid);
+        if (cid !== activeMainId && parent !== activeMainId) return false;
+      }
       if (q && !p.name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [products, query, activeCat]);
+  }, [products, query, activeMainId, activeSubId, catParentMap]);
 
   useEffect(() => {
     setPageSize(PAGE_SIZE);
-  }, [activeCat, query]);
+  }, [activeMainId, activeSubId, query]);
+
+  // Search integration: exact match on a subcategory auto-activates it
+  useEffect(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return;
+    const hit = categories.find((c: any) => c.parent_id && c.name.toLowerCase() === q);
+    if (hit) {
+      const parent = (hit as any).parent_id as string;
+      if (activeMainId !== parent) selectMain(parent, "header");
+      if (activeSubId !== hit.id) selectSub(hit.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, categories]);
 
   function scrollToAll() {
     document.getElementById("all-products")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -104,14 +159,38 @@ function StoreHome() {
 
   return (
     <div className="space-y-8">
+      {mainCategories.length > 0 && (
+        <MainCategoryBar
+          mains={mainCategories as any}
+          counts={countsByMain}
+          totalCount={products.length}
+          activeMainId={activeMainId}
+          onSelect={(id) => {
+            selectMain(id, "header");
+            scrollToAll();
+          }}
+        />
+      )}
+
       {banners.length > 0 && <BannerCarousel banners={banners} />}
+
+      {source === "header" && activeMainId && activeSubs.length > 0 && (
+        <SubcategoryBar
+          subs={activeSubs}
+          activeSubId={activeSubId}
+          onSelect={(id) => {
+            selectSub(id);
+            scrollToAll();
+          }}
+        />
+      )}
 
       {categories.length > 0 && (
         <CategoryStrip
-          categories={categories}
-          active={activeCat}
+          categories={mainCategories as any}
+          active={activeMainId}
           onSelect={(id) => {
-            setActiveCat(id);
+            selectMain(id, "icon");
             scrollToAll();
           }}
         />
@@ -122,7 +201,7 @@ function StoreHome() {
           title="Featured Products"
           icon={<Sparkles className="h-4 w-4 text-amber-500" />}
           onViewAll={() => {
-            setActiveCat(null);
+            selectMain(null, null);
             scrollToAll();
           }}
         >
@@ -135,7 +214,7 @@ function StoreHome() {
           title="Best Selling"
           icon={<Flame className="h-4 w-4 text-rose-500" />}
           onViewAll={() => {
-            setActiveCat(null);
+            selectMain(null, null);
             scrollToAll();
           }}
         >
@@ -225,6 +304,117 @@ function Section({
       </div>
       {children}
     </section>
+  );
+}
+
+function MainCategoryBar({
+  mains,
+  counts,
+  totalCount,
+  activeMainId,
+  onSelect,
+}: {
+  mains: { id: string; name: string }[];
+  counts: Map<string, number>;
+  totalCount: number;
+  activeMainId: string | null;
+  onSelect: (id: string | null) => void;
+}) {
+  return (
+    <div className="-mx-4 hidden overflow-x-auto px-4 pb-1 md:block [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex items-center gap-2">
+        <Pill active={activeMainId === null} onClick={() => onSelect(null)}>
+          All ({totalCount})
+        </Pill>
+        {mains.map((c) => (
+          <Pill
+            key={c.id}
+            active={activeMainId === c.id}
+            onClick={() => onSelect(c.id)}
+          >
+            {c.name} ({counts.get(c.id) ?? 0})
+          </Pill>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SubcategoryBar({
+  subs,
+  activeSubId,
+  onSelect,
+}: {
+  subs: { id: string; name: string }[];
+  activeSubId: string | null;
+  onSelect: (id: string | null) => void;
+}) {
+  return (
+    <div className="-mx-4 hidden overflow-x-auto px-4 md:block [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex items-center gap-2">
+        <SubPill active={activeSubId === null} onClick={() => onSelect(null)}>
+          All
+        </SubPill>
+        {subs.map((s) => (
+          <SubPill
+            key={s.id}
+            active={activeSubId === s.id}
+            onClick={() => onSelect(s.id)}
+          >
+            {s.name}
+          </SubPill>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Pill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors duration-200 ${
+        active
+          ? "text-white"
+          : "border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50"
+      }`}
+      style={active ? { backgroundColor: "var(--store-btn-bg, #7c3aed)" } : undefined}
+    >
+      {children}
+    </button>
+  );
+}
+
+function SubPill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors duration-200 ${
+        active
+          ? "bg-neutral-900 text-white"
+          : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
