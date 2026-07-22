@@ -153,7 +153,20 @@ function isPhotoIntent(text: string) {
 }
 
 function isProductIntent(text: string) {
-  return /প্রোডাক্ট|পণ্য|দেখান|দেখাও|কী আছে|কি আছে|দাম|কত|কিনতে|অর্ডার|product|item|price|buy|order|show/i.test(text);
+  return /প্রোডাক্ট|পণ্য|দেখান|দেখাও|কী আছে|কি আছে|দাম|কত|বিস্তারিত|ডিটেইলস|product|item|price|show|details/i.test(text);
+}
+
+function isOrderIntent(text: string) {
+  return /অর্ডার|কিনতে|নিতে চাই|নিব|নেব|buy now|buy|order|purchase|checkout/i.test(text);
+}
+
+function isReferenceIntent(text: string) {
+  return /এটা|এইটা|ওটা|এই|ওই|this|that|it|same/i.test(text);
+}
+
+function isGreetingIntent(text: string) {
+  const compact = text.trim().toLowerCase();
+  return /^(হাই|হাই+|হ্যালো|হেলো|hello|hi|hey|assalamu alaikum|আসসালামু আলাইকুম|সালাম|কেমন আছেন|তোমার কি খবর|কি খবর)[।!?.\s]*$/i.test(compact);
 }
 
 async function searchDirectProducts(sb: ReturnType<typeof admin>, storeId: string, text: string, limit = 6) {
@@ -222,6 +235,60 @@ async function getRecentRecommendedProducts(sb: ReturnType<typeof admin>, storeI
   return ids.map((id) => byId.get(id)).filter(Boolean) as ProductRow[];
 }
 
+async function getConversationPendingOrder(sb: ReturnType<typeof admin>, conversationId: string) {
+  const { data } = await sb
+    .from("ai_conversations")
+    .select("psid_profile")
+    .eq("id", conversationId)
+    .maybeSingle();
+  const profile = ((data as any)?.psid_profile ?? {}) as Record<string, any>;
+  return (profile.pending_order ?? {}) as Record<string, any>;
+}
+
+async function patchConversationPendingOrder(
+  sb: ReturnType<typeof admin>,
+  conversationId: string,
+  patch: Record<string, any>,
+) {
+  const { data } = await sb
+    .from("ai_conversations")
+    .select("psid_profile")
+    .eq("id", conversationId)
+    .maybeSingle();
+  const profile = { ...(((data as any)?.psid_profile ?? {}) as Record<string, any>) };
+  profile.pending_order = { ...(profile.pending_order ?? {}), ...patch };
+  await sb.from("ai_conversations").update({ psid_profile: profile } as any).eq("id", conversationId);
+  return profile.pending_order as Record<string, any>;
+}
+
+function orderMissingFields(slot: Record<string, any>) {
+  const missing: string[] = [];
+  if (!slot.customer_name) missing.push("নাম");
+  if (!slot.phone) missing.push("ফোন নম্বর");
+  if (!slot.full_address) missing.push("সম্পূর্ণ ঠিকানা");
+  if (!slot.payment_method) missing.push("পেমেন্ট মেথড (COD/bKash/Nagad)");
+  return missing;
+}
+
+async function maybeHandleGreeting(opts: {
+  sb: ReturnType<typeof admin>;
+  conversationId: string;
+  psid: string;
+  token: string;
+  text: string;
+}) {
+  const { sb, conversationId, psid, token, text } = opts;
+  if (!isGreetingIntent(text)) return false;
+  await sendAndLogText(
+    sb,
+    token,
+    psid,
+    conversationId,
+    "আলহামদুলিল্লাহ, ভালো আছি 😊 আপনি কোন প্রোডাক্ট খুঁজছেন? নাম লিখলে ছবিসহ দেখিয়ে দিচ্ছি।",
+  );
+  return true;
+}
+
 function productCardInput(storeSlug: string | null | undefined, product: ProductRow): ProductCardInput {
   const priceLine = `৳${Number(product.price).toFixed(0)}`;
   const stockLine = product.stock > 0 ? "In stock" : "Out of stock";
@@ -283,19 +350,40 @@ async function maybeSendDirectProductReply(opts: {
   const { sb, storeId, storeSlug, conversationId, psid, token, text } = opts;
   const terms = productSearchTerms(text);
   const photoIntent = isPhotoIntent(text);
+  const orderIntent = isOrderIntent(text);
+  const referenceIntent = isReferenceIntent(text);
   const explicitProductIntent = isProductIntent(text);
-  if (!photoIntent && !explicitProductIntent && !terms.length) return false;
+  if (!photoIntent && !orderIntent && !explicitProductIntent && !terms.length) return false;
 
-  let products = photoIntent
+  let products = photoIntent || orderIntent || (referenceIntent && terms.length === 0)
     ? await getRecentRecommendedProducts(sb, storeId, conversationId, 3)
     : [];
   if (!products.length) products = await searchDirectProducts(sb, storeId, text, 6);
 
-  if (!products.length && !photoIntent && !explicitProductIntent) return false;
+  if (!products.length && !photoIntent && !orderIntent && !explicitProductIntent) return false;
 
   if (!products.length) {
-    const noResult = "দুঃখিত, এই মুহূর্তে এই প্রোডাক্টটি স্টকে পাচ্ছি না। অন্য কোনো প্রোডাক্ট খুঁজতে চাইলে নাম লিখুন।";
+    const noResult = orderIntent || referenceIntent
+      ? "কোন প্রোডাক্টটি অর্ডার করতে চান বুঝতে পারছি না। প্রোডাক্টের নাম লিখুন, আমি ছবিসহ দেখিয়ে অর্ডার শুরু করে দিব।"
+      : "দুঃখিত, এই নামে কোনো স্টকে থাকা প্রোডাক্ট পেলাম না। অন্য নাম/ক্যাটাগরি লিখলে আবার খুঁজে দেখছি।";
     await sendAndLogText(sb, token, psid, conversationId, noResult);
+    return true;
+  }
+
+  if (orderIntent) {
+    const product = products[0];
+    const current = await getConversationPendingOrder(sb, conversationId);
+    const slot = await patchConversationPendingOrder(sb, conversationId, {
+      ...current,
+      product_id: product.id,
+      qty: current.qty ?? 1,
+    });
+    const missing = orderMissingFields(slot);
+    const textReply = missing.length
+      ? `ঠিক আছে, ${product.name} অর্ডার শুরু করলাম। অর্ডার কনফার্ম করতে ${missing.join(", ")} দিন।`
+      : `ঠিক আছে, ${product.name} অর্ডারের তথ্য পেয়েছি। কনফার্ম করার আগে আর কিছু যোগ করতে চান?`;
+    await logProductRecommendations(sb, storeId, conversationId, [product], text);
+    await sendAndLogText(sb, token, psid, conversationId, textReply);
     return true;
   }
 
@@ -362,6 +450,47 @@ async function maybeSendDirectProductReply(opts: {
     } as any);
     throw e;
   }
+}
+
+async function handleBuyPostback(opts: {
+  sb: ReturnType<typeof admin>;
+  storeId: string;
+  conversationId: string;
+  psid: string;
+  token: string;
+  payload: string;
+}) {
+  const { sb, storeId, conversationId, psid, token, payload } = opts;
+  const productId = payload.replace(/^BUY_/, "");
+  if (!/^[0-9a-f-]{36}$/i.test(productId)) return false;
+  const { data: product } = await sb
+    .from("products")
+    .select("id,name,stock,status")
+    .eq("store_id", storeId)
+    .eq("id", productId)
+    .maybeSingle();
+  if (!product || product.status !== "active" || Number(product.stock) <= 0) {
+    await sendAndLogText(sb, token, psid, conversationId, "দুঃখিত, এই প্রোডাক্টটি এখন স্টকে নেই। চাইলে কাছাকাছি অন্য প্রোডাক্ট দেখাতে পারি।");
+    return true;
+  }
+  const current = await getConversationPendingOrder(sb, conversationId);
+  const slot = await patchConversationPendingOrder(sb, conversationId, {
+    ...current,
+    product_id: product.id,
+    qty: current.qty ?? 1,
+  });
+  const missing = orderMissingFields(slot);
+  const reply = missing.length
+    ? `ঠিক আছে, ${product.name} অর্ডার শুরু করলাম। কনফার্ম করতে ${missing.join(", ")} দিন।`
+    : `ঠিক আছে, ${product.name} অর্ডারের তথ্য পেয়েছি। কনফার্ম করার আগে আর কিছু যোগ করতে চান?`;
+  await sendAndLogText(
+    sb,
+    token,
+    psid,
+    conversationId,
+    reply,
+  );
+  return true;
 }
 
 async function decryptToken(enc: string | null | undefined): Promise<string | null> {
@@ -583,6 +712,27 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                     unread_count: (conv!.unread_count ?? 0) + 1,
                   })
                   .eq("id", conv!.id);
+                const handoff = (conv as any)!.handoff_mode ?? "ai";
+                if (
+                  handoff === "ai" &&
+                  token &&
+                  !(integ as any).human_takeover &&
+                  (integ as any).ai_auto_reply !== false &&
+                  String(ev.postback.payload ?? "").startsWith("BUY_")
+                ) {
+                  await handleBuyPostback({
+                    sb,
+                    storeId: integ.store_id,
+                    conversationId: conv!.id,
+                    psid: senderId,
+                    token,
+                    payload: String(ev.postback.payload),
+                  });
+                  await sb
+                    .from("messenger_integrations")
+                    .update({ last_error: null } as any)
+                    .eq("id", (integ as any).id);
+                }
                 continue;
               }
 
@@ -624,6 +774,21 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
               if ((integ as any).human_takeover || (integ as any).ai_auto_reply === false) continue;
               if (!token) continue;
               if (parsed.message_type !== "text" && parsed.message_type !== "quick_reply") continue;
+
+              const greetingHandled = await maybeHandleGreeting({
+                sb,
+                conversationId: conv!.id,
+                psid: senderId,
+                token,
+                text: parsed.text,
+              });
+              if (greetingHandled) {
+                await sb
+                  .from("messenger_integrations")
+                  .update({ last_error: null } as any)
+                  .eq("id", (integ as any).id);
+                continue;
+              }
 
               const { data: storeRow } = await sb
                 .from("stores")
