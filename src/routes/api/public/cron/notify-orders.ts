@@ -2,7 +2,6 @@
 // Call every 1-2 min from pg_cron or an external scheduler with
 //   Authorization: Bearer <CRON_SECRET>
 import { createFileRoute } from "@tanstack/react-router";
-import { drainOutbox } from "@/lib/messenger-notify.server";
 
 export const Route = createFileRoute("/api/public/cron/notify-orders")({
   server: {
@@ -13,6 +12,7 @@ export const Route = createFileRoute("/api/public/cron/notify-orders")({
         if (!secret || auth !== `Bearer ${secret}`) {
           return new Response("Unauthorized", { status: 401 });
         }
+        const { drainOutbox } = await import("@/lib/messenger-notify.server");
         return Response.json({ ok: true, ...(await drainOutbox()) });
       },
     },
