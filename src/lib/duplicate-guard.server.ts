@@ -138,7 +138,7 @@ export async function checkDuplicate(
   // customer/page identity AND the same product must point to the same active
   // order. This prevents both false negatives (PSID-only not checked early) and
   // false positives (another customer ordered the same product).
-  if (input.psid && input.productIds.length > 0 && settings.rule_product !== false) {
+  if (input.psid && input.productIds.length > 0) {
     const identityMatches = new Map<string, Set<string>>();
     const addIdentityHit = (orderId: string | null | undefined, rule: string) => {
       if (!orderId) return;
@@ -165,12 +165,15 @@ export async function checkDuplicate(
       for (const row of data ?? []) addIdentityHit((row as any).id, rule);
     }
 
-    if (settings.rule_phone && input.phone) await addByColumn("phone", input.phone, "phone");
-    if (settings.rule_customer && input.customerId) await addByColumn("customer_id", input.customerId, "customer");
-    if (settings.rule_fingerprint && input.fingerprint) await addByColumn("fingerprint", input.fingerprint, "fingerprint");
-    if (settings.rule_device && input.deviceId) await addByColumn("device_id", input.deviceId, "device");
+    // Messenger must enforce same-person + same-product regardless of the
+    // generic checkout rule toggles. The Messenger master toggle/whitelist/
+    // excluded-products checks still apply before this block.
+    if (input.phone) await addByColumn("phone", input.phone, "phone");
+    if (input.customerId) await addByColumn("customer_id", input.customerId, "customer");
+    if (input.fingerprint) await addByColumn("fingerprint", input.fingerprint, "fingerprint");
+    if (input.deviceId) await addByColumn("device_id", input.deviceId, "device");
 
-    if ((settings as any).rule_psid) {
+    if (input.psid) {
       const { data: convs } = await sb
         .from("ai_conversations")
         .select("psid_profile")
