@@ -152,7 +152,7 @@ function isPhotoIntent(text: string) {
   return /ছবি|ফটো|ইমেজ|photo|image|picture|pic/i.test(text);
 }
 
-function isProductIntent(text: string, terms: string[]) {
+function isProductIntent(text: string) {
   return /প্রোডাক্ট|পণ্য|দেখান|দেখাও|কী আছে|কি আছে|দাম|কত|কিনতে|অর্ডার|product|item|price|buy|order|show/i.test(text);
 }
 
@@ -283,7 +283,7 @@ async function maybeSendDirectProductReply(opts: {
   const { sb, storeId, storeSlug, conversationId, psid, token, text } = opts;
   const terms = productSearchTerms(text);
   const photoIntent = isPhotoIntent(text);
-  const explicitProductIntent = isProductIntent(text, terms);
+  const explicitProductIntent = isProductIntent(text);
   if (!photoIntent && !explicitProductIntent && !terms.length) return false;
 
   let products = photoIntent
