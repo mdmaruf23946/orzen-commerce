@@ -567,6 +567,7 @@ export const upsertCategory = createServerFn({ method: "POST" })
         description: z.string().max(500).nullable().optional(),
         sort_order: z.number().int().min(0).max(9999).optional(),
         is_active: z.boolean().optional(),
+        parent_id: z.string().uuid().nullable().optional(),
       })
       .parse(d),
   )
@@ -580,6 +581,7 @@ export const upsertCategory = createServerFn({ method: "POST" })
       ...(data.description !== undefined ? { description: data.description } : {}),
       ...(data.sort_order !== undefined ? { sort_order: data.sort_order } : {}),
       ...(data.is_active !== undefined ? { is_active: data.is_active } : {}),
+      ...(data.parent_id !== undefined ? { parent_id: data.parent_id } : {}),
     };
     if (data.id) {
       const { error } = await supabase
