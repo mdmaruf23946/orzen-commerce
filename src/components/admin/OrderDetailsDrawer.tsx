@@ -8,6 +8,7 @@ import {
 import { Link } from "@tanstack/react-router";
 import { getOrderDetails, addInternalNote, deleteInternalNote } from "@/lib/business.functions";
 import { updateOrderCourierInfo } from "@/lib/ai-review.functions";
+import { setOrderAllowDuplicate } from "@/lib/admin.functions";
 import { getCachedFraudCheck, ensureAutoFraudCheck } from "@/lib/fraud.functions";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
