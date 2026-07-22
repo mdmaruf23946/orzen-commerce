@@ -202,6 +202,33 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                   <dt className="text-muted-foreground">Status</dt>
                   <dd className="text-right capitalize">{order.status}</dd>
                 </dl>
+                <label className="mt-3 flex items-start gap-2 rounded-md border bg-muted/30 p-2 text-xs">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4"
+                    checked={!!order.allow_duplicate}
+                    disabled={savingAllowDup}
+                    onChange={async (e) => {
+                      const allow = e.target.checked;
+                      setSavingAllowDup(true);
+                      try {
+                        await allowDupFn({ data: { id: orderId, allow } });
+                        qc.invalidateQueries({ queryKey: ["order-drawer", orderId] });
+                        toast.success(allow ? "Duplicate override enabled" : "Override removed");
+                      } catch (err) {
+                        toast.error((err as Error).message);
+                      } finally {
+                        setSavingAllowDup(false);
+                      }
+                    }}
+                  />
+                  <span>
+                    <span className="font-medium">Allow duplicate purchase</span>
+                    <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                      Let this customer order the same product again even if another order exists.
+                    </span>
+                  </span>
+                </label>
               </Section>
 
               {/* Courier + fraud */}
