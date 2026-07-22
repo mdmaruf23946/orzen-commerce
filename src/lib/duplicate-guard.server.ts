@@ -1,4 +1,4 @@
-// Server-only duplicate-order guard used by placeOrder.
+// Server-only duplicate-order guard used by placeOrder and Messenger AI.
 // Do NOT import from client-reachable modules.
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -10,7 +10,14 @@ export type DuplicateCheckInput = {
   fingerprint: string | null;
   deviceId: string | null;
   productIds: string[];
+  psid?: string | null;
 };
+
+export type DuplicateMatchedOrder = {
+  id: string;
+  invoice_no: string | null;
+  status: string | null;
+} | null;
 
 export type DuplicateCheckResult =
   | { action: "allow" }
@@ -18,6 +25,7 @@ export type DuplicateCheckResult =
       action: "block" | "warn";
       matchedRules: string[];
       matchedOrderId: string | null;
+      matchedOrder: DuplicateMatchedOrder;
       message: string;
     };
 
@@ -75,12 +83,17 @@ export async function checkDuplicate(
   type RuleHit = { rule: string; orderId: string | null };
   const hits: RuleHit[] = [];
 
-  async function findByColumn(col: "phone" | "customer_id" | "fingerprint" | "device_id", value: string) {
+  async function findByColumn(
+    col: "phone" | "customer_id" | "fingerprint" | "device_id",
+    value: string,
+  ) {
     const { data } = await sb
       .from("orders")
       .select("id")
       .eq("store_id", input.storeId)
       .eq(col, value)
+      .eq("allow_duplicate", false)
+      .neq("status", "cancelled")
       .gte("created_at", since)
       .order("created_at", { ascending: false })
       .limit(1);
@@ -103,13 +116,31 @@ export async function checkDuplicate(
     const id = await findByColumn("device_id", input.deviceId);
     if (id) hits.push({ rule: "device", orderId: id });
   }
+  if ((settings as any).rule_psid && input.psid) {
+    // Match by PSID via ai_conversations linked to prior orders in this store.
+    const { data: convOrders } = await sb
+      .from("ai_conversations")
+      .select("order_id, orders!inner(id, store_id, status, allow_duplicate, created_at)")
+      .eq("store_id", input.storeId)
+      .eq("psid", input.psid)
+      .not("order_id", "is", null)
+      .gte("orders.created_at", since)
+      .neq("orders.status", "cancelled")
+      .eq("orders.allow_duplicate", false)
+      .order("orders(created_at)", { ascending: false })
+      .limit(1);
+    const orderId = (convOrders?.[0] as any)?.order_id ?? null;
+    if (orderId) hits.push({ rule: "psid", orderId });
+  }
   if (settings.rule_product && input.productIds.length > 0) {
     // Find any recent order for this store that contains any of these products.
     const { data: items } = await sb
       .from("order_items")
-      .select("order_id, product_id, orders!inner(store_id, created_at)")
+      .select("order_id, product_id, orders!inner(store_id, created_at, status, allow_duplicate)")
       .in("product_id", input.productIds)
       .eq("orders.store_id", input.storeId)
+      .eq("orders.allow_duplicate", false)
+      .neq("orders.status", "cancelled")
       .gte("orders.created_at", since)
       .limit(1);
     const orderId = (items?.[0] as any)?.order_id ?? null;
@@ -122,7 +153,8 @@ export async function checkDuplicate(
     (settings.rule_customer ? 1 : 0) +
     (settings.rule_fingerprint ? 1 : 0) +
     (settings.rule_device ? 1 : 0) +
-    (settings.rule_product ? 1 : 0);
+    (settings.rule_product ? 1 : 0) +
+    ((settings as any).rule_psid ? 1 : 0);
 
   const matched =
     settings.match_logic === "all"
@@ -134,10 +166,20 @@ export async function checkDuplicate(
   const matchedRules = hits.map((h) => h.rule);
   const matchedOrderId = hits[0]?.orderId ?? null;
 
-  if (settings.mode === "warn") {
-    return { action: "warn", matchedRules, matchedOrderId, message: FRIENDLY };
+  let matchedOrder: DuplicateMatchedOrder = null;
+  if (matchedOrderId) {
+    const { data: mo } = await sb
+      .from("orders")
+      .select("id, invoice_no, status")
+      .eq("id", matchedOrderId)
+      .maybeSingle();
+    matchedOrder = (mo as any) ?? null;
   }
-  return { action: "block", matchedRules, matchedOrderId, message: FRIENDLY };
+
+  if (settings.mode === "warn") {
+    return { action: "warn", matchedRules, matchedOrderId, matchedOrder, message: FRIENDLY };
+  }
+  return { action: "block", matchedRules, matchedOrderId, matchedOrder, message: FRIENDLY };
 }
 
 export const DUPLICATE_MESSAGE = FRIENDLY;
