@@ -405,62 +405,16 @@ async function finalizePendingMessengerOrder(opts: {
     return true;
   }
 
-  // Messenger duplicate protection — reuse the shared guard used by web checkout.
-  const normalizedPhone = normalizePhone(slot.phone) ?? String(slot.phone).trim();
-  const { data: dpSettings } = await sb
-    .from("store_duplicate_protection")
-    .select("messenger_enabled, messenger_custom_reply, mode")
-    .eq("store_id", storeId)
-    .maybeSingle();
-  const messengerDupOn = !dpSettings || (dpSettings as any).messenger_enabled !== false;
-  if (messengerDupOn) {
-    const dup = await checkDuplicate({
-      storeId,
-      phone: normalizedPhone || null,
-      customerId: null,
-      fingerprint: null,
-      deviceId: null,
-      productIds: [product.id],
-      psid,
-    });
-    if (dup.action !== "allow") {
-      const invoice = dup.matchedOrder?.invoice_no || dup.matchedOrder?.id || "—";
-      const status = dup.matchedOrder?.status || "pending";
-      const defaultReply = [
-        "আপনার এই পণ্যের একটি অর্ডার ইতোমধ্যে রয়েছে।",
-        `অর্ডার নম্বর: #${invoice}`,
-        `স্ট্যাটাস: ${status}`,
-        "একই পণ্যের জন্য নতুন অর্ডার দেওয়ার আগে বর্তমান অর্ডারটি সম্পন্ন অথবা বাতিল হওয়া প্রয়োজন।",
-        "আপনার কি বর্তমান অর্ডারের স্ট্যাটাস জানতে চান?",
-      ].join("\n");
-      const reply = ((dpSettings as any)?.messenger_custom_reply as string | null) || defaultReply;
-      await sb.from("store_duplicate_blocks").insert({
-        store_id: storeId,
-        phone: normalizedPhone || null,
-        matched_rules: dup.matchedRules,
-        matched_order_id: dup.matchedOrderId,
-        status: dup.action === "warn" ? "warned" : "blocked",
-        source: "messenger",
-        psid,
-        payload: {
-          customerName: slot.customer_name,
-          address: slot.full_address,
-          productId: product.id,
-          productName: product.name,
-          qty,
-        },
-      } as any);
-      await sendAndLogText(sb, token, psid, conversationId, reply);
-      if (dup.action === "block") {
-        await replaceConversationProfile(sb, conversationId, (profile) => {
-          delete profile.pending_order;
-          return profile;
-        });
-        return true;
-      }
-      // warn mode: continue with order creation
-    }
-  }
+  const blocked = await maybeBlockDuplicateMessengerOrder({
+    sb,
+    storeId,
+    conversationId,
+    psid,
+    token,
+    slot,
+    product: { id: product.id, name: product.name },
+  });
+  if (blocked) return true;
 
   const subtotal = Number(product.price) * qty;
   const delivery = Number((product as any).delivery_charge ?? 0);
@@ -554,6 +508,75 @@ async function finalizePendingMessengerOrder(opts: {
   return true;
 }
 
+async function maybeBlockDuplicateMessengerOrder(opts: {
+  sb: ReturnType<typeof admin>;
+  storeId: string;
+  conversationId: string;
+  psid: string;
+  token: string;
+  slot: Record<string, any>;
+  product: { id: string; name?: string | null };
+}) {
+  const { sb, storeId, conversationId, psid, token, slot, product } = opts;
+  if (!product.id) return false;
+
+  const { data: dpSettings } = await sb
+    .from("store_duplicate_protection")
+    .select("messenger_enabled, messenger_custom_reply")
+    .eq("store_id", storeId)
+    .maybeSingle();
+  if (dpSettings && (dpSettings as any).messenger_enabled === false) return false;
+
+  const normalizedPhone = normalizePhone(slot.phone) ?? String(slot.phone ?? "").trim();
+  const dup = await checkDuplicate({
+    storeId,
+    phone: normalizedPhone || null,
+    customerId: null,
+    fingerprint: null,
+    deviceId: null,
+    productIds: [product.id],
+    psid,
+  });
+  if (dup.action === "allow") return false;
+
+  const invoice = dup.matchedOrder?.invoice_no || dup.matchedOrder?.id || "—";
+  const status = dup.matchedOrder?.status || "pending";
+  const defaultReply = [
+    "আপনার এই পণ্যের একটি অর্ডার ইতোমধ্যে রয়েছে।",
+    `অর্ডার নম্বর: #${invoice}`,
+    `স্ট্যাটাস: ${status}`,
+    "একই পণ্যের জন্য নতুন অর্ডার দেওয়ার আগে বর্তমান অর্ডারটি সম্পন্ন অথবা বাতিল হওয়া প্রয়োজন।",
+    "আপনার কি বর্তমান অর্ডারের স্ট্যাটাস জানতে চান?",
+  ].join("\n");
+  const reply = ((dpSettings as any)?.messenger_custom_reply as string | null) || defaultReply;
+
+  await sb.from("store_duplicate_blocks").insert({
+    store_id: storeId,
+    phone: normalizedPhone || null,
+    matched_rules: dup.matchedRules,
+    matched_order_id: dup.matchedOrderId,
+    status: "blocked",
+    source: "messenger",
+    psid,
+    product_ids: [product.id],
+    payload: {
+      customerName: slot.customer_name,
+      address: slot.full_address,
+      productId: product.id,
+      productName: product.name,
+      qty: Math.max(1, Math.min(Number(slot.qty ?? 1) || 1, 99)),
+      reason: "Duplicate Order Attempt",
+    },
+  } as any);
+
+  await sendAndLogText(sb, token, psid, conversationId, reply);
+  await replaceConversationProfile(sb, conversationId, (profile) => {
+    delete profile.pending_order;
+    return profile;
+  });
+  return true;
+}
+
 async function maybeHandlePendingOrderText(opts: {
   sb: ReturnType<typeof admin>;
   storeId: string;
@@ -566,10 +589,31 @@ async function maybeHandlePendingOrderText(opts: {
   const current = await getConversationPendingOrder(sb, conversationId);
   if (!current.product_id) return false;
 
+  const blocked = await maybeBlockDuplicateMessengerOrder({
+    sb,
+    storeId,
+    conversationId,
+    psid,
+    token,
+    slot: current,
+    product: { id: String(current.product_id), name: current.product_name ?? null },
+  });
+  if (blocked) return true;
+
   const details = parseOrderDetailsText(text);
   const slot = Object.keys(details).length
     ? await patchConversationPendingOrder(sb, conversationId, { ...current, ...details })
     : current;
+  const blockedAfterDetails = await maybeBlockDuplicateMessengerOrder({
+    sb,
+    storeId,
+    conversationId,
+    psid,
+    token,
+    slot,
+    product: { id: String(slot.product_id), name: slot.product_name ?? null },
+  });
+  if (blockedAfterDetails) return true;
   const missing = orderMissingFields(slot);
   if (!missing.length) {
     return finalizePendingMessengerOrder({ sb, storeId, conversationId, psid, token });
@@ -715,8 +759,19 @@ async function maybeSendDirectProductReply(opts: {
       ...current,
       ...details,
       product_id: product.id,
+      product_name: product.name,
       qty: details.qty ?? current.qty ?? 1,
     });
+    const blocked = await maybeBlockDuplicateMessengerOrder({
+      sb,
+      storeId,
+      conversationId,
+      psid,
+      token,
+      slot,
+      product: { id: product.id, name: product.name },
+    });
+    if (blocked) return true;
     const missing = orderMissingFields(slot);
     if (!missing.length) {
       await logProductRecommendations(sb, storeId, conversationId, [product], text);
