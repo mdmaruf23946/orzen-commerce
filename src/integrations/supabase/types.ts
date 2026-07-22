@@ -540,6 +540,7 @@ export type Database = {
           image_url: string | null
           is_active: boolean
           name: string
+          parent_id: string | null
           sort_order: number
           store_id: string
         }
@@ -550,6 +551,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           name: string
+          parent_id?: string | null
           sort_order?: number
           store_id: string
         }
@@ -560,10 +562,18 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           name?: string
+          parent_id?: string | null
           sort_order?: number
           store_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "categories_store_id_fkey"
             columns: ["store_id"]

@@ -1,0 +1,2 @@
+ALTER TABLE public.categories ADD COLUMN IF NOT EXISTS parent_id uuid NULL REFERENCES public.categories(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS categories_store_parent_sort_idx ON public.categories(store_id, parent_id, sort_order);
