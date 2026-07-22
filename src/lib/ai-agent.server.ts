@@ -154,7 +154,7 @@ function searchTerms(raw: string) {
   return Array.from(terms);
 }
 
-function stringifyProductField(value: any) {
+function stringifyProductField(value: any): string {
   if (!value) return "";
   if (Array.isArray(value)) return value.map(stringifyProductField).join(" ");
   if (typeof value === "object") return Object.values(value).map(stringifyProductField).join(" ");
