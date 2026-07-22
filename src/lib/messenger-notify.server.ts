@@ -14,6 +14,8 @@ const STAGE_MESSAGES: Record<string, (o: any) => string> = {
   courier_assigned: (o) => `🚚 আপনার অর্ডার ${o.invoice_no ? "#" + o.invoice_no : ""} কুরিয়ারে অ্যাসাইন করা হয়েছে।`,
 };
 
+type MessengerConversation = { id: string; external_id: string | null };
+
 async function decryptToken(enc: string | null | undefined): Promise<string | null> {
   if (!enc) return null;
   try {
@@ -108,7 +110,7 @@ export async function drainOutbox(opts: { orderId?: string; limit?: number; late
         .maybeSingle();
       const conversationId = (notification as any)?.meta?.conversation_id as string | undefined;
 
-      let conv: { id: string; external_id: string | null } | null = null;
+      let conv: MessengerConversation | undefined;
       if (conversationId) {
         const { data } = await supabaseAdmin
           .from("ai_conversations")
@@ -118,10 +120,10 @@ export async function drainOutbox(opts: { orderId?: string; limit?: number; late
           .eq("channel", "messenger")
           .not("external_id", "is", null)
           .maybeSingle();
-        conv = data as typeof conv;
+        conv = (data ?? undefined) as MessengerConversation | undefined;
       }
 
-      if (!conv?.external_id) {
+      if (!conv || !conv.external_id) {
         const { data } = await supabaseAdmin
           .from("ai_conversations")
           .select("id,external_id")
@@ -132,10 +134,10 @@ export async function drainOutbox(opts: { orderId?: string; limit?: number; late
           .order("last_message_at", { ascending: false })
           .limit(1)
           .maybeSingle();
-        conv = data as typeof conv;
+        conv = (data ?? undefined) as MessengerConversation | undefined;
       }
 
-      if (!conv?.external_id && candidates.size > 0) {
+      if ((!conv || !conv.external_id) && candidates.size > 0) {
         const { data } = await supabaseAdmin
           .from("ai_conversations")
           .select("id,external_id")
@@ -146,10 +148,10 @@ export async function drainOutbox(opts: { orderId?: string; limit?: number; late
           .order("last_message_at", { ascending: false })
           .limit(1)
           .maybeSingle();
-        conv = data as typeof conv;
+        conv = (data ?? undefined) as MessengerConversation | undefined;
       }
 
-      if (!conv?.external_id) {
+      if (!conv || !conv.external_id) {
         await supabaseAdmin
           .from("order_notifications_outbox")
           .update({ sent_at: new Date().toISOString(), error: "no_psid" })
