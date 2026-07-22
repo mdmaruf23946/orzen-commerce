@@ -6,8 +6,9 @@ import { toast } from "sonner";
 import {
   TrendingUp, ShoppingBag, Users, Clock, ArrowUpRight, ArrowDownRight,
   Package, PackageCheck, PackageX, AlertTriangle,
-  CheckCircle2, Truck, Ban, RotateCcw, Loader2,
-  Plus, Share2, ExternalLink, Bell, Star, Sparkles,
+  CheckCircle2, Truck, Ban, RotateCcw, Loader2, PackageOpen,
+  Plus, Share2, ExternalLink, Bell, Star, Sparkles, Bot, MessageSquare,
+  Ticket, Image as ImageIcon,
 } from "lucide-react";
 import { myDashboardOverview } from "@/lib/admin.functions";
 import { getInboxStats } from "@/lib/messenger-inbox.functions";
@@ -24,7 +25,7 @@ type Point = { date: string; sales: number; orders: number; revenue: number };
 
 function Card({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <section className={cn("rounded-[18px] border bg-background p-5 shadow-sm md:p-6", className)}>
+    <section className={cn("rounded-2xl border bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] md:p-6", className)}>
       {children}
     </section>
   );
@@ -61,20 +62,18 @@ function Dashboard() {
 
   const shareStore = async () => {
     if (!storeUrl) return;
-    try {
-      await navigator.clipboard.writeText(storeUrl);
-      toast.success("Store link copied");
-    } catch {
-      toast.error("Copy failed");
-    }
+    try { await navigator.clipboard.writeText(storeUrl); toast.success("Store link copied"); }
+    catch { toast.error("Copy failed"); }
   };
 
   if (isLoading || !data) {
     return (
       <div className="space-y-6">
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-32 animate-pulse rounded-[18px] border bg-muted/40" />
-        ))}
+        <div className="h-40 animate-pulse rounded-2xl border bg-muted/40" />
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => <div key={i} className="h-32 animate-pulse rounded-2xl border bg-muted/40" />)}
+        </div>
+        <div className="h-72 animate-pulse rounded-2xl border bg-muted/40" />
       </div>
     );
   }
@@ -84,17 +83,23 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* 1. Welcome Header */}
-      <Card>
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      {/* 1. Welcome Hero */}
+      <section className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/5 via-background to-accent/40 p-6 md:p-8">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 right-20 h-48 w-48 rounded-full bg-primary/5 blur-3xl" />
+        <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="min-w-0 space-y-2">
-            <h1 className="text-xl font-semibold tracking-tight md:text-2xl">
-              Welcome back, {data.owner.name}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>👋</span>
+              <span>Welcome back</span>
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+              Hello, {data.owner.name}!
             </h1>
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <StatusPill status={store?.status ?? "active"} sub={store?.subscription_status} />
               {store?.package_name && (
-                <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 font-medium">
+                <span className="inline-flex items-center gap-1 rounded-full border bg-background/60 px-2.5 py-1 font-medium">
                   {store.package_name}
                 </span>
               )}
@@ -103,9 +108,9 @@ function Dashboard() {
                   href={storeUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex max-w-[220px] items-center gap-1 truncate rounded-full border px-2.5 py-1 text-muted-foreground hover:text-foreground"
+                  className="inline-flex max-w-[240px] items-center gap-1 truncate rounded-full border bg-background/60 px-2.5 py-1 text-muted-foreground hover:text-foreground"
                 >
-                  /store/{store.slug}
+                  /store/{store.slug} <ExternalLink className="h-3 w-3" />
                 </a>
               )}
               <span className="text-muted-foreground">
@@ -118,189 +123,196 @@ function Dashboard() {
               href={storeUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90"
+              className="inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/25 transition hover:shadow-lg hover:shadow-primary/30"
             >
-              Open Store <ExternalLink className="h-4 w-4" />
+              View Store <ExternalLink className="h-4 w-4" />
             </a>
           )}
         </div>
-      </Card>
+      </section>
 
-      {/* 2. Business Overview */}
+      {/* 2. KPI Cards */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <StatCard icon={TrendingUp} label="Today's Sales" value={fmtBDT(data.today.sales)}
-          trend={data.today.salesPct} trendLabel="vs Yesterday" tone="text-emerald-600 bg-emerald-50" />
+          trend={data.today.salesPct} trendLabel="vs Yesterday" tone="emerald"
+          spark={series.map((p) => p.sales)} />
         <StatCard icon={ShoppingBag} label="Today's Orders" value={data.today.orders}
-          trend={data.today.ordersPct} trendLabel="vs Yesterday" tone="text-blue-600 bg-blue-50" />
-        <StatCard icon={Users} label="Today's Visitors"
+          trend={data.today.ordersPct} trendLabel="vs Yesterday" tone="blue"
+          spark={series.map((p) => p.orders)} />
+        <StatCard icon={Users} label="Visitors"
           value={data.visitorsAvailable ? data.today.visitors : "—"}
-          trend={null} trendLabel="analytics coming soon" tone="text-purple-600 bg-purple-50" />
+          trend={null} trendLabel="tracking soon" tone="violet"
+          spark={series.map((p) => p.sales / 10)} />
         <StatCard icon={Clock} label="Pending Orders" value={data.today.pendingOrders}
-          trend={null} trendLabel="need action" tone="text-amber-600 bg-amber-50" />
+          trend={null} trendLabel="need action" tone="amber"
+          spark={series.map((p) => p.orders)} />
       </div>
 
-      {/* 3. Sales Analytics */}
+      {/* 3. Order Status Strip */}
       <Card>
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="text-base font-semibold tracking-tight">Sales Analytics</h2>
-            <p className="text-xs text-muted-foreground">Track your store's momentum over time</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-base font-semibold tracking-tight">Order Status</h2>
+          <Link to="/admin/orders" className="text-xs font-medium text-primary hover:underline">View all →</Link>
+        </div>
+        <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:grid-cols-6">
+          <StatusMini icon={Clock} label="Pending" count={data.orderStatus.pending} tone="amber" />
+          <StatusMini icon={CheckCircle2} label="Confirmed" count={data.orderStatus.confirmed} tone="blue" />
+          <StatusMini icon={PackageOpen} label="Processing" count={data.orderStatus.processing} tone="indigo" />
+          <StatusMini icon={Truck} label="Delivered" count={data.orderStatus.delivered} tone="emerald" />
+          <StatusMini icon={Ban} label="Cancelled" count={data.orderStatus.cancelled} tone="red" />
+          <StatusMini icon={RotateCcw} label="Returned" count={data.orderStatus.returned} tone="slate" />
+        </div>
+      </Card>
+
+      {/* 4. Sales Analytics + Store Performance */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-base font-semibold tracking-tight">Sales Analytics</h2>
+              <p className="text-xs text-muted-foreground">Track your store's momentum</p>
+            </div>
             <Segmented value={range} onChange={setRange} options={[
               { v: "today", l: "Today" }, { v: "7d", l: "7 Days" },
-              { v: "30d", l: "30 Days" }, { v: "month", l: "This Month" },
+              { v: "30d", l: "30 Days" }, { v: "month", l: "Month" },
             ]} />
           </div>
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {(["sales", "orders", "revenue"] as Metric[]).map((m) => (
-            <button key={m}
-              onClick={() => setMetric(m)}
-              className={cn(
-                "rounded-full border px-3 py-1 text-xs capitalize transition",
-                metric === m ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted",
-              )}
-            >{m}</button>
-          ))}
-        </div>
-        <div className="mt-4">
-          <LineChart data={series} metric={metric} />
-        </div>
-      </Card>
-
-      {/* 4. Order Status */}
-      <Card>
-        <h2 className="mb-4 text-base font-semibold tracking-tight">Order Status</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          <StatusMini icon={Clock} label="Pending" count={data.orderStatus.pending} tone="text-amber-700 bg-amber-50 border-amber-100" />
-          <StatusMini icon={CheckCircle2} label="Confirmed" count={data.orderStatus.confirmed} tone="text-blue-700 bg-blue-50 border-blue-100" />
-          <StatusMini icon={Loader2} label="Processing" count={data.orderStatus.processing} tone="text-indigo-700 bg-indigo-50 border-indigo-100" />
-          <StatusMini icon={Truck} label="Delivered" count={data.orderStatus.delivered} tone="text-emerald-700 bg-emerald-50 border-emerald-100" />
-          <StatusMini icon={Ban} label="Cancelled" count={data.orderStatus.cancelled} tone="text-red-700 bg-red-50 border-red-100" />
-          <StatusMini icon={RotateCcw} label="Returned" count={data.orderStatus.returned} tone="text-slate-700 bg-slate-50 border-slate-100" />
-        </div>
-      </Card>
-
-      {/* 5 + 6 side-by-side on lg */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* 5. Product Summary */}
-        <Card>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold tracking-tight">Product Summary</h2>
-            <Link to="/admin/products" className="text-xs text-muted-foreground hover:text-foreground">Manage →</Link>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {(["sales", "orders", "revenue"] as Metric[]).map((m) => (
+              <button key={m}
+                onClick={() => setMetric(m)}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs capitalize transition",
+                  metric === m ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted",
+                )}
+              >{m}</button>
+            ))}
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <MiniStat icon={Package} label="Total" value={data.products.total} tone="text-slate-700" />
-            <MiniStat icon={PackageCheck} label="Active" value={data.products.active} tone="text-emerald-600" />
-            <MiniStat icon={AlertTriangle} label="Low Stock" value={data.products.lowStock} tone="text-amber-600" />
-            <MiniStat icon={PackageX} label="Out of Stock" value={data.products.outOfStock} tone="text-red-600" />
+          <div className="mt-4">
+            <LineChart data={series} metric={metric} />
           </div>
         </Card>
 
-        {/* 6. Store Performance */}
         <Card>
-          <h2 className="mb-4 text-base font-semibold tracking-tight">Store Performance</h2>
+          <h2 className="mb-1 text-base font-semibold tracking-tight">Store Health</h2>
+          <p className="mb-4 text-xs text-muted-foreground">Performance snapshot</p>
           <div className="grid grid-cols-3 gap-3">
             <Ring label="Conversion" value={data.performance.conversionRate} suffix="%" max={100} />
-            <Ring label="Health Score" value={data.performance.healthScore} suffix="" max={100} />
-            <Ring label="Rating" value={data.performance.customerRating ?? 0} suffix={data.performance.customerRating ? "" : ""} max={5} display={data.performance.customerRating ? `${data.performance.customerRating}` : "—"} icon={<Star className="h-3 w-3 fill-amber-400 text-amber-400" />} />
+            <Ring label="Health" value={data.performance.healthScore} suffix="" max={100} />
+            <Ring
+              label="Rating"
+              value={data.performance.customerRating ?? 0}
+              suffix=""
+              max={5}
+              display={data.performance.customerRating ? `${data.performance.customerRating}` : "—"}
+              icon={<Star className="h-3 w-3 fill-amber-400 text-amber-400" />}
+            />
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <MiniStat icon={Package} label="Products" value={data.products.total} tone="text-slate-700" />
+            <MiniStat icon={PackageCheck} label="Active" value={data.products.active} tone="text-emerald-600" />
+            <MiniStat icon={AlertTriangle} label="Low Stock" value={data.products.lowStock} tone="text-amber-600" />
+            <MiniStat icon={PackageX} label="Out" value={data.products.outOfStock} tone="text-red-600" />
           </div>
         </Card>
       </div>
 
-      <InboxTile />
-
-
-
-      {/* 7. Recent Orders */}
-      <Card>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold tracking-tight">Recent Orders</h2>
-          <Link to="/admin/orders" className="text-xs font-medium text-primary hover:underline">
-            View All Orders →
-          </Link>
-        </div>
-        {data.recentOrders.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">No orders yet</p>
-        ) : (
-          <div className="overflow-hidden">
-            {/* Desktop table */}
-            <table className="hidden w-full text-sm md:table">
-              <thead>
-                <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="py-2.5 pr-3 font-medium">Customer</th>
-                  <th className="py-2.5 pr-3 font-medium">Order #</th>
-                  <th className="py-2.5 pr-3 font-medium">Amount</th>
-                  <th className="py-2.5 pr-3 font-medium">Status</th>
-                  <th className="py-2.5 font-medium">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.recentOrders.map((o: any) => (
-                  <tr key={o.id} className="border-b last:border-0">
-                    <td className="py-3 pr-3 font-medium">{o.customer_name}</td>
-                    <td className="py-3 pr-3 text-muted-foreground">#{o.order_number}</td>
-                    <td className="py-3 pr-3">{fmtBDT(o.subtotal)}</td>
-                    <td className="py-3 pr-3"><OrderStatusPill status={o.status} /></td>
-                    <td className="py-3 text-muted-foreground">{relTime(o.created_at)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {/* Mobile list */}
-            <ul className="space-y-3 md:hidden">
-              {data.recentOrders.map((o: any) => (
-                <li key={o.id} className="rounded-xl border p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{o.customer_name}</p>
-                      <p className="text-xs text-muted-foreground">#{o.order_number} · {relTime(o.created_at)}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold">{fmtBDT(o.subtotal)}</p>
-                      <OrderStatusPill status={o.status} />
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
+      {/* 5. Recent Orders + Messenger + Notifications */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-base font-semibold tracking-tight">Recent Orders</h2>
+            <Link to="/admin/orders" className="text-xs font-medium text-primary hover:underline">
+              View all orders →
+            </Link>
           </div>
-        )}
-      </Card>
+          {data.recentOrders.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">No orders yet</p>
+          ) : (
+            <div className="overflow-hidden">
+              <table className="hidden w-full text-sm md:table">
+                <thead>
+                  <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
+                    <th className="py-2.5 pr-3 font-medium">Customer</th>
+                    <th className="py-2.5 pr-3 font-medium">Order ID</th>
+                    <th className="py-2.5 pr-3 font-medium">Amount</th>
+                    <th className="py-2.5 pr-3 font-medium">Status</th>
+                    <th className="py-2.5 font-medium">Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.recentOrders.map((o: any) => (
+                    <tr key={o.id} className="border-b last:border-0 hover:bg-muted/40">
+                      <td className="py-3 pr-3 font-medium">{o.customer_name}</td>
+                      <td className="py-3 pr-3 text-muted-foreground">#{o.order_number}</td>
+                      <td className="py-3 pr-3 font-semibold">{fmtBDT(o.subtotal)}</td>
+                      <td className="py-3 pr-3"><OrderStatusPill status={o.status} /></td>
+                      <td className="py-3 text-muted-foreground">{relTime(o.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <ul className="space-y-3 md:hidden">
+                {data.recentOrders.map((o: any) => (
+                  <li key={o.id} className="rounded-xl border p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{o.customer_name}</p>
+                        <p className="text-xs text-muted-foreground">#{o.order_number} · {relTime(o.created_at)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold">{fmtBDT(o.subtotal)}</p>
+                        <OrderStatusPill status={o.status} />
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </Card>
 
-      {/* 8. Notifications */}
+        <div className="space-y-6">
+          <InboxTile />
+          <Card>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-base font-semibold tracking-tight">Notifications</h2>
+              <Bell className="h-4 w-4 text-muted-foreground" />
+            </div>
+            {data.notifications.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">You're all caught up 🎉</p>
+            ) : (
+              <ul className="space-y-2.5">
+                {data.notifications.slice(0, 4).map((n: any, i: number) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <NotifIcon type={n.type} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{n.title}</p>
+                      <p className="truncate text-xs text-muted-foreground">{n.detail}</p>
+                    </div>
+                    <span className="shrink-0 text-[11px] text-muted-foreground">{relTime(n.at)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
+      </div>
+
+      {/* 6. Quick Actions */}
       <Card>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold tracking-tight">Notifications</h2>
-          <Bell className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-base font-semibold tracking-tight">Quick Actions</h2>
         </div>
-        {data.notifications.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">You're all caught up 🎉</p>
-        ) : (
-          <ul className="space-y-3">
-            {data.notifications.map((n: any, i: number) => (
-              <li key={i} className="flex items-start gap-3 rounded-xl border p-3">
-                <NotifIcon type={n.type} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{n.title}</p>
-                  <p className="truncate text-xs text-muted-foreground">{n.detail}</p>
-                </div>
-                <span className="shrink-0 text-[11px] text-muted-foreground">{relTime(n.at)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <QuickAction to="/admin/products" icon={Plus} label="Add Product" tone="text-primary bg-primary/10" />
+          <QuickAction to="/admin/coupons" icon={Ticket} label="Create Coupon" tone="text-emerald-600 bg-emerald-50" />
+          <QuickAction to="/admin/banners" icon={ImageIcon} label="Create Banner" tone="text-violet-600 bg-violet-50" />
+          <QuickAction to="/admin/orders" icon={ShoppingBag} label="View Orders" tone="text-blue-600 bg-blue-50" />
+          <QuickAction to="/admin/messenger-inbox" icon={MessageSquare} label="Messenger Inbox" tone="text-amber-600 bg-amber-50" />
+          <QuickAction onClick={shareStore} icon={Share2} label="Share Store" tone="text-slate-700 bg-slate-100" />
+        </div>
       </Card>
-
-      {/* 9. Quick Actions */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <QuickAction to="/admin/billing" icon={Sparkles} label="আপডেট করুন" />
-        <QuickAction to="/admin/products" icon={Plus} label="Add Product" />
-        <QuickAction to="/admin/orders" icon={ShoppingBag} label="View Orders" />
-        <QuickAction onClick={shareStore} icon={Share2} label="Share Store" />
-        <QuickAction href={storeUrl} external icon={ExternalLink} label="Open Store" />
-      </div>
 
       <AdSlot slotKey="admin_dashboard_bottom" />
     </div>
@@ -317,24 +329,36 @@ function StatusPill({ status, sub }: { status: string; sub?: string }) {
       isActive ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-700"
     )}>
       <span className={cn("h-1.5 w-1.5 rounded-full", isActive ? "bg-emerald-500" : "bg-amber-500")} />
-      {isActive ? "Active" : (sub || status)}
+      {isActive ? "Active Store" : (sub || status)}
     </span>
   );
 }
 
+const toneMap: Record<string, { bg: string; text: string; icon: string }> = {
+  emerald: { bg: "bg-emerald-50", text: "text-emerald-600", icon: "text-emerald-600 bg-emerald-100" },
+  blue:    { bg: "bg-blue-50",    text: "text-blue-600",    icon: "text-blue-600 bg-blue-100" },
+  violet:  { bg: "bg-violet-50",  text: "text-violet-600",  icon: "text-violet-600 bg-violet-100" },
+  amber:   { bg: "bg-amber-50",   text: "text-amber-600",   icon: "text-amber-600 bg-amber-100" },
+  indigo:  { bg: "bg-indigo-50",  text: "text-indigo-600",  icon: "text-indigo-600 bg-indigo-100" },
+  red:     { bg: "bg-red-50",     text: "text-red-600",     icon: "text-red-600 bg-red-100" },
+  slate:   { bg: "bg-slate-100",  text: "text-slate-700",   icon: "text-slate-700 bg-slate-200" },
+};
+
 function StatCard({
-  icon: Icon, label, value, trend, trendLabel, tone,
+  icon: Icon, label, value, trend, trendLabel, tone, spark,
 }: {
   icon: any; label: string; value: React.ReactNode;
-  trend: number | null; trendLabel: string; tone: string;
+  trend: number | null; trendLabel: string; tone: keyof typeof toneMap;
+  spark?: number[];
 }) {
   const up = trend !== null && trend >= 0;
+  const t = toneMap[tone];
   return (
-    <div className="rounded-[18px] border bg-background p-4 shadow-sm md:p-5">
+    <div className="group rounded-2xl border bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition hover:-translate-y-0.5 hover:shadow-lg">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-muted-foreground">{label}</span>
-        <span className={cn("flex h-9 w-9 items-center justify-center rounded-xl", tone)}>
-          <Icon className="h-4.5 w-4.5" />
+        <span className={cn("grid h-9 w-9 place-items-center rounded-xl", t.icon)}>
+          <Icon className="h-4 w-4" />
         </span>
       </div>
       <div className="mt-3 text-2xl font-bold tracking-tight md:text-[26px]">{value}</div>
@@ -354,7 +378,29 @@ function StatCard({
           <span className="text-muted-foreground">{trendLabel}</span>
         )}
       </div>
+      {spark && spark.length > 1 && (
+        <div className={cn("mt-3 h-8 w-full", t.text)}>
+          <MiniSpark values={spark} />
+        </div>
+      )}
     </div>
+  );
+}
+
+function MiniSpark({ values }: { values: number[] }) {
+  const w = 100, h = 28;
+  const max = Math.max(1, ...values);
+  const min = Math.min(0, ...values);
+  const range = Math.max(1, max - min);
+  const stepX = values.length > 1 ? w / (values.length - 1) : 0;
+  const pts = values.map((v, i) => ({ x: i * stepX, y: h - ((v - min) / range) * h }));
+  const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const area = `${path} L${w},${h} L0,${h} Z`;
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="h-full w-full">
+      <path d={area} fill="currentColor" opacity="0.12" />
+      <path d={path} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
   );
 }
 
@@ -398,7 +444,7 @@ function LineChart({ data, metric }: { data: Point[]; metric: Metric }) {
       <svg viewBox={`0 0 ${w} ${h}`} className="h-56 w-full" preserveAspectRatio="none">
         <defs>
           <linearGradient id="chart-grad" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="currentColor" stopOpacity="0.2" />
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.25" />
             <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
           </linearGradient>
         </defs>
@@ -427,13 +473,19 @@ function LineChart({ data, metric }: { data: Point[]; metric: Metric }) {
   );
 }
 
-function StatusMini({ icon: Icon, label, count, tone }: { icon: any; label: string; count: number; tone: string }) {
+function StatusMini({ icon: Icon, label, count, tone }: { icon: any; label: string; count: number; tone: keyof typeof toneMap }) {
+  const t = toneMap[tone];
   return (
-    <div className={cn("rounded-xl border p-3", tone)}>
-      <Icon className="h-4 w-4" />
-      <div className="mt-2 text-xl font-bold">{count}</div>
-      <div className="text-[11px] font-medium opacity-80">{label}</div>
-    </div>
+    <Link
+      to="/admin/orders"
+      className={cn("group rounded-xl border p-3 transition hover:-translate-y-0.5 hover:shadow-md", t.bg)}
+    >
+      <div className={cn("flex items-center justify-between", t.text)}>
+        <Icon className="h-4 w-4" />
+        <span className="text-xs font-medium opacity-70">{label}</span>
+      </div>
+      <div className={cn("mt-2 text-2xl font-bold", t.text)}>{count}</div>
+    </Link>
   );
 }
 
@@ -444,14 +496,14 @@ function MiniStat({ icon: Icon, label, value, tone }: { icon: any; label: string
         <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
         <Icon className={cn("h-4 w-4", tone)} />
       </div>
-      <div className={cn("mt-1.5 text-2xl font-bold", tone)}>{value}</div>
+      <div className={cn("mt-1.5 text-xl font-bold", tone)}>{value}</div>
     </div>
   );
 }
 
 function Ring({ label, value, max, suffix = "%", display, icon }: { label: string; value: number; max: number; suffix?: string; display?: string; icon?: React.ReactNode }) {
   const pct = Math.max(0, Math.min(1, value / max));
-  const size = 68, stroke = 6;
+  const size = 72, stroke = 6;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   return (
@@ -474,11 +526,11 @@ function Ring({ label, value, max, suffix = "%", display, icon }: { label: strin
 
 function OrderStatusPill({ status }: { status: string }) {
   const map: Record<string, string> = {
-    pending: "bg-amber-50 text-amber-700 border-amber-100",
-    confirmed: "bg-blue-50 text-blue-700 border-blue-100",
-    processing: "bg-indigo-50 text-indigo-700 border-indigo-100",
-    delivered: "bg-emerald-50 text-emerald-700 border-emerald-100",
-    cancelled: "bg-red-50 text-red-700 border-red-100",
+    pending: "bg-amber-50 text-amber-700 border-amber-200",
+    confirmed: "bg-blue-50 text-blue-700 border-blue-200",
+    processing: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    delivered: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    cancelled: "bg-red-50 text-red-700 border-red-200",
     returned: "bg-slate-100 text-slate-700 border-slate-200",
   };
   return (
@@ -489,7 +541,7 @@ function OrderStatusPill({ status }: { status: string }) {
 }
 
 function NotifIcon({ type }: { type: string }) {
-  const cls = "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl";
+  const cls = "grid h-9 w-9 shrink-0 place-items-center rounded-xl";
   if (type === "order") return <span className={cn(cls, "bg-blue-50 text-blue-600")}><ShoppingBag className="h-4 w-4" /></span>;
   if (type === "low-stock") return <span className={cn(cls, "bg-amber-50 text-amber-600")}><AlertTriangle className="h-4 w-4" /></span>;
   if (type === "subscription") return <span className={cn(cls, "bg-red-50 text-red-600")}><Clock className="h-4 w-4" /></span>;
@@ -497,20 +549,20 @@ function NotifIcon({ type }: { type: string }) {
 }
 
 function QuickAction({
-  to, href, onClick, external, icon: Icon, label,
+  to, href, onClick, external, icon: Icon, label, tone,
 }: {
   to?: string; href?: string; onClick?: () => void; external?: boolean;
-  icon: any; label: string;
+  icon: any; label: string; tone?: string;
 }) {
   const inner = (
     <>
-      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+      <span className={cn("grid h-11 w-11 place-items-center rounded-xl", tone ?? "bg-primary/10 text-primary")}>
         <Icon className="h-5 w-5" />
       </span>
-      <span className="text-sm font-medium">{label}</span>
+      <span className="text-sm font-medium leading-tight">{label}</span>
     </>
   );
-  const cls = "flex items-center gap-3 rounded-[18px] border bg-background p-4 shadow-sm transition hover:border-primary/40 hover:shadow-md";
+  const cls = "flex flex-col items-start gap-2.5 rounded-2xl border bg-card p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md";
   if (to) return <Link to={to} className={cls}>{inner}</Link>;
   if (href) return <a href={href} target={external ? "_blank" : undefined} rel="noreferrer" className={cls}>{inner}</a>;
   return <button type="button" onClick={onClick} className={cn(cls, "text-left")}>{inner}</button>;
@@ -524,30 +576,32 @@ function InboxTile() {
     refetchInterval: 30_000,
   });
   const items: { label: string; value: number; tone: string }[] = [
-    { label: "Total", value: data?.total ?? 0, tone: "text-slate-700" },
     { label: "Unread", value: data?.unread ?? 0, tone: "text-blue-600" },
-    { label: "Today", value: data?.today ?? 0, tone: "text-emerald-600" },
-    { label: "AI replied", value: data?.ai_replied ?? 0, tone: "text-violet-600" },
-    { label: "Human replied", value: data?.human_replied ?? 0, tone: "text-amber-600" },
+    { label: "AI", value: data?.ai_replied ?? 0, tone: "text-violet-600" },
+    { label: "Human", value: data?.human_replied ?? 0, tone: "text-amber-600" },
     { label: "Failed", value: data?.failed ?? 0, tone: "text-red-600" },
   ];
   return (
     <Card>
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-base font-semibold tracking-tight">Messenger Inbox</h2>
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="grid h-8 w-8 place-items-center rounded-xl bg-violet-50 text-violet-600">
+            <Bot className="h-4 w-4" />
+          </span>
+          <h2 className="text-base font-semibold tracking-tight">Messenger</h2>
+        </div>
         <Link to="/admin/messenger-inbox" className="text-xs font-medium text-primary hover:underline">
           Open Inbox →
         </Link>
       </div>
-      <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+      <div className="grid grid-cols-4 gap-2">
         {items.map((i) => (
-          <div key={i.label} className="rounded-xl border p-3">
-            <div className={cn("text-lg font-semibold", i.tone)}>{i.value}</div>
-            <div className="text-[11px] text-muted-foreground">{i.label}</div>
+          <div key={i.label} className="rounded-xl border bg-muted/20 p-2.5 text-center">
+            <div className={cn("text-lg font-bold", i.tone)}>{i.value}</div>
+            <div className="text-[10px] text-muted-foreground">{i.label}</div>
           </div>
         ))}
       </div>
     </Card>
   );
 }
-
