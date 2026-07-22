@@ -36,12 +36,23 @@ const ACTIVE_ORDER_STATUSES = [
   "pending",
   "confirmed",
   "processing",
+] as const;
+
+const EXTRA_ACTIVE_ORDER_STATUSES = new Set([
   "packed",
   "ready_for_courier",
   "ready for courier",
   "courier_assigned",
   "shipped",
-];
+]);
+
+function isActiveOrderStatus(status: string | null | undefined) {
+  const normalized = String(status ?? "").toLowerCase();
+  return (
+    (ACTIVE_ORDER_STATUSES as readonly string[]).includes(normalized) ||
+    EXTRA_ACTIVE_ORDER_STATUSES.has(normalized)
+  );
+}
 
 function profileOrderIds(profile: Record<string, any> | null | undefined) {
   const ids = new Set<string>();
@@ -206,9 +217,8 @@ export async function checkDuplicate(
       .eq("id", matchedOrderId)
       .maybeSingle();
     matchedOrder = (mo as any) ?? null;
-    if (settings.mode === "warn") {
-      return { action: "warn", matchedRules, matchedOrderId, matchedOrder, message: FRIENDLY };
-    }
+    // Messenger duplicate protection must stop duplicate creation immediately;
+    // admin override is handled per-order with allow_duplicate.
     return { action: "block", matchedRules, matchedOrderId, matchedOrder, message: FRIENDLY };
   }
 
@@ -267,7 +277,7 @@ export async function checkDuplicate(
       if (
         o &&
         !(o as any).allow_duplicate &&
-        ACTIVE_ORDER_STATUSES.includes(String((o as any).status ?? "").toLowerCase()) &&
+        isActiveOrderStatus((o as any).status) &&
         new Date((o as any).created_at).toISOString() >= since
       ) {
         hits.push({ rule: "psid", orderId: oid });
