@@ -1,41 +1,50 @@
-## সমস্যাটা কেন হচ্ছে
+# Sticky Header & Composer for Messenger Inbox
 
-- Messenger conversation data অনুযায়ী `Buy Now` চাপার পর `pending_order`-এ শুধু `product_id` এবং `qty` সেভ হচ্ছে।
-- এরপর আপনি নাম/ফোন/ঠিকানা/COD একসাথে পাঠালেও deterministic webhook flow সেই order details parse করে `pending_order`-এ সেভ করছে না।
-- ফলে message-টি আবার AI/product-search path-এ যাচ্ছে এবং AI আগের product card/availability রিপ্লাই করছে; `finalizeOrder` কল হচ্ছে না, তাই order create হচ্ছে না।
+Scope: `src/routes/_authenticated/admin/messenger-inbox.tsx` — `ConversationView` component (around lines 420–626). No business-logic changes, presentation only.
 
-## Implementation plan
+## Current issue
+The conversation panel uses `flex flex-1 flex-col overflow-hidden` with header, scroll area, and composer as flex siblings. On mobile the outer page/list container ends up scrolling the whole panel, so the header and input scroll away with the messages.
 
-1. **Dedicated Messenger order state machine বানাব**
-   - `pending_order.product_id` থাকলে পরের customer text-কে আগে order-details হিসেবে handle করবে।
-   - Product search/photo reply এর আগে order flow চলবে, যাতে order details message কখনও product card reply-তে না চলে যায়।
+## Changes
 
-2. **Bangla/English mixed order details parser যোগ করব**
-   - এক message থেকে name, phone, full address, payment method (`COD`, `bKash`, `Nagad`, etc.) extract করবে।
-   - Screenshot-এর format যেমন:
-     ```text
-     মারুফ
-     01623239446
-     Chittagong, Sandeep, ...
-     COD
-     ```
-     এটাকে valid complete order হিসেবে ধরবে।
+1. **Lock the conversation panel to viewport height** so its inner flex layout is authoritative:
+   - Root wrapper of `ConversationView` becomes `flex h-[100dvh] flex-1 flex-col overflow-hidden` (dynamic viewport height handles mobile URL bar). Keep `md:h-full` fallback where nested in the desktop 3-pane layout.
 
-3. **Deterministic order creation করব**
-   - সব required fields থাকলে model-এর উপর নির্ভর না করে direct database order তৈরি করবে।
-   - Trusted product price/stock থেকে total calculate করবে।
-   - `orders`, `order_items`, admin notification তৈরি করবে।
-   - Success হলে `pending_order` clear করবে এবং customer-কে invoice/order confirmation পাঠাবে।
+2. **Sticky header** (the block at line 423):
+   - Add `sticky top-0 z-20 shrink-0 bg-background/95 backdrop-blur`.
+   - Keep existing content and add:
+     - Customer online/offline dot next to the avatar (green if `profile.is_online`, muted gray otherwise; hidden if field unavailable — no new data fetch).
+     - AI/Human badge stays as the toggle button on the right.
+   - Ensure `border-b` remains for visual separation.
 
-4. **Missing fields হলে professional prompt দেবে**
-   - সব তথ্য না থাকলে শুধু missing fields চাইবে।
-   - আগের product card বা “product আছে” রিপ্লাই repeat করবে না।
+3. **Scrollable message area** (line 450):
+   - Keep `ref={scrollRef}` div as the sole vertical scroller: `flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-smooth space-y-2 p-3`.
+   - Add `pb-4` so the last bubble isn't flush against the composer.
+   - Parent grid at line 448 gets `min-h-0` so flex children can actually shrink and scroll.
 
-5. **Duplicate/retry safety যোগ করব**
-   - Messenger retry বা user একই details আবার পাঠালে duplicate order তৈরি না করে existing pending/created state অনুযায়ী safe reply দেবে।
-   - Order creation failure হলে `ai_messages.error`/integration error-এ clear reason রাখবে।
+4. **Sticky composer** (line 512 block):
+   - Wrap in `sticky bottom-0 z-10 shrink-0 bg-background border-t`.
+   - Add safe-area padding: `pb-[env(safe-area-inset-bottom)]` for iOS.
+   - Keep all existing controls (attachments, emoji, quick replies, product picker, textarea, send).
 
-6. **Testing/verification করব**
-   - Simulate করব: product query → Buy Now → order details → order created.
-   - Verify করব order row, order_items row, notification, and `pending_order` cleared.
-   - Also test: incomplete details, greeting after product card, and product query after completed order.
+5. **Right rail** (line 629) stays as its own independent scroller on `lg+`; unaffected.
+
+## Result
+```
+┌───────────────────────────────┐
+│ Sticky header (back, avatar,  │
+│ name, PSID, online, AI/Human) │
+├───────────────────────────────┤
+│                               │
+│  Scrollable messages          │
+│  (only this area scrolls)     │
+│                               │
+├───────────────────────────────┤
+│ Sticky composer + attachments │
+└───────────────────────────────┘
+```
+
+## Verification
+- Resize preview to 360px width, scroll messages: header + composer stay in place.
+- Desktop lg breakpoint: 3-pane layout unchanged, right rail still scrolls independently.
+- Send a message: auto-scroll behavior (`scrollRef`) still lands at bottom.
