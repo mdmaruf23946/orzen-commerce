@@ -173,6 +173,7 @@ function CategoriesPage() {
           storeId={store.id}
           editing={editing}
           nextOrder={items.length}
+          allCategories={items}
           onClose={() => setOpen(false)}
           onSave={async (data) => {
             await save({ data });
@@ -190,12 +191,14 @@ function CategoryDialog({
   storeId,
   editing,
   nextOrder,
+  allCategories,
   onClose,
   onSave,
 }: {
   storeId: string;
   editing: Category | null;
   nextOrder: number;
+  allCategories: Category[];
   onClose: () => void;
   onSave: (data: any) => Promise<void>;
 }) {
@@ -204,7 +207,12 @@ function CategoryDialog({
   const [description, setDescription] = useState<string>(editing?.description ?? "");
   const [sortOrder, setSortOrder] = useState<number>(editing?.sort_order ?? nextOrder);
   const [isActive, setIsActive] = useState<boolean>(editing?.is_active ?? true);
+  const [parentId, setParentId] = useState<string | null>((editing as any)?.parent_id ?? null);
   const [saving, setSaving] = useState(false);
+
+  const parentOptions = allCategories.filter(
+    (c) => !(c as any).parent_id && (!editing || c.id !== editing.id),
+  );
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -221,6 +229,7 @@ function CategoryDialog({
         description: description.trim() || null,
         sort_order: Number(sortOrder) || 0,
         is_active: isActive,
+        parent_id: parentId,
       });
     } catch (err) {
       toast.error((err as Error).message);
@@ -247,6 +256,26 @@ function CategoryDialog({
           <div className="space-y-1.5">
             <Label htmlFor="n">Name</Label>
             <Input id="n" required value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="pid">Parent category</Label>
+            <select
+              id="pid"
+              value={parentId ?? ""}
+              onChange={(e) => setParentId(e.target.value || null)}
+              className="flex h-9 w-full rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="">— None (main category)</option>
+              {parentOptions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Leave empty to make this a main category. Selecting a parent makes this a subcategory.
+            </p>
           </div>
 
           <div className="space-y-1.5">
@@ -293,3 +322,4 @@ function CategoryDialog({
     </Dialog>
   );
 }
+
