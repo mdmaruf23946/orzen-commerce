@@ -1,87 +1,90 @@
-## Messenger Duplicate Order Protection
 
-Extend the existing website duplicate-protection system to also cover Messenger AI orders. Reuse `checkDuplicate` in `src/lib/duplicate-guard.server.ts` — no second checker.
+## Goal
 
-### 1. Reuse the shared validator (no schema changes required)
+Upgrade category navigation on the storefront home page. Desktop gets a horizontal Main Category pill bar between header and banner, plus a subcategory strip after the banner when a main category is selected. Mobile puts the tree inside the existing side drawer. All filtering is client-side — no new routes, no page reload, homepage stays mounted.
 
-Call the existing `checkDuplicate({ storeId, phone, customerId, fingerprint, deviceId, productIds })` from the Messenger order finalizer. The `store_duplicate_protection` row a store already configured (rules for phone / product / customer, period_days, mode block|warn|off, match_logic) will apply automatically. This satisfies "one shared validation service".
+## Database (one migration)
 
-Additions for Messenger:
-- Pass `phone` = normalized customer phone from the pending slot.
-- Pass `productIds` = `[slot.product_id]`.
-- Pass `customerId` = matched `store_customers.id` when a row exists for `(store_id, phone)`; otherwise null.
-- `fingerprint`/`deviceId` = null (no browser context in Messenger).
+Extend `categories` with self-referential parent:
 
-The existing `active status` semantics are already correct: `checkDuplicate` filters on `orders.status <> 'cancelled'` via the underlying settings; we keep behavior identical to website. (No status-list override for now — matches the "reuse, don't fork" rule.)
+- Add `parent_id uuid NULL REFERENCES public.categories(id) ON DELETE SET NULL`
+- Add index on `(store_id, parent_id, sort_order)`
+- No RLS changes (existing policies apply to all rows)
 
-### 2. Wire it into the Messenger finalizer
+Categories with `parent_id IS NULL` = main categories. Others = subcategories.
 
-File: `src/routes/api/public/messenger/webhook.ts`, function `finalizePendingMessengerOrder` (around line 405, right after product/stock validation, before the `orders.insert`).
+## Admin — Categories page
 
-```text
-- resolve normalized phone (already computed for insert)
-- lookup store_customers.id by (store_id, phone) — optional
-- dup = await checkDuplicate({...})
-- if dup.action === "block":
-    - fetch matched order (id, invoice_no, status) via supabaseAdmin
-    - insert a row in store_duplicate_blocks with source='messenger',
-      payload = { psid, conversation_id, product_id, qty, ... }
-    - reply with the Bangla template (uses invoice_no + status)
-    - do NOT create the order; clear the pending slot; return true
-- if dup.action === "warn":
-    - log the block row with status='warned', still create the order
-      (matches website "warn" mode)
-- else: continue with existing insert flow
+`src/routes/_authenticated/admin/categories.tsx` + `src/lib/admin.functions.ts`:
+
+- Add "Parent category" dropdown in the category dialog (options = main categories only, "— None (main category)" default).
+- Update `upsertCategory` / `listMyCategories` to persist and return `parent_id`.
+- List view groups subcategories visually under their parent (indent), keeps existing drag-reorder within same parent.
+
+## Storefront data
+
+`src/lib/storefront.functions.ts` — `listStoreCategories` already returns all categories; extend the returned shape to include `parent_id`. No new server function.
+
+Product counts are computed client-side from the existing `products` query (already loaded). Icon category rail keeps using main categories only.
+
+## Storefront UI — `src/routes/store/$slug/index.tsx`
+
+State:
+- `activeMainId: string | null`
+- `activeSubId: string | null`
+- `source: 'header' | 'icon' | null` — controls whether the subcategory strip renders
+- Existing `query` from `useStoreUI` stays as-is
+
+Derived:
+- `mainCategories = categories.filter(c => !c.parent_id)`
+- `subcategoriesOf(mainId) = categories.filter(c => c.parent_id === mainId)`
+- `countFor(mainId)` = products whose `category_id === mainId` OR whose category's `parent_id === mainId`
+- `filtered` products:
+  - if `activeSubId` → `p.category_id === activeSubId`
+  - else if `activeMainId` → main-or-child match
+  - plus existing search filter
+
+Layout order (unchanged sections, one new section inserted):
+
+```
+Header
+MainCategoryBar   ← NEW, desktop only (hidden md:block)
+Banner
+SubcategoryBar    ← NEW, desktop only, renders when source==='header' && activeMainId
+CategoryStrip     ← existing icon rail (unchanged)
+Sections (Featured, Best Selling, All Products)
 ```
 
-The Bangla reply template lives inline in the webhook (same style as other order messages there). If admin has set a `custom_ai_duplicate_reply`, use that; else the default template.
+Components (all in the same file, matching existing style):
 
-### 3. Small settings extensions (optional column adds)
+- `MainCategoryBar`: horizontal scrollable pill row. Items: `All (n)` + each main `Name (count)`. Active = purple bg / white text using existing `--store-btn-bg` token (falls back to `#7c3aed` when unset to match request). Click sets `activeMainId`, `activeSubId=null`, `source='header'`, scrolls to `#all-products`.
+- `SubcategoryBar`: text-only pill row, appears below banner only when `source==='header'` and a main is active and it has subcategories. `All / <Sub1> / <Sub2>…`. Click sets `activeSubId`.
+- Existing `CategoryStrip` (icon rail): keep as-is but change handler to set `activeMainId`, `activeSubId=null`, `source='icon'` — this deliberately hides the subcategory bar per spec.
 
-Add nullable columns to `store_duplicate_protection` so admins can tune Messenger behavior without a parallel table:
+Mobile side drawer (`src/routes/store/$slug/route.tsx` — where the current menu drawer lives; will locate and edit only the "Categories" section):
 
-- `rule_psid boolean default false` — check by Messenger PSID (`ai_conversations.psid` → past `orders` linked via `ai_conversations.order_id`, or via `orders.notes` marker; simplest: skip until we persist psid on order — see step 5).
-- `messenger_custom_reply text` — optional override for the duplicate message.
-- `messenger_enabled boolean default true` — kill switch just for Messenger.
+- Replace flat category list with accordion: each main = collapsible row showing `▶/▼ Name (count)`.
+- Only one open at a time (`openMainId` state).
+- Tap main title → sets `activeMainId`, closes drawer, scrolls to products.
+- Expanded panel lists `All / <subs>` as text rows; tap → sets `activeSubId`, closes drawer, scrolls.
+- No horizontal main bar on mobile (`md:hidden` on desktop bar, drawer handles mobile).
 
-Extend `getDuplicateSettings`/`updateDuplicateSettings` and the admin UI page (`src/routes/_authenticated/admin/duplicate-protection.tsx`) with a "Messenger Duplicate Protection" section exposing these fields. Existing rules (phone, product, customer, period_days, mode) are shared — no duplication.
+Search integration: existing search stays. When a search term matches a subcategory name exactly (case-insensitive), auto-set that sub + its parent main. Implemented as a `useEffect` on `query` change.
 
-### 4. Admin override on an order
+Scroll: use existing `scrollToAll()`. Reset `pageSize` on any filter change (existing effect extended to include `activeMainId`, `activeSubId`).
 
-Add `allow_duplicate boolean default false` to `orders`. When set true by an admin (checkbox in `OrderDetailsDrawer`), a follow-up duplicate check skips that order as a match (add `.eq("allow_duplicate", false)` filter inside `checkDuplicate`'s per-column lookups). This is a minimal addition and both website + Messenger benefit.
+Animation: Tailwind `transition-colors duration-200` on pills, `transition-all` on accordion height via `grid-rows-[0fr]`/`[1fr]` pattern already used elsewhere. No shadows added.
 
-### 5. Blocked-attempt log (reuse `store_duplicate_blocks`)
+## Non-goals / restrictions honoured
 
-Already exists for website blocks. Add two nullable columns so Messenger attempts show up in the same admin list/analytics:
+- No new routes, no URL/search-param changes, no reload.
+- Banner, icon rail, product cards, search box untouched visually.
+- Homepage still mounts once; only local state changes.
+- Existing caching (`staleTime: 5min`) unchanged; no extra queries.
 
-- `source text default 'web'` — 'web' | 'messenger'
-- `psid text` — Messenger PSID when source='messenger'
+## Technical notes
 
-Update `listDuplicateBlocks` to return `source`/`psid`; the existing admin page renders a new "Source" column and PSID chip.
-
-### 6. Analytics tiles
-
-In the admin dashboard overview (`src/lib/admin.functions.ts` → `myDashboardOverview`) add three counts derived from `store_duplicate_blocks`:
-
-- `duplicates_blocked_today` — count where `created_at >= today` and `status in ('blocked','warned')`.
-- `duplicates_blocked_month` — same, month-to-date.
-- `duplicate_savings` — SUM over blocked rows of `payload->>'total'::numeric` (approximate; matches website's payload shape and Messenger's payload we insert).
-
-Surface them as a small strip on the dashboard next to existing KPI cards (no layout redesign — one extra row/card).
-
-### Technical notes
-
-- **Single validator**: only `checkDuplicate` in `duplicate-guard.server.ts` performs matching. Messenger path just calls it and formats a reply.
-- **Migration**: one migration adds `rule_psid`, `messenger_enabled`, `messenger_custom_reply` to `store_duplicate_protection`; `source`, `psid` to `store_duplicate_blocks`; `allow_duplicate` to `orders`. All nullable / defaulted — no data backfill.
-- **RLS/GRANT**: no new tables, no new policies needed.
-- **Behavioral safety**: if `store_duplicate_protection.enabled=false` or `messenger_enabled=false`, Messenger flow is unchanged.
-
-### Files touched
-
-- `src/routes/api/public/messenger/webhook.ts` — call `checkDuplicate` in `finalizePendingMessengerOrder`, log block, send Bangla reply.
-- `src/lib/duplicate-guard.server.ts` — honor `orders.allow_duplicate=false` filter; accept optional `psid` and consult `rule_psid`; return matched order's `invoice_no` and `status` for the Messenger reply.
-- `src/lib/duplicate-protection.functions.ts` — extend validators for new fields.
-- `src/routes/_authenticated/admin/duplicate-protection.tsx` — new "Messenger" subsection + Source column.
-- `src/components/admin/OrderDetailsDrawer.tsx` — "Allow duplicate purchase" toggle.
-- `src/lib/admin.functions.ts` + `src/routes/_authenticated/admin/index.tsx` — 3 analytics counters.
-- One Supabase migration for the column additions.
+- Category count is O(products × 1) computed via a `Map<parentId, count>` memo — one pass, no extra fetches.
+- Subcategory picks products by `category_id === subId` only (no double-counting).
+- Purple active pill uses `bg-[var(--store-btn-bg,#7c3aed)] text-white` so theme override still wins.
+- Drawer accordion uses `aria-expanded` and keyboard-accessible buttons.
