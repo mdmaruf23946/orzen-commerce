@@ -388,13 +388,15 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
     // Fire-and-observe: push Messenger status update to the customer if this order
     // originated from (or has) a Messenger conversation. Failures are swallowed —
     // they remain in the outbox for retry.
+    let messenger: { sent: number; failed: number; considered: number; error?: string } | null = null;
     try {
       const { drainOutbox } = await import("@/lib/messenger-notify.server");
-      await drainOutbox({ orderId: data.id, latestOnly: true });
+      messenger = await drainOutbox({ orderId: data.id, latestOnly: true });
     } catch (e) {
+      messenger = { sent: 0, failed: 1, considered: 0, error: (e as Error).message };
       console.error("[updateOrderStatus] messenger drain failed:", (e as Error).message);
     }
-    return { ok: true };
+    return { ok: true, messenger };
   });
 
 
