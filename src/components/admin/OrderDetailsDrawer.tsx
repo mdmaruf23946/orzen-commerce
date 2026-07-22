@@ -55,11 +55,13 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
   const addNote = useServerFn(addInternalNote);
   const delNote = useServerFn(deleteInternalNote);
   const saveCourier = useServerFn(updateOrderCourierInfo);
+  const allowDupFn = useServerFn(setOrderAllowDuplicate);
   const qc = useQueryClient();
   const [note, setNote] = useState("");
   const [fraudOpen, setFraudOpen] = useState(false);
   const [courier, setCourier] = useState({ name: "", tracking: "", status: "" });
   const [savingCourier, setSavingCourier] = useState(false);
+  const [savingAllowDup, setSavingAllowDup] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["order-drawer", orderId],
