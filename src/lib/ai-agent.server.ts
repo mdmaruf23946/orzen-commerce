@@ -59,8 +59,10 @@ Style: ${agent.style}.
 # Hard rules — never violate
 - NEVER invent product names, prices, stock, features, or policies. Every product fact must come from a tool call in this turn.
 - The MOMENT a customer mentions a product, category, price range, brand, or asks "what do you sell / show me products / আপনাদের কি আছে / দাম কত" — IMMEDIATELY call searchProducts (or listCategories if they ask for categories). Do not answer from memory, do not ask clarifying questions first for a general browse intent.
+- If the customer asks for a photo/image/details of "this/that/এটা/এইটা/ওটা" after you already recommended a product, call getRecentRecommendations first, then sendProductCard for the most recent matching product.
 - If searchProducts returns 0 results, try again with a broader query (drop filters, translate Bangla→English keyword, try a synonym) before telling the customer "not found".
-- When you have products to show, call sendProductCarousel (multiple) or sendProductCard (one) AND also write a short friendly text line (1 sentence) introducing them. Never leave the text reply empty when you sent cards — always add a line like "এই প্রোডাক্টগুলো দেখুন 👇".
+- When you have products to show, call sendProductCarousel (multiple) or sendProductCard (one) so Messenger shows the image, price, stock and buy button. Also write a short friendly text line (1 sentence) introducing them. Never leave the text reply empty when you sent cards — always add a line like "এই প্রোডাক্টগুলো দেখুন 👇".
+- Never say a product image is unavailable until you checked the product tool result. If primary_image_url or gallery has an image, send a product card.
 - If a product is out of stock, tell the customer and call searchProducts in the same category to suggest alternatives.
 - If you cannot answer confidently or the customer asks for a human, call escalateToHuman.
 
@@ -97,6 +99,99 @@ function productUrl(ctx: AgentContext, slug: string | null | undefined, productI
   const base = ctx.siteOrigin || `https://${ctx.storeSlug || slug || "store"}.orzen.top`;
   const s = ctx.storeSlug || slug || "";
   return s ? `${base.replace(/\/$/, "")}/store/${s}/product/${productId}` : `${base}/product/${productId}`;
+}
+
+function absoluteUrl(ctx: AgentContext, value: string | null | undefined) {
+  if (!value) return undefined;
+  if (/^https?:\/\//i.test(value)) return value;
+  const base = (ctx.siteOrigin || `https://${ctx.storeSlug || "www"}.orzen.top`).replace(/\/$/, "");
+  const path = value.startsWith("/") ? value : `/api/img/${value}`;
+  return `${base}${path}`;
+}
+
+function firstImage(ctx: AgentContext, product: any) {
+  if (product.primary_image_url) return absoluteUrl(ctx, product.primary_image_url);
+  const gallery = Array.isArray(product.gallery) ? product.gallery : [];
+  return absoluteUrl(ctx, gallery.find(Boolean));
+}
+
+const BANGLA_SEARCH_SYNONYMS: Record<string, string[]> = {
+  "ব্যাগ": ["bag", "school bag", "backpack"],
+  "স্কুল": ["school"],
+  "জুতা": ["shoe", "shoes", "sandal"],
+  "ঘড়ি": ["watch", "clock"],
+  "কাপড়": ["cloth", "dress", "shirt"],
+  "ড্রেস": ["dress"],
+  "শার্ট": ["shirt"],
+  "প্যান্ট": ["pant", "trouser"],
+  "ফোন": ["phone", "mobile"],
+  "মোবাইল": ["mobile", "phone"],
+  "চার্জার": ["charger"],
+  "হেডফোন": ["headphone", "earphone"],
+  "ইয়ারফোন": ["earphone", "headphone"],
+  "প্রজেক্টর": ["projector"],
+  "বেডশিট": ["bedsheet", "bed sheet"],
+  "ফ্যান": ["fan"],
+  "লাইট": ["light"],
+};
+
+const PRODUCT_STOPWORDS = new Set([
+  "this", "that", "these", "those", "show", "give", "send", "photo", "image", "picture", "pic", "please", "price", "details",
+  "এটা", "এইটা", "ওটা", "এই", "ওই", "এর", "টার", "একটা", "একটি", "ছবি", "দাও", "দেন", "দেখাও", "দেখান", "কি", "কী", "আছে", "দাম", "কত", "ডিটেইলস", "বিস্তারিত", "প্লিজ", "আমাদের", "আপনাদের",
+]);
+
+function searchTerms(raw: string) {
+  const compact = raw.toLowerCase().replace(/[.,!?;:()\[\]{}"'`~|/\\]+/g, " ");
+  const terms = new Set<string>();
+  for (const token of compact.split(/\s+/).map((t) => t.trim()).filter(Boolean)) {
+    if (token.length < 2 || PRODUCT_STOPWORDS.has(token)) continue;
+    terms.add(token);
+    for (const synonym of BANGLA_SEARCH_SYNONYMS[token] ?? []) terms.add(synonym.toLowerCase());
+  }
+  for (const [bn, synonyms] of Object.entries(BANGLA_SEARCH_SYNONYMS)) {
+    if (compact.includes(bn)) synonyms.forEach((s) => terms.add(s.toLowerCase()));
+  }
+  return Array.from(terms);
+}
+
+function stringifyProductField(value: any) {
+  if (!value) return "";
+  if (Array.isArray(value)) return value.map(stringifyProductField).join(" ");
+  if (typeof value === "object") return Object.values(value).map(stringifyProductField).join(" ");
+  return String(value);
+}
+
+function productSummary(ctx: AgentContext, product: any, categoryName?: string | null) {
+  return {
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    brand: product.brand,
+    category_id: product.category_id,
+    category_name: categoryName ?? null,
+    product_code: product.product_code,
+    sku: product.sku,
+    short_description: product.short_description,
+    description: product.description,
+    price: product.price,
+    old_price: product.old_price,
+    stock: product.stock,
+    status: product.status,
+    image_url: firstImage(ctx, product),
+    primary_image_url: firstImage(ctx, product),
+    gallery: Array.isArray(product.gallery) ? product.gallery.map((img: string) => absoluteUrl(ctx, img)).filter(Boolean) : [],
+    features: product.features,
+    specifications: product.specifications,
+    variants: product.variants,
+    delivery_charge: product.delivery_charge,
+    delivery_time_days: product.delivery_time_days,
+    rating: product.rating,
+    total_sold: product.total_sold,
+    warranty: product.warranty,
+    return_policy: product.return_policy,
+    shipping_info: product.shipping_info,
+    product_url: productUrl(ctx, product.slug, product.id),
+  };
 }
 
 async function getConversationSlot(conversationId: string): Promise<Record<string, any>> {
@@ -170,6 +265,11 @@ export function buildTools(ctx: AgentContext) {
     } catch { /* non-fatal */ }
   }
 
+  async function categoryMap() {
+    const { data } = await sb.from("categories").select("id,name").eq("store_id", storeId);
+    return new Map((data ?? []).map((c: any) => [c.id, c.name]));
+  }
+
   const tools: Record<string, any> = {
     searchProducts: tool({
       description:
@@ -190,14 +290,11 @@ export function buildTools(ctx: AgentContext) {
           .select(productSelect)
           .eq("store_id", storeId)
           .eq("status", "active");
-        const like = `%${input.query.replace(/[%_]/g, " ")}%`;
-        q = q.or(
-          `name.ilike.${like},brand.ilike.${like},sku.ilike.${like},product_code.ilike.${like},short_description.ilike.${like},description.ilike.${like}`,
-        );
         if (input.brand) q = q.ilike("brand", `%${input.brand}%`);
         if (input.minPrice != null) q = q.gte("price", input.minPrice);
         if (input.maxPrice != null) q = q.lte("price", input.maxPrice);
         if (input.inStockOnly) q = q.gt("stock", 0);
+        const cats = await categoryMap();
         if (input.category) {
           const { data: cat } = await sb
             .from("categories")
@@ -212,11 +309,85 @@ export function buildTools(ctx: AgentContext) {
         else if (input.sort === "bestseller") q = q.order("total_sold", { ascending: false });
         else if (input.sort === "newest") q = q.order("created_at", { ascending: false });
         else q = q.order("is_featured", { ascending: false }).order("total_sold", { ascending: false });
-        const { data } = await q.limit((input.limit ?? 6) + 5);
+        const { data } = await q.limit(120);
         const blocked = await getBlacklistedIds();
-        const filtered = (data ?? []).filter((p: any) => !blocked.has(p.id)).slice(0, input.limit ?? 6);
+        const terms = searchTerms(input.query);
+        const phrase = input.query.toLowerCase().trim();
+        const scored = (data ?? [])
+          .filter((p: any) => !blocked.has(p.id))
+          .map((p: any) => {
+            const categoryName = cats.get(p.category_id) ?? "";
+            const haystack = [
+              p.name,
+              p.brand,
+              p.sku,
+              p.product_code,
+              categoryName,
+              p.short_description,
+              p.description,
+              stringifyProductField(p.features),
+              stringifyProductField(p.specifications),
+              stringifyProductField(p.variants),
+            ].join(" ").toLowerCase();
+            let score = 0;
+            if (phrase && haystack.includes(phrase)) score += 60;
+            for (const term of terms) {
+              if (haystack.includes(term)) score += 25;
+              if (String(p.name ?? "").toLowerCase().includes(term)) score += 20;
+              if (String(categoryName).toLowerCase().includes(term)) score += 15;
+              if (String(p.brand ?? "").toLowerCase().includes(term)) score += 10;
+            }
+            if (p.stock > 0) score += 8;
+            if (p.is_featured) score += 6;
+            score += Math.min(Number(p.total_sold) || 0, 50) / 10;
+            score += Math.min(Number(p.rating) || 0, 5);
+            return { product: p, score };
+          });
+        const hasMeaningfulTerms = terms.length > 0;
+        let ranked = scored;
+        if (hasMeaningfulTerms) {
+          const matches = scored.filter((row) => row.score >= 25);
+          ranked = matches.length ? matches : scored;
+        }
+        ranked.sort((a, b) => b.score - a.score);
+        const filtered = ranked.slice(0, input.limit ?? 6).map((row) => row.product);
         await logRecommendations("searchProducts", filtered, input.query);
-        return { products: filtered };
+        return {
+          products: filtered.map((p: any) => productSummary(ctx, p, cats.get(p.category_id))),
+          query_terms: terms,
+          fallback_used: hasMeaningfulTerms && !scored.some((row) => row.score >= 25),
+        };
+      },
+    }),
+
+    getRecentRecommendations: tool({
+      description:
+        "Return the most recent products shown/recommended in this conversation. Use when the customer says this/that/এটা/এইটা/ছবি/details after a previous product recommendation.",
+      inputSchema: z.object({
+        limit: z.number().optional().default(5),
+      }),
+      execute: async ({ limit }) => {
+        if (!convId) return { products: [] };
+        const { data: recs } = await sb
+          .from("ai_product_recommendations")
+          .select("product_id,created_at,context")
+          .eq("store_id", storeId)
+          .eq("conversation_id", convId)
+          .order("created_at", { ascending: false })
+          .limit(Math.max(Number(limit ?? 5) * 3, 5));
+        const ids = Array.from(new Set((recs ?? []).map((r: any) => r.product_id).filter(Boolean))).slice(0, limit ?? 5);
+        if (!ids.length) return { products: [] };
+        const [blocked, cats, productsResult] = await Promise.all([
+          getBlacklistedIds(),
+          categoryMap(),
+          sb.from("products").select(productSelect).eq("store_id", storeId).eq("status", "active").in("id", ids),
+        ]);
+        const byId = new Map((productsResult.data ?? []).map((p: any) => [p.id, p]));
+        const products = ids
+          .map((id) => byId.get(id))
+          .filter((p: any) => p && !blocked.has(p.id))
+          .map((p: any) => productSummary(ctx, p, cats.get(p.category_id)));
+        return { products };
       },
     }),
 
@@ -235,7 +406,8 @@ export function buildTools(ctx: AgentContext) {
           .eq("id", productId)
           .maybeSingle();
         if (data) await logRecommendations("getProduct", [data], "detail_view");
-        return data;
+        const cats = await categoryMap();
+        return data ? productSummary(ctx, data, cats.get(data.category_id)) : null;
       },
     }),
 
