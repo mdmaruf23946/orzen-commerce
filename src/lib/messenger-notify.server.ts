@@ -1,6 +1,6 @@
 // Server-only helper: drain order_notifications_outbox for a specific order or all pending.
 // Sends Messenger updates to the customer who placed the order.
-import { sendText } from "@/lib/messenger-send.server";
+import { sendPostPurchaseUpdate } from "@/lib/messenger-send.server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const STAGE_MESSAGES: Record<string, (o: any) => string> = {
@@ -13,6 +13,16 @@ const STAGE_MESSAGES: Record<string, (o: any) => string> = {
   returned: (o) => `↩️ আপনার অর্ডার ${o.invoice_no ? "#" + o.invoice_no : ""} রিটার্ন হিসাবে রেকর্ড করা হয়েছে।`,
   courier_assigned: (o) => `🚚 আপনার অর্ডার ${o.invoice_no ? "#" + o.invoice_no : ""} কুরিয়ারে অ্যাসাইন করা হয়েছে।`,
 };
+
+async function decryptToken(enc: string | null | undefined): Promise<string | null> {
+  if (!enc) return null;
+  try {
+    const { decryptJSON } = await import("@/lib/crypto/credentials.server");
+    return decryptJSON<string>(enc);
+  } catch {
+    return null;
+  }
+}
 
 export async function drainOutbox(opts: { orderId?: string; limit?: number } = {}) {
   const limit = opts.limit ?? 50;
@@ -83,13 +93,15 @@ export async function drainOutbox(opts: { orderId?: string; limit?: number } = {
 
       const { data: integ } = await supabaseAdmin
         .from("messenger_integrations")
-        .select("page_access_token")
+        .select("page_access_token,page_access_token_encrypted,status")
         .eq("store_id", row.store_id)
         .maybeSingle();
-      const token = (integ as any)?.page_access_token;
+      const token =
+        (await decryptToken((integ as any)?.page_access_token_encrypted)) ||
+        (integ as any)?.page_access_token;
       if (!token) throw new Error("no_page_token");
 
-      await sendText(token, conv.external_id, text);
+      await sendPostPurchaseUpdate(token, conv.external_id, text);
 
       await supabaseAdmin
         .from("order_notifications_outbox")
