@@ -138,8 +138,8 @@ function MessengerInbox() {
   ];
 
   return (
-    <div className="space-y-4">
-      <div>
+    <div className={cn("space-y-4", selectedId && "max-md:flex max-md:h-[calc(100dvh-3.5rem-1rem-70px)] max-md:flex-col max-md:overflow-hidden max-md:space-y-0")}>
+      <div className={cn(selectedId && "max-md:hidden")}>
         <h1 className="text-2xl font-semibold">Messenger Inbox</h1>
         <p className="text-sm text-muted-foreground">
           Total {stats.data?.total ?? 0} · Unread {stats.data?.unread ?? 0} · Today {stats.data?.today ?? 0} ·
@@ -148,7 +148,7 @@ function MessengerInbox() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-[320px_1fr] md:h-[calc(100vh-180px)]">
+      <div className={cn("grid min-h-0 grid-cols-1 gap-4 md:h-[calc(100vh-180px)] md:grid-cols-[320px_1fr]", selectedId && "max-md:flex-1 max-md:overflow-hidden")}>
         {/* List */}
         <aside
           className={cn(
@@ -241,8 +241,8 @@ function MessengerInbox() {
         {/* Chat */}
         <section
           className={cn(
-            "flex flex-col rounded-lg border bg-background overflow-hidden",
-            selectedId ? "flex" : "hidden md:flex",
+            "flex min-h-0 flex-col rounded-lg border bg-background overflow-hidden",
+            selectedId ? "flex max-md:h-full" : "hidden md:flex",
           )}
         >
           {selectedId ? (
@@ -418,7 +418,7 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
   }
 
   return (
-    <div className="flex h-[100dvh] flex-1 flex-col overflow-hidden md:h-full">
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       {/* header */}
       <div className="sticky top-0 z-20 flex shrink-0 items-center gap-3 border-b bg-background/95 p-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <Button variant="ghost" size="icon" className="md:hidden" onClick={onBack}>
@@ -458,7 +458,7 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
       {/* messages + profile */}
       <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[1fr_280px]">
         <div className="flex min-h-0 flex-col overflow-hidden">
-          <div ref={scrollRef} className="flex-1 min-h-0 space-y-2 overflow-y-auto overscroll-contain scroll-smooth p-3 pb-4">
+          <div ref={scrollRef} className="min-h-0 flex-1 touch-pan-y space-y-2 overflow-y-auto overscroll-contain scroll-smooth p-3 pb-24 [-webkit-overflow-scrolling:touch] md:pb-4">
 
             {(msgs.data ?? []).map((m: any) => {
               const out = m.direction === "out";
