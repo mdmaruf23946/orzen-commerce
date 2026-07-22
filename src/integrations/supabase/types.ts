@@ -1458,6 +1458,7 @@ export type Database = {
       orders: {
         Row: {
           address: string
+          allow_duplicate: boolean
           area: string | null
           coupon_id: string | null
           courier_code: string | null
@@ -1485,6 +1486,7 @@ export type Database = {
         }
         Insert: {
           address: string
+          allow_duplicate?: boolean
           area?: string | null
           coupon_id?: string | null
           courier_code?: string | null
@@ -1512,6 +1514,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          allow_duplicate?: boolean
           area?: string | null
           coupon_id?: string | null
           courier_code?: string | null
@@ -2435,8 +2438,10 @@ export type Database = {
           payload: Json
           phone: string | null
           product_ids: string[]
+          psid: string | null
           resolved_at: string | null
           resolved_by: string | null
+          source: string
           status: string
           store_id: string
         }
@@ -2452,8 +2457,10 @@ export type Database = {
           payload: Json
           phone?: string | null
           product_ids?: string[]
+          psid?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
+          source?: string
           status?: string
           store_id: string
         }
@@ -2469,8 +2476,10 @@ export type Database = {
           payload?: Json
           phone?: string | null
           product_ids?: string[]
+          psid?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
+          source?: string
           status?: string
           store_id?: string
         }
@@ -2546,6 +2555,8 @@ export type Database = {
           created_at: string
           enabled: boolean
           match_logic: string
+          messenger_custom_reply: string | null
+          messenger_enabled: boolean
           mode: string
           period_days: number
           rule_customer: boolean
@@ -2553,6 +2564,7 @@ export type Database = {
           rule_fingerprint: boolean
           rule_phone: boolean
           rule_product: boolean
+          rule_psid: boolean
           store_id: string
           updated_at: string
         }
@@ -2560,6 +2572,8 @@ export type Database = {
           created_at?: string
           enabled?: boolean
           match_logic?: string
+          messenger_custom_reply?: string | null
+          messenger_enabled?: boolean
           mode?: string
           period_days?: number
           rule_customer?: boolean
@@ -2567,6 +2581,7 @@ export type Database = {
           rule_fingerprint?: boolean
           rule_phone?: boolean
           rule_product?: boolean
+          rule_psid?: boolean
           store_id: string
           updated_at?: string
         }
@@ -2574,6 +2589,8 @@ export type Database = {
           created_at?: string
           enabled?: boolean
           match_logic?: string
+          messenger_custom_reply?: string | null
+          messenger_enabled?: boolean
           mode?: string
           period_days?: number
           rule_customer?: boolean
@@ -2581,6 +2598,7 @@ export type Database = {
           rule_fingerprint?: boolean
           rule_phone?: boolean
           rule_product?: boolean
+          rule_psid?: boolean
           store_id?: string
           updated_at?: string
         }
