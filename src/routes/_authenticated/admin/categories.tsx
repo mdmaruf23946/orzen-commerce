@@ -106,73 +106,102 @@ function CategoriesPage() {
           <div className="p-10 text-center text-sm text-muted-foreground">No categories yet.</div>
         ) : (
           <ul className="divide-y">
-            {items.map((c) => {
-              const src = c.image_url
-                ? c.image_url.startsWith("http")
-                  ? c.image_url
-                  : `/api/img/${c.image_url}`
-                : null;
-              return (
-                <li
-                  key={c.id}
-                  draggable
-                  onDragStart={() => onDragStart(c.id)}
-                  onDragOver={(e) => onDragOver(e, c.id)}
-                  onDragEnd={onDragEnd}
-                  className={`flex items-center gap-3 p-3 ${dragId === c.id ? "opacity-50" : ""}`}
-                >
-                  <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-muted-foreground" />
-                  <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-muted">
-                    {src ? (
-                      <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
-                    ) : (
-                      <ImageIcon className="h-5 w-5 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="line-clamp-1 text-sm font-medium">{c.name}</p>
-                    {c.description && (
-                      <p className="line-clamp-1 text-xs text-muted-foreground">{c.description}</p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => toggleActive(c)}
-                    className="rounded p-2 hover:bg-muted"
-                    aria-label={c.is_active ? "Hide" : "Show"}
-                    title={c.is_active ? "Active — click to hide" : "Hidden — click to show"}
-                  >
-                    {c.is_active ? (
-                      <Eye className="h-4 w-4" />
-                    ) : (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => startEdit(c)}
-                    className="rounded p-2 hover:bg-muted"
-                    aria-label="Edit"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => remove(c.id)}
-                    className="rounded p-2 text-destructive hover:bg-destructive/10"
-                    aria-label="Delete"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </li>
+            {(() => {
+              const mains = items.filter((c) => !(c as any).parent_id);
+              const subsByParent = new Map<string, Category[]>();
+              for (const c of items) {
+                const pid = (c as any).parent_id as string | null;
+                if (pid) {
+                  if (!subsByParent.has(pid)) subsByParent.set(pid, []);
+                  subsByParent.get(pid)!.push(c);
+                }
+              }
+              const orphans = items.filter(
+                (c) =>
+                  (c as any).parent_id &&
+                  !mains.some((m) => m.id === (c as any).parent_id),
               );
-            })}
+              const ordered: Array<{ c: Category; indent: boolean }> = [];
+              for (const m of mains) {
+                ordered.push({ c: m, indent: false });
+                for (const s of subsByParent.get(m.id) ?? []) {
+                  ordered.push({ c: s, indent: true });
+                }
+              }
+              for (const o of orphans) ordered.push({ c: o, indent: true });
+              return ordered.map(({ c, indent }) => {
+                const src = c.image_url
+                  ? c.image_url.startsWith("http")
+                    ? c.image_url
+                    : `/api/img/${c.image_url}`
+                  : null;
+                return (
+                  <li
+                    key={c.id}
+                    draggable
+                    onDragStart={() => onDragStart(c.id)}
+                    onDragOver={(e) => onDragOver(e, c.id)}
+                    onDragEnd={onDragEnd}
+                    className={`flex items-center gap-3 p-3 ${indent ? "pl-10" : ""} ${dragId === c.id ? "opacity-50" : ""}`}
+                  >
+                    <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-muted-foreground" />
+                    <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-muted">
+                      {src ? (
+                        <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
+                      ) : (
+                        <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-1 text-sm font-medium">
+                        {indent && <span className="text-muted-foreground">↳ </span>}
+                        {c.name}
+                      </p>
+                      {c.description && (
+                        <p className="line-clamp-1 text-xs text-muted-foreground">{c.description}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => toggleActive(c)}
+                      className="rounded p-2 hover:bg-muted"
+                      aria-label={c.is_active ? "Hide" : "Show"}
+                      title={c.is_active ? "Active — click to hide" : "Hidden — click to show"}
+                    >
+                      {c.is_active ? (
+                        <Eye className="h-4 w-4" />
+                      ) : (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => startEdit(c)}
+                      className="rounded p-2 hover:bg-muted"
+                      aria-label="Edit"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => remove(c.id)}
+                      className="rounded p-2 text-destructive hover:bg-destructive/10"
+                      aria-label="Delete"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </li>
+                );
+              });
+            })()}
           </ul>
         )}
       </div>
+
 
       {open && store && (
         <CategoryDialog
           storeId={store.id}
           editing={editing}
           nextOrder={items.length}
+          allCategories={items}
           onClose={() => setOpen(false)}
           onSave={async (data) => {
             await save({ data });
@@ -190,12 +219,14 @@ function CategoryDialog({
   storeId,
   editing,
   nextOrder,
+  allCategories,
   onClose,
   onSave,
 }: {
   storeId: string;
   editing: Category | null;
   nextOrder: number;
+  allCategories: Category[];
   onClose: () => void;
   onSave: (data: any) => Promise<void>;
 }) {
@@ -204,7 +235,12 @@ function CategoryDialog({
   const [description, setDescription] = useState<string>(editing?.description ?? "");
   const [sortOrder, setSortOrder] = useState<number>(editing?.sort_order ?? nextOrder);
   const [isActive, setIsActive] = useState<boolean>(editing?.is_active ?? true);
+  const [parentId, setParentId] = useState<string | null>((editing as any)?.parent_id ?? null);
   const [saving, setSaving] = useState(false);
+
+  const parentOptions = allCategories.filter(
+    (c) => !(c as any).parent_id && (!editing || c.id !== editing.id),
+  );
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -221,6 +257,7 @@ function CategoryDialog({
         description: description.trim() || null,
         sort_order: Number(sortOrder) || 0,
         is_active: isActive,
+        parent_id: parentId,
       });
     } catch (err) {
       toast.error((err as Error).message);
@@ -247,6 +284,26 @@ function CategoryDialog({
           <div className="space-y-1.5">
             <Label htmlFor="n">Name</Label>
             <Input id="n" required value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="pid">Parent category</Label>
+            <select
+              id="pid"
+              value={parentId ?? ""}
+              onChange={(e) => setParentId(e.target.value || null)}
+              className="flex h-9 w-full rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="">— None (main category)</option>
+              {parentOptions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Leave empty to make this a main category. Selecting a parent makes this a subcategory.
+            </p>
           </div>
 
           <div className="space-y-1.5">
@@ -293,3 +350,4 @@ function CategoryDialog({
     </Dialog>
   );
 }
+

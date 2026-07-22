@@ -1,13 +1,14 @@
 import { createFileRoute, Link, Outlet, notFound } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ShoppingCart, Search, Phone, MessageCircle, Facebook, Menu, X, Mail, User, LogOut } from "lucide-react";
-import { getStoreBySlug } from "@/lib/storefront.functions";
+import { ShoppingCart, Search, Phone, MessageCircle, Facebook, Menu, X, Mail, User, LogOut, ChevronDown, ChevronRight } from "lucide-react";
+import { getStoreBySlug, listStoreCategories, listStoreProducts } from "@/lib/storefront.functions";
 import { getStoreAgentPublic } from "@/lib/ai.functions";
 import { cartCount } from "@/lib/cart";
 import { StoreUIProvider, useStoreUI } from "@/lib/store-ui";
 import { AIChatLauncher } from "@/components/storefront/AIChatLauncher";
 import { useCustomerSession } from "@/lib/customer-session";
+
 
 
 export const storeQuery = (slug: string) =>
@@ -85,7 +86,7 @@ function StoreLayout() {
       <TrackingScripts marketing={s.marketing} slug={slug} />
       <div className="min-h-screen bg-background" style={themeVars}>
 
-        <StoreHeader slug={slug} name={store.name} logoUrl={store.logo_url} />
+        <StoreHeader slug={slug} storeId={store.id} name={store.name} logoUrl={store.logo_url} />
         <main className="mx-auto max-w-5xl px-4 pb-12 pt-4 sm:px-6">
           <Outlet />
         </main>
@@ -166,17 +167,73 @@ function TrackingScripts({ marketing, slug }: { marketing: any; slug: string }) 
 
 function StoreHeader({
   slug,
+  storeId,
   name,
   logoUrl,
 }: {
   slug: string;
+  storeId: string;
   name: string;
   logoUrl: string | null;
 }) {
   const [count, setCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { query, setQuery } = useStoreUI();
+  const [openMainId, setOpenMainId] = useState<string | null>(null);
+  const { query, setQuery, activeMainId, activeSubId, selectMain, selectSub } = useStoreUI();
   const { customer, signOut } = useCustomerSession(slug);
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories", storeId],
+    queryFn: () => listStoreCategories({ data: { storeId } }),
+    staleTime: 5 * 60_000,
+  });
+  const { data: products = [] } = useQuery({
+    queryKey: ["products", storeId],
+    queryFn: () => listStoreProducts({ data: { storeId } }),
+    staleTime: 5 * 60_000,
+  });
+
+  const mainCategories = categories.filter((c: any) => !c.parent_id);
+  const subsByParent = new Map<string, any[]>();
+  for (const c of categories as any[]) {
+    if (c.parent_id) {
+      if (!subsByParent.has(c.parent_id)) subsByParent.set(c.parent_id, []);
+      subsByParent.get(c.parent_id)!.push(c);
+    }
+  }
+  const catParentMap = new Map<string, string | null>();
+  for (const c of categories as any[]) catParentMap.set(c.id, c.parent_id ?? null);
+  const countsByMain = new Map<string, number>();
+  for (const p of products as any[]) {
+    if (!p.category_id) continue;
+    const parent = catParentMap.get(p.category_id);
+    const mainId = parent ?? p.category_id;
+    countsByMain.set(mainId, (countsByMain.get(mainId) ?? 0) + 1);
+  }
+
+  function closeMenuAndScroll() {
+    setMenuOpen(false);
+    setTimeout(() => {
+      document
+        .getElementById("all-products")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  }
+
+  function pickMain(id: string) {
+    selectMain(id, "header");
+    closeMenuAndScroll();
+  }
+  function pickAllMain() {
+    selectMain(null, null);
+    closeMenuAndScroll();
+  }
+  function pickSub(mainId: string, subId: string | null) {
+    if (activeMainId !== mainId) selectMain(mainId, "header");
+    selectSub(subId);
+    closeMenuAndScroll();
+  }
+
 
 
   useEffect(() => {
@@ -307,12 +364,100 @@ function StoreHeader({
             >
               Cart {count > 0 && <span className="ml-1 text-xs text-neutral-500">({count})</span>}
             </Link>
-            <a href="#contact" onClick={() => setMenuOpen(false)} className="block rounded-md px-3 py-2 hover:bg-neutral-100">
-              Contact
-            </a>
-            <a href="#policies" onClick={() => setMenuOpen(false)} className="block rounded-md px-3 py-2 hover:bg-neutral-100">
-              Policies
-            </a>
+
+            {mainCategories.length > 0 && (
+              <div className="mt-1 border-t pt-1">
+                <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+                  Categories
+                </div>
+                <button
+                  type="button"
+                  onClick={pickAllMain}
+                  className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left hover:bg-neutral-100 ${
+                    activeMainId === null ? "font-semibold text-neutral-900" : ""
+                  }`}
+                >
+                  <span>All</span>
+                  <span className="text-xs text-neutral-500">({products.length})</span>
+                </button>
+                {mainCategories.map((m: any) => {
+                  const subs = subsByParent.get(m.id) ?? [];
+                  const expanded = openMainId === m.id;
+                  return (
+                    <div key={m.id}>
+                      <div className="flex items-center">
+                        <button
+                          type="button"
+                          onClick={() => pickMain(m.id)}
+                          className={`flex flex-1 items-center justify-between rounded-md px-3 py-2 text-left hover:bg-neutral-100 ${
+                            activeMainId === m.id ? "font-semibold text-neutral-900" : ""
+                          }`}
+                        >
+                          <span>{m.name}</span>
+                          <span className="text-xs text-neutral-500">
+                            ({countsByMain.get(m.id) ?? 0})
+                          </span>
+                        </button>
+                        {subs.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setOpenMainId(expanded ? null : m.id)}
+                            aria-expanded={expanded}
+                            aria-label={expanded ? "Collapse" : "Expand"}
+                            className="mr-1 rounded p-1.5 hover:bg-neutral-100"
+                          >
+                            {expanded ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+                      {expanded && subs.length > 0 && (
+                        <div className="ml-3 border-l border-neutral-200 pl-2">
+                          <button
+                            type="button"
+                            onClick={() => pickSub(m.id, null)}
+                            className={`block w-full rounded-md px-3 py-1.5 text-left text-[13px] hover:bg-neutral-100 ${
+                              activeMainId === m.id && activeSubId === null
+                                ? "font-semibold text-neutral-900"
+                                : "text-neutral-700"
+                            }`}
+                          >
+                            All
+                          </button>
+                          {subs.map((s: any) => (
+                            <button
+                              key={s.id}
+                              type="button"
+                              onClick={() => pickSub(m.id, s.id)}
+                              className={`block w-full rounded-md px-3 py-1.5 text-left text-[13px] hover:bg-neutral-100 ${
+                                activeSubId === s.id
+                                  ? "font-semibold text-neutral-900"
+                                  : "text-neutral-700"
+                              }`}
+                            >
+                              {s.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="mt-1 border-t pt-1">
+              <a href="#contact" onClick={() => setMenuOpen(false)} className="block rounded-md px-3 py-2 hover:bg-neutral-100">
+                Contact
+              </a>
+              <a href="#policies" onClick={() => setMenuOpen(false)} className="block rounded-md px-3 py-2 hover:bg-neutral-100">
+                Policies
+              </a>
+            </div>
+
             {customer ? (
               <>
                 <Link
