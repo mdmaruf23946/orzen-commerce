@@ -36,6 +36,7 @@ const ACTIVE_ORDER_STATUSES = [
   "pending",
   "confirmed",
   "processing",
+  "delivered",
 ] as const;
 
 const EXTRA_ACTIVE_ORDER_STATUSES = new Set([
