@@ -270,6 +270,284 @@ function orderMissingFields(slot: Record<string, any>) {
   return missing;
 }
 
+function normalizePhone(value: string | null | undefined) {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  if (!digits) return null;
+  if (digits.startsWith("8801") && digits.length === 13) return `0${digits.slice(3)}`;
+  if (digits.startsWith("01") && digits.length === 11) return digits;
+  return digits.length >= 8 && digits.length <= 15 ? digits : null;
+}
+
+function extractPhone(text: string) {
+  const bdMatch = text.match(/(?:\+?88[-\s]?)?01[3-9][\d\s-]{8,12}/);
+  if (bdMatch) return normalizePhone(bdMatch[0]);
+  const generic = text.match(/\+?\d[\d\s-]{7,18}\d/);
+  return generic ? normalizePhone(generic[0]) : null;
+}
+
+function normalizePaymentMethod(text: string) {
+  const compact = text.toLowerCase();
+  if (/\bcod\b|cash\s*on\s*delivery|cash|ক্যাশ|ডেলিভারিতে|হাতে টাকা|ক্যাশ অন ডেলিভারি/i.test(compact)) return "cod";
+  if (/bkash|b-kash|বিকাশ/i.test(compact)) return "bkash";
+  if (/nagad|নগদ/i.test(compact)) return "nagad";
+  if (/rocket|রকেট/i.test(compact)) return "rocket";
+  if (/bank|ব্যাংক/i.test(compact)) return "bank";
+  return null;
+}
+
+function extractQty(text: string) {
+  const match = text.match(/(?:qty|quantity|পরিমাণ)\s*[:：-]?\s*(\d{1,2})|\b(\d{1,2})\s*(?:pcs|pieces|piece|পিস|টা|টি)\b/i);
+  const qty = match ? Number(match[1] ?? match[2]) : null;
+  return qty && qty > 0 && qty <= 99 ? qty : null;
+}
+
+function isPaymentLine(line: string) {
+  return !!normalizePaymentMethod(line) && line.trim().replace(/[\s.,।-]+/g, "").length <= 24;
+}
+
+function parseOrderDetailsText(text: string) {
+  const lines = text
+    .split(/\r?\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const phone = extractPhone(text);
+  const payment_method = normalizePaymentMethod(text);
+  const qty = extractQty(text);
+
+  const cleanedLines = lines
+    .map((line) => (phone ? line.replace(/(?:\+?88[-\s]?)?01[3-9][\d\s-]{8,12}/g, "") : line).trim())
+    .filter((line) => line && !isPaymentLine(line));
+
+  let customer_name: string | undefined;
+  let full_address: string | undefined;
+
+  const nameMatch = text.match(/(?:^|\n|\b)(?:name|নাম)\s*[:：-]?\s*([^\n,;|]+)/i);
+  if (nameMatch?.[1]) customer_name = nameMatch[1].trim();
+  const addressMatch = text.match(/(?:address|ঠিকানা|এড্রেস)\s*[:：-]?\s*([^|]+)/i);
+  if (addressMatch?.[1]) full_address = addressMatch[1].trim();
+
+  if (!customer_name) {
+    const firstNameLike = cleanedLines.find((line) => {
+      const withoutDigits = line.replace(/[\d+()-]/g, "").trim();
+      return withoutDigits.length >= 2 && withoutDigits.length <= 80 && !/,/.test(withoutDigits);
+    });
+    if (firstNameLike) customer_name = firstNameLike;
+  }
+
+  if (!full_address) {
+    const addressLines = cleanedLines.filter((line) => line !== customer_name);
+    if (addressLines.length) full_address = addressLines.join(", ");
+  }
+
+  const patch: Record<string, any> = {};
+  if (customer_name) patch.customer_name = customer_name.slice(0, 120);
+  if (phone) patch.phone = phone;
+  if (full_address) patch.full_address = full_address.slice(0, 500);
+  if (payment_method) patch.payment_method = payment_method;
+  if (qty) patch.qty = qty;
+  return patch;
+}
+
+function looksLikeOrderDetails(text: string) {
+  const hasPhone = !!extractPhone(text);
+  const hasPayment = !!normalizePaymentMethod(text);
+  const hasAddress = /,|address|ঠিকানা|এড্রেস|গ্রাম|ইউনিয়ন|উপজেলা|জেলা|চট্টগ্রাম|ঢাকা|house|road|village|district|upazila/i.test(text);
+  return (hasPhone && (hasPayment || hasAddress)) || (hasPayment && hasAddress);
+}
+
+async function replaceConversationProfile(
+  sb: ReturnType<typeof admin>,
+  conversationId: string,
+  updater: (profile: Record<string, any>) => Record<string, any>,
+) {
+  const { data } = await sb
+    .from("ai_conversations")
+    .select("psid_profile")
+    .eq("id", conversationId)
+    .maybeSingle();
+  const profile = { ...(((data as any)?.psid_profile ?? {}) as Record<string, any>) };
+  const next = updater(profile);
+  await sb.from("ai_conversations").update({ psid_profile: next } as any).eq("id", conversationId);
+  return next;
+}
+
+async function finalizePendingMessengerOrder(opts: {
+  sb: ReturnType<typeof admin>;
+  storeId: string;
+  conversationId: string;
+  psid: string;
+  token: string;
+}) {
+  const { sb, storeId, conversationId, psid, token } = opts;
+  const slot = await getConversationPendingOrder(sb, conversationId);
+  const missing = orderMissingFields(slot);
+  if (!slot.product_id) missing.unshift("প্রোডাক্ট");
+  if (missing.length) {
+    await sendAndLogText(sb, token, psid, conversationId, `অর্ডার কনফার্ম করতে ${missing.join(", ")} দিন।`);
+    return true;
+  }
+
+  const qty = Math.max(1, Math.min(Number(slot.qty ?? 1) || 1, 99));
+  const { data: product } = await sb
+    .from("products")
+    .select("id,name,price,stock,status,delivery_charge")
+    .eq("store_id", storeId)
+    .eq("id", slot.product_id)
+    .maybeSingle();
+
+  if (!product || product.status !== "active") {
+    await sendAndLogText(sb, token, psid, conversationId, "দুঃখিত, এই প্রোডাক্টটি এখন অর্ডারের জন্য পাওয়া যাচ্ছে না। অন্য প্রোডাক্ট চাইলে নাম লিখুন।");
+    return true;
+  }
+  if (Number(product.stock) < qty) {
+    await sendAndLogText(sb, token, psid, conversationId, `দুঃখিত, ${product.name} এর স্টক এখন ${Number(product.stock)}টি। কম quantity চাইলে বলুন, আমি অর্ডার করে দিচ্ছি।`);
+    return true;
+  }
+
+  const subtotal = Number(product.price) * qty;
+  const delivery = Number((product as any).delivery_charge ?? 0);
+  const total = subtotal + delivery;
+  const { data: invoiceNo } = await sb.rpc("generate_invoice_no", { _store_id: storeId } as any);
+  const { data: order, error: orderError } = await sb
+    .from("orders")
+    .insert({
+      store_id: storeId,
+      customer_name: String(slot.customer_name).trim(),
+      phone: normalizePhone(slot.phone) ?? String(slot.phone).trim(),
+      address: String(slot.full_address).trim(),
+      area: [slot.village, slot.union, slot.upazila, slot.district].filter(Boolean).join(", ") || null,
+      payment_method: slot.payment_method,
+      subtotal: total,
+      delivery_amount: delivery,
+      discount_amount: 0,
+      status: "pending",
+      invoice_no: invoiceNo || null,
+      notes: "Placed via Messenger AI Sales Agent",
+    } as any)
+    .select("id,invoice_no")
+    .single();
+
+  if (orderError || !order) {
+    const errorText = orderError?.message ?? "Order failed";
+    await sendAndLogText(sb, token, psid, conversationId, "দুঃখিত, অর্ডারটি কনফার্ম করতে সমস্যা হয়েছে। আমাদের টিম একটু পর দেখে জানাবে।");
+    await sb.from("ai_messages").insert({
+      conversation_id: conversationId,
+      role: "system",
+      direction: "out",
+      message_type: "text",
+      content: "[order create failed]",
+      delivery_status: "failed",
+      error: errorText,
+    } as any);
+    throw new Error(errorText);
+  }
+
+  const { error: itemError } = await sb.from("order_items").insert({
+    order_id: order.id,
+    product_id: product.id,
+    name_snapshot: product.name,
+    price_snapshot: product.price,
+    qty,
+  } as any);
+  if (itemError) throw new Error(itemError.message);
+
+  await Promise.all([
+    sb.from("order_timeline").insert({ store_id: storeId, order_id: order.id, stage: "placed", note: "Order placed via Messenger AI" } as any),
+    sb.from("admin_notifications").insert({
+      store_id: storeId,
+      kind: "new_order",
+      title: "New Messenger AI order",
+      body: `${slot.customer_name} ordered ${qty}× ${product.name}`,
+      meta: { order_id: order.id, conversation_id: conversationId },
+    } as any),
+    sb.from("ai_conversations").update({
+      customer_name: String(slot.customer_name).trim(),
+      phone: normalizePhone(slot.phone) ?? String(slot.phone).trim(),
+      address: String(slot.full_address).trim(),
+      lead_status: "ordered",
+    } as any).eq("id", conversationId),
+  ]);
+
+  await replaceConversationProfile(sb, conversationId, (profile) => {
+    delete profile.pending_order;
+    return {
+      ...profile,
+      last_order: {
+        order_id: order.id,
+        invoice_no: order.invoice_no,
+        product_id: product.id,
+        product_name: product.name,
+        qty,
+        total,
+        created_at: new Date().toISOString(),
+      },
+    };
+  });
+
+  const confirmation = [
+    `আপনার অর্ডার কনফার্ম হয়েছে ✅`,
+    `অর্ডার নম্বর: ${order.invoice_no || order.id}`,
+    `প্রোডাক্ট: ${product.name} × ${qty}`,
+    `মোট: ৳${total.toFixed(0)}`,
+    `পেমেন্ট: ${String(slot.payment_method).toUpperCase()}`,
+    "আমাদের টিম দ্রুত আপনার সাথে যোগাযোগ করবে।",
+  ].join("\n");
+  await sendAndLogText(sb, token, psid, conversationId, confirmation);
+  return true;
+}
+
+async function maybeHandlePendingOrderText(opts: {
+  sb: ReturnType<typeof admin>;
+  storeId: string;
+  conversationId: string;
+  psid: string;
+  token: string;
+  text: string;
+}) {
+  const { sb, storeId, conversationId, psid, token, text } = opts;
+  const current = await getConversationPendingOrder(sb, conversationId);
+  if (!current.product_id) return false;
+
+  const details = parseOrderDetailsText(text);
+  const slot = Object.keys(details).length
+    ? await patchConversationPendingOrder(sb, conversationId, { ...current, ...details })
+    : current;
+  const missing = orderMissingFields(slot);
+  if (!missing.length) {
+    return finalizePendingMessengerOrder({ sb, storeId, conversationId, psid, token });
+  }
+
+  const saved = Object.keys(details).length ? "যে তথ্য দিয়েছেন সেগুলো সেভ করেছি। " : "";
+  await sendAndLogText(sb, token, psid, conversationId, `${saved}অর্ডার কনফার্ম করতে এখন ${missing.join(", ")} দিন।`);
+  return true;
+}
+
+async function maybeHandleRepeatedOrderDetails(opts: {
+  sb: ReturnType<typeof admin>;
+  conversationId: string;
+  psid: string;
+  token: string;
+  text: string;
+}) {
+  const { sb, conversationId, psid, token, text } = opts;
+  if (!looksLikeOrderDetails(text)) return false;
+  const { data } = await sb
+    .from("ai_conversations")
+    .select("psid_profile")
+    .eq("id", conversationId)
+    .maybeSingle();
+  const lastOrder = ((data as any)?.psid_profile as any)?.last_order;
+  if (!lastOrder?.order_id) return false;
+  await sendAndLogText(
+    sb,
+    token,
+    psid,
+    conversationId,
+    `আপনার অর্ডারটি ইতিমধ্যে নেওয়া হয়েছে ✅\nঅর্ডার নম্বর: ${lastOrder.invoice_no || lastOrder.order_id}\nপ্রোডাক্ট: ${lastOrder.product_name}`,
+  );
+  return true;
+}
+
 async function maybeHandleGreeting(opts: {
   sb: ReturnType<typeof admin>;
   conversationId: string;
@@ -353,6 +631,7 @@ async function maybeSendDirectProductReply(opts: {
   const orderIntent = isOrderIntent(text);
   const referenceIntent = isReferenceIntent(text);
   const explicitProductIntent = isProductIntent(text);
+  if (!photoIntent && !orderIntent && !explicitProductIntent && looksLikeOrderDetails(text)) return false;
   if (!photoIntent && !orderIntent && !explicitProductIntent && !terms.length) return false;
 
   let products = photoIntent || orderIntent || (referenceIntent && terms.length === 0)
@@ -373,12 +652,18 @@ async function maybeSendDirectProductReply(opts: {
   if (orderIntent) {
     const product = products[0];
     const current = await getConversationPendingOrder(sb, conversationId);
+    const details = parseOrderDetailsText(text);
     const slot = await patchConversationPendingOrder(sb, conversationId, {
       ...current,
+      ...details,
       product_id: product.id,
-      qty: current.qty ?? 1,
+      qty: details.qty ?? current.qty ?? 1,
     });
     const missing = orderMissingFields(slot);
+    if (!missing.length) {
+      await logProductRecommendations(sb, storeId, conversationId, [product], text);
+      return finalizePendingMessengerOrder({ sb, storeId, conversationId, psid, token });
+    }
     const textReply = missing.length
       ? `ঠিক আছে, ${product.name} অর্ডার শুরু করলাম। অর্ডার কনফার্ম করতে ${missing.join(", ")} দিন।`
       : `ঠিক আছে, ${product.name} অর্ডারের তথ্য পেয়েছি। কনফার্ম করার আগে আর কিছু যোগ করতে চান?`;
@@ -774,6 +1059,37 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
               if ((integ as any).human_takeover || (integ as any).ai_auto_reply === false) continue;
               if (!token) continue;
               if (parsed.message_type !== "text" && parsed.message_type !== "quick_reply") continue;
+
+              const pendingOrderHandled = await maybeHandlePendingOrderText({
+                sb,
+                storeId: integ.store_id,
+                conversationId: conv!.id,
+                psid: senderId,
+                token,
+                text: parsed.text,
+              });
+              if (pendingOrderHandled) {
+                await sb
+                  .from("messenger_integrations")
+                  .update({ last_error: null } as any)
+                  .eq("id", (integ as any).id);
+                continue;
+              }
+
+              const repeatedOrderHandled = await maybeHandleRepeatedOrderDetails({
+                sb,
+                conversationId: conv!.id,
+                psid: senderId,
+                token,
+                text: parsed.text,
+              });
+              if (repeatedOrderHandled) {
+                await sb
+                  .from("messenger_integrations")
+                  .update({ last_error: null } as any)
+                  .eq("id", (integ as any).id);
+                continue;
+              }
 
               const greetingHandled = await maybeHandleGreeting({
                 sb,
