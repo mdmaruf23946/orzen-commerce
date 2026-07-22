@@ -364,12 +364,100 @@ function StoreHeader({
             >
               Cart {count > 0 && <span className="ml-1 text-xs text-neutral-500">({count})</span>}
             </Link>
-            <a href="#contact" onClick={() => setMenuOpen(false)} className="block rounded-md px-3 py-2 hover:bg-neutral-100">
-              Contact
-            </a>
-            <a href="#policies" onClick={() => setMenuOpen(false)} className="block rounded-md px-3 py-2 hover:bg-neutral-100">
-              Policies
-            </a>
+
+            {mainCategories.length > 0 && (
+              <div className="mt-1 border-t pt-1">
+                <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+                  Categories
+                </div>
+                <button
+                  type="button"
+                  onClick={pickAllMain}
+                  className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left hover:bg-neutral-100 ${
+                    activeMainId === null ? "font-semibold text-neutral-900" : ""
+                  }`}
+                >
+                  <span>All</span>
+                  <span className="text-xs text-neutral-500">({products.length})</span>
+                </button>
+                {mainCategories.map((m: any) => {
+                  const subs = subsByParent.get(m.id) ?? [];
+                  const expanded = openMainId === m.id;
+                  return (
+                    <div key={m.id}>
+                      <div className="flex items-center">
+                        <button
+                          type="button"
+                          onClick={() => pickMain(m.id)}
+                          className={`flex flex-1 items-center justify-between rounded-md px-3 py-2 text-left hover:bg-neutral-100 ${
+                            activeMainId === m.id ? "font-semibold text-neutral-900" : ""
+                          }`}
+                        >
+                          <span>{m.name}</span>
+                          <span className="text-xs text-neutral-500">
+                            ({countsByMain.get(m.id) ?? 0})
+                          </span>
+                        </button>
+                        {subs.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setOpenMainId(expanded ? null : m.id)}
+                            aria-expanded={expanded}
+                            aria-label={expanded ? "Collapse" : "Expand"}
+                            className="mr-1 rounded p-1.5 hover:bg-neutral-100"
+                          >
+                            {expanded ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+                      {expanded && subs.length > 0 && (
+                        <div className="ml-3 border-l border-neutral-200 pl-2">
+                          <button
+                            type="button"
+                            onClick={() => pickSub(m.id, null)}
+                            className={`block w-full rounded-md px-3 py-1.5 text-left text-[13px] hover:bg-neutral-100 ${
+                              activeMainId === m.id && activeSubId === null
+                                ? "font-semibold text-neutral-900"
+                                : "text-neutral-700"
+                            }`}
+                          >
+                            All
+                          </button>
+                          {subs.map((s: any) => (
+                            <button
+                              key={s.id}
+                              type="button"
+                              onClick={() => pickSub(m.id, s.id)}
+                              className={`block w-full rounded-md px-3 py-1.5 text-left text-[13px] hover:bg-neutral-100 ${
+                                activeSubId === s.id
+                                  ? "font-semibold text-neutral-900"
+                                  : "text-neutral-700"
+                              }`}
+                            >
+                              {s.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="mt-1 border-t pt-1">
+              <a href="#contact" onClick={() => setMenuOpen(false)} className="block rounded-md px-3 py-2 hover:bg-neutral-100">
+                Contact
+              </a>
+              <a href="#policies" onClick={() => setMenuOpen(false)} className="block rounded-md px-3 py-2 hover:bg-neutral-100">
+                Policies
+              </a>
+            </div>
+
             {customer ? (
               <>
                 <Link
