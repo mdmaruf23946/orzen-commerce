@@ -415,6 +415,9 @@ export const setOrderAllowDuplicate = createServerFn({ method: "POST" })
       .eq("store_id", store.id);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+
 
 
 // ---------- BANNERS ----------
