@@ -167,17 +167,73 @@ function TrackingScripts({ marketing, slug }: { marketing: any; slug: string }) 
 
 function StoreHeader({
   slug,
+  storeId,
   name,
   logoUrl,
 }: {
   slug: string;
+  storeId: string;
   name: string;
   logoUrl: string | null;
 }) {
   const [count, setCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { query, setQuery } = useStoreUI();
+  const [openMainId, setOpenMainId] = useState<string | null>(null);
+  const { query, setQuery, activeMainId, activeSubId, selectMain, selectSub } = useStoreUI();
   const { customer, signOut } = useCustomerSession(slug);
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories", storeId],
+    queryFn: () => listStoreCategories({ data: { storeId } }),
+    staleTime: 5 * 60_000,
+  });
+  const { data: products = [] } = useQuery({
+    queryKey: ["products", storeId],
+    queryFn: () => listStoreProducts({ data: { storeId } }),
+    staleTime: 5 * 60_000,
+  });
+
+  const mainCategories = categories.filter((c: any) => !c.parent_id);
+  const subsByParent = new Map<string, any[]>();
+  for (const c of categories as any[]) {
+    if (c.parent_id) {
+      if (!subsByParent.has(c.parent_id)) subsByParent.set(c.parent_id, []);
+      subsByParent.get(c.parent_id)!.push(c);
+    }
+  }
+  const catParentMap = new Map<string, string | null>();
+  for (const c of categories as any[]) catParentMap.set(c.id, c.parent_id ?? null);
+  const countsByMain = new Map<string, number>();
+  for (const p of products as any[]) {
+    if (!p.category_id) continue;
+    const parent = catParentMap.get(p.category_id);
+    const mainId = parent ?? p.category_id;
+    countsByMain.set(mainId, (countsByMain.get(mainId) ?? 0) + 1);
+  }
+
+  function closeMenuAndScroll() {
+    setMenuOpen(false);
+    setTimeout(() => {
+      document
+        .getElementById("all-products")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  }
+
+  function pickMain(id: string) {
+    selectMain(id, "header");
+    closeMenuAndScroll();
+  }
+  function pickAllMain() {
+    selectMain(null, null);
+    closeMenuAndScroll();
+  }
+  function pickSub(mainId: string, subId: string | null) {
+    if (activeMainId !== mainId) selectMain(mainId, "header");
+    selectSub(subId);
+    closeMenuAndScroll();
+  }
+
 
 
   useEffect(() => {
