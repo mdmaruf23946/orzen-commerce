@@ -521,7 +521,7 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
           </div>
 
           {/* composer */}
-          <div className="border-t p-3 space-y-2">
+          <div className="sticky bottom-0 z-10 shrink-0 space-y-2 border-t bg-background p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {quickReplies.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {quickReplies.map((q, i) => (
