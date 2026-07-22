@@ -587,6 +587,14 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
               // messages event
               const msg = ev.message;
               if (!msg || msg.is_echo) continue;
+              if (msg.mid) {
+                const { data: existingMessage } = await sb
+                  .from("ai_messages")
+                  .select("id")
+                  .eq("mid", msg.mid)
+                  .maybeSingle();
+                if (existingMessage) continue;
+              }
               const parsed = parseMessage(msg);
               const preview = parsed.text.slice(0, 200) || `[${parsed.message_type}]`;
 
@@ -615,19 +623,45 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
               if (!token) continue;
               if (parsed.message_type !== "text" && parsed.message_type !== "quick_reply") continue;
 
+              const { data: storeRow } = await sb
+                .from("stores")
+                .select("slug")
+                .eq("id", integ.store_id)
+                .maybeSingle();
+
+              const directHandled = await maybeSendDirectProductReply({
+                sb,
+                storeId: integ.store_id,
+                storeSlug: (storeRow as any)?.slug,
+                conversationId: conv!.id,
+                psid: senderId,
+                token,
+                text: parsed.text,
+              });
+              if (directHandled) {
+                await sb
+                  .from("messenger_integrations")
+                  .update({ last_error: null } as any)
+                  .eq("id", (integ as any).id);
+                continue;
+              }
+
               const { store, agent } = await loadAiContext(integ.store_id);
               const useHistory = (integ as any).conversation_history !== false;
               const history = useHistory
                 ? (
                     await sb
                       .from("ai_messages")
-                      .select("role,content")
+                      .select("role,content,message_type")
                       .eq("conversation_id", conv!.id)
+                      .in("message_type", ["text", "quick_reply", "postback"])
                       .order("created_at", { ascending: true })
-                      .limit(20)
+                      .limit(12)
                   ).data ?? []
                 : [];
-              const messages = history.map((m) => ({ role: m.role as any, content: m.content }));
+              const messages = history
+                .filter((m: any) => m.role === "user" || m.role === "assistant")
+                .map((m) => ({ role: m.role as any, content: m.content }));
               const reply = await generateAgentReply({
                 ctx: {
                   storeId: integ.store_id,
@@ -638,6 +672,7 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                 },
                 messages,
                 system: buildSystemPrompt(store, agent),
+                fast: true,
               });
 
               const replyText = (reply ?? "").trim();
