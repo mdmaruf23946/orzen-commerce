@@ -36,13 +36,29 @@ export async function checkDuplicate(
   input: DuplicateCheckInput,
 ): Promise<DuplicateCheckResult> {
   const sb = supabaseAdmin;
-  const { data: settings } = await sb
+  const { data: existing } = await sb
     .from("store_duplicate_protection")
     .select("*")
     .eq("store_id", input.storeId)
     .maybeSingle();
 
-  if (!settings || !settings.enabled || settings.mode === "off") {
+  // Default to ON with safe rules when a store has never opened the settings
+  // page, so duplicate protection works out of the box.
+  const settings: any = existing ?? {
+    enabled: true,
+    mode: "block",
+    period_days: 7,
+    rule_phone: true,
+    rule_product: true,
+    rule_customer: true,
+    rule_fingerprint: true,
+    rule_device: true,
+    rule_psid: false,
+    match_logic: "any",
+    messenger_enabled: true,
+  };
+
+  if (!settings.enabled || settings.mode === "off") {
     return { action: "allow" };
   }
 
