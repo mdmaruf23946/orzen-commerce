@@ -13,6 +13,7 @@ import {
 import { myDashboardOverview } from "@/lib/admin.functions";
 import { getInboxStats } from "@/lib/messenger-inbox.functions";
 import { AdSlot } from "@/components/admin/AdSlot";
+import { WelcomeCard } from "@/components/admin/dashboard/WelcomeCard";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
