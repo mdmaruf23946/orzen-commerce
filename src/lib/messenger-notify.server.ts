@@ -24,11 +24,11 @@ async function decryptToken(enc: string | null | undefined): Promise<string | nu
   }
 }
 
-export async function drainOutbox(opts: { orderId?: string; limit?: number; latestOnly?: boolean } = {}) {
+export async function drainOutbox(opts: { orderId?: string; limit?: number; latestOnly?: boolean; latestPerOrder?: boolean } = {}) {
   const limit = opts.limit ?? 50;
   let q = supabaseAdmin
     .from("order_notifications_outbox")
-    .select("id,order_id,store_id,stage,attempt_count")
+    .select("id,order_id,store_id,stage,attempt_count,created_at")
     .is("sent_at", null)
     .lt("attempt_count", 4)
     .order("created_at", { ascending: true })
@@ -36,18 +36,29 @@ export async function drainOutbox(opts: { orderId?: string; limit?: number; late
   if (opts.orderId) q = q.eq("order_id", opts.orderId);
   const { data: pending } = await q;
 
-  const rows = pending ?? [];
-  if (opts.latestOnly && opts.orderId && rows.length > 1) {
-    const stale = rows.slice(0, -1);
-    const latest = rows[rows.length - 1];
-    await supabaseAdmin
-      .from("order_notifications_outbox")
-      .update({ sent_at: new Date().toISOString(), error: "superseded" })
-      .in(
-        "id",
-        stale.map((row) => row.id),
-      );
-    rows.splice(0, rows.length, latest);
+  const rows = [...(pending ?? [])];
+  if (opts.latestOnly || opts.latestPerOrder) {
+    const staleIds: string[] = [];
+    const latestRows: typeof rows = [];
+    if (opts.orderId) {
+      if (rows.length > 1) staleIds.push(...rows.slice(0, -1).map((row) => row.id));
+      if (rows.length) latestRows.push(rows[rows.length - 1]);
+    } else {
+      const byOrder = new Map<string, typeof rows>();
+      for (const row of rows) byOrder.set(row.order_id, [...(byOrder.get(row.order_id) ?? []), row]);
+      for (const group of byOrder.values()) {
+        if (group.length > 1) staleIds.push(...group.slice(0, -1).map((row) => row.id));
+        latestRows.push(group[group.length - 1]);
+      }
+      latestRows.sort((a, b) => new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime());
+    }
+    if (staleIds.length) {
+      await supabaseAdmin
+        .from("order_notifications_outbox")
+        .update({ sent_at: new Date().toISOString(), error: "superseded" })
+        .in("id", staleIds);
+    }
+    rows.splice(0, rows.length, ...latestRows);
   }
 
   let sent = 0;
