@@ -399,6 +399,26 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
     return { ok: true, messenger };
   });
 
+export const setOrderAllowDuplicate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ id: z.string().uuid(), allow: z.boolean() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    if (!store) throw new Error("No store");
+    const { error } = await supabase
+      .from("orders")
+      .update({ allow_duplicate: data.allow } as any)
+      .eq("id", data.id)
+      .eq("store_id", store.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+
+
 
 // ---------- BANNERS ----------
 export const listMyBanners = createServerFn({ method: "GET" })

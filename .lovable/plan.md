@@ -1,54 +1,87 @@
-## Welcome Card refinement — desktop + dedicated mobile layout
+## Messenger Duplicate Order Protection
 
-Scope: only `src/components/admin/dashboard/WelcomeCard.tsx`. No changes to `src/routes/_authenticated/admin/index.tsx` (props stay identical), no changes to any other widget, hook, API, route, or DB. `src/styles.css` animations already added last turn stay as-is (no additions).
+Extend the existing website duplicate-protection system to also cover Messenger AI orders. Reuse `checkDuplicate` in `src/lib/duplicate-guard.server.ts` — no second checker.
+
+### 1. Reuse the shared validator (no schema changes required)
+
+Call the existing `checkDuplicate({ storeId, phone, customerId, fingerprint, deviceId, productIds })` from the Messenger order finalizer. The `store_duplicate_protection` row a store already configured (rules for phone / product / customer, period_days, mode block|warn|off, match_logic) will apply automatically. This satisfies "one shared validation service".
+
+Additions for Messenger:
+- Pass `phone` = normalized customer phone from the pending slot.
+- Pass `productIds` = `[slot.product_id]`.
+- Pass `customerId` = matched `store_customers.id` when a row exists for `(store_id, phone)`; otherwise null.
+- `fingerprint`/`deviceId` = null (no browser context in Messenger).
+
+The existing `active status` semantics are already correct: `checkDuplicate` filters on `orders.status <> 'cancelled'` via the underlying settings; we keep behavior identical to website. (No status-list override for now — matches the "reuse, don't fork" rule.)
+
+### 2. Wire it into the Messenger finalizer
+
+File: `src/routes/api/public/messenger/webhook.ts`, function `finalizePendingMessengerOrder` (around line 405, right after product/stock validation, before the `orders.insert`).
+
+```text
+- resolve normalized phone (already computed for insert)
+- lookup store_customers.id by (store_id, phone) — optional
+- dup = await checkDuplicate({...})
+- if dup.action === "block":
+    - fetch matched order (id, invoice_no, status) via supabaseAdmin
+    - insert a row in store_duplicate_blocks with source='messenger',
+      payload = { psid, conversation_id, product_id, qty, ... }
+    - reply with the Bangla template (uses invoice_no + status)
+    - do NOT create the order; clear the pending slot; return true
+- if dup.action === "warn":
+    - log the block row with status='warned', still create the order
+      (matches website "warn" mode)
+- else: continue with existing insert flow
+```
+
+The Bangla reply template lives inline in the webhook (same style as other order messages there). If admin has set a `custom_ai_duplicate_reply`, use that; else the default template.
+
+### 3. Small settings extensions (optional column adds)
+
+Add nullable columns to `store_duplicate_protection` so admins can tune Messenger behavior without a parallel table:
+
+- `rule_psid boolean default false` — check by Messenger PSID (`ai_conversations.psid` → past `orders` linked via `ai_conversations.order_id`, or via `orders.notes` marker; simplest: skip until we persist psid on order — see step 5).
+- `messenger_custom_reply text` — optional override for the duplicate message.
+- `messenger_enabled boolean default true` — kill switch just for Messenger.
+
+Extend `getDuplicateSettings`/`updateDuplicateSettings` and the admin UI page (`src/routes/_authenticated/admin/duplicate-protection.tsx`) with a "Messenger Duplicate Protection" section exposing these fields. Existing rules (phone, product, customer, period_days, mode) are shared — no duplication.
+
+### 4. Admin override on an order
+
+Add `allow_duplicate boolean default false` to `orders`. When set true by an admin (checkbox in `OrderDetailsDrawer`), a follow-up duplicate check skips that order as a match (add `.eq("allow_duplicate", false)` filter inside `checkDuplicate`'s per-column lookups). This is a minimal addition and both website + Messenger benefit.
+
+### 5. Blocked-attempt log (reuse `store_duplicate_blocks`)
+
+Already exists for website blocks. Add two nullable columns so Messenger attempts show up in the same admin list/analytics:
+
+- `source text default 'web'` — 'web' | 'messenger'
+- `psid text` — Messenger PSID when source='messenger'
+
+Update `listDuplicateBlocks` to return `source`/`psid`; the existing admin page renders a new "Source" column and PSID chip.
+
+### 6. Analytics tiles
+
+In the admin dashboard overview (`src/lib/admin.functions.ts` → `myDashboardOverview`) add three counts derived from `store_duplicate_blocks`:
+
+- `duplicates_blocked_today` — count where `created_at >= today` and `status in ('blocked','warned')`.
+- `duplicates_blocked_month` — same, month-to-date.
+- `duplicate_savings` — SUM over blocked rows of `payload->>'total'::numeric` (approximate; matches website's payload shape and Messenger's payload we insert).
+
+Surface them as a small strip on the dashboard next to existing KPI cards (no layout redesign — one extra row/card).
+
+### Technical notes
+
+- **Single validator**: only `checkDuplicate` in `duplicate-guard.server.ts` performs matching. Messenger path just calls it and formats a reply.
+- **Migration**: one migration adds `rule_psid`, `messenger_enabled`, `messenger_custom_reply` to `store_duplicate_protection`; `source`, `psid` to `store_duplicate_blocks`; `allow_duplicate` to `orders`. All nullable / defaulted — no data backfill.
+- **RLS/GRANT**: no new tables, no new policies needed.
+- **Behavioral safety**: if `store_duplicate_protection.enabled=false` or `messenger_enabled=false`, Messenger flow is unchanged.
 
 ### Files touched
 
-1. `src/components/admin/dashboard/WelcomeCard.tsx` — rewrite internals only. Same exported component name, same props signature, same import site.
-
-No other file changes. No new dependency.
-
-### Desktop / tablet layout (≥ md)
-
-Single card, `max-h-[200px]`, `rounded-2xl`, soft shadow, light gradient (`from-primary/5 via-background to-accent/40`), `p-5 lg:p-6`. Grid:
-
-```text
-[  LEFT (greeting + chips)  ][  CENTER (4 stats + 2 status chips)  ][ RIGHT (robot + View Store) ]
-   grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]
-```
-
-- **Left**: 👋 `Welcome back, {name}!` (text-xl/2xl semibold) + wrap row of chips: Active Store (green dot), Business/package, `/store/{slug}` + copy button (reuses existing `shareStore`), `Updated {relTime}`.
-- **Center**: 4 compact stat tiles in one row (`grid-cols-4 gap-3`), each = small icon + label (Orders / Messages / AI Replies / Today's Sales) + big number. Values come from existing props (`data.today.orders`, `inbox.newConversationsToday`, `inbox.aiRepliedToday`, `fmtBDT(data.today.sales)`). Below: two status pills (AI Online, Messenger Connected) using existing signals; hidden if signal missing.
-- **Right**: inline SVG robot + mini analytics glyph (`hidden md:block`, tablet `scale-75`), and the gradient **View Store** button on top (same `storeUrl` + target/rel as today).
-
-### Mobile layout (< md) — dedicated, not a shrunk desktop
-
-Rendered via a separate JSX branch gated by Tailwind `md:hidden` / `hidden md:grid`. Same component, two layouts.
-
-Card: `max-h-[250px]`, `rounded-[20px]`, `p-4`, gradient background.
-
-```text
-Row 1:  🤖  👋 Welcome back, {name}
-Row 2:  chips row (wrap): 🟢 Active Store · Business · /store/{slug} + copy · Updated {rel}
-Row 3:  2×2 grid of compact stat tiles (Orders / Messages / AI Replies / Sales) — gap-2, text-sm number, text-[11px] label
-Row 4:  status chip strip (wrap, no horizontal scroll): AI Online · Messenger Connected · Webhook Verified
-Row 5:  full-width View Store button (gradient, rounded-full, py-2.5)
-```
-
-- Large robot illustration is not rendered; only a small 20–24px 🤖 glyph next to the greeting.
-- No horizontal scroll — chips use `flex flex-wrap gap-2`.
-- Missing signals silently omit their chip.
-
-### Behavior preserved
-
-- Same props, same `storeUrl`, same copy handler (`shareStore`), same `View Store` target/rel.
-- No new fetch, no new state, no logic change. `useQuery`/data flow in `admin/index.tsx` untouched.
-- No new keyframes; drops the mount fade-in to keep rendering lightweight per the "no heavy animations" rule (existing `animate-welcome-fade-in` utility stays in `styles.css`, just unused here).
-
-### Verification
-
-- `/admin` desktop: card ≤ 200px tall, 3-column layout, 4 stats visible in one row, robot on the right.
-- Tablet (md): same layout, illustration visually ~50% smaller.
-- Mobile 375px: dedicated stack, 2×2 stat grid, wrap chips, full-width CTA, ≤ 250px, no horizontal scroll.
-- Every widget below the hero (KPI cards, Order Status, Analytics, Store Health, Recent Orders, Messenger, Quick Actions) renders unchanged.
-- `bun run build` succeeds.
+- `src/routes/api/public/messenger/webhook.ts` — call `checkDuplicate` in `finalizePendingMessengerOrder`, log block, send Bangla reply.
+- `src/lib/duplicate-guard.server.ts` — honor `orders.allow_duplicate=false` filter; accept optional `psid` and consult `rule_psid`; return matched order's `invoice_no` and `status` for the Messenger reply.
+- `src/lib/duplicate-protection.functions.ts` — extend validators for new fields.
+- `src/routes/_authenticated/admin/duplicate-protection.tsx` — new "Messenger" subsection + Source column.
+- `src/components/admin/OrderDetailsDrawer.tsx` — "Allow duplicate purchase" toggle.
+- `src/lib/admin.functions.ts` + `src/routes/_authenticated/admin/index.tsx` — 3 analytics counters.
+- One Supabase migration for the column additions.
