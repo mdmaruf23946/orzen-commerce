@@ -13,7 +13,13 @@ async function post(token: string, body: any): Promise<SendResult> {
     },
   );
   const j = await r.json().catch(() => ({} as any));
-  if (!r.ok) throw new Error(j?.error?.message || `Send failed (${r.status})`);
+  if (!r.ok) {
+    const err = j?.error ?? {};
+    const parts = [err.message || `Send failed (${r.status})`, err.code ? `code:${err.code}` : null, err.error_subcode ? `subcode:${err.error_subcode}` : null]
+      .filter(Boolean)
+      .join(" ");
+    throw new Error(parts);
+  }
   return j;
 }
 
@@ -25,13 +31,34 @@ export function sendText(token: string, psid: string, text: string) {
   });
 }
 
-export function sendPostPurchaseUpdate(token: string, psid: string, text: string) {
-  return post(token, {
-    recipient: { id: psid },
-    messaging_type: "MESSAGE_TAG",
-    tag: "POST_PURCHASE_UPDATE",
-    message: { text: text.slice(0, 1900) },
-  });
+export async function sendPostPurchaseUpdate(token: string, psid: string, text: string) {
+  const message = { text: text.slice(0, 1900) };
+  try {
+    return await post(token, {
+      recipient: { id: psid },
+      messaging_type: "MESSAGE_TAG",
+      tag: "POST_PURCHASE_UPDATE",
+      message,
+    });
+  } catch (e) {
+    const msg = (e as Error).message;
+    if (/invalid parameter|code:100/i.test(msg)) {
+      try {
+        return await post(token, {
+          recipient: { id: psid },
+          messaging_type: "UPDATE",
+          message,
+        });
+      } catch {
+        return post(token, {
+          recipient: { id: psid },
+          messaging_type: "RESPONSE",
+          message,
+        });
+      }
+    }
+    throw e;
+  }
 }
 
 export type ProductCardInput = {
