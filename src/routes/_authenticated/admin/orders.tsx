@@ -32,9 +32,15 @@ function OrdersPage() {
 
   async function setStatus(id: string, status: Status) {
     try {
-      await update({ data: { id, status } });
+      const result = await update({ data: { id, status } });
       qc.invalidateQueries({ queryKey: ["admin", "orders"] });
-      toast.success("Updated");
+      if (result.messenger?.failed) {
+        toast.warning(result.messenger.error || "Order updated, but Messenger status message could not be delivered yet.");
+      } else if (result.messenger?.sent) {
+        toast.success("Updated and Messenger notified");
+      } else {
+        toast.success("Updated");
+      }
     } catch (e) { toast.error((e as Error).message); }
   }
 
