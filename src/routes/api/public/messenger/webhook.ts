@@ -315,7 +315,7 @@ function parseOrderDetailsText(text: string) {
   const qty = extractQty(text);
 
   const cleanedLines = lines
-    .map((line) => (phone ? line.replace(phone, "").replace(phone.replace(/^0/, "880"), "") : line).trim())
+    .map((line) => (phone ? line.replace(/(?:\+?88[-\s]?)?01[3-9][\d\s-]{8,12}/g, "") : line).trim())
     .filter((line) => line && !isPaymentLine(line));
 
   let customer_name: string | undefined;
@@ -652,12 +652,18 @@ async function maybeSendDirectProductReply(opts: {
   if (orderIntent) {
     const product = products[0];
     const current = await getConversationPendingOrder(sb, conversationId);
+    const details = parseOrderDetailsText(text);
     const slot = await patchConversationPendingOrder(sb, conversationId, {
       ...current,
+      ...details,
       product_id: product.id,
-      qty: current.qty ?? 1,
+      qty: details.qty ?? current.qty ?? 1,
     });
     const missing = orderMissingFields(slot);
+    if (!missing.length) {
+      await logProductRecommendations(sb, storeId, conversationId, [product], text);
+      return finalizePendingMessengerOrder({ sb, storeId, conversationId, psid, token });
+    }
     const textReply = missing.length
       ? `ঠিক আছে, ${product.name} অর্ডার শুরু করলাম। অর্ডার কনফার্ম করতে ${missing.join(", ")} দিন।`
       : `ঠিক আছে, ${product.name} অর্ডারের তথ্য পেয়েছি। কনফার্ম করার আগে আর কিছু যোগ করতে চান?`;
