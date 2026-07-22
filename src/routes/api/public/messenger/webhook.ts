@@ -297,7 +297,7 @@ function normalizePaymentMethod(text: string) {
 
 function extractQty(text: string) {
   const match = text.match(/(?:qty|quantity|পরিমাণ)\s*[:：-]?\s*(\d{1,2})|\b(\d{1,2})\s*(?:pcs|pieces|piece|পিস|টা|টি)\b/i);
-  const qty = match ? Number(match[1]) : null;
+  const qty = match ? Number(match[1] ?? match[2]) : null;
   return qty && qty > 0 && qty <= 99 ? qty : null;
 }
 
