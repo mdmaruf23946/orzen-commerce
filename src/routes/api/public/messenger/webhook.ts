@@ -709,6 +709,27 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                     unread_count: (conv!.unread_count ?? 0) + 1,
                   })
                   .eq("id", conv!.id);
+                const handoff = (conv as any)!.handoff_mode ?? "ai";
+                if (
+                  handoff === "ai" &&
+                  token &&
+                  !(integ as any).human_takeover &&
+                  (integ as any).ai_auto_reply !== false &&
+                  String(ev.postback.payload ?? "").startsWith("BUY_")
+                ) {
+                  await handleBuyPostback({
+                    sb,
+                    storeId: integ.store_id,
+                    conversationId: conv!.id,
+                    psid: senderId,
+                    token,
+                    payload: String(ev.postback.payload),
+                  });
+                  await sb
+                    .from("messenger_integrations")
+                    .update({ last_error: null } as any)
+                    .eq("id", (integ as any).id);
+                }
                 continue;
               }
 
@@ -750,6 +771,21 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
               if ((integ as any).human_takeover || (integ as any).ai_auto_reply === false) continue;
               if (!token) continue;
               if (parsed.message_type !== "text" && parsed.message_type !== "quick_reply") continue;
+
+              const greetingHandled = await maybeHandleGreeting({
+                sb,
+                conversationId: conv!.id,
+                psid: senderId,
+                token,
+                text: parsed.text,
+              });
+              if (greetingHandled) {
+                await sb
+                  .from("messenger_integrations")
+                  .update({ last_error: null } as any)
+                  .eq("id", (integ as any).id);
+                continue;
+              }
 
               const { data: storeRow } = await sb
                 .from("stores")
