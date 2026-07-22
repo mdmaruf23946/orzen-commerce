@@ -58,7 +58,10 @@ export const updateDuplicateSettings = createServerFn({ method: "POST" })
         rule_fingerprint: z.boolean(),
         rule_device: z.boolean(),
         rule_customer: z.boolean(),
+        rule_psid: z.boolean().optional().default(false),
         match_logic: z.enum(["any", "all"]),
+        messenger_enabled: z.boolean().optional().default(true),
+        messenger_custom_reply: z.string().max(2000).nullable().optional(),
       })
       .parse(d),
   )
