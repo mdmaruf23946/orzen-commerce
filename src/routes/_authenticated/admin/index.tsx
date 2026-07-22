@@ -52,6 +52,13 @@ function Dashboard() {
     staleTime: 30_000,
   });
 
+  const inboxStatsFn = useServerFn(getInboxStats);
+  const { data: inboxStats } = useQuery({
+    queryKey: ["admin", "inbox-stats"],
+    queryFn: () => inboxStatsFn(),
+    refetchInterval: 30_000,
+  });
+
   const [range, setRange] = useState<Range>("7d");
   const [metric, setMetric] = useState<Metric>("sales");
 
