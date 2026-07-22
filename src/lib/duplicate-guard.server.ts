@@ -117,20 +117,34 @@ export async function checkDuplicate(
     if (id) hits.push({ rule: "device", orderId: id });
   }
   if ((settings as any).rule_psid && input.psid) {
-    // Match by PSID via ai_conversations linked to prior orders in this store.
-    const { data: convOrders } = await sb
+    // Match by PSID via ai_conversations.psid_profile.last_order (populated on
+    // Messenger order finalization). Verify the referenced order is still active.
+    const { data: convs } = await sb
       .from("ai_conversations")
-      .select("order_id, orders!inner(id, store_id, status, allow_duplicate, created_at)")
+      .select("psid_profile")
       .eq("store_id", input.storeId)
-      .eq("psid", input.psid)
-      .not("order_id", "is", null)
-      .gte("orders.created_at", since)
-      .neq("orders.status", "cancelled")
-      .eq("orders.allow_duplicate", false)
-      .order("orders(created_at)", { ascending: false })
-      .limit(1);
-    const orderId = (convOrders?.[0] as any)?.order_id ?? null;
-    if (orderId) hits.push({ rule: "psid", orderId });
+      .eq("channel", "messenger")
+      .eq("external_id", input.psid)
+      .limit(5);
+    for (const c of convs ?? []) {
+      const last = ((c as any).psid_profile as any)?.last_order;
+      const oid = last?.order_id as string | undefined;
+      if (!oid) continue;
+      const { data: o } = await sb
+        .from("orders")
+        .select("id, status, allow_duplicate, created_at")
+        .eq("id", oid)
+        .maybeSingle();
+      if (
+        o &&
+        !(o as any).allow_duplicate &&
+        (o as any).status !== "cancelled" &&
+        new Date((o as any).created_at).toISOString() >= since
+      ) {
+        hits.push({ rule: "psid", orderId: oid });
+        break;
+      }
+    }
   }
   if (settings.rule_product && input.productIds.length > 0) {
     // Find any recent order for this store that contains any of these products.
