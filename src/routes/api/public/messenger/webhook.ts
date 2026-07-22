@@ -7,6 +7,7 @@ import {
   sendProductCarousel,
   type ProductCardInput,
 } from "@/lib/messenger-send.server";
+import { checkDuplicate } from "@/lib/duplicate-guard.server";
 
 const PUBLIC_MESSENGER_ORIGIN = "https://orzen-commerce.lovable.app";
 const PRODUCT_STOPWORDS = new Set([
