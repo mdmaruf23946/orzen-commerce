@@ -8,6 +8,7 @@ import {
   sendProductCard as fbSendProductCard,
   sendProductCarousel as fbSendProductCarousel,
 } from "./messenger-send.server";
+import { checkDuplicate } from "./duplicate-guard.server";
 
 function admin() {
   return createClient<Database>(
@@ -237,6 +238,86 @@ async function clearConversationSlot(conversationId: string) {
   const profile = { ...((data?.psid_profile ?? {}) as Record<string, any>) };
   delete profile.pending_order;
   await sb.from("ai_conversations").update({ psid_profile: profile }).eq("id", conversationId);
+}
+
+function normalizePhone(value: string | null | undefined) {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  if (!digits) return null;
+  if (digits.startsWith("8801") && digits.length === 13) return `0${digits.slice(3)}`;
+  if (digits.startsWith("01") && digits.length === 11) return digits;
+  return digits.length >= 8 && digits.length <= 15 ? digits : null;
+}
+
+async function blockDuplicateMessengerToolOrder(opts: {
+  sb: ReturnType<typeof admin>;
+  storeId: string;
+  conversationId: string;
+  psid?: string | null;
+  slot: Record<string, any>;
+  product: { id: string; name?: string | null };
+}) {
+  const { sb, storeId, conversationId, psid, slot, product } = opts;
+  if (!psid || !product.id) return null;
+
+  const { data: dpSettings } = await sb
+    .from("store_duplicate_protection")
+    .select("messenger_enabled, messenger_custom_reply")
+    .eq("store_id", storeId)
+    .maybeSingle();
+  if (dpSettings && (dpSettings as any).messenger_enabled === false) return null;
+
+  const phone = normalizePhone(slot.phone) ?? String(slot.phone ?? "").trim();
+  const dup = await checkDuplicate({
+    storeId,
+    phone: phone || null,
+    customerId: null,
+    fingerprint: null,
+    deviceId: null,
+    productIds: [product.id],
+    psid,
+  });
+  if (dup.action === "allow") return null;
+
+  const invoice = dup.matchedOrder?.invoice_no || dup.matchedOrder?.id || "—";
+  const status = dup.matchedOrder?.status || "pending";
+  const defaultReply = [
+    "আপনার এই পণ্যের একটি অর্ডার ইতোমধ্যে রয়েছে।",
+    `অর্ডার নম্বর: #${invoice}`,
+    `স্ট্যাটাস: ${status}`,
+    "একই পণ্যের জন্য নতুন অর্ডার দেওয়ার আগে বর্তমান অর্ডারটি সম্পন্ন অথবা বাতিল হওয়া প্রয়োজন।",
+    "আপনার কি বর্তমান অর্ডারের স্ট্যাটাস জানতে চান?",
+  ].join("\n");
+  const reply = ((dpSettings as any)?.messenger_custom_reply as string | null) || defaultReply;
+
+  await sb.from("store_duplicate_blocks").insert({
+    store_id: storeId,
+    phone: phone || null,
+    matched_rules: dup.matchedRules,
+    matched_order_id: dup.matchedOrderId,
+    status: "blocked",
+    source: "messenger",
+    psid,
+    product_ids: [product.id],
+    payload: {
+      customerName: slot.customer_name,
+      address: slot.full_address,
+      productId: product.id,
+      productName: product.name,
+      qty: Math.max(1, Math.min(Number(slot.qty ?? 1) || 1, 99)),
+      reason: "Duplicate Order Attempt",
+      blocker: "ai_agent_finalizeOrder",
+    },
+  } as any);
+
+  await clearConversationSlot(conversationId);
+  return {
+    ok: false,
+    error: "duplicate_blocked",
+    reply,
+    matched_order_id: dup.matchedOrderId,
+    matched_invoice_no: dup.matchedOrder?.invoice_no ?? null,
+    matched_status: dup.matchedOrder?.status ?? null,
+  };
 }
 
 // ---------- Tools ----------
@@ -679,12 +760,22 @@ export function buildTools(ctx: AgentContext) {
         if (!product) return { ok: false, error: "product_not_found" };
         if (product.stock < slot.qty) return { ok: false, error: "out_of_stock", available: product.stock };
 
+        const duplicateBlocked = await blockDuplicateMessengerToolOrder({
+          sb,
+          storeId,
+          conversationId: convId,
+          psid: ctx.psid,
+          slot,
+          product: { id: product.id, name: product.name },
+        });
+        if (duplicateBlocked) return duplicateBlocked;
+
         const subtotal = Number(product.price) * Number(slot.qty);
         const delivery = Number(product.delivery_charge ?? 0);
 
         // Link to store_customers by phone
         let customerId: string | null = null;
-        const phoneNorm = String(slot.phone).replace(/\D/g, "");
+        const phoneNorm = normalizePhone(slot.phone) ?? String(slot.phone).replace(/\D/g, "");
         if (phoneNorm) {
           const { data: existing } = await sb
             .from("store_customers")
@@ -700,7 +791,7 @@ export function buildTools(ctx: AgentContext) {
           .insert({
             store_id: storeId,
             customer_name: slot.customer_name,
-            phone: slot.phone,
+            phone: phoneNorm || slot.phone,
             address: slot.full_address,
             area: [slot.village, slot.union, slot.upazila, slot.district].filter(Boolean).join(", ") || null,
             payment_method: slot.payment_method,
