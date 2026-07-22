@@ -390,7 +390,7 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
     // they remain in the outbox for retry.
     try {
       const { drainOutbox } = await import("@/lib/messenger-notify.server");
-      await drainOutbox({ orderId: data.id });
+      await drainOutbox({ orderId: data.id, latestOnly: true });
     } catch (e) {
       console.error("[updateOrderStatus] messenger drain failed:", (e as Error).message);
     }

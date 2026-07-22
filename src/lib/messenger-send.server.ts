@@ -25,6 +25,15 @@ export function sendText(token: string, psid: string, text: string) {
   });
 }
 
+export function sendPostPurchaseUpdate(token: string, psid: string, text: string) {
+  return post(token, {
+    recipient: { id: psid },
+    messaging_type: "MESSAGE_TAG",
+    tag: "POST_PURCHASE_UPDATE",
+    message: { text: text.slice(0, 1900) },
+  });
+}
+
 export type ProductCardInput = {
   title: string;
   subtitle?: string;

@@ -1,6 +1,6 @@
 // Server-only helper: drain order_notifications_outbox for a specific order or all pending.
 // Sends Messenger updates to the customer who placed the order.
-import { sendText } from "@/lib/messenger-send.server";
+import { sendPostPurchaseUpdate } from "@/lib/messenger-send.server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const STAGE_MESSAGES: Record<string, (o: any) => string> = {
@@ -14,11 +14,21 @@ const STAGE_MESSAGES: Record<string, (o: any) => string> = {
   courier_assigned: (o) => `🚚 আপনার অর্ডার ${o.invoice_no ? "#" + o.invoice_no : ""} কুরিয়ারে অ্যাসাইন করা হয়েছে।`,
 };
 
-export async function drainOutbox(opts: { orderId?: string; limit?: number } = {}) {
+async function decryptToken(enc: string | null | undefined): Promise<string | null> {
+  if (!enc) return null;
+  try {
+    const { decryptJSON } = await import("@/lib/crypto/credentials.server");
+    return decryptJSON<string>(enc);
+  } catch {
+    return null;
+  }
+}
+
+export async function drainOutbox(opts: { orderId?: string; limit?: number; latestOnly?: boolean; latestPerOrder?: boolean } = {}) {
   const limit = opts.limit ?? 50;
   let q = supabaseAdmin
     .from("order_notifications_outbox")
-    .select("id,order_id,store_id,stage,attempt_count")
+    .select("id,order_id,store_id,stage,attempt_count,created_at")
     .is("sent_at", null)
     .lt("attempt_count", 4)
     .order("created_at", { ascending: true })
@@ -26,10 +36,35 @@ export async function drainOutbox(opts: { orderId?: string; limit?: number } = {
   if (opts.orderId) q = q.eq("order_id", opts.orderId);
   const { data: pending } = await q;
 
+  const rows = [...(pending ?? [])];
+  if (opts.latestOnly || opts.latestPerOrder) {
+    const staleIds: string[] = [];
+    const latestRows: typeof rows = [];
+    if (opts.orderId) {
+      if (rows.length > 1) staleIds.push(...rows.slice(0, -1).map((row) => row.id));
+      if (rows.length) latestRows.push(rows[rows.length - 1]);
+    } else {
+      const byOrder = new Map<string, typeof rows>();
+      for (const row of rows) byOrder.set(row.order_id, [...(byOrder.get(row.order_id) ?? []), row]);
+      for (const group of byOrder.values()) {
+        if (group.length > 1) staleIds.push(...group.slice(0, -1).map((row) => row.id));
+        latestRows.push(group[group.length - 1]);
+      }
+      latestRows.sort((a, b) => new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime());
+    }
+    if (staleIds.length) {
+      await supabaseAdmin
+        .from("order_notifications_outbox")
+        .update({ sent_at: new Date().toISOString(), error: "superseded" })
+        .in("id", staleIds);
+    }
+    rows.splice(0, rows.length, ...latestRows);
+  }
+
   let sent = 0;
   let failed = 0;
 
-  for (const row of pending ?? []) {
+  for (const row of rows) {
     try {
       const builder = STAGE_MESSAGES[row.stage];
       if (!builder) {
@@ -83,13 +118,15 @@ export async function drainOutbox(opts: { orderId?: string; limit?: number } = {
 
       const { data: integ } = await supabaseAdmin
         .from("messenger_integrations")
-        .select("page_access_token")
+        .select("page_access_token,page_access_token_encrypted,status")
         .eq("store_id", row.store_id)
         .maybeSingle();
-      const token = (integ as any)?.page_access_token;
+      const token =
+        (await decryptToken((integ as any)?.page_access_token_encrypted)) ||
+        (integ as any)?.page_access_token;
       if (!token) throw new Error("no_page_token");
 
-      await sendText(token, conv.external_id, text);
+      await sendPostPurchaseUpdate(token, conv.external_id, text);
 
       await supabaseAdmin
         .from("order_notifications_outbox")
@@ -107,5 +144,5 @@ export async function drainOutbox(opts: { orderId?: string; limit?: number } = {
         .eq("id", row.id);
     }
   }
-  return { sent, failed, considered: pending?.length ?? 0 };
+  return { sent, failed, considered: rows.length };
 }
