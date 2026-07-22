@@ -546,7 +546,7 @@ export function buildTools(ctx: AgentContext) {
       execute: async ({ productId }) => {
         const { data: p } = await sb
           .from("products")
-          .select("id,name,slug,short_description,price,old_price,stock,primary_image_url")
+          .select("id,name,slug,short_description,price,old_price,stock,primary_image_url,gallery")
           .eq("store_id", storeId)
           .eq("id", productId)
           .maybeSingle();
@@ -560,7 +560,7 @@ export function buildTools(ctx: AgentContext) {
           await fbSendProductCard(ctx.pageToken!, ctx.psid!, {
             title: p.name,
             subtitle,
-            image_url: p.primary_image_url ?? undefined,
+            image_url: firstImage(ctx, p),
             buy_url: productUrl(ctx, p.slug, p.id),
             product_id: p.id,
           });
@@ -590,13 +590,13 @@ export function buildTools(ctx: AgentContext) {
       execute: async ({ productIds }) => {
         const { data } = await sb
           .from("products")
-          .select("id,name,slug,short_description,price,old_price,stock,primary_image_url")
+          .select("id,name,slug,short_description,price,old_price,stock,primary_image_url,gallery")
           .eq("store_id", storeId)
           .in("id", productIds);
         const items = (data ?? []).map((p) => ({
           title: p.name,
           subtitle: `${p.old_price ? `৳${p.price} (was ৳${p.old_price})` : `৳${p.price}`} · ${p.stock > 0 ? "In stock" : "Out of stock"}`,
-          image_url: p.primary_image_url ?? undefined,
+          image_url: firstImage(ctx, p),
           buy_url: productUrl(ctx, p.slug, p.id),
           product_id: p.id,
         }));
