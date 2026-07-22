@@ -69,6 +69,9 @@ function SettingsTab() {
         rule_phone: !!s.rule_phone, rule_product: !!s.rule_product,
         rule_fingerprint: !!s.rule_fingerprint, rule_device: !!s.rule_device,
         rule_customer: !!s.rule_customer, match_logic: s.match_logic,
+        rule_psid: !!s.rule_psid,
+        messenger_enabled: s.messenger_enabled !== false,
+        messenger_custom_reply: s.messenger_custom_reply ?? null,
       } as any });
       qc.invalidateQueries({ queryKey: ["dp-settings"] });
       toast.success("Saved");
@@ -116,6 +119,7 @@ function SettingsTab() {
             ["rule_customer", "Same customer account"],
             ["rule_fingerprint", "Same browser fingerprint"],
             ["rule_device", "Same device"],
+            ["rule_psid", "Same Messenger PSID"],
           ].map(([k, label]) => (
             <label key={k} className="flex items-center justify-between rounded-md border p-2 text-sm">
               <span>{label}</span>
@@ -134,6 +138,30 @@ function SettingsTab() {
             <SelectItem value="all">All enabled rules must match</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-medium">Messenger duplicate protection</div>
+            <div className="text-xs text-muted-foreground">
+              Apply the rules above to orders placed through the Messenger AI agent.
+            </div>
+          </div>
+          <Switch
+            checked={s.messenger_enabled !== false}
+            onCheckedChange={(v) => set("messenger_enabled", v)}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Custom AI reply (optional)</Label>
+          <textarea
+            className="w-full min-h-[96px] rounded-md border bg-background p-2 text-sm"
+            placeholder="Leave blank to use the default polite reply with invoice number and status."
+            value={s.messenger_custom_reply ?? ""}
+            onChange={(e) => set("messenger_custom_reply", e.target.value)}
+          />
+        </div>
       </div>
 
       <Button onClick={onSave} className="w-full sm:w-auto">Save changes</Button>
