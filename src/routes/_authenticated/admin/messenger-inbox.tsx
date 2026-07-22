@@ -418,19 +418,30 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div className="flex h-[100dvh] flex-1 flex-col overflow-hidden md:h-full">
       {/* header */}
-      <div className="flex items-center gap-3 border-b p-3">
+      <div className="sticky top-0 z-20 flex shrink-0 items-center gap-3 border-b bg-background/95 p-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <Button variant="ghost" size="icon" className="md:hidden" onClick={onBack}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        {profile.profile_pic ? (
-          <img src={profile.profile_pic} alt="" className="h-9 w-9 rounded-full object-cover" />
-        ) : (
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
-            <UserIcon className="h-4 w-4" />
-          </div>
-        )}
+        <div className="relative shrink-0">
+          {profile.profile_pic ? (
+            <img src={profile.profile_pic} alt="" className="h-9 w-9 rounded-full object-cover" />
+          ) : (
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
+              <UserIcon className="h-4 w-4" />
+            </div>
+          )}
+          {typeof (profile as any).is_online === "boolean" && (
+            <span
+              className={cn(
+                "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-background",
+                (profile as any).is_online ? "bg-green-500" : "bg-muted-foreground/50",
+              )}
+              aria-label={(profile as any).is_online ? "Online" : "Offline"}
+            />
+          )}
+        </div>
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-medium">{name}</div>
           <div className="truncate text-xs text-muted-foreground">PSID {c?.external_id}</div>
@@ -445,9 +456,10 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
       </div>
 
       {/* messages + profile */}
-      <div className="grid flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[1fr_280px]">
-        <div className="flex flex-col overflow-hidden">
-          <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto p-3">
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[1fr_280px]">
+        <div className="flex min-h-0 flex-col overflow-hidden">
+          <div ref={scrollRef} className="flex-1 min-h-0 space-y-2 overflow-y-auto overscroll-contain scroll-smooth p-3 pb-4">
+
             {(msgs.data ?? []).map((m: any) => {
               const out = m.direction === "out";
               const failed = m.delivery_status === "failed";
@@ -509,7 +521,7 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
           </div>
 
           {/* composer */}
-          <div className="border-t p-3 space-y-2">
+          <div className="sticky bottom-0 z-10 shrink-0 space-y-2 border-t bg-background p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {quickReplies.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {quickReplies.map((q, i) => (
