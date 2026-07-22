@@ -480,12 +480,15 @@ async function handleBuyPostback(opts: {
     qty: current.qty ?? 1,
   });
   const missing = orderMissingFields(slot);
+  const reply = missing.length
+    ? `ঠিক আছে, ${product.name} অর্ডার শুরু করলাম। কনফার্ম করতে ${missing.join(", ")} দিন।`
+    : `ঠিক আছে, ${product.name} অর্ডারের তথ্য পেয়েছি। কনফার্ম করার আগে আর কিছু যোগ করতে চান?`;
   await sendAndLogText(
     sb,
     token,
     psid,
     conversationId,
-    `ঠিক আছে, ${product.name} অর্ডার শুরু করলাম। কনফার্ম করতে ${missing.join(", ")} দিন।`,
+    reply,
   );
   return true;
 }
