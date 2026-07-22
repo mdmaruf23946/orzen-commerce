@@ -385,8 +385,18 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .eq("store_id", store.id);
     if (error) throw new Error(error.message);
+    // Fire-and-observe: push Messenger status update to the customer if this order
+    // originated from (or has) a Messenger conversation. Failures are swallowed —
+    // they remain in the outbox for retry.
+    try {
+      const { drainOutbox } = await import("@/lib/messenger-notify.server");
+      await drainOutbox({ orderId: data.id });
+    } catch (e) {
+      console.error("[updateOrderStatus] messenger drain failed:", (e as Error).message);
+    }
     return { ok: true };
   });
+
 
 // ---------- BANNERS ----------
 export const listMyBanners = createServerFn({ method: "GET" })
