@@ -1054,6 +1054,37 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
               if (!token) continue;
               if (parsed.message_type !== "text" && parsed.message_type !== "quick_reply") continue;
 
+              const pendingOrderHandled = await maybeHandlePendingOrderText({
+                sb,
+                storeId: integ.store_id,
+                conversationId: conv!.id,
+                psid: senderId,
+                token,
+                text: parsed.text,
+              });
+              if (pendingOrderHandled) {
+                await sb
+                  .from("messenger_integrations")
+                  .update({ last_error: null } as any)
+                  .eq("id", (integ as any).id);
+                continue;
+              }
+
+              const repeatedOrderHandled = await maybeHandleRepeatedOrderDetails({
+                sb,
+                conversationId: conv!.id,
+                psid: senderId,
+                token,
+                text: parsed.text,
+              });
+              if (repeatedOrderHandled) {
+                await sb
+                  .from("messenger_integrations")
+                  .update({ last_error: null } as any)
+                  .eq("id", (integ as any).id);
+                continue;
+              }
+
               const greetingHandled = await maybeHandleGreeting({
                 sb,
                 conversationId: conv!.id,
