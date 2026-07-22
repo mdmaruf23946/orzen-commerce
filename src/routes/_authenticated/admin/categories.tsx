@@ -106,67 +106,95 @@ function CategoriesPage() {
           <div className="p-10 text-center text-sm text-muted-foreground">No categories yet.</div>
         ) : (
           <ul className="divide-y">
-            {items.map((c) => {
-              const src = c.image_url
-                ? c.image_url.startsWith("http")
-                  ? c.image_url
-                  : `/api/img/${c.image_url}`
-                : null;
-              return (
-                <li
-                  key={c.id}
-                  draggable
-                  onDragStart={() => onDragStart(c.id)}
-                  onDragOver={(e) => onDragOver(e, c.id)}
-                  onDragEnd={onDragEnd}
-                  className={`flex items-center gap-3 p-3 ${dragId === c.id ? "opacity-50" : ""}`}
-                >
-                  <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-muted-foreground" />
-                  <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-muted">
-                    {src ? (
-                      <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
-                    ) : (
-                      <ImageIcon className="h-5 w-5 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="line-clamp-1 text-sm font-medium">{c.name}</p>
-                    {c.description && (
-                      <p className="line-clamp-1 text-xs text-muted-foreground">{c.description}</p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => toggleActive(c)}
-                    className="rounded p-2 hover:bg-muted"
-                    aria-label={c.is_active ? "Hide" : "Show"}
-                    title={c.is_active ? "Active — click to hide" : "Hidden — click to show"}
-                  >
-                    {c.is_active ? (
-                      <Eye className="h-4 w-4" />
-                    ) : (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => startEdit(c)}
-                    className="rounded p-2 hover:bg-muted"
-                    aria-label="Edit"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => remove(c.id)}
-                    className="rounded p-2 text-destructive hover:bg-destructive/10"
-                    aria-label="Delete"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </li>
+            {(() => {
+              const mains = items.filter((c) => !(c as any).parent_id);
+              const subsByParent = new Map<string, Category[]>();
+              for (const c of items) {
+                const pid = (c as any).parent_id as string | null;
+                if (pid) {
+                  if (!subsByParent.has(pid)) subsByParent.set(pid, []);
+                  subsByParent.get(pid)!.push(c);
+                }
+              }
+              const orphans = items.filter(
+                (c) =>
+                  (c as any).parent_id &&
+                  !mains.some((m) => m.id === (c as any).parent_id),
               );
-            })}
+              const ordered: Array<{ c: Category; indent: boolean }> = [];
+              for (const m of mains) {
+                ordered.push({ c: m, indent: false });
+                for (const s of subsByParent.get(m.id) ?? []) {
+                  ordered.push({ c: s, indent: true });
+                }
+              }
+              for (const o of orphans) ordered.push({ c: o, indent: true });
+              return ordered.map(({ c, indent }) => {
+                const src = c.image_url
+                  ? c.image_url.startsWith("http")
+                    ? c.image_url
+                    : `/api/img/${c.image_url}`
+                  : null;
+                return (
+                  <li
+                    key={c.id}
+                    draggable
+                    onDragStart={() => onDragStart(c.id)}
+                    onDragOver={(e) => onDragOver(e, c.id)}
+                    onDragEnd={onDragEnd}
+                    className={`flex items-center gap-3 p-3 ${indent ? "pl-10" : ""} ${dragId === c.id ? "opacity-50" : ""}`}
+                  >
+                    <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-muted-foreground" />
+                    <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-muted">
+                      {src ? (
+                        <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
+                      ) : (
+                        <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-1 text-sm font-medium">
+                        {indent && <span className="text-muted-foreground">↳ </span>}
+                        {c.name}
+                      </p>
+                      {c.description && (
+                        <p className="line-clamp-1 text-xs text-muted-foreground">{c.description}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => toggleActive(c)}
+                      className="rounded p-2 hover:bg-muted"
+                      aria-label={c.is_active ? "Hide" : "Show"}
+                      title={c.is_active ? "Active — click to hide" : "Hidden — click to show"}
+                    >
+                      {c.is_active ? (
+                        <Eye className="h-4 w-4" />
+                      ) : (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => startEdit(c)}
+                      className="rounded p-2 hover:bg-muted"
+                      aria-label="Edit"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => remove(c.id)}
+                      className="rounded p-2 text-destructive hover:bg-destructive/10"
+                      aria-label="Delete"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </li>
+                );
+              });
+            })()}
           </ul>
         )}
       </div>
+
 
       {open && store && (
         <CategoryDialog
