@@ -153,7 +153,6 @@ function isPhotoIntent(text: string) {
 }
 
 function isProductIntent(text: string, terms: string[]) {
-  if (terms.length > 0) return true;
   return /প্রোডাক্ট|পণ্য|দেখান|দেখাও|কী আছে|কি আছে|দাম|কত|কিনতে|অর্ডার|product|item|price|buy|order|show/i.test(text);
 }
 
@@ -284,12 +283,15 @@ async function maybeSendDirectProductReply(opts: {
   const { sb, storeId, storeSlug, conversationId, psid, token, text } = opts;
   const terms = productSearchTerms(text);
   const photoIntent = isPhotoIntent(text);
-  if (!photoIntent && !isProductIntent(text, terms)) return false;
+  const explicitProductIntent = isProductIntent(text, terms);
+  if (!photoIntent && !explicitProductIntent && !terms.length) return false;
 
   let products = photoIntent
     ? await getRecentRecommendedProducts(sb, storeId, conversationId, 3)
     : [];
   if (!products.length) products = await searchDirectProducts(sb, storeId, text, 6);
+
+  if (!products.length && !photoIntent && !explicitProductIntent) return false;
 
   if (!products.length) {
     const noResult = "দুঃখিত, এই মুহূর্তে এই প্রোডাক্টটি স্টকে পাচ্ছি না। অন্য কোনো প্রোডাক্ট খুঁজতে চাইলে নাম লিখুন।";
