@@ -95,8 +95,14 @@ ${faqs}`;
 }
 
 // ---------- Helpers ----------
+const PUBLIC_MESSENGER_ORIGIN = "https://orzen-commerce.lovable.app";
+
+function publicOrigin(ctx: AgentContext) {
+  return (ctx.siteOrigin || process.env.PUBLIC_APP_URL || process.env.VITE_APP_URL || PUBLIC_MESSENGER_ORIGIN).replace(/\/$/, "");
+}
+
 function productUrl(ctx: AgentContext, slug: string | null | undefined, productId: string) {
-  const base = ctx.siteOrigin || `https://${ctx.storeSlug || slug || "store"}.orzen.top`;
+  const base = publicOrigin(ctx);
   const s = ctx.storeSlug || slug || "";
   return s ? `${base.replace(/\/$/, "")}/store/${s}/product/${productId}` : `${base}/product/${productId}`;
 }
@@ -104,7 +110,7 @@ function productUrl(ctx: AgentContext, slug: string | null | undefined, productI
 function absoluteUrl(ctx: AgentContext, value: string | null | undefined) {
   if (!value) return undefined;
   if (/^https?:\/\//i.test(value)) return value;
-  const base = (ctx.siteOrigin || `https://${ctx.storeSlug || "www"}.orzen.top`).replace(/\/$/, "");
+  const base = publicOrigin(ctx);
   const path = value.startsWith("/") ? value : `/api/img/${value}`;
   return `${base}${path}`;
 }
@@ -847,14 +853,15 @@ export async function logUsage(storeId: string | null, model: string, usage: any
   }
 }
 
-export async function getModelForStore() {
+export async function getModelForStore(opts?: { fast?: boolean }) {
   const sb = admin();
   const { data: settings } = await sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle();
   const saved = (settings?.provider_api_key || "").trim();
   const looksLovable = saved.startsWith("lv_") || saved.startsWith("sk-lovable");
   const apiKey = (looksLovable ? saved : "") || process.env.LOVABLE_API_KEY!;
   if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
-  const modelId = settings?.default_model || "google/gemini-2.5-flash";
+  const configuredModel = settings?.default_model || "openai/gpt-5.4-mini";
+  const modelId = opts?.fast && configuredModel.includes("pro") ? "openai/gpt-5.4-mini" : configuredModel;
   const gateway = createLovableAiGatewayProvider(apiKey);
   return { model: gateway(modelId), modelId };
 }
@@ -884,14 +891,16 @@ export async function generateAgentReply(opts: {
   ctx: AgentContext;
   messages: any[];
   system: string;
+  fast?: boolean;
 }) {
-  const { model, modelId } = await getModelForStore();
+  const { model, modelId } = await getModelForStore({ fast: opts.fast });
   const result = await generateText({
     model,
     system: opts.system,
     messages: opts.messages,
     tools: buildTools(opts.ctx),
     stopWhen: stepCountIs(50),
+    providerOptions: modelId === "openai/gpt-5.4-mini" ? { lovable: { service_tier: "priority" } } : undefined,
   });
   void logUsage(opts.ctx.storeId, modelId, result.usage, "messenger");
   return result.text;
