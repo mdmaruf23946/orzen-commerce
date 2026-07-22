@@ -43,11 +43,19 @@ export async function sendPostPurchaseUpdate(token: string, psid: string, text: 
   } catch (e) {
     const msg = (e as Error).message;
     if (/invalid parameter|code:100/i.test(msg)) {
-      return post(token, {
-        recipient: { id: psid },
-        messaging_type: "RESPONSE",
-        message,
-      });
+      try {
+        return await post(token, {
+          recipient: { id: psid },
+          messaging_type: "UPDATE",
+          message,
+        });
+      } catch {
+        return post(token, {
+          recipient: { id: psid },
+          messaging_type: "RESPONSE",
+          message,
+        });
+      }
     }
     throw e;
   }
