@@ -1,107 +1,93 @@
 
-# Store Admin Dashboard — Premium UI Redesign
+# Welcome Card Redesign — Store Admin Dashboard
 
-Reference: the attached screenshot (MyStore admin). Scope is strictly visual — no route, server function, RLS, schema, or feature change. All 30+ sidebar links stay, all data sources stay, all handlers stay.
+Scope: only the top hero section of `src/routes/_authenticated/admin/index.tsx` (lines 86–132). Every other widget (KPI cards, Order Status strip, Sales Analytics, Store Health, Recent Orders, Messenger, Notifications, Quick Actions, sidebar, header) stays byte-identical. No route, server function, RLS, schema, or query change.
 
-## Files touched (UI only)
+## Files touched
 
-1. `src/routes/_authenticated/admin/route.tsx` — sidebar shell + header
-2. `src/routes/_authenticated/admin/index.tsx` — dashboard content
-3. `src/components/admin/dashboard/*` — new presentational components (no logic)
-4. `src/styles.css` — add a few semantic tokens (indigo primary accent, soft surface, success/warn/danger tints) using existing shadcn token pattern
+1. `src/routes/_authenticated/admin/index.tsx` — replace the `{/* 1. Welcome Hero */}` section only.
+2. `src/components/admin/dashboard/WelcomeCard.tsx` — new presentational component (props-only, no data fetching).
+3. `src/styles.css` — add 2 keyframes (`welcome-fade-in`, `status-pulse`) + `@utility` wrappers. No token removals.
 
-No other files change.
+No other files change. No new npm dependency.
 
-## 1. Sidebar (route.tsx)
+## Card shell
 
-Keep the exact `links` array and its order — every current entry stays with identical `to`, `label`, `icon`, `exact`. Only the visual grouping and rendering changes.
+- Full width, `min-h-[150px] md:min-h-[170px]`, `rounded-[22px]`, `border border-[#ECECEC] dark:border-white/10`, white glass background (`bg-white/70 dark:bg-card/70 backdrop-blur-xl`), soft shadow (`shadow-[0_8px_30px_-12px_rgba(80,70,229,0.15)]`).
+- Layered decoration (all `pointer-events-none absolute`): purple→blue gradient overlay (`bg-gradient-to-br from-primary/8 via-transparent to-blue-500/8`), two soft blurred blobs (purple top-left, blue bottom-right).
+- Content grid: `grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_260px]` — Left / Center / Right. Tablet: `md:grid-cols-2` with Right stacking under. Mobile: single column stack in order Left → Center → Right illustration hidden or reduced to a compact top-right glyph.
+- Wraps `welcome-fade-in` (0.5s ease-out) on mount; hover raises card `-translate-y-0.5 transition`.
 
-Introduce a presentational grouping map (labels only, no route change):
+## Left column
 
-```
-Main:        Dashboard
-Orders:      Orders, Returns
-Products:    Products, Categories, Inventory
-Customers:   Customers, Customer Accounts, Duplicate Protection
-AI & Automation: AI Sales Agent, AI Recommendations, Handoff Queue,
-                 Low Stock Alerts, Messenger, Messenger Inbox
-Marketing:   Marketing, Coupons, SEO, Banners
-Finance:     Payments, Payment Gateway, Finance, Analytics
-Settings:    Delivery, Couriers, Theme, Product Defaults,
-             Notifications, Legal & Info Pages, Domains, DNS Checker,
-             Import / Export, Subscription, Billing & Plans, Store Settings
-```
+- `👋 Welcome back, {data.owner.name}!` — `text-xl md:text-2xl font-semibold tracking-tight`.
+- One horizontal wrap row of chips (Apple/Linear pill style, `rounded-full border bg-background/70 px-2.5 py-1 text-xs`):
+  - 🟢 Active Store (uses existing `store.status`; green dot + `animate-pulse`).
+  - Business / package chip (existing `store.package_name`).
+  - Store URL chip: `/store/{slug}` + inline copy button (reuses existing `shareStore()` — no logic change, just re-parented). External-link chip opens `storeUrl`.
+  - `Updated {relTime(store?.updated_at)}` — muted.
+- All chips flow on one line at ≥md, wrap gracefully below.
 
-Any link not covered by the map falls through into a "More" group so nothing can be dropped by mistake.
+## Center column — AI Business Summary
 
-Sidebar visuals:
-- Fixed 260px width desktop, collapsible to 72px icon-rail (toggle button in header). Persist collapsed state in `localStorage` (read in `useEffect`).
-- Section headers: uppercase 11px, muted, chevron for collapse/expand (default expanded).
-- Active link: soft indigo pill (`bg-primary/10 text-primary` + left 2px indigo bar), inactive: `text-muted-foreground hover:bg-muted`.
-- Store brand block at top (logo + "Store Admin" + role) matching screenshot's `MyStore` card.
-- Search input at the top of the nav filters links by label client-side.
-- Mobile: existing drawer behavior preserved; grouping still applies.
-- Logout stays pinned at bottom.
+- Title row: 🤖 `AI Business Summary` — `text-sm font-semibold`.
+- Dynamic bullet list built purely from data already returned by `myDashboardOverview` + `getInboxStats` (already fetched on this page — wire via a `useQuery` reuse of the same `["messenger", "inbox-stats"]` key that the Messenger widget uses lower on the page, or pass in as a prop from the parent, whichever avoids a second network call). Bullets rendered only when the underlying number is defined & > 0; otherwise silently omitted:
+  - `{today.orders}` new orders
+  - `{inbox.newConversationsToday}` new Messenger conversations
+  - AI replied to `{inbox.aiRepliedToday}` customers
+  - `{inbox.handoffToday}` customers requested human support
+  - Total sales today `{fmtBDT(today.sales)}`
+  - Revenue `{today.salesPct >= 0 ? "increased" : "decreased"} by {abs}% vs yesterday`
+- Numbers use a lightweight count-up (reuse existing `useCountUp` from `src/hooks/use-reveal.ts`) triggered on mount.
+- **AI Insight** callout beneath: soft indigo panel (`rounded-xl bg-primary/5 border border-primary/10 p-3 text-xs`) with 💡 label. Text is derived client-side from data already in the page (no new API):
+  - If any `lowStock` item present → "`{topProduct.name}` is trending — stock low, consider restocking."
+  - Else if `today.ordersPct > 20` → "Order volume is up `{ordersPct}%` today — great momentum."
+  - Else if `inbox.unread > 0` → "You have `{unread}` unread Messenger threads waiting for a reply."
+  - Fallback: "All quiet — a good time to publish a new product or coupon."
 
-## 2. Top header (route.tsx)
+## Right column — Illustration + primary CTA
 
-Sticky header (desktop too, not just mobile). Left→right:
-- Sidebar collapse toggle
-- Global search input (client-side placeholder; no new API)
-- Notification bell (uses existing notifications count if already fetched, otherwise a static badge — no new query)
-- Messenger icon linking to `/admin/messenger-inbox`
-- "View Store" button linking to existing store URL logic already in the dashboard
-- Profile menu (existing signOut wired to the current handler)
-- Dark mode toggle (uses existing `dark` class approach via `next-themes` if present, else a no-op toggle switching `.dark` on `<html>`)
+- Top-right absolutely-positioned **View Store** button (existing behavior/handler preserved): purple gradient (`bg-gradient-to-r from-primary to-indigo-500`), `rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/30 hover:-translate-y-0.5 transition`, external-link icon. On mobile it sits below the header row full-width.
+- Decorative AI illustration built with inline SVG (no asset, no new dep): stylized robot head, two floating chat bubbles, a mini analytics bar chart, floating circles, radial purple glow behind. `hidden md:block` on tablet-and-up; hidden entirely under `sm` to keep the card compact. `orzen-float` animation reused (already in styles.css).
 
-## 3. Dashboard content (`admin/index.tsx`)
+## Bottom status bar
 
-Preserve every existing data hook, query key, and server-function call. Only markup/layout changes. New sub-components are pure presentation and receive the same data the current page already fetches.
+- Horizontal scroll-safe row of small badge chips inside the card, separated from content by a subtle divider (`border-t border-black/5 pt-3 mt-3`), `flex flex-wrap gap-2 md:gap-2.5 overflow-x-auto`.
+- Chip style: `inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300 px-2.5 py-1 text-[11px] font-medium`, with leading dot using `status-pulse` animation.
+- Chips derived from existing dashboard signals only — do not add new fetches. Show `🟢`/`🟡`/`🔴` variant per real state:
+  - AI Online (from `data.ai?.enabled` if present, else default green when store active)
+  - Messenger Connected (from existing messenger status already surfaced in the Messenger widget below — pass the same value in as prop)
+  - Webhook Verified (same source as messenger widget)
+  - Knowledge Synced / Product Index Ready (derived from products count > 0)
+  - OpenAI Connected (from `data.ai?.gatewayOk` if present, else omit)
+  - Inventory Synced (products count > 0)
+- Any chip whose underlying signal is missing is silently omitted — never faked.
 
-Layout order (matches reference):
+## Animations
 
-1. **Welcome card** — greeting, store URL chip, "Last Updated", Active Store pill, View Store button.
-2. **AI Business Summary banner** — soft gradient (indigo→violet), robot illustration slot, existing AI summary text bindings.
-3. **KPI row (4 cards)** — Today's Sales, New Orders, Messenger Unread (AI/Human split chip), Need Attention (Pending Orders / Low Stock / AI Failed sub-rows). Each card: icon tile, big value, delta vs yesterday, mini sparkline (reuse existing sparkline SVG pattern from `owner/index.tsx` — no new chart lib).
-4. **Middle row (3 columns on xl, stack on smaller)**:
-   - Today's Tasks list (Confirm Orders, Reply Messenger, Low Stock, Courier Pending, AI Needs Review) — each item links to its existing route.
-   - Sales Analytics chart with Today / 7 Days / 30 Days / 12 Months tabs and Sales/Orders/Revenue/Profit sub-tabs. Uses existing chart data; if the current dashboard uses Recharts, keep Recharts (no new lib).
-   - AI Performance card (accuracy ring, Orders by AI, Conversion, Human Takeover, Failed Replies) — bound to existing AI metrics only if already present, otherwise render "—" placeholders. No new server call.
-5. **Bottom row (4 columns on xl)**:
-   - Recent Orders table (Customer / Order ID / Amount / Status / Time / Actions) — same data, restyled rows with status pills.
-   - Messenger Overview (Unread, AI Replied, Human Replied, Avg Response Time) + "Open Inbox" link.
-   - Notifications feed with icon + title + timestamp.
-   - Quick Actions grid: Add Product, Create Coupon, Create Banner, View Orders, Messenger Inbox, Open Store (each = `<Link>` to the already-existing route).
+- `welcome-fade-in`: opacity/translate on mount, 0.5s.
+- `status-pulse`: 1.6s soft opacity pulse on the leading dot of each status chip.
+- Card hover: `hover:-translate-y-0.5 transition-transform`.
+- AI illustration: reuse existing `orzen-float`.
+- Numbers: existing `useCountUp` for the summary bullets. No layout thrash.
 
-Order Status horizontal strip (Pending / Confirmed / Packaging / Processing / Shipped / Delivered / Cancelled / Returned) sits between KPI row and middle row, each chip links to `/admin/orders?status=<value>` using the query param the orders page already accepts.
+## Responsiveness
 
-## 4. Design tokens (`src/styles.css`)
+- ≥ `lg` (1024px+): 3-column grid as described.
+- `md` (768–1024): 2-column; illustration column stacks below, CTA moves inline top-right.
+- `< md`: single column stack — greeting + chips → AI summary → AI insight → status chips (horizontal scroll). Illustration hidden. CTA becomes full-width pill under the greeting.
 
-Add under existing `:root` / `.dark`:
-- `--brand-indigo`, `--brand-indigo-foreground`
-- `--surface-soft` (card background for KPI tiles)
-- `--success`, `--warning`, `--danger` tint variants (light bg + solid fg) used by status pills
+## Guarantees
 
-Register them in `@theme inline` so utilities like `bg-surface-soft`, `text-brand-indigo` work. No token removal, no shadcn primitive changes.
-
-## 5. Responsiveness
-
-- `< 640px`: single column, KPI cards 2-per-row, order status strip horizontal scroll, tables become card list.
-- `640–1024px`: 2 columns for middle/bottom rows.
-- `≥ 1280px`: full reference layout.
-- Sidebar stays as mobile drawer under `md`.
-
-## 6. Guarantees
-
-- No `links` array entry removed or renamed.
-- No route file added/removed.
-- No server function, RLS policy, or Supabase call added or changed.
-- `SubscriptionStatusBanner`, `StickyMobileAdBar`, `Outlet`, sign-out handler, `amIOwner` gate all preserved.
-- All existing `<Link to="...">` targets kept.
+- No change to `myDashboardOverview`, `getInboxStats`, or any hook.
+- No change to KPI grid, Order Status, Analytics, Store Health, Recent Orders, Messenger widget, Notifications, Quick Actions, sidebar, header, `AdSlot`, or `StickyMobileAdBar`.
+- No new server call, no new secret, no new dependency.
+- `View Store` uses the identical `storeUrl` + target/rel behavior.
 
 ## Verification
 
-- Visit `/admin`: layout matches reference sections, all KPIs render with existing data, sidebar shows every current link across the new groups.
-- Toggle sidebar collapse, mobile drawer, dark mode.
-- Click each Quick Action, Order Status chip, Task item → lands on the same existing route it does today.
-- `bun run build` succeeds; no new dependencies added.
+- `/admin` renders with the new hero; every existing widget below it looks and behaves exactly as before.
+- Copy button copies store URL (existing `shareStore`).
+- Insight text updates when data changes; empty states render nothing rather than placeholder zeros.
+- Mobile 375px: hero stacks cleanly, status chips scroll horizontally, no overflow.
+- `bun run build` succeeds; no new deps.

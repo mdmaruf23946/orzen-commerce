@@ -13,6 +13,7 @@ import {
 import { myDashboardOverview } from "@/lib/admin.functions";
 import { getInboxStats } from "@/lib/messenger-inbox.functions";
 import { AdSlot } from "@/components/admin/AdSlot";
+import { WelcomeCard } from "@/components/admin/dashboard/WelcomeCard";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -51,6 +52,13 @@ function Dashboard() {
     staleTime: 30_000,
   });
 
+  const inboxStatsFn = useServerFn(getInboxStats);
+  const { data: inboxStats } = useQuery({
+    queryKey: ["admin", "inbox-stats"],
+    queryFn: () => inboxStatsFn(),
+    refetchInterval: 30_000,
+  });
+
   const [range, setRange] = useState<Range>("7d");
   const [metric, setMetric] = useState<Metric>("sales");
 
@@ -83,53 +91,39 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* 1. Welcome Hero */}
-      <section className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/5 via-background to-accent/40 p-6 md:p-8">
-        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-20 right-20 h-48 w-48 rounded-full bg-primary/5 blur-3xl" />
-        <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="min-w-0 space-y-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>👋</span>
-              <span>Welcome back</span>
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-              Hello, {data.owner.name}!
-            </h1>
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <StatusPill status={store?.status ?? "active"} sub={store?.subscription_status} />
-              {store?.package_name && (
-                <span className="inline-flex items-center gap-1 rounded-full border bg-background/60 px-2.5 py-1 font-medium">
-                  {store.package_name}
-                </span>
-              )}
-              {store && (
-                <a
-                  href={storeUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex max-w-[240px] items-center gap-1 truncate rounded-full border bg-background/60 px-2.5 py-1 text-muted-foreground hover:text-foreground"
-                >
-                  /store/{store.slug} <ExternalLink className="h-3 w-3" />
-                </a>
-              )}
-              <span className="text-muted-foreground">
-                Updated {relTime(store?.updated_at)}
-              </span>
-            </div>
-          </div>
-          {store && (
-            <a
-              href={storeUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/25 transition hover:shadow-lg hover:shadow-primary/30"
-            >
-              View Store <ExternalLink className="h-4 w-4" />
-            </a>
-          )}
-        </div>
-      </section>
+      {/* 1. Welcome Card (premium AI overview) */}
+      <WelcomeCard
+        ownerName={data.owner.name}
+        store={store ? {
+          slug: store.slug,
+          status: store.status,
+          package_name: (store as any).package_name ?? null,
+          updated_at: store.updated_at,
+        } : null}
+        storeUrl={storeUrl}
+        onCopy={shareStore}
+        today={{
+          sales: data.today.sales,
+          orders: data.today.orders,
+          salesPct: data.today.salesPct,
+          ordersPct: data.today.ordersPct,
+          pendingOrders: data.today.pendingOrders,
+        }}
+        products={{
+          total: data.products?.total ?? 0,
+          lowStock: data.products?.lowStock ?? 0,
+          outOfStock: data.products?.outOfStock ?? 0,
+        }}
+        inbox={inboxStats}
+        lowStockSample={(() => {
+          const n = (data.notifications ?? []).find((x: any) => x.type === "low-stock");
+          if (!n) return null;
+          const m = /e\.g\.\s+(.+?)\s+·\s+(\d+)\s+left/.exec(n.detail ?? "");
+          return m ? { name: m[1], stock: Number(m[2]) } : null;
+        })()}
+        updatedRel={relTime(store?.updated_at)}
+      />
+
 
       {/* 2. KPI Cards */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
