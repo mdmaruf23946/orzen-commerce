@@ -97,16 +97,57 @@ export async function drainOutbox(opts: { orderId?: string; limit?: number; late
         if (phoneNorm.startsWith("0")) candidates.add("880" + phoneNorm.slice(1));
       }
 
-      const { data: conv } = await supabaseAdmin
-        .from("ai_conversations")
-        .select("external_id")
+      const { data: notification } = await supabaseAdmin
+        .from("admin_notifications")
+        .select("meta")
         .eq("store_id", row.store_id)
-        .eq("channel", "messenger")
-        .in("phone", Array.from(candidates))
-        .not("external_id", "is", null)
-        .order("last_message_at", { ascending: false })
+        .eq("kind", "new_order")
+        .contains("meta", { order_id: row.order_id })
+        .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+      const conversationId = (notification as any)?.meta?.conversation_id as string | undefined;
+
+      let conv: { id: string; external_id: string | null } | null = null;
+      if (conversationId) {
+        const { data } = await supabaseAdmin
+          .from("ai_conversations")
+          .select("id,external_id")
+          .eq("id", conversationId)
+          .eq("store_id", row.store_id)
+          .eq("channel", "messenger")
+          .not("external_id", "is", null)
+          .maybeSingle();
+        conv = data as typeof conv;
+      }
+
+      if (!conv?.external_id) {
+        const { data } = await supabaseAdmin
+          .from("ai_conversations")
+          .select("id,external_id")
+          .eq("store_id", row.store_id)
+          .eq("channel", "messenger")
+          .contains("psid_profile", { last_order: { order_id: row.order_id } })
+          .not("external_id", "is", null)
+          .order("last_message_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        conv = data as typeof conv;
+      }
+
+      if (!conv?.external_id && candidates.size > 0) {
+        const { data } = await supabaseAdmin
+          .from("ai_conversations")
+          .select("id,external_id")
+          .eq("store_id", row.store_id)
+          .eq("channel", "messenger")
+          .in("phone", Array.from(candidates))
+          .not("external_id", "is", null)
+          .order("last_message_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        conv = data as typeof conv;
+      }
 
       if (!conv?.external_id) {
         await supabaseAdmin
@@ -127,6 +168,15 @@ export async function drainOutbox(opts: { orderId?: string; limit?: number; late
       if (!token) throw new Error("no_page_token");
 
       await sendPostPurchaseUpdate(token, conv.external_id, text);
+
+      await supabaseAdmin.from("ai_messages").insert({
+        conversation_id: conv.id,
+        role: "assistant",
+        direction: "out",
+        message_type: "text",
+        content: text,
+        delivery_status: "sent",
+      } as any);
 
       await supabaseAdmin
         .from("order_notifications_outbox")
