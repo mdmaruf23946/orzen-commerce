@@ -24,7 +24,7 @@ async function decryptToken(enc: string | null | undefined): Promise<string | nu
   }
 }
 
-export async function drainOutbox(opts: { orderId?: string; limit?: number } = {}) {
+export async function drainOutbox(opts: { orderId?: string; limit?: number; latestOnly?: boolean } = {}) {
   const limit = opts.limit ?? 50;
   let q = supabaseAdmin
     .from("order_notifications_outbox")
@@ -36,10 +36,24 @@ export async function drainOutbox(opts: { orderId?: string; limit?: number } = {
   if (opts.orderId) q = q.eq("order_id", opts.orderId);
   const { data: pending } = await q;
 
+  const rows = pending ?? [];
+  if (opts.latestOnly && opts.orderId && rows.length > 1) {
+    const stale = rows.slice(0, -1);
+    const latest = rows[rows.length - 1];
+    await supabaseAdmin
+      .from("order_notifications_outbox")
+      .update({ sent_at: new Date().toISOString(), error: "superseded" })
+      .in(
+        "id",
+        stale.map((row) => row.id),
+      );
+    rows.splice(0, rows.length, latest);
+  }
+
   let sent = 0;
   let failed = 0;
 
-  for (const row of pending ?? []) {
+  for (const row of rows) {
     try {
       const builder = STAGE_MESSAGES[row.stage];
       if (!builder) {
@@ -119,5 +133,5 @@ export async function drainOutbox(opts: { orderId?: string; limit?: number } = {
         .eq("id", row.id);
     }
   }
-  return { sent, failed, considered: pending?.length ?? 0 };
+  return { sent, failed, considered: rows.length };
 }
