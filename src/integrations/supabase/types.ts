@@ -3601,6 +3601,7 @@ export type Database = {
         Returns: boolean
       }
       is_slug_taken: { Args: { _slug: string }; Returns: boolean }
+      is_store_active: { Args: { _store_id: string }; Returns: boolean }
       is_store_owner: { Args: { _store_id: string }; Returns: boolean }
       refresh_store_subscription_status: {
         Args: { _store_id: string }
