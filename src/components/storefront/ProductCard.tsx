@@ -1,5 +1,8 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Heart } from "lucide-react";
 import { addToCart } from "@/lib/cart";
+import { isInWishlist, toggleWishlist } from "@/lib/wishlist";
 
 type Product = {
   id: string;
@@ -12,11 +15,19 @@ type Product = {
 
 export function ProductCard({ slug, p }: { slug: string; p: Product }) {
   const navigate = useNavigate();
+  const [wished, setWished] = useState(false);
   const price = Number(p.price);
   const oldPrice = p.old_price != null ? Number(p.old_price) : null;
   const hasDiscount = oldPrice != null && oldPrice > price;
   const discountPct = hasDiscount ? Math.round(((oldPrice! - price) / oldPrice!) * 100) : 0;
   const outOfStock = p.stock <= 0;
+
+  useEffect(() => {
+    setWished(isInWishlist(slug, p.id));
+    const sync = () => setWished(isInWishlist(slug, p.id));
+    window.addEventListener("wishlist-changed", sync);
+    return () => window.removeEventListener("wishlist-changed", sync);
+  }, [slug, p.id]);
 
   function handleAdd(e: React.MouseEvent) {
     e.preventDefault();
@@ -45,8 +56,20 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
     navigate({ to: "/store/$slug/cart", params: { slug } });
   }
 
+  function handleWish(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    const now = toggleWishlist(slug, {
+      productId: p.id,
+      name: p.name,
+      price,
+      image: p.primary_image_url,
+    });
+    setWished(now);
+  }
+
   return (
-    <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_16px_-6px_rgba(0,0,0,0.08)] transition-shadow hover:shadow-[0_2px_4px_rgba(0,0,0,0.04),0_10px_24px_-8px_rgba(0,0,0,0.12)]">
+    <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_16px_-6px_rgba(0,0,0,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_2px_4px_rgba(0,0,0,0.04),0_12px_28px_-8px_rgba(0,0,0,0.14)]">
       <Link
         to="/store/$slug/product/$productId"
         params={{ slug, productId: p.id }}
@@ -58,7 +81,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
             alt={p.name}
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-xs text-neutral-400">
@@ -75,13 +98,24 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
             Sold out
           </span>
         )}
+        <button
+          type="button"
+          onClick={handleWish}
+          aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
+          aria-pressed={wished}
+          className={`absolute ${outOfStock ? "right-2 top-9" : "right-2 top-2"} grid h-8 w-8 place-items-center rounded-full bg-white/90 shadow-sm backdrop-blur transition-colors hover:bg-white`}
+        >
+          <Heart
+            className={`h-4 w-4 transition-colors ${wished ? "fill-rose-500 text-rose-500" : "text-neutral-600"}`}
+          />
+        </button>
       </Link>
 
       <div className="flex flex-1 flex-col gap-2 p-2.5 sm:p-3">
         <Link
           to="/store/$slug/product/$productId"
           params={{ slug, productId: p.id }}
-          className="line-clamp-2 text-[13px] font-semibold leading-snug text-neutral-900 sm:text-sm"
+          className="line-clamp-2 min-h-[2.4em] text-[13px] font-semibold leading-snug text-neutral-900 sm:text-sm"
         >
           {p.name}
         </Link>
