@@ -67,6 +67,7 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
   const [step, setStep] = useState<1 | 2>(1);
   const [images, setImages] = useState<string[]>([]); // storage paths
   const [uploading, setUploading] = useState(false);
+  const [uploadErrors, setUploadErrors] = useState<{ name: string; reason: string }[]>([]);
   const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState(0);
@@ -89,18 +90,41 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
       toast.error(`Maximum ${MAX_IMAGES} images`);
       return;
     }
-    const toUpload = Array.from(files).slice(0, remaining);
+    const toProcess = Array.from(files);
+    const overflow = toProcess.length - remaining;
+    const toUpload = toProcess.slice(0, remaining);
     setUploading(true);
+    const errors: { name: string; reason: string }[] = [];
+    if (overflow > 0) {
+      errors.push({ name: "—", reason: `${overflow} extra file(s) skipped (max ${MAX_IMAGES} images).` });
+    }
     const uploaded: string[] = [];
     try {
       for (const raw of toUpload) {
-        if (!raw.type.startsWith("image/")) {
-          toast.error(`${raw.name}: not an image`);
+        if (!ALLOWED_TYPES.includes(raw.type)) {
+          errors.push({ name: raw.name, reason: `Unsupported type (${raw.type || "unknown"}). Use JPG, PNG, WebP, or GIF.` });
+          continue;
+        }
+        if (raw.size > MAX_BYTES) {
+          errors.push({ name: raw.name, reason: `Too large before compression (${(raw.size / 1024 / 1024).toFixed(1)} MB, max 5 MB).` });
+          continue;
+        }
+        const dims = await readDimensions(raw);
+        if (!dims) {
+          errors.push({ name: raw.name, reason: "Could not read image — file may be corrupted." });
+          continue;
+        }
+        if (dims.w < MIN_DIM || dims.h < MIN_DIM) {
+          errors.push({ name: raw.name, reason: `Too small (${dims.w}×${dims.h}px, min ${MIN_DIM}×${MIN_DIM}px).` });
+          continue;
+        }
+        if (dims.w > MAX_DIM || dims.h > MAX_DIM) {
+          errors.push({ name: raw.name, reason: `Too large (${dims.w}×${dims.h}px, max ${MAX_DIM}×${MAX_DIM}px).` });
           continue;
         }
         const file = await compressImage(raw);
         if (file.size > MAX_BYTES) {
-          toast.error(`${raw.name}: too large (max 5 MB)`);
+          errors.push({ name: raw.name, reason: `Still too large after compression (${(file.size / 1024 / 1024).toFixed(1)} MB).` });
           continue;
         }
         const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "jpg";
@@ -109,10 +133,16 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
           upsert: false,
           contentType: file.type,
         });
-        if (error) toast.error(error.message || "Upload failed");
+        if (error) errors.push({ name: raw.name, reason: error.message || "Upload failed" });
         else uploaded.push(path);
       }
       if (uploaded.length) setImages((prev) => [...prev, ...uploaded]);
+      setUploadErrors(errors);
+      if (errors.length && !uploaded.length) {
+        toast.error("No images were added — see errors below.");
+      } else if (errors.length) {
+        toast.warning(`${uploaded.length} added, ${errors.length} skipped.`);
+      }
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
