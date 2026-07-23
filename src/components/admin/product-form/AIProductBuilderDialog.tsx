@@ -521,6 +521,85 @@ Anything else`}
   );
 }
 
+type EssProps = {
+  price: string; setPrice: (v: string) => void;
+  oldPrice: string; setOldPrice: (v: string) => void;
+  costPrice: string; setCostPrice: (v: string) => void;
+  stock: string; setStock: (v: string) => void;
+  lowStock: string; setLowStock: (v: string) => void;
+  sku: string; setSku: (v: string) => void;
+  brand: string; setBrand: (v: string) => void;
+  weight: string; setWeight: (v: string) => void;
+};
+
+function StepEssentials(p: EssProps) {
+  const priceNum = Number(p.price);
+  const oldNum = Number(p.oldPrice);
+  const showDiscount = priceNum > 0 && oldNum > priceNum;
+  const discountPct = showDiscount ? Math.round(((oldNum - priceNum) / oldNum) * 100) : 0;
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Essentials — AI can't reliably guess your price or stock. Fill these in for accuracy. <span className="text-destructive">*</span> required.
+      </p>
+
+      <div className="rounded-xl border bg-muted/30 p-3">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pricing (BDT)</div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Selling price <span className="text-destructive">*</span></Label>
+            <Input type="number" min={0} inputMode="decimal" placeholder="e.g. 499" value={p.price} onChange={(e) => p.setPrice(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Old / compare-at price</Label>
+            <Input type="number" min={0} inputMode="decimal" placeholder="e.g. 699" value={p.oldPrice} onChange={(e) => p.setOldPrice(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Cost price <span className="text-muted-foreground">(profit calc)</span></Label>
+            <Input type="number" min={0} inputMode="decimal" placeholder="e.g. 300" value={p.costPrice} onChange={(e) => p.setCostPrice(e.target.value)} />
+          </div>
+        </div>
+        {showDiscount && (
+          <p className="mt-2 text-xs text-emerald-600">Discount: {discountPct}% off</p>
+        )}
+      </div>
+
+      <div className="rounded-xl border bg-muted/30 p-3">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Inventory</div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Stock quantity</Label>
+            <Input type="number" min={0} inputMode="numeric" placeholder="e.g. 50" value={p.stock} onChange={(e) => p.setStock(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Low-stock alert at</Label>
+            <Input type="number" min={0} inputMode="numeric" placeholder="e.g. 5" value={p.lowStock} onChange={(e) => p.setLowStock(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">SKU / Product code</Label>
+            <Input placeholder="e.g. SHRT-001" value={p.sku} onChange={(e) => p.setSku(e.target.value)} />
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border bg-muted/30 p-3">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Extras</div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Brand</Label>
+            <Input placeholder="e.g. Orzen" value={p.brand} onChange={(e) => p.setBrand(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Weight (grams) <span className="text-muted-foreground">(shipping)</span></Label>
+            <Input type="number" min={0} inputMode="decimal" placeholder="e.g. 250" value={p.weight} onChange={(e) => p.setWeight(e.target.value)} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function ProgressPanel({ stage }: { stage: number }) {
   return (
     <div className="space-y-3 py-6">
