@@ -2,6 +2,7 @@
 export const FEATURE_KEYS = [
   "ai_agent",
   "ai_messenger",
+  "ai_product_builder",
   "pixel",
   "courier",
   "inventory",
@@ -22,6 +23,7 @@ export type FeatureKey = (typeof FEATURE_KEYS)[number];
 export const FEATURE_LABELS: Record<FeatureKey, string> = {
   ai_agent: "AI Sales Agent",
   ai_messenger: "AI Messenger",
+  ai_product_builder: "AI Product Builder",
   pixel: "Facebook Pixel & Tracking",
   courier: "Courier Integration",
   inventory: "Inventory Management",
