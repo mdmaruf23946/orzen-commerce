@@ -527,16 +527,27 @@ function UpgradeCTA() {
 }
 
 // Turn an AI draft into the same shape ProductDialog expects for `editing`.
-function buildEditingLike(res: {
-  draft: ProductDraft;
-  matchedCategoryId: string | null;
-  matchedSubcategoryId: string | null;
-  imagePaths: string[];
-}) {
+function buildEditingLike(
+  res: {
+    draft: ProductDraft;
+    matchedCategoryId: string | null;
+    matchedSubcategoryId: string | null;
+    imagePaths: string[];
+  },
+  extras: { youtubeUrl?: string; facebookUrl?: string } = {},
+) {
   const { draft, matchedCategoryId, matchedSubcategoryId, imagePaths } = res;
   const primaryIdx = Math.min(Math.max(draft.primary_image_index ?? 0, 0), Math.max(0, imagePaths.length - 1));
   const primary = imagePaths[primaryIdx] ?? imagePaths[0] ?? null;
   const gallery = imagePaths.filter((p) => p !== primary);
+
+  const videos: { url: string; provider: "youtube" | "facebook"; primary?: boolean }[] = [];
+  const yt = extras.youtubeUrl?.trim();
+  const fb = extras.facebookUrl?.trim();
+  if (yt) videos.push({ url: yt, provider: "youtube" });
+  if (fb) videos.push({ url: fb, provider: "facebook" });
+  if (videos.length > 0) videos[0].primary = true;
+  const primaryVideoUrl = videos[0]?.url ?? null;
 
   const meta: Record<string, any> = {
     product_type: "physical",
