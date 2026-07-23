@@ -120,6 +120,13 @@ function StoreHome() {
     [products],
   );
 
+  const newArrivals = useMemo(
+    () => [...products].slice(0, 12),
+    [products],
+  );
+
+
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return products.filter((p) => {
@@ -219,6 +226,19 @@ function StoreHome() {
           }}
         >
           <ProductGrid slug={slug} products={bestSelling} />
+        </Section>
+      )}
+
+      {newArrivals.length > 0 && (
+        <Section
+          title="New Arrivals"
+          icon={<Sparkles className="h-4 w-4 text-sky-500" />}
+          onViewAll={() => {
+            selectMain(null, null);
+            scrollToAll();
+          }}
+        >
+          <ProductGrid slug={slug} products={newArrivals} />
         </Section>
       )}
 

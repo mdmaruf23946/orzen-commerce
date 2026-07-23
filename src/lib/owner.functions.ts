@@ -1035,6 +1035,57 @@ export const updateStoreTemplate = createServerFn({ method: "POST" })
     return updated;
   });
 
+// Apply the current global template to existing stores.
+// Modes:
+//  - "missing-only": seed only stores with zero categories/products/banners
+//  - "reset":        wipe categories/products/banners on every store and reseed
+export const applyTemplateToAllStores = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ mode: z.enum(["missing-only", "reset"]) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { fetchTemplate, templateStoreFields, seedStoreFromTemplate, wipeStoreChildren } =
+      await import("@/lib/store-template");
+
+    const tpl = await fetchTemplate(supabaseAdmin);
+    if (!tpl) throw new Error("No template configured");
+
+    const { data: stores, error } = await supabaseAdmin
+      .from("stores")
+      .select("id");
+    if (error) throw new Error(error.message);
+
+    let updated = 0;
+    let skipped = 0;
+    for (const s of stores ?? []) {
+      const sid = (s as any).id as string;
+      if (data.mode === "missing-only") {
+        const [{ count: pCount }, { count: cCount }, { count: bCount }] = await Promise.all([
+          supabaseAdmin.from("products").select("id", { count: "exact", head: true }).eq("store_id", sid),
+          supabaseAdmin.from("categories").select("id", { count: "exact", head: true }).eq("store_id", sid),
+          supabaseAdmin.from("banners").select("id", { count: "exact", head: true }).eq("store_id", sid),
+        ]);
+        if ((pCount ?? 0) > 0 || (cCount ?? 0) > 0 || (bCount ?? 0) > 0) {
+          skipped++;
+          continue;
+        }
+      } else {
+        await wipeStoreChildren(supabaseAdmin, sid);
+        await supabaseAdmin.from("stores").update(templateStoreFields(tpl)).eq("id", sid);
+      }
+      try {
+        await seedStoreFromTemplate(supabaseAdmin, sid, tpl);
+        updated++;
+      } catch {
+        skipped++;
+      }
+    }
+    return { ok: true, updated, skipped, total: (stores ?? []).length };
+  });
+
 // ============================================================
 // Customer accounts (cross-store) — Winner Admin stats
 // ============================================================
