@@ -818,9 +818,9 @@ export function ProductDialog({
   return (
     <>
       <Dialog open onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-h-[92vh] max-w-4xl overflow-hidden p-0">
-          <DialogHeader className="border-b p-4">
-            <DialogTitle className="text-base font-semibold">
+        <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-full flex-col overflow-hidden rounded-none p-0 sm:h-auto sm:max-h-[92vh] sm:w-full sm:max-w-4xl sm:rounded-lg">
+          <DialogHeader className="shrink-0 border-b p-3 pr-10 sm:p-4 sm:pr-12">
+            <DialogTitle className="truncate text-sm font-semibold sm:text-base">
               {editing ? "Edit product" : "New product"}
             </DialogTitle>
             {labels.length > 0 && (
@@ -960,16 +960,16 @@ function WizardForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex max-h-[calc(92vh-8rem)] flex-col">
-      <div className="border-b bg-muted/20 px-4 py-3">
-        <div className="mb-2 flex items-center justify-between text-xs">
-          <span className="font-medium">
-            Step {step + 1} of {total} — <span className="text-primary">{current.label}</span>
+    <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
+      <div className="shrink-0 border-b bg-muted/20 px-3 py-2.5 sm:px-4 sm:py-3">
+        <div className="mb-1.5 flex items-center justify-between text-[11px] sm:text-xs">
+          <span className="truncate pr-2 font-medium">
+            Step {step + 1}/{total} — <span className="text-primary">{current.label}</span>
           </span>
-          <span className="text-muted-foreground">{progress}%</span>
+          <span className="shrink-0 text-muted-foreground">{progress}%</span>
         </div>
         <Progress value={progress} className="h-1.5" />
-        <div className="mt-3 -mx-1 flex gap-1 overflow-x-auto pb-1">
+        <div className="mt-2 -mx-1 flex gap-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {tabs.map((t, i) => {
             const done = i < step;
             const active = i === step;
@@ -978,7 +978,7 @@ function WizardForm({
                 key={t.id}
                 type="button"
                 onClick={() => setStep(i)}
-                className={`shrink-0 rounded-full border px-3 py-1 text-[11px] transition-colors ${
+                className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] transition-colors sm:px-3 sm:text-[11px] ${
                   active
                     ? "border-primary bg-primary text-primary-foreground"
                     : done
@@ -994,32 +994,33 @@ function WizardForm({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
         <div key={current.id}>{current.content}</div>
       </div>
 
-      <div className="flex items-center justify-between gap-2 border-t bg-muted/30 p-3 sm:p-4">
-        <p className="hidden text-xs text-muted-foreground sm:block">{footerInfo}</p>
-        <div className="flex flex-1 gap-2 sm:flex-none">
+      <div className="shrink-0 border-t bg-muted/30 p-2.5 sm:p-4">
+        <p className="mb-2 hidden text-xs text-muted-foreground sm:block">{footerInfo}</p>
+        <div className="flex items-center gap-2">
           <Button type="button" variant="ghost" onClick={onCancel} className="hidden sm:inline-flex">
             Cancel
           </Button>
           <Button
             type="button"
             variant="outline"
+            size="sm"
             onClick={goBack}
             disabled={step === 0}
-            className="flex-1 sm:flex-none"
+            className="flex-1 sm:flex-none sm:size-default"
           >
             <ChevronLeft className="mr-1 h-4 w-4" />
             Back
           </Button>
           {isLast ? (
-            <Button type="submit" disabled={saving} className="flex-1 sm:flex-none">
-              {saving ? "Saving…" : editing ? "Save changes" : "Create product"}
+            <Button type="submit" size="sm" disabled={saving} className="flex-1 sm:flex-none sm:size-default">
+              {saving ? "Saving…" : editing ? "Save" : "Create"}
             </Button>
           ) : (
-            <Button type="button" onClick={goNext} className="flex-1 sm:flex-none">
+            <Button type="button" size="sm" onClick={goNext} className="flex-1 sm:flex-none sm:size-default">
               Next
               <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
