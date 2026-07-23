@@ -191,7 +191,7 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
 
   // Once we have a draft, hand off to the existing ProductDialog prefilled.
   if (draftResult) {
-    const editingLike = buildEditingLike(draftResult);
+    const editingLike = buildEditingLike(draftResult, { youtubeUrl, facebookUrl });
     return (
       <ProductDialog
         storeId={storeId}
