@@ -818,9 +818,9 @@ export function ProductDialog({
   return (
     <>
       <Dialog open onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-h-[92vh] max-w-4xl overflow-hidden p-0">
-          <DialogHeader className="border-b p-4">
-            <DialogTitle className="text-base font-semibold">
+        <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-full flex-col overflow-hidden rounded-none p-0 sm:h-auto sm:max-h-[92vh] sm:w-full sm:max-w-4xl sm:rounded-lg">
+          <DialogHeader className="shrink-0 border-b p-3 pr-10 sm:p-4 sm:pr-12">
+            <DialogTitle className="truncate text-sm font-semibold sm:text-base">
               {editing ? "Edit product" : "New product"}
             </DialogTitle>
             {labels.length > 0 && (
