@@ -10,23 +10,18 @@ import {
   deleteProduct,
   getMyStore,
   listMyCategories,
-  upsertCategory,
 } from "@/lib/admin.functions";
 import { bulkUpdateProducts, bulkDeleteProducts } from "@/lib/business.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ImageUploader } from "@/components/admin/ImageUploader";
-import { GalleryUploader } from "@/components/admin/GalleryUploader";
+import { ProductDialog } from "@/components/admin/product-form/ProductDialog";
 
 export const Route = createFileRoute("/_authenticated/admin/products")({
   component: ProductsPage,
 });
 
 type Product = Awaited<ReturnType<typeof listMyProducts>>[number];
-type Category = Awaited<ReturnType<typeof listMyCategories>>[number];
+
 
 function ProductsPage() {
   const list = useServerFn(listMyProducts);
