@@ -147,22 +147,7 @@ function StoreHome() {
     setPageSize(PAGE_SIZE);
   }, [activeMainId, activeSubId, query]);
 
-  // Search integration: exact match on a subcategory auto-activates it
-  useEffect(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return;
-    const hit = categories.find((c: any) => c.parent_id && c.name.toLowerCase() === q);
-    if (hit) {
-      const parent = (hit as any).parent_id as string;
-      if (activeMainId !== parent) selectMain(parent, "header");
-      if (activeSubId !== hit.id) selectSub(hit.id);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, categories]);
-
-  function scrollToAll() {
-    document.getElementById("all-products")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
+  const isFiltering = !!activeMainId || !!activeSubId || query.trim().length > 0;
 
   return (
     <div className="space-y-8">
@@ -172,71 +157,53 @@ function StoreHome() {
           counts={countsByMain}
           totalCount={products.length}
           activeMainId={activeMainId}
-          onSelect={(id) => {
-            selectMain(id, "header");
-            scrollToAll();
-          }}
+          onSelect={(id) => selectMain(id, "header")}
         />
       )}
 
       {banners.length > 0 && <BannerCarousel banners={banners} />}
 
-      {source === "header" && activeMainId && activeSubs.length > 0 && (
+      {!isFiltering && source === "header" && activeMainId && activeSubs.length > 0 && (
         <SubcategoryBar
           subs={activeSubs}
           activeSubId={activeSubId}
-          onSelect={(id) => {
-            selectSub(id);
-            scrollToAll();
-          }}
+          onSelect={(id) => selectSub(id)}
         />
       )}
 
-      {categories.length > 0 && (
+      {!isFiltering && categories.length > 0 && (
         <CategoryStrip
           categories={mainCategories as any}
           active={activeMainId}
-          onSelect={(id) => {
-            selectMain(id, "icon");
-            scrollToAll();
-          }}
+          onSelect={(id) => selectMain(id, "icon")}
         />
       )}
 
-      {featured.length > 0 && (
+      {!isFiltering && featured.length > 0 && (
         <Section
           title="Featured Products"
           icon={<Sparkles className="h-4 w-4 text-amber-500" />}
-          onViewAll={() => {
-            selectMain(null, null);
-            scrollToAll();
-          }}
+          onViewAll={() => selectMain(null, null)}
         >
           <ProductGrid slug={slug} products={featured} />
         </Section>
       )}
 
-      {bestSelling.length > 0 && (
+      {!isFiltering && bestSelling.length > 0 && (
         <Section
           title="Best Selling"
           icon={<Flame className="h-4 w-4 text-rose-500" />}
-          onViewAll={() => {
-            selectMain(null, null);
-            scrollToAll();
-          }}
+          onViewAll={() => selectMain(null, null)}
         >
           <ProductGrid slug={slug} products={bestSelling} />
         </Section>
       )}
 
-      {newArrivals.length > 0 && (
+      {!isFiltering && newArrivals.length > 0 && (
         <Section
           title="New Arrivals"
           icon={<Sparkles className="h-4 w-4 text-sky-500" />}
-          onViewAll={() => {
-            selectMain(null, null);
-            scrollToAll();
-          }}
+          onViewAll={() => selectMain(null, null)}
         >
           <ProductGrid slug={slug} products={newArrivals} />
         </Section>
@@ -246,7 +213,7 @@ function StoreHome() {
         <div className="flex items-center gap-2">
           <Grid3x3 className="h-4 w-4 text-neutral-500" />
           <h2 className="text-lg font-bold tracking-tight text-neutral-900 sm:text-xl">
-            All Products
+            {isFiltering ? "Results" : "All Products"}
           </h2>
           <span className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-600">
             {filtered.length}
@@ -254,9 +221,17 @@ function StoreHome() {
         </div>
 
         {filtered.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-10 text-center text-sm text-neutral-500">
-            {products.length === 0 ? "No products yet." : "No products match your search."}
-          </div>
+          isFiltering ? (
+            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-neutral-200 bg-white p-10 text-center">
+              <SearchX className="h-8 w-8 text-neutral-400" />
+              <p className="text-sm font-semibold text-neutral-800">No products found.</p>
+              <p className="text-xs text-neutral-500">Try another keyword or category.</p>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-10 text-center text-sm text-neutral-500">
+              No products yet.
+            </div>
+          )
         ) : (
           <>
             <ProductGrid slug={slug} products={filtered.slice(0, pageSize)} />
