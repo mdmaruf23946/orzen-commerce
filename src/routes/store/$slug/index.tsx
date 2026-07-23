@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, Flame, Grid3x3, ChevronRight } from "lucide-react";
+import { Sparkles, Flame, Grid3x3, ChevronRight, SearchX } from "lucide-react";
 import {
   listStoreBanners,
   listStoreProducts,
