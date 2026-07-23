@@ -859,6 +859,55 @@ function ProductEditor({
   );
 }
 
+function DemoStoreManager() {
+  const apply = useServerFn(applyTemplateToAllStores);
+  const [busy, setBusy] = useState<null | "missing-only" | "reset">(null);
+
+  async function run(mode: "missing-only" | "reset") {
+    if (mode === "reset" && !window.confirm("Reset ALL existing stores to the current template? This wipes their categories, products and banners.")) return;
+    setBusy(mode);
+    try {
+      const res: any = await apply({ data: { mode } });
+      toast.success(`Applied to ${res.updated} store(s). Skipped: ${res.skipped}.`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div className="rounded-xl border bg-card p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold">Demo Store Manager</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            New stores automatically use the current template. Push it to existing stores below.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={busy !== null}
+            onClick={() => run("missing-only")}
+          >
+            {busy === "missing-only" ? "Seeding…" : "Seed empty stores"}
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={busy !== null}
+            onClick={() => run("reset")}
+          >
+            {busy === "reset" ? "Resetting…" : "Reset all stores"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
