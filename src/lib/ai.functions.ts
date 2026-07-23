@@ -167,13 +167,39 @@ export const getStoreAgentPublic = createServerFn({ method: "GET" })
     const { data: row } = await sb.rpc("get_public_store_by_slug", { _slug: data.slug });
     const store = row as { id: string } | null;
     if (!store) return null;
+
+    // Plan-gate the storefront AI icon: only show for stores whose current
+    // subscription package includes the `ai_agent` feature (or trial).
+    const admin = adminClient();
+    const { data: planRow } = await admin
+      .from("stores")
+      .select("subscription_status, subscription_packages(is_trial, features)")
+      .eq("id", store.id)
+      .maybeSingle();
+    const status = (planRow as any)?.subscription_status ?? "active";
+    if (status === "expired" || status === "suspended" || status === "cancelled") return null;
+    const pkg = (planRow as any)?.subscription_packages;
+    const planAllows = !!pkg && (pkg.is_trial === true || pkg.features?.ai_agent === true);
+    if (!planAllows) return null;
+
     const { data: agent } = await sb
       .from("store_ai_agents")
       .select("enabled,agent_name,welcome_message,language,style,use_emoji,human_like")
       .eq("store_id", store.id)
       .maybeSingle();
-    if (!agent || !agent.enabled) return null;
-    return { storeId: store.id, ...agent };
+    // If owner explicitly disabled the agent, hide the icon.
+    if (agent && agent.enabled === false) return null;
+    // Plan allows and no row (or enabled) → show icon with sensible defaults.
+    return {
+      storeId: store.id,
+      enabled: true,
+      agent_name: agent?.agent_name || "Sales Assistant",
+      welcome_message: agent?.welcome_message || "Hi! How can I help you today?",
+      language: agent?.language ?? "both",
+      style: agent?.style ?? "Friendly and helpful",
+      use_emoji: agent?.use_emoji ?? true,
+      human_like: agent?.human_like ?? true,
+    };
   });
 
 // ---------- Messenger ----------
