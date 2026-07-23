@@ -298,12 +298,16 @@ function StepPill({ n, active, done, label }: { n: number; active: boolean; done
 function StepImages({
   images,
   uploading,
+  errors,
+  onDismissErrors,
   onPick,
   onCamera,
   onRemove,
 }: {
   images: string[];
   uploading: boolean;
+  errors: { name: string; reason: string }[];
+  onDismissErrors: () => void;
   onPick: () => void;
   onCamera: () => void;
   onRemove: (i: number) => void;
@@ -311,7 +315,7 @@ function StepImages({
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
-        Add up to {MAX_IMAGES} product photos. Images are automatically compressed and optimized.
+        Add up to {MAX_IMAGES} product photos. JPG, PNG, WebP, or GIF · min {MIN_DIM}×{MIN_DIM}px · max 5 MB each.
       </p>
       <div className="flex flex-wrap gap-2">
         {images.map((path, idx) => (
@@ -352,8 +356,32 @@ function StepImages({
       </div>
       {uploading && (
         <p className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Uploading…
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Validating and uploading…
         </p>
+      )}
+      {errors.length > 0 && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs">
+          <div className="mb-1 flex items-center justify-between">
+            <span className="font-medium text-destructive">
+              {errors.length} image{errors.length === 1 ? "" : "s"} skipped
+            </span>
+            <button
+              type="button"
+              onClick={onDismissErrors}
+              className="text-muted-foreground hover:text-foreground"
+              aria-label="Dismiss"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <ul className="space-y-1">
+            {errors.map((e, i) => (
+              <li key={i} className="text-muted-foreground">
+                <span className="font-medium text-foreground">{e.name}:</span> {e.reason}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );
