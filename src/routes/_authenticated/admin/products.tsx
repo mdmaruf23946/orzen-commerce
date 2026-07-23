@@ -38,6 +38,7 @@ function ProductsPage() {
   const { data: categories } = useQuery({ queryKey: ["admin", "categories"], queryFn: () => catsFn() });
   const [editing, setEditing] = useState<Product | null>(null);
   const [open, setOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState<"" | "delete" | "category" | "price" | "stock" | "status">("");
   const [bulkValue, setBulkValue] = useState<any>("");
