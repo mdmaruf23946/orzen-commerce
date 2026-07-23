@@ -618,7 +618,7 @@ function buildEditingLike(
     status: "draft",
     primary_image_url: primary,
     gallery,
-    video_url: null,
+    video_url: primaryVideoUrl,
     category_id: matchedCategoryId,
     warranty: null,
     return_policy: null,
