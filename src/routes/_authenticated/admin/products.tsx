@@ -180,6 +180,21 @@ function ProductsPage() {
           }}
         />
       )}
+
+      {aiOpen && store && (
+        <AIProductBuilderDialog
+          storeId={store.id}
+          categories={categories ?? []}
+          productDefaults={(store as any).product_defaults ?? null}
+          onClose={() => setAiOpen(false)}
+          onSave={async (data) => {
+            await save({ data });
+            qc.invalidateQueries({ queryKey: ["admin", "products"] });
+            toast.success("Saved");
+            setAiOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
