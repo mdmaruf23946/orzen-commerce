@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS products_meta_gin ON public.products USING gin (meta jsonb_path_ops);
