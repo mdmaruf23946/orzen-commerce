@@ -656,7 +656,7 @@ function buildEditingLike(
     sku?: string; brand?: string; weight_g?: number;
   } = {},
 ) {
-  void 0;
+  const pick = <T,>(user: T | undefined, ai: T): T => (user !== undefined && user !== null && !(typeof user === "number" && Number.isNaN(user)) ? user : ai);
   const { draft, matchedCategoryId, matchedSubcategoryId, imagePaths } = res;
   const primaryIdx = Math.min(Math.max(draft.primary_image_index ?? 0, 0), Math.max(0, imagePaths.length - 1));
   const primary = imagePaths[primaryIdx] ?? imagePaths[0] ?? null;
