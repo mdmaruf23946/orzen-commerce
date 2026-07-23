@@ -683,7 +683,7 @@ function buildEditingLike(
     },
     shipping: {
       type: "free",
-      weight: draft.suggested_weight_g ?? undefined,
+      weight: pick(essentials.weight_g, draft.suggested_weight_g ?? undefined),
       l: draft.dimensions_cm?.l ?? undefined,
       w: draft.dimensions_cm?.w ?? undefined,
       h: draft.dimensions_cm?.h ?? undefined,
