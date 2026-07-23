@@ -49,7 +49,8 @@ const STAGES = [
   "Generating product…",
   "Creating variants…",
   "Optimizing SEO…",
-  "Done",
+  "Finalizing product…",
+  "Opening preview…",
 ];
 
 type Props = {
@@ -71,6 +72,7 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
   const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState(0);
+  const [generationError, setGenerationError] = useState<string | null>(null);
   const [draftResult, setDraftResult] = useState<{
     draft: ProductDraft;
     matchedCategoryId: string | null;
@@ -159,18 +161,21 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
       toast.error("Add at least one image or a description");
       return;
     }
+    setGenerationError(null);
     setBusy(true);
     setStage(0);
     // Simulated staged progress while awaiting the model.
     stageTimer.current = setInterval(() => {
       setStage((s) => (s < STAGES.length - 2 ? s + 1 : s));
-    }, 1400);
+    }, 2200);
     try {
       const res = await gen({ data: { imagePaths: images, description } });
       setStage(STAGES.length - 1);
       setDraftResult(res as any);
     } catch (e) {
-      toast.error((e as Error).message || "Generation failed");
+      const message = (e as Error).message || "Generation failed. Please try again.";
+      setGenerationError(message);
+      toast.error(message);
     } finally {
       if (stageTimer.current) clearInterval(stageTimer.current);
       stageTimer.current = null;
@@ -214,6 +219,11 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
           <ProgressPanel stage={stage} />
         ) : (
           <>
+            {generationError && (
+              <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                {generationError}
+              </div>
+            )}
             <StepIndicator step={step} />
             {step === 1 ? (
               <StepImages
@@ -432,6 +442,9 @@ function ProgressPanel({ stage }: { stage: number }) {
         <Loader2 className="h-5 w-5 animate-spin text-primary" />
         <span className="font-medium">{STAGES[stage] ?? STAGES[STAGES.length - 1]}</span>
       </div>
+      <p className="text-xs text-muted-foreground">
+        AI generation can take 30–60 seconds with product photos. Keep this window open while the preview is prepared.
+      </p>
       <ol className="space-y-1.5 text-xs">
         {STAGES.map((s, i) => (
           <li key={s} className={`flex items-center gap-2 ${i < stage ? "text-emerald-600" : i === stage ? "text-foreground" : "text-muted-foreground"}`}>
