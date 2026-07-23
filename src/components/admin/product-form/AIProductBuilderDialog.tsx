@@ -69,13 +69,22 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
   const { allowed, loading: gateLoading } = useFeature("ai_product_builder");
   const gen = useServerFn(generateProductDraft);
 
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [images, setImages] = useState<string[]>([]); // storage paths
   const [uploading, setUploading] = useState(false);
   const [uploadErrors, setUploadErrors] = useState<{ name: string; reason: string }[]>([]);
   const [description, setDescription] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [facebookUrl, setFacebookUrl] = useState("");
+  // Essentials (user-provided, overrides AI guesses when set)
+  const [essPrice, setEssPrice] = useState<string>("");
+  const [essOldPrice, setEssOldPrice] = useState<string>("");
+  const [essCostPrice, setEssCostPrice] = useState<string>("");
+  const [essStock, setEssStock] = useState<string>("");
+  const [essLowStock, setEssLowStock] = useState<string>("5");
+  const [essSku, setEssSku] = useState<string>("");
+  const [essBrand, setEssBrand] = useState<string>("");
+  const [essWeight, setEssWeight] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState(0);
   const [generationError, setGenerationError] = useState<string | null>(null);
@@ -191,7 +200,17 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
 
   // Once we have a draft, hand off to the existing ProductDialog prefilled.
   if (draftResult) {
-    const editingLike = buildEditingLike(draftResult, { youtubeUrl, facebookUrl });
+    const essentials = {
+      price: essPrice ? Number(essPrice) : undefined,
+      old_price: essOldPrice ? Number(essOldPrice) : undefined,
+      cost_price: essCostPrice ? Number(essCostPrice) : undefined,
+      stock: essStock ? Number(essStock) : undefined,
+      low_stock_threshold: essLowStock ? Number(essLowStock) : undefined,
+      sku: essSku.trim() || undefined,
+      brand: essBrand.trim() || undefined,
+      weight_g: essWeight ? Number(essWeight) : undefined,
+    };
+    const editingLike = buildEditingLike(draftResult, { youtubeUrl, facebookUrl }, essentials);
     return (
       <ProductDialog
         storeId={storeId}
@@ -241,6 +260,17 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
                 onCamera={() => cameraRef.current?.click()}
                 onRemove={removeImage}
               />
+            ) : step === 2 ? (
+              <StepEssentials
+                price={essPrice} setPrice={setEssPrice}
+                oldPrice={essOldPrice} setOldPrice={setEssOldPrice}
+                costPrice={essCostPrice} setCostPrice={setEssCostPrice}
+                stock={essStock} setStock={setEssStock}
+                lowStock={essLowStock} setLowStock={setEssLowStock}
+                sku={essSku} setSku={setEssSku}
+                brand={essBrand} setBrand={setEssBrand}
+                weight={essWeight} setWeight={setEssWeight}
+              />
             ) : (
               <StepDescription
                 description={description}
@@ -270,8 +300,8 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
             />
 
             <div className="mt-4 flex items-center justify-between gap-2">
-              {step === 2 ? (
-                <Button variant="ghost" onClick={() => setStep(1)}>
+              {step > 1 ? (
+                <Button variant="ghost" onClick={() => setStep((s) => (s === 3 ? 2 : 1))}>
                   <ArrowLeft className="mr-1 h-4 w-4" /> Back
                 </Button>
               ) : (
@@ -279,6 +309,10 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
               )}
               {step === 1 ? (
                 <Button onClick={() => setStep(2)} disabled={images.length === 0}>
+                  Continue <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+              ) : step === 2 ? (
+                <Button onClick={() => setStep(3)} disabled={!essPrice || Number(essPrice) <= 0}>
                   Continue <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
               ) : (
@@ -294,12 +328,14 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
   );
 }
 
-function StepIndicator({ step }: { step: 1 | 2 }) {
+function StepIndicator({ step }: { step: 1 | 2 | 3 }) {
   return (
-    <div className="mb-4 flex items-center gap-3 text-xs">
-      <StepPill n={1} active={step === 1} done={step > 1} label="Upload images" />
+    <div className="mb-4 flex items-center gap-2 text-xs">
+      <StepPill n={1} active={step === 1} done={step > 1} label="Images" />
       <div className="h-px flex-1 bg-border" />
-      <StepPill n={2} active={step === 2} done={false} label="Describe product" />
+      <StepPill n={2} active={step === 2} done={step > 2} label="Essentials" />
+      <div className="h-px flex-1 bg-border" />
+      <StepPill n={3} active={step === 3} done={false} label="Describe" />
     </div>
   );
 }
@@ -485,6 +521,85 @@ Anything else`}
   );
 }
 
+type EssProps = {
+  price: string; setPrice: (v: string) => void;
+  oldPrice: string; setOldPrice: (v: string) => void;
+  costPrice: string; setCostPrice: (v: string) => void;
+  stock: string; setStock: (v: string) => void;
+  lowStock: string; setLowStock: (v: string) => void;
+  sku: string; setSku: (v: string) => void;
+  brand: string; setBrand: (v: string) => void;
+  weight: string; setWeight: (v: string) => void;
+};
+
+function StepEssentials(p: EssProps) {
+  const priceNum = Number(p.price);
+  const oldNum = Number(p.oldPrice);
+  const showDiscount = priceNum > 0 && oldNum > priceNum;
+  const discountPct = showDiscount ? Math.round(((oldNum - priceNum) / oldNum) * 100) : 0;
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Essentials — AI can't reliably guess your price or stock. Fill these in for accuracy. <span className="text-destructive">*</span> required.
+      </p>
+
+      <div className="rounded-xl border bg-muted/30 p-3">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pricing (BDT)</div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Selling price <span className="text-destructive">*</span></Label>
+            <Input type="number" min={0} inputMode="decimal" placeholder="e.g. 499" value={p.price} onChange={(e) => p.setPrice(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Old / compare-at price</Label>
+            <Input type="number" min={0} inputMode="decimal" placeholder="e.g. 699" value={p.oldPrice} onChange={(e) => p.setOldPrice(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Cost price <span className="text-muted-foreground">(profit calc)</span></Label>
+            <Input type="number" min={0} inputMode="decimal" placeholder="e.g. 300" value={p.costPrice} onChange={(e) => p.setCostPrice(e.target.value)} />
+          </div>
+        </div>
+        {showDiscount && (
+          <p className="mt-2 text-xs text-emerald-600">Discount: {discountPct}% off</p>
+        )}
+      </div>
+
+      <div className="rounded-xl border bg-muted/30 p-3">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Inventory</div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Stock quantity</Label>
+            <Input type="number" min={0} inputMode="numeric" placeholder="e.g. 50" value={p.stock} onChange={(e) => p.setStock(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Low-stock alert at</Label>
+            <Input type="number" min={0} inputMode="numeric" placeholder="e.g. 5" value={p.lowStock} onChange={(e) => p.setLowStock(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">SKU / Product code</Label>
+            <Input placeholder="e.g. SHRT-001" value={p.sku} onChange={(e) => p.setSku(e.target.value)} />
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border bg-muted/30 p-3">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Extras</div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Brand</Label>
+            <Input placeholder="e.g. Orzen" value={p.brand} onChange={(e) => p.setBrand(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Weight (grams) <span className="text-muted-foreground">(shipping)</span></Label>
+            <Input type="number" min={0} inputMode="decimal" placeholder="e.g. 250" value={p.weight} onChange={(e) => p.setWeight(e.target.value)} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function ProgressPanel({ stage }: { stage: number }) {
   return (
     <div className="space-y-3 py-6">
@@ -535,7 +650,13 @@ function buildEditingLike(
     imagePaths: string[];
   },
   extras: { youtubeUrl?: string; facebookUrl?: string } = {},
+  essentials: {
+    price?: number; old_price?: number; cost_price?: number;
+    stock?: number; low_stock_threshold?: number;
+    sku?: string; brand?: string; weight_g?: number;
+  } = {},
 ) {
+  const pick = <T,>(user: T | undefined, ai: T): T => (user !== undefined && user !== null && !(typeof user === "number" && Number.isNaN(user)) ? user : ai);
   const { draft, matchedCategoryId, matchedSubcategoryId, imagePaths } = res;
   const primaryIdx = Math.min(Math.max(draft.primary_image_index ?? 0, 0), Math.max(0, imagePaths.length - 1));
   const primary = imagePaths[primaryIdx] ?? imagePaths[0] ?? null;
@@ -562,7 +683,7 @@ function buildEditingLike(
     },
     shipping: {
       type: "free",
-      weight: draft.suggested_weight_g ?? undefined,
+      weight: pick(essentials.weight_g, draft.suggested_weight_g ?? undefined),
       l: draft.dimensions_cm?.l ?? undefined,
       w: draft.dimensions_cm?.w ?? undefined,
       h: draft.dimensions_cm?.h ?? undefined,
@@ -607,14 +728,14 @@ function buildEditingLike(
     name: draft.name,
     short_description: draft.short_description,
     description: draft.long_description_html,
-    brand: draft.brand ?? "",
-    product_code: null,
-    price: draft.suggested_price ?? 0,
-    old_price: draft.suggested_old_price ?? null,
-    cost_price: 0,
-    sku: null,
-    low_stock_threshold: 5,
-    stock: 0,
+    brand: pick(essentials.brand, draft.brand ?? ""),
+    product_code: essentials.sku ?? null,
+    price: pick(essentials.price, draft.suggested_price ?? 0),
+    old_price: pick(essentials.old_price, draft.suggested_old_price ?? null),
+    cost_price: essentials.cost_price ?? 0,
+    sku: essentials.sku ?? null,
+    low_stock_threshold: essentials.low_stock_threshold ?? 5,
+    stock: essentials.stock ?? 0,
     status: "draft",
     primary_image_url: primary,
     gallery,
