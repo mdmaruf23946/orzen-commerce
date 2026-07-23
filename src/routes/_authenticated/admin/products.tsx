@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Sparkles } from "lucide-react";
 import {
   listMyProducts,
   upsertProduct,
@@ -15,6 +15,7 @@ import { bulkUpdateProducts, bulkDeleteProducts } from "@/lib/business.functions
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProductDialog } from "@/components/admin/product-form/ProductDialog";
+import { AIProductBuilderDialog } from "@/components/admin/product-form/AIProductBuilderDialog";
 
 export const Route = createFileRoute("/_authenticated/admin/products")({
   component: ProductsPage,
@@ -37,6 +38,7 @@ function ProductsPage() {
   const { data: categories } = useQuery({ queryKey: ["admin", "categories"], queryFn: () => catsFn() });
   const [editing, setEditing] = useState<Product | null>(null);
   const [open, setOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState<"" | "delete" | "category" | "price" | "stock" | "status">("");
   const [bulkValue, setBulkValue] = useState<any>("");
@@ -85,7 +87,13 @@ function ProductsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Products</h1>
-        <Button onClick={startNew}><Plus className="mr-1 h-4 w-4" />Add product</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setAiOpen(true)} className="gap-1.5">
+            <Sparkles className="h-4 w-4 text-amber-500" />
+            AI Builder
+          </Button>
+          <Button onClick={startNew}><Plus className="mr-1 h-4 w-4" />Add product</Button>
+        </div>
       </div>
 
       {selected.size > 0 && (
@@ -169,6 +177,21 @@ function ProductsPage() {
             qc.invalidateQueries({ queryKey: ["admin", "products"] });
             toast.success("Saved");
             setOpen(false);
+          }}
+        />
+      )}
+
+      {aiOpen && store && (
+        <AIProductBuilderDialog
+          storeId={store.id}
+          categories={categories ?? []}
+          productDefaults={(store as any).product_defaults ?? null}
+          onClose={() => setAiOpen(false)}
+          onSave={async (data) => {
+            await save({ data });
+            qc.invalidateQueries({ queryKey: ["admin", "products"] });
+            toast.success("Saved");
+            setAiOpen(false);
           }}
         />
       )}
