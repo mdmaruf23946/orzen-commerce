@@ -259,19 +259,36 @@ const productSchema = z.object({
   shipping_info: z.string().trim().max(2000).optional().nullable(),
   is_featured: z.boolean().optional().default(false),
   features: z.array(z.string().max(200)).max(30).optional().default([]),
-  specifications: z.array(z.object({ key: z.string().max(60), value: z.string().max(200) })).max(30).optional().default([]),
-  variants: z.array(z.object({
-    name: z.string().max(60),
-    price: z.number().nonnegative().optional().nullable(),
-    stock: z.number().int().min(0).optional().nullable(),
-    sku: z.string().max(60).optional().nullable(),
-  })).max(30).optional().default([]),
+  specifications: z.array(z.object({ key: z.string().max(60), value: z.string().max(200) })).max(60).optional().default([]),
+  variants: z.union([
+    z.array(z.object({
+      name: z.string().max(60),
+      price: z.number().nonnegative().optional().nullable(),
+      stock: z.number().int().min(0).optional().nullable(),
+      sku: z.string().max(60).optional().nullable(),
+    })).max(30),
+    z.object({
+      options: z.array(z.object({ name: z.string().max(60), values: z.array(z.string().max(60)).max(50) })).max(6),
+      items: z.array(z.object({
+        id: z.string().max(120),
+        options: z.record(z.string(), z.string().max(60)),
+        sku: z.string().max(60).optional().nullable(),
+        price: z.number().nonnegative().optional().nullable(),
+        discount: z.number().nonnegative().optional().nullable(),
+        stock: z.number().int().min(0).optional().nullable(),
+        barcode: z.string().max(60).optional().nullable(),
+        image: z.string().max(500).optional().nullable(),
+      })).max(500),
+    }),
+  ]).optional().default([]),
   delivery_charge: z.number().nonnegative().optional().nullable(),
   delivery_time_days: z.string().trim().max(60).optional().nullable(),
   rating: z.number().min(0).max(5).optional().nullable(),
   total_sold: z.number().int().min(0).optional().nullable(),
-  related_product_ids: z.array(z.string().uuid()).max(20).optional().default([]),
+  related_product_ids: z.array(z.string().uuid()).max(50).optional().default([]),
+  meta: z.record(z.string(), z.any()).optional().nullable(),
 });
+
 
 
 export const upsertProduct = createServerFn({ method: "POST" })
@@ -315,7 +332,9 @@ export const upsertProduct = createServerFn({ method: "POST" })
       rating: data.rating ?? null,
       total_sold: data.total_sold ?? null,
       related_product_ids: data.related_product_ids ?? [],
+      meta: data.meta ?? {},
     } as any;
+
 
 
     if (data.id) {
