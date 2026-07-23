@@ -413,19 +413,28 @@ function StepImages({
 function StepDescription({
   description,
   setDescription,
+  youtubeUrl,
+  setYoutubeUrl,
+  facebookUrl,
+  setFacebookUrl,
 }: {
   description: string;
   setDescription: (v: string) => void;
+  youtubeUrl: string;
+  setYoutubeUrl: (v: string) => void;
+  facebookUrl: string;
+  setFacebookUrl: (v: string) => void;
 }) {
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">
-        Tell the AI everything you know. The more detail you give, the better the result.
-      </p>
-      <Textarea
-        rows={12}
-        maxLength={MAX_DESC}
-        placeholder={`Describe your product in as much detail as possible.
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground">
+          Tell the AI everything you know. The more detail you give, the better the result.
+        </p>
+        <Textarea
+          rows={10}
+          maxLength={MAX_DESC}
+          placeholder={`Describe your product in as much detail as possible.
 
 Example:
 Product name
@@ -438,11 +447,39 @@ Warranty
 Target customer
 Selling price
 Anything else`}
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-      />
-      <div className="text-right text-xs text-muted-foreground">
-        {description.length} / {MAX_DESC}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+        <div className="text-right text-xs text-muted-foreground">
+          {description.length} / {MAX_DESC}
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label className="flex items-center gap-1.5 text-xs">
+            <Youtube className="h-3.5 w-3.5 text-red-500" />
+            YouTube URL <span className="text-muted-foreground">(optional)</span>
+          </Label>
+          <Input
+            type="url"
+            placeholder="https://youtube.com/watch?v=…"
+            value={youtubeUrl}
+            onChange={(e) => setYoutubeUrl(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="flex items-center gap-1.5 text-xs">
+            <Facebook className="h-3.5 w-3.5 text-blue-600" />
+            Facebook Video URL <span className="text-muted-foreground">(optional)</span>
+          </Label>
+          <Input
+            type="url"
+            placeholder="https://facebook.com/…"
+            value={facebookUrl}
+            onChange={(e) => setFacebookUrl(e.target.value)}
+          />
+        </div>
       </div>
     </div>
   );
