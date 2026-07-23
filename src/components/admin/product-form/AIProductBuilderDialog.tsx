@@ -74,6 +74,8 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
   const [uploading, setUploading] = useState(false);
   const [uploadErrors, setUploadErrors] = useState<{ name: string; reason: string }[]>([]);
   const [description, setDescription] = useState("");
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [facebookUrl, setFacebookUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState(0);
   const [generationError, setGenerationError] = useState<string | null>(null);
