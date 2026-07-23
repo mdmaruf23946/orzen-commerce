@@ -219,6 +219,8 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
               <StepImages
                 images={images}
                 uploading={uploading}
+                errors={uploadErrors}
+                onDismissErrors={() => setUploadErrors([])}
                 onPick={() => fileRef.current?.click()}
                 onCamera={() => cameraRef.current?.click()}
                 onRemove={removeImage}
