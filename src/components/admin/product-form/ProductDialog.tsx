@@ -1,4 +1,5 @@
 import { lazy, Suspense, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -14,8 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { Progress } from "@/components/ui/progress";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { GalleryUploader } from "@/components/admin/GalleryUploader";
 
@@ -832,44 +832,20 @@ export function ProductDialog({
             )}
           </DialogHeader>
 
-          <form onSubmit={submit} className="flex max-h-[calc(92vh-8rem)] flex-col">
-            <div className="flex-1 overflow-y-auto p-4">
-              {/* Desktop tabs */}
-              <div className="hidden md:block">
-                <Tabs defaultValue="general">
-                  <TabsList className="h-auto flex-wrap justify-start">
-                    {tabs.map((t) => (
-                      <TabsTrigger key={t.id} value={t.id}>{t.label}</TabsTrigger>
-                    ))}
-                  </TabsList>
-                  {tabs.map((t) => (
-                    <TabsContent key={t.id} value={t.id} className="mt-4">{t.content}</TabsContent>
-                  ))}
-                </Tabs>
-              </div>
-              {/* Mobile accordion */}
-              <div className="md:hidden">
-                <Accordion type="single" collapsible defaultValue="general">
-                  {tabs.map((t) => (
-                    <AccordionItem key={t.id} value={t.id}>
-                      <AccordionTrigger className="text-sm">{t.label}</AccordionTrigger>
-                      <AccordionContent>{t.content}</AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </div>
-            </div>
-            <div className="flex items-center justify-between gap-3 border-t bg-muted/30 p-4">
-              <p className="text-xs text-muted-foreground">
+          <WizardForm
+            tabs={tabs as any}
+            saving={saving}
+            editing={!!editing}
+            onSubmit={submit}
+            onCancel={onClose}
+            footerInfo={
+              <>
                 {finalPrice > 0 && `৳${finalPrice.toFixed(0)}`}
                 {stockManaged && ` · Stock ${stock}`}
-              </p>
-              <div className="flex gap-2">
-                <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-                <Button type="submit" disabled={saving}>{saving ? "Saving…" : editing ? "Save changes" : "Create product"}</Button>
-              </div>
-            </div>
-          </form>
+              </>
+            }
+          />
+
         </DialogContent>
       </Dialog>
       {cropTarget && (
@@ -950,5 +926,106 @@ function ProductPicker({
         </div>
       )}
     </div>
+  );
+}
+
+function WizardForm({
+  tabs,
+  saving,
+  editing,
+  onSubmit,
+  onCancel,
+  footerInfo,
+}: {
+  tabs: ReadonlyArray<{ id: string; label: string; content: React.ReactNode }>;
+  saving: boolean;
+  editing: boolean;
+  onSubmit: (e: React.FormEvent) => void;
+  onCancel: () => void;
+  footerInfo: React.ReactNode;
+}) {
+  const [step, setStep] = useState(0);
+  const total = tabs.length;
+  const current = tabs[step];
+  const isLast = step === total - 1;
+  const progress = Math.round(((step + 1) / total) * 100);
+
+  function goNext(e: React.MouseEvent) {
+    e.preventDefault();
+    if (!isLast) setStep((s) => Math.min(total - 1, s + 1));
+  }
+  function goBack(e: React.MouseEvent) {
+    e.preventDefault();
+    setStep((s) => Math.max(0, s - 1));
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="flex max-h-[calc(92vh-8rem)] flex-col">
+      <div className="border-b bg-muted/20 px-4 py-3">
+        <div className="mb-2 flex items-center justify-between text-xs">
+          <span className="font-medium">
+            Step {step + 1} of {total} — <span className="text-primary">{current.label}</span>
+          </span>
+          <span className="text-muted-foreground">{progress}%</span>
+        </div>
+        <Progress value={progress} className="h-1.5" />
+        <div className="mt-3 -mx-1 flex gap-1 overflow-x-auto pb-1">
+          {tabs.map((t, i) => {
+            const done = i < step;
+            const active = i === step;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setStep(i)}
+                className={`shrink-0 rounded-full border px-3 py-1 text-[11px] transition-colors ${
+                  active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : done
+                      ? "border-primary/40 bg-primary/10 text-primary"
+                      : "bg-background text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {done && <Check className="mr-1 inline h-3 w-3" />}
+                {i + 1}. {t.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4">
+        <div key={current.id}>{current.content}</div>
+      </div>
+
+      <div className="flex items-center justify-between gap-2 border-t bg-muted/30 p-3 sm:p-4">
+        <p className="hidden text-xs text-muted-foreground sm:block">{footerInfo}</p>
+        <div className="flex flex-1 gap-2 sm:flex-none">
+          <Button type="button" variant="ghost" onClick={onCancel} className="hidden sm:inline-flex">
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={goBack}
+            disabled={step === 0}
+            className="flex-1 sm:flex-none"
+          >
+            <ChevronLeft className="mr-1 h-4 w-4" />
+            Back
+          </Button>
+          {isLast ? (
+            <Button type="submit" disabled={saving} className="flex-1 sm:flex-none">
+              {saving ? "Saving…" : editing ? "Save changes" : "Create product"}
+            </Button>
+          ) : (
+            <Button type="button" onClick={goNext} className="flex-1 sm:flex-none">
+              Next
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </div>
+    </form>
   );
 }
