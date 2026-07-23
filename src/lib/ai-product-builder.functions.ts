@@ -130,7 +130,7 @@ export const generateProductDraft = createServerFn({ method: "POST" })
         type: "text",
         text: `<user_description>\n${clampStr(data.description, MAX_DESC)}\n</user_description>`,
       },
-      ...imageUrls.map((url) => ({ type: "image_url" as const, image_url: { url } })),
+      ...imageUrls.map((url) => ({ type: "image" as const, image: new URL(url) })),
     ];
 
     let draft: ProductDraft;
