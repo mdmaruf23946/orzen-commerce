@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.refresh_store_subscription_status(uuid) TO authenticated;

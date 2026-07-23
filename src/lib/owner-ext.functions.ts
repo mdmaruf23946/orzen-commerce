@@ -267,7 +267,7 @@ export const getOwnerReports = createServerFn({ method: "GET" })
       sb.from("payments").select("amount,status,created_at,verified_at,method").gte("created_at", last90),
       sb.from("stores").select("id,created_at,subscription_status"),
       sb.from("orders").select("total,status,created_at").gte("created_at", last30),
-      sb.from("ai_usage").select("cost_usd,total_tokens,model,created_at").gte("created_at", last30),
+      sb.from("ai_usage").select("cost_usd,prompt_tokens,completion_tokens,model,created_at").gte("created_at", last30),
     ]);
 
     const paid = (payments ?? []).filter((p: any) => p.status === "paid");
@@ -302,7 +302,7 @@ export const getOwnerReports = createServerFn({ method: "GET" })
 
     const orderTotal = (orders ?? []).reduce((a: number, o: any) => a + Number(o.total || 0), 0);
     const aiCost = (ai ?? []).reduce((a: number, r: any) => a + Number(r.cost_usd || 0), 0);
-    const aiTokens = (ai ?? []).reduce((a: number, r: any) => a + Number(r.total_tokens || 0), 0);
+    const aiTokens = (ai ?? []).reduce((a: number, r: any) => a + (Number(r.prompt_tokens || 0) + Number(r.completion_tokens || 0)), 0);
 
     const subStatus: Record<string, number> = {};
     for (const s of stores ?? []) subStatus[s.subscription_status ?? "active"] = (subStatus[s.subscription_status ?? "active"] ?? 0) + 1;
