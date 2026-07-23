@@ -666,7 +666,7 @@ export const ownerControlCenter = createServerFn({ method: "GET" })
       sb.from("payments").select("amount,status,created_at,verified_at").eq("status", "paid"),
       sb.from("stores").select("id,name,subscription_status,expires_at,trial_ends_at,created_at,status"),
       sb.from("user_roles").select("*", { count: "exact", head: true }).eq("role", "user"),
-      sb.from("ai_usage").select("cost_usd,total_tokens,created_at").gte("created_at", last30.toISOString()),
+      sb.from("ai_usage").select("cost_usd,prompt_tokens,completion_tokens,created_at").gte("created_at", last30.toISOString()),
       sb.from("payments").select("id,amount,method,status,created_at,stores(name)").order("created_at", { ascending: false }).limit(5),
       sb.from("stores").select("id,name,slug,created_at").order("created_at", { ascending: false }).limit(5),
       sb.from("role_audit_log").select("actor_email,target_email,role,action,created_at").order("created_at", { ascending: false }).limit(5),
@@ -713,7 +713,7 @@ export const ownerControlCenter = createServerFn({ method: "GET" })
 
     // AI usage
     const aiCost = (aiUsage ?? []).reduce((a: number, r: any) => a + Number(r.cost_usd || 0), 0);
-    const aiTokens = (aiUsage ?? []).reduce((a: number, r: any) => a + Number(r.total_tokens || 0), 0);
+    const aiTokens = (aiUsage ?? []).reduce((a: number, r: any) => a + (Number(r.prompt_tokens || 0) + Number(r.completion_tokens || 0)), 0);
     const aiRequests = (aiUsage ?? []).length;
 
     // Recent activity feed (mixed)
@@ -774,7 +774,7 @@ export const getStoreUsage = createServerFn({ method: "POST" })
       sb.from("orders").select("*", { count: "exact", head: true })
         .eq("store_id", data.storeId).gte("created_at", last30),
       sb.from("orders").select("total,status,customer_phone,created_at").eq("store_id", data.storeId),
-      sb.from("ai_usage").select("cost_usd,total_tokens,created_at")
+      sb.from("ai_usage").select("cost_usd,prompt_tokens,completion_tokens,created_at")
         .eq("store_id", data.storeId).gte("created_at", last30),
       sb.from("payments").select("id,amount,status,method,created_at,invoice_no")
         .eq("store_id", data.storeId).order("created_at", { ascending: false }).limit(10),
@@ -785,7 +785,7 @@ export const getStoreUsage = createServerFn({ method: "POST" })
       .reduce((a: number, o: any) => a + Number(o.total || 0), 0);
     const customers = new Set((revenueRows ?? []).map((o: any) => o.customer_phone).filter(Boolean)).size;
     const aiCost = (aiRows ?? []).reduce((a: number, r: any) => a + Number(r.cost_usd || 0), 0);
-    const aiTokens = (aiRows ?? []).reduce((a: number, r: any) => a + Number(r.total_tokens || 0), 0);
+    const aiTokens = (aiRows ?? []).reduce((a: number, r: any) => a + (Number(r.prompt_tokens || 0) + Number(r.completion_tokens || 0)), 0);
 
     return {
       store,
