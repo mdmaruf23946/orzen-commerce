@@ -28,6 +28,20 @@ import { useFeature } from "@/components/admin/FeatureGate";
 const MAX_IMAGES = 8;
 const MAX_BYTES = 5 * 1024 * 1024;
 const MAX_DESC = 4000;
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const MIN_DIM = 200;
+const MAX_DIM = 8000;
+
+async function readDimensions(file: File): Promise<{ w: number; h: number } | null> {
+  try {
+    const bmp = await createImageBitmap(file);
+    const dim = { w: bmp.width, h: bmp.height };
+    bmp.close?.();
+    return dim;
+  } catch {
+    return null;
+  }
+}
 
 const STAGES = [
   "Analyzing images…",
@@ -53,6 +67,7 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
   const [step, setStep] = useState<1 | 2>(1);
   const [images, setImages] = useState<string[]>([]); // storage paths
   const [uploading, setUploading] = useState(false);
+  const [uploadErrors, setUploadErrors] = useState<{ name: string; reason: string }[]>([]);
   const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState(0);
@@ -75,18 +90,41 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
       toast.error(`Maximum ${MAX_IMAGES} images`);
       return;
     }
-    const toUpload = Array.from(files).slice(0, remaining);
+    const toProcess = Array.from(files);
+    const overflow = toProcess.length - remaining;
+    const toUpload = toProcess.slice(0, remaining);
     setUploading(true);
+    const errors: { name: string; reason: string }[] = [];
+    if (overflow > 0) {
+      errors.push({ name: "—", reason: `${overflow} extra file(s) skipped (max ${MAX_IMAGES} images).` });
+    }
     const uploaded: string[] = [];
     try {
       for (const raw of toUpload) {
-        if (!raw.type.startsWith("image/")) {
-          toast.error(`${raw.name}: not an image`);
+        if (!ALLOWED_TYPES.includes(raw.type)) {
+          errors.push({ name: raw.name, reason: `Unsupported type (${raw.type || "unknown"}). Use JPG, PNG, WebP, or GIF.` });
+          continue;
+        }
+        if (raw.size > MAX_BYTES) {
+          errors.push({ name: raw.name, reason: `Too large before compression (${(raw.size / 1024 / 1024).toFixed(1)} MB, max 5 MB).` });
+          continue;
+        }
+        const dims = await readDimensions(raw);
+        if (!dims) {
+          errors.push({ name: raw.name, reason: "Could not read image — file may be corrupted." });
+          continue;
+        }
+        if (dims.w < MIN_DIM || dims.h < MIN_DIM) {
+          errors.push({ name: raw.name, reason: `Too small (${dims.w}×${dims.h}px, min ${MIN_DIM}×${MIN_DIM}px).` });
+          continue;
+        }
+        if (dims.w > MAX_DIM || dims.h > MAX_DIM) {
+          errors.push({ name: raw.name, reason: `Too large (${dims.w}×${dims.h}px, max ${MAX_DIM}×${MAX_DIM}px).` });
           continue;
         }
         const file = await compressImage(raw);
         if (file.size > MAX_BYTES) {
-          toast.error(`${raw.name}: too large (max 5 MB)`);
+          errors.push({ name: raw.name, reason: `Still too large after compression (${(file.size / 1024 / 1024).toFixed(1)} MB).` });
           continue;
         }
         const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "jpg";
@@ -95,10 +133,16 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
           upsert: false,
           contentType: file.type,
         });
-        if (error) toast.error(error.message || "Upload failed");
+        if (error) errors.push({ name: raw.name, reason: error.message || "Upload failed" });
         else uploaded.push(path);
       }
       if (uploaded.length) setImages((prev) => [...prev, ...uploaded]);
+      setUploadErrors(errors);
+      if (errors.length && !uploaded.length) {
+        toast.error("No images were added — see errors below.");
+      } else if (errors.length) {
+        toast.warning(`${uploaded.length} added, ${errors.length} skipped.`);
+      }
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -175,6 +219,8 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
               <StepImages
                 images={images}
                 uploading={uploading}
+                errors={uploadErrors}
+                onDismissErrors={() => setUploadErrors([])}
                 onPick={() => fileRef.current?.click()}
                 onCamera={() => cameraRef.current?.click()}
                 onRemove={removeImage}
@@ -252,12 +298,16 @@ function StepPill({ n, active, done, label }: { n: number; active: boolean; done
 function StepImages({
   images,
   uploading,
+  errors,
+  onDismissErrors,
   onPick,
   onCamera,
   onRemove,
 }: {
   images: string[];
   uploading: boolean;
+  errors: { name: string; reason: string }[];
+  onDismissErrors: () => void;
   onPick: () => void;
   onCamera: () => void;
   onRemove: (i: number) => void;
@@ -265,7 +315,7 @@ function StepImages({
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
-        Add up to {MAX_IMAGES} product photos. Images are automatically compressed and optimized.
+        Add up to {MAX_IMAGES} product photos. JPG, PNG, WebP, or GIF · min {MIN_DIM}×{MIN_DIM}px · max 5 MB each.
       </p>
       <div className="flex flex-wrap gap-2">
         {images.map((path, idx) => (
@@ -306,8 +356,32 @@ function StepImages({
       </div>
       {uploading && (
         <p className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Uploading…
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Validating and uploading…
         </p>
+      )}
+      {errors.length > 0 && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs">
+          <div className="mb-1 flex items-center justify-between">
+            <span className="font-medium text-destructive">
+              {errors.length} image{errors.length === 1 ? "" : "s"} skipped
+            </span>
+            <button
+              type="button"
+              onClick={onDismissErrors}
+              className="text-muted-foreground hover:text-foreground"
+              aria-label="Dismiss"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <ul className="space-y-1">
+            {errors.map((e, i) => (
+              <li key={i} className="text-muted-foreground">
+                <span className="font-medium text-foreground">{e.name}:</span> {e.reason}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

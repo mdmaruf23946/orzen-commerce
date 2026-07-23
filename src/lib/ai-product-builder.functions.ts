@@ -214,6 +214,32 @@ export const generateProductDraft = createServerFn({ method: "POST" })
       }
     }
 
+    // Duplicate detection — block if an existing product for this store
+    // matches the generated slug or name (case-insensitive). Prevents the
+    // AI Builder from creating near-duplicates within the same generation run.
+    const normName = draft.name.trim().toLowerCase();
+    const slug = draft.slug_suggestion;
+    const orParts: string[] = [];
+    if (slug) orParts.push(`slug.eq.${slug}`);
+    if (normName) {
+      const safeName = normName.replace(/[,()*]/g, " ").trim();
+      if (safeName) orParts.push(`name.ilike.${safeName}`);
+    }
+    if (orParts.length > 0) {
+      const { data: dupes } = await supabase
+        .from("products")
+        .select("id, name, slug")
+        .eq("store_id", storeId)
+        .or(orParts.join(","))
+        .limit(1);
+      const existing = dupes?.[0] as { id: string; name: string; slug: string } | undefined;
+      if (existing) {
+        throw new Error(
+          `A similar product already exists in your store: "${existing.name}". Edit that product or change your description to make this one distinct.`,
+        );
+      }
+    }
+
     return {
       draft,
       matchedCategoryId,
