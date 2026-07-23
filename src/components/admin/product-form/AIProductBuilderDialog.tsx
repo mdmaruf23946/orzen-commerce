@@ -242,7 +242,14 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
                 onRemove={removeImage}
               />
             ) : (
-              <StepDescription description={description} setDescription={setDescription} />
+              <StepDescription
+                description={description}
+                setDescription={setDescription}
+                youtubeUrl={youtubeUrl}
+                setYoutubeUrl={setYoutubeUrl}
+                facebookUrl={facebookUrl}
+                setFacebookUrl={setFacebookUrl}
+              />
             )}
 
             <input
