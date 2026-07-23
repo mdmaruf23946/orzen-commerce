@@ -260,6 +260,17 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
                 onCamera={() => cameraRef.current?.click()}
                 onRemove={removeImage}
               />
+            ) : step === 2 ? (
+              <StepEssentials
+                price={essPrice} setPrice={setEssPrice}
+                oldPrice={essOldPrice} setOldPrice={setEssOldPrice}
+                costPrice={essCostPrice} setCostPrice={setEssCostPrice}
+                stock={essStock} setStock={setEssStock}
+                lowStock={essLowStock} setLowStock={setEssLowStock}
+                sku={essSku} setSku={setEssSku}
+                brand={essBrand} setBrand={setEssBrand}
+                weight={essWeight} setWeight={setEssWeight}
+              />
             ) : (
               <StepDescription
                 description={description}
@@ -289,8 +300,8 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
             />
 
             <div className="mt-4 flex items-center justify-between gap-2">
-              {step === 2 ? (
-                <Button variant="ghost" onClick={() => setStep(1)}>
+              {step > 1 ? (
+                <Button variant="ghost" onClick={() => setStep((s) => (s === 3 ? 2 : 1))}>
                   <ArrowLeft className="mr-1 h-4 w-4" /> Back
                 </Button>
               ) : (
@@ -298,6 +309,10 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
               )}
               {step === 1 ? (
                 <Button onClick={() => setStep(2)} disabled={images.length === 0}>
+                  Continue <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+              ) : step === 2 ? (
+                <Button onClick={() => setStep(3)} disabled={!essPrice || Number(essPrice) <= 0}>
                   Continue <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
               ) : (
