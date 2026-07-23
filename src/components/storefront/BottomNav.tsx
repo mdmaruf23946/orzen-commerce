@@ -56,25 +56,20 @@ export function BottomNav({ slug }: { slug: string }) {
     }
   }
 
-  const items = [
-    { to: "/store/$slug", label: "Home", icon: Home, active: isActive(base), onClick: undefined },
-    {
-      to: "/store/$slug",
-      label: "Browse",
-      icon: LayoutGrid,
-      active: false,
-      onClick: scrollToAll,
-    },
+  const items: Array<{
+    to: "/store/$slug" | "/store/$slug/cart" | "/store/$slug/account";
+    label: string;
+    icon: typeof Home;
+    active: boolean;
+    onClick?: (e: React.MouseEvent) => void;
+    badge?: number;
+  }> = [
+    { to: "/store/$slug", label: "Home", icon: Home, active: isActive(base) },
+    { to: "/store/$slug", label: "Browse", icon: LayoutGrid, active: false, onClick: scrollToAll },
     { to: "/store/$slug/cart", label: "Cart", icon: ShoppingCart, active: isActive(`${base}/cart`), badge: cart },
-    {
-      to: "/store/$slug/account",
-      label: "Wishlist",
-      icon: Heart,
-      active: false,
-      badge: wish,
-    },
+    { to: "/store/$slug/account", label: "Wishlist", icon: Heart, active: false, badge: wish },
     { to: "/store/$slug/account", label: "Account", icon: User, active: isActive(`${base}/account`) },
-  ] as const;
+  ];
 
   return (
     <nav
