@@ -157,7 +157,13 @@ function isProductIntent(text: string) {
   return /প্রোডাক্ট|পণ্য|দেখান|দেখাও|কী আছে|কি আছে|দাম|কত|বিস্তারিত|ডিটেইলস|product|item|price|show|details/i.test(text);
 }
 
+function isOrderStatusIntent(text: string) {
+  // Tracking, status, cancel, return, refund — must be handled by the AI agent (trackOrder tool), not the buy flow.
+  return /(where.*(is|are).*(my )?order|track.*order|order.*(status|track)|cancel.*order|return.*order|refund|আমার অর্ডার কোথায়|অর্ডার কোথায়|অর্ডার (ট্র্যাক|ট্রাক|ষ্ট্যাটাস|স্ট্যাটাস|স্টেটাস|status)|অর্ডার (বাতিল|ক্যান্সেল|cancel)|রিটার্ন|ফেরত)/i.test(text);
+}
+
 function isOrderIntent(text: string) {
+  if (isOrderStatusIntent(text)) return false;
   return /অর্ডার|কিনতে|নিতে চাই|নিব|নেব|buy now|buy|order|purchase|checkout/i.test(text);
 }
 
