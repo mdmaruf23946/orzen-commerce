@@ -69,13 +69,22 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
   const { allowed, loading: gateLoading } = useFeature("ai_product_builder");
   const gen = useServerFn(generateProductDraft);
 
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [images, setImages] = useState<string[]>([]); // storage paths
   const [uploading, setUploading] = useState(false);
   const [uploadErrors, setUploadErrors] = useState<{ name: string; reason: string }[]>([]);
   const [description, setDescription] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [facebookUrl, setFacebookUrl] = useState("");
+  // Essentials (user-provided, overrides AI guesses when set)
+  const [essPrice, setEssPrice] = useState<string>("");
+  const [essOldPrice, setEssOldPrice] = useState<string>("");
+  const [essCostPrice, setEssCostPrice] = useState<string>("");
+  const [essStock, setEssStock] = useState<string>("");
+  const [essLowStock, setEssLowStock] = useState<string>("5");
+  const [essSku, setEssSku] = useState<string>("");
+  const [essBrand, setEssBrand] = useState<string>("");
+  const [essWeight, setEssWeight] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState(0);
   const [generationError, setGenerationError] = useState<string | null>(null);
