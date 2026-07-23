@@ -171,7 +171,7 @@ function StoreHome() {
         />
       )}
 
-      {!isFiltering && categories.length > 0 && (
+      {categories.length > 0 && (
         <CategoryStrip
           categories={mainCategories as any}
           active={activeMainId}
