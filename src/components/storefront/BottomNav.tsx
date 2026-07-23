@@ -93,11 +93,11 @@ export function BottomNav({ slug }: { slug: string }) {
                   className={`h-5 w-5 transition-colors ${it.active ? "text-neutral-900" : "text-neutral-500"}`}
                   strokeWidth={it.active ? 2.5 : 2}
                 />
-                {"badge" in it && (it as any).badge > 0 && (
+                {it.badge !== undefined && it.badge > 0 && (
                   <span
                     className="absolute -right-1.5 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white"
                   >
-                    {(it as any).badge > 99 ? "99+" : (it as any).badge}
+                    {it.badge > 99 ? "99+" : it.badge}
                   </span>
                 )}
               </div>
