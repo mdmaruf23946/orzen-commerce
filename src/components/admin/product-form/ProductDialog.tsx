@@ -820,13 +820,18 @@ export function ProductDialog({
       <Dialog open onOpenChange={(o) => !o && onClose()}>
         <DialogContent className="max-h-[92vh] max-w-4xl overflow-hidden p-0">
           <DialogHeader className="border-b p-4">
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="text-base font-semibold">
               {editing ? "Edit product" : "New product"}
-              {labels.map((l) => (
-                <Badge key={l} variant="secondary" className="text-[10px]">{l}</Badge>
-              ))}
             </DialogTitle>
+            {labels.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {labels.map((l) => (
+                  <Badge key={l} variant="secondary" className="text-[10px]">{l}</Badge>
+                ))}
+              </div>
+            )}
           </DialogHeader>
+
           <form onSubmit={submit} className="flex max-h-[calc(92vh-8rem)] flex-col">
             <div className="flex-1 overflow-y-auto p-4">
               {/* Desktop tabs */}
