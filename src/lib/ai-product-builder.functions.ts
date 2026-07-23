@@ -58,6 +58,10 @@ function clampStr(s: unknown, max: number): string {
   return typeof s === "string" ? s.slice(0, max) : "";
 }
 
+function escapePostgrestValue(value: string): string {
+  return value.replace(/([\\%_,.*])/g, "\\$1").replace(/"/g, "\\\"");
+}
+
 async function signImages(supabase: any, paths: string[]): Promise<string[]> {
   const urls: string[] = [];
   for (const p of paths) {
@@ -190,54 +194,62 @@ export const generateProductDraft = createServerFn({ method: "POST" })
     draft.seo_score = clampInt(draft.seo_score, 0, 100, 60);
     draft.primary_image_index = clampInt(draft.primary_image_index, 0, Math.max(0, data.imagePaths.length - 1), 0);
 
-    // Try to match category/subcategory guesses to existing rows (case-insensitive).
     let matchedCategoryId: string | null = null;
     let matchedSubcategoryId: string | null = null;
-    if (draft.category_guess || draft.subcategory_guess) {
-      const { data: cats } = await supabase
-        .from("categories")
-        .select("id, name, parent_id")
-        .eq("store_id", storeId);
-      const norm = (s: string) => s.trim().toLowerCase();
-      if (draft.category_guess) {
-        const hit = (cats ?? []).find(
-          (c: any) => !c.parent_id && norm(c.name) === norm(draft.category_guess!),
-        );
-        if (hit) matchedCategoryId = hit.id;
-      }
-      if (draft.subcategory_guess && matchedCategoryId) {
-        const hit = (cats ?? []).find(
-          (c: any) =>
-            c.parent_id === matchedCategoryId && norm(c.name) === norm(draft.subcategory_guess!),
-        );
-        if (hit) matchedSubcategoryId = hit.id;
-      }
-    }
 
-    // Duplicate detection — block if an existing product for this store
-    // matches the generated slug or name (case-insensitive). Prevents the
-    // AI Builder from creating near-duplicates within the same generation run.
-    const normName = draft.name.trim().toLowerCase();
-    const slug = draft.slug_suggestion;
-    const orParts: string[] = [];
-    if (slug) orParts.push(`slug.eq.${slug}`);
-    if (normName) {
-      const safeName = normName.replace(/[,()*]/g, " ").trim();
-      if (safeName) orParts.push(`name.ilike.${safeName}`);
-    }
-    if (orParts.length > 0) {
-      const { data: dupes } = await supabase
-        .from("products")
-        .select("id, name, slug")
-        .eq("store_id", storeId)
-        .or(orParts.join(","))
-        .limit(1);
-      const existing = dupes?.[0] as { id: string; name: string; slug: string } | undefined;
-      if (existing) {
-        throw new Error(
-          `A similar product already exists in your store: "${existing.name}". Edit that product or change your description to make this one distinct.`,
-        );
+    try {
+      // Try to match category/subcategory guesses to existing rows (case-insensitive).
+      if (draft.category_guess || draft.subcategory_guess) {
+        const { data: cats, error: catsError } = await supabase
+          .from("categories")
+          .select("id, name, parent_id")
+          .eq("store_id", storeId);
+        if (catsError) console.warn("AI Product Builder category lookup failed", catsError.message);
+        const norm = (s: string) => s.trim().toLowerCase();
+        if (!catsError && draft.category_guess) {
+          const hit = (cats ?? []).find(
+            (c: any) => !c.parent_id && norm(c.name) === norm(draft.category_guess!),
+          );
+          if (hit) matchedCategoryId = hit.id;
+        }
+        if (!catsError && draft.subcategory_guess && matchedCategoryId) {
+          const hit = (cats ?? []).find(
+            (c: any) =>
+              c.parent_id === matchedCategoryId && norm(c.name) === norm(draft.subcategory_guess!),
+          );
+          if (hit) matchedSubcategoryId = hit.id;
+        }
       }
+
+      // Duplicate detection — block if an existing product for this store
+      // matches the generated slug or exact name (case-insensitive). Values are
+      // quoted/escaped so Bengali text, commas, brackets, and symbols cannot
+      // break PostgREST's OR filter at the end of the generation run.
+      const normName = draft.name.trim();
+      const slug = draft.slug_suggestion.trim();
+      const orParts: string[] = [];
+      if (slug) orParts.push(`slug.eq."${escapePostgrestValue(slug)}"`);
+      if (normName) orParts.push(`name.ilike."${escapePostgrestValue(normName)}"`);
+      if (orParts.length > 0) {
+        const { data: dupes, error: dupesError } = await supabase
+          .from("products")
+          .select("id, name, slug")
+          .eq("store_id", storeId)
+          .or(orParts.join(","))
+          .limit(1);
+        if (dupesError) {
+          console.warn("AI Product Builder duplicate check failed", dupesError.message);
+        }
+        const existing = dupes?.[0] as { id: string; name: string; slug: string } | undefined;
+        if (existing) {
+          throw new Error(
+            `A similar product already exists in your store: "${existing.name}". Edit that product or change your description to make this one distinct.`,
+          );
+        }
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("A similar product already exists")) throw error;
+      console.warn("AI Product Builder post-processing failed", error);
     }
 
     return {

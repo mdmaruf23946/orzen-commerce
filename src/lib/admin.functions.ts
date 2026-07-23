@@ -330,7 +330,7 @@ export const upsertProduct = createServerFn({ method: "POST" })
       delivery_charge: data.delivery_charge ?? null,
       delivery_time_days: data.delivery_time_days ?? null,
       rating: data.rating ?? null,
-      total_sold: data.total_sold ?? null,
+      total_sold: data.total_sold ?? 0,
       related_product_ids: data.related_product_ids ?? [],
       meta: data.meta ?? {},
     } as any;
