@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Sparkles } from "lucide-react";
+import { Plus, Pencil, Trash2, Sparkles, ChevronDown, PenLine } from "lucide-react";
 import {
   listMyProducts,
   upsertProduct,
@@ -14,6 +14,12 @@ import {
 import { bulkUpdateProducts, bulkDeleteProducts } from "@/lib/business.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ProductDialog } from "@/components/admin/product-form/ProductDialog";
 import { AIProductBuilderDialog } from "@/components/admin/product-form/AIProductBuilderDialog";
 
