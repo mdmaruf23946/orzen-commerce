@@ -552,6 +552,7 @@ function buildEditingLike(
   const meta: Record<string, any> = {
     product_type: "physical",
     subcategory_id: matchedSubcategoryId ?? null,
+    videos,
     labels: draft.labels ?? [],
     seo: {
       title: draft.seo_title,
