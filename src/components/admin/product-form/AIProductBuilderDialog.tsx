@@ -28,6 +28,20 @@ import { useFeature } from "@/components/admin/FeatureGate";
 const MAX_IMAGES = 8;
 const MAX_BYTES = 5 * 1024 * 1024;
 const MAX_DESC = 4000;
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const MIN_DIM = 200;
+const MAX_DIM = 8000;
+
+async function readDimensions(file: File): Promise<{ w: number; h: number } | null> {
+  try {
+    const bmp = await createImageBitmap(file);
+    const dim = { w: bmp.width, h: bmp.height };
+    bmp.close?.();
+    return dim;
+  } catch {
+    return null;
+  }
+}
 
 const STAGES = [
   "Analyzing images…",
