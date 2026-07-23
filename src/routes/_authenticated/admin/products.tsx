@@ -87,7 +87,13 @@ function ProductsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Products</h1>
-        <Button onClick={startNew}><Plus className="mr-1 h-4 w-4" />Add product</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setAiOpen(true)} className="gap-1.5">
+            <Sparkles className="h-4 w-4 text-amber-500" />
+            AI Builder
+          </Button>
+          <Button onClick={startNew}><Plus className="mr-1 h-4 w-4" />Add product</Button>
+        </div>
       </div>
 
       {selected.size > 0 && (
