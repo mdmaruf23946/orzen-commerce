@@ -650,7 +650,13 @@ function buildEditingLike(
     imagePaths: string[];
   },
   extras: { youtubeUrl?: string; facebookUrl?: string } = {},
+  essentials: {
+    price?: number; old_price?: number; cost_price?: number;
+    stock?: number; low_stock_threshold?: number;
+    sku?: string; brand?: string; weight_g?: number;
+  } = {},
 ) {
+  void 0;
   const { draft, matchedCategoryId, matchedSubcategoryId, imagePaths } = res;
   const primaryIdx = Math.min(Math.max(draft.primary_image_index ?? 0, 0), Math.max(0, imagePaths.length - 1));
   const primary = imagePaths[primaryIdx] ?? imagePaths[0] ?? null;
