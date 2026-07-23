@@ -328,12 +328,14 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
   );
 }
 
-function StepIndicator({ step }: { step: 1 | 2 }) {
+function StepIndicator({ step }: { step: 1 | 2 | 3 }) {
   return (
-    <div className="mb-4 flex items-center gap-3 text-xs">
-      <StepPill n={1} active={step === 1} done={step > 1} label="Upload images" />
+    <div className="mb-4 flex items-center gap-2 text-xs">
+      <StepPill n={1} active={step === 1} done={step > 1} label="Images" />
       <div className="h-px flex-1 bg-border" />
-      <StepPill n={2} active={step === 2} done={false} label="Describe product" />
+      <StepPill n={2} active={step === 2} done={step > 2} label="Essentials" />
+      <div className="h-px flex-1 bg-border" />
+      <StepPill n={3} active={step === 3} done={false} label="Describe" />
     </div>
   );
 }
