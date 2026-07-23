@@ -1,15 +1,16 @@
-import { createFileRoute, Link, Outlet, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, notFound, useRouterState } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { ShoppingCart, Search, Phone, MessageCircle, Facebook, Menu, X, Mail, User, LogOut, ChevronDown, ChevronRight } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ShoppingCart, Phone, MessageCircle, Facebook, Menu, Mail, User } from "lucide-react";
 import { getStoreBySlug, listStoreCategories, listStoreProducts } from "@/lib/storefront.functions";
 import { getStoreAgentPublic } from "@/lib/ai.functions";
 import { cartCount } from "@/lib/cart";
 import { StoreUIProvider, useStoreUI } from "@/lib/store-ui";
 import { AIChatLauncher } from "@/components/storefront/AIChatLauncher";
 import { useCustomerSession } from "@/lib/customer-session";
-
-
+import { SearchBar } from "@/components/storefront/SearchBar";
+import { MobileDrawer } from "@/components/storefront/MobileDrawer";
+import { BottomNav } from "@/components/storefront/BottomNav";
 
 export const storeQuery = (slug: string) =>
   queryOptions({
@@ -67,6 +68,7 @@ function StoreLayout() {
   const { slug } = Route.useParams();
   const { data: store } = useSuspenseQuery(storeQuery(slug));
   const { data: agent } = useQuery(agentQuery(slug));
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   if (!store) return null;
   const s: any = store;
   const theme = s.theme ?? {};
@@ -81,17 +83,26 @@ function StoreLayout() {
     ["--radius" as string]: radius,
   } as React.CSSProperties;
 
+  const isAccount = pathname.includes("/account");
+  const isCheckoutFlow = /\/(checkout|cart|order)/.test(pathname);
+  const showChrome = !isAccount;
+
   return (
     <StoreUIProvider>
       <TrackingScripts marketing={s.marketing} slug={slug} />
       <div className="min-h-screen bg-background" style={themeVars}>
-
-        <StoreHeader slug={slug} storeId={store.id} name={store.name} logoUrl={store.logo_url} />
-        <main className="mx-auto max-w-5xl px-4 pb-12 pt-4 sm:px-6">
+        <StoreHeader
+          slug={slug}
+          storeId={store.id}
+          name={store.name}
+          logoUrl={store.logo_url}
+          showSearch={!isAccount && !isCheckoutFlow}
+        />
+        <main className="mx-auto max-w-5xl px-4 pb-24 pt-4 sm:px-6 md:pb-12">
           <Outlet />
         </main>
-        <StoreFooter store={store} />
-        {agent && (
+        {showChrome && <StoreFooter store={store} />}
+        {showChrome && agent && (
           <AIChatLauncher
             slug={slug}
             agentName={agent.agent_name}
@@ -99,6 +110,7 @@ function StoreLayout() {
             messengerUrl={toMessengerUrl(store.facebook)}
           />
         )}
+        <BottomNav slug={slug} />
       </div>
     </StoreUIProvider>
   );
@@ -113,7 +125,6 @@ function toMessengerUrl(fb: string | null): string | null {
   if (m) return `https://m.me/${m[1]}`;
   return trimmed;
 }
-
 
 function TrackingScripts({ marketing, slug }: { marketing: any; slug: string }) {
   const m = marketing ?? {};
@@ -149,7 +160,6 @@ function TrackingScripts({ marketing, slug }: { marketing: any; slug: string }) 
         "",
         `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${m.fb_pixel_id}');`,
       );
-      // Fire PageView (browser + CAPI) once init module has attached.
       import("@/lib/fb-track").then(({ fbTrack }) => fbTrack("PageView"));
     }
     if (m.tiktok_pixel_id && en.tiktok !== false) {
@@ -170,17 +180,17 @@ function StoreHeader({
   storeId,
   name,
   logoUrl,
+  showSearch,
 }: {
   slug: string;
   storeId: string;
   name: string;
   logoUrl: string | null;
+  showSearch: boolean;
 }) {
   const [count, setCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [openMainId, setOpenMainId] = useState<string | null>(null);
-  const { query, setQuery, activeMainId, activeSubId, selectMain, selectSub } = useStoreUI();
-  const { customer, signOut } = useCustomerSession(slug);
+  const { customer } = useCustomerSession(slug);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories", storeId],
@@ -193,48 +203,18 @@ function StoreHeader({
     staleTime: 5 * 60_000,
   });
 
-  const mainCategories = categories.filter((c: any) => !c.parent_id);
-  const subsByParent = new Map<string, any[]>();
-  for (const c of categories as any[]) {
-    if (c.parent_id) {
-      if (!subsByParent.has(c.parent_id)) subsByParent.set(c.parent_id, []);
-      subsByParent.get(c.parent_id)!.push(c);
+  const countsByMain = useMemo(() => {
+    const catParentMap = new Map<string, string | null>();
+    for (const c of categories as any[]) catParentMap.set(c.id, c.parent_id ?? null);
+    const m = new Map<string, number>();
+    for (const p of products as any[]) {
+      if (!p.category_id) continue;
+      const parent = catParentMap.get(p.category_id);
+      const mainId = parent ?? p.category_id;
+      m.set(mainId, (m.get(mainId) ?? 0) + 1);
     }
-  }
-  const catParentMap = new Map<string, string | null>();
-  for (const c of categories as any[]) catParentMap.set(c.id, c.parent_id ?? null);
-  const countsByMain = new Map<string, number>();
-  for (const p of products as any[]) {
-    if (!p.category_id) continue;
-    const parent = catParentMap.get(p.category_id);
-    const mainId = parent ?? p.category_id;
-    countsByMain.set(mainId, (countsByMain.get(mainId) ?? 0) + 1);
-  }
-
-  function closeMenuAndScroll() {
-    setMenuOpen(false);
-    setTimeout(() => {
-      document
-        .getElementById("all-products")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 60);
-  }
-
-  function pickMain(id: string) {
-    selectMain(id, "header");
-    closeMenuAndScroll();
-  }
-  function pickAllMain() {
-    selectMain(null, null);
-    closeMenuAndScroll();
-  }
-  function pickSub(mainId: string, subId: string | null) {
-    if (activeMainId !== mainId) selectMain(mainId, "header");
-    selectSub(subId);
-    closeMenuAndScroll();
-  }
-
-
+    return m;
+  }, [products, categories]);
 
   useEffect(() => {
     const update = () => setCount(cartCount(slug));
@@ -248,252 +228,152 @@ function StoreHeader({
   }, [slug]);
 
   return (
-    <header
-      className="sticky top-0 z-30 border-b border-black/5 backdrop-blur"
-      style={{ backgroundColor: "var(--store-header-bg, rgba(255,255,255,0.9))" }}
-    >
-      <div className="mx-auto max-w-5xl px-4 sm:px-6">
-        <div className="flex h-14 items-center gap-3">
-          <Link to="/store/$slug" params={{ slug }} className="flex min-w-0 items-center gap-2">
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt=""
-                className="h-9 w-9 shrink-0 rounded-full object-cover"
-                loading="eager"
-              />
-            ) : (
-              <div
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-bold text-white"
-                style={{ backgroundColor: "var(--primary)" }}
-              >
-                {name.charAt(0)}
-              </div>
-            )}
-            <span className="truncate text-sm font-semibold sm:text-base">{name}</span>
-          </Link>
-
-          <div className="relative ml-auto hidden flex-1 max-w-sm sm:block">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search products…"
-              className="h-9 w-full rounded-full border bg-background pl-8 pr-3 text-sm outline-none focus:ring-1 focus:ring-ring"
-            />
-          </div>
-
-          <Link
-            to="/store/$slug/cart"
-            params={{ slug }}
-            className="relative ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-neutral-100 sm:ml-0"
-            aria-label="Cart"
-          >
-            <ShoppingCart className="h-5 w-5" />
-            {count > 0 && (
-              <span
-                className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full px-1 text-[10px] font-bold text-white"
-                style={{ backgroundColor: "var(--primary)" }}
-              >
-                {count}
-              </span>
-            )}
-          </Link>
-
-          {customer ? (
-            <Link
-              to="/store/$slug/account"
-              params={{ slug }}
-              className="hidden h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium hover:bg-neutral-100 sm:flex"
-              aria-label="Account"
+    <>
+      <header
+        className="sticky top-0 z-30 border-b border-black/5 backdrop-blur-md"
+        style={{ backgroundColor: "var(--store-header-bg, rgba(255,255,255,0.9))" }}
+      >
+        <div className="mx-auto max-w-5xl px-3 sm:px-6">
+          {/* Mobile compact header */}
+          <div className="flex h-12 items-center gap-2 md:hidden">
+            <button
+              type="button"
+              onClick={() => setMenuOpen(true)}
+              className="grid h-9 w-9 place-items-center rounded-full text-neutral-700 hover:bg-neutral-100"
+              aria-label="Open menu"
             >
-              <User className="h-4 w-4" />
-              <span className="max-w-[8rem] truncate">{customer.full_name.split(" ")[0]}</span>
-            </Link>
-          ) : (
-            <Link
-              to="/store/$slug/auth/login"
-              params={{ slug }}
-              className="hidden h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium hover:bg-neutral-100 sm:flex"
-            >
-              <User className="h-4 w-4" /> Sign in
-            </Link>
-          )}
+              <Menu className="h-5 w-5" />
+            </button>
 
-
-          <button
-            type="button"
-            onClick={() => setMenuOpen((v) => !v)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-neutral-100 sm:hidden"
-            aria-label="Menu"
-            aria-expanded={menuOpen}
-          >
-            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-        </div>
-
-        <div className="pb-2 sm:hidden">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search products…"
-              className="h-9 w-full rounded-full border bg-background pl-8 pr-3 text-sm outline-none focus:ring-1 focus:ring-ring"
-            />
-          </div>
-        </div>
-
-        {menuOpen && (
-          <div className="border-t py-2 text-sm sm:hidden">
             <Link
               to="/store/$slug"
               params={{ slug }}
-              onClick={() => setMenuOpen(false)}
-              className="block rounded-md px-3 py-2 hover:bg-neutral-100"
+              className="flex min-w-0 flex-1 items-center justify-center gap-1.5"
             >
-              Home
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt=""
+                  className="h-7 w-7 shrink-0 rounded-full object-cover"
+                  loading="eager"
+                />
+              ) : (
+                <div
+                  className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-bold text-white"
+                  style={{ backgroundColor: "var(--primary)" }}
+                >
+                  {name.charAt(0)}
+                </div>
+              )}
+              <span className="truncate text-sm font-semibold text-neutral-900">{name}</span>
             </Link>
+
             <Link
               to="/store/$slug/cart"
               params={{ slug }}
-              onClick={() => setMenuOpen(false)}
-              className="block rounded-md px-3 py-2 hover:bg-neutral-100"
+              className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full hover:bg-neutral-100"
+              aria-label="Cart"
             >
-              Cart {count > 0 && <span className="ml-1 text-xs text-neutral-500">({count})</span>}
+              <ShoppingCart className="h-5 w-5 text-neutral-700" />
+              {count > 0 && (
+                <span
+                  className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[9px] font-bold text-white"
+                  style={{ backgroundColor: "var(--primary)" }}
+                >
+                  {count}
+                </span>
+              )}
             </Link>
 
-            {mainCategories.length > 0 && (
-              <div className="mt-1 border-t pt-1">
-                <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
-                  Categories
-                </div>
-                <button
-                  type="button"
-                  onClick={pickAllMain}
-                  className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left hover:bg-neutral-100 ${
-                    activeMainId === null ? "font-semibold text-neutral-900" : ""
-                  }`}
-                >
-                  <span>All</span>
-                  <span className="text-xs text-neutral-500">({products.length})</span>
-                </button>
-                {mainCategories.map((m: any) => {
-                  const subs = subsByParent.get(m.id) ?? [];
-                  const expanded = openMainId === m.id;
-                  return (
-                    <div key={m.id}>
-                      <div className="flex items-center">
-                        <button
-                          type="button"
-                          onClick={() => pickMain(m.id)}
-                          className={`flex flex-1 items-center justify-between rounded-md px-3 py-2 text-left hover:bg-neutral-100 ${
-                            activeMainId === m.id ? "font-semibold text-neutral-900" : ""
-                          }`}
-                        >
-                          <span>{m.name}</span>
-                          <span className="text-xs text-neutral-500">
-                            ({countsByMain.get(m.id) ?? 0})
-                          </span>
-                        </button>
-                        {subs.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => setOpenMainId(expanded ? null : m.id)}
-                            aria-expanded={expanded}
-                            aria-label={expanded ? "Collapse" : "Expand"}
-                            className="mr-1 rounded p-1.5 hover:bg-neutral-100"
-                          >
-                            {expanded ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                          </button>
-                        )}
-                      </div>
-                      {expanded && subs.length > 0 && (
-                        <div className="ml-3 border-l border-neutral-200 pl-2">
-                          <button
-                            type="button"
-                            onClick={() => pickSub(m.id, null)}
-                            className={`block w-full rounded-md px-3 py-1.5 text-left text-[13px] hover:bg-neutral-100 ${
-                              activeMainId === m.id && activeSubId === null
-                                ? "font-semibold text-neutral-900"
-                                : "text-neutral-700"
-                            }`}
-                          >
-                            All
-                          </button>
-                          {subs.map((s: any) => (
-                            <button
-                              key={s.id}
-                              type="button"
-                              onClick={() => pickSub(m.id, s.id)}
-                              className={`block w-full rounded-md px-3 py-1.5 text-left text-[13px] hover:bg-neutral-100 ${
-                                activeSubId === s.id
-                                  ? "font-semibold text-neutral-900"
-                                  : "text-neutral-700"
-                              }`}
-                            >
-                              {s.name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            <Link
+              to={customer ? "/store/$slug/account" : "/store/$slug/auth/login"}
+              params={{ slug }}
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full hover:bg-neutral-100"
+              aria-label={customer ? "Account" : "Sign in"}
+            >
+              <User className="h-5 w-5 text-neutral-700" />
+            </Link>
+          </div>
 
-            <div className="mt-1 border-t pt-1">
-              <a href="#contact" onClick={() => setMenuOpen(false)} className="block rounded-md px-3 py-2 hover:bg-neutral-100">
-                Contact
-              </a>
-              <a href="#policies" onClick={() => setMenuOpen(false)} className="block rounded-md px-3 py-2 hover:bg-neutral-100">
-                Policies
-              </a>
+          {/* Desktop header */}
+          <div className="hidden h-14 items-center gap-4 md:flex">
+            <Link to="/store/$slug" params={{ slug }} className="flex min-w-0 items-center gap-2">
+              {logoUrl ? (
+                <img src={logoUrl} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" loading="eager" />
+              ) : (
+                <div
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-bold text-white"
+                  style={{ backgroundColor: "var(--primary)" }}
+                >
+                  {name.charAt(0)}
+                </div>
+              )}
+              <span className="truncate text-base font-semibold">{name}</span>
+            </Link>
+
+            <div className="mx-auto w-full max-w-md">
+              <SearchBar />
             </div>
 
+            <Link
+              to="/store/$slug/cart"
+              params={{ slug }}
+              className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-neutral-100"
+              aria-label="Cart"
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {count > 0 && (
+                <span
+                  className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full px-1 text-[10px] font-bold text-white"
+                  style={{ backgroundColor: "var(--primary)" }}
+                >
+                  {count}
+                </span>
+              )}
+            </Link>
+
             {customer ? (
-              <>
-                <Link
-                  to="/store/$slug/account"
-                  params={{ slug }}
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-neutral-100"
-                >
-                  <User className="h-4 w-4" /> My account ({customer.full_name.split(" ")[0]})
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => { setMenuOpen(false); signOut(); }}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-destructive hover:bg-destructive/10"
-                >
-                  <LogOut className="h-4 w-4" /> Sign out
-                </button>
-              </>
+              <Link
+                to="/store/$slug/account"
+                params={{ slug }}
+                className="flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-medium hover:bg-neutral-100"
+              >
+                <User className="h-4 w-4" />
+                <span className="max-w-[8rem] truncate">{customer.full_name.split(" ")[0]}</span>
+              </Link>
             ) : (
               <Link
                 to="/store/$slug/auth/login"
                 params={{ slug }}
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-neutral-100"
+                className="flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-medium hover:bg-neutral-100"
               >
                 <User className="h-4 w-4" /> Sign in
               </Link>
             )}
           </div>
-        )}
-      </div>
-    </header>
+        </div>
+      </header>
+
+      {/* Mobile-only search band below header */}
+      {showSearch && (
+        <div className="sticky top-12 z-20 border-b border-black/5 bg-white/95 px-3 py-2 backdrop-blur md:hidden">
+          <SearchBar />
+        </div>
+      )}
+
+      <MobileDrawer
+        open={menuOpen}
+        onOpenChange={setMenuOpen}
+        slug={slug}
+        storeName={name}
+        logoUrl={logoUrl}
+        categories={categories as any}
+        productCounts={countsByMain}
+        totalProducts={(products as any[]).length}
+      />
+    </>
   );
 }
-
-
 
 function StoreFooter({
   store,
@@ -531,9 +411,7 @@ function StoreFooter({
           {store.description && (
             <p className="text-sm text-white/70 line-clamp-4">{store.description}</p>
           )}
-          {store.address && (
-            <p className="text-xs text-white/60">{store.address}</p>
-          )}
+          {store.address && <p className="text-xs text-white/60">{store.address}</p>}
         </div>
 
         <div className="space-y-2 text-sm">
@@ -572,9 +450,9 @@ function StoreFooter({
 
         <div id="policies" className="space-y-2 text-sm">
           <h3 className="text-sm font-semibold text-white">Quick Links</h3>
-          <a href="#privacy" className="block text-white/80 hover:text-white">Privacy Policy</a>
-          <a href="#terms" className="block text-white/80 hover:text-white">Terms &amp; Conditions</a>
-          <a href="#returns" className="block text-white/80 hover:text-white">Return Policy</a>
+          <a href="/privacy-policy" className="block text-white/80 hover:text-white">Privacy Policy</a>
+          <a href="/terms" className="block text-white/80 hover:text-white">Terms &amp; Conditions</a>
+          <a href="/refund-policy" className="block text-white/80 hover:text-white">Return Policy</a>
         </div>
       </div>
       <div className="border-t border-white/10">
@@ -585,4 +463,3 @@ function StoreFooter({
     </footer>
   );
 }
-
