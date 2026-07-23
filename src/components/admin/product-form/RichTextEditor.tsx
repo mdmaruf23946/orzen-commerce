@@ -15,18 +15,32 @@ export default function RichTextEditor({
   const editor = useEditor({
     extensions: [StarterKit],
     content: value || "",
+    immediatelyRender: false,
     editorProps: {
       attributes: {
         class:
           "prose prose-sm max-w-none min-h-32 rounded-md border bg-background p-3 focus:outline-none focus:ring-2 focus:ring-ring",
       },
     },
-    onUpdate: ({ editor }) => onChange(editor.getHTML()),
+    onUpdate: ({ editor }) => {
+      if (editor.isDestroyed) return;
+      try {
+        onChange(editor.getHTML());
+      } catch {
+        /* editor tearing down */
+      }
+    },
   });
 
   useEffect(() => {
-    if (!editor) return;
-    if (value !== editor.getHTML()) editor.commands.setContent(value || "", { emitUpdate: false });
+    if (!editor || editor.isDestroyed) return;
+    try {
+      if (value !== editor.getHTML()) {
+        editor.commands.setContent(value || "", { emitUpdate: false });
+      }
+    } catch {
+      /* editor not ready or destroyed */
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
