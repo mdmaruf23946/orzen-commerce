@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Sparkles } from "lucide-react";
+import { Plus, Pencil, Trash2, Sparkles, ChevronDown, PenLine } from "lucide-react";
 import {
   listMyProducts,
   upsertProduct,
@@ -14,6 +14,12 @@ import {
 import { bulkUpdateProducts, bulkDeleteProducts } from "@/lib/business.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ProductDialog } from "@/components/admin/product-form/ProductDialog";
 import { AIProductBuilderDialog } from "@/components/admin/product-form/AIProductBuilderDialog";
 
@@ -88,11 +94,31 @@ function ProductsPage() {
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Products</h1>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setAiOpen(true)} className="gap-1.5">
-            <Sparkles className="h-4 w-4 text-amber-500" />
-            AI Builder
-          </Button>
-          <Button onClick={startNew}><Plus className="mr-1 h-4 w-4" />Add product</Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="gap-1.5">
+                <Plus className="h-4 w-4" />
+                Add Product
+                <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={startNew} className="gap-2">
+                <PenLine className="h-4 w-4" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Manual</span>
+                  <span className="text-xs text-muted-foreground">Fill in the form yourself</span>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setAiOpen(true)} className="gap-2">
+                <Sparkles className="h-4 w-4 text-amber-500" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">AI Assistant</span>
+                  <span className="text-xs text-muted-foreground">Generate from photos & description</span>
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

@@ -14,10 +14,14 @@ import {
   X,
   CheckCircle2,
   Lock,
+  Youtube,
+  Facebook,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { compressImage } from "@/lib/compress-image";
@@ -70,6 +74,8 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
   const [uploading, setUploading] = useState(false);
   const [uploadErrors, setUploadErrors] = useState<{ name: string; reason: string }[]>([]);
   const [description, setDescription] = useState("");
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [facebookUrl, setFacebookUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState(0);
   const [generationError, setGenerationError] = useState<string | null>(null);
@@ -185,7 +191,7 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
 
   // Once we have a draft, hand off to the existing ProductDialog prefilled.
   if (draftResult) {
-    const editingLike = buildEditingLike(draftResult);
+    const editingLike = buildEditingLike(draftResult, { youtubeUrl, facebookUrl });
     return (
       <ProductDialog
         storeId={storeId}
@@ -236,7 +242,14 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
                 onRemove={removeImage}
               />
             ) : (
-              <StepDescription description={description} setDescription={setDescription} />
+              <StepDescription
+                description={description}
+                setDescription={setDescription}
+                youtubeUrl={youtubeUrl}
+                setYoutubeUrl={setYoutubeUrl}
+                facebookUrl={facebookUrl}
+                setFacebookUrl={setFacebookUrl}
+              />
             )}
 
             <input
@@ -400,19 +413,28 @@ function StepImages({
 function StepDescription({
   description,
   setDescription,
+  youtubeUrl,
+  setYoutubeUrl,
+  facebookUrl,
+  setFacebookUrl,
 }: {
   description: string;
   setDescription: (v: string) => void;
+  youtubeUrl: string;
+  setYoutubeUrl: (v: string) => void;
+  facebookUrl: string;
+  setFacebookUrl: (v: string) => void;
 }) {
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">
-        Tell the AI everything you know. The more detail you give, the better the result.
-      </p>
-      <Textarea
-        rows={12}
-        maxLength={MAX_DESC}
-        placeholder={`Describe your product in as much detail as possible.
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground">
+          Tell the AI everything you know. The more detail you give, the better the result.
+        </p>
+        <Textarea
+          rows={10}
+          maxLength={MAX_DESC}
+          placeholder={`Describe your product in as much detail as possible.
 
 Example:
 Product name
@@ -425,11 +447,39 @@ Warranty
 Target customer
 Selling price
 Anything else`}
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-      />
-      <div className="text-right text-xs text-muted-foreground">
-        {description.length} / {MAX_DESC}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+        <div className="text-right text-xs text-muted-foreground">
+          {description.length} / {MAX_DESC}
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label className="flex items-center gap-1.5 text-xs">
+            <Youtube className="h-3.5 w-3.5 text-red-500" />
+            YouTube URL <span className="text-muted-foreground">(optional)</span>
+          </Label>
+          <Input
+            type="url"
+            placeholder="https://youtube.com/watch?v=…"
+            value={youtubeUrl}
+            onChange={(e) => setYoutubeUrl(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="flex items-center gap-1.5 text-xs">
+            <Facebook className="h-3.5 w-3.5 text-blue-600" />
+            Facebook Video URL <span className="text-muted-foreground">(optional)</span>
+          </Label>
+          <Input
+            type="url"
+            placeholder="https://facebook.com/…"
+            value={facebookUrl}
+            onChange={(e) => setFacebookUrl(e.target.value)}
+          />
+        </div>
       </div>
     </div>
   );
@@ -477,20 +527,32 @@ function UpgradeCTA() {
 }
 
 // Turn an AI draft into the same shape ProductDialog expects for `editing`.
-function buildEditingLike(res: {
-  draft: ProductDraft;
-  matchedCategoryId: string | null;
-  matchedSubcategoryId: string | null;
-  imagePaths: string[];
-}) {
+function buildEditingLike(
+  res: {
+    draft: ProductDraft;
+    matchedCategoryId: string | null;
+    matchedSubcategoryId: string | null;
+    imagePaths: string[];
+  },
+  extras: { youtubeUrl?: string; facebookUrl?: string } = {},
+) {
   const { draft, matchedCategoryId, matchedSubcategoryId, imagePaths } = res;
   const primaryIdx = Math.min(Math.max(draft.primary_image_index ?? 0, 0), Math.max(0, imagePaths.length - 1));
   const primary = imagePaths[primaryIdx] ?? imagePaths[0] ?? null;
   const gallery = imagePaths.filter((p) => p !== primary);
 
+  const videos: { url: string; provider: "youtube" | "facebook"; primary?: boolean }[] = [];
+  const yt = extras.youtubeUrl?.trim();
+  const fb = extras.facebookUrl?.trim();
+  if (yt) videos.push({ url: yt, provider: "youtube" });
+  if (fb) videos.push({ url: fb, provider: "facebook" });
+  if (videos.length > 0) videos[0].primary = true;
+  const primaryVideoUrl = videos[0]?.url ?? null;
+
   const meta: Record<string, any> = {
     product_type: "physical",
     subcategory_id: matchedSubcategoryId ?? null,
+    videos,
     labels: draft.labels ?? [],
     seo: {
       title: draft.seo_title,
@@ -556,7 +618,7 @@ function buildEditingLike(res: {
     status: "draft",
     primary_image_url: primary,
     gallery,
-    video_url: null,
+    video_url: primaryVideoUrl,
     category_id: matchedCategoryId,
     warranty: null,
     return_policy: null,
