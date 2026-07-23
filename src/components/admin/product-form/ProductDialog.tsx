@@ -832,44 +832,20 @@ export function ProductDialog({
             )}
           </DialogHeader>
 
-          <form onSubmit={submit} className="flex max-h-[calc(92vh-8rem)] flex-col">
-            <div className="flex-1 overflow-y-auto p-4">
-              {/* Desktop tabs */}
-              <div className="hidden md:block">
-                <Tabs defaultValue="general">
-                  <TabsList className="h-auto flex-wrap justify-start">
-                    {tabs.map((t) => (
-                      <TabsTrigger key={t.id} value={t.id}>{t.label}</TabsTrigger>
-                    ))}
-                  </TabsList>
-                  {tabs.map((t) => (
-                    <TabsContent key={t.id} value={t.id} className="mt-4">{t.content}</TabsContent>
-                  ))}
-                </Tabs>
-              </div>
-              {/* Mobile accordion */}
-              <div className="md:hidden">
-                <Accordion type="single" collapsible defaultValue="general">
-                  {tabs.map((t) => (
-                    <AccordionItem key={t.id} value={t.id}>
-                      <AccordionTrigger className="text-sm">{t.label}</AccordionTrigger>
-                      <AccordionContent>{t.content}</AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </div>
-            </div>
-            <div className="flex items-center justify-between gap-3 border-t bg-muted/30 p-4">
-              <p className="text-xs text-muted-foreground">
+          <WizardForm
+            tabs={tabs as any}
+            saving={saving}
+            editing={!!editing}
+            onSubmit={submit}
+            onCancel={onClose}
+            footerInfo={
+              <>
                 {finalPrice > 0 && `৳${finalPrice.toFixed(0)}`}
                 {stockManaged && ` · Stock ${stock}`}
-              </p>
-              <div className="flex gap-2">
-                <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-                <Button type="submit" disabled={saving}>{saving ? "Saving…" : editing ? "Save changes" : "Create product"}</Button>
-              </div>
-            </div>
-          </form>
+              </>
+            }
+          />
+
         </DialogContent>
       </Dialog>
       {cropTarget && (
