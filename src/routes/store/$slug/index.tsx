@@ -229,6 +229,19 @@ function StoreHome() {
         </Section>
       )}
 
+      {newArrivals.length > 0 && (
+        <Section
+          title="New Arrivals"
+          icon={<Sparkles className="h-4 w-4 text-sky-500" />}
+          onViewAll={() => {
+            selectMain(null, null);
+            scrollToAll();
+          }}
+        >
+          <ProductGrid slug={slug} products={newArrivals} />
+        </Section>
+      )}
+
       <section id="all-products" className="scroll-mt-32 space-y-4">
         <div className="flex items-center gap-2">
           <Grid3x3 className="h-4 w-4 text-neutral-500" />
