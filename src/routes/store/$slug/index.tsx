@@ -120,6 +120,13 @@ function StoreHome() {
     [products],
   );
 
+  const newArrivals = useMemo(
+    () => [...products].slice(0, 12),
+    [products],
+  );
+
+
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return products.filter((p) => {
