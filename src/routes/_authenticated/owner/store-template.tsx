@@ -181,6 +181,10 @@ function StoreTemplatePage() {
         </p>
       </div>
 
+      <DemoStoreManager />
+
+
+
       <Tabs defaultValue="design">
         <TabsList className="flex flex-wrap">
           <TabsTrigger value="design">Design</TabsTrigger>
