@@ -200,7 +200,17 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
 
   // Once we have a draft, hand off to the existing ProductDialog prefilled.
   if (draftResult) {
-    const editingLike = buildEditingLike(draftResult, { youtubeUrl, facebookUrl });
+    const essentials = {
+      price: essPrice ? Number(essPrice) : undefined,
+      old_price: essOldPrice ? Number(essOldPrice) : undefined,
+      cost_price: essCostPrice ? Number(essCostPrice) : undefined,
+      stock: essStock ? Number(essStock) : undefined,
+      low_stock_threshold: essLowStock ? Number(essLowStock) : undefined,
+      sku: essSku.trim() || undefined,
+      brand: essBrand.trim() || undefined,
+      weight_g: essWeight ? Number(essWeight) : undefined,
+    };
+    const editingLike = buildEditingLike(draftResult, { youtubeUrl, facebookUrl }, essentials);
     return (
       <ProductDialog
         storeId={storeId}
