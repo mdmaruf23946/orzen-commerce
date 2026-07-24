@@ -26,7 +26,9 @@ export type AgentContext = {
   pageToken?: string; // decrypted page access token
   siteOrigin?: string; // e.g. https://mystore.orzen.top
   channel?: "web" | "messenger"; // controls which display tools are registered
+  focusProductId?: string | null; // server-resolved product for this turn (see resolveFocusProduct)
 };
+
 
 export async function loadAiContext(storeId: string) {
   const sb = admin();
