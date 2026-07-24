@@ -545,15 +545,15 @@ export async function resolveFocusProduct(opts: {
 }): Promise<FocusProduct> {
   const raw = String(opts.text ?? "").trim();
   if (!raw) return { product: null, ambiguous: false, candidates: [] };
-  if (!isBroadBrowseQuery(raw) && searchTerms(raw).length === 0) {
+  const compact = raw.toLowerCase();
+  const hasDeictic = DEICTIC_TOKENS.some((t) => compact.includes(t.toLowerCase()));
+  if (!hasDeictic && !isBroadBrowseQuery(raw) && searchTerms(raw).length === 0) {
     return { product: null, ambiguous: false, candidates: [] };
   }
   const sb = admin();
 
   // 1) Deictic reference ("this / এটা / ওইটা / it") → use the last recommended
-  //    product in this conversation. If there's exactly one recent id, pin it.
-  const compact = raw.toLowerCase();
-  const hasDeictic = DEICTIC_TOKENS.some((t) => new RegExp(`(^|\\W)${t}(\\W|$)`, "i").test(compact));
+  //    product in this conversation. Pin the most recent product card the agent sent.
   if (hasDeictic && opts.conversationId) {
     const { data: recs } = await sb
       .from("ai_product_recommendations")
@@ -563,12 +563,12 @@ export async function resolveFocusProduct(opts: {
       .order("created_at", { ascending: false })
       .limit(5);
     const ids = Array.from(new Set((recs ?? []).map((r: any) => r.product_id).filter(Boolean)));
-    if (ids.length === 1) {
+    if (ids.length > 0) {
       const { data: p } = await sb
         .from("products")
         .select(PRODUCT_SELECT_MIN)
         .eq("store_id", opts.storeId)
-        .eq("id", ids[0]!)
+        .eq("id", ids[0])
         .eq("status", "active")
         .maybeSingle();
       if (p) return { product: p, ambiguous: false, candidates: [], canonical_caption: canonicalCaption(p as any) };
