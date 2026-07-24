@@ -618,25 +618,36 @@ async function transcribeAudioAttachment(url: string): Promise<string | null> {
   try {
     const audioRes = await fetch(url);
     if (!audioRes.ok) return null;
-    const blob = await audioRes.blob();
-    const ct = (blob.type || "audio/mp4").split(";")[0];
-    const ext =
-      ct === "audio/webm" ? "webm" :
-      ct === "audio/mp4" || ct === "audio/aac" ? "m4a" :
-      ct === "audio/mpeg" ? "mp3" :
-      ct === "audio/wav" ? "wav" :
-      ct === "audio/ogg" ? "ogg" : "m4a";
-    const form = new FormData();
-    form.append("model", "openai/gpt-4o-transcribe");
-    form.append("file", blob, `voice.${ext}`);
-    const r = await fetch("https://ai.gateway.lovable.dev/v1/audio/transcriptions", {
+    const buf = new Uint8Array(await audioRes.arrayBuffer());
+    if (!buf.byteLength) return null;
+    let bin = "";
+    for (let i = 0; i < buf.byteLength; i++) bin += String.fromCharCode(buf[i]!);
+    const b64 = btoa(bin);
+    const mime = (audioRes.headers.get("content-type") || "audio/mp4").split(";")[0]!.trim();
+    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${key}` },
-      body: form,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`,
+        "Lovable-API-Key": key,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Transcribe this voice message verbatim. Return only the transcript text with no extra commentary." },
+              { type: "input_audio", input_audio: { data: b64, format: mime.replace(/^audio\//, "") } },
+            ],
+          },
+        ],
+      }),
     });
     if (!r.ok) return null;
-    const j = (await r.json().catch(() => null)) as { text?: string } | null;
-    return j?.text?.trim() || null;
+    const j = (await r.json().catch(() => null)) as { choices?: Array<{ message?: { content?: string } }> } | null;
+    const text = j?.choices?.[0]?.message?.content?.trim();
+    return text || null;
   } catch {
     return null;
   }
