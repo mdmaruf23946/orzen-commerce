@@ -1,82 +1,78 @@
-## Root cause
+## Goal
+Rebuild `src/routes/store/$slug/product.$productId.tsx` as a premium, mobile+desktop-optimized PDP. No changes to the Product Add form or DB schema — only surface fields that already exist (`brand`, `sku`, `category_id`, `features`, `specifications`, `video_url`, `warranty`, `return_policy`, `meta`, `gallery`, `old_price`, `stock`).
 
-Today the AI agent has two independent surfaces per turn:
+## Data changes (minimal, backend-only)
+Extend existing server functions in `src/lib/storefront.functions.ts`:
+- `getProduct`: also return `brand, sku, category_id, features, specifications, video_url, warranty, meta, return_policy`.
+- New `listRelatedProducts({ storeId, categoryId, excludeId, limit: 8 })` — reuses the products table, filtered by same category, active status; falls back to newest if fewer than 6.
+- Store fetch already returns logo/name; reuse for the Store Information card.
 
-1. A **product tool** (`sendProductCard` / `showProduct` / `searchProducts`) that emits an image + card using a `productId` the model chose.
-2. **Free-form assistant text** the model writes separately, drawing on the full prompt (system prompt "recent product ids", "pending order product_name", earlier assistant messages, tool results from *other* products it looked at this turn).
+No DB migrations, no new tables, no schema changes.
 
-Nothing links (1) and (2) to the same DB row. The model can call `sendProductCard(A)` and then, in the same turn, write a sentence describing product B — often the *previously* recommended product still sitting in `recent_product_ids` / `pending_order` / prior messages. The mismatch the user reported ("image of one product, description of another") is exactly this: two independent generations, one grounded in a tool call, one grounded in stale context.
-
-Secondary contributors:
-- `searchProducts` returns up to 6 products; the model picks *which id* to card, but writes text from any of them (or from an earlier turn's product).
-- `sendProductCard` / `showProduct` only return `{ sent: true }` / a summary — they don't return the *authoritative* caption, so the model has no anchor forcing its text to match the card.
-- The system-prompt "Conversation state" block leaks a `product_name` from `pending_order` and a list of `recent_product_ids` into every turn, which the model happily uses as if it were the current focus.
-
-## Fix strategy
-
-Make the product being talked about a single, server-resolved value per turn, and make the outgoing text derive from *that record only*.
-
-### 1. `resolveFocusProduct(userMessage, convId, storeId)` — server-side, deterministic
-New helper in `src/lib/ai-agent.server.ts` that runs *before* `streamText`:
-
-- Extract candidates from the customer's latest message: explicit product id/slug, product name/code/SKU tokens, "this/that/এটা/এইটা/ওটা/এই product" deictic references.
-- Deictic → last product from `ai_product_recommendations` for this conversation (single row, most recent, not blacklisted).
-- Name/SKU/code → run the same ranked search as `searchProducts` but return **only the top-1 match with score ≥ threshold**; if ambiguous (top-2 within 10% score), mark `ambiguous: true` and return the top candidates.
-- Returns `{ product: fullRow | null, ambiguous, candidates }`.
-
-Called from `src/routes/api/public/messenger/webhook.ts` and `src/routes/api/ai/chat.ts` right before building the system prompt.
-
-### 2. Inject a "Focus product" block into the system prompt
-When `resolveFocusProduct` returns a product, append a block:
-
-```
-# Focus product (ONLY product allowed in this reply)
-id, name, slug, price, old_price, stock, brand, short_description, primary_image_url, key features, variants
+## Page structure (single route, split into small local components)
+Layout:
+```text
+Desktop (lg+):                        Mobile:
+┌──────────┬───────────────┐          ┌──────────────┐
+│ Gallery  │ Info + Buy Box│          │ Gallery      │
+│ + Video  │ (sticky)      │          │ Info         │
+├──────────┴───────────────┤          │ Highlights   │
+│ Tabs: Description /      │          │ Tabs / Accord│
+│ Features / Specs /       │          │ Reviews      │
+│ Package / Delivery /     │          │ Related      │
+│ Warranty                 │          │ Recently Vwd │
+├──────────────────────────┤          │ Store card   │
+│ Reviews                  │          │ Trust badges │
+│ Related products (grid)  │          │ Share        │
+│ Recently viewed          │          └──────────────┘
+│ You may also like        │          + Sticky bottom bar
+│ Store info + Trust + Shr │            (Price | Cart | Buy)
+└──────────────────────────┘
 ```
 
-And a hard rule:
+### Sections (all conditional — hidden if data missing)
+1. **Gallery** — thumbnail rail + main image with hover/click zoom (CSS transform, no library). If `video_url` present and matches YouTube/Facebook, append a video slide with lazy `<iframe loading="lazy">`.
+2. **Info block** — name, price, discount %, old price strike, stock badge, brand, category link, SKU. Short highlights read from `meta.highlights` (array) if present; otherwise omitted.
+3. **Description** — reuse existing sanitized rich-text renderer.
+4. **Key Features** — render `features` (array of strings) as bullet list; hidden if empty.
+5. **Technical Specifications** — render `specifications` (object) as 2-col key/value table; hidden if empty.
+6. **Package Includes** — from `meta.package_includes` (array) if present.
+7. **Delivery & Return** — pulled from store `delivery` JSON (already in store) + product `return_policy`.
+8. **Warranty** — `warranty` field if present.
+9. **Customer Reviews (UI shell)** — no reviews table exists; render average rating placeholder (uses `meta.rating` if present, else "No reviews yet"), rating breakdown bars, empty state, and a **Write a Review** button that opens a "coming soon" toast. This keeps the section without new DB work.
+10. **Related Products** — `listRelatedProducts` grid (2 cols mobile, 4 desktop), min 6, lazy-loaded images.
+11. **Recently Viewed** — localStorage-backed (`recent:{slug}` key), push current product on mount, render horizontal scroll rail.
+12. **You May Also Like** — reuse existing `listBestSellingProducts` server fn (already present) as lightweight AI-style recommendation.
+13. **Frequently Bought Together** — omitted (marked optional in request; would need new data).
+14. **Share Product** — Facebook / Messenger / WhatsApp / Telegram share URLs + Copy Link (uses `navigator.clipboard`).
+15. **Store Information** — logo + name + Visit Store button linking to `/store/$slug`.
+16. **Trust badges** — Secure Checkout, COD (if store gateway includes cod), Fast Delivery, Easy Return, Original Product — static icons + labels.
+17. **Sticky bottom bar (mobile)** — fixed bar with price, Add to Cart, Buy Now; only visible on `<lg` and when main Buy Box scrolled out of view (IntersectionObserver).
+18. **Sticky Buy Box (desktop)** — right column uses `position: sticky; top: 80px` so Buy Now / Add to Cart stay visible.
 
-> If a Focus product is set, every product fact in your reply MUST come from that record. Do not describe, name, price, or image any other product. Do not use `pending_order.product_name` or `recent_product_ids` as a substitute. To show it, call `sendProductCard`/`showProduct` with that exact id.
+## New helper files
+- `src/lib/recently-viewed.ts` — read/write recent product IDs per store in localStorage (max 12).
+- `src/components/storefront/pdp/` (co-located small components):
+  - `ProductGallery.tsx` (images + zoom + video slide)
+  - `BuyBox.tsx` (qty, add/buy, sticky wrapper)
+  - `InfoTabs.tsx` (Description/Features/Specs/Package/Delivery/Warranty — accordion on mobile, tabs on desktop)
+  - `ReviewsBlock.tsx` (rating breakdown UI shell)
+  - `RelatedRail.tsx` (reused for Related, Recently Viewed, You May Also Like)
+  - `ShareBar.tsx`, `TrustBadges.tsx`, `StoreCard.tsx`, `StickyMobileBar.tsx`
 
-When `ambiguous: true`, inject the top candidates and require the model to ask a one-line disambiguation question instead of guessing.
+## Performance
+- All rails/images use `loading="lazy"` and `decoding="async"`.
+- Related/recently-viewed/best-sellers queries run in `useQuery` (not blocking loader) so PDP first paint stays fast.
+- IntersectionObserver defers mounting Reviews/Related sections until near-viewport.
+- No new heavy dependencies; zoom via CSS `transform` on hover/tap.
+- Sanitized description already handled.
 
-### 3. Remove leaky context that lets the model drift
-- Drop `product_name` and `product_id` from the `pending_order` line in the system prompt when no Focus product is set for this turn (keep name/phone/address so the order flow still works).
-- Drop the "Recently recommended product ids: …" line — it is the biggest source of "wrong product" hallucinations. Replace it with the Focus-product block above (which is only present when the current turn actually needs it).
+## Out of scope
+- No Product Add form changes.
+- No new DB tables (reviews section is a UI shell only).
+- No Frequently Bought Together (needs data we don't have).
+- No new routes.
 
-### 4. Make the product tools return an authoritative caption + reject stale ids
-- `sendProductCard` / `showProduct` (and Messenger / web variants):
-  - When a Focus product is set for this turn, **reject** any `productId` that doesn't match — return `{ sent: false, error: "must_use_focus_product", focus_product_id }`. The model is forced to retry with the right id.
-  - On success, return `{ sent: true, canonical_caption }` where `canonical_caption` is a one-sentence, DB-derived line (name + short_description + price + stock). Instruct the model that its follow-up text MUST paraphrase only that caption, no new facts.
-- `sendProductCarousel` / `showProducts`: when a Focus product is set, restrict to related/upsell context; keep the same "canonical captions per id" return shape.
-
-### 5. Voice: transcribe first, resolve product from transcript
-In `src/routes/api/public/messenger/webhook.ts`, keep the Gemini transcription, then treat the transcript as the "latest user message" fed into `resolveFocusProduct`. Persist the transcript to `ai_messages` so the same resolution logic runs identically for text and voice.
-
-### 6. Verification (built into the change, not left to manual QA)
-Add `scripts/ai-agent-conversations.test.ts` (bun test) that drives `resolveFocusProduct` + a stubbed `streamText` over 30 scripted turns:
-
-- 10 text conversations across 5 different products (exact name, partial name, SKU, brand + category, Bangla name).
-- 10 follow-up/deictic turns ("এইটার দাম কত", "ছবি দেখান", "stock আছে?") after a prior recommendation, including cases where a *different* product was mentioned in an earlier turn.
-- 5 voice-transcript inputs (pre-recorded Gemini transcript strings) covering the same intents.
-- 5 ambiguity cases (two products share a keyword) — assert the agent asks a disambiguation question instead of picking one.
-
-Each test asserts:
-1. `resolveFocusProduct` returns the expected product id (or `ambiguous`).
-2. The tool call arguments passed to `sendProductCard`/`showProduct` match that id.
-3. The assistant text contains the focus product's name and *no* other product name from the fixture set.
-
-CI fails on any mismatch. Iterate on `resolveFocusProduct` scoring + the system-prompt rule until all 30 pass.
-
-## Files touched
-
-- `src/lib/ai-agent.server.ts` — add `resolveFocusProduct`, update `buildSystemPrompt` (Focus block, drop leaky state), update `sendProductCard` / `sendProductCarousel` / `showProduct` / `showProducts` to enforce focus id + return canonical caption.
-- `src/routes/api/public/messenger/webhook.ts` — call `resolveFocusProduct` on the resolved text (typed or transcribed) and pass it into the prompt/tool context.
-- `src/routes/api/ai/chat.ts` — same call on the last user UIMessage text.
-- `scripts/ai-agent-conversations.test.ts` — new 30-case regression suite.
-
-## Not changing
-
-- Model choice (stays Gemini) and the AI SDK wiring.
-- The order / tracking / handoff flows.
-- Storefront UI, product card rendering.
+## Verification
+- Playwright: load a real product page at 375px and 1280px viewports, screenshot to confirm gallery, sticky bars, and all conditional sections render without HTML tags leaking.
+- `tsgo` typecheck.
