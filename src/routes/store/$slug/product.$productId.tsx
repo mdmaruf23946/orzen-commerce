@@ -187,3 +187,28 @@ function ProductPage() {
     </div>
   );
 }
+
+function ProductDescription({ html }: { html: string }) {
+  const clean = useMemo(() => {
+    const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(html);
+    const source = looksLikeHtml ? html : html.replace(/\n/g, "<br />");
+    return DOMPurify.sanitize(source, {
+      ALLOWED_TAGS: [
+        "p", "br", "strong", "b", "em", "i", "u", "s", "ul", "ol", "li",
+        "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "a", "hr", "span", "div",
+      ],
+      ALLOWED_ATTR: ["href", "target", "rel"],
+      ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|tel:|#|\/)/i,
+    });
+  }, [html]);
+
+  return (
+    <div className="mt-8">
+      <h2 className="text-base font-semibold">Description</h2>
+      <div
+        className="prose prose-sm mt-2 max-w-none text-muted-foreground prose-headings:text-foreground prose-strong:text-foreground prose-a:text-primary"
+        dangerouslySetInnerHTML={{ __html: clean }}
+      />
+    </div>
+  );
+}
