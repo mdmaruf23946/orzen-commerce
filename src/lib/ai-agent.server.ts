@@ -25,6 +25,7 @@ export type AgentContext = {
   psid?: string; // Messenger PSID
   pageToken?: string; // decrypted page access token
   siteOrigin?: string; // e.g. https://mystore.orzen.top
+  channel?: "web" | "messenger"; // controls which display tools are registered
 };
 
 export async function loadAiContext(storeId: string) {
