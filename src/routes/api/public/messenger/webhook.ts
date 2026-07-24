@@ -1271,11 +1271,14 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                 new Set((recentRecs ?? []).map((r: any) => r.product_id).filter(Boolean)),
               );
 
-              const focus = await resolveFocusProduct({
-                storeId: integ.store_id,
-                conversationId: conv!.id,
-                text: effectiveText,
-              });
+              const smallTalk = isSmallTalkIntent(effectiveText);
+              const focus = smallTalk
+                ? { product: null, ambiguous: false, candidates: [] as any[] }
+                : await resolveFocusProduct({
+                    storeId: integ.store_id,
+                    conversationId: conv!.id,
+                    text: effectiveText,
+                  });
 
               const reply = await generateAgentReply({
                 ctx: {
@@ -1290,12 +1293,15 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                 system: buildSystemPrompt(store, agent, {
                   channel: "messenger",
                   settings,
-                  state: { pending_order: pending, last_order: lastOrder, recent_product_ids: recentIds },
+                  state: smallTalk
+                    ? { pending_order: {}, last_order: null, recent_product_ids: [] }
+                    : { pending_order: pending, last_order: lastOrder, recent_product_ids: recentIds },
                   focus,
                   latestUserText: effectiveText,
                 }),
                 fast: true,
               });
+
 
 
 
