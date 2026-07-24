@@ -445,8 +445,190 @@ async function blockDuplicateMessengerToolOrder(opts: {
   };
 }
 
+// ---------- Focus product resolver (root-cause fix for wrong-image/wrong-text) ----------
+
+const DEICTIC_TOKENS = [
+  "this", "that", "it", "এটা", "এইটা", "ওটা", "ওইটা", "এই", "ওই", "সেই", "সেটা",
+];
+
+const PRODUCT_SELECT_MIN =
+  "id,name,slug,brand,product_code,sku,category_id,short_description,price,old_price,stock,status,primary_image_url,gallery,features,variants,total_sold,rating,is_featured";
+
+/** Pure scoring function — exposed for tests. Returns 0 when no meaningful signal. */
+export function scoreProductAgainstQuery(
+  product: {
+    name?: string | null;
+    brand?: string | null;
+    sku?: string | null;
+    product_code?: string | null;
+    short_description?: string | null;
+    description?: string | null;
+    features?: unknown;
+    specifications?: unknown;
+    variants?: unknown;
+  },
+  terms: string[],
+  phrase: string,
+): number {
+  const name = String(product.name ?? "").toLowerCase();
+  const brand = String(product.brand ?? "").toLowerCase();
+  const sku = String(product.sku ?? "").toLowerCase();
+  const code = String(product.product_code ?? "").toLowerCase();
+  const haystack = [
+    name, brand, sku, code,
+    String(product.short_description ?? "").toLowerCase(),
+    String(product.description ?? "").toLowerCase(),
+    stringifyProductField(product.features).toLowerCase(),
+    stringifyProductField(product.specifications).toLowerCase(),
+    stringifyProductField(product.variants).toLowerCase(),
+  ].join(" ");
+  let score = 0;
+  const p = phrase.toLowerCase().trim();
+  if (p && name === p) score += 200;                     // exact name match wins
+  if (p && name && name.includes(p) && p.length >= 3) score += 100;
+  if (p && haystack.includes(p) && p.length >= 3) score += 40;
+  for (const t of terms) {
+    if (!t) continue;
+    if (sku && sku === t) score += 150;                  // exact SKU
+    if (code && code === t) score += 150;                // exact product code
+    if (name.includes(t)) score += 30;
+    if (brand === t) score += 25;
+    else if (brand && brand.includes(t)) score += 10;
+    if (haystack.includes(t)) score += 8;
+  }
+  return score;
+}
+
+export function canonicalCaption(p: {
+  name: string;
+  price: number | string;
+  old_price?: number | string | null;
+  stock: number;
+  short_description?: string | null;
+}): string {
+  const price = p.old_price ? `৳${p.price} (was ৳${p.old_price})` : `৳${p.price}`;
+  const stock = Number(p.stock) > 0 ? "in stock" : "out of stock";
+  const sd = (p.short_description ?? "").trim();
+  return sd ? `${p.name} — ${price}, ${stock}. ${sd}` : `${p.name} — ${price}, ${stock}.`;
+}
+
+/**
+ * Deterministically resolve which product this turn is about, BEFORE calling
+ * the model. This is the single anti-hallucination gate: if the customer's
+ * latest message names/references a product, we pin that product's DB row and
+ * force every tool call + text sentence to derive from it.
+ */
+export async function resolveFocusProduct(opts: {
+  storeId: string;
+  conversationId?: string | null;
+  text: string;
+}): Promise<FocusProduct> {
+  const raw = String(opts.text ?? "").trim();
+  if (!raw) return { product: null, ambiguous: false, candidates: [] };
+  const sb = admin();
+
+  // 1) Deictic reference ("this / এটা / ওইটা / it") → use the last recommended
+  //    product in this conversation. If there's exactly one recent id, pin it.
+  const compact = raw.toLowerCase();
+  const hasDeictic = DEICTIC_TOKENS.some((t) => new RegExp(`(^|\\W)${t}(\\W|$)`, "i").test(compact));
+  if (hasDeictic && opts.conversationId) {
+    const { data: recs } = await sb
+      .from("ai_product_recommendations")
+      .select("product_id,created_at")
+      .eq("store_id", opts.storeId)
+      .eq("conversation_id", opts.conversationId)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    const ids = Array.from(new Set((recs ?? []).map((r: any) => r.product_id).filter(Boolean)));
+    if (ids.length === 1) {
+      const { data: p } = await sb
+        .from("products")
+        .select(PRODUCT_SELECT_MIN)
+        .eq("store_id", opts.storeId)
+        .eq("id", ids[0]!)
+        .eq("status", "active")
+        .maybeSingle();
+      if (p) return { product: p, ambiguous: false, candidates: [], canonical_caption: canonicalCaption(p as any) };
+    }
+    // Multiple recent products → let the search branch below try to
+    // disambiguate; if it also fails, we'll return ambiguous with these ids.
+  }
+
+  // 2) Search branch: score all active products against the message text.
+  const terms = searchTerms(raw);
+  if (!terms.length && !hasDeictic) return { product: null, ambiguous: false, candidates: [] };
+
+  const { data: rows } = await sb
+    .from("products")
+    .select(PRODUCT_SELECT_MIN)
+    .eq("store_id", opts.storeId)
+    .eq("status", "active")
+    .limit(500);
+  const { data: bl } = await sb
+    .from("ai_product_blacklist")
+    .select("product_id")
+    .eq("store_id", opts.storeId);
+  const blocked = new Set((bl ?? []).map((r: any) => r.product_id));
+
+  const scored = (rows ?? [])
+    .filter((r: any) => !blocked.has(r.id))
+    .map((r: any) => ({ product: r, score: scoreProductAgainstQuery(r, terms, raw) }))
+    .filter((row) => row.score >= 25)
+    .sort((a, b) => b.score - a.score);
+
+  if (!scored.length) {
+    // Deictic with multiple recent products → mark ambiguous with those.
+    if (hasDeictic && opts.conversationId) {
+      const { data: recs } = await sb
+        .from("ai_product_recommendations")
+        .select("product_id,created_at")
+        .eq("store_id", opts.storeId)
+        .eq("conversation_id", opts.conversationId)
+        .order("created_at", { ascending: false })
+        .limit(4);
+      const ids = Array.from(new Set((recs ?? []).map((r: any) => r.product_id).filter(Boolean))).slice(0, 4);
+      if (ids.length >= 2) {
+        const { data: prods } = await sb
+          .from("products")
+          .select(PRODUCT_SELECT_MIN)
+          .eq("store_id", opts.storeId)
+          .in("id", ids);
+        return {
+          product: null,
+          ambiguous: true,
+          candidates: (prods ?? []).map((p: any) => ({
+            id: p.id, name: p.name, price: p.price, primary_image_url: p.primary_image_url,
+          })),
+        };
+      }
+    }
+    return { product: null, ambiguous: false, candidates: [] };
+  }
+
+  const top = scored[0]!;
+  const second = scored[1];
+  // Ambiguous when top-2 within 15% of the top score AND both above threshold.
+  if (second && second.score >= top.score * 0.85) {
+    return {
+      product: null,
+      ambiguous: true,
+      candidates: scored.slice(0, 4).map((row) => ({
+        id: row.product.id, name: row.product.name, price: row.product.price,
+        primary_image_url: row.product.primary_image_url,
+      })),
+    };
+  }
+  return {
+    product: top.product,
+    ambiguous: false,
+    candidates: [],
+    canonical_caption: canonicalCaption(top.product as any),
+  };
+}
+
 // ---------- Tools ----------
 export function buildTools(ctx: AgentContext) {
+
   const sb = admin();
   const storeId = ctx.storeId;
 
