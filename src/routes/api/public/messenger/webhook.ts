@@ -1248,7 +1248,8 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                 continue;
               }
 
-              const { store, agent } = await loadAiContext(integ.store_id);
+              const { store, agent, settings } = await loadAiContext(integ.store_id);
+
               const useHistory = (integ as any).conversation_history !== false;
               const history = useHistory
                 ? (
