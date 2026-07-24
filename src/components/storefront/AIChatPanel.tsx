@@ -39,7 +39,7 @@ export default function AIChatPanel({
   }
 
   return (
-    <div className="fixed bottom-20 right-4 z-40 flex h-[70vh] max-h-[600px] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl sm:w-96">
+    <div className="fixed bottom-40 right-4 z-40 flex h-[70vh] max-h-[600px] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl sm:w-96 md:bottom-20">
       <div
         className="flex items-center justify-between px-4 py-3 text-white"
         style={{ backgroundColor: "var(--store-btn-bg, var(--primary))" }}

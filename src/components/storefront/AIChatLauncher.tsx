@@ -29,7 +29,7 @@ export function AIChatLauncher({
   return (
     <>
       {open && hasMessenger && (
-        <div className="fixed bottom-24 right-4 z-40 flex flex-col items-end gap-2">
+        <div className="fixed bottom-40 right-4 z-40 flex flex-col items-end gap-2 md:bottom-24">
           <button
             onClick={() => {
               setChatOpen(true);
@@ -54,7 +54,7 @@ export function AIChatLauncher({
       <button
         onClick={toggle}
         aria-label="Open chat"
-        className="fixed bottom-4 right-4 z-40 grid h-14 w-14 place-items-center rounded-full text-white shadow-lg transition-transform hover:scale-105"
+        className="fixed bottom-20 right-4 z-40 grid h-14 w-14 place-items-center rounded-full text-white shadow-lg transition-transform hover:scale-105 md:bottom-4"
         style={{ backgroundColor: "var(--store-btn-bg, var(--primary))" }}
       >
         {open || chatOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
@@ -63,7 +63,7 @@ export function AIChatLauncher({
       {chatOpen && (
         <Suspense
           fallback={
-            <div className="fixed bottom-20 right-4 z-40 grid h-24 w-80 place-items-center rounded-2xl border bg-background text-sm text-muted-foreground shadow-xl">
+            <div className="fixed bottom-40 right-4 z-40 grid h-24 w-80 place-items-center rounded-2xl border bg-background text-sm text-muted-foreground shadow-xl md:bottom-20">
               Loading…
             </div>
           }
