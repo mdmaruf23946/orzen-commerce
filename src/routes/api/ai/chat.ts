@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, stepCountIs, type UIMessage } from "ai";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { buildSystemPrompt, buildTools, getModelForStore, loadAiContext, logUsage } from "@/lib/ai-agent.server";
+import { buildSystemPrompt, buildTools, getModelForStore, loadAiContext, logUsage, resolveFocusProduct } from "@/lib/ai-agent.server";
 
 function admin() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
