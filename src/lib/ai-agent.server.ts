@@ -710,6 +710,47 @@ export function buildTools(ctx: AgentContext) {
     });
   }
 
+  // Web-only display tools — return structured JSON that the chat panel renders inline.
+  if (ctx.channel === "web") {
+    async function loadProducts(ids: string[]) {
+      if (!ids.length) return [];
+      const [blocked, cats, res] = await Promise.all([
+        getBlacklistedIds(),
+        categoryMap(),
+        sb.from("products").select(productSelect).eq("store_id", storeId).in("id", ids),
+      ]);
+      const byId = new Map((res.data ?? []).map((p: any) => [p.id, p]));
+      return ids
+        .map((id) => byId.get(id))
+        .filter((p: any) => p && !blocked.has(p.id))
+        .map((p: any) => productSummary(ctx, p, cats.get(p.category_id)));
+    }
+
+    tools.showProduct = tool({
+      description:
+        "Display ONE product to the web-chat customer as a rich card (image, name, price, stock, view/buy buttons). Use whenever you want the customer to see a specific product.",
+      inputSchema: z.object({ productId: z.string().uuid() }),
+      execute: async ({ productId }) => {
+        const products = await loadProducts([productId]);
+        if (!products.length) return { rendered: false, error: "not_found" };
+        await logRecommendations("showProduct", products, "web_card");
+        return { rendered: true, products };
+      },
+    });
+
+    tools.showProducts = tool({
+      description:
+        "Display up to 10 products to the web-chat customer as a scrollable carousel. Use for search results, comparisons, and cross-sell suggestions.",
+      inputSchema: z.object({ productIds: z.array(z.string().uuid()).min(1).max(10) }),
+      execute: async ({ productIds }) => {
+        const products = await loadProducts(productIds);
+        if (!products.length) return { rendered: false, error: "no_products" };
+        await logRecommendations("showProducts", products, "web_carousel");
+        return { rendered: true, products };
+      },
+    });
+  }
+
   // Conversation-aware tools (order flow, memory, escalation)
   if (ctx.conversationId) {
     const convId = ctx.conversationId;
