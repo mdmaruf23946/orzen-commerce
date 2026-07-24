@@ -1274,7 +1274,7 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                   pageToken: token,
                 },
                 messages,
-                system: buildSystemPrompt(store, agent),
+                system: buildSystemPrompt(store, agent, { channel: "messenger", settings }),
                 fast: true,
               });
 
