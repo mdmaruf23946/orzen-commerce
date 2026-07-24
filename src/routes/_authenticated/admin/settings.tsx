@@ -55,6 +55,44 @@ function SettingsPage() {
   });
   const [savingLogin, setSavingLogin] = useState(false);
 
+  // Invoice numbering
+  const fetchInvoice = useServerFn(getInvoiceSettings);
+  const saveInvoice = useServerFn(updateInvoiceSettings);
+  const { data: invoice } = useQuery({
+    queryKey: ["admin", "invoice-settings"],
+    queryFn: () => fetchInvoice(),
+  });
+  const [invForm, setInvForm] = useState<InvoiceSettingsInput | null>(null);
+  const [savingInv, setSavingInv] = useState(false);
+  useEffect(() => {
+    if (invoice) {
+      setInvForm({
+        prefix: invoice.prefix,
+        separator: invoice.separator,
+        padding: invoice.padding,
+        start_number: invoice.start_number,
+        include_year: invoice.include_year,
+        include_month: invoice.include_month,
+      });
+    }
+  }, [invoice]);
+
+  async function submitInvoice(e: React.FormEvent) {
+    e.preventDefault();
+    if (!invForm) return;
+    setSavingInv(true);
+    try {
+      await saveInvoice({ data: invForm });
+      await qc.invalidateQueries({ queryKey: ["admin", "invoice-settings"] });
+      toast.success("Invoice settings saved");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSavingInv(false);
+    }
+  }
+
+
   async function toggleRequireLogin(enabled: boolean) {
     setSavingLogin(true);
     try {
