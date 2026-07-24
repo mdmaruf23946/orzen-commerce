@@ -137,10 +137,10 @@ export const listMessages = createServerFn({ method: "POST" })
         "id,conversation_id,role,content,direction,message_type,attachments,mid,delivery_status,error,sent_by_user_id,created_at",
       )
       .eq("conversation_id", data.conversationId)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
       .limit(data.limit);
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    return [...(rows ?? [])].reverse();
   });
 
 export const markRead = createServerFn({ method: "POST" })
