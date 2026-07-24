@@ -278,8 +278,8 @@ const BANGLA_SEARCH_SYNONYMS: Record<string, string[]> = {
 };
 
 const PRODUCT_STOPWORDS = new Set([
-  "this", "that", "these", "those", "show", "give", "send", "photo", "image", "picture", "pic", "please", "price", "details", "hi", "hello", "hey", "news", "status", "you", "your", "how", "are",
-  "এটা", "এইটা", "ওটা", "এই", "ওই", "এর", "টার", "একটা", "একটি", "ছবি", "দাও", "দেন", "দেখাও", "দেখান", "কি", "কী", "আছে", "দাম", "কত", "ডিটেইলস", "বিস্তারিত", "প্লিজ", "আমাদের", "আপনাদের", "তুমি", "তোমার", "আপনি", "আপনার", "খবর", "অবস্থা", "কেমন", "ভালো", "আছেন", "আছো", "হাই", "হ্যালো", "হেলো",
+  "this", "that", "these", "those", "show", "give", "send", "photo", "image", "picture", "pic", "please", "price", "details", "hi", "hai", "hey", "hii", "hiii", "yo", "sup", "ok", "okay", "hmm", "hello", "helo", "news", "status", "you", "your", "how", "are",
+  "এটা", "এইটা", "ওটা", "এই", "ওই", "এর", "টার", "একটা", "একটি", "ছবি", "দাও", "দেন", "দেখাও", "দেখান", "কি", "কী", "আছে", "দাম", "কত", "ডিটেইলস", "বিস্তারিত", "প্লিজ", "আমাদের", "আপনাদের", "তুমি", "তোমার", "আপনি", "আপনার", "খবর", "অবস্থা", "কেমন", "ভালো", "আছেন", "আছো", "হাই", "হ্যালো", "হেলো", "হি", "হেই", "হ্যা", "হ্যাঁ", "হুম", "হুঁ", "আচ্ছা", "ওহে", "ইয়ো", "ওকে", "সালাম",
 ]);
 
 function searchTerms(raw: string) {
@@ -291,11 +291,14 @@ function searchTerms(raw: string) {
       token.replace(/(ের|এর|টি|টা|গুলো|গুলি|গুলোতে|গুলোর|টার|টির)$/u, ""),
     ].filter(Boolean));
     for (const variant of variants) {
-      if (variant.length < 2 || PRODUCT_STOPWORDS.has(variant)) continue;
+      // Require ≥3 chars: prevents short greetings/particles like "হি", "হে",
+      // "hi", "ok" from being treated as product keywords and hallucinating a focus product.
+      if (variant.length < 3 || PRODUCT_STOPWORDS.has(variant)) continue;
       terms.add(variant);
       for (const synonym of BANGLA_SEARCH_SYNONYMS[variant] ?? []) terms.add(synonym.toLowerCase());
     }
   }
+
   for (const [bn, synonyms] of Object.entries(BANGLA_SEARCH_SYNONYMS)) {
     if (compact.includes(bn)) synonyms.forEach((s) => terms.add(s.toLowerCase()));
   }
