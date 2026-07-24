@@ -1,7 +1,21 @@
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import { useEffect, useRef, useState } from "react";
-import { Send, X } from "lucide-react";
+import { Send, X, LifeBuoy, ExternalLink } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { getWebChatHistory, escalateWebChat } from "@/lib/ai-web-chat.functions";
+
+type WebProduct = {
+  id: string;
+  name: string;
+  price: number;
+  old_price?: number | null;
+  stock: number;
+  image_url?: string | null;
+  product_url?: string | null;
+};
+
+const CID_KEY_PREFIX = "orzen_ai_cid:";
 
 export default function AIChatPanel({
   slug,
@@ -14,28 +28,107 @@ export default function AIChatPanel({
   welcome: string;
   onClose: () => void;
 }) {
+  const cidKey = CID_KEY_PREFIX + slug;
   const [input, setInput] = useState("");
+  const [conversationId, setConversationId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem(cidKey);
+  });
+  const [handedOff, setHandedOff] = useState(false);
+  const [escalating, setEscalating] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const loadHistory = useServerFn(getWebChatHistory);
+  const escalate = useServerFn(escalateWebChat);
+
   const transport = useRef(
     new DefaultChatTransport({
       api: "/api/ai/chat",
-      body: { slug },
+      prepareSendMessagesRequest: ({ messages }) => ({
+        body: {
+          slug,
+          messages,
+          conversationId: window.localStorage.getItem(cidKey) ?? undefined,
+        },
+      }),
+      fetch: async (url, init) => {
+        const res = await fetch(url as string, init);
+        const cid = res.headers.get("x-orzen-conversation-id");
+        if (cid) {
+          window.localStorage.setItem(cidKey, cid);
+          setConversationId(cid);
+        }
+        return res;
+      },
     }),
   ).current;
-  const { messages, sendMessage, status } = useChat({ transport });
+
+  const { messages, sendMessage, setMessages, status } = useChat({ transport });
+
+  // Load prior history once per open, if we have a conversation id.
+  useEffect(() => {
+    if (historyLoaded) return;
+    if (!conversationId) { setHistoryLoaded(true); return; }
+    (async () => {
+      try {
+        const res = await loadHistory({ data: { slug, conversationId } });
+        if (res.handedOff) setHandedOff(true);
+        if (res.messages.length) {
+          setMessages(
+            res.messages.map((m) => ({
+              id: m.id,
+              role: m.role,
+              parts: [{ type: "text", text: m.content }],
+            })) as UIMessage[],
+          );
+        }
+      } catch { /* ignore */ }
+      setHistoryLoaded(true);
+    })();
+  }, [conversationId, historyLoaded, loadHistory, slug, setMessages]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, status]);
 
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [status, handedOff]);
+
   const busy = status === "submitted" || status === "streaming";
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!input.trim() || busy) return;
+    if (!input.trim() || busy || handedOff) return;
     const text = input.trim();
     setInput("");
     await sendMessage({ text });
+  }
+
+  async function handleEscalate() {
+    if (!conversationId || escalating || handedOff) return;
+    setEscalating(true);
+    try {
+      await escalate({ data: { slug, conversationId } });
+      setHandedOff(true);
+    } catch { /* ignore */ }
+    setEscalating(false);
+  }
+
+  function extractProducts(m: UIMessage): WebProduct[] {
+    const products: WebProduct[] = [];
+    for (const part of m.parts as any[]) {
+      const type = part?.type as string | undefined;
+      if (!type) continue;
+      // AI SDK emits tool parts as `tool-<name>` with `output`/`result` (varies by version).
+      if (type === "tool-showProduct" || type === "tool-showProducts") {
+        const out = part.output ?? part.result ?? part.toolResult;
+        const list = out?.products;
+        if (Array.isArray(list)) products.push(...list);
+      }
+    }
+    return products;
   }
 
   return (
@@ -45,9 +138,21 @@ export default function AIChatPanel({
         style={{ backgroundColor: "var(--store-btn-bg, var(--primary))" }}
       >
         <div className="font-semibold">{agentName}</div>
-        <button onClick={onClose} aria-label="Close">
-          <X className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          {!handedOff && conversationId && (
+            <button
+              onClick={handleEscalate}
+              disabled={escalating}
+              title="Talk to a human"
+              className="rounded-md p-1.5 hover:bg-white/10 disabled:opacity-50"
+            >
+              <LifeBuoy className="h-4 w-4" />
+            </button>
+          )}
+          <button onClick={onClose} aria-label="Close" className="rounded-md p-1.5 hover:bg-white/10">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       </div>
       <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-3 py-3 text-sm">
         {messages.length === 0 && (
@@ -57,36 +162,55 @@ export default function AIChatPanel({
           const text = m.parts
             .map((p: any) => (p.type === "text" ? p.text : ""))
             .join("");
-          if (!text) return null;
+          const products = m.role === "assistant" ? extractProducts(m) : [];
           const isUser = m.role === "user";
           return (
-            <div key={m.id} className={isUser ? "flex justify-end" : "flex justify-start"}>
-              <div
-                className={
-                  isUser
-                    ? "max-w-[85%] rounded-2xl rounded-br-sm px-3 py-2 text-white"
-                    : "max-w-[85%] rounded-2xl rounded-bl-sm bg-muted px-3 py-2"
-                }
-                style={isUser ? { backgroundColor: "var(--store-btn-bg, var(--primary))" } : undefined}
-              >
-                {text}
-              </div>
+            <div key={m.id} className="space-y-2">
+              {text && (
+                <div className={isUser ? "flex justify-end" : "flex justify-start"}>
+                  <div
+                    className={
+                      isUser
+                        ? "max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm px-3 py-2 text-white"
+                        : "max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-bl-sm bg-muted px-3 py-2"
+                    }
+                    style={isUser ? { backgroundColor: "var(--store-btn-bg, var(--primary))" } : undefined}
+                  >
+                    {text}
+                  </div>
+                </div>
+              )}
+              {products.length > 0 && (
+                <div className="flex justify-start">
+                  <div className="w-full max-w-[95%] space-y-2">
+                    {products.map((p) => (
+                      <ProductCard key={p.id} p={p} />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
         {busy && <div className="text-xs text-muted-foreground">Typing…</div>}
+        {handedOff && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            A human agent has been notified and will reply shortly.
+          </div>
+        )}
       </div>
       <form onSubmit={submit} className="flex gap-2 border-t p-2">
         <input
+          ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Type a message…"
-          disabled={busy}
+          placeholder={handedOff ? "Waiting for a human agent…" : "Type a message…"}
+          disabled={busy || handedOff}
           className="flex-1 rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
         />
         <button
           type="submit"
-          disabled={busy || !input.trim()}
+          disabled={busy || handedOff || !input.trim()}
           className="grid h-9 w-9 place-items-center rounded-md text-white disabled:opacity-50"
           style={{ backgroundColor: "var(--store-btn-bg, var(--primary))" }}
         >
@@ -94,5 +218,44 @@ export default function AIChatPanel({
         </button>
       </form>
     </div>
+  );
+}
+
+function ProductCard({ p }: { p: WebProduct }) {
+  const inStock = p.stock > 0;
+  return (
+    <a
+      href={p.product_url ?? "#"}
+      target="_blank"
+      rel="noreferrer"
+      className="flex gap-3 rounded-xl border bg-card p-2 shadow-sm transition-shadow hover:shadow-md"
+    >
+      {p.image_url ? (
+        <img src={p.image_url} alt={p.name} loading="lazy" className="h-20 w-20 flex-shrink-0 rounded-lg object-cover" />
+      ) : (
+        <div className="h-20 w-20 flex-shrink-0 rounded-lg bg-muted" />
+      )}
+      <div className="flex min-w-0 flex-1 flex-col justify-between">
+        <div>
+          <div className="line-clamp-2 text-sm font-medium">{p.name}</div>
+          <div className="mt-0.5 flex items-baseline gap-1.5">
+            <span className="text-sm font-semibold" style={{ color: "var(--store-btn-bg, var(--primary))" }}>
+              ৳{p.price}
+            </span>
+            {p.old_price ? (
+              <span className="text-xs text-muted-foreground line-through">৳{p.old_price}</span>
+            ) : null}
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className={`text-[10px] font-medium ${inStock ? "text-emerald-600" : "text-red-500"}`}>
+            {inStock ? "In stock" : "Out of stock"}
+          </span>
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+            View <ExternalLink className="h-3 w-3" />
+          </span>
+        </div>
+      </div>
+    </a>
   );
 }
