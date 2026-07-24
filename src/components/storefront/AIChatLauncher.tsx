@@ -54,7 +54,7 @@ export function AIChatLauncher({
       <button
         onClick={toggle}
         aria-label="Open chat"
-        className="fixed bottom-4 right-4 z-40 grid h-14 w-14 place-items-center rounded-full text-white shadow-lg transition-transform hover:scale-105"
+        className="fixed bottom-20 right-4 z-40 grid h-14 w-14 place-items-center rounded-full text-white shadow-lg transition-transform hover:scale-105 md:bottom-4"
         style={{ backgroundColor: "var(--store-btn-bg, var(--primary))" }}
       >
         {open || chatOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
