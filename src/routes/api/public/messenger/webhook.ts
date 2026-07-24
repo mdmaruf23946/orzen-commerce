@@ -583,7 +583,7 @@ async function maybeBlockDuplicateMessengerOrder(opts: {
   return true;
 }
 
-async function maybeHandlePendingOrderText(opts: {
+async function maybeApplyPendingOrderText(opts: {
   sb: ReturnType<typeof admin>;
   storeId: string;
   conversationId: string;
@@ -591,26 +591,16 @@ async function maybeHandlePendingOrderText(opts: {
   token: string;
   text: string;
 }) {
+  // Context-only: merge any order details from this message into the pending-order slot
+  // so the LLM sees them via the state block, and block duplicates. NEVER sends a canned reply.
   const { sb, storeId, conversationId, psid, token, text } = opts;
   const current = await getConversationPendingOrder(sb, conversationId);
-  if (!current.product_id) return false;
-
-  const blocked = await maybeBlockDuplicateMessengerOrder({
-    sb,
-    storeId,
-    conversationId,
-    psid,
-    token,
-    slot: current,
-    product: { id: String(current.product_id), name: current.product_name ?? null },
-  });
-  if (blocked) return true;
-
   const details = parseOrderDetailsText(text);
   const slot = Object.keys(details).length
     ? await patchConversationPendingOrder(sb, conversationId, { ...current, ...details })
     : current;
-  const blockedAfterDetails = await maybeBlockDuplicateMessengerOrder({
+  if (!slot.product_id) return false;
+  const blocked = await maybeBlockDuplicateMessengerOrder({
     sb,
     storeId,
     conversationId,
@@ -619,61 +609,39 @@ async function maybeHandlePendingOrderText(opts: {
     slot,
     product: { id: String(slot.product_id), name: slot.product_name ?? null },
   });
-  if (blockedAfterDetails) return true;
-  const missing = orderMissingFields(slot);
-  if (!missing.length) {
-    return finalizePendingMessengerOrder({ sb, storeId, conversationId, psid, token });
+  return blocked; // true = duplicate short-circuit already replied; false = fall through to LLM
+}
+
+async function transcribeAudioAttachment(url: string): Promise<string | null> {
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key || !url) return null;
+  try {
+    const audioRes = await fetch(url);
+    if (!audioRes.ok) return null;
+    const blob = await audioRes.blob();
+    const ct = (blob.type || "audio/mp4").split(";")[0];
+    const ext =
+      ct === "audio/webm" ? "webm" :
+      ct === "audio/mp4" || ct === "audio/aac" ? "m4a" :
+      ct === "audio/mpeg" ? "mp3" :
+      ct === "audio/wav" ? "wav" :
+      ct === "audio/ogg" ? "ogg" : "m4a";
+    const form = new FormData();
+    form.append("model", "openai/gpt-4o-transcribe");
+    form.append("file", blob, `voice.${ext}`);
+    const r = await fetch("https://ai.gateway.lovable.dev/v1/audio/transcriptions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}` },
+      body: form,
+    });
+    if (!r.ok) return null;
+    const j = (await r.json().catch(() => null)) as { text?: string } | null;
+    return j?.text?.trim() || null;
+  } catch {
+    return null;
   }
-
-  const saved = Object.keys(details).length ? "যে তথ্য দিয়েছেন সেগুলো সেভ করেছি। " : "";
-  await sendAndLogText(sb, token, psid, conversationId, `${saved}অর্ডার কনফার্ম করতে এখন ${missing.join(", ")} দিন।`);
-  return true;
 }
 
-async function maybeHandleRepeatedOrderDetails(opts: {
-  sb: ReturnType<typeof admin>;
-  conversationId: string;
-  psid: string;
-  token: string;
-  text: string;
-}) {
-  const { sb, conversationId, psid, token, text } = opts;
-  if (!looksLikeOrderDetails(text)) return false;
-  const { data } = await sb
-    .from("ai_conversations")
-    .select("psid_profile")
-    .eq("id", conversationId)
-    .maybeSingle();
-  const lastOrder = ((data as any)?.psid_profile as any)?.last_order;
-  if (!lastOrder?.order_id) return false;
-  await sendAndLogText(
-    sb,
-    token,
-    psid,
-    conversationId,
-    `আপনার অর্ডারটি ইতিমধ্যে নেওয়া হয়েছে ✅\nঅর্ডার নম্বর: ${lastOrder.invoice_no || lastOrder.order_id}\nপ্রোডাক্ট: ${lastOrder.product_name}`,
-  );
-  return true;
-}
-
-async function maybeHandleGreeting(opts: {
-  sb: ReturnType<typeof admin>;
-  conversationId: string;
-  psid: string;
-  token: string;
-  text: string;
-}) {
-  const { sb, conversationId, psid, token, text } = opts;
-  if (!isGreetingIntent(text)) return false;
-  await sendAndLogText(
-    sb,
-    token,
-    psid,
-    conversationId,
-    "আলহামদুলিল্লাহ, ভালো আছি 😊 আপনি কোন প্রোডাক্ট খুঁজছেন? নাম লিখলে ছবিসহ দেখিয়ে দিচ্ছি।",
-  );
-  return true;
-}
 
 function productCardInput(storeSlug: string | null | undefined, product: ProductRow): ProductCardInput {
   const priceLine = `৳${Number(product.price).toFixed(0)}`;
