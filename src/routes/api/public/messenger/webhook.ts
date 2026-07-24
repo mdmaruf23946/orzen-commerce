@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { buildSystemPrompt, generateAgentReply, loadAiContext } from "@/lib/ai-agent.server";
+import { buildSystemPrompt, generateAgentReply, loadAiContext, resolveFocusProduct } from "@/lib/ai-agent.server";
 import {
   sendProductCard,
   sendProductCarousel,
@@ -1234,6 +1234,12 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                 new Set((recentRecs ?? []).map((r: any) => r.product_id).filter(Boolean)),
               );
 
+              const focus = await resolveFocusProduct({
+                storeId: integ.store_id,
+                conversationId: conv!.id,
+                text: effectiveText,
+              });
+
               const reply = await generateAgentReply({
                 ctx: {
                   storeId: integ.store_id,
@@ -1241,15 +1247,18 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                   conversationId: conv!.id,
                   psid: senderId,
                   pageToken: token,
+                  focusProductId: focus.product?.id ?? null,
                 },
                 messages,
                 system: buildSystemPrompt(store, agent, {
                   channel: "messenger",
                   settings,
                   state: { pending_order: pending, last_order: lastOrder, recent_product_ids: recentIds },
+                  focus,
                 }),
                 fast: true,
               });
+
 
 
               const replyText = (reply ?? "").trim();

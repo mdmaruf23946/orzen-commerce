@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, stepCountIs, type UIMessage } from "ai";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { buildSystemPrompt, buildTools, getModelForStore, loadAiContext, logUsage } from "@/lib/ai-agent.server";
+import { buildSystemPrompt, buildTools, getModelForStore, loadAiContext, logUsage, resolveFocusProduct } from "@/lib/ai-agent.server";
 
 function admin() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -138,12 +138,23 @@ export const Route = createFileRoute("/api/ai/chat")({
             typeof settings?.max_tokens === "number" && settings.max_tokens > 0
               ? Math.floor(settings.max_tokens)
               : undefined;
+          const lastUserText = (() => {
+            const u = [...body.messages].reverse().find((m) => m.role === "user");
+            if (!u) return "";
+            return (u.parts as any[]).map((p: any) => (p.type === "text" ? p.text : "")).join("");
+          })();
+          const focus = await resolveFocusProduct({
+            storeId: store.id,
+            conversationId: ctxConvId,
+            text: lastUserText,
+          });
           const result = streamText({
             model,
             system: buildSystemPrompt(s, agent, {
               channel: "web",
               settings,
               state: { pending_order: pending, last_order: lastOrder, recent_product_ids: recentIds },
+              focus,
             }),
 
             messages: await convertToModelMessages(body.messages),
@@ -153,7 +164,9 @@ export const Route = createFileRoute("/api/ai/chat")({
               conversationId: ctxConvId,
               siteOrigin,
               channel: "web",
+              focusProductId: focus.product?.id ?? null,
             }),
+
             stopWhen: stepCountIs(50),
             temperature,
             maxOutputTokens,

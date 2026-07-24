@@ -26,7 +26,9 @@ export type AgentContext = {
   pageToken?: string; // decrypted page access token
   siteOrigin?: string; // e.g. https://mystore.orzen.top
   channel?: "web" | "messenger"; // controls which display tools are registered
+  focusProductId?: string | null; // server-resolved product for this turn (see resolveFocusProduct)
 };
+
 
 export async function loadAiContext(storeId: string) {
   const sb = admin();
@@ -57,6 +59,13 @@ export type AgentState = {
   recent_product_ids?: string[] | null;
 };
 
+export type FocusProduct = {
+  product: any | null;
+  ambiguous: boolean;
+  candidates: any[]; // small summaries when ambiguous
+  canonical_caption?: string;
+};
+
 export function buildSystemPrompt(
   store: any,
   agent: any,
@@ -64,11 +73,13 @@ export function buildSystemPrompt(
     channel?: "web" | "messenger";
     settings?: GlobalAiSettings | null;
     state?: AgentState | null;
+    focus?: FocusProduct | null;
   },
 ) {
   const channel = opts?.channel ?? "messenger";
   const settings = opts?.settings ?? null;
   const state = opts?.state ?? null;
+  const focus = opts?.focus ?? null;
   const displayTools =
     channel === "web"
       ? "showProducts (multiple) or showProduct (one) — the web chat renders rich cards inline"
@@ -103,19 +114,20 @@ export function buildSystemPrompt(
     .filter(Boolean)
     .join("\n\n");
 
-  // Compact state block so the model always knows what's already in flight.
+  // Compact pending-order block — NO product_name/product_id (that leaks into
+  // free-form text as if it were the current focus). The focus block below is
+  // the single source of truth for product facts this turn.
   const stateLines: string[] = [];
   const po = state?.pending_order && Object.keys(state.pending_order).length ? state.pending_order : null;
   if (po) {
     const parts = [
-      po.product_name ? `product=${po.product_name}` : po.product_id ? `product_id=${po.product_id}` : null,
       po.qty ? `qty=${po.qty}` : null,
       po.customer_name ? `name=${po.customer_name}` : null,
       po.phone ? `phone=${po.phone}` : null,
       po.full_address ? `address=${String(po.full_address).slice(0, 120)}` : null,
       po.payment_method ? `payment=${po.payment_method}` : null,
     ].filter(Boolean);
-    stateLines.push(`Pending order slot (already collected): ${parts.join(", ") || "(empty)"}`);
+    if (parts.length) stateLines.push(`Pending order slot (already collected): ${parts.join(", ")}`);
   }
   const lo = state?.last_order;
   if (lo?.order_id) {
@@ -123,9 +135,41 @@ export function buildSystemPrompt(
       `Last confirmed order: #${lo.invoice_no || lo.order_id} — ${lo.product_name ?? "product"} × ${lo.qty ?? 1}`,
     );
   }
-  const rec = (state?.recent_product_ids ?? []).slice(0, 3);
-  if (rec.length) stateLines.push(`Recently recommended product ids: ${rec.join(", ")}`);
   const stateBlock = stateLines.length ? `# Conversation state\n${stateLines.join("\n")}` : "";
+
+  // Focus product block — server-resolved for THIS turn only. If set, it is the
+  // ONLY product the assistant is allowed to describe/name/price/image in text.
+  let focusBlock = "";
+  if (focus?.product) {
+    const p = focus.product;
+    const feat = stringifyProductField(p.features).slice(0, 400);
+    const varList = Array.isArray(p.variants)
+      ? p.variants.map((v: any) => v?.label || v?.name).filter(Boolean).slice(0, 10).join(", ")
+      : "";
+    focusBlock = [
+      `# Focus product (ONLY product allowed in this reply)`,
+      `id: ${p.id}`,
+      `name: ${p.name}`,
+      p.brand ? `brand: ${p.brand}` : "",
+      `price: ৳${p.price}${p.old_price ? ` (was ৳${p.old_price})` : ""}`,
+      `stock: ${p.stock}`,
+      p.sku ? `sku: ${p.sku}` : "",
+      p.short_description ? `short_description: ${p.short_description}` : "",
+      feat ? `features: ${feat}` : "",
+      varList ? `variants: ${varList}` : "",
+      ``,
+      `Rule: every product fact in your reply MUST come from this record. Do not name, describe, price, or image any other product in this reply. To show it, call ${channel === "web" ? "showProduct" : "sendProductCard"} with productId=${p.id}.`,
+    ].filter(Boolean).join("\n");
+  } else if (focus?.ambiguous && focus.candidates?.length) {
+    const list = focus.candidates.slice(0, 4).map((c: any, i: number) => `${i + 1}. ${c.name} — ৳${c.price} (id ${c.id})`).join("\n");
+    focusBlock = [
+      `# Focus product — AMBIGUOUS`,
+      `The customer's message could refer to multiple products:`,
+      list,
+      ``,
+      `Rule: do NOT pick one and describe it. Ask ONE short disambiguation question naming these options. Do not call sendProductCard / showProduct until the customer confirms.`,
+    ].join("\n");
+  }
 
   return `${globalBlock ? globalBlock + "\n\n" : ""}You are ${agent.agent_name}, the sales assistant for "${store.name}".
 ${lang} ${emoji} ${human}
@@ -133,10 +177,10 @@ Style: ${agent.style}.
 
 
 # Hard rules — never violate
-- NEVER invent product names, prices, stock, features, or policies. Every product fact must come from a tool call in this turn.
+- NEVER invent product names, prices, stock, features, or policies. Every product fact must come from a tool call in this turn OR from the Focus product block below.
 - Every reply must be freshly generated for the customer's latest message and the current conversation state. Never repeat the same sentence you sent earlier in this conversation — vary the wording.
 - The MOMENT a customer mentions a product, category, price range, brand, or asks "what do you sell / show me products / আপনাদের কি আছে / দাম কত" — IMMEDIATELY call searchProducts (or listCategories if they ask for categories). Do not answer from memory, do not ask clarifying questions first for a general browse intent.
-- If the customer asks for a photo/image/details of "this/that/এটা/এইটা/ওটা" after you already recommended a product, call getRecentRecommendations first, then sendProductCard for the most recent matching product.
+- If a Focus product is set below, you MUST use its id when calling sendProductCard/showProduct, and every product fact in your text MUST come from that record. Never mix in facts from another product, earlier turn, or the pending-order slot.
 - If searchProducts returns 0 results, try again with a broader query (drop filters, translate Bangla→English keyword, try a synonym) before telling the customer "not found".
 - When you have products to show, call ${displayTools}. Also write a short friendly text line (1 sentence) introducing them. Never leave the text reply empty when you showed products — always add a line like "এই প্রোডাক্টগুলো দেখুন 👇".
 - Never say a product image is unavailable until you checked the product tool result. If primary_image_url or gallery has an image, send a product card.
@@ -160,7 +204,7 @@ If asked "where is my order" / "track my order", call trackOrder with orderId, i
 # Memory
 At the start of each conversation call getCustomerMemory to see previous orders and preferences. Personalise your greeting.
 
-${stateBlock ? stateBlock + "\n\n" : ""}# Store facts
+${focusBlock ? focusBlock + "\n\n" : ""}${stateBlock ? stateBlock + "\n\n" : ""}# Store facts
 Address: ${store.address || "n/a"}
 Phone: ${store.phone || "n/a"}
 Delivery: ${k.delivery_policy || JSON.stringify(store.delivery ?? {})}
@@ -173,6 +217,7 @@ Store info: ${k.store_info || store.description || ""}
 FAQs:
 ${faqs}`;
 }
+
 
 
 // ---------- Helpers ----------
@@ -400,8 +445,190 @@ async function blockDuplicateMessengerToolOrder(opts: {
   };
 }
 
+// ---------- Focus product resolver (root-cause fix for wrong-image/wrong-text) ----------
+
+const DEICTIC_TOKENS = [
+  "this", "that", "it", "এটা", "এইটা", "ওটা", "ওইটা", "এই", "ওই", "সেই", "সেটা",
+];
+
+const PRODUCT_SELECT_MIN =
+  "id,name,slug,brand,product_code,sku,category_id,short_description,price,old_price,stock,status,primary_image_url,gallery,features,variants,total_sold,rating,is_featured";
+
+/** Pure scoring function — exposed for tests. Returns 0 when no meaningful signal. */
+export function scoreProductAgainstQuery(
+  product: {
+    name?: string | null;
+    brand?: string | null;
+    sku?: string | null;
+    product_code?: string | null;
+    short_description?: string | null;
+    description?: string | null;
+    features?: unknown;
+    specifications?: unknown;
+    variants?: unknown;
+  },
+  terms: string[],
+  phrase: string,
+): number {
+  const name = String(product.name ?? "").toLowerCase();
+  const brand = String(product.brand ?? "").toLowerCase();
+  const sku = String(product.sku ?? "").toLowerCase();
+  const code = String(product.product_code ?? "").toLowerCase();
+  const haystack = [
+    name, brand, sku, code,
+    String(product.short_description ?? "").toLowerCase(),
+    String(product.description ?? "").toLowerCase(),
+    stringifyProductField(product.features).toLowerCase(),
+    stringifyProductField(product.specifications).toLowerCase(),
+    stringifyProductField(product.variants).toLowerCase(),
+  ].join(" ");
+  let score = 0;
+  const p = phrase.toLowerCase().trim();
+  if (p && name === p) score += 200;                     // exact name match wins
+  if (p && name && name.includes(p) && p.length >= 3) score += 100;
+  if (p && haystack.includes(p) && p.length >= 3) score += 40;
+  for (const t of terms) {
+    if (!t) continue;
+    if (sku && sku === t) score += 150;                  // exact SKU
+    if (code && code === t) score += 150;                // exact product code
+    if (name.includes(t)) score += 30;
+    if (brand === t) score += 25;
+    else if (brand && brand.includes(t)) score += 10;
+    if (haystack.includes(t)) score += 8;
+  }
+  return score;
+}
+
+export function canonicalCaption(p: {
+  name: string;
+  price: number | string;
+  old_price?: number | string | null;
+  stock: number;
+  short_description?: string | null;
+}): string {
+  const price = p.old_price ? `৳${p.price} (was ৳${p.old_price})` : `৳${p.price}`;
+  const stock = Number(p.stock) > 0 ? "in stock" : "out of stock";
+  const sd = (p.short_description ?? "").trim();
+  return sd ? `${p.name} — ${price}, ${stock}. ${sd}` : `${p.name} — ${price}, ${stock}.`;
+}
+
+/**
+ * Deterministically resolve which product this turn is about, BEFORE calling
+ * the model. This is the single anti-hallucination gate: if the customer's
+ * latest message names/references a product, we pin that product's DB row and
+ * force every tool call + text sentence to derive from it.
+ */
+export async function resolveFocusProduct(opts: {
+  storeId: string;
+  conversationId?: string | null;
+  text: string;
+}): Promise<FocusProduct> {
+  const raw = String(opts.text ?? "").trim();
+  if (!raw) return { product: null, ambiguous: false, candidates: [] };
+  const sb = admin();
+
+  // 1) Deictic reference ("this / এটা / ওইটা / it") → use the last recommended
+  //    product in this conversation. If there's exactly one recent id, pin it.
+  const compact = raw.toLowerCase();
+  const hasDeictic = DEICTIC_TOKENS.some((t) => new RegExp(`(^|\\W)${t}(\\W|$)`, "i").test(compact));
+  if (hasDeictic && opts.conversationId) {
+    const { data: recs } = await sb
+      .from("ai_product_recommendations")
+      .select("product_id,created_at")
+      .eq("store_id", opts.storeId)
+      .eq("conversation_id", opts.conversationId)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    const ids = Array.from(new Set((recs ?? []).map((r: any) => r.product_id).filter(Boolean)));
+    if (ids.length === 1) {
+      const { data: p } = await sb
+        .from("products")
+        .select(PRODUCT_SELECT_MIN)
+        .eq("store_id", opts.storeId)
+        .eq("id", ids[0]!)
+        .eq("status", "active")
+        .maybeSingle();
+      if (p) return { product: p, ambiguous: false, candidates: [], canonical_caption: canonicalCaption(p as any) };
+    }
+    // Multiple recent products → let the search branch below try to
+    // disambiguate; if it also fails, we'll return ambiguous with these ids.
+  }
+
+  // 2) Search branch: score all active products against the message text.
+  const terms = searchTerms(raw);
+  if (!terms.length && !hasDeictic) return { product: null, ambiguous: false, candidates: [] };
+
+  const { data: rows } = await sb
+    .from("products")
+    .select(PRODUCT_SELECT_MIN)
+    .eq("store_id", opts.storeId)
+    .eq("status", "active")
+    .limit(500);
+  const { data: bl } = await sb
+    .from("ai_product_blacklist")
+    .select("product_id")
+    .eq("store_id", opts.storeId);
+  const blocked = new Set((bl ?? []).map((r: any) => r.product_id));
+
+  const scored = (rows ?? [])
+    .filter((r: any) => !blocked.has(r.id))
+    .map((r: any) => ({ product: r, score: scoreProductAgainstQuery(r, terms, raw) }))
+    .filter((row) => row.score >= 25)
+    .sort((a, b) => b.score - a.score);
+
+  if (!scored.length) {
+    // Deictic with multiple recent products → mark ambiguous with those.
+    if (hasDeictic && opts.conversationId) {
+      const { data: recs } = await sb
+        .from("ai_product_recommendations")
+        .select("product_id,created_at")
+        .eq("store_id", opts.storeId)
+        .eq("conversation_id", opts.conversationId)
+        .order("created_at", { ascending: false })
+        .limit(4);
+      const ids = Array.from(new Set((recs ?? []).map((r: any) => r.product_id).filter(Boolean))).slice(0, 4);
+      if (ids.length >= 2) {
+        const { data: prods } = await sb
+          .from("products")
+          .select(PRODUCT_SELECT_MIN)
+          .eq("store_id", opts.storeId)
+          .in("id", ids);
+        return {
+          product: null,
+          ambiguous: true,
+          candidates: (prods ?? []).map((p: any) => ({
+            id: p.id, name: p.name, price: p.price, primary_image_url: p.primary_image_url,
+          })),
+        };
+      }
+    }
+    return { product: null, ambiguous: false, candidates: [] };
+  }
+
+  const top = scored[0]!;
+  const second = scored[1];
+  // Ambiguous when top-2 within 15% of the top score AND both above threshold.
+  if (second && second.score >= top.score * 0.85) {
+    return {
+      product: null,
+      ambiguous: true,
+      candidates: scored.slice(0, 4).map((row) => ({
+        id: row.product.id, name: row.product.name, price: row.product.price,
+        primary_image_url: row.product.primary_image_url,
+      })),
+    };
+  }
+  return {
+    product: top.product,
+    ambiguous: false,
+    candidates: [],
+    canonical_caption: canonicalCaption(top.product as any),
+  };
+}
+
 // ---------- Tools ----------
 export function buildTools(ctx: AgentContext) {
+
   const sb = admin();
   const storeId = ctx.storeId;
 
@@ -711,6 +938,9 @@ export function buildTools(ctx: AgentContext) {
         "Send one product to the customer as a rich Messenger card with Buy Now / View Product buttons. Prefer this over describing a product in plain text.",
       inputSchema: z.object({ productId: z.string().uuid() }),
       execute: async ({ productId }) => {
+        if (ctx.focusProductId && productId !== ctx.focusProductId) {
+          return { sent: false, error: "must_use_focus_product", focus_product_id: ctx.focusProductId };
+        }
         const { data: p } = await sb
           .from("products")
           .select("id,name,slug,short_description,price,old_price,stock,primary_image_url,gallery")
@@ -718,6 +948,7 @@ export function buildTools(ctx: AgentContext) {
           .eq("id", productId)
           .maybeSingle();
         if (!p) return { sent: false, error: "not_found" };
+
         const priceLine = p.old_price
           ? `৳${p.price} (was ৳${p.old_price})`
           : `৳${p.price}`;
@@ -741,7 +972,7 @@ export function buildTools(ctx: AgentContext) {
               attachments: [{ type: "product_card", product_id: p.id }],
             } as any);
           }
-          return { sent: true };
+          return { sent: true, canonical_caption: canonicalCaption(p as any), product_id: p.id, name: p.name };
         } catch (e) {
           return { sent: false, error: (e as Error).message };
         }
@@ -809,12 +1040,16 @@ export function buildTools(ctx: AgentContext) {
         "Display ONE product to the web-chat customer as a rich card (image, name, price, stock, view/buy buttons). Use whenever you want the customer to see a specific product.",
       inputSchema: z.object({ productId: z.string().uuid() }),
       execute: async ({ productId }) => {
+        if (ctx.focusProductId && productId !== ctx.focusProductId) {
+          return { rendered: false, error: "must_use_focus_product", focus_product_id: ctx.focusProductId };
+        }
         const products = await loadProducts([productId]);
         if (!products.length) return { rendered: false, error: "not_found" };
         await logRecommendations("showProduct", products, "web_card");
-        return { rendered: true, products };
+        return { rendered: true, products, canonical_caption: canonicalCaption(products[0] as any) };
       },
     });
+
 
     tools.showProducts = tool({
       description:
