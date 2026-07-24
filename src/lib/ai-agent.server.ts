@@ -41,19 +41,40 @@ export async function loadAiContext(storeId: string) {
   return { store, agent, settings };
 }
 
-export function buildSystemPrompt(store: any, agent: any, opts?: { channel?: "web" | "messenger" }) {
+export type GlobalAiSettings = {
+  global_system_prompt?: string | null;
+  safety_rules?: string | null;
+  brand_voice?: string | null;
+  supported_languages?: string[] | null;
+  temperature?: number | null;
+  max_tokens?: number | null;
+  fallback_model?: string | null;
+};
+
+export function buildSystemPrompt(
+  store: any,
+  agent: any,
+  opts?: { channel?: "web" | "messenger"; settings?: GlobalAiSettings | null },
+) {
   const channel = opts?.channel ?? "messenger";
+  const settings = opts?.settings ?? null;
   const displayTools =
     channel === "web"
       ? "showProducts (multiple) or showProduct (one) — the web chat renders rich cards inline"
       : "sendProductCarousel (multiple) or sendProductCard (one) so Messenger shows the image, price, stock and buy button";
   const k = (agent.knowledge ?? {}) as Record<string, any>;
+  const supported = (settings?.supported_languages ?? []).filter(Boolean);
+  const langHint =
+    supported.length > 0
+      ? `Only respond in one of these languages: ${supported.join(", ")}. Match the customer's language when possible.`
+      : "";
   const lang =
     agent.language === "bn"
       ? "Respond in Bangla."
       : agent.language === "en"
       ? "Respond in English."
       : "Respond in the same language the customer uses (Bangla or English).";
+
   const emoji = agent.use_emoji ? "Use friendly emojis sparingly." : "Do not use emojis.";
   const human = agent.human_like ? "Sound natural and human, not robotic." : "";
   const faqs = Array.isArray(k.faqs)
