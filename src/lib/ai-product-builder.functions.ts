@@ -111,7 +111,7 @@ export const generateProductDraft = createServerFn({ method: "POST" })
         "X-Lovable-AIG-SDK": "vercel-ai-sdk",
       },
     });
-    const model = provider("openai/gpt-5.5");
+    const model = provider("google/gemini-2.5-pro");
 
     const system = [
       "You are an e-commerce product listing generator for a Bangladeshi (BDT) storefront.",

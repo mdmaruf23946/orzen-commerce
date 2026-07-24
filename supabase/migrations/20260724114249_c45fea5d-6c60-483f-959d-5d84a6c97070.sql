@@ -1,0 +1,2 @@
+UPDATE public.ai_global_settings SET default_model = 'google/gemini-2.5-flash' WHERE default_model IS NULL OR default_model LIKE 'openai/%';
+UPDATE public.ai_global_settings SET fallback_model = NULL WHERE fallback_model LIKE 'openai/%';

@@ -1072,8 +1072,8 @@ export async function getModelForStore(opts?: { fast?: boolean; modelOverride?: 
   const looksLovable = saved.startsWith("lv_") || saved.startsWith("sk-lovable");
   const apiKey = (looksLovable ? saved : "") || process.env.LOVABLE_API_KEY!;
   if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
-  const configuredModel = opts?.modelOverride || settings?.default_model || "openai/gpt-5.4-mini";
-  const modelId = opts?.fast && configuredModel.includes("pro") ? "openai/gpt-5.4-mini" : configuredModel;
+  const configuredModel = opts?.modelOverride || settings?.default_model || "google/gemini-2.5-flash";
+  const modelId = opts?.fast && configuredModel.includes("pro") ? "google/gemini-2.5-flash" : configuredModel;
   const gateway = createLovableAiGatewayProvider(apiKey);
   return { model: gateway(modelId), modelId, settings: (settings ?? null) as GlobalAiSettings | null, gateway };
 }
@@ -1156,8 +1156,6 @@ async function runGenerate(opts: {
     tools: buildTools(opts.ctx),
     stopWhen: stepCountIs(50),
     ...generationParams(settings),
-    providerOptions:
-      modelId === "openai/gpt-5.4-mini" ? { lovable: { service_tier: "priority" } } : undefined,
   });
   return { result, modelId, settings };
 }

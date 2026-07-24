@@ -28,8 +28,6 @@ const MODELS = [
   "google/gemini-3-flash-preview",
   "google/gemini-2.5-flash",
   "google/gemini-2.5-pro",
-  "openai/gpt-5-mini",
-  "openai/gpt-5",
 ];
 
 function AIControlCenter() {
