@@ -175,14 +175,7 @@ function ProductPage() {
       </div>
 
       {/* Description below both columns */}
-      {product.description && (
-        <div className="mt-8">
-          <h2 className="text-base font-semibold">Description</h2>
-          <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">
-            {product.description}
-          </p>
-        </div>
-      )}
+      {product.description && <ProductDescription html={product.description} />}
 
       <Link
         to="/store/$slug"
