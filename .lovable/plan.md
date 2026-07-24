@@ -1,79 +1,54 @@
 
-# ORZEN Enterprise AI Sales Agent
+## Root cause
 
-The platform already ships a centralised AI engine (`ai_global_settings`, `store_ai_agents`, `ai-agent.server.ts` with 15+ tools, Messenger inbox, plan-gated storefront icon, usage logging). This plan closes the gaps between what exists and the enterprise spec, without rebuilding what works. Delivered in 4 phases so you can approve/ship incrementally.
+The Messenger webhook in `src/routes/api/public/messenger/webhook.ts` intercepts almost every incoming message with hard-coded template replies **before** the LLM is ever called. The chain (lines 1180‑1249) runs, in order:
 
-## Current state (verified)
+1. `parsed.message_type !== "text" && "quick_reply"` → **silently drops audio/image** (no STT, no vision).
+2. `maybeHandlePendingOrderText` → fixed strings like `"যে তথ্য দিয়েছেন সেগুলো সেভ করেছি। অর্ডার কনফার্ম করতে ... দিন।"`. Once a pending order slot exists, every subsequent message is captured here and the topic can never change.
+3. `maybeHandleRepeatedOrderDetails` → fixed `"আপনার অর্ডারটি ইতিমধ্যে নেওয়া হয়েছে ✅ ..."`.
+4. `maybeHandleGreeting` → fixed `"আলহামদুলিল্লাহ, ভালো আছি 😊 ..."` for any hello/hi/salam.
+5. `maybeSendDirectProductReply` → keyword search + fixed `"জি, X আছে — ছবিসহ..."` / `"দুঃখিত, এই নামে কোনো স্টকে থাকা প্রোডাক্ট পেলাম না..."`.
 
-- ONE global AI key + model in `ai_global_settings` (Winner Admin controlled) ✓
-- Per-store agent config, plan-gated icon, RLS isolation ✓
-- Tools: searchProducts, listCategories, sendProductCard/Carousel, collectOrderInfo, finalizeOrder, trackOrder, getRelatedProducts, getCustomerMemory, escalateToHuman ✓ (Messenger only)
-- Usage logging in `ai_usage` ✓
+The `generateAgentReply` call at line 1268 only runs when none of the above matched, which is rare. History is capped at 12 messages and only `text/quick_reply/postback` — tool product cards and order state aren't in the model's context, so even when it does answer it lacks memory of what it just showed.
 
-## Gaps to close
+Web chat (`src/routes/api/ai/chat.ts` + `AIChatPanel.tsx`) already goes straight to the LLM with tools — issues #1‑#6 primarily apply to Messenger, but the fixes below also lift the web-chat history cap.
 
-1. Storefront web chat has no conversation persistence, no tools, no order/tracking/escalation — only free-form streamText.
-2. Winner Admin can set model + key, but not temperature, max tokens, global system prompt, brand voice, safety rules, supported languages.
-3. No voice (STT/TTS) pipeline on Messenger.
-4. No image-understanding pipeline (customer uploads a product photo).
-5. No explicit confidence signal — escalation is only when the model chooses.
-6. Human handover for web chat (Messenger has takeover already).
+## What to change
 
----
+### 1. Delete the hard-coded reply gates
+In `src/routes/api/public/messenger/webhook.ts`:
+- Remove the calls to `maybeHandleGreeting`, `maybeHandleRepeatedOrderDetails`, and `maybeSendDirectProductReply` from the incoming-message flow.
+- Replace `maybeHandlePendingOrderText` with a **context-only** helper: parse any order details out of the text and merge them into the conversation slot (existing `patchConversationPendingOrder` + `parseOrderDetailsText`), then fall through to the LLM. Do not send any fixed reply. Duplicate-order blocking (`maybeBlockDuplicateMessengerOrder`) stays — that's a safety guard, not a template.
+- Keep `handleBuyPostback` (it's triggered by a UI button, not a chat message), but let its acknowledgement come from the LLM by pushing the "started order for X" as a system message and calling `generateAgentReply` instead of sending a fixed string.
+- Delete the now-unused template helpers so they can't be re-wired by accident.
 
-## Phase 1 — Web chat parity with Messenger (biggest UX win)
+### 2. Give the LLM the real context
+In the same file, around line 1251‑1279:
+- Load the last **30** turns (was 12), include `message_type` in the prompt as a small tag so the model sees `[product_card]`, `[image]`, `[audio]`, etc., not just raw text.
+- Append a compact **conversation-state block** to the system prompt for this turn: pending-order slot (product, qty, missing fields), last order summary from `psid_profile.last_order`, and the last 3 recommended product ids. This is what lets the model "remember" without re-deriving from noisy history.
+- Same treatment for the web-chat path: raise the SDK-side history limit and include the same state block. Web-chat history is already client-driven via `useChat`, so this is a one-line prompt-builder change.
 
-Goal: the storefront widget behaves like Messenger — memory, product cards, order taking, tracking, escalation.
+### 3. Voice support (Messenger)
+- When `parsed.message_type === "audio"`, download the first attachment URL with the page access token, POST it to `https://ai.gateway.lovable.dev/v1/audio/transcriptions` with `openai/gpt-4o-transcribe` (per the `ai-speech-to-text` knowledge), and use the transcript as the message text going into the LLM pipeline. Store the transcript in `ai_messages.content` and keep the original audio URL in `attachments` so the inbox still shows the voice note.
+- Reply is text by default. Optional TTS reply is Phase 3 in `.lovable/plan.md` and is out of scope here.
 
-- `ai_conversations` + `ai_messages`: add a `web` channel row per browser session (localStorage `orzen_ai_cid`).
-- `src/routes/api/ai/chat.ts`: create/load conversation, persist user + assistant messages, pass `conversationId` into `buildTools(ctx)`.
-- Reuse existing tools; add a lightweight `webRenderProductCard` alias so results stream inline (the Messenger `sendProductCard` short-circuits when `psid` missing — return structured JSON instead).
-- `AIChatPanel.tsx`: render tool-result product cards (image, name, price, stock, "View" + "Order now" buttons that deep-link to product page / trigger order flow).
-- Add "Talk to a human" button → creates `admin_notifications` row + sets conversation `needs_human=true` (already exists on the table).
-- Load recent history on panel open for returning visitors.
+### 4. Trust the model to switch topics
+Because steps 1‑2 remove the interceptors, a customer who was mid-order and asks "আচ্ছা, ডেলিভারি চার্জ কত?" now reaches the LLM with the full history + the pending-order state block. The system prompt already tells it to use tools; add one line: *"If the user changes topic, answer the new question first; only resume the pending order when they signal readiness."*
 
-## Phase 2 — Winner Admin global controls
+### 5. No-confident-answer behavior
+Add to the system prompt: *"If you cannot answer confidently from tools/store data, ask one specific follow-up question in the customer's language — never send a generic greeting or apology."* No new code; this replaces the deleted greeting/no-match templates.
 
-Goal: single control room for the entire platform's AI behaviour.
+## Files touched
 
-- Extend `ai_global_settings` columns: `temperature numeric`, `max_tokens int`, `global_system_prompt text`, `safety_rules text`, `brand_voice text`, `supported_languages text[]`, `fallback_model text`.
-- `src/routes/_authenticated/owner/ai.tsx`: tabbed UI (Provider & Key · Model & Params · Global Prompt · Safety · Brand voice · Languages · Usage).
-- `buildSystemPrompt` in `ai-agent.server.ts` prepends `global_system_prompt`, `safety_rules`, `brand_voice`; `streamText`/`generateText` pass `temperature` and `maxOutputTokens`.
-- Fallback model: on gateway 429/5xx, retry once with `fallback_model` before surfacing error.
+- `src/routes/api/public/messenger/webhook.ts` — remove template gates, rewire pending-order to context-only, add audio STT branch, expand history + state block.
+- `src/lib/ai-agent.server.ts` — `buildSystemPrompt` gains an optional `state` param (pending order, last order, recent products, topic-switch + follow-up rules).
+- `src/routes/api/ai/chat.ts` — pass the same state block into `buildSystemPrompt` for web chat.
 
-## Phase 3 — Voice + image understanding
+No DB migration. No new dependencies. No changes to the Messenger inbox UI, plan gating, duplicate protection, or existing tool implementations.
 
-Goal: Messenger + web chat accept voice notes and product photos.
+## Verification
 
-- Voice: Messenger webhook detects `attachments[].type === "audio"`, downloads via `pageToken`, calls Lovable AI Gateway `/v1/audio/transcriptions` with `openai/gpt-4o-transcribe`, feeds text into the same agent pipeline. Optional TTS reply behind a per-store toggle (`voice_reply_enabled` on `store_ai_agents`) using `openai/gpt-4o-mini-tts`.
-- Image: Messenger `attachments[].type === "image"` and web chat file upload → pass image as multimodal `image` part to `openai/gpt-5.5` with instruction "identify the product category/keywords". Feed keywords into `searchProducts` and return matches. Store attachment URL in `ai_messages.attachments`.
-
-## Phase 4 — Confidence + safer handover
-
-Goal: never guess; escalate cleanly.
-
-- Add `confidence` output requirement to the system prompt ("emit `[[conf:HIGH|MED|LOW]]` at end of each reply"), parse+strip before sending to user.
-- LOW → auto-call `escalateToHuman` and reply with the polite fallback.
-- Track `confidence` on `ai_messages` for analytics.
-- Frustration heuristic: 2 consecutive user messages with negative intent keywords (regex, both bn/en) → auto-escalate.
-
----
-
-## Non-goals for this plan
-
-- No new AI provider integration (Lovable AI Gateway only).
-- No WhatsApp/Instagram/Telegram connectors — architecture already supports them via the same `AgentContext`, but wiring each is separate work.
-- No changes to Messenger inbox UI, duplicate protection, or plan gating (already working).
-
-## Technical notes
-
-- All new columns via `supabase--migration` with GRANTs.
-- All server-only code stays in `*.server.ts`; server functions in `*.functions.ts` reachable through `useServerFn`.
-- New `/api/ai/chat` conversation ID flows via request body; RLS unaffected (admin client, store-scoped queries).
-- Cost impact: voice/image raise per-message cost — Winner Admin can toggle each feature globally.
-
-## Suggested rollout order
-
-Phase 1 → Phase 2 → Phase 4 → Phase 3 (voice/image last; highest cost, most infra).
-
-Approve the whole plan or tell me which phase to build first.
+- Send "হ্যালো" on Messenger twice → replies differ, both LLM-generated.
+- Start an order, then ask "ডেলিভারি চার্জ কত?" → answer is about delivery, order slot preserved for later confirmation.
+- Send a voice note on Messenger → transcript stored, LLM answers based on it.
+- Ask an unknown question → LLM asks a specific follow-up instead of an apology template.

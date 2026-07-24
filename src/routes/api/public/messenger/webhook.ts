@@ -583,7 +583,7 @@ async function maybeBlockDuplicateMessengerOrder(opts: {
   return true;
 }
 
-async function maybeHandlePendingOrderText(opts: {
+async function maybeApplyPendingOrderText(opts: {
   sb: ReturnType<typeof admin>;
   storeId: string;
   conversationId: string;
@@ -591,26 +591,16 @@ async function maybeHandlePendingOrderText(opts: {
   token: string;
   text: string;
 }) {
+  // Context-only: merge any order details from this message into the pending-order slot
+  // so the LLM sees them via the state block, and block duplicates. NEVER sends a canned reply.
   const { sb, storeId, conversationId, psid, token, text } = opts;
   const current = await getConversationPendingOrder(sb, conversationId);
-  if (!current.product_id) return false;
-
-  const blocked = await maybeBlockDuplicateMessengerOrder({
-    sb,
-    storeId,
-    conversationId,
-    psid,
-    token,
-    slot: current,
-    product: { id: String(current.product_id), name: current.product_name ?? null },
-  });
-  if (blocked) return true;
-
   const details = parseOrderDetailsText(text);
   const slot = Object.keys(details).length
     ? await patchConversationPendingOrder(sb, conversationId, { ...current, ...details })
     : current;
-  const blockedAfterDetails = await maybeBlockDuplicateMessengerOrder({
+  if (!slot.product_id) return false;
+  const blocked = await maybeBlockDuplicateMessengerOrder({
     sb,
     storeId,
     conversationId,
@@ -619,61 +609,39 @@ async function maybeHandlePendingOrderText(opts: {
     slot,
     product: { id: String(slot.product_id), name: slot.product_name ?? null },
   });
-  if (blockedAfterDetails) return true;
-  const missing = orderMissingFields(slot);
-  if (!missing.length) {
-    return finalizePendingMessengerOrder({ sb, storeId, conversationId, psid, token });
+  return blocked; // true = duplicate short-circuit already replied; false = fall through to LLM
+}
+
+async function transcribeAudioAttachment(url: string): Promise<string | null> {
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key || !url) return null;
+  try {
+    const audioRes = await fetch(url);
+    if (!audioRes.ok) return null;
+    const blob = await audioRes.blob();
+    const ct = (blob.type || "audio/mp4").split(";")[0];
+    const ext =
+      ct === "audio/webm" ? "webm" :
+      ct === "audio/mp4" || ct === "audio/aac" ? "m4a" :
+      ct === "audio/mpeg" ? "mp3" :
+      ct === "audio/wav" ? "wav" :
+      ct === "audio/ogg" ? "ogg" : "m4a";
+    const form = new FormData();
+    form.append("model", "openai/gpt-4o-transcribe");
+    form.append("file", blob, `voice.${ext}`);
+    const r = await fetch("https://ai.gateway.lovable.dev/v1/audio/transcriptions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}` },
+      body: form,
+    });
+    if (!r.ok) return null;
+    const j = (await r.json().catch(() => null)) as { text?: string } | null;
+    return j?.text?.trim() || null;
+  } catch {
+    return null;
   }
-
-  const saved = Object.keys(details).length ? "যে তথ্য দিয়েছেন সেগুলো সেভ করেছি। " : "";
-  await sendAndLogText(sb, token, psid, conversationId, `${saved}অর্ডার কনফার্ম করতে এখন ${missing.join(", ")} দিন।`);
-  return true;
 }
 
-async function maybeHandleRepeatedOrderDetails(opts: {
-  sb: ReturnType<typeof admin>;
-  conversationId: string;
-  psid: string;
-  token: string;
-  text: string;
-}) {
-  const { sb, conversationId, psid, token, text } = opts;
-  if (!looksLikeOrderDetails(text)) return false;
-  const { data } = await sb
-    .from("ai_conversations")
-    .select("psid_profile")
-    .eq("id", conversationId)
-    .maybeSingle();
-  const lastOrder = ((data as any)?.psid_profile as any)?.last_order;
-  if (!lastOrder?.order_id) return false;
-  await sendAndLogText(
-    sb,
-    token,
-    psid,
-    conversationId,
-    `আপনার অর্ডারটি ইতিমধ্যে নেওয়া হয়েছে ✅\nঅর্ডার নম্বর: ${lastOrder.invoice_no || lastOrder.order_id}\nপ্রোডাক্ট: ${lastOrder.product_name}`,
-  );
-  return true;
-}
-
-async function maybeHandleGreeting(opts: {
-  sb: ReturnType<typeof admin>;
-  conversationId: string;
-  psid: string;
-  token: string;
-  text: string;
-}) {
-  const { sb, conversationId, psid, token, text } = opts;
-  if (!isGreetingIntent(text)) return false;
-  await sendAndLogText(
-    sb,
-    token,
-    psid,
-    conversationId,
-    "আলহামদুলিল্লাহ, ভালো আছি 😊 আপনি কোন প্রোডাক্ট খুঁজছেন? নাম লিখলে ছবিসহ দেখিয়ে দিচ্ছি।",
-  );
-  return true;
-}
 
 function productCardInput(storeSlug: string | null | undefined, product: ProductRow): ProductCardInput {
   const priceLine = `৳${Number(product.price).toFixed(0)}`;
@@ -1152,14 +1120,23 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                 if (existingMessage) continue;
               }
               const parsed = parseMessage(msg);
-              const preview = parsed.text.slice(0, 200) || `[${parsed.message_type}]`;
+
+              // Voice notes: transcribe upstream so the LLM sees text, not "[audio]".
+              let effectiveText = parsed.text;
+              if (parsed.message_type === "audio") {
+                const audioUrl = (parsed.attachments?.[0]?.url as string) || "";
+                const transcript = await transcribeAudioAttachment(audioUrl);
+                if (transcript) effectiveText = transcript;
+              }
+
+              const preview = effectiveText.slice(0, 200) || `[${parsed.message_type}]`;
 
               await sb.from("ai_messages").insert({
                 conversation_id: conv!.id,
                 role: "user",
                 direction: "in",
                 message_type: parsed.message_type,
-                content: parsed.text || preview,
+                content: effectiveText || preview,
                 attachments: parsed.attachments,
                 mid: msg.mid ?? null,
               });
@@ -1177,70 +1154,26 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
               if (handoff !== "ai") continue;
               if ((integ as any).human_takeover || (integ as any).ai_auto_reply === false) continue;
               if (!token) continue;
-              if (parsed.message_type !== "text" && parsed.message_type !== "quick_reply") continue;
+              // Only text-shaped inputs go to the LLM. Audio was transcribed above; other
+              // attachments (image, sticker, file) fall through until vision is wired in.
+              if (
+                parsed.message_type !== "text" &&
+                parsed.message_type !== "quick_reply" &&
+                parsed.message_type !== "audio"
+              ) continue;
+              if (!effectiveText.trim()) continue;
 
-              const pendingOrderHandled = await maybeHandlePendingOrderText({
+              // Merge any order-detail hints into the pending-order slot as CONTEXT for the LLM.
+              // This never sends a template — it only short-circuits when the duplicate guard blocks the order.
+              const duplicateBlocked = await maybeApplyPendingOrderText({
                 sb,
                 storeId: integ.store_id,
                 conversationId: conv!.id,
                 psid: senderId,
                 token,
-                text: parsed.text,
+                text: effectiveText,
               });
-              if (pendingOrderHandled) {
-                await sb
-                  .from("messenger_integrations")
-                  .update({ last_error: null } as any)
-                  .eq("id", (integ as any).id);
-                continue;
-              }
-
-              const repeatedOrderHandled = await maybeHandleRepeatedOrderDetails({
-                sb,
-                conversationId: conv!.id,
-                psid: senderId,
-                token,
-                text: parsed.text,
-              });
-              if (repeatedOrderHandled) {
-                await sb
-                  .from("messenger_integrations")
-                  .update({ last_error: null } as any)
-                  .eq("id", (integ as any).id);
-                continue;
-              }
-
-              const greetingHandled = await maybeHandleGreeting({
-                sb,
-                conversationId: conv!.id,
-                psid: senderId,
-                token,
-                text: parsed.text,
-              });
-              if (greetingHandled) {
-                await sb
-                  .from("messenger_integrations")
-                  .update({ last_error: null } as any)
-                  .eq("id", (integ as any).id);
-                continue;
-              }
-
-              const { data: storeRow } = await sb
-                .from("stores")
-                .select("slug")
-                .eq("id", integ.store_id)
-                .maybeSingle();
-
-              const directHandled = await maybeSendDirectProductReply({
-                sb,
-                storeId: integ.store_id,
-                storeSlug: (storeRow as any)?.slug,
-                conversationId: conv!.id,
-                psid: senderId,
-                token,
-                text: parsed.text,
-              });
-              if (directHandled) {
+              if (duplicateBlocked) {
                 await sb
                   .from("messenger_integrations")
                   .update({ last_error: null } as any)
@@ -1257,14 +1190,39 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                       .from("ai_messages")
                       .select("role,content,message_type")
                       .eq("conversation_id", conv!.id)
-                      .in("message_type", ["text", "quick_reply", "postback"])
+                      .in("message_type", ["text", "quick_reply", "postback", "audio", "product_card", "product_carousel"])
                       .order("created_at", { ascending: true })
-                      .limit(12)
+                      .limit(30)
                   ).data ?? []
                 : [];
               const messages = history
                 .filter((m: any) => m.role === "user" || m.role === "assistant")
-                .map((m) => ({ role: m.role as any, content: m.content }));
+                .map((m: any) => ({
+                  role: m.role as "user" | "assistant",
+                  content:
+                    m.message_type && m.message_type !== "text" && m.message_type !== "quick_reply"
+                      ? `[${m.message_type}] ${m.content ?? ""}`.trim()
+                      : (m.content ?? ""),
+                }));
+
+              // Build conversation-state block so the model always sees what's already collected.
+              const pending = await getConversationPendingOrder(sb, conv!.id);
+              const { data: convStateRow } = await sb
+                .from("ai_conversations")
+                .select("psid_profile")
+                .eq("id", conv!.id)
+                .maybeSingle();
+              const lastOrder = ((convStateRow as any)?.psid_profile as any)?.last_order ?? null;
+              const { data: recentRecs } = await sb
+                .from("ai_product_recommendations")
+                .select("product_id")
+                .eq("conversation_id", conv!.id)
+                .order("created_at", { ascending: false })
+                .limit(3);
+              const recentIds = Array.from(
+                new Set((recentRecs ?? []).map((r: any) => r.product_id).filter(Boolean)),
+              );
+
               const reply = await generateAgentReply({
                 ctx: {
                   storeId: integ.store_id,
@@ -1274,9 +1232,14 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                   pageToken: token,
                 },
                 messages,
-                system: buildSystemPrompt(store, agent, { channel: "messenger", settings }),
+                system: buildSystemPrompt(store, agent, {
+                  channel: "messenger",
+                  settings,
+                  state: { pending_order: pending, last_order: lastOrder, recent_product_ids: recentIds },
+                }),
                 fast: true,
               });
+
 
               const replyText = (reply ?? "").trim();
               if (!replyText) {

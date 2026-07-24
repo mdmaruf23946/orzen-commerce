@@ -51,13 +51,24 @@ export type GlobalAiSettings = {
   fallback_model?: string | null;
 };
 
+export type AgentState = {
+  pending_order?: Record<string, any> | null;
+  last_order?: Record<string, any> | null;
+  recent_product_ids?: string[] | null;
+};
+
 export function buildSystemPrompt(
   store: any,
   agent: any,
-  opts?: { channel?: "web" | "messenger"; settings?: GlobalAiSettings | null },
+  opts?: {
+    channel?: "web" | "messenger";
+    settings?: GlobalAiSettings | null;
+    state?: AgentState | null;
+  },
 ) {
   const channel = opts?.channel ?? "messenger";
   const settings = opts?.settings ?? null;
+  const state = opts?.state ?? null;
   const displayTools =
     channel === "web"
       ? "showProducts (multiple) or showProduct (one) — the web chat renders rich cards inline"
@@ -91,6 +102,31 @@ export function buildSystemPrompt(
   ]
     .filter(Boolean)
     .join("\n\n");
+
+  // Compact state block so the model always knows what's already in flight.
+  const stateLines: string[] = [];
+  const po = state?.pending_order && Object.keys(state.pending_order).length ? state.pending_order : null;
+  if (po) {
+    const parts = [
+      po.product_name ? `product=${po.product_name}` : po.product_id ? `product_id=${po.product_id}` : null,
+      po.qty ? `qty=${po.qty}` : null,
+      po.customer_name ? `name=${po.customer_name}` : null,
+      po.phone ? `phone=${po.phone}` : null,
+      po.full_address ? `address=${String(po.full_address).slice(0, 120)}` : null,
+      po.payment_method ? `payment=${po.payment_method}` : null,
+    ].filter(Boolean);
+    stateLines.push(`Pending order slot (already collected): ${parts.join(", ") || "(empty)"}`);
+  }
+  const lo = state?.last_order;
+  if (lo?.order_id) {
+    stateLines.push(
+      `Last confirmed order: #${lo.invoice_no || lo.order_id} — ${lo.product_name ?? "product"} × ${lo.qty ?? 1}`,
+    );
+  }
+  const rec = (state?.recent_product_ids ?? []).slice(0, 3);
+  if (rec.length) stateLines.push(`Recently recommended product ids: ${rec.join(", ")}`);
+  const stateBlock = stateLines.length ? `# Conversation state\n${stateLines.join("\n")}` : "";
+
   return `${globalBlock ? globalBlock + "\n\n" : ""}You are ${agent.agent_name}, the sales assistant for "${store.name}".
 ${lang} ${emoji} ${human}
 Style: ${agent.style}.
@@ -98,19 +134,22 @@ Style: ${agent.style}.
 
 # Hard rules — never violate
 - NEVER invent product names, prices, stock, features, or policies. Every product fact must come from a tool call in this turn.
+- Every reply must be freshly generated for the customer's latest message and the current conversation state. Never repeat the same sentence you sent earlier in this conversation — vary the wording.
 - The MOMENT a customer mentions a product, category, price range, brand, or asks "what do you sell / show me products / আপনাদের কি আছে / দাম কত" — IMMEDIATELY call searchProducts (or listCategories if they ask for categories). Do not answer from memory, do not ask clarifying questions first for a general browse intent.
 - If the customer asks for a photo/image/details of "this/that/এটা/এইটা/ওটা" after you already recommended a product, call getRecentRecommendations first, then sendProductCard for the most recent matching product.
 - If searchProducts returns 0 results, try again with a broader query (drop filters, translate Bangla→English keyword, try a synonym) before telling the customer "not found".
 - When you have products to show, call ${displayTools}. Also write a short friendly text line (1 sentence) introducing them. Never leave the text reply empty when you showed products — always add a line like "এই প্রোডাক্টগুলো দেখুন 👇".
 - Never say a product image is unavailable until you checked the product tool result. If primary_image_url or gallery has an image, send a product card.
 - If a product is out of stock, tell the customer and call searchProducts in the same category to suggest alternatives.
+- If the customer changes topic mid-conversation (e.g. asks about delivery charge while an order is pending), answer the new topic FIRST using the appropriate tool, then only resume the order flow when they signal they're ready to continue.
+- If you cannot answer confidently from tools or store data, ask ONE specific follow-up question in the customer's language. Never send a generic greeting, apology, or "how can I help you?" template.
 - If you cannot answer confidently or the customer asks for a human, call escalateToHuman.
 
 
 # Order flow
 When the customer wants to buy:
 1. Use collectOrderInfo to save each field as the customer gives it (name, phone, district, upazila, union, village, full_address, product_id, variant, qty, delivery_method, payment_method).
-2. Ask only for fields that are still missing — never re-ask what you already have.
+2. Ask only for fields that are still missing — never re-ask what you already have (see the pending-order slot in the state block below).
 3. Once every required field is present, call finalizeOrder. It creates the order and returns the confirmation.
 4. If finalizeOrder returns error="duplicate_blocked", send the returned reply exactly and stop the order flow. Do not show product cards or say you are ordering again.
 5. After finalizeOrder succeeds, use getRelatedProducts and offer 2-3 add-ons via sendProductCarousel.
@@ -121,7 +160,7 @@ If asked "where is my order" / "track my order", call trackOrder with orderId, i
 # Memory
 At the start of each conversation call getCustomerMemory to see previous orders and preferences. Personalise your greeting.
 
-# Store facts
+${stateBlock ? stateBlock + "\n\n" : ""}# Store facts
 Address: ${store.address || "n/a"}
 Phone: ${store.phone || "n/a"}
 Delivery: ${k.delivery_policy || JSON.stringify(store.delivery ?? {})}
@@ -134,6 +173,7 @@ Store info: ${k.store_info || store.description || ""}
 FAQs:
 ${faqs}`;
 }
+
 
 // ---------- Helpers ----------
 const PUBLIC_MESSENGER_ORIGIN = "https://orzen-commerce.lovable.app";
