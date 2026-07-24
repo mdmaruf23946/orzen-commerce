@@ -1198,15 +1198,6 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
               ) continue;
               if (!effectiveText.trim()) continue;
 
-              if (isSmallTalkIntent(effectiveText)) {
-                await sendAndLogText(sb, token, senderId, conv!.id, smallTalkReply(effectiveText));
-                await sb
-                  .from("messenger_integrations")
-                  .update({ last_error: null } as any)
-                  .eq("id", (integ as any).id);
-                continue;
-              }
-
               // Merge any order-detail hints into the pending-order slot as CONTEXT for the LLM.
               // This never sends a template — it only short-circuits when the duplicate guard blocks the order.
               const duplicateBlocked = await maybeApplyPendingOrderText({
