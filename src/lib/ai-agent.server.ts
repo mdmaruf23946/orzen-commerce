@@ -41,7 +41,12 @@ export async function loadAiContext(storeId: string) {
   return { store, agent, settings };
 }
 
-export function buildSystemPrompt(store: any, agent: any) {
+export function buildSystemPrompt(store: any, agent: any, opts?: { channel?: "web" | "messenger" }) {
+  const channel = opts?.channel ?? "messenger";
+  const displayTools =
+    channel === "web"
+      ? "showProducts (multiple) or showProduct (one) — the web chat renders rich cards inline"
+      : "sendProductCarousel (multiple) or sendProductCard (one) so Messenger shows the image, price, stock and buy button";
   const k = (agent.knowledge ?? {}) as Record<string, any>;
   const lang =
     agent.language === "bn"
