@@ -111,6 +111,26 @@ export const Route = createFileRoute("/api/ai/chat")({
           const { model, modelId } = await getModelForStore();
           const siteOrigin = siteOriginFromRequest(request);
           const ctxConvId = convId;
+
+          // Conversation state block for the LLM (pending order + last order + recent recs).
+          const { data: convStateRow } = await sb
+            .from("ai_conversations")
+            .select("psid_profile")
+            .eq("id", ctxConvId)
+            .maybeSingle();
+          const profile = ((convStateRow as any)?.psid_profile ?? {}) as Record<string, any>;
+          const pending = (profile.pending_order ?? {}) as Record<string, any>;
+          const lastOrder = profile.last_order ?? null;
+          const { data: recentRecs } = await sb
+            .from("ai_product_recommendations")
+            .select("product_id")
+            .eq("conversation_id", ctxConvId)
+            .order("created_at", { ascending: false })
+            .limit(3);
+          const recentIds = Array.from(
+            new Set((recentRecs ?? []).map((r: any) => r.product_id).filter(Boolean)),
+          );
+
           // Pull generation params inline to avoid exporting from the server module.
           const temperature =
             typeof settings?.temperature === "number" ? Math.max(0, Math.min(2, settings.temperature)) : undefined;
@@ -120,7 +140,12 @@ export const Route = createFileRoute("/api/ai/chat")({
               : undefined;
           const result = streamText({
             model,
-            system: buildSystemPrompt(s, agent, { channel: "web", settings }),
+            system: buildSystemPrompt(s, agent, {
+              channel: "web",
+              settings,
+              state: { pending_order: pending, last_order: lastOrder, recent_product_ids: recentIds },
+            }),
+
             messages: await convertToModelMessages(body.messages),
             tools: buildTools({
               storeId: store.id,
