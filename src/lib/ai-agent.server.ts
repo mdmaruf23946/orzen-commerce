@@ -80,9 +80,21 @@ export function buildSystemPrompt(
   const faqs = Array.isArray(k.faqs)
     ? k.faqs.map((f: any) => `Q: ${f.q}\nA: ${f.a}`).join("\n\n")
     : "";
-  return `You are ${agent.agent_name}, the sales assistant for "${store.name}".
+  const globalPrompt = (settings?.global_system_prompt ?? "").trim();
+  const brand = (settings?.brand_voice ?? "").trim();
+  const safety = (settings?.safety_rules ?? "").trim();
+  const globalBlock = [
+    globalPrompt ? `# Platform guidance\n${globalPrompt}` : "",
+    brand ? `# Brand voice\n${brand}` : "",
+    safety ? `# Safety & compliance (never violate)\n${safety}` : "",
+    langHint ? `# Language policy\n${langHint}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+  return `${globalBlock ? globalBlock + "\n\n" : ""}You are ${agent.agent_name}, the sales assistant for "${store.name}".
 ${lang} ${emoji} ${human}
 Style: ${agent.style}.
+
 
 # Hard rules — never violate
 - NEVER invent product names, prices, stock, features, or policies. Every product fact must come from a tool call in this turn.
