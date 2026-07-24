@@ -17,6 +17,9 @@ const PRODUCT_STOPWORDS = new Set([
 const PRODUCT_SYNONYMS: Record<string, string[]> = {
   "ব্যাগ": ["bag", "school bag", "backpack"],
   "স্কুল": ["school"],
+  "কলম": ["pen"],
+  "পেন": ["pen"],
+  "বই": ["book"],
   "জুতা": ["shoe", "shoes", "sandal"],
   "ঘড়ি": ["watch", "clock"],
   "কাপড়": ["cloth", "dress", "shirt"],
@@ -174,6 +177,27 @@ function isReferenceIntent(text: string) {
 function isGreetingIntent(text: string) {
   const compact = text.trim().toLowerCase();
   return /^(হাই|হাই+|হ্যালো|হেলো|hello|hi|hey|assalamu alaikum|আসসালামু আলাইকুম|সালাম|কেমন আছেন|তোমার কি খবর|কি খবর)[।!?.\s]*$/i.test(compact);
+}
+
+function isSmallTalkIntent(text: string) {
+  return isGreetingIntent(text) || /^(তোমার|আপনার)?\s*(কি|কী)\s*খবর[।!?.\s]*$/i.test(text.trim()) || /(কেমন আছেন|কেমন আছো|কী অবস্থা|কি অবস্থা|how are you|what'?s up)/i.test(text.trim());
+}
+
+function smallTalkReply(text: string) {
+  if (/আসসালামু|সালাম/i.test(text)) {
+    return "ওয়ালাইকুম আসসালাম। আলহামদুলিল্লাহ ভালো আছি। আপনার কী প্রয়োজন বলুন, আমি সাহায্য করছি।";
+  }
+  return "আলহামদুলিল্লাহ ভালো আছি। আপনার কী খবর? এই মুহূর্তে কী প্রয়োজন বলুন, আমি সাহায্য করছি।";
+}
+
+function sanitizeMessengerReply(reply: string, latestText: string) {
+  const text = reply.trim();
+  if (!text) return text;
+  if (/productId|product_id|must_use_focus_product|tool|database|undefined|null/i.test(text)) {
+    if (isSmallTalkIntent(latestText)) return smallTalkReply(latestText);
+    return "দুঃখিত, আপনার কথাটা বুঝেছি—কোন প্রোডাক্টটি চান সেটার নাম আরেকবার লিখলে আমি ঠিকভাবে ছবিসহ দেখাচ্ছি।";
+  }
+  return text;
 }
 
 async function searchDirectProducts(sb: ReturnType<typeof admin>, storeId: string, text: string, limit = 6) {
@@ -596,6 +620,8 @@ async function maybeApplyPendingOrderText(opts: {
   const { sb, storeId, conversationId, psid, token, text } = opts;
   const current = await getConversationPendingOrder(sb, conversationId);
   const details = parseOrderDetailsText(text);
+  const hasNewOrderDetails = Object.keys(details).length > 0;
+  if (!hasNewOrderDetails && !isOrderIntent(text)) return false;
   const slot = Object.keys(details).length
     ? await patchConversationPendingOrder(sb, conversationId, { ...current, ...details })
     : current;
@@ -1201,12 +1227,12 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                       .from("ai_messages")
                       .select("role,content,message_type")
                       .eq("conversation_id", conv!.id)
-                      .in("message_type", ["text", "quick_reply", "postback", "audio", "product_card", "product_carousel"])
-                      .order("created_at", { ascending: true })
+                      .in("message_type", ["text", "quick_reply", "postback", "audio"])
+                      .order("created_at", { ascending: false })
                       .limit(30)
                   ).data ?? []
                 : [];
-              const messages = history
+              const messages = [...history].reverse()
                 .filter((m: any) => m.role === "user" || m.role === "assistant")
                 .map((m: any) => ({
                   role: m.role as "user" | "assistant",
@@ -1215,6 +1241,12 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                       ? `[${m.message_type}] ${m.content ?? ""}`.trim()
                       : (m.content ?? ""),
                 }));
+              const latestInHistory = [...messages]
+                .reverse()
+                .find((m) => m.role === "user")?.content?.trim();
+              if (latestInHistory !== effectiveText.trim()) {
+                messages.push({ role: "user", content: effectiveText.trim() });
+              }
 
               // Build conversation-state block so the model always sees what's already collected.
               const pending = await getConversationPendingOrder(sb, conv!.id);
@@ -1255,13 +1287,14 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                   settings,
                   state: { pending_order: pending, last_order: lastOrder, recent_product_ids: recentIds },
                   focus,
+                  latestUserText: effectiveText,
                 }),
                 fast: true,
               });
 
 
 
-              const replyText = (reply ?? "").trim();
+              const replyText = sanitizeMessengerReply(reply ?? "", effectiveText);
               if (!replyText) {
                 // AI answered by sending a product card/carousel via tool call;
                 // nothing more to say. Clear stale errors, don't POST empty text.

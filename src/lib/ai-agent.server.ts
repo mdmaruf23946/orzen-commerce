@@ -74,12 +74,14 @@ export function buildSystemPrompt(
     settings?: GlobalAiSettings | null;
     state?: AgentState | null;
     focus?: FocusProduct | null;
+    latestUserText?: string | null;
   },
 ) {
   const channel = opts?.channel ?? "messenger";
   const settings = opts?.settings ?? null;
   const state = opts?.state ?? null;
   const focus = opts?.focus ?? null;
+  const latestUserText = (opts?.latestUserText ?? "").trim().slice(0, 800);
   const displayTools =
     channel === "web"
       ? "showProducts (multiple) or showProduct (one) — the web chat renders rich cards inline"
@@ -136,6 +138,9 @@ export function buildSystemPrompt(
     );
   }
   const stateBlock = stateLines.length ? `# Conversation state\n${stateLines.join("\n")}` : "";
+  const latestBlock = latestUserText
+    ? `# Latest customer message — answer this first\n${latestUserText}\n\nRule: Your next reply must answer this exact latest message. Use older conversation only as background, never as a replacement for the latest message.`
+    : "";
 
   // Focus product block — server-resolved for THIS turn only. If set, it is the
   // ONLY product the assistant is allowed to describe/name/price/image in text.
@@ -178,6 +183,7 @@ Style: ${agent.style}.
 
 # Hard rules — never violate
 - NEVER invent product names, prices, stock, features, or policies. Every product fact must come from a tool call in this turn OR from the Focus product block below.
+- First understand the customer's latest message intent. If it is only a greeting or small talk (hi, hello, কেমন আছেন, কি খবর, কী অবস্থা), do NOT call product tools, do NOT mention previous products/orders, and answer naturally like a human sales assistant.
 - Every reply must be freshly generated for the customer's latest message and the current conversation state. Never repeat the same sentence you sent earlier in this conversation — vary the wording.
 - The MOMENT a customer mentions a product, category, price range, brand, or asks "what do you sell / show me products / আপনাদের কি আছে / দাম কত" — IMMEDIATELY call searchProducts (or listCategories if they ask for categories). Do not answer from memory, do not ask clarifying questions first for a general browse intent.
 - If a Focus product is set below, you MUST use its id when calling sendProductCard/showProduct, and every product fact in your text MUST come from that record. Never mix in facts from another product, earlier turn, or the pending-order slot.
@@ -188,6 +194,7 @@ Style: ${agent.style}.
 - If the customer changes topic mid-conversation (e.g. asks about delivery charge while an order is pending), answer the new topic FIRST using the appropriate tool, then only resume the order flow when they signal they're ready to continue.
 - If you cannot answer confidently from tools or store data, ask ONE specific follow-up question in the customer's language. Never send a generic greeting, apology, or "how can I help you?" template.
 - If you cannot answer confidently or the customer asks for a human, call escalateToHuman.
+- Never expose internal tool errors, productId problems, ids, database wording, or implementation details to the customer. If a tool fails, recover naturally or ask one helpful follow-up question.
 
 
 # Order flow
@@ -204,7 +211,7 @@ If asked "where is my order" / "track my order", call trackOrder with orderId, i
 # Memory
 At the start of each conversation call getCustomerMemory to see previous orders and preferences. Personalise your greeting.
 
-${focusBlock ? focusBlock + "\n\n" : ""}${stateBlock ? stateBlock + "\n\n" : ""}# Store facts
+${latestBlock ? latestBlock + "\n\n" : ""}${focusBlock ? focusBlock + "\n\n" : ""}${stateBlock ? stateBlock + "\n\n" : ""}# Store facts
 Address: ${store.address || "n/a"}
 Phone: ${store.phone || "n/a"}
 Delivery: ${k.delivery_policy || JSON.stringify(store.delivery ?? {})}
@@ -250,6 +257,9 @@ function firstImage(ctx: AgentContext, product: any) {
 const BANGLA_SEARCH_SYNONYMS: Record<string, string[]> = {
   "ব্যাগ": ["bag", "school bag", "backpack"],
   "স্কুল": ["school"],
+  "কলম": ["pen"],
+  "পেন": ["pen"],
+  "বই": ["book"],
   "জুতা": ["shoe", "shoes", "sandal"],
   "ঘড়ি": ["watch", "clock"],
   "কাপড়": ["cloth", "dress", "shirt"],
@@ -268,22 +278,32 @@ const BANGLA_SEARCH_SYNONYMS: Record<string, string[]> = {
 };
 
 const PRODUCT_STOPWORDS = new Set([
-  "this", "that", "these", "those", "show", "give", "send", "photo", "image", "picture", "pic", "please", "price", "details",
-  "এটা", "এইটা", "ওটা", "এই", "ওই", "এর", "টার", "একটা", "একটি", "ছবি", "দাও", "দেন", "দেখাও", "দেখান", "কি", "কী", "আছে", "দাম", "কত", "ডিটেইলস", "বিস্তারিত", "প্লিজ", "আমাদের", "আপনাদের",
+  "this", "that", "these", "those", "show", "give", "send", "photo", "image", "picture", "pic", "please", "price", "details", "hi", "hello", "hey", "news", "status", "you", "your", "how", "are",
+  "এটা", "এইটা", "ওটা", "এই", "ওই", "এর", "টার", "একটা", "একটি", "ছবি", "দাও", "দেন", "দেখাও", "দেখান", "কি", "কী", "আছে", "দাম", "কত", "ডিটেইলস", "বিস্তারিত", "প্লিজ", "আমাদের", "আপনাদের", "তুমি", "তোমার", "আপনি", "আপনার", "খবর", "অবস্থা", "কেমন", "ভালো", "আছেন", "আছো", "হাই", "হ্যালো", "হেলো",
 ]);
 
 function searchTerms(raw: string) {
   const compact = raw.toLowerCase().replace(/[.,!?;:()\[\]{}"'`~|/\\]+/g, " ");
   const terms = new Set<string>();
   for (const token of compact.split(/\s+/).map((t) => t.trim()).filter(Boolean)) {
-    if (token.length < 2 || PRODUCT_STOPWORDS.has(token)) continue;
-    terms.add(token);
-    for (const synonym of BANGLA_SEARCH_SYNONYMS[token] ?? []) terms.add(synonym.toLowerCase());
+    const variants = new Set([
+      token,
+      token.replace(/(ের|এর|টি|টা|গুলো|গুলি|গুলোতে|গুলোর|টার|টির)$/u, ""),
+    ].filter(Boolean));
+    for (const variant of variants) {
+      if (variant.length < 2 || PRODUCT_STOPWORDS.has(variant)) continue;
+      terms.add(variant);
+      for (const synonym of BANGLA_SEARCH_SYNONYMS[variant] ?? []) terms.add(synonym.toLowerCase());
+    }
   }
   for (const [bn, synonyms] of Object.entries(BANGLA_SEARCH_SYNONYMS)) {
     if (compact.includes(bn)) synonyms.forEach((s) => terms.add(s.toLowerCase()));
   }
   return Array.from(terms);
+}
+
+function isBroadBrowseQuery(raw: string) {
+  return /প্রোডাক্ট|পণ্য|কি আছে|কী আছে|দেখান|দেখাও|সব|নতুন|বেস্ট|best|new|popular|product|products|items|show|browse|catalog/i.test(raw);
 }
 
 function stringifyProductField(value: any): string {
@@ -525,12 +545,15 @@ export async function resolveFocusProduct(opts: {
 }): Promise<FocusProduct> {
   const raw = String(opts.text ?? "").trim();
   if (!raw) return { product: null, ambiguous: false, candidates: [] };
+  const compact = raw.toLowerCase();
+  const hasDeictic = DEICTIC_TOKENS.some((t) => compact.includes(t.toLowerCase()));
+  if (!hasDeictic && !isBroadBrowseQuery(raw) && searchTerms(raw).length === 0) {
+    return { product: null, ambiguous: false, candidates: [] };
+  }
   const sb = admin();
 
   // 1) Deictic reference ("this / এটা / ওইটা / it") → use the last recommended
-  //    product in this conversation. If there's exactly one recent id, pin it.
-  const compact = raw.toLowerCase();
-  const hasDeictic = DEICTIC_TOKENS.some((t) => new RegExp(`(^|\\W)${t}(\\W|$)`, "i").test(compact));
+  //    product in this conversation. Pin the most recent product card the agent sent.
   if (hasDeictic && opts.conversationId) {
     const { data: recs } = await sb
       .from("ai_product_recommendations")
@@ -540,12 +563,12 @@ export async function resolveFocusProduct(opts: {
       .order("created_at", { ascending: false })
       .limit(5);
     const ids = Array.from(new Set((recs ?? []).map((r: any) => r.product_id).filter(Boolean)));
-    if (ids.length === 1) {
+    if (ids.length > 0) {
       const { data: p } = await sb
         .from("products")
         .select(PRODUCT_SELECT_MIN)
         .eq("store_id", opts.storeId)
-        .eq("id", ids[0]!)
+        .eq("id", ids[0])
         .eq("status", "active")
         .maybeSingle();
       if (p) return { product: p, ambiguous: false, candidates: [], canonical_caption: canonicalCaption(p as any) };

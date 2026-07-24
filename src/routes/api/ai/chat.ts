@@ -155,6 +155,7 @@ export const Route = createFileRoute("/api/ai/chat")({
               settings,
               state: { pending_order: pending, last_order: lastOrder, recent_product_ids: recentIds },
               focus,
+              latestUserText: lastUserText,
             }),
 
             messages: await convertToModelMessages(body.messages),
