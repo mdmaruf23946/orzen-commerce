@@ -63,7 +63,7 @@ export function AIChatLauncher({
       {chatOpen && (
         <Suspense
           fallback={
-            <div className="fixed bottom-20 right-4 z-40 grid h-24 w-80 place-items-center rounded-2xl border bg-background text-sm text-muted-foreground shadow-xl">
+            <div className="fixed bottom-40 right-4 z-40 grid h-24 w-80 place-items-center rounded-2xl border bg-background text-sm text-muted-foreground shadow-xl md:bottom-20">
               Loading…
             </div>
           }
