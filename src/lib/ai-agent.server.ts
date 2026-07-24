@@ -286,9 +286,15 @@ function searchTerms(raw: string) {
   const compact = raw.toLowerCase().replace(/[.,!?;:()\[\]{}"'`~|/\\]+/g, " ");
   const terms = new Set<string>();
   for (const token of compact.split(/\s+/).map((t) => t.trim()).filter(Boolean)) {
-    if (token.length < 2 || PRODUCT_STOPWORDS.has(token)) continue;
-    terms.add(token);
-    for (const synonym of BANGLA_SEARCH_SYNONYMS[token] ?? []) terms.add(synonym.toLowerCase());
+    const variants = new Set([
+      token,
+      token.replace(/(ের|এর|টি|টা|গুলো|গুলি|গুলোতে|গুলোর|টার|টির)$/u, ""),
+    ].filter(Boolean));
+    for (const variant of variants) {
+      if (variant.length < 2 || PRODUCT_STOPWORDS.has(variant)) continue;
+      terms.add(variant);
+      for (const synonym of BANGLA_SEARCH_SYNONYMS[variant] ?? []) terms.add(synonym.toLowerCase());
+    }
   }
   for (const [bn, synonyms] of Object.entries(BANGLA_SEARCH_SYNONYMS)) {
     if (compact.includes(bn)) synonyms.forEach((s) => terms.add(s.toLowerCase()));
@@ -539,6 +545,9 @@ export async function resolveFocusProduct(opts: {
 }): Promise<FocusProduct> {
   const raw = String(opts.text ?? "").trim();
   if (!raw) return { product: null, ambiguous: false, candidates: [] };
+  if (!isBroadBrowseQuery(raw) && searchTerms(raw).length === 0) {
+    return { product: null, ambiguous: false, candidates: [] };
+  }
   const sb = admin();
 
   // 1) Deictic reference ("this / এটা / ওইটা / it") → use the last recommended
