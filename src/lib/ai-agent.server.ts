@@ -1156,8 +1156,6 @@ async function runGenerate(opts: {
     tools: buildTools(opts.ctx),
     stopWhen: stepCountIs(50),
     ...generationParams(settings),
-    providerOptions:
-      modelId === "openai/gpt-5.4-mini" ? { lovable: { service_tier: "priority" } } : undefined,
   });
   return { result, modelId, settings };
 }
