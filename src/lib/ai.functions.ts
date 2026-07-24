@@ -8,10 +8,27 @@ import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
 function adminClient() {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const isNewKey = key.startsWith("sb_publishable_") || key.startsWith("sb_secret_");
   return createClient<Database>(
     process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
+    key,
+    {
+      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+      global: {
+        // New-format sb_ keys are opaque, not JWTs. PostgREST rejects them as
+        // `Authorization: Bearer <key>` with "Expected 3 parts in JWT". Strip
+        // the bearer header and pass the key only via `apikey`.
+        fetch: (input, init) => {
+          const headers = new Headers(init?.headers);
+          if (isNewKey && headers.get("Authorization") === `Bearer ${key}`) {
+            headers.delete("Authorization");
+          }
+          headers.set("apikey", key);
+          return fetch(input as any, { ...init, headers });
+        },
+      },
+    },
   );
 }
 
