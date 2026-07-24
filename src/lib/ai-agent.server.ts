@@ -1025,17 +1025,26 @@ export async function logUsage(storeId: string | null, model: string, usage: any
   }
 }
 
-export async function getModelForStore(opts?: { fast?: boolean }) {
+export async function getModelForStore(opts?: { fast?: boolean; modelOverride?: string }) {
   const sb = admin();
   const { data: settings } = await sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle();
   const saved = (settings?.provider_api_key || "").trim();
   const looksLovable = saved.startsWith("lv_") || saved.startsWith("sk-lovable");
   const apiKey = (looksLovable ? saved : "") || process.env.LOVABLE_API_KEY!;
   if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
-  const configuredModel = settings?.default_model || "openai/gpt-5.4-mini";
+  const configuredModel = opts?.modelOverride || settings?.default_model || "openai/gpt-5.4-mini";
   const modelId = opts?.fast && configuredModel.includes("pro") ? "openai/gpt-5.4-mini" : configuredModel;
   const gateway = createLovableAiGatewayProvider(apiKey);
-  return { model: gateway(modelId), modelId };
+  return { model: gateway(modelId), modelId, settings: (settings ?? null) as GlobalAiSettings | null, gateway };
+}
+
+function generationParams(settings: GlobalAiSettings | null | undefined) {
+  const params: { temperature?: number; maxOutputTokens?: number } = {};
+  const t = settings?.temperature;
+  if (typeof t === "number" && Number.isFinite(t)) params.temperature = Math.max(0, Math.min(2, t));
+  const m = settings?.max_tokens;
+  if (typeof m === "number" && Number.isFinite(m) && m > 0) params.maxOutputTokens = Math.floor(m);
+  return params;
 }
 
 export function streamAgentResponse(opts: {
@@ -1044,13 +1053,14 @@ export function streamAgentResponse(opts: {
   system: string;
 }) {
   return async () => {
-    const { model, modelId } = await getModelForStore();
+    const { model, modelId, settings } = await getModelForStore();
     const result = streamText({
       model,
       system: opts.system,
       messages: opts.messages,
       tools: buildTools(opts.ctx),
       stopWhen: stepCountIs(50),
+      ...generationParams(settings),
       onFinish: ({ usage }) => {
         void logUsage(opts.ctx.storeId, modelId, usage, "chat");
       },
@@ -1081,23 +1091,60 @@ function findDuplicateBlockedReply(value: any, depth = 0, seen = new WeakSet<obj
   return null;
 }
 
-export async function generateAgentReply(opts: {
+function isTransientGatewayError(err: unknown) {
+  const msg = (err as any)?.message || "";
+  const status = (err as any)?.statusCode ?? (err as any)?.status;
+  if (status === 429 || (typeof status === "number" && status >= 500 && status < 600)) return true;
+  return /\b(429|rate.?limit|timeout|overload|5\d\d)\b/i.test(String(msg));
+}
+
+async function runGenerate(opts: {
   ctx: AgentContext;
   messages: any[];
   system: string;
   fast?: boolean;
+  modelOverride?: string;
 }) {
-  const { model, modelId } = await getModelForStore({ fast: opts.fast });
+  const { model, modelId, settings } = await getModelForStore({
+    fast: opts.fast,
+    modelOverride: opts.modelOverride,
+  });
   const result = await generateText({
     model,
     system: opts.system,
     messages: opts.messages,
     tools: buildTools(opts.ctx),
     stopWhen: stepCountIs(50),
-    providerOptions: modelId === "openai/gpt-5.4-mini" ? { lovable: { service_tier: "priority" } } : undefined,
+    ...generationParams(settings),
+    providerOptions:
+      modelId === "openai/gpt-5.4-mini" ? { lovable: { service_tier: "priority" } } : undefined,
   });
+  return { result, modelId, settings };
+}
+
+export async function generateAgentReply(opts: {
+  ctx: AgentContext;
+  messages: any[];
+  system: string;
+  fast?: boolean;
+}) {
+  let attempt: Awaited<ReturnType<typeof runGenerate>>;
+  try {
+    attempt = await runGenerate(opts);
+  } catch (err) {
+    // Try fallback model once if configured and error is transient
+    const { settings } = await getModelForStore({ fast: opts.fast });
+    const fb = (settings?.fallback_model || "").trim();
+    if (fb && isTransientGatewayError(err)) {
+      attempt = await runGenerate({ ...opts, modelOverride: fb });
+    } else {
+      throw err;
+    }
+  }
+  const { result, modelId } = attempt;
   void logUsage(opts.ctx.storeId, modelId, result.usage, "messenger");
   const duplicateReply = findDuplicateBlockedReply(result as any);
   if (duplicateReply) return duplicateReply;
   return result.text;
 }
+
