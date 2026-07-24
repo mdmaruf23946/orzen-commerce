@@ -200,8 +200,8 @@ export function MobileDrawer({
                 Shop
               </div>
               <NavItem to="/store/$slug/cart" params={{ slug }} icon={ShoppingCart} label="Cart" onClick={() => onOpenChange(false)} />
-              <NavItem to="/store/$slug/account" params={{ slug }} icon={Package} label="Orders" onClick={() => onOpenChange(false)} />
-              <NavItem to="/store/$slug/account" params={{ slug }} icon={Heart} label="Wishlist" onClick={() => onOpenChange(false)} />
+              <NavItem to="/store/$slug/account" params={{ slug }} search={{ tab: "orders" }} icon={Package} label="Orders" onClick={() => onOpenChange(false)} />
+              <NavItem to="/store/$slug/account" params={{ slug }} search={{ tab: "wishlist" }} icon={Heart} label="Wishlist" onClick={() => onOpenChange(false)} />
             </div>
 
             {/* More */}
