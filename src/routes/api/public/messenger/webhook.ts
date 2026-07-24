@@ -620,6 +620,8 @@ async function maybeApplyPendingOrderText(opts: {
   const { sb, storeId, conversationId, psid, token, text } = opts;
   const current = await getConversationPendingOrder(sb, conversationId);
   const details = parseOrderDetailsText(text);
+  const hasNewOrderDetails = Object.keys(details).length > 0;
+  if (!hasNewOrderDetails && !isOrderIntent(text)) return false;
   const slot = Object.keys(details).length
     ? await patchConversationPendingOrder(sb, conversationId, { ...current, ...details })
     : current;
