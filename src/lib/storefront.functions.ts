@@ -125,7 +125,9 @@ export const getProduct = createServerFn({ method: "GET" })
     const sb = publicClient();
     const { data: p, error } = await sb
       .from("products")
-      .select("id,name,slug,description,price,old_price,stock,status,primary_image_url,gallery,store_id")
+      .select(
+        "id,name,slug,description,price,old_price,stock,status,primary_image_url,gallery,store_id,brand,sku,category_id,features,specifications,video_url,warranty,return_policy,meta",
+      )
       .eq("id", data.productId)
       .eq("store_id", data.storeId)
       .maybeSingle();
@@ -138,6 +140,70 @@ export const getProduct = createServerFn({ method: "GET" })
       gallery: gallery.map((g) => imgUrl(g)!).filter(Boolean),
     };
   });
+
+export const listRelatedProducts = createServerFn({ method: "GET" })
+  .inputValidator((d) =>
+    z
+      .object({
+        storeId: z.string().uuid(),
+        categoryId: z.string().uuid().nullable().optional(),
+        excludeId: z.string().uuid(),
+        limit: z.number().int().min(1).max(24).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const sb = publicClient();
+    const limit = data.limit ?? 8;
+    let rows: any[] = [];
+    if (data.categoryId) {
+      const { data: cat } = await sb
+        .from("products")
+        .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id")
+        .eq("store_id", data.storeId)
+        .eq("category_id", data.categoryId)
+        .neq("id", data.excludeId)
+        .neq("status", "draft")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      rows = cat ?? [];
+    }
+    if (rows.length < 6) {
+      const need = limit - rows.length;
+      const have = new Set(rows.map((r) => r.id));
+      const { data: extra } = await sb
+        .from("products")
+        .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id")
+        .eq("store_id", data.storeId)
+        .neq("id", data.excludeId)
+        .neq("status", "draft")
+        .order("created_at", { ascending: false })
+        .limit(need + 12);
+      for (const r of extra ?? []) {
+        if (rows.length >= limit) break;
+        if (!have.has(r.id)) rows.push(r);
+      }
+    }
+    return rows.map((p) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }));
+  });
+
+export const listProductsByIds = createServerFn({ method: "GET" })
+  .inputValidator((d) =>
+    z.object({ storeId: z.string().uuid(), ids: z.array(z.string().uuid()).min(1).max(24) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const sb = publicClient();
+    const { data: rows, error } = await sb
+      .from("products")
+      .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id")
+      .eq("store_id", data.storeId)
+      .in("id", data.ids)
+      .neq("status", "draft");
+    if (error) throw new Error(error.message);
+    return (rows ?? []).map((p) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }));
+  });
+
+
 
 const itemSchema = z.object({
   productId: z.string().uuid(),
