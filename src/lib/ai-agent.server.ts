@@ -1040,12 +1040,16 @@ export function buildTools(ctx: AgentContext) {
         "Display ONE product to the web-chat customer as a rich card (image, name, price, stock, view/buy buttons). Use whenever you want the customer to see a specific product.",
       inputSchema: z.object({ productId: z.string().uuid() }),
       execute: async ({ productId }) => {
+        if (ctx.focusProductId && productId !== ctx.focusProductId) {
+          return { rendered: false, error: "must_use_focus_product", focus_product_id: ctx.focusProductId };
+        }
         const products = await loadProducts([productId]);
         if (!products.length) return { rendered: false, error: "not_found" };
         await logRecommendations("showProduct", products, "web_card");
-        return { rendered: true, products };
+        return { rendered: true, products, canonical_caption: canonicalCaption(products[0] as any) };
       },
     });
+
 
     tools.showProducts = tool({
       description:
