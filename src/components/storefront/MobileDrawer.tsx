@@ -200,8 +200,8 @@ export function MobileDrawer({
                 Shop
               </div>
               <NavItem to="/store/$slug/cart" params={{ slug }} icon={ShoppingCart} label="Cart" onClick={() => onOpenChange(false)} />
-              <NavItem to="/store/$slug/account" params={{ slug }} icon={Package} label="Orders" onClick={() => onOpenChange(false)} />
-              <NavItem to="/store/$slug/account" params={{ slug }} icon={Heart} label="Wishlist" onClick={() => onOpenChange(false)} />
+              <NavItem to="/store/$slug/account" params={{ slug }} search={{ tab: "orders" }} icon={Package} label="Orders" onClick={() => onOpenChange(false)} />
+              <NavItem to="/store/$slug/account" params={{ slug }} search={{ tab: "wishlist" }} icon={Heart} label="Wishlist" onClick={() => onOpenChange(false)} />
             </div>
 
             {/* More */}
@@ -261,12 +261,14 @@ export function MobileDrawer({
 function NavItem({
   to,
   params,
+  search,
   icon: Icon,
   label,
   onClick,
 }: {
   to: string;
   params?: any;
+  search?: any;
   icon: any;
   label: string;
   onClick?: () => void;
@@ -275,6 +277,7 @@ function NavItem({
     <Link
       to={to as any}
       params={params}
+      search={search}
       onClick={onClick}
       className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100"
     >

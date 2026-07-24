@@ -33,28 +33,43 @@ import {
 } from "lucide-react";
 import { AccountShell } from "@/components/storefront/AccountShell";
 
+const TABS = ["overview", "profile", "orders", "addresses", "wishlist", "password"] as const;
+type Tab = (typeof TABS)[number];
+
 export const Route = createFileRoute("/store/$slug/account")({
   head: () => ({ meta: [{ title: "My account" }] }),
+  validateSearch: (search: Record<string, unknown>): { tab?: Tab } => {
+    const t = search.tab;
+    return typeof t === "string" && (TABS as readonly string[]).includes(t)
+      ? { tab: t as Tab }
+      : {};
+  },
   component: AccountPage,
 });
-
-type Tab = "overview" | "profile" | "orders" | "addresses" | "wishlist" | "password";
 
 function AccountPage() {
   const { slug } = Route.useParams();
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const { customer, isLoading, token, signOut, refresh } = useCustomerSession(slug);
-  const [tab, setTab] = useState<Tab>("overview");
+  const tab: Tab = search.tab ?? "overview";
+  const setTab = (t: Tab) =>
+    navigate({
+      to: "/store/$slug/account",
+      params: { slug },
+      search: t === "overview" ? {} : { tab: t },
+      replace: false,
+    });
 
   useEffect(() => {
     if (!isLoading && !customer) {
       navigate({
         to: "/store/$slug/auth/login",
         params: { slug },
-        search: { redirect: `/store/${slug}/account` },
+        search: { redirect: `/store/${slug}/account${tab === "overview" ? "" : `?tab=${tab}`}` },
       });
     }
-  }, [isLoading, customer, navigate, slug]);
+  }, [isLoading, customer, navigate, slug, tab]);
 
   if (!customer || !token) {
     return (

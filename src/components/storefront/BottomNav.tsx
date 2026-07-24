@@ -63,11 +63,19 @@ export function BottomNav({ slug }: { slug: string }) {
     active: boolean;
     onClick?: (e: React.MouseEvent) => void;
     badge?: number;
+    search?: Record<string, string>;
   }> = [
     { to: "/store/$slug", label: "Home", icon: Home, active: isActive(base) },
     { to: "/store/$slug", label: "Browse", icon: LayoutGrid, active: false, onClick: scrollToAll },
     { to: "/store/$slug/cart", label: "Cart", icon: ShoppingCart, active: isActive(`${base}/cart`), badge: cart },
-    { to: "/store/$slug/account", label: "Wishlist", icon: Heart, active: false, badge: wish },
+    {
+      to: "/store/$slug/account",
+      label: "Wishlist",
+      icon: Heart,
+      active: pathname === `${base}/account` && /[?&]tab=wishlist(?:&|$)/.test(window.location?.search ?? ""),
+      badge: wish,
+      search: { tab: "wishlist" },
+    },
     { to: "/store/$slug/account", label: "Account", icon: User, active: isActive(`${base}/account`) },
   ];
 
@@ -85,6 +93,7 @@ export function BottomNav({ slug }: { slug: string }) {
             <Link
               to={it.to}
               params={{ slug }}
+              search={it.search as any}
               onClick={it.onClick}
               className="relative flex h-14 flex-col items-center justify-center gap-0.5"
             >
