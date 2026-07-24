@@ -972,7 +972,7 @@ export function buildTools(ctx: AgentContext) {
               attachments: [{ type: "product_card", product_id: p.id }],
             } as any);
           }
-          return { sent: true };
+          return { sent: true, canonical_caption: canonicalCaption(p as any), product_id: p.id, name: p.name };
         } catch (e) {
           return { sent: false, error: (e as Error).message };
         }
