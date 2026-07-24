@@ -10,6 +10,12 @@ import {
   adminGetRequireCustomerLogin,
   adminSetRequireCustomerLogin,
 } from "@/lib/admin.functions";
+import {
+  getInvoiceSettings,
+  updateInvoiceSettings,
+  computeInvoicePreview,
+  type InvoiceSettingsInput,
+} from "@/lib/invoice-settings.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,6 +54,44 @@ function SettingsPage() {
     queryFn: () => getReqLogin(),
   });
   const [savingLogin, setSavingLogin] = useState(false);
+
+  // Invoice numbering
+  const fetchInvoice = useServerFn(getInvoiceSettings);
+  const saveInvoice = useServerFn(updateInvoiceSettings);
+  const { data: invoice } = useQuery({
+    queryKey: ["admin", "invoice-settings"],
+    queryFn: () => fetchInvoice(),
+  });
+  const [invForm, setInvForm] = useState<InvoiceSettingsInput | null>(null);
+  const [savingInv, setSavingInv] = useState(false);
+  useEffect(() => {
+    if (invoice) {
+      setInvForm({
+        prefix: invoice.prefix,
+        separator: invoice.separator,
+        padding: invoice.padding,
+        start_number: invoice.start_number,
+        include_year: invoice.include_year,
+        include_month: invoice.include_month,
+      });
+    }
+  }, [invoice]);
+
+  async function submitInvoice(e: React.FormEvent) {
+    e.preventDefault();
+    if (!invForm) return;
+    setSavingInv(true);
+    try {
+      await saveInvoice({ data: invForm });
+      await qc.invalidateQueries({ queryKey: ["admin", "invoice-settings"] });
+      toast.success("Invoice settings saved");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSavingInv(false);
+    }
+  }
+
 
   async function toggleRequireLogin(enabled: boolean) {
     setSavingLogin(true);
@@ -216,6 +260,117 @@ function SettingsPage() {
           </span>
         </label>
       </section>
+
+      {invForm && (
+        <section className="space-y-4 rounded-xl border bg-card p-4">
+          <div>
+            <h2 className="text-sm font-semibold">Invoice numbering</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Customize how invoice numbers are generated when an order is confirmed. Numbers are always
+              unique per store and never reused.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="inv-prefix">Prefix</Label>
+              <Input
+                id="inv-prefix"
+                value={invForm.prefix}
+                maxLength={10}
+                onChange={(e) =>
+                  setInvForm({
+                    ...invForm,
+                    prefix: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""),
+                  })
+                }
+              />
+              <p className="text-[11px] text-muted-foreground">Letters and digits only, up to 10 characters.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Separator</Label>
+              <div className="flex gap-1">
+                {(["-", "/", "_", ""] as const).map((sep) => (
+                  <button
+                    key={sep || "none"}
+                    type="button"
+                    onClick={() => setInvForm({ ...invForm, separator: sep })}
+                    className={`h-9 flex-1 rounded-md border text-sm ${
+                      invForm.separator === sep
+                        ? "border-primary bg-primary/10 font-medium"
+                        : "border-input hover:bg-muted"
+                    }`}
+                  >
+                    {sep === "" ? "None" : sep}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="inv-padding">Number padding ({invForm.padding} digits)</Label>
+              <input
+                id="inv-padding"
+                type="range"
+                min={4}
+                max={8}
+                step={1}
+                value={invForm.padding}
+                onChange={(e) => setInvForm({ ...invForm, padding: Number(e.target.value) })}
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="inv-start">Starting number</Label>
+              <Input
+                id="inv-start"
+                type="number"
+                min={1}
+                value={invForm.start_number}
+                onChange={(e) =>
+                  setInvForm({ ...invForm, start_number: Math.max(1, Number(e.target.value) || 1) })
+                }
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Applied only if higher than the current sequence.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={invForm.include_year}
+                onChange={(e) => setInvForm({ ...invForm, include_year: e.target.checked })}
+              />
+              Include year (YYYY)
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={invForm.include_month}
+                onChange={(e) => setInvForm({ ...invForm, include_month: e.target.checked })}
+              />
+              Include month (MM)
+            </label>
+          </div>
+
+          <div className="rounded-lg bg-muted p-3">
+            <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Preview</div>
+            <div className="mt-1 font-mono text-base">
+              {computeInvoicePreview(invForm, Math.max(invoice?.next_number ?? 1, invForm.start_number))}
+            </div>
+          </div>
+
+          <Button type="button" onClick={submitInvoice} disabled={savingInv} size="sm">
+            {savingInv ? "Saving…" : "Save invoice settings"}
+          </Button>
+        </section>
+      )}
+
+
 
 
       <section className="space-y-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4">

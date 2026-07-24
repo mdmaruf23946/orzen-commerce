@@ -2685,6 +2685,53 @@ export type Database = {
           },
         ]
       }
+      store_invoice_settings: {
+        Row: {
+          created_at: string
+          include_month: boolean
+          include_year: boolean
+          next_number: number
+          padding: number
+          prefix: string
+          separator: string
+          start_number: number
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          include_month?: boolean
+          include_year?: boolean
+          next_number?: number
+          padding?: number
+          prefix?: string
+          separator?: string
+          start_number?: number
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          include_month?: boolean
+          include_year?: boolean
+          next_number?: number
+          padding?: number
+          prefix?: string
+          separator?: string
+          start_number?: number
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_invoice_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_legal_info: {
         Row: {
           business_address: string
@@ -3539,6 +3586,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _default_invoice_prefix: { Args: { _name: string }; Returns: string }
       _new_session_token: {
         Args: {
           _customer_id: string
