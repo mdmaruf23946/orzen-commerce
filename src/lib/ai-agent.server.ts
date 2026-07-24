@@ -938,6 +938,9 @@ export function buildTools(ctx: AgentContext) {
         "Send one product to the customer as a rich Messenger card with Buy Now / View Product buttons. Prefer this over describing a product in plain text.",
       inputSchema: z.object({ productId: z.string().uuid() }),
       execute: async ({ productId }) => {
+        if (ctx.focusProductId && productId !== ctx.focusProductId) {
+          return { sent: false, error: "must_use_focus_product", focus_product_id: ctx.focusProductId };
+        }
         const { data: p } = await sb
           .from("products")
           .select("id,name,slug,short_description,price,old_price,stock,primary_image_url,gallery")
@@ -945,6 +948,7 @@ export function buildTools(ctx: AgentContext) {
           .eq("id", productId)
           .maybeSingle();
         if (!p) return { sent: false, error: "not_found" };
+
         const priceLine = p.old_price
           ? `৳${p.price} (was ৳${p.old_price})`
           : `৳${p.price}`;
