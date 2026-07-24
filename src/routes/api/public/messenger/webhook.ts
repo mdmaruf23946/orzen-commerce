@@ -175,13 +175,18 @@ function isReferenceIntent(text: string) {
 }
 
 function isGreetingIntent(text: string) {
-  const compact = text.trim().toLowerCase();
-  return /^(হাই|হাই+|হ্যালো|হেলো|hello|hi|hey|assalamu alaikum|আসসালামু আলাইকুম|সালাম|কেমন আছেন|তোমার কি খবর|কি খবর)[।!?.\s]*$/i.test(compact);
+  const compact = text.trim().toLowerCase().replace(/[।!?.,\s]+$/u, "");
+  if (!compact) return false;
+  if (compact.length <= 6 && /^(হি+|হে+ই*|হাই+|হ্যা+|হ্যাঁ+|হ্যালো+|হেলো+|হুম+|আচ্ছা|ওহে|ইয়ো|ok|okay|hi+|hai+|hey+|yo+|sup|helo+|hello+|salam|sallam)$/u.test(compact)) {
+    return true;
+  }
+  return /^(assalamu alaikum|আসসালামু আলাইকুম|সালাম|কেমন আছেন|কেমন আছো|তোমার কি খবর|কি খবর|কী খবর|কি অবস্থা|কী অবস্থা)$/i.test(compact);
 }
 
 function isSmallTalkIntent(text: string) {
   return isGreetingIntent(text) || /^(তোমার|আপনার)?\s*(কি|কী)\s*খবর[।!?.\s]*$/i.test(text.trim()) || /(কেমন আছেন|কেমন আছো|কী অবস্থা|কি অবস্থা|how are you|what'?s up)/i.test(text.trim());
 }
+
 
 function smallTalkReply(text: string) {
   if (/আসসালামু|সালাম/i.test(text)) {
