@@ -212,33 +212,54 @@ export type Database = {
       }
       ai_global_settings: {
         Row: {
+          brand_voice: string | null
           created_at: string
           default_model: string
           enabled: boolean
+          fallback_model: string | null
           gemini_api_key: string | null
+          global_system_prompt: string | null
           id: number
+          max_tokens: number | null
           openai_api_key: string | null
           provider_api_key: string | null
+          safety_rules: string | null
+          supported_languages: string[] | null
+          temperature: number | null
           updated_at: string
         }
         Insert: {
+          brand_voice?: string | null
           created_at?: string
           default_model?: string
           enabled?: boolean
+          fallback_model?: string | null
           gemini_api_key?: string | null
+          global_system_prompt?: string | null
           id?: number
+          max_tokens?: number | null
           openai_api_key?: string | null
           provider_api_key?: string | null
+          safety_rules?: string | null
+          supported_languages?: string[] | null
+          temperature?: number | null
           updated_at?: string
         }
         Update: {
+          brand_voice?: string | null
           created_at?: string
           default_model?: string
           enabled?: boolean
+          fallback_model?: string | null
           gemini_api_key?: string | null
+          global_system_prompt?: string | null
           id?: number
+          max_tokens?: number | null
           openai_api_key?: string | null
           provider_api_key?: string | null
+          safety_rules?: string | null
+          supported_languages?: string[] | null
+          temperature?: number | null
           updated_at?: string
         }
         Relationships: []

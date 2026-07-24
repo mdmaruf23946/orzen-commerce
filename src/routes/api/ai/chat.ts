@@ -107,13 +107,20 @@ export const Route = createFileRoute("/api/ai/chat")({
         }
 
         try {
-          const { store: s, agent } = await loadAiContext(store.id);
+          const { store: s, agent, settings } = await loadAiContext(store.id);
           const { model, modelId } = await getModelForStore();
           const siteOrigin = siteOriginFromRequest(request);
           const ctxConvId = convId;
+          // Pull generation params inline to avoid exporting from the server module.
+          const temperature =
+            typeof settings?.temperature === "number" ? Math.max(0, Math.min(2, settings.temperature)) : undefined;
+          const maxOutputTokens =
+            typeof settings?.max_tokens === "number" && settings.max_tokens > 0
+              ? Math.floor(settings.max_tokens)
+              : undefined;
           const result = streamText({
             model,
-            system: buildSystemPrompt(s, agent, { channel: "web" }),
+            system: buildSystemPrompt(s, agent, { channel: "web", settings }),
             messages: await convertToModelMessages(body.messages),
             tools: buildTools({
               storeId: store.id,
@@ -123,6 +130,9 @@ export const Route = createFileRoute("/api/ai/chat")({
               channel: "web",
             }),
             stopWhen: stepCountIs(50),
+            temperature,
+            maxOutputTokens,
+
             onFinish: async ({ usage, text }) => {
               void logUsage(store.id, modelId, usage, "chat");
               // Persist the assistant reply (text only; product cards logged separately via tools).

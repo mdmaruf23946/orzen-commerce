@@ -230,13 +230,36 @@ function PlatformSettings({ global, overview }: { global: any; overview: any }) 
   const qc = useQueryClient();
   const saveBasic = useServerFn(updateAiGlobalSettings);
   const saveKeys = useServerFn(updateGlobalAiKeys);
-  const [form, setForm] = useState({ enabled: true, default_model: MODELS[0] });
+  const [form, setForm] = useState({
+    enabled: true,
+    default_model: MODELS[0],
+    fallback_model: "",
+    temperature: 0.7,
+    max_tokens: 2048,
+    global_system_prompt: "",
+    safety_rules: "",
+    brand_voice: "",
+    supported_languages: "bn, en",
+  });
   const [openai, setOpenai] = useState("");
   const [gemini, setGemini] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (global) setForm({ enabled: !!global.enabled, default_model: global.default_model || MODELS[0] });
+    if (global)
+      setForm({
+        enabled: !!global.enabled,
+        default_model: global.default_model || MODELS[0],
+        fallback_model: global.fallback_model || "",
+        temperature: typeof global.temperature === "number" ? global.temperature : 0.7,
+        max_tokens: typeof global.max_tokens === "number" ? global.max_tokens : 2048,
+        global_system_prompt: global.global_system_prompt ?? "",
+        safety_rules: global.safety_rules ?? "",
+        brand_voice: global.brand_voice ?? "",
+        supported_languages: Array.isArray(global.supported_languages)
+          ? global.supported_languages.join(", ")
+          : "bn, en",
+      });
   }, [global]);
 
   const g = overview?.global ?? {};
@@ -244,7 +267,24 @@ function PlatformSettings({ global, overview }: { global: any; overview: any }) 
   async function submit() {
     setSaving(true);
     try {
-      await saveBasic({ data: { enabled: form.enabled, default_model: form.default_model, provider_api_key: null } });
+      const langs = form.supported_languages
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
+      await saveBasic({
+        data: {
+          enabled: form.enabled,
+          default_model: form.default_model,
+          provider_api_key: null,
+          temperature: Number(form.temperature),
+          max_tokens: Number(form.max_tokens),
+          global_system_prompt: form.global_system_prompt,
+          safety_rules: form.safety_rules,
+          brand_voice: form.brand_voice,
+          supported_languages: langs,
+          fallback_model: form.fallback_model || null,
+        },
+      });
       if (openai || gemini) {
         await saveKeys({ data: { openai_api_key: openai || null, gemini_api_key: gemini || null } });
         setOpenai(""); setGemini("");
@@ -267,7 +307,7 @@ function PlatformSettings({ global, overview }: { global: any; overview: any }) 
       <div className="flex items-center justify-between gap-2">
         <div>
           <h2 className="text-lg font-semibold">Platform defaults</h2>
-          <p className="text-xs text-muted-foreground">Used when a store hasn't set its own provider or keys.</p>
+          <p className="text-xs text-muted-foreground">Applies to every store's AI agent (Messenger + web chat).</p>
         </div>
         <label className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">Enabled</span>
@@ -283,7 +323,83 @@ function PlatformSettings({ global, overview }: { global: any; overview: any }) 
             {MODELS.map((m) => <option key={m} value={m}>{m}</option>)}
           </select>
         </div>
-        <div className="flex items-end text-xs text-muted-foreground">
+        <div>
+          <label className="text-xs font-medium text-muted-foreground">
+            Fallback model <span className="opacity-60">(used on rate-limit / 5xx)</span>
+          </label>
+          <select
+            value={form.fallback_model}
+            onChange={(e) => setForm({ ...form, fallback_model: e.target.value })}
+            className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm"
+          >
+            <option value="">— none —</option>
+            {MODELS.filter((m) => m !== form.default_model).map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="text-xs font-medium text-muted-foreground">
+            Temperature <span className="opacity-60">({form.temperature.toFixed(2)})</span>
+          </label>
+          <input
+            type="range" min={0} max={2} step={0.05}
+            value={form.temperature}
+            onChange={(e) => setForm({ ...form, temperature: Number(e.target.value) })}
+            className="mt-2 w-full"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-muted-foreground">Max output tokens</label>
+          <Input
+            type="number" min={64} max={32000}
+            value={form.max_tokens}
+            onChange={(e) => setForm({ ...form, max_tokens: Number(e.target.value) || 0 })}
+          />
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="text-xs font-medium text-muted-foreground">Supported languages (comma-separated)</label>
+          <Input
+            value={form.supported_languages}
+            onChange={(e) => setForm({ ...form, supported_languages: e.target.value })}
+            placeholder="bn, en"
+          />
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="text-xs font-medium text-muted-foreground">Global system prompt</label>
+          <textarea
+            value={form.global_system_prompt}
+            onChange={(e) => setForm({ ...form, global_system_prompt: e.target.value })}
+            rows={4}
+            placeholder="e.g. Always be concise. Always confirm the order total before finalizing."
+            className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="text-xs font-medium text-muted-foreground">Brand voice</label>
+          <textarea
+            value={form.brand_voice}
+            onChange={(e) => setForm({ ...form, brand_voice: e.target.value })}
+            rows={3}
+            placeholder="e.g. Warm, helpful, uses light Bangla humor when appropriate."
+            className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="text-xs font-medium text-muted-foreground">Safety & compliance rules</label>
+          <textarea
+            value={form.safety_rules}
+            onChange={(e) => setForm({ ...form, safety_rules: e.target.value })}
+            rows={3}
+            placeholder="e.g. Never share personal data. Never make medical or legal claims. Refuse abusive requests politely."
+            className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div className="sm:col-span-2 flex items-center text-xs text-muted-foreground">
           {g.has_lovable_key ? "Lovable AI Gateway configured." : "Lovable AI Gateway auto-configured."}
         </div>
 
@@ -313,6 +429,7 @@ function PlatformSettings({ global, overview }: { global: any; overview: any }) 
     </div>
   );
 }
+
 
 function ProviderKeyField({ icon: Icon, label, existing, value, onChange, onClear, placeholder }: any) {
   return (

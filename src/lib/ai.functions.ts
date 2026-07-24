@@ -60,18 +60,37 @@ export const updateAiGlobalSettings = createServerFn({ method: "POST" })
         enabled: z.boolean(),
         default_model: z.string().min(2).max(120),
         provider_api_key: z.string().max(500).optional().nullable(),
+        temperature: z.number().min(0).max(2).optional().nullable(),
+        max_tokens: z.number().int().min(64).max(32000).optional().nullable(),
+        global_system_prompt: z.string().max(8000).optional().nullable(),
+        safety_rules: z.string().max(4000).optional().nullable(),
+        brand_voice: z.string().max(2000).optional().nullable(),
+        supported_languages: z.array(z.string().min(1).max(20)).max(20).optional().nullable(),
+        fallback_model: z.string().max(120).optional().nullable(),
       })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
     await assertOwner(context.supabase, context.userId);
     const sb = adminClient();
-    const { error } = await sb
-      .from("ai_global_settings")
-      .upsert({ id: 1, ...data, provider_api_key: data.provider_api_key || null });
+    const patch: Record<string, any> = {
+      id: 1,
+      enabled: data.enabled,
+      default_model: data.default_model,
+      provider_api_key: data.provider_api_key || null,
+    };
+    if (data.temperature !== undefined) patch.temperature = data.temperature;
+    if (data.max_tokens !== undefined) patch.max_tokens = data.max_tokens;
+    if (data.global_system_prompt !== undefined) patch.global_system_prompt = data.global_system_prompt ?? "";
+    if (data.safety_rules !== undefined) patch.safety_rules = data.safety_rules ?? "";
+    if (data.brand_voice !== undefined) patch.brand_voice = data.brand_voice ?? "";
+    if (data.supported_languages !== undefined) patch.supported_languages = data.supported_languages ?? [];
+    if (data.fallback_model !== undefined) patch.fallback_model = data.fallback_model || null;
+    const { error } = await sb.from("ai_global_settings").upsert(patch);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 export const getAiUsageStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

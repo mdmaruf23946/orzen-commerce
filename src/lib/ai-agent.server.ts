@@ -41,27 +41,60 @@ export async function loadAiContext(storeId: string) {
   return { store, agent, settings };
 }
 
-export function buildSystemPrompt(store: any, agent: any, opts?: { channel?: "web" | "messenger" }) {
+export type GlobalAiSettings = {
+  global_system_prompt?: string | null;
+  safety_rules?: string | null;
+  brand_voice?: string | null;
+  supported_languages?: string[] | null;
+  temperature?: number | null;
+  max_tokens?: number | null;
+  fallback_model?: string | null;
+};
+
+export function buildSystemPrompt(
+  store: any,
+  agent: any,
+  opts?: { channel?: "web" | "messenger"; settings?: GlobalAiSettings | null },
+) {
   const channel = opts?.channel ?? "messenger";
+  const settings = opts?.settings ?? null;
   const displayTools =
     channel === "web"
       ? "showProducts (multiple) or showProduct (one) — the web chat renders rich cards inline"
       : "sendProductCarousel (multiple) or sendProductCard (one) so Messenger shows the image, price, stock and buy button";
   const k = (agent.knowledge ?? {}) as Record<string, any>;
+  const supported = (settings?.supported_languages ?? []).filter(Boolean);
+  const langHint =
+    supported.length > 0
+      ? `Only respond in one of these languages: ${supported.join(", ")}. Match the customer's language when possible.`
+      : "";
   const lang =
     agent.language === "bn"
       ? "Respond in Bangla."
       : agent.language === "en"
       ? "Respond in English."
       : "Respond in the same language the customer uses (Bangla or English).";
+
   const emoji = agent.use_emoji ? "Use friendly emojis sparingly." : "Do not use emojis.";
   const human = agent.human_like ? "Sound natural and human, not robotic." : "";
   const faqs = Array.isArray(k.faqs)
     ? k.faqs.map((f: any) => `Q: ${f.q}\nA: ${f.a}`).join("\n\n")
     : "";
-  return `You are ${agent.agent_name}, the sales assistant for "${store.name}".
+  const globalPrompt = (settings?.global_system_prompt ?? "").trim();
+  const brand = (settings?.brand_voice ?? "").trim();
+  const safety = (settings?.safety_rules ?? "").trim();
+  const globalBlock = [
+    globalPrompt ? `# Platform guidance\n${globalPrompt}` : "",
+    brand ? `# Brand voice\n${brand}` : "",
+    safety ? `# Safety & compliance (never violate)\n${safety}` : "",
+    langHint ? `# Language policy\n${langHint}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+  return `${globalBlock ? globalBlock + "\n\n" : ""}You are ${agent.agent_name}, the sales assistant for "${store.name}".
 ${lang} ${emoji} ${human}
 Style: ${agent.style}.
+
 
 # Hard rules — never violate
 - NEVER invent product names, prices, stock, features, or policies. Every product fact must come from a tool call in this turn.
@@ -992,17 +1025,26 @@ export async function logUsage(storeId: string | null, model: string, usage: any
   }
 }
 
-export async function getModelForStore(opts?: { fast?: boolean }) {
+export async function getModelForStore(opts?: { fast?: boolean; modelOverride?: string }) {
   const sb = admin();
   const { data: settings } = await sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle();
   const saved = (settings?.provider_api_key || "").trim();
   const looksLovable = saved.startsWith("lv_") || saved.startsWith("sk-lovable");
   const apiKey = (looksLovable ? saved : "") || process.env.LOVABLE_API_KEY!;
   if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
-  const configuredModel = settings?.default_model || "openai/gpt-5.4-mini";
+  const configuredModel = opts?.modelOverride || settings?.default_model || "openai/gpt-5.4-mini";
   const modelId = opts?.fast && configuredModel.includes("pro") ? "openai/gpt-5.4-mini" : configuredModel;
   const gateway = createLovableAiGatewayProvider(apiKey);
-  return { model: gateway(modelId), modelId };
+  return { model: gateway(modelId), modelId, settings: (settings ?? null) as GlobalAiSettings | null, gateway };
+}
+
+function generationParams(settings: GlobalAiSettings | null | undefined) {
+  const params: { temperature?: number; maxOutputTokens?: number } = {};
+  const t = settings?.temperature;
+  if (typeof t === "number" && Number.isFinite(t)) params.temperature = Math.max(0, Math.min(2, t));
+  const m = settings?.max_tokens;
+  if (typeof m === "number" && Number.isFinite(m) && m > 0) params.maxOutputTokens = Math.floor(m);
+  return params;
 }
 
 export function streamAgentResponse(opts: {
@@ -1011,13 +1053,14 @@ export function streamAgentResponse(opts: {
   system: string;
 }) {
   return async () => {
-    const { model, modelId } = await getModelForStore();
+    const { model, modelId, settings } = await getModelForStore();
     const result = streamText({
       model,
       system: opts.system,
       messages: opts.messages,
       tools: buildTools(opts.ctx),
       stopWhen: stepCountIs(50),
+      ...generationParams(settings),
       onFinish: ({ usage }) => {
         void logUsage(opts.ctx.storeId, modelId, usage, "chat");
       },
@@ -1048,23 +1091,60 @@ function findDuplicateBlockedReply(value: any, depth = 0, seen = new WeakSet<obj
   return null;
 }
 
-export async function generateAgentReply(opts: {
+function isTransientGatewayError(err: unknown) {
+  const msg = (err as any)?.message || "";
+  const status = (err as any)?.statusCode ?? (err as any)?.status;
+  if (status === 429 || (typeof status === "number" && status >= 500 && status < 600)) return true;
+  return /\b(429|rate.?limit|timeout|overload|5\d\d)\b/i.test(String(msg));
+}
+
+async function runGenerate(opts: {
   ctx: AgentContext;
   messages: any[];
   system: string;
   fast?: boolean;
+  modelOverride?: string;
 }) {
-  const { model, modelId } = await getModelForStore({ fast: opts.fast });
+  const { model, modelId, settings } = await getModelForStore({
+    fast: opts.fast,
+    modelOverride: opts.modelOverride,
+  });
   const result = await generateText({
     model,
     system: opts.system,
     messages: opts.messages,
     tools: buildTools(opts.ctx),
     stopWhen: stepCountIs(50),
-    providerOptions: modelId === "openai/gpt-5.4-mini" ? { lovable: { service_tier: "priority" } } : undefined,
+    ...generationParams(settings),
+    providerOptions:
+      modelId === "openai/gpt-5.4-mini" ? { lovable: { service_tier: "priority" } } : undefined,
   });
+  return { result, modelId, settings };
+}
+
+export async function generateAgentReply(opts: {
+  ctx: AgentContext;
+  messages: any[];
+  system: string;
+  fast?: boolean;
+}) {
+  let attempt: Awaited<ReturnType<typeof runGenerate>>;
+  try {
+    attempt = await runGenerate(opts);
+  } catch (err) {
+    // Try fallback model once if configured and error is transient
+    const { settings } = await getModelForStore({ fast: opts.fast });
+    const fb = (settings?.fallback_model || "").trim();
+    if (fb && isTransientGatewayError(err)) {
+      attempt = await runGenerate({ ...opts, modelOverride: fb });
+    } else {
+      throw err;
+    }
+  }
+  const { result, modelId } = attempt;
   void logUsage(opts.ctx.storeId, modelId, result.usage, "messenger");
   const duplicateReply = findDuplicateBlockedReply(result as any);
   if (duplicateReply) return duplicateReply;
   return result.text;
 }
+
