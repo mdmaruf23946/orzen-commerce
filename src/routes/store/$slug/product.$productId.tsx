@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, notFound, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import DOMPurify from "isomorphic-dompurify";
 import { fbTrack } from "@/lib/fb-track";
 import { toast } from "sonner";
 import { Minus, Plus } from "lucide-react";
