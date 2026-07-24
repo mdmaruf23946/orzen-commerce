@@ -4,37 +4,145 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { buildSystemPrompt, buildTools, getModelForStore, loadAiContext, logUsage } from "@/lib/ai-agent.server";
 
+function admin() {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const isNewKey = key.startsWith("sb_publishable_") || key.startsWith("sb_secret_");
+  return createClient<Database>(process.env.SUPABASE_URL!, key, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+    global: {
+      fetch: (input, init) => {
+        const headers = new Headers(init?.headers);
+        if (isNewKey && headers.get("Authorization") === `Bearer ${key}`) headers.delete("Authorization");
+        headers.set("apikey", key);
+        return fetch(input as any, { ...init, headers });
+      },
+    },
+  });
+}
+
+function siteOriginFromRequest(request: Request): string {
+  const url = new URL(request.url);
+  const proto = request.headers.get("x-forwarded-proto") || url.protocol.replace(":", "");
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || url.host;
+  return `${proto}://${host}`.replace(/\/$/, "");
+}
+
 export const Route = createFileRoute("/api/ai/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const body = (await request.json()) as { slug?: string; messages?: UIMessage[] };
+        const body = (await request.json()) as {
+          slug?: string;
+          messages?: UIMessage[];
+          conversationId?: string;
+        };
         if (!body.slug || !Array.isArray(body.messages)) {
           return new Response("Invalid request", { status: 400 });
         }
-        const sb = createClient<Database>(
+
+        const sbPublic = createClient<Database>(
           process.env.SUPABASE_URL!,
           process.env.SUPABASE_PUBLISHABLE_KEY!,
           { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
         );
-        const { data: storeRow } = await sb.rpc("get_public_store_by_slug", { _slug: body.slug });
+        const { data: storeRow } = await sbPublic.rpc("get_public_store_by_slug", { _slug: body.slug });
         const store = storeRow as { id: string } | null;
         if (!store) return new Response("Store not found", { status: 404 });
+
+        const sb = admin();
+
+        // Load or create the web conversation.
+        let convId = body.conversationId?.trim() || null;
+        if (convId) {
+          const { data: existing } = await sb
+            .from("ai_conversations")
+            .select("id,store_id,handoff_mode")
+            .eq("id", convId)
+            .maybeSingle();
+          if (!existing || existing.store_id !== store.id) convId = null;
+        }
+        if (!convId) {
+          const { data: created, error } = await sb
+            .from("ai_conversations")
+            .insert({ store_id: store.id, channel: "web", status: "open" } as any)
+            .select("id")
+            .single();
+          if (error || !created) return new Response("Cannot start conversation", { status: 500 });
+          convId = created.id;
+        }
+
+        // Persist the newest user message (last item in UIMessages).
+        const lastUser = [...body.messages].reverse().find((m) => m.role === "user");
+        if (lastUser) {
+          const text = (lastUser.parts as any[])
+            .map((p: any) => (p.type === "text" ? p.text : ""))
+            .join("")
+            .slice(0, 4000);
+          if (text) {
+            await sb.from("ai_messages").insert({
+              conversation_id: convId,
+              role: "user",
+              direction: "in",
+              message_type: "text",
+              content: text,
+            } as any);
+            await sb
+              .from("ai_conversations")
+              .update({ last_message_at: new Date().toISOString(), last_message_preview: text.slice(0, 200) } as any)
+              .eq("id", convId);
+          }
+        }
+
+        // Respect human handoff — do not answer if conversation is in human mode.
+        const { data: convRow } = await sb
+          .from("ai_conversations")
+          .select("handoff_mode")
+          .eq("id", convId)
+          .maybeSingle();
+        if (convRow?.handoff_mode === "human") {
+          return Response.json(
+            { conversationId: convId, handedOff: true },
+            { status: 200 },
+          );
+        }
 
         try {
           const { store: s, agent } = await loadAiContext(store.id);
           const { model, modelId } = await getModelForStore();
+          const siteOrigin = siteOriginFromRequest(request);
+          const ctxConvId = convId;
           const result = streamText({
             model,
-            system: buildSystemPrompt(s, agent),
+            system: buildSystemPrompt(s, agent, { channel: "web" }),
             messages: await convertToModelMessages(body.messages),
-            tools: buildTools({ storeId: store.id, storeSlug: body.slug }),
+            tools: buildTools({
+              storeId: store.id,
+              storeSlug: body.slug,
+              conversationId: ctxConvId,
+              siteOrigin,
+              channel: "web",
+            }),
             stopWhen: stepCountIs(50),
-            onFinish: ({ usage }) => {
+            onFinish: async ({ usage, text }) => {
               void logUsage(store.id, modelId, usage, "chat");
+              // Persist the assistant reply (text only; product cards logged separately via tools).
+              const clean = (text ?? "").trim().slice(0, 8000);
+              if (clean) {
+                await sb.from("ai_messages").insert({
+                  conversation_id: ctxConvId,
+                  role: "assistant",
+                  direction: "out",
+                  message_type: "text",
+                  content: clean,
+                } as any);
+              }
             },
           });
-          return result.toUIMessageStreamResponse({ originalMessages: body.messages });
+          const response = result.toUIMessageStreamResponse({ originalMessages: body.messages });
+          // Expose conversation id to the browser so it can persist it.
+          response.headers.set("x-orzen-conversation-id", ctxConvId);
+          response.headers.set("access-control-expose-headers", "x-orzen-conversation-id");
+          return response;
         } catch (e) {
           return new Response((e as Error).message, { status: 400 });
         }
