@@ -25,6 +25,7 @@ export type AgentContext = {
   psid?: string; // Messenger PSID
   pageToken?: string; // decrypted page access token
   siteOrigin?: string; // e.g. https://mystore.orzen.top
+  channel?: "web" | "messenger"; // controls which display tools are registered
 };
 
 export async function loadAiContext(storeId: string) {
@@ -40,7 +41,12 @@ export async function loadAiContext(storeId: string) {
   return { store, agent, settings };
 }
 
-export function buildSystemPrompt(store: any, agent: any) {
+export function buildSystemPrompt(store: any, agent: any, opts?: { channel?: "web" | "messenger" }) {
+  const channel = opts?.channel ?? "messenger";
+  const displayTools =
+    channel === "web"
+      ? "showProducts (multiple) or showProduct (one) — the web chat renders rich cards inline"
+      : "sendProductCarousel (multiple) or sendProductCard (one) so Messenger shows the image, price, stock and buy button";
   const k = (agent.knowledge ?? {}) as Record<string, any>;
   const lang =
     agent.language === "bn"
@@ -62,7 +68,7 @@ Style: ${agent.style}.
 - The MOMENT a customer mentions a product, category, price range, brand, or asks "what do you sell / show me products / আপনাদের কি আছে / দাম কত" — IMMEDIATELY call searchProducts (or listCategories if they ask for categories). Do not answer from memory, do not ask clarifying questions first for a general browse intent.
 - If the customer asks for a photo/image/details of "this/that/এটা/এইটা/ওটা" after you already recommended a product, call getRecentRecommendations first, then sendProductCard for the most recent matching product.
 - If searchProducts returns 0 results, try again with a broader query (drop filters, translate Bangla→English keyword, try a synonym) before telling the customer "not found".
-- When you have products to show, call sendProductCarousel (multiple) or sendProductCard (one) so Messenger shows the image, price, stock and buy button. Also write a short friendly text line (1 sentence) introducing them. Never leave the text reply empty when you sent cards — always add a line like "এই প্রোডাক্টগুলো দেখুন 👇".
+- When you have products to show, call ${displayTools}. Also write a short friendly text line (1 sentence) introducing them. Never leave the text reply empty when you showed products — always add a line like "এই প্রোডাক্টগুলো দেখুন 👇".
 - Never say a product image is unavailable until you checked the product tool result. If primary_image_url or gallery has an image, send a product card.
 - If a product is out of stock, tell the customer and call searchProducts in the same category to suggest alternatives.
 - If you cannot answer confidently or the customer asks for a human, call escalateToHuman.
@@ -705,6 +711,47 @@ export function buildTools(ctx: AgentContext) {
         } catch (e) {
           return { sent: false, error: (e as Error).message };
         }
+      },
+    });
+  }
+
+  // Web-only display tools — return structured JSON that the chat panel renders inline.
+  if (ctx.channel === "web") {
+    async function loadProducts(ids: string[]) {
+      if (!ids.length) return [];
+      const [blocked, cats, res] = await Promise.all([
+        getBlacklistedIds(),
+        categoryMap(),
+        sb.from("products").select(productSelect).eq("store_id", storeId).in("id", ids),
+      ]);
+      const byId = new Map((res.data ?? []).map((p: any) => [p.id, p]));
+      return ids
+        .map((id) => byId.get(id))
+        .filter((p: any) => p && !blocked.has(p.id))
+        .map((p: any) => productSummary(ctx, p, cats.get(p.category_id)));
+    }
+
+    tools.showProduct = tool({
+      description:
+        "Display ONE product to the web-chat customer as a rich card (image, name, price, stock, view/buy buttons). Use whenever you want the customer to see a specific product.",
+      inputSchema: z.object({ productId: z.string().uuid() }),
+      execute: async ({ productId }) => {
+        const products = await loadProducts([productId]);
+        if (!products.length) return { rendered: false, error: "not_found" };
+        await logRecommendations("showProduct", products, "web_card");
+        return { rendered: true, products };
+      },
+    });
+
+    tools.showProducts = tool({
+      description:
+        "Display up to 10 products to the web-chat customer as a scrollable carousel. Use for search results, comparisons, and cross-sell suggestions.",
+      inputSchema: z.object({ productIds: z.array(z.string().uuid()).min(1).max(10) }),
+      execute: async ({ productIds }) => {
+        const products = await loadProducts(productIds);
+        if (!products.length) return { rendered: false, error: "no_products" };
+        await logRecommendations("showProducts", products, "web_carousel");
+        return { rendered: true, products };
       },
     });
   }
