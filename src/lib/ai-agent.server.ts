@@ -59,6 +59,13 @@ export type AgentState = {
   recent_product_ids?: string[] | null;
 };
 
+export type FocusProduct = {
+  product: any | null;
+  ambiguous: boolean;
+  candidates: any[]; // small summaries when ambiguous
+  canonical_caption?: string;
+};
+
 export function buildSystemPrompt(
   store: any,
   agent: any,
@@ -66,11 +73,13 @@ export function buildSystemPrompt(
     channel?: "web" | "messenger";
     settings?: GlobalAiSettings | null;
     state?: AgentState | null;
+    focus?: FocusProduct | null;
   },
 ) {
   const channel = opts?.channel ?? "messenger";
   const settings = opts?.settings ?? null;
   const state = opts?.state ?? null;
+  const focus = opts?.focus ?? null;
   const displayTools =
     channel === "web"
       ? "showProducts (multiple) or showProduct (one) — the web chat renders rich cards inline"
@@ -105,19 +114,20 @@ export function buildSystemPrompt(
     .filter(Boolean)
     .join("\n\n");
 
-  // Compact state block so the model always knows what's already in flight.
+  // Compact pending-order block — NO product_name/product_id (that leaks into
+  // free-form text as if it were the current focus). The focus block below is
+  // the single source of truth for product facts this turn.
   const stateLines: string[] = [];
   const po = state?.pending_order && Object.keys(state.pending_order).length ? state.pending_order : null;
   if (po) {
     const parts = [
-      po.product_name ? `product=${po.product_name}` : po.product_id ? `product_id=${po.product_id}` : null,
       po.qty ? `qty=${po.qty}` : null,
       po.customer_name ? `name=${po.customer_name}` : null,
       po.phone ? `phone=${po.phone}` : null,
       po.full_address ? `address=${String(po.full_address).slice(0, 120)}` : null,
       po.payment_method ? `payment=${po.payment_method}` : null,
     ].filter(Boolean);
-    stateLines.push(`Pending order slot (already collected): ${parts.join(", ") || "(empty)"}`);
+    if (parts.length) stateLines.push(`Pending order slot (already collected): ${parts.join(", ")}`);
   }
   const lo = state?.last_order;
   if (lo?.order_id) {
@@ -125,9 +135,41 @@ export function buildSystemPrompt(
       `Last confirmed order: #${lo.invoice_no || lo.order_id} — ${lo.product_name ?? "product"} × ${lo.qty ?? 1}`,
     );
   }
-  const rec = (state?.recent_product_ids ?? []).slice(0, 3);
-  if (rec.length) stateLines.push(`Recently recommended product ids: ${rec.join(", ")}`);
   const stateBlock = stateLines.length ? `# Conversation state\n${stateLines.join("\n")}` : "";
+
+  // Focus product block — server-resolved for THIS turn only. If set, it is the
+  // ONLY product the assistant is allowed to describe/name/price/image in text.
+  let focusBlock = "";
+  if (focus?.product) {
+    const p = focus.product;
+    const feat = stringifyProductField(p.features).slice(0, 400);
+    const varList = Array.isArray(p.variants)
+      ? p.variants.map((v: any) => v?.label || v?.name).filter(Boolean).slice(0, 10).join(", ")
+      : "";
+    focusBlock = [
+      `# Focus product (ONLY product allowed in this reply)`,
+      `id: ${p.id}`,
+      `name: ${p.name}`,
+      p.brand ? `brand: ${p.brand}` : "",
+      `price: ৳${p.price}${p.old_price ? ` (was ৳${p.old_price})` : ""}`,
+      `stock: ${p.stock}`,
+      p.sku ? `sku: ${p.sku}` : "",
+      p.short_description ? `short_description: ${p.short_description}` : "",
+      feat ? `features: ${feat}` : "",
+      varList ? `variants: ${varList}` : "",
+      ``,
+      `Rule: every product fact in your reply MUST come from this record. Do not name, describe, price, or image any other product in this reply. To show it, call ${channel === "web" ? "showProduct" : "sendProductCard"} with productId=${p.id}.`,
+    ].filter(Boolean).join("\n");
+  } else if (focus?.ambiguous && focus.candidates?.length) {
+    const list = focus.candidates.slice(0, 4).map((c: any, i: number) => `${i + 1}. ${c.name} — ৳${c.price} (id ${c.id})`).join("\n");
+    focusBlock = [
+      `# Focus product — AMBIGUOUS`,
+      `The customer's message could refer to multiple products:`,
+      list,
+      ``,
+      `Rule: do NOT pick one and describe it. Ask ONE short disambiguation question naming these options. Do not call sendProductCard / showProduct until the customer confirms.`,
+    ].join("\n");
+  }
 
   return `${globalBlock ? globalBlock + "\n\n" : ""}You are ${agent.agent_name}, the sales assistant for "${store.name}".
 ${lang} ${emoji} ${human}
@@ -135,10 +177,10 @@ Style: ${agent.style}.
 
 
 # Hard rules — never violate
-- NEVER invent product names, prices, stock, features, or policies. Every product fact must come from a tool call in this turn.
+- NEVER invent product names, prices, stock, features, or policies. Every product fact must come from a tool call in this turn OR from the Focus product block below.
 - Every reply must be freshly generated for the customer's latest message and the current conversation state. Never repeat the same sentence you sent earlier in this conversation — vary the wording.
 - The MOMENT a customer mentions a product, category, price range, brand, or asks "what do you sell / show me products / আপনাদের কি আছে / দাম কত" — IMMEDIATELY call searchProducts (or listCategories if they ask for categories). Do not answer from memory, do not ask clarifying questions first for a general browse intent.
-- If the customer asks for a photo/image/details of "this/that/এটা/এইটা/ওটা" after you already recommended a product, call getRecentRecommendations first, then sendProductCard for the most recent matching product.
+- If a Focus product is set below, you MUST use its id when calling sendProductCard/showProduct, and every product fact in your text MUST come from that record. Never mix in facts from another product, earlier turn, or the pending-order slot.
 - If searchProducts returns 0 results, try again with a broader query (drop filters, translate Bangla→English keyword, try a synonym) before telling the customer "not found".
 - When you have products to show, call ${displayTools}. Also write a short friendly text line (1 sentence) introducing them. Never leave the text reply empty when you showed products — always add a line like "এই প্রোডাক্টগুলো দেখুন 👇".
 - Never say a product image is unavailable until you checked the product tool result. If primary_image_url or gallery has an image, send a product card.
@@ -162,7 +204,7 @@ If asked "where is my order" / "track my order", call trackOrder with orderId, i
 # Memory
 At the start of each conversation call getCustomerMemory to see previous orders and preferences. Personalise your greeting.
 
-${stateBlock ? stateBlock + "\n\n" : ""}# Store facts
+${focusBlock ? focusBlock + "\n\n" : ""}${stateBlock ? stateBlock + "\n\n" : ""}# Store facts
 Address: ${store.address || "n/a"}
 Phone: ${store.phone || "n/a"}
 Delivery: ${k.delivery_policy || JSON.stringify(store.delivery ?? {})}
@@ -175,6 +217,7 @@ Store info: ${k.store_info || store.description || ""}
 FAQs:
 ${faqs}`;
 }
+
 
 
 // ---------- Helpers ----------
