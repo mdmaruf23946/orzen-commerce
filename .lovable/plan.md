@@ -1,70 +1,64 @@
-
 ## Goal
 
-Give the Winner Admin one place to control the branding (logo, colors, description, status) of every Payment Gateway and Courier. Store admins automatically pick up those brand values everywhere — no per-store logo uploads.
+Create a dedicated **Courier Brand Assets** management page in Winner Admin with an expanded field set (dark logo, favicon, official URLs, display order, etc.), a live preview matching how the courier card renders in Store Admin, and automatic sync — Store Admins can only edit credentials, never branding.
 
 ## Current state (verified)
 
-- `platform_payment_gateways` table stores `id, label, enabled, sort_order, logo_url, notes` — no brand color, secondary color, background, or description columns yet. Owner page (`owner/payment-gateways.tsx`) only toggles enabled; there is no upload UI.
-- `courier_providers` already has `logo_url`, `is_active`, `is_default`. Owner page (`owner/couriers.tsx`) already uploads logos to `store-assets` under `courier-logos/…`. No brand color fields yet.
-- Store side already reads shared logos via `get_public_courier_providers` RPC (couriers) but payment gateway brand is currently hard-coded in `src/components/admin/payments/providers.ts` (`PAYMENT_BRANDS`) — store admin never fetches gateway branding from the DB.
-- `BrandMark` (payments) already accepts a `logoUrl` prop; couriers use `BrandBadge` similarly. Both just need to be fed dynamic values.
+- `courier_providers` already has: `name, code, logo_url, brand_color, secondary_color, icon_bg_color, description, is_active, is_default, config (jsonb)`. Unique constraint on `code`.
+- Owner policy `couriers owner all` scopes writes to owners; public read is via `get_public_courier_providers()` RPC.
+- The unified `owner/brand-assets.tsx` tab covers couriers today with only the shared fields. `owner/couriers.tsx` handles credentials/config.
+- Store Admin `admin/couriers.tsx` already pulls `logo_url + brand_color + description` from the public RPC — new fields just need to be added to the RPC to flow through.
+
+Missing fields from the request that need to be added: `dark_logo_url`, `favicon_url`, `website_url`, `docs_url`, `support_url`, `sort_order`.
 
 ## What to build
 
-### 1. Database migration — extend both branding tables
+### 1. Migration — extend `courier_providers`
 
-Add these columns (nullable, with sensible defaults) to `platform_payment_gateways` and `courier_providers`:
+Add nullable columns: `dark_logo_url text`, `favicon_url text`, `website_url text`, `docs_url text`, `support_url text`, `sort_order int default 100`. Extend `get_public_courier_providers()` to return them (ordered by `sort_order, name`). Keep the unique constraint on `code`; also enforce case-insensitive unique on `name` via a unique index on `lower(name)` so duplicates are prevented server-side.
 
-- `brand_color TEXT` (hex)
-- `secondary_color TEXT` (hex, optional)
-- `icon_bg_color TEXT` (hex, optional)
-- `description TEXT` (short tagline)
+### 2. Dedicated page: `owner/courier-brand-assets.tsx`
 
-Also add matching fields to the existing public RPCs so store-side reads get them:
+New route registered in the Owner sidebar under **Platform** (next to the existing Brand Assets entry, labeled "Courier Brand Assets"). The old couriers tab inside `brand-assets.tsx` stays but links to this page for the richer editor.
 
-- Extend `get_public_courier_providers()` to return the new columns.
-- Add `get_public_payment_gateways()` RPC returning `id, label, logo_url, brand_color, secondary_color, icon_bg_color, description, enabled` (only where `enabled = true`), granted to `anon` + `authenticated`.
+Each courier renders as an expandable brand card with:
 
-### 2. Winner Admin — unified "Brand Assets" page
+- **Live preview** at the top mirroring the exact Store Admin `CourierCard` header (logo chip using `icon_bg_color`, name in `brand_color`, secondary color accent, active/inactive status badge, description line).
+- **Identity**: Name (with duplicate-name check on blur), Code (read-only for existing rows, editable when creating).
+- **Logos**: Primary logo, Dark/Monochrome logo, Small icon/favicon — each uses `ImageUploader` writing to `store-assets` under `brand-logos/courier/<code>/<kind>-<ts>.<ext>`. Client-side validation: max 2 MB, min 64px on the shortest edge for logos / min 32px for favicon, formats limited to SVG/PNG/WebP, transparent PNG/SVG allowed. PNG/WebP auto-compressed via existing `compressImage({ maxEdge: 512 })`; SVG uploaded as-is.
+- **Colors**: Brand color, Secondary color, Icon background — reuse the `ColorInput` component with hex validation (`/^#([0-9a-f]{3}|[0-9a-f]{6})$/i`).
+- **Content**: Description (textarea).
+- **Links**: Website URL, Documentation URL, Support URL — validated as `https?://` URLs.
+- **Ordering & status**: Display order (number) and Active toggle.
+- **Actions**: "Save branding" (per card) and "Add new courier" button at the top for future providers (prompts for Name + Code).
 
-Create `src/routes/_authenticated/owner/brand-assets.tsx` with two tabbed sections: **Payment Gateways** and **Couriers**. Register it in the Owner sidebar under Platform Settings.
+Every field is disabled if the current user isn't an owner (defense in depth — RLS already blocks writes).
 
-Each row is a professional brand card:
+### 3. Server functions
 
-- Logo preview (SVG/PNG/WebP; upload via existing `ImageUploader` → `store-assets` bucket, path `brand-logos/<kind>/<code>-<ts>.<ext>`).
-- Brand name (label).
-- Brand color, secondary color, icon background — color-picker inputs with hex text fallback and swatch preview.
-- Short description (textarea).
-- Status toggle (Active/Inactive → maps to existing `enabled` / `is_active`).
-- Save button per card; live preview of the resulting brand card at the top of the editor.
+- Extend `upsertCourier` in `src/lib/owner-ext.functions.ts` to accept the new columns and enforce duplicate name check (case-insensitive) on the server before write.
+- Add a small `createCourierProvider` fn for the "Add new courier" flow (Name + Code + optional starter branding); reuses `upsertCourier` under the hood.
+- Extend `listCouriers` to return the new fields so the editor can hydrate.
 
-The existing owner pages (`owner/payment-gateways.tsx`, `owner/couriers.tsx`) stay as they are for compatibility, but the new page becomes the recommended entry point (add a link/notice).
+### 4. Store Admin propagation (no editing)
 
-### 3. Extend server functions
+- `admin/couriers.tsx` continues to read via `get_public_courier_providers()`. Forward the new fields (`dark_logo_url`, `favicon_url`, `website_url`, `docs_url`, `support_url`, `sort_order`) to `CourierCard`. Card automatically picks the dark logo when the app is in dark mode; favicon shows in compact/mini views; website/docs/support show as small helper links inside the courier config sheet.
+- Store Admin UI: no upload controls, no color inputs — those are removed/hidden if they exist for these branding fields. Credential/config editing stays exactly as-is.
 
-- `store-payments.functions.ts` → extend `upsertPlatformPaymentGateway` input & write to accept the new fields.
-- `owner-ext.functions.ts` → extend `upsertCourier` similarly (already handles logo_url).
-- Add `listPublicPaymentGateways` server fn wrapping the new RPC for store admin consumption.
+### 5. Future ready
 
-### 4. Store Admin — auto-sync branding from DB
-
-- Replace the hard-coded `PAYMENT_BRANDS` lookups on `src/routes/_authenticated/admin/payment-gateway.tsx` with a query to `listPublicPaymentGateways`, then merge DB values over the static registry (DB wins; static acts as a fallback for anything not yet configured). `BrandMark` receives `logoUrl`, and card border/background use `brand_color` / `icon_bg_color` from DB.
-- Courier cards on `admin/couriers.tsx` already pull `logo_url` from the public RPC; extend the same query to also read `brand_color` / `description` and forward to `CourierCard` / `BrandBadge`.
-- No store-side upload UI for these logos anywhere.
-
-### 5. Future-ready
-
-Because both tables are the source of truth and the store reads via generic RPCs, adding a new gateway or courier is just inserting a row from the Winner Admin (or a migration for a brand-new adapter). No code change is required for branding — only when a new adapter's business logic is added.
+Because everything is a DB row, adding "Sundarban", "eCourier" or any new provider is done from this page (or a migration inserting the row). The RPC returns whatever exists, and both Winner Admin editor and Store Admin cards render the new provider automatically with no code changes. Adapter/business logic for a brand-new courier still needs code — this plan is branding-only.
 
 ## Technical details
 
-- Migration follows the standard 4-step block for altered tables (ALTER + GRANT already exists + policies unchanged). New RPC is `SECURITY DEFINER`, `STABLE`, `search_path = public`, granted to `anon, authenticated`.
-- Color inputs: `<input type="color">` + text field, validated as `/^#([0-9a-f]{3}|[0-9a-f]{6})$/i` client-side.
-- Logo upload reuses `compressImage({ maxEdge: 512, quality: 0.9 })` and `store-assets` bucket, mirroring the existing courier flow. Rendering uses the existing `/api/img/<path>` proxy so no bucket policy changes are needed.
-- Backward compatibility: all new columns nullable; store UI falls back to the static `PAYMENT_BRANDS` registry when DB value is null, so nothing breaks before the owner configures brands.
+- Migration follows the required order for altered tables (ALTER COLUMN + REPLACE FUNCTION). Existing GRANTs are preserved.
+- Image upload uses the existing `/api/img/<path>` proxy — no new storage policies.
+- Duplicate name enforcement: DB unique index on `lower(name)` + friendly client-side check calling a lightweight `checkCourierName` server fn.
+- Sort order defaults to 100; RPC orders `ASC NULLS LAST, name ASC`.
+- `courier_providers` remains the single source of truth; the static `COURIERS` registry in `src/components/admin/couriers/providers.ts` stays only for `supports` capability flags (sandbox, pickup, etc.) which are not part of branding.
 
 ## Out of scope
 
-- Removing the existing separate owner pages (kept for continuity; new page is additive).
-- Any change to actual payment/courier adapter logic — this is branding only.
+- Store Admin credential/config UI changes beyond forwarding new display fields.
+- Courier adapter/business logic for new providers.
+- Removing the couriers tab from the existing `brand-assets.tsx` (kept as a shortcut).
