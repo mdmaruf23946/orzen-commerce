@@ -9,9 +9,16 @@ export const shurjopay: SubscriptionPaymentProvider = {
     methods: ["bkash", "nagad", "rocket", "visa", "mastercard"],
     supportsSandbox: true,
     credentialFields: [
-      { key: "merchant_username", label: "Merchant Username", type: "text" },
-      { key: "merchant_password", label: "Merchant Password", type: "password" },
-      { key: "prefix", label: "Prefix", type: "text", placeholder: "sp" },
+      { key: "merchant_username", label: "Merchant Username", type: "text", required: true, group: "Credentials" },
+      { key: "merchant_password", label: "Merchant Password", type: "password", required: true, group: "Credentials" },
+      { key: "prefix", label: "Prefix", type: "text", placeholder: "sp", group: "Credentials", helper: "Short store prefix (2–4 chars)." },
+      { key: "currency", label: "Currency", type: "select", group: "Credentials",
+        options: [
+          { label: "BDT — Bangladeshi Taka", value: "BDT" },
+          { label: "USD — US Dollar", value: "USD" },
+        ], placeholder: "BDT" },
+      { key: "return_url", label: "Return URL", type: "url", group: "Callback URLs", helper: "Where the customer lands after payment." },
+      { key: "callback_url", label: "Callback / IPN URL", type: "url", group: "Callback URLs" },
     ],
   },
   async testConnection(cfg) {
@@ -39,7 +46,7 @@ export const shurjopay: SubscriptionPaymentProvider = {
       return { ok: false, message: e?.message ?? "Network error", latency_ms: Date.now() - start };
     }
   },
-  async createCheckout(_cfg, ctx) {
+  async createCheckout(_cfg, _ctx) {
     throw new Error("ShurjoPay checkout not yet wired for storefront");
   },
   async verifyPayment(_cfg, input) {
