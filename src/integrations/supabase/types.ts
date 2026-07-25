@@ -1654,6 +1654,68 @@ export type Database = {
           },
         ]
       }
+      payment_webhook_events: {
+        Row: {
+          amount: number | null
+          currency: string | null
+          error_message: string | null
+          headers: Json | null
+          id: string
+          method: string | null
+          payload_summary: Json | null
+          provider_id: string
+          provider_ref: string | null
+          received_at: string
+          signature_valid: boolean | null
+          source: string
+          status_code: number | null
+          store_id: string
+          verified_status: string | null
+        }
+        Insert: {
+          amount?: number | null
+          currency?: string | null
+          error_message?: string | null
+          headers?: Json | null
+          id?: string
+          method?: string | null
+          payload_summary?: Json | null
+          provider_id: string
+          provider_ref?: string | null
+          received_at?: string
+          signature_valid?: boolean | null
+          source?: string
+          status_code?: number | null
+          store_id: string
+          verified_status?: string | null
+        }
+        Update: {
+          amount?: number | null
+          currency?: string | null
+          error_message?: string | null
+          headers?: Json | null
+          id?: string
+          method?: string | null
+          payload_summary?: Json | null
+          provider_id?: string
+          provider_ref?: string | null
+          received_at?: string
+          signature_valid?: boolean | null
+          source?: string
+          status_code?: number | null
+          store_id?: string
+          verified_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_webhook_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number

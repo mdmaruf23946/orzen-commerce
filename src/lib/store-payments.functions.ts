@@ -307,3 +307,125 @@ export const upsertPlatformPaymentGateway = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// -------- Webhook test flow + events viewer --------
+
+/**
+ * Returns synthetic sample payloads the test flow POSTs to our own
+ * webhook receiver. Each adapter's parseWebhook determines whether
+ * the round-trip succeeds, so the shape must resemble what the real
+ * provider would send.
+ */
+function sampleWebhookBody(providerId: string): { contentType: string; body: string } {
+  const tranId = `TEST-${Date.now()}`;
+  switch (providerId) {
+    case "sslcommerz":
+      return {
+        contentType: "application/x-www-form-urlencoded",
+        body: new URLSearchParams({
+          tran_id: tranId,
+          val_id: `VAL-${tranId}`,
+          status: "VALID",
+          amount: "100.00",
+          currency: "BDT",
+          card_type: "TEST-CARD",
+        }).toString(),
+      };
+    case "stripe":
+      return {
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: `evt_test_${tranId}`,
+          type: "checkout.session.completed",
+          data: { object: { id: tranId, amount_total: 10000, currency: "usd" } },
+        }),
+      };
+    default:
+      return {
+        contentType: "application/json",
+        body: JSON.stringify({
+          tran_id: tranId,
+          provider_ref: tranId,
+          status: "success",
+          amount: 100,
+          currency: "BDT",
+          _test: true,
+        }),
+      };
+  }
+}
+
+export const testStorePaymentWebhook = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ storeId: z.string().uuid(), providerId: providerIdSchema }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertStoreOwnership(context.supabase, data.storeId, context.userId);
+    const provider = getProvider(data.providerId);
+    if (!provider.parseWebhook) {
+      return {
+        ok: false as const,
+        message: `${provider.meta.label} adapter does not accept webhooks`,
+      };
+    }
+
+    const { getRequestHost } = await import("@tanstack/react-start/server");
+    let host: string;
+    try {
+      host = getRequestHost();
+    } catch {
+      host = process.env.PUBLIC_APP_HOST ?? "localhost:8080";
+    }
+    const proto = host.includes("localhost") ? "http" : "https";
+    const url = `${proto}://${host}/api/public/store-payments/webhook/${data.storeId}/${data.providerId}?source=test`;
+
+    const sample = sampleWebhookBody(data.providerId);
+    let ok = false;
+    let status = 0;
+    let message = "";
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": sample.contentType, "x-orzen-webhook-test": "1" },
+        body: sample.body,
+      });
+      status = res.status;
+      const json: any = await res.json().catch(() => ({}));
+      ok = res.ok && !!json?.provider_ref;
+      message = ok
+        ? `Round-trip OK (ref ${json.provider_ref})`
+        : json?.error ?? `Receiver returned ${res.status}`;
+    } catch (e: any) {
+      message = e?.message ?? "Network error hitting webhook URL";
+    }
+    return { ok, message, status, webhook_url: url };
+  });
+
+export const listStorePaymentWebhookEvents = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        storeId: z.string().uuid(),
+        providerId: providerIdSchema.optional(),
+        limit: z.number().int().min(1).max(100).default(25),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertStoreOwnership(context.supabase, data.storeId, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let q = supabaseAdmin
+      .from("payment_webhook_events")
+      .select(
+        "id,provider_id,source,signature_valid,verified_status,provider_ref,method,amount,currency,payload_summary,status_code,error_message,received_at",
+      )
+      .eq("store_id", data.storeId)
+      .order("received_at", { ascending: false })
+      .limit(data.limit);
+    if (data.providerId) q = q.eq("provider_id", data.providerId);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });

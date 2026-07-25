@@ -16,6 +16,7 @@ import {
   ExternalLink,
   Info,
   Sparkles,
+  Zap,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -25,6 +26,7 @@ import {
   setActiveStorePaymentGateway,
   toggleStorePaymentGateway,
   disconnectStorePaymentGateway,
+  testStorePaymentWebhook,
 } from "@/lib/store-payments.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,6 +60,7 @@ import { ImageUploader } from "@/components/admin/ImageUploader";
 import { BrandMark } from "@/components/admin/payments/BrandMark";
 import { StatusBadge, type GatewayStatus } from "@/components/admin/payments/StatusBadge";
 import { getBrand } from "@/components/admin/payments/providers";
+import { WebhookEventsPanel } from "@/components/admin/payments/WebhookEventsPanel";
 
 export const Route = createFileRoute("/_authenticated/admin/payment-gateway")({
   component: PaymentGatewayPage,
@@ -198,6 +201,13 @@ function PaymentGatewayPage() {
           <Sparkles className="mb-2 h-6 w-6" />
           No payment gateways are enabled for your store yet. Please contact support to enable providers.
         </div>
+      )}
+
+      {storeId && data && data.length > 0 && (
+        <WebhookEventsPanel
+          storeId={storeId}
+          providers={data.map((g) => ({ provider_id: g.provider_id, label: g.label }))}
+        />
       )}
 
       <Sheet open={!!open} onOpenChange={(v) => !v && setOpenId(null)}>
@@ -552,6 +562,7 @@ function ConfigureForm({
 }) {
   const save = useServerFn(saveStorePaymentGateway);
   const test = useServerFn(testStorePaymentGateway);
+  const testHook = useServerFn(testStorePaymentWebhook);
   const brand = getBrand(g.provider_id);
   const hasExisting = !!g.connection?.has_credentials;
 
@@ -640,6 +651,32 @@ function ConfigureForm({
       setTestResult({ ok: false, message: e?.message ?? "Failed" });
     } finally {
       setTesting(false);
+    }
+  }
+
+  const [testingHook, setTestingHook] = useState(false);
+  async function runWebhookTest() {
+    if (!hasExisting) {
+      toast.info("Save the gateway first to test the webhook.");
+      return;
+    }
+    setTestingHook(true);
+    setTestResult(null);
+    try {
+      const r: any = await testHook({ data: { storeId, providerId: g.provider_id } });
+      setTestResult({
+        ok: !!r?.ok,
+        message: r?.ok
+          ? `Webhook OK — ${r.message}`
+          : `Webhook failed — ${r?.message ?? "Unknown error"}`,
+      });
+      if (r?.webhook_url) {
+        navigator.clipboard?.writeText(r.webhook_url).catch(() => {});
+      }
+    } catch (e: any) {
+      setTestResult({ ok: false, message: e?.message ?? "Failed" });
+    } finally {
+      setTestingHook(false);
     }
   }
 
@@ -760,6 +797,20 @@ function ConfigureForm({
             Save
           </Button>
         </div>
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={runWebhookTest}
+          disabled={testingHook || !hasExisting}
+          title={!hasExisting ? "Save first to enable webhook test" : "Sends a synthetic event to your webhook URL"}
+        >
+          {testingHook ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Zap className="mr-2 h-4 w-4" />
+          )}
+          Test Webhook (copies URL)
+        </Button>
         <Button
           variant="ghost"
           className="w-full"
