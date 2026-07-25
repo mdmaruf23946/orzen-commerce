@@ -1366,7 +1366,7 @@ export function streamAgentResponse(opts: {
       messages: opts.messages,
       tools: buildTools(opts.ctx),
       stopWhen: stepCountIs(50),
-      ...generationParams(settings),
+      ...generationParams(settings, modelId),
       onFinish: ({ usage }) => {
         void logUsage(opts.ctx.storeId, modelId, usage, "chat");
       },
