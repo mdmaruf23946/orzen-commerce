@@ -1,83 +1,66 @@
-## Goal
 
-Give every store its own configurable invoice numbering scheme, generated automatically at order confirmation, unique per store, never reused on cancellation/deletion, and always sequential.
+# Import / Export Products — Professional Redesign
 
-## Current state (verified)
+Replace the current thin `import-export.tsx` (CSV only, no preview, no update, no history) with a modern wizard UI plus stronger server functions and a history table.
 
-- `public.orders.invoice_no text` exists (nullable, no unique index).
-- `public.generate_invoice_no(_store_id)` currently hardcodes format `INV-YYYYMM-0001` scoped per store, called inside the `on_order_status_change` trigger only when status becomes `confirmed`. Cancellations already skip the branch, so no reuse occurs today.
-- No invoice settings exist on `stores` and no per-store sequence table exists.
+## Scope
+- Route: `src/routes/_authenticated/admin/import-export.tsx` — full redesign.
+- Server logic: `src/lib/business.functions.ts` — extend import/export functions.
+- New DB table: `product_import_export_history` for last activity tracking.
+- New component files under `src/components/admin/import-export/`.
+- Plan-gated via existing `FeatureGate feature="import_export"`.
 
-## Design
+## UI (wizard, no page reloads)
 
-### 1. Data model (migration)
+Top summary cards (responsive grid):
+- Total Products, Last Import (time + user + rows), Last Export (time + user + rows).
+- Two large primary CTAs: **Import Products**, **Export Products** (open dialogs).
 
-New table `public.store_invoice_settings` (one row per store):
+### Import dialog — 4 steps
+1. **Source** — Drag-and-drop uploader accepting `.csv`, `.xlsx`, or Google Sheets URL/ID. "Download sample template" (CSV + XLSX) button. Table of required/optional columns with descriptions.
+2. **Mode** — radio: Add new only / Update existing (by SKU) / Add + Update. Match key selector (SKU or Product Code).
+3. **Preview & validate** — table of first 20 parsed rows, per-row status badge (New / Update / Error), inline reason for failures with row numbers. Toggle "Skip invalid rows" or "Fix in place" (editable cells for common fixes: price, stock, status). Summary counters update live.
+4. **Import** — real-time progress bar (chunked 100 rows/request via server fn), final summary card: Total / Imported / Updated / Skipped / Failed with downloadable error report CSV.
 
-- `store_id uuid PK REFERENCES stores(id) ON DELETE CASCADE`
-- `prefix text NOT NULL` — 1–10 chars, uppercase letters/digits
-- `separator text NOT NULL DEFAULT '-'` — one of `-`, `/`, `_`, `` (empty = none)
-- `padding smallint NOT NULL DEFAULT 6 CHECK (padding BETWEEN 4 AND 8)`
-- `start_number bigint NOT NULL DEFAULT 1` — owner-editable floor; only applied if higher than current sequence
-- `include_year boolean NOT NULL DEFAULT false`
-- `include_month boolean NOT NULL DEFAULT false`
-- `next_number bigint NOT NULL DEFAULT 1` — monotonically increasing counter (never decremented)
-- timestamps + `updated_at` trigger
+### Export dialog
+- Filters: Category (multi), Brand, Stock status, Active/Inactive, Date range (created_at).
+- Column picker (checkbox list, sensible defaults).
+- Format: CSV / XLSX.
+- Progress indicator; result streamed to a Blob download; log to history.
 
-Grants: `authenticated` SELECT/INSERT/UPDATE via RLS `is_store_owner(store_id)`; `service_role` ALL. Also readable by winner admin via `has_role('admin')`.
+### History section
+- Bottom card listing last 20 import/export runs: type, file name, rows, status, user, time. Pulled from new table.
 
-Add: `CREATE UNIQUE INDEX orders_store_invoice_no_uniq ON public.orders (store_id, invoice_no) WHERE invoice_no IS NOT NULL;` to enforce per-store uniqueness even under concurrency.
+Responsive: cards stack on mobile, dialogs full-screen `<480px`, tables become card lists.
 
-### 2. Auto-provision defaults
+## Technical details
 
-Trigger `AFTER INSERT ON public.stores`: insert a settings row with:
-- `prefix` = first two A–Z letters of `stores.name` uppercased (fallback `ST` when nothing usable)
-- other columns = defaults
+### Parsing
+- Add `xlsx` npm package for `.xlsx` (SheetJS) and reuse for CSV read/write. For Google Sheets, accept a public sheet URL, extract `spreadsheetId`, fetch via existing `google_sheets` gateway if a workspace connection exists, else instruct user to publish as CSV and paste URL (fallback fetch through server fn to avoid CORS).
+- All parsing happens client-side except Sheets fetch (server fn).
 
-Backfill migration: insert a row for every existing store using the same rule.
+### Server functions (extend `src/lib/business.functions.ts`)
+- `bulkImportProducts` — extend input: `mode: "add" | "update" | "upsert"`, `matchKey: "sku" | "code"`, wider optional fields (brand, category_slug, images[], features, specifications, etc.), keep chunk size 500. Returns `{ imported, updated, skipped, failed, errors: {row, reason}[] }`. Update path uses `update ... where store_id=sid and sku=?`. Add path insert; Upsert combines. Writes a history row on completion.
+- `exportProductsFiltered` — inputs: filters, columns[], format (`csv`|`xlsx_data`). Returns rows + header (client builds XLSX to keep worker light). Writes a history row.
+- `getImportExportHistory` — last 20 rows for current store.
+- `fetchGoogleSheetCsv` — server fn: given URL, fetch CSV, return text (validates it's a Google Sheets host).
 
-### 3. Number generator (replace existing)
+### Database
+New migration:
+- `public.product_import_export_history` (store_id, user_id, kind ['import'|'export'], file_name, format, total, imported, updated, skipped, failed, filters jsonb, created_at).
+- GRANT + RLS: store owner select/insert own rows.
 
-Rewrite `public.generate_invoice_no(_store_id)` as SECURITY DEFINER:
+### Files
+- New: `src/components/admin/import-export/ImportDialog.tsx`, `ExportDialog.tsx`, `HistoryCard.tsx`, `SummaryCards.tsx`, `sample-template.ts` (builds sample CSV/XLSX Blob).
+- Rewrite: `src/routes/_authenticated/admin/import-export.tsx` (composes above).
+- Extend: `src/lib/business.functions.ts` (functions above).
+- Add dep: `xlsx` via `bun add xlsx`.
 
-1. `SELECT ... FOR UPDATE` the settings row (row-level lock → sequential per store, race-safe).
-2. `seq := GREATEST(next_number, start_number)`.
-3. Compose:
-   - Optional `YYYY` / `YYYYMM` segment when `include_year` / `include_month` set.
-   - `lpad(seq::text, padding, '0')`.
-   - Join `prefix`, optional date, number with `separator` (skip separator when empty).
-4. `UPDATE ... SET next_number = seq + 1`.
-5. Return the string.
+### Performance
+- Chunked async imports (100/req) with progress via sequential awaits.
+- Preview limited to 20 rows; full validation runs in a `requestIdleCallback` loop with counters, no UI freeze.
+- Export uses `useQuery` with `enabled:false`; run on click, no route reloads.
 
-Called from the existing `on_order_status_change` trigger's confirm branch — unchanged call site. Cancellations still skip assignment, so numbers never reuse. Deleting an order does not decrement `next_number` either.
-
-### 4. Winner admin visibility
-
-The existing admin orders query already selects `invoice_no`; no change. Admins do not mutate invoice numbers directly — uniqueness is enforced structurally.
-
-### 5. UI — Store admin
-
-Add an "Invoice numbering" card to `src/routes/_authenticated/admin/settings.tsx` (existing settings page):
-
-- Fields: prefix (uppercase, live-sanitized), separator (segmented `-` `/` `_` `None`), padding (4–8 slider), start number, include year, include month.
-- Live preview label rendering the composed sample invoice using current form state.
-- Server function `updateInvoiceSettings` (`requireSupabaseAuth` + `is_store_owner`) validates and upserts the row.
-- Server function `getInvoiceSettings` returns the row + a computed preview.
-
-No changes to the storefront or checkout — invoice numbers are assigned only on confirmation as today.
-
-## Files touched
-
-- `supabase/migrations/<new>.sql` — table, grants, RLS, index, trigger, backfill, rewritten `generate_invoice_no`.
-- `src/lib/admin.functions.ts` (or new `src/lib/invoice-settings.functions.ts`) — `getInvoiceSettings`, `updateInvoiceSettings`.
-- `src/routes/_authenticated/admin/settings.tsx` — new card + form.
-
-## Guarantees mapping
-
-- Unique per store → composite unique index + row-locked counter.
-- No reuse on cancel/delete → generator only runs on confirm; deletes don't touch `next_number`.
-- Sequential → `FOR UPDATE` serializes increments.
-- Independent per store → per-store row in `store_invoice_settings`.
-- Owner-editable prefix / format → settings row with owner-only RLS.
-- Auto default prefix from name → insert trigger on `stores`.
-- Admin can view but cannot dup → read-only for admin role; index prevents duplicates by construction.
+## Out of scope
+- Editing product variants via CSV (kept minimal — variants stay in product editor).
+- Image file uploads via CSV (only URLs supported, matching existing schema).

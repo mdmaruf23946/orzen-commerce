@@ -407,41 +407,137 @@ export const bulkDeleteProducts = createServerFn({ method: "POST" })
   });
 
 // ---------- IMPORT / EXPORT ----------
+const IMPORT_ROW = z.object({
+  name: z.string().min(1).max(200),
+  price: z.number().nonnegative(),
+  old_price: z.number().nonnegative().nullable().optional(),
+  cost_price: z.number().nonnegative().nullable().optional(),
+  stock: z.number().int().min(0).nullable().optional(),
+  sku: z.string().max(60).nullable().optional(),
+  product_code: z.string().max(60).nullable().optional(),
+  status: z.enum(["active", "draft", "out_of_stock"]).nullable().optional(),
+  description: z.string().max(10000).nullable().optional(),
+  short_description: z.string().max(500).nullable().optional(),
+  brand: z.string().max(120).nullable().optional(),
+  category_slug: z.string().max(120).nullable().optional(),
+  primary_image_url: z.string().max(1000).nullable().optional(),
+  gallery: z.array(z.string()).nullable().optional(),
+  video_url: z.string().max(1000).nullable().optional(),
+  is_featured: z.boolean().nullable().optional(),
+  low_stock_threshold: z.number().int().min(0).nullable().optional(),
+  delivery_charge: z.number().nonnegative().nullable().optional(),
+  delivery_time_days: z.string().max(60).nullable().optional(),
+  warranty: z.string().max(500).nullable().optional(),
+  return_policy: z.string().max(1000).nullable().optional(),
+  shipping_info: z.string().max(1000).nullable().optional(),
+});
+
+function slugify(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
+}
+
 export const bulkImportProducts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
     z.object({
-      rows: z.array(z.object({
-        name: z.string().min(1).max(160),
-        price: z.number().nonnegative(),
-        old_price: z.number().nonnegative().optional().nullable(),
-        cost_price: z.number().nonnegative().optional(),
-        stock: z.number().int().min(0).optional(),
-        sku: z.string().max(60).optional().nullable(),
-        status: z.enum(["active", "draft", "out_of_stock"]).optional(),
-        description: z.string().max(5000).optional().nullable(),
-      })).min(1).max(500),
+      rows: z.array(IMPORT_ROW).min(1).max(500),
+      mode: z.enum(["add", "update", "upsert"]).default("add"),
+      matchKey: z.enum(["sku", "product_code"]).default("sku"),
+      fileName: z.string().max(200).optional(),
+      isFinalChunk: z.boolean().optional(),
+      totalRows: z.number().int().min(0).optional(),
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertPlan(context.supabase, context.userId, "import_export");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
-    const rows = data.rows.map((r) => ({
-      store_id: sid,
-      name: r.name,
-      slug: r.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 60) + "-" + Math.random().toString(36).slice(2, 6),
-      price: r.price,
-      old_price: r.old_price ?? null,
-      cost_price: r.cost_price ?? 0,
-      stock: r.stock ?? 0,
-      sku: r.sku ?? null,
-      status: r.status ?? "active",
-      description: r.description ?? null,
-    }));
-    const { error } = await context.supabase.from("products").insert(rows);
-    if (error) throw new Error(error.message);
-    return { ok: true, count: rows.length };
+
+    // Preload categories map (slug -> id)
+    const { data: cats } = await context.supabase
+      .from("categories").select("id,slug").eq("store_id", sid);
+    const catMap = new Map<string, string>((cats ?? []).map((c: any) => [c.slug, c.id]));
+
+    // Preload existing key set for the match key
+    const key = data.matchKey;
+    const keyVals = data.rows.map((r: any) => r[key]).filter((v) => v != null && v !== "");
+    const existing = new Map<string, string>();
+    if (keyVals.length) {
+      const { data: found } = await context.supabase
+        .from("products").select(`id,${key}`).eq("store_id", sid).in(key, keyVals);
+      for (const r of found ?? []) existing.set(String((r as any)[key]), r.id);
+    }
+
+    let imported = 0, updated = 0, skipped = 0, failed = 0;
+    const errors: { index: number; reason: string }[] = [];
+
+    for (let i = 0; i < data.rows.length; i++) {
+      const r = data.rows[i];
+      try {
+        const matchVal = (r as any)[key];
+        const existId = matchVal ? existing.get(String(matchVal)) : undefined;
+
+        const base: any = {
+          name: r.name,
+          price: r.price,
+          old_price: r.old_price ?? null,
+          cost_price: r.cost_price ?? 0,
+          stock: r.stock ?? 0,
+          sku: r.sku ?? null,
+          product_code: r.product_code ?? null,
+          status: r.status ?? "active",
+          description: r.description ?? null,
+          short_description: r.short_description ?? null,
+          brand: r.brand ?? null,
+          primary_image_url: r.primary_image_url ?? null,
+          gallery: r.gallery ?? [],
+          video_url: r.video_url ?? null,
+          is_featured: r.is_featured ?? false,
+          low_stock_threshold: r.low_stock_threshold ?? 5,
+          delivery_charge: r.delivery_charge ?? null,
+          delivery_time_days: r.delivery_time_days ?? null,
+          warranty: r.warranty ?? null,
+          return_policy: r.return_policy ?? null,
+          shipping_info: r.shipping_info ?? null,
+        };
+        if (r.category_slug && catMap.has(r.category_slug)) {
+          base.category_id = catMap.get(r.category_slug);
+        }
+
+        if (existId) {
+          if (data.mode === "add") { skipped++; continue; }
+          const { error } = await context.supabase
+            .from("products").update(base).eq("id", existId).eq("store_id", sid);
+          if (error) throw new Error(error.message);
+          updated++;
+        } else {
+          if (data.mode === "update") { skipped++; continue; }
+          const slug = slugify(r.name) + "-" + Math.random().toString(36).slice(2, 6);
+          const { error } = await context.supabase
+            .from("products").insert({ ...base, store_id: sid, slug });
+          if (error) throw new Error(error.message);
+          imported++;
+        }
+      } catch (e: any) {
+        failed++;
+        errors.push({ index: i, reason: e?.message ?? "Unknown error" });
+      }
+    }
+
+    if (data.isFinalChunk) {
+      await context.supabase.from("product_import_export_history").insert({
+        store_id: sid,
+        user_id: context.userId,
+        kind: "import",
+        file_name: data.fileName ?? null,
+        format: null,
+        total: data.totalRows ?? data.rows.length,
+        imported, updated, skipped, failed,
+        filters: { mode: data.mode, matchKey: data.matchKey },
+      });
+    }
+
+    return { ok: true, imported, updated, skipped, failed, errors };
   });
 
 export const exportProductsCsv = createServerFn({ method: "GET" })
@@ -462,6 +558,120 @@ export const exportProductsCsv = createServerFn({ method: "GET" })
     const lines = [header.join(",")];
     for (const r of data ?? []) lines.push(header.map((h) => esc((r as any)[h])).join(","));
     return lines.join("\n");
+  });
+
+export const exportProductsFiltered = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      columns: z.array(z.string()).min(1),
+      filters: z.object({
+        categoryIds: z.array(z.string().uuid()).optional(),
+        brands: z.array(z.string()).optional(),
+        stockStatus: z.enum(["all", "in_stock", "out_of_stock", "low_stock"]).optional(),
+        status: z.enum(["all", "active", "draft", "out_of_stock"]).optional(),
+        from: z.string().optional(),
+        to: z.string().optional(),
+      }).default({}),
+      format: z.enum(["csv", "xlsx"]).default("csv"),
+      fileName: z.string().max(200).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "import_export");
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) return { header: data.columns, rows: [] };
+
+    const selectCols = Array.from(new Set([...data.columns, "id"])).join(",");
+    let q = context.supabase.from("products").select(selectCols).eq("store_id", sid);
+    const f = data.filters;
+    if (f.categoryIds?.length) q = q.in("category_id", f.categoryIds);
+    if (f.brands?.length) q = q.in("brand", f.brands);
+    if (f.status && f.status !== "all") q = q.eq("status", f.status);
+    if (f.stockStatus === "in_stock") q = q.gt("stock", 0);
+    if (f.stockStatus === "out_of_stock") q = q.eq("stock", 0);
+    if (f.stockStatus === "low_stock") q = q.lte("stock", 5).gt("stock", 0);
+    if (f.from) q = q.gte("created_at", f.from);
+    if (f.to) q = q.lte("created_at", f.to);
+    q = q.order("created_at", { ascending: false }).limit(10000);
+
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+
+    const out = (rows ?? []).map((r: any) => {
+      const obj: any = {};
+      for (const c of data.columns) {
+        const v = r[c];
+        obj[c] = v && typeof v === "object" ? JSON.stringify(v) : v ?? "";
+      }
+      return obj;
+    });
+
+    await context.supabase.from("product_import_export_history").insert({
+      store_id: sid,
+      user_id: context.userId,
+      kind: "export",
+      file_name: data.fileName ?? null,
+      format: data.format,
+      total: out.length,
+      imported: 0, updated: 0, skipped: 0, failed: 0,
+      filters: data.filters,
+    });
+
+    return { header: data.columns, rows: out };
+  });
+
+export const getImportExportHistory = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) return { history: [], totalProducts: 0 };
+    const [{ data: history }, { count }] = await Promise.all([
+      context.supabase
+        .from("product_import_export_history")
+        .select("id,kind,file_name,format,total,imported,updated,skipped,failed,created_at,user_id")
+        .eq("store_id", sid)
+        .order("created_at", { ascending: false })
+        .limit(20),
+      context.supabase.from("products").select("id", { count: "exact", head: true }).eq("store_id", sid),
+    ]);
+    return { history: history ?? [], totalProducts: count ?? 0 };
+  });
+
+export const fetchGoogleSheetCsv = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ url: z.string().url() }).parse(d))
+  .handler(async ({ data }) => {
+    const u = new URL(data.url);
+    if (!/(^|\.)google\.com$/.test(u.hostname) && !/googleusercontent\.com$/.test(u.hostname)) {
+      throw new Error("Only docs.google.com URLs are supported");
+    }
+    // Convert /edit URL to CSV export URL
+    let csvUrl = data.url;
+    const m = data.url.match(/\/spreadsheets\/d\/([^/]+)/);
+    if (m) {
+      const id = m[1];
+      const gidMatch = data.url.match(/[#&?]gid=(\d+)/);
+      const gid = gidMatch ? gidMatch[1] : "0";
+      csvUrl = `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
+    }
+    const res = await fetch(csvUrl);
+    if (!res.ok) throw new Error(`Failed to fetch sheet (HTTP ${res.status}). Make sure it's shared as "Anyone with the link".`);
+    const text = await res.text();
+    return { csv: text };
+  });
+
+export const listExportFacets = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) return { categories: [], brands: [] };
+    const [{ data: cats }, { data: prods }] = await Promise.all([
+      context.supabase.from("categories").select("id,name,slug").eq("store_id", sid).order("name"),
+      context.supabase.from("products").select("brand").eq("store_id", sid).not("brand", "is", null),
+    ]);
+    const brands = Array.from(new Set((prods ?? []).map((p: any) => p.brand).filter(Boolean))).sort();
+    return { categories: cats ?? [], brands };
   });
 
 // ---------- ANALYTICS ----------
