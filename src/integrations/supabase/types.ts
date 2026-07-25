@@ -812,6 +812,59 @@ export type Database = {
           },
         ]
       }
+      delivery_zones: {
+        Row: {
+          charge: number
+          courier_code: string | null
+          courier_config: Json
+          created_at: string
+          eta: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          sort_order: number
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          charge?: number
+          courier_code?: string | null
+          courier_config?: Json
+          created_at?: string
+          eta?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          sort_order?: number
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          charge?: number
+          courier_code?: string | null
+          courier_config?: Json
+          created_at?: string
+          eta?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          sort_order?: number
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_zones_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_logs: {
         Row: {
           attempts: number
@@ -1501,6 +1554,7 @@ export type Database = {
           customer_id: string | null
           customer_name: string
           delivery_amount: number | null
+          delivery_zone_id: string | null
           device_id: string | null
           discount_amount: number | null
           fingerprint: string | null
@@ -1529,6 +1583,7 @@ export type Database = {
           customer_id?: string | null
           customer_name: string
           delivery_amount?: number | null
+          delivery_zone_id?: string | null
           device_id?: string | null
           discount_amount?: number | null
           fingerprint?: string | null
@@ -1557,6 +1612,7 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string
           delivery_amount?: number | null
+          delivery_zone_id?: string | null
           device_id?: string | null
           discount_amount?: number | null
           fingerprint?: string | null
@@ -1577,6 +1633,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "store_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_delivery_zone_id_fkey"
+            columns: ["delivery_zone_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_zones"
             referencedColumns: ["id"]
           },
           {
