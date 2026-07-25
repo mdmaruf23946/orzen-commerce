@@ -739,40 +739,52 @@ export type Database = {
         Row: {
           api_key: string | null
           base_url: string | null
+          brand_color: string | null
           code: string
           config: Json
           created_at: string
+          description: string | null
+          icon_bg_color: string | null
           id: string
           is_active: boolean
           is_default: boolean
           logo_url: string | null
           name: string
+          secondary_color: string | null
           updated_at: string
         }
         Insert: {
           api_key?: string | null
           base_url?: string | null
+          brand_color?: string | null
           code: string
           config?: Json
           created_at?: string
+          description?: string | null
+          icon_bg_color?: string | null
           id?: string
           is_active?: boolean
           is_default?: boolean
           logo_url?: string | null
           name: string
+          secondary_color?: string | null
           updated_at?: string
         }
         Update: {
           api_key?: string | null
           base_url?: string | null
+          brand_color?: string | null
           code?: string
           config?: Json
           created_at?: string
+          description?: string | null
+          icon_bg_color?: string | null
           id?: string
           is_active?: boolean
           is_default?: boolean
           logo_url?: string | null
           name?: string
+          secondary_color?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1877,32 +1889,44 @@ export type Database = {
       }
       platform_payment_gateways: {
         Row: {
+          brand_color: string | null
           created_at: string
+          description: string | null
           enabled: boolean
+          icon_bg_color: string | null
           id: string
           label: string
           logo_url: string | null
           notes: string | null
+          secondary_color: string | null
           sort_order: number
           updated_at: string
         }
         Insert: {
+          brand_color?: string | null
           created_at?: string
+          description?: string | null
           enabled?: boolean
+          icon_bg_color?: string | null
           id: string
           label: string
           logo_url?: string | null
           notes?: string | null
+          secondary_color?: string | null
           sort_order?: number
           updated_at?: string
         }
         Update: {
+          brand_color?: string | null
           created_at?: string
+          description?: string | null
           enabled?: boolean
+          icon_bg_color?: string | null
           id?: string
           label?: string
           logo_url?: string | null
           notes?: string | null
+          secondary_color?: string | null
           sort_order?: number
           updated_at?: string
         }
@@ -3877,10 +3901,14 @@ export type Database = {
       get_public_courier_providers: {
         Args: never
         Returns: {
+          brand_color: string
           code: string
+          description: string
+          icon_bg_color: string
           is_active: boolean
           logo_url: string
           name: string
+          secondary_color: string
         }[]
       }
       get_public_delivery_zones: {
@@ -3895,6 +3923,20 @@ export type Database = {
         }[]
       }
       get_public_order: { Args: { _order_id: string }; Returns: Json }
+      get_public_payment_gateways: {
+        Args: never
+        Returns: {
+          brand_color: string
+          description: string
+          enabled: boolean
+          icon_bg_color: string
+          id: string
+          label: string
+          logo_url: string
+          secondary_color: string
+          sort_order: number
+        }[]
+      }
       get_public_store_by_slug: { Args: { _slug: string }; Returns: Json }
       get_store_bestsellers: {
         Args: { _limit?: number; _store_id: string }
