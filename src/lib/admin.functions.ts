@@ -770,12 +770,62 @@ export const sendFbTestEvent = createServerFn({ method: "POST" })
     return res;
   });
 
-const courierProvider = z.object({
-  api_key: z.string().trim().max(300).optional().nullable(),
-  secret: z.string().trim().max(300).optional().nullable(),
-  base_url: z.string().trim().max(300).optional().nullable(),
-  enabled: z.boolean().optional(),
-});
+const courierShipping = z
+  .object({
+    insideCity: z.number().finite().nonnegative().max(100000).optional().nullable(),
+    outsideCity: z.number().finite().nonnegative().max(100000).optional().nullable(),
+    subCity: z.number().finite().nonnegative().max(100000).optional().nullable(),
+    cod: z.boolean().optional(),
+    home: z.boolean().optional(),
+    pickupPoint: z.boolean().optional(),
+    returnDelivery: z.boolean().optional(),
+    exchange: z.boolean().optional(),
+    priority: z.number().int().min(0).max(999).optional().nullable(),
+  })
+  .partial();
+const courierPickup = z
+  .object({
+    contactName: z.string().trim().max(120).optional().nullable(),
+    phone: z.string().trim().max(40).optional().nullable(),
+    address: z.string().trim().max(400).optional().nullable(),
+    district: z.string().trim().max(80).optional().nullable(),
+    area: z.string().trim().max(80).optional().nullable(),
+    instructions: z.string().trim().max(500).optional().nullable(),
+  })
+  .partial();
+const courierAutomation = z
+  .object({
+    autoParcel: z.boolean().optional(),
+    autoStatus: z.boolean().optional(),
+    autoTracking: z.boolean().optional(),
+    autoLabel: z.boolean().optional(),
+    autoSms: z.boolean().optional(),
+    autoNotify: z.boolean().optional(),
+  })
+  .partial();
+const courierDiagnostics = z
+  .object({
+    lastConnectedAt: z.string().max(60).optional().nullable(),
+    lastStatus: z.enum(["connected", "error", "unknown"]).optional().nullable(),
+    lastError: z.string().max(1000).optional().nullable(),
+    lastResponse: z.string().max(4000).optional().nullable(),
+    latencyMs: z.number().int().min(0).max(600000).optional().nullable(),
+  })
+  .partial();
+const courierProvider = z
+  .object({
+    api_key: z.string().trim().max(300).optional().nullable(),
+    secret: z.string().trim().max(300).optional().nullable(),
+    base_url: z.string().trim().max(300).optional().nullable(),
+    enabled: z.boolean().optional(),
+    sandbox: z.boolean().optional(),
+    is_default: z.boolean().optional(),
+    shipping: courierShipping.optional(),
+    pickup: courierPickup.optional(),
+    automation: courierAutomation.optional(),
+    diagnostics: courierDiagnostics.optional(),
+  })
+  .partial();
 const couriersSchema = z.object({
   steadfast: courierProvider.optional(),
   pathao: courierProvider.optional(),
@@ -789,6 +839,68 @@ export const updateCouriers = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertPlan(context.supabase, context.userId, "courier");
     return updateStoreColumn(context.supabase, context.userId, "couriers", data);
+  });
+
+// Lightweight reachability/auth ping against the courier's base URL.
+// Persists diagnostics into stores.couriers[key] so the UI can show
+// last-connected time, latency, and errors without a bespoke adapter.
+export const testCourierConnection = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ key: z.enum(["steadfast", "pathao", "redx", "paperfly"]) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "courier");
+    const { data: store } = await context.supabase
+      .from("stores")
+      .select("id, couriers")
+      .eq("owner_user_id", context.userId)
+      .maybeSingle();
+    if (!store) throw new Error("No store");
+    const couriers: any = (store as any).couriers ?? {};
+    const cfg = couriers[data.key] ?? {};
+    const url: string | null = cfg.base_url || null;
+    const startedAt = Date.now();
+    let status: "connected" | "error" = "error";
+    let message = "";
+    let responseSnippet = "";
+    try {
+      if (!url) throw new Error("Base URL is not set");
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          ...(cfg.api_key ? { Authorization: `Bearer ${cfg.api_key}`, "Api-Key": String(cfg.api_key) } : {}),
+          ...(cfg.secret ? { "Secret-Key": String(cfg.secret) } : {}),
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      responseSnippet = (await res.text().catch(() => "")).slice(0, 500);
+      if (res.status < 500) {
+        status = "connected";
+        message = `Reachable (HTTP ${res.status})`;
+      } else {
+        status = "error";
+        message = `Server error (HTTP ${res.status})`;
+      }
+    } catch (e) {
+      status = "error";
+      message = (e as Error).message || "Network error";
+    }
+    const latencyMs = Date.now() - startedAt;
+    const diagnostics = {
+      lastConnectedAt: new Date().toISOString(),
+      lastStatus: status,
+      lastError: status === "error" ? message : null,
+      lastResponse: responseSnippet || null,
+      latencyMs,
+    };
+    const next = { ...couriers, [data.key]: { ...cfg, diagnostics } };
+    await context.supabase.from("stores").update({ couriers: next }).eq("id", (store as any).id);
+    return { ok: status === "connected", status, message, latencyMs };
   });
 
 const seoSchema = z.object({
