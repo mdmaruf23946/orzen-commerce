@@ -189,7 +189,7 @@ function CheckoutPage() {
           txnId: method === "cod" ? undefined : txnId,
           items: items.map((i) => ({ productId: i.productId, qty: i.qty })),
           couponCode: coupon?.code,
-          insideCity,
+          deliveryZoneId: zoneId ?? undefined,
           customerToken: customerToken ?? undefined,
           fingerprint: fingerprint || undefined,
           deviceId: deviceId || undefined,
