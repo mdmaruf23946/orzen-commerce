@@ -118,7 +118,7 @@ function PaymentGatewayPage() {
   const [openId, setOpenId] = useState<string | null>(null);
   const open = useMemo(() => data?.find((g) => g.provider_id === openId) ?? null, [openId, data]);
   const active = data?.find((g) => g.connection?.is_active) ?? null;
-  const activeBrand = active ? getBrand(active.provider_id) : null;
+  const activeBrand = active ? getBrand(active.provider_id, active as any) : null;
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["storePaymentGateways", storeId] });
 
@@ -244,7 +244,7 @@ function GatewayCard({
   const toggle = useServerFn(toggleStorePaymentGateway);
   const disconnect = useServerFn(disconnectStorePaymentGateway);
   const [busy, setBusy] = useState<string | null>(null);
-  const brand = getBrand(g.provider_id);
+  const brand = getBrand(g.provider_id, g as any);
   const status = computeStatus(g);
   const c = g.connection;
   const lastResult = c?.last_test_result as any;
@@ -563,7 +563,7 @@ function ConfigureForm({
   const save = useServerFn(saveStorePaymentGateway);
   const test = useServerFn(testStorePaymentGateway);
   const testHook = useServerFn(testStorePaymentWebhook);
-  const brand = getBrand(g.provider_id);
+  const brand = getBrand(g.provider_id, g as any);
   const hasExisting = !!g.connection?.has_credentials;
 
   const [creds, setCreds] = useState<Record<string, string>>(() =>

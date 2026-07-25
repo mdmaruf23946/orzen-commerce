@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Store as StoreIcon, Package, LogOut, Menu, ArrowLeft, ShieldCheck,
   Sparkles, Wallet, Users, CreditCard, Activity, Truck, Megaphone, ToggleLeft, Settings,
   UserCog, BarChart3, LifeBuoy, Bell, FileText, KeyRound, Webhook, Terminal, HardDrive,
-  ChevronDown, ChevronRight, Globe,
+  ChevronDown, ChevronRight, Globe, Palette,
 } from "lucide-react";
 import { amIOwner } from "@/lib/owner.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,6 +44,7 @@ const groups: NavGroup[] = [
     { to: "/owner/ads", label: "Advertisement Management", icon: Megaphone },
   ]},
   { label: "Platform", links: [
+    { to: "/owner/brand-assets", label: "Brand Assets", icon: Palette },
     { to: "/owner/store-template", label: "Store Template", icon: StoreIcon },
     { to: "/owner/features", label: "Feature Flags", icon: ToggleLeft },
     { to: "/owner/fraud", label: "Fraud Checker", icon: ShieldCheck },
