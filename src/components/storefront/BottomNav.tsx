@@ -73,7 +73,7 @@ export function BottomNav({ slug }: { slug: string }) {
       to: "/store/$slug/account",
       label: "Wishlist",
       icon: Heart,
-      active: pathname === `${base}/account` && /[?&]tab=wishlist(?:&|$)/.test(window.location?.search ?? ""),
+      active: pathname === `${base}/account` && /[?&]tab=wishlist(?:&|$)/.test(searchStr ?? ""),
       badge: wish,
       search: { tab: "wishlist" },
     },
