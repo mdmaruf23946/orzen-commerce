@@ -384,12 +384,25 @@ function StoreFooter({
     logo_url: string | null;
     phone: string | null;
     whatsapp: string | null;
+    email?: string | null;
     facebook: string | null;
+    instagram?: string | null;
+    youtube?: string | null;
+    tiktok?: string | null;
+    linkedin?: string | null;
+    website?: string | null;
     address: string | null;
     seo?: any;
   };
 }) {
-  const email = (store.seo && (store.seo.contact_email || store.seo.email)) || null;
+  const email = store.email || (store.seo && (store.seo.contact_email || store.seo.email)) || null;
+  const socials: { label: string; href: string; icon: any }[] = [];
+  if (store.facebook) socials.push({ label: "Facebook", href: store.facebook, icon: Facebook });
+  if (store.instagram) socials.push({ label: "Instagram", href: store.instagram, icon: MessageCircle });
+  if (store.youtube) socials.push({ label: "YouTube", href: store.youtube, icon: MessageCircle });
+  if (store.tiktok) socials.push({ label: "TikTok", href: store.tiktok, icon: MessageCircle });
+  if (store.linkedin) socials.push({ label: "LinkedIn", href: store.linkedin, icon: MessageCircle });
+  if (store.website) socials.push({ label: "Website", href: store.website, icon: MessageCircle });
   return (
     <footer
       id="contact"
@@ -436,16 +449,17 @@ function StoreFooter({
               <MessageCircle className="h-4 w-4" /> WhatsApp
             </a>
           )}
-          {store.facebook && (
+          {socials.map((s) => (
             <a
-              href={store.facebook}
+              key={s.label}
+              href={s.href}
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-2 text-white/80 hover:text-white"
             >
-              <Facebook className="h-4 w-4" /> Facebook
+              <s.icon className="h-4 w-4" /> {s.label}
             </a>
-          )}
+          ))}
         </div>
 
         <div id="policies" className="space-y-2 text-sm">

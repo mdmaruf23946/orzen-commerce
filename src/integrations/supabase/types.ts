@@ -3051,23 +3051,31 @@ export type Database = {
       stores: {
         Row: {
           address: string | null
+          allow_guest_checkout: boolean
           bkash_number: string | null
+          business_name: string | null
           button_color: string | null
           couriers: Json
           created_at: string
+          currency: string
           delivery: Json
           description: string | null
+          email: string | null
           expires_at: string | null
           facebook: string | null
           footer_color: string | null
           header_color: string | null
           id: string
+          instagram: string | null
+          language: string
           last_renewed_at: string | null
+          linkedin: string | null
           logo_url: string | null
           marketing: Json
           nagad_number: string | null
           name: string
           notifications: Json
+          owner_name: string | null
           owner_user_id: string
           package_id: string | null
           payments_config: Json
@@ -3080,32 +3088,46 @@ export type Database = {
           slug: string
           status: Database["public"]["Enums"]["store_status"]
           subscription_status: string
+          tax_number: string | null
           template_version: string | null
           theme: Json
+          tiktok: string | null
+          timezone: string
           title_bar_color: string | null
+          trade_license: string | null
           trial_ends_at: string | null
           updated_at: string
+          website: string | null
           whatsapp: string | null
+          youtube: string | null
         }
         Insert: {
           address?: string | null
+          allow_guest_checkout?: boolean
           bkash_number?: string | null
+          business_name?: string | null
           button_color?: string | null
           couriers?: Json
           created_at?: string
+          currency?: string
           delivery?: Json
           description?: string | null
+          email?: string | null
           expires_at?: string | null
           facebook?: string | null
           footer_color?: string | null
           header_color?: string | null
           id?: string
+          instagram?: string | null
+          language?: string
           last_renewed_at?: string | null
+          linkedin?: string | null
           logo_url?: string | null
           marketing?: Json
           nagad_number?: string | null
           name: string
           notifications?: Json
+          owner_name?: string | null
           owner_user_id: string
           package_id?: string | null
           payments_config?: Json
@@ -3118,32 +3140,46 @@ export type Database = {
           slug: string
           status?: Database["public"]["Enums"]["store_status"]
           subscription_status?: string
+          tax_number?: string | null
           template_version?: string | null
           theme?: Json
+          tiktok?: string | null
+          timezone?: string
           title_bar_color?: string | null
+          trade_license?: string | null
           trial_ends_at?: string | null
           updated_at?: string
+          website?: string | null
           whatsapp?: string | null
+          youtube?: string | null
         }
         Update: {
           address?: string | null
+          allow_guest_checkout?: boolean
           bkash_number?: string | null
+          business_name?: string | null
           button_color?: string | null
           couriers?: Json
           created_at?: string
+          currency?: string
           delivery?: Json
           description?: string | null
+          email?: string | null
           expires_at?: string | null
           facebook?: string | null
           footer_color?: string | null
           header_color?: string | null
           id?: string
+          instagram?: string | null
+          language?: string
           last_renewed_at?: string | null
+          linkedin?: string | null
           logo_url?: string | null
           marketing?: Json
           nagad_number?: string | null
           name?: string
           notifications?: Json
+          owner_name?: string | null
           owner_user_id?: string
           package_id?: string | null
           payments_config?: Json
@@ -3156,12 +3192,18 @@ export type Database = {
           slug?: string
           status?: Database["public"]["Enums"]["store_status"]
           subscription_status?: string
+          tax_number?: string | null
           template_version?: string | null
           theme?: Json
+          tiktok?: string | null
+          timezone?: string
           title_bar_color?: string | null
+          trade_license?: string | null
           trial_ends_at?: string | null
           updated_at?: string
+          website?: string | null
           whatsapp?: string | null
+          youtube?: string | null
         }
         Relationships: [
           {
@@ -3767,6 +3809,17 @@ export type Database = {
       get_fraud_public_status: { Args: never; Returns: Json }
       get_messenger_daily_stats: { Args: { _store_id: string }; Returns: Json }
       get_my_active_ads: { Args: never; Returns: Json }
+      get_public_delivery_zones: {
+        Args: { _store_id: string }
+        Returns: {
+          charge: number
+          eta: string
+          id: string
+          is_default: boolean
+          name: string
+          sort_order: number
+        }[]
+      }
       get_public_order: { Args: { _order_id: string }; Returns: Json }
       get_public_store_by_slug: { Args: { _slug: string }; Returns: Json }
       get_store_bestsellers: {
