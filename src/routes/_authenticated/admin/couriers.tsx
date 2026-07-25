@@ -1,83 +1,135 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { FeatureGate } from "@/components/admin/FeatureGate";
-import { updateCouriers } from "@/lib/admin.functions";
-import { SettingsPage } from "@/components/admin/SettingsPage";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { getMyStore, updateCouriers, testCourierConnection } from "@/lib/admin.functions";
+import { CourierCard } from "@/components/admin/couriers/CourierCard";
+import {
+  COURIERS,
+  emptyConfig,
+  type CourierConfig,
+  type CourierKey,
+} from "@/components/admin/couriers/providers";
 
 export const Route = createFileRoute("/_authenticated/admin/couriers")({
-  component: () => <FeatureGate feature="courier"><CouriersPage /></FeatureGate>,
+  component: () => (
+    <FeatureGate feature="courier">
+      <CouriersPage />
+    </FeatureGate>
+  ),
 });
 
-const providers = [
-  { key: "steadfast", label: "SteadFast" },
-  { key: "pathao", label: "Pathao Courier" },
-  { key: "redx", label: "RedX" },
-  { key: "paperfly", label: "Paperfly" },
-] as const;
+type FormState = Record<CourierKey, CourierConfig>;
 
-type Provider = { api_key?: string; secret?: string; base_url?: string; enabled?: boolean };
-const defaults = {
-  steadfast: {} as Provider,
-  pathao: {} as Provider,
-  redx: {} as Provider,
-  paperfly: {} as Provider,
+const defaultForm: FormState = {
+  steadfast: { ...emptyConfig },
+  pathao: { ...emptyConfig },
+  redx: { ...emptyConfig },
+  paperfly: { ...emptyConfig },
 };
 
 function CouriersPage() {
+  const fetchStore = useServerFn(getMyStore);
+  const saveFn = useServerFn(updateCouriers);
+  const testFn = useServerFn(testCourierConnection);
+  const qc = useQueryClient();
+
+  const { data: store } = useQuery({
+    queryKey: ["admin", "store"],
+    queryFn: () => fetchStore(),
+  });
+
+  const [form, setForm] = useState<FormState | null>(null);
+  const [saving, setSaving] = useState<CourierKey | null>(null);
+  const [testing, setTesting] = useState<CourierKey | null>(null);
+
+  useEffect(() => {
+    if (!store) return;
+    const c = (store as any).couriers ?? {};
+    setForm({
+      steadfast: { ...emptyConfig, ...(c.steadfast ?? {}) },
+      pathao: { ...emptyConfig, ...(c.pathao ?? {}) },
+      redx: { ...emptyConfig, ...(c.redx ?? {}) },
+      paperfly: { ...emptyConfig, ...(c.paperfly ?? {}) },
+    });
+  }, [store]);
+
+  if (!form) {
+    return <div className="text-sm text-muted-foreground">Loading…</div>;
+  }
+
+  function updateOne(key: CourierKey, next: CourierConfig) {
+    setForm((f) => (f ? { ...f, [key]: next } : f));
+  }
+
+  function setDefault(key: CourierKey) {
+    setForm((f) => {
+      if (!f) return f;
+      const out = { ...f };
+      (Object.keys(out) as CourierKey[]).forEach((k) => {
+        out[k] = { ...out[k], is_default: k === key };
+      });
+      return out;
+    });
+  }
+
+  async function save(key: CourierKey) {
+    if (!form) return;
+    setSaving(key);
+    try {
+      await saveFn({ data: form });
+      qc.invalidateQueries({ queryKey: ["admin", "store"] });
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  async function test(key: CourierKey) {
+    if (!form) return;
+    // Persist any unsaved credentials first so the server test uses them.
+    setTesting(key);
+    try {
+      await saveFn({ data: form });
+      const res = await testFn({ data: { key } });
+      if (res.ok) toast.success(`${key}: ${res.message} · ${res.latencyMs}ms`);
+      else toast.error(`${key}: ${res.message}`);
+      qc.invalidateQueries({ queryKey: ["admin", "store"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setTesting(null);
+    }
+  }
+
+  const enabledCount = (Object.values(form) as CourierConfig[]).filter((c) => c.enabled).length;
+
   return (
-    <SettingsPage
-      title="Courier Integration"
-      description="Connect couriers to create parcels and sync delivery status. Adapters ship as we add support."
-      column="couriers"
-      save={updateCouriers}
-      defaults={defaults}
-    >
-      {(form, set) => (
-        <div className="space-y-6">
-          {providers.map((p) => {
-            const cur: Provider = (form as any)[p.key] ?? {};
-            const update = (patch: Partial<Provider>) => set(p.key as any, { ...cur, ...patch } as any);
-            return (
-              <div key={p.key} className="space-y-3 rounded-lg border p-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold">{p.label}</h3>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    Enabled
-                    <Switch
-                      checked={!!cur.enabled}
-                      onCheckedChange={(v) => update({ enabled: v })}
-                    />
-                  </div>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label>API Key</Label>
-                    <Input value={cur.api_key ?? ""} onChange={(e) => update({ api_key: e.target.value })} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Secret</Label>
-                    <Input
-                      type="password"
-                      value={cur.secret ?? ""}
-                      onChange={(e) => update({ secret: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Base URL (optional)</Label>
-                  <Input
-                    value={cur.base_url ?? ""}
-                    onChange={(e) => update({ base_url: e.target.value })}
-                    placeholder="https://"
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </SettingsPage>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold">Courier Integration</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Connect couriers to create parcels and sync delivery status. {enabledCount} enabled ·{" "}
+          {COURIERS.length} available.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {COURIERS.map((meta) => (
+          <CourierCard
+            key={meta.key}
+            meta={meta}
+            value={form[meta.key]}
+            onChange={(next) => updateOne(meta.key, next)}
+            onSave={() => save(meta.key)}
+            onTest={() => test(meta.key)}
+            onSetDefault={() => setDefault(meta.key)}
+            saving={saving === meta.key}
+            testing={testing === meta.key}
+          />
+        ))}
+      </div>
+    </div>
   );
 }

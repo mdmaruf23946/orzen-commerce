@@ -1,69 +1,88 @@
 ## Goal
 
-Redesign `/admin/settings` into a clean, sectioned Store Settings page with cards, sticky Save bar, and the new fields listed — without touching sidebar menus or duplicating features that live elsewhere (Invoice numbering, Delivery, Payments, Theme colors, Marketing, SEO, Legal etc. stay where they are).
+Redesign `/admin/couriers` into a professional courier management dashboard while preserving the existing `updateCouriers` save flow and every current field (`api_key`, `secret`, `base_url`, `enabled`).
 
-## Scope check vs current page
+## Scope
 
-The existing page currently mixes: Branding, Contact, Mobile wallet, Customer accounts (Require login), Invoice numbering, Danger zone. The redesign will:
+- Extends the `couriers` JSON column shape on `stores` (already a JSON blob — no schema migration).
+- No changes to the sidebar, plan gating, or the `owner/couriers` global provider registry.
+- Only touches: `src/lib/admin.functions.ts`, `src/routes/_authenticated/admin/couriers.tsx`, and new components under `src/components/admin/couriers/`.
 
-- Keep: Store Identity, Contact, Customer login setting, Danger zone (with confirm — already present).
-- Move OUT of this page: Mobile wallet fields (belong in Payment Gateway module) and Invoice numbering card (already has its own settings surface; keep only if user wants — see Q1). Header/title-bar/footer/button colors already live in Theme page and are not re-added here.
-- Add: Social Links (Instagram, YouTube, TikTok, LinkedIn, Website), Business Information, Localization, Guest Checkout toggle, Email address.
+## Provider Registry (frontend metadata)
 
-## Database changes (one migration)
+New file `src/components/admin/couriers/providers.ts` defines each courier's official branding and capability flags so unsupported fields hide automatically:
 
-Add nullable columns to `public.stores`:
+```ts
+{
+  key, label, brandColor, logoUrl,
+  supports: {
+    sandbox, subCity, pickupPoint, exchange, return,
+    autoParcel, autoStatus, autoTracking, autoLabel, autoSms, autoNotify,
+  }
+}
+```
 
-- `email text`, `instagram text`, `youtube text`, `tiktok text`, `linkedin text`, `website text`
-- `business_name text`, `owner_name text`, `trade_license text`, `tax_number text`
-- `currency text default 'BDT'`, `language text default 'en'`, `timezone text default 'Asia/Dhaka'`
-- `allow_guest_checkout boolean default true`
+Providers: SteadFast, Pathao, RedX, Paperfly (same set as today). Logos as inline SVG components so no asset fetch.
 
-No new tables, no RLS changes (existing owner policies cover these).
+## Data shape (per provider, saved into `stores.couriers[key]`)
 
-## Server functions
+Extends the existing `{ api_key, secret, base_url, enabled }` with optional fields — all backward-compatible:
 
-Update `updateMyStore` in `src/lib/admin.functions.ts`:
-- Extend Zod schema with the new optional fields.
-- Persist them in the update payload.
-- Keep existing fields (name, slug, logo, phone, whatsapp, facebook, address, primary_color, bkash/nagad) working — bkash/nagad remain writable via API for backward compat; only the UI moves.
+- `sandbox: boolean`, `is_default: boolean`
+- `shipping: { insideCity, outsideCity, subCity, cod, home, pickupPoint, return, exchange, priority }`
+- `pickup: { contactName, phone, address, district, area, instructions }`
+- `automation: { autoParcel, autoStatus, autoTracking, autoLabel, autoSms, autoNotify }`
+- `diagnostics: { lastConnectedAt, lastStatus, lastError, lastResponse }` (updated by Test Connection)
 
-Storefront helper `getPublicStoreBySlug` / storefront queries: extend safe-column projection to include the new social links + currency + language so the storefront can hide empty ones automatically.
+## Server changes (`src/lib/admin.functions.ts`)
 
-## UI: `src/routes/_authenticated/admin/settings.tsx`
+1. Expand `courierProvider` Zod schema with the optional fields above (all `.optional()` so existing rows keep working).
+2. Add `testCourierConnection` server function:
+   - `.middleware([requireSupabaseAuth])`, plan-gated `courier`.
+   - Input: `{ key: 'steadfast' | 'pathao' | 'redx' | 'paperfly' }`.
+   - Reads the store's stored credentials, does a lightweight auth ping (GET `base_url` or provider-specific balance endpoint when known; generic HEAD fallback), then writes `diagnostics` back into `stores.couriers[key]` and returns `{ ok, status, latencyMs, message }`.
+   - No adapters shipped yet — this is a network reachability + auth-header ping; provider-specific adapters slot in later without UI changes.
 
-Rewrite the page structure. One `<form>` with a sticky bottom Save bar (mobile + desktop). Sections rendered as cards with icon + heading + description:
+## UI (`src/routes/_authenticated/admin/couriers.tsx`)
 
-1. **Store Identity** — logo uploader, name*, slug*, description, primary color (picker + hex).
-2. **Contact Information** — phone, whatsapp, email, address.
-3. **Social Links** — facebook, instagram, youtube, tiktok, linkedin, website. Note under card: "Empty links are automatically hidden on your storefront."
-4. **Business Information** — business_name, owner_name, trade_license, tax_number.
-5. **Customer Login Settings** — three switches: Enable customer accounts (existing `require_customer_login` inverse + new dedicated toggle — see Q2), Allow guest checkout, Require login before checkout (uses existing `adminSetRequireCustomerLogin`).
-6. **Localization** — currency select (BDT/USD/EUR/GBP/INR + free text), language select (en/bn), timezone select (common list).
-7. **Danger Zone** — unchanged Reset to Default Template with existing AlertDialog.
+Replaces the current single form with a card grid built from the registry. Wrapped in `FeatureGate feature="courier"` (unchanged).
 
-Sticky save bar: `sticky bottom-0` container with backdrop blur, showing "Save changes" button (loading state) and unsaved-changes indicator. Zod client validation for required fields (name, slug). Toast on success/error (already wired via sonner).
+Each card (`<CourierCard/>` new component):
 
-Storefront: `src/components/storefront/*` footer/social bar reads new fields and skips falsy ones (single-line change wherever social links render).
+- Header: brand logo + name, `Verified` badge, `Connected`/`Disconnected` chip driven by `diagnostics.lastStatus`, colored accent bar in `brandColor`.
+- Enable/Disable switch + Default toggle (only one default at a time — set locally when saving).
+- Collapsible sections (accordion, all closed by default on mobile):
+  1. **Credentials** — API Key, Secret Key, Base URL, Sandbox switch (hidden when `!supports.sandbox`), Test Connection, Save.
+  2. **Shipping options** — the switches/inputs from the spec; each hidden when the provider's `supports.*` is false.
+  3. **Pickup information** — contact name, phone, address, district, area, instructions.
+  4. **Advanced automation** — only rendered flags the provider supports.
+  5. **Diagnostics** — API status, auth status, last sync, last response (pretty JSON, collapsed), last error, Retry button (re-runs `testCourierConnection`).
+- Last Connected time formatted with existing date util.
+
+Reusable pieces under `src/components/admin/couriers/`:
+- `providers.ts` (registry)
+- `CourierCard.tsx`
+- `CourierDiagnostics.tsx`
+- `BrandBadge.tsx`
+
+Save behavior stays the same: form-level state per card, `updateCouriers` receives the full `couriers` object (merge of all four cards) so existing rows continue to load.
+
+## Responsive / a11y
+
+- Grid: 1 col mobile, 2 cols `lg`, keeps existing padding.
+- All toggles use existing `Switch`; sections use existing `Accordion` primitives.
+- Sticky per-card Save button on mobile, inline on desktop.
+
+## Out of scope
+
+- Real provider SDK integrations (parcel creation, tracking sync). The automation toggles persist intent; adapters land in a follow-up.
+- Any change to owner-level global courier providers page.
 
 ## Files touched
 
-- Migration (add columns).
-- `src/lib/admin.functions.ts` — extend `updateMyStore` schema + payload.
-- `src/lib/storefront.functions.ts` — extend public store projection.
-- `src/routes/_authenticated/admin/settings.tsx` — full redesign.
-- Storefront social/footer component — hide-empty logic (one file, once identified).
-
-## Out of scope (explicit)
-
-- Invoice numbering card (has its own settings). See Q1.
-- Mobile wallet numbers (owned by Payment Gateway module).
-- Theme colors beyond Primary (owned by Theme page).
-- No sidebar changes.
-
-## Questions
-
-Q1. Should the existing **Invoice numbering** card stay on this page, or move out (it's operational config, not "general store settings")?
-Q2. "Enable/Disable Customer Account Login" vs existing "Require login before checkout" — treat as two independent switches (enable accounts feature + separately require login), or is "Enable accounts" just a rename of the existing toggle?
-
-If you're fine with: keep Invoice card in place (Q1 = keep) and treat customer-accounts as a single existing toggle (Q2 = same), I'll proceed with that default.
+- `src/lib/admin.functions.ts` — extend schema, add `testCourierConnection`.
+- `src/routes/_authenticated/admin/couriers.tsx` — full rewrite of the page body.
+- `src/components/admin/couriers/providers.ts` (new)
+- `src/components/admin/couriers/CourierCard.tsx` (new)
+- `src/components/admin/couriers/CourierDiagnostics.tsx` (new)
+- `src/components/admin/couriers/BrandBadge.tsx` (new)
