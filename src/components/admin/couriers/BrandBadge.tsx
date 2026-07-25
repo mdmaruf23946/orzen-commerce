@@ -1,13 +1,37 @@
 import { CheckCircle2, ShieldCheck, XCircle } from "lucide-react";
 import type { CourierMeta } from "./providers";
 
-export function BrandBadge({ meta }: { meta: CourierMeta }) {
+export function BrandBadge({ meta, logoUrl }: { meta: CourierMeta; logoUrl?: string | null }) {
   const initials = meta.label
     .split(" ")
     .map((w) => w[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
+
+  const src = logoUrl
+    ? logoUrl.startsWith("http")
+      ? logoUrl
+      : `/api/img/${logoUrl}`
+    : null;
+
+  if (src) {
+    return (
+      <div
+        className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-white p-1 shadow-sm dark:bg-white/95"
+        aria-label={meta.label}
+      >
+        <img
+          src={src}
+          alt={meta.label}
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-contain"
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white shadow-sm"
