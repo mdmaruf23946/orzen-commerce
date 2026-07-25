@@ -792,8 +792,6 @@ export const updateSeo = createServerFn({ method: "POST" })
   );
 
 const deliverySchema = z.object({
-  inside_city: z.number().nonnegative().optional(),
-  outside_city: z.number().nonnegative().optional(),
   free_min: z.number().nonnegative().optional(),
   cod_enabled: z.boolean().optional(),
 });
@@ -803,6 +801,129 @@ export const updateDelivery = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) =>
     updateStoreColumn(context.supabase, context.userId, "delivery", data),
   );
+
+// ---------- Delivery Zones ----------
+
+async function getOwnedStoreId(sb: any, userId: string): Promise<string> {
+  const { data, error } = await sb
+    .from("stores")
+    .select("id")
+    .eq("owner_user_id", userId)
+    .maybeSingle();
+  if (error || !data) throw new Error("Store not found");
+  return data.id as string;
+}
+
+export const listDeliveryZones = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const storeId = await getOwnedStoreId(context.supabase, context.userId);
+    const { data, error } = await context.supabase
+      .from("delivery_zones")
+      .select("id,name,charge,eta,is_active,is_default,sort_order,courier_code")
+      .eq("store_id", storeId)
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+const zoneUpsertSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  charge: z.number().nonnegative(),
+  eta: z.string().trim().max(60).optional().nullable(),
+  is_active: z.boolean().optional(),
+  is_default: z.boolean().optional(),
+});
+
+export const createDeliveryZone = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => zoneUpsertSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const storeId = await getOwnedStoreId(context.supabase, context.userId);
+    if (data.is_default) {
+      await context.supabase
+        .from("delivery_zones")
+        .update({ is_default: false })
+        .eq("store_id", storeId);
+    }
+    const { data: row, error } = await context.supabase
+      .from("delivery_zones")
+      .insert({
+        store_id: storeId,
+        name: data.name,
+        charge: data.charge,
+        eta: data.eta ?? null,
+        is_active: data.is_active ?? true,
+        is_default: data.is_default ?? false,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
+export const updateDeliveryZone = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    zoneUpsertSchema.partial().extend({ id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const storeId = await getOwnedStoreId(context.supabase, context.userId);
+    if (data.is_default) {
+      await context.supabase
+        .from("delivery_zones")
+        .update({ is_default: false })
+        .eq("store_id", storeId)
+        .neq("id", data.id);
+    }
+    const patch: Record<string, any> = {};
+    if (data.name !== undefined) patch.name = data.name;
+    if (data.charge !== undefined) patch.charge = data.charge;
+    if (data.eta !== undefined) patch.eta = data.eta;
+    if (data.is_active !== undefined) patch.is_active = data.is_active;
+    if (data.is_default !== undefined) patch.is_default = data.is_default;
+    const { error } = await context.supabase
+      .from("delivery_zones")
+      .update(patch)
+      .eq("id", data.id)
+      .eq("store_id", storeId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteDeliveryZone = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const storeId = await getOwnedStoreId(context.supabase, context.userId);
+    const { error } = await context.supabase
+      .from("delivery_zones")
+      .delete()
+      .eq("id", data.id)
+      .eq("store_id", storeId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const setDefaultDeliveryZone = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const storeId = await getOwnedStoreId(context.supabase, context.userId);
+    await context.supabase
+      .from("delivery_zones")
+      .update({ is_default: false })
+      .eq("store_id", storeId);
+    const { error } = await context.supabase
+      .from("delivery_zones")
+      .update({ is_default: true })
+      .eq("id", data.id)
+      .eq("store_id", storeId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 
 const paymentMethod = z.object({
   enabled: z.boolean().optional(),
