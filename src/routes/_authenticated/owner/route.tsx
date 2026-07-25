@@ -44,6 +44,7 @@ const groups: NavGroup[] = [
     { to: "/owner/ads", label: "Advertisement Management", icon: Megaphone },
   ]},
   { label: "Platform", links: [
+    { to: "/owner/brand-assets", label: "Brand Assets", icon: Palette },
     { to: "/owner/store-template", label: "Store Template", icon: StoreIcon },
     { to: "/owner/features", label: "Feature Flags", icon: ToggleLeft },
     { to: "/owner/fraud", label: "Fraud Checker", icon: ShieldCheck },
