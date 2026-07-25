@@ -143,23 +143,36 @@ export const upsertCourier = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({
     id: z.string().uuid().optional(),
     name: z.string().min(1).max(80),
-    code: z.string().min(1).max(40),
+    code: z.string().min(1).max(40).regex(/^[a-z0-9_-]+$/i, "Only letters, numbers, dash, underscore"),
     base_url: z.string().max(300).nullish(),
     api_key: z.string().max(500).nullish(),
     clear_api_key: z.boolean().optional(),
     logo_url: z.string().max(500).nullish(),
+    dark_logo_url: z.string().max(500).nullish(),
+    favicon_url: z.string().max(500).nullish(),
     is_default: z.boolean().default(false),
     is_active: z.boolean().default(true),
     brand_color: z.string().max(20).nullish(),
     secondary_color: z.string().max(20).nullish(),
     icon_bg_color: z.string().max(20).nullish(),
-    description: z.string().max(500).nullish(),
+    description: z.string().max(1000).nullish(),
+    website_url: z.string().max(300).nullish(),
+    docs_url: z.string().max(300).nullish(),
+    support_url: z.string().max(300).nullish(),
+    sort_order: z.number().int().min(0).max(9999).default(100),
     config: z.record(z.string(), z.any()).default({}),
   }).parse(d))
   .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId);
     const sb: any = context.supabase;
     const { id, clear_api_key, api_key, ...rest } = data;
+
+    // Duplicate name check (case-insensitive) excluding self
+    const { data: dupes } = await sb.from("courier_providers").select("id").ilike("name", rest.name);
+    if ((dupes ?? []).some((r: any) => r.id !== id)) {
+      throw new Error("A courier with this name already exists");
+    }
+
     const patch: any = { ...rest };
     if (clear_api_key) patch.api_key = null;
     else if (api_key) patch.api_key = api_key;
@@ -167,11 +180,23 @@ export const upsertCourier = createServerFn({ method: "POST" })
     if (id) {
       const { error } = await sb.from("courier_providers").update(patch).eq("id", id);
       if (error) throw new Error(error.message);
+      return { ok: true, id };
     } else {
-      const { error } = await sb.from("courier_providers").insert(patch);
+      const { data: ins, error } = await sb.from("courier_providers").insert(patch).select("id").single();
       if (error) throw new Error(error.message);
+      return { ok: true, id: ins?.id };
     }
-    return { ok: true };
+  });
+
+export const checkCourierNameAvailable = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ name: z.string().min(1).max(80), id: z.string().uuid().optional() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { data: rows } = await (context.supabase as any)
+      .from("courier_providers").select("id").ilike("name", data.name);
+    const taken = (rows ?? []).some((r: any) => r.id !== data.id);
+    return { available: !taken };
   });
 
 

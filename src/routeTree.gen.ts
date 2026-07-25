@@ -54,6 +54,7 @@ import { Route as AuthenticatedOwnerDomainsRouteImport } from './routes/_authent
 import { Route as AuthenticatedOwnerDevLogsRouteImport } from './routes/_authenticated/owner/dev-logs'
 import { Route as AuthenticatedOwnerCustomersRouteImport } from './routes/_authenticated/owner/customers'
 import { Route as AuthenticatedOwnerCouriersRouteImport } from './routes/_authenticated/owner/couriers'
+import { Route as AuthenticatedOwnerCourierBrandAssetsRouteImport } from './routes/_authenticated/owner/courier-brand-assets'
 import { Route as AuthenticatedOwnerBrandAssetsRouteImport } from './routes/_authenticated/owner/brand-assets'
 import { Route as AuthenticatedOwnerBillingRouteImport } from './routes/_authenticated/owner/billing'
 import { Route as AuthenticatedOwnerBackupsRouteImport } from './routes/_authenticated/owner/backups'
@@ -356,6 +357,12 @@ const AuthenticatedOwnerCouriersRoute =
   AuthenticatedOwnerCouriersRouteImport.update({
     id: '/couriers',
     path: '/couriers',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerCourierBrandAssetsRoute =
+  AuthenticatedOwnerCourierBrandAssetsRouteImport.update({
+    id: '/courier-brand-assets',
+    path: '/courier-brand-assets',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
 const AuthenticatedOwnerBrandAssetsRoute =
@@ -758,6 +765,7 @@ export interface FileRoutesByFullPath {
   '/owner/backups': typeof AuthenticatedOwnerBackupsRoute
   '/owner/billing': typeof AuthenticatedOwnerBillingRoute
   '/owner/brand-assets': typeof AuthenticatedOwnerBrandAssetsRoute
+  '/owner/courier-brand-assets': typeof AuthenticatedOwnerCourierBrandAssetsRoute
   '/owner/couriers': typeof AuthenticatedOwnerCouriersRoute
   '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
@@ -858,6 +866,7 @@ export interface FileRoutesByTo {
   '/owner/backups': typeof AuthenticatedOwnerBackupsRoute
   '/owner/billing': typeof AuthenticatedOwnerBillingRoute
   '/owner/brand-assets': typeof AuthenticatedOwnerBrandAssetsRoute
+  '/owner/courier-brand-assets': typeof AuthenticatedOwnerCourierBrandAssetsRoute
   '/owner/couriers': typeof AuthenticatedOwnerCouriersRoute
   '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
@@ -965,6 +974,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/backups': typeof AuthenticatedOwnerBackupsRoute
   '/_authenticated/owner/billing': typeof AuthenticatedOwnerBillingRoute
   '/_authenticated/owner/brand-assets': typeof AuthenticatedOwnerBrandAssetsRoute
+  '/_authenticated/owner/courier-brand-assets': typeof AuthenticatedOwnerCourierBrandAssetsRoute
   '/_authenticated/owner/couriers': typeof AuthenticatedOwnerCouriersRoute
   '/_authenticated/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/_authenticated/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
@@ -1072,6 +1082,7 @@ export interface FileRouteTypes {
     | '/owner/backups'
     | '/owner/billing'
     | '/owner/brand-assets'
+    | '/owner/courier-brand-assets'
     | '/owner/couriers'
     | '/owner/customers'
     | '/owner/dev-logs'
@@ -1172,6 +1183,7 @@ export interface FileRouteTypes {
     | '/owner/backups'
     | '/owner/billing'
     | '/owner/brand-assets'
+    | '/owner/courier-brand-assets'
     | '/owner/couriers'
     | '/owner/customers'
     | '/owner/dev-logs'
@@ -1278,6 +1290,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/backups'
     | '/_authenticated/owner/billing'
     | '/_authenticated/owner/brand-assets'
+    | '/_authenticated/owner/courier-brand-assets'
     | '/_authenticated/owner/couriers'
     | '/_authenticated/owner/customers'
     | '/_authenticated/owner/dev-logs'
@@ -1664,6 +1677,13 @@ declare module '@tanstack/react-router' {
       path: '/couriers'
       fullPath: '/owner/couriers'
       preLoaderRoute: typeof AuthenticatedOwnerCouriersRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/courier-brand-assets': {
+      id: '/_authenticated/owner/courier-brand-assets'
+      path: '/courier-brand-assets'
+      fullPath: '/owner/courier-brand-assets'
+      preLoaderRoute: typeof AuthenticatedOwnerCourierBrandAssetsRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/owner/brand-assets': {
@@ -2221,6 +2241,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerBackupsRoute: typeof AuthenticatedOwnerBackupsRoute
   AuthenticatedOwnerBillingRoute: typeof AuthenticatedOwnerBillingRoute
   AuthenticatedOwnerBrandAssetsRoute: typeof AuthenticatedOwnerBrandAssetsRoute
+  AuthenticatedOwnerCourierBrandAssetsRoute: typeof AuthenticatedOwnerCourierBrandAssetsRoute
   AuthenticatedOwnerCouriersRoute: typeof AuthenticatedOwnerCouriersRoute
   AuthenticatedOwnerCustomersRoute: typeof AuthenticatedOwnerCustomersRoute
   AuthenticatedOwnerDevLogsRoute: typeof AuthenticatedOwnerDevLogsRoute
@@ -2259,6 +2280,8 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerBackupsRoute: AuthenticatedOwnerBackupsRoute,
     AuthenticatedOwnerBillingRoute: AuthenticatedOwnerBillingRoute,
     AuthenticatedOwnerBrandAssetsRoute: AuthenticatedOwnerBrandAssetsRoute,
+    AuthenticatedOwnerCourierBrandAssetsRoute:
+      AuthenticatedOwnerCourierBrandAssetsRoute,
     AuthenticatedOwnerCouriersRoute: AuthenticatedOwnerCouriersRoute,
     AuthenticatedOwnerCustomersRoute: AuthenticatedOwnerCustomersRoute,
     AuthenticatedOwnerDevLogsRoute: AuthenticatedOwnerDevLogsRoute,
@@ -2360,13 +2383,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
