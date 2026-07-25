@@ -1466,3 +1466,13 @@ export const adminGetRequireCustomerLogin = createServerFn({ method: "GET" })
       .maybeSingle();
     return { enabled: !!(data as any)?.require_customer_login };
   });
+
+// Public list of couriers (name/code/logo only) for any signed-in store owner.
+export const listPublicCourierProviders = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await (context.supabase as any).rpc("get_public_courier_providers");
+    if (error) throw new Error(error.message);
+    return (data ?? []) as Array<{ code: string; name: string; logo_url: string | null; is_active: boolean }>;
+  });
+

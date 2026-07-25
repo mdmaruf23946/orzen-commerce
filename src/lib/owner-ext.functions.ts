@@ -147,6 +147,7 @@ export const upsertCourier = createServerFn({ method: "POST" })
     base_url: z.string().max(300).nullish(),
     api_key: z.string().max(500).nullish(),
     clear_api_key: z.boolean().optional(),
+    logo_url: z.string().max(500).nullish(),
     is_default: z.boolean().default(false),
     is_active: z.boolean().default(true),
     config: z.record(z.string(), z.any()).default({}),
@@ -168,6 +169,7 @@ export const upsertCourier = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
+
 
 export const deleteCourier = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

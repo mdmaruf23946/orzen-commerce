@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { FeatureGate } from "@/components/admin/FeatureGate";
-import { getMyStore, updateCouriers, testCourierConnection } from "@/lib/admin.functions";
+import { getMyStore, updateCouriers, testCourierConnection, listPublicCourierProviders } from "@/lib/admin.functions";
 import { CourierCard } from "@/components/admin/couriers/CourierCard";
 import {
   COURIERS,
@@ -34,12 +34,25 @@ function CouriersPage() {
   const fetchStore = useServerFn(getMyStore);
   const saveFn = useServerFn(updateCouriers);
   const testFn = useServerFn(testCourierConnection);
+  const fetchProviders = useServerFn(listPublicCourierProviders);
   const qc = useQueryClient();
 
   const { data: store } = useQuery({
     queryKey: ["admin", "store"],
     queryFn: () => fetchStore(),
   });
+
+  const { data: providers } = useQuery({
+    queryKey: ["courier-providers-public"],
+    queryFn: () => fetchProviders(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const logoByCode: Record<string, string | null> = {};
+  for (const p of (providers ?? []) as Array<{ code: string; logo_url: string | null }>) {
+    logoByCode[p.code] = p.logo_url;
+  }
+
 
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState<CourierKey | null>(null);
@@ -127,6 +140,7 @@ function CouriersPage() {
             onSetDefault={() => setDefault(meta.key)}
             saving={saving === meta.key}
             testing={testing === meta.key}
+            logoUrl={logoByCode[meta.key] ?? null}
           />
         ))}
       </div>

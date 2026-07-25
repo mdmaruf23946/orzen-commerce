@@ -29,6 +29,7 @@ type Props = {
   onSetDefault: () => void;
   saving?: boolean;
   testing?: boolean;
+  logoUrl?: string | null;
 };
 
 export function CourierCard({
@@ -40,7 +41,9 @@ export function CourierCard({
   onSetDefault,
   saving,
   testing,
+  logoUrl,
 }: Props) {
+
   const cfg = { ...emptyConfig, ...value } as CourierConfig;
   const set = (patch: Partial<CourierConfig>) => onChange({ ...cfg, ...patch });
   const setShipping = (patch: Partial<NonNullable<CourierConfig["shipping"]>>) =>
@@ -78,7 +81,7 @@ export function CourierCard({
       style={{ borderTop: `3px solid ${meta.brandColor}` }}
     >
       <div className="flex flex-wrap items-start gap-3 border-b p-4">
-        <BrandBadge meta={meta} />
+        <BrandBadge meta={meta} logoUrl={logoUrl} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="truncate text-base font-semibold">{meta.label}</h3>

@@ -1,88 +1,42 @@
-## Goal
+## Central Courier Logo Management
 
-Redesign `/admin/couriers` into a professional courier management dashboard while preserving the existing `updateCouriers` save flow and every current field (`api_key`, `secret`, `base_url`, `enabled`).
+Add a centrally-managed logo for each courier provider (Winner Admin) that automatically appears in every Store Admin's Courier Integration card.
 
-## Scope
+### Database
+- Migration on `public.courier_providers`: add `logo_url text` column.
+- Add public read RPC `get_public_courier_providers()` returning `code, name, logo_url` (SECURITY DEFINER) so all store owners can read logos without exposing API keys.
+- Grant EXECUTE to `authenticated`.
 
-- Extends the `couriers` JSON column shape on `stores` (already a JSON blob — no schema migration).
-- No changes to the sidebar, plan gating, or the `owner/couriers` global provider registry.
-- Only touches: `src/lib/admin.functions.ts`, `src/routes/_authenticated/admin/couriers.tsx`, and new components under `src/components/admin/couriers/`.
+### Storage
+- Reuse existing `store-assets` bucket under a `courier-logos/` prefix (Owner-only write policy already covered by owner role check performed in the server function using `supabaseAdmin`). Files served via signed/public URL — since bucket is private, we generate a long-lived public read policy for the `courier-logos/` prefix only.
+- Add a storage RLS policy: allow anyone (anon+authenticated) SELECT on objects where `bucket_id = 'store-assets' AND name LIKE 'courier-logos/%'`.
 
-## Provider Registry (frontend metadata)
+### Winner Admin (Owner) — `src/routes/_authenticated/owner/couriers.tsx`
+- Extend the edit dialog with a Logo Upload field (drag/click).
+- On selection: compress client-side via existing `src/lib/compress-image.ts` (max 512px, WebP, quality 0.9) → upload to `store-assets/courier-logos/{code}-{timestamp}.webp` → save returned URL into `logo_url` via `upsertCourier`.
+- Show current logo preview + Remove button.
+- Extend `upsertCourier` server function to accept `logo_url` and persist it.
+- Extend `listCouriers` to return `logo_url`.
 
-New file `src/components/admin/couriers/providers.ts` defines each courier's official branding and capability flags so unsupported fields hide automatically:
+### Store Admin — `src/components/admin/couriers/CourierCard.tsx` + `BrandBadge.tsx`
+- Fetch central provider list via new `getPublicCourierProviders()` server function (cached with react-query, key `["courier-providers-public"]`, staleTime 5 min).
+- Pass `logoUrl` into `CourierCard` and `BrandBadge`.
+- `BrandBadge`: if `logoUrl` present render `<img>` with `object-contain` on a white/neutral rounded tile that works in both light and dark mode (e.g. `bg-white dark:bg-white/90` with subtle border). Fallback to the existing letter avatar when no logo is set.
+- Add `loading="lazy"` and `decoding="async"` for performance.
 
-```ts
-{
-  key, label, brandColor, logoUrl,
-  supports: {
-    sandbox, subCity, pickupPoint, exchange, return,
-    autoParcel, autoStatus, autoTracking, autoLabel, autoSms, autoNotify,
-  }
-}
-```
+### Sync behavior
+- Store Admin queries the public provider list on mount; when the owner uploads a new logo, cache invalidates on next visit (staleTime 5m) and revalidates in background. No manual action needed by store admins.
 
-Providers: SteadFast, Pathao, RedX, Paperfly (same set as today). Logos as inline SVG components so no asset fetch.
+### Verification
+- Typecheck.
+- Manual browser flow via Playwright: owner uploads logo → store admin panel `/admin/couriers` shows it in the card header, both light and dark mode.
 
-## Data shape (per provider, saved into `stores.couriers[key]`)
-
-Extends the existing `{ api_key, secret, base_url, enabled }` with optional fields — all backward-compatible:
-
-- `sandbox: boolean`, `is_default: boolean`
-- `shipping: { insideCity, outsideCity, subCity, cod, home, pickupPoint, return, exchange, priority }`
-- `pickup: { contactName, phone, address, district, area, instructions }`
-- `automation: { autoParcel, autoStatus, autoTracking, autoLabel, autoSms, autoNotify }`
-- `diagnostics: { lastConnectedAt, lastStatus, lastError, lastResponse }` (updated by Test Connection)
-
-## Server changes (`src/lib/admin.functions.ts`)
-
-1. Expand `courierProvider` Zod schema with the optional fields above (all `.optional()` so existing rows keep working).
-2. Add `testCourierConnection` server function:
-   - `.middleware([requireSupabaseAuth])`, plan-gated `courier`.
-   - Input: `{ key: 'steadfast' | 'pathao' | 'redx' | 'paperfly' }`.
-   - Reads the store's stored credentials, does a lightweight auth ping (GET `base_url` or provider-specific balance endpoint when known; generic HEAD fallback), then writes `diagnostics` back into `stores.couriers[key]` and returns `{ ok, status, latencyMs, message }`.
-   - No adapters shipped yet — this is a network reachability + auth-header ping; provider-specific adapters slot in later without UI changes.
-
-## UI (`src/routes/_authenticated/admin/couriers.tsx`)
-
-Replaces the current single form with a card grid built from the registry. Wrapped in `FeatureGate feature="courier"` (unchanged).
-
-Each card (`<CourierCard/>` new component):
-
-- Header: brand logo + name, `Verified` badge, `Connected`/`Disconnected` chip driven by `diagnostics.lastStatus`, colored accent bar in `brandColor`.
-- Enable/Disable switch + Default toggle (only one default at a time — set locally when saving).
-- Collapsible sections (accordion, all closed by default on mobile):
-  1. **Credentials** — API Key, Secret Key, Base URL, Sandbox switch (hidden when `!supports.sandbox`), Test Connection, Save.
-  2. **Shipping options** — the switches/inputs from the spec; each hidden when the provider's `supports.*` is false.
-  3. **Pickup information** — contact name, phone, address, district, area, instructions.
-  4. **Advanced automation** — only rendered flags the provider supports.
-  5. **Diagnostics** — API status, auth status, last sync, last response (pretty JSON, collapsed), last error, Retry button (re-runs `testCourierConnection`).
-- Last Connected time formatted with existing date util.
-
-Reusable pieces under `src/components/admin/couriers/`:
-- `providers.ts` (registry)
-- `CourierCard.tsx`
-- `CourierDiagnostics.tsx`
-- `BrandBadge.tsx`
-
-Save behavior stays the same: form-level state per card, `updateCouriers` receives the full `couriers` object (merge of all four cards) so existing rows continue to load.
-
-## Responsive / a11y
-
-- Grid: 1 col mobile, 2 cols `lg`, keeps existing padding.
-- All toggles use existing `Switch`; sections use existing `Accordion` primitives.
-- Sticky per-card Save button on mobile, inline on desktop.
-
-## Out of scope
-
-- Real provider SDK integrations (parcel creation, tracking sync). The automation toggles persist intent; adapters land in a follow-up.
-- Any change to owner-level global courier providers page.
-
-## Files touched
-
-- `src/lib/admin.functions.ts` — extend schema, add `testCourierConnection`.
-- `src/routes/_authenticated/admin/couriers.tsx` — full rewrite of the page body.
-- `src/components/admin/couriers/providers.ts` (new)
-- `src/components/admin/couriers/CourierCard.tsx` (new)
-- `src/components/admin/couriers/CourierDiagnostics.tsx` (new)
-- `src/components/admin/couriers/BrandBadge.tsx` (new)
+### Files touched
+- `supabase migration` (add column, RPC, storage policy)
+- `src/lib/owner-ext.functions.ts` (logo_url in list/upsert)
+- `src/lib/admin.functions.ts` or new `src/lib/courier-public.functions.ts` (public list RPC wrapper)
+- `src/routes/_authenticated/owner/couriers.tsx` (upload UI)
+- `src/components/admin/couriers/providers.ts` (allow dynamic override of `logoUrl`)
+- `src/components/admin/couriers/BrandBadge.tsx` (render image)
+- `src/components/admin/couriers/CourierCard.tsx` (pass through)
+- `src/routes/_authenticated/admin/couriers.tsx` (fetch + merge public logos)
