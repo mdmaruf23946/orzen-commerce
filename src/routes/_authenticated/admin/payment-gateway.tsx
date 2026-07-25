@@ -654,6 +654,32 @@ function ConfigureForm({
     }
   }
 
+  const [testingHook, setTestingHook] = useState(false);
+  async function runWebhookTest() {
+    if (!hasExisting) {
+      toast.info("Save the gateway first to test the webhook.");
+      return;
+    }
+    setTestingHook(true);
+    setTestResult(null);
+    try {
+      const r: any = await testHook({ data: { storeId, providerId: g.provider_id } });
+      setTestResult({
+        ok: !!r?.ok,
+        message: r?.ok
+          ? `Webhook OK — ${r.message}`
+          : `Webhook failed — ${r?.message ?? "Unknown error"}`,
+      });
+      if (r?.webhook_url) {
+        navigator.clipboard?.writeText(r.webhook_url).catch(() => {});
+      }
+    } catch (e: any) {
+      setTestResult({ ok: false, message: e?.message ?? "Failed" });
+    } finally {
+      setTestingHook(false);
+    }
+  }
+
   return (
     <>
       <SheetHeader className="border-b pb-4">
