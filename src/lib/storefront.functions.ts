@@ -242,15 +242,11 @@ export const getStoreDeliveryZones = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ storeId: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     const sb = publicClient();
-    const { data: rows, error } = await sb
-      .from("delivery_zones")
-      .select("id,name,charge,eta,is_default,sort_order")
-      .eq("store_id", data.storeId)
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true })
-      .order("name", { ascending: true });
+    const { data: rows, error } = await sb.rpc("get_public_delivery_zones", {
+      _store_id: data.storeId,
+    } as any);
     if (error) throw new Error(error.message);
-    return (rows ?? []).map((r) => ({
+    return ((rows as any[]) ?? []).map((r) => ({
       id: r.id,
       name: r.name,
       charge: Number(r.charge),
