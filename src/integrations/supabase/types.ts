@@ -745,6 +745,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_default: boolean
+          logo_url: string | null
           name: string
           updated_at: string
         }
@@ -757,6 +758,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_default?: boolean
+          logo_url?: string | null
           name: string
           updated_at?: string
         }
@@ -769,6 +771,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_default?: boolean
+          logo_url?: string | null
           name?: string
           updated_at?: string
         }
@@ -3809,6 +3812,15 @@ export type Database = {
       get_fraud_public_status: { Args: never; Returns: Json }
       get_messenger_daily_stats: { Args: { _store_id: string }; Returns: Json }
       get_my_active_ads: { Args: never; Returns: Json }
+      get_public_courier_providers: {
+        Args: never
+        Returns: {
+          code: string
+          is_active: boolean
+          logo_url: string
+          name: string
+        }[]
+      }
       get_public_delivery_zones: {
         Args: { _store_id: string }
         Returns: {
