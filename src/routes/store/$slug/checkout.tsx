@@ -94,7 +94,8 @@ function CheckoutPage() {
   const delivery = s.delivery ?? {};
   const subtotal = items.reduce((a, i) => a + i.qty * i.price, 0);
   const freeMin = Number(delivery.free_min ?? 0);
-  const baseShip = Number((insideCity ? delivery.inside_city : delivery.outside_city) ?? 0);
+  const selectedZone = zones.find((z: any) => z.id === zoneId) ?? null;
+  const baseShip = selectedZone ? Number(selectedZone.charge) : 0;
   let shipping = freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
   if (coupon?.freeShipping) shipping = 0;
   const discount = coupon?.discount ?? 0;
