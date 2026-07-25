@@ -798,6 +798,20 @@ function ConfigureForm({
           </Button>
         </div>
         <Button
+          variant="outline"
+          className="w-full"
+          onClick={runWebhookTest}
+          disabled={testingHook || !hasExisting}
+          title={!hasExisting ? "Save first to enable webhook test" : "Sends a synthetic event to your webhook URL"}
+        >
+          {testingHook ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Zap className="mr-2 h-4 w-4" />
+          )}
+          Test Webhook (copies URL)
+        </Button>
+        <Button
           variant="ghost"
           className="w-full"
           onClick={() => submit(true)}
