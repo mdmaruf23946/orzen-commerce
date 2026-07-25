@@ -30,7 +30,7 @@ export const listStorePaymentGateways = createServerFn({ method: "GET" })
     const [{ data: platform, error: pErr }, { data: rows, error: rErr }] = await Promise.all([
       context.supabase
         .from("platform_payment_gateways")
-        .select("id,label,enabled,sort_order,logo_url,notes")
+        .select("id,label,enabled,sort_order,logo_url,notes,brand_color,secondary_color,icon_bg_color,description")
         .eq("enabled", true)
         .order("sort_order", { ascending: true }),
       context.supabase
@@ -49,6 +49,11 @@ export const listStorePaymentGateways = createServerFn({ method: "GET" })
         label: p.label,
         logo_url: p.logo_url,
         notes: p.notes,
+        brand_color: p.brand_color,
+        secondary_color: p.secondary_color,
+        icon_bg_color: p.icon_bg_color,
+        description: p.description,
+
         methods: meta?.methods ?? [],
         supportsSandbox: meta?.supportsSandbox ?? false,
         credentialFields: meta?.credentialFields ?? [],
