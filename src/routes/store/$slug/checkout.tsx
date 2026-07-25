@@ -35,10 +35,16 @@ function CheckoutPage() {
   const place = useServerFn(placeOrder);
   const valCoupon = useServerFn(validateCoupon);
   const getGw = useServerFn(getStoreActiveGateway);
+  const getZones = useServerFn(getStoreDeliveryZones);
   const { data: activeGateway } = useQuery({
     enabled: !!store?.id,
     queryKey: ["activeGateway", store?.id],
     queryFn: () => getGw({ data: { storeId: store!.id } }),
+  });
+  const { data: zones = [] } = useQuery({
+    enabled: !!store?.id,
+    queryKey: ["deliveryZones", store?.id],
+    queryFn: () => getZones({ data: { storeId: store!.id } }),
   });
 
   const { customer, token: customerToken } = useCustomerSession(slug);
@@ -50,7 +56,7 @@ function CheckoutPage() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [area, setArea] = useState("");
-  const [insideCity, setInsideCity] = useState(true);
+  const [zoneId, setZoneId] = useState<string | null>(null);
   const [method, setMethod] = useState<PM>("cod");
   const [txnId, setTxnId] = useState("");
   const [submitting, setSubmitting] = useState(false);
