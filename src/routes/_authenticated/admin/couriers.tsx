@@ -140,6 +140,7 @@ function CouriersPage() {
             onSetDefault={() => setDefault(meta.key)}
             saving={saving === meta.key}
             testing={testing === meta.key}
+            logoUrl={logoByCode[meta.key] ?? null}
           />
         ))}
       </div>
