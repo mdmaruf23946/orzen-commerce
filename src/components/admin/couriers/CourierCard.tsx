@@ -29,6 +29,7 @@ type Props = {
   onSetDefault: () => void;
   saving?: boolean;
   testing?: boolean;
+  logoUrl?: string | null;
 };
 
 export function CourierCard({
@@ -40,7 +41,9 @@ export function CourierCard({
   onSetDefault,
   saving,
   testing,
+  logoUrl,
 }: Props) {
+
   const cfg = { ...emptyConfig, ...value } as CourierConfig;
   const set = (patch: Partial<CourierConfig>) => onChange({ ...cfg, ...patch });
   const setShipping = (patch: Partial<NonNullable<CourierConfig["shipping"]>>) =>
