@@ -238,6 +238,27 @@ export const validateCoupon = createServerFn({ method: "POST" })
     };
   });
 
+export const getStoreDeliveryZones = createServerFn({ method: "GET" })
+  .inputValidator((d) => z.object({ storeId: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const sb = publicClient();
+    const { data: rows, error } = await sb
+      .from("delivery_zones")
+      .select("id,name,charge,eta,is_default,sort_order")
+      .eq("store_id", data.storeId)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true });
+    if (error) throw new Error(error.message);
+    return (rows ?? []).map((r) => ({
+      id: r.id,
+      name: r.name,
+      charge: Number(r.charge),
+      eta: r.eta,
+      is_default: r.is_default,
+    }));
+  });
+
 export const placeOrder = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z
@@ -252,7 +273,7 @@ export const placeOrder = createServerFn({ method: "POST" })
         notes: z.string().trim().max(500).optional(),
         items: z.array(itemSchema).min(1).max(50),
         couponCode: z.string().trim().max(40).optional(),
-        insideCity: z.boolean().optional(),
+        deliveryZoneId: z.string().uuid().optional(),
         customerToken: z.string().min(16).max(128).optional(),
         fingerprint: z.string().trim().max(128).optional(),
         deviceId: z.string().trim().max(128).optional(),
@@ -307,12 +328,25 @@ export const placeOrder = createServerFn({ method: "POST" })
       };
     });
 
-    // Delivery
+    // Delivery — from zone if provided, else legacy fallback
     const d: any = store.delivery ?? {};
-    const insideCity = data.insideCity ?? true;
-    const baseShip = Number((insideCity ? d.inside_city : d.outside_city) ?? 0);
+    let baseShip = 0;
+    let zoneId: string | null = null;
+    if (data.deliveryZoneId) {
+      const { data: zone } = await sb
+        .from("delivery_zones")
+        .select("id,charge,is_active")
+        .eq("id", data.deliveryZoneId)
+        .eq("store_id", data.storeId)
+        .maybeSingle();
+      if (zone && zone.is_active) {
+        baseShip = Number(zone.charge);
+        zoneId = zone.id;
+      }
+    }
     const freeMin = Number(d.free_min ?? 0);
     let delivery_amount = freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
+
 
     // Coupon
     let coupon_id: string | null = null;
@@ -362,7 +396,7 @@ export const placeOrder = createServerFn({ method: "POST" })
           paymentMethod: data.paymentMethod,
           txnId: data.txnId,
           notes: data.notes,
-          insideCity: data.insideCity,
+          deliveryZoneId: data.deliveryZoneId,
           itemRows,
           subtotal,
           delivery_amount,
@@ -408,6 +442,7 @@ export const placeOrder = createServerFn({ method: "POST" })
         delivery_amount,
         discount_amount,
         coupon_id,
+        delivery_zone_id: zoneId,
         status: "pending",
         fingerprint: data.fingerprint ?? null,
         device_id: data.deviceId ?? null,

@@ -3,7 +3,7 @@ import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getStoreBySlug, getStoreActiveGateway, placeOrder, validateCoupon } from "@/lib/storefront.functions";
+import { getStoreBySlug, getStoreActiveGateway, placeOrder, validateCoupon, getStoreDeliveryZones } from "@/lib/storefront.functions";
 import { readCart, clearCart, type CartItem } from "@/lib/cart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,10 +35,16 @@ function CheckoutPage() {
   const place = useServerFn(placeOrder);
   const valCoupon = useServerFn(validateCoupon);
   const getGw = useServerFn(getStoreActiveGateway);
+  const getZones = useServerFn(getStoreDeliveryZones);
   const { data: activeGateway } = useQuery({
     enabled: !!store?.id,
     queryKey: ["activeGateway", store?.id],
     queryFn: () => getGw({ data: { storeId: store!.id } }),
+  });
+  const { data: zones = [] } = useQuery({
+    enabled: !!store?.id,
+    queryKey: ["deliveryZones", store?.id],
+    queryFn: () => getZones({ data: { storeId: store!.id } }),
   });
 
   const { customer, token: customerToken } = useCustomerSession(slug);
@@ -50,7 +56,7 @@ function CheckoutPage() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [area, setArea] = useState("");
-  const [insideCity, setInsideCity] = useState(true);
+  const [zoneId, setZoneId] = useState<string | null>(null);
   const [method, setMethod] = useState<PM>("cod");
   const [txnId, setTxnId] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -81,6 +87,14 @@ function CheckoutPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customer]);
 
+  // Auto-select default zone when zones load
+  useEffect(() => {
+    if (!zoneId && zones.length > 0) {
+      const def = zones.find((z: any) => z.is_default) ?? zones[0];
+      setZoneId(def.id);
+    }
+  }, [zones, zoneId]);
+
 
   if (!store) return null;
   const s: any = store;
@@ -88,7 +102,8 @@ function CheckoutPage() {
   const delivery = s.delivery ?? {};
   const subtotal = items.reduce((a, i) => a + i.qty * i.price, 0);
   const freeMin = Number(delivery.free_min ?? 0);
-  const baseShip = Number((insideCity ? delivery.inside_city : delivery.outside_city) ?? 0);
+  const selectedZone = zones.find((z: any) => z.id === zoneId) ?? null;
+  const baseShip = selectedZone ? Number(selectedZone.charge) : 0;
   let shipping = freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
   if (coupon?.freeShipping) shipping = 0;
   const discount = coupon?.discount ?? 0;
@@ -182,7 +197,7 @@ function CheckoutPage() {
           txnId: method === "cod" ? undefined : txnId,
           items: items.map((i) => ({ productId: i.productId, qty: i.qty })),
           couponCode: coupon?.code,
-          insideCity,
+          deliveryZoneId: zoneId ?? undefined,
           customerToken: customerToken ?? undefined,
           fingerprint: fingerprint || undefined,
           deviceId: deviceId || undefined,
@@ -225,18 +240,31 @@ function CheckoutPage() {
             <Label htmlFor="area">Delivery area (optional)</Label>
             <Input id="area" value={area} onChange={(e) => setArea(e.target.value)} />
           </div>
-          {(Number(delivery.inside_city) || Number(delivery.outside_city)) ? (
+          {zones.length > 0 ? (
             <div className="space-y-1.5">
               <Label>Delivery zone</Label>
-              <div className="flex gap-2">
-                <label className={`flex-1 cursor-pointer rounded-md border p-2 text-sm ${insideCity ? "border-primary bg-primary/5" : ""}`}>
-                  <input type="radio" className="mr-2" checked={insideCity} onChange={() => setInsideCity(true)} />
-                  Inside city · ৳{Number(delivery.inside_city ?? 0).toFixed(0)}
-                </label>
-                <label className={`flex-1 cursor-pointer rounded-md border p-2 text-sm ${!insideCity ? "border-primary bg-primary/5" : ""}`}>
-                  <input type="radio" className="mr-2" checked={!insideCity} onChange={() => setInsideCity(false)} />
-                  Outside city · ৳{Number(delivery.outside_city ?? 0).toFixed(0)}
-                </label>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {zones.map((z: any) => (
+                  <label
+                    key={z.id}
+                    className={`flex cursor-pointer items-start gap-2 rounded-md border p-3 text-sm ${zoneId === z.id ? "border-primary bg-primary/5" : ""}`}
+                  >
+                    <input
+                      type="radio"
+                      name="zone"
+                      className="mt-0.5"
+                      checked={zoneId === z.id}
+                      onChange={() => setZoneId(z.id)}
+                    />
+                    <span className="flex-1">
+                      <span className="block font-medium">{z.name}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        ৳{Number(z.charge).toFixed(0)}
+                        {z.eta ? ` · ${z.eta}` : ""}
+                      </span>
+                    </span>
+                  </label>
+                ))}
               </div>
             </div>
           ) : null}
