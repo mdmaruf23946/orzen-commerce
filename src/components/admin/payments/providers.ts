@@ -95,8 +95,8 @@ export const PAYMENT_BRANDS: Record<string, PaymentBrand> = {
   },
 };
 
-export function getBrand(id: string): PaymentBrand {
-  return (
+export function getBrand(id: string, overrides?: Partial<PaymentBrand> & { brand_color?: string | null; icon_bg_color?: string | null; description?: string | null }): PaymentBrand {
+  const base =
     PAYMENT_BRANDS[id] ?? {
       id,
       label: id,
@@ -105,6 +105,14 @@ export function getBrand(id: string): PaymentBrand {
       accentColor: "#F1F5F9",
       initials: id.slice(0, 2).toUpperCase(),
       region: "—",
-    }
-  );
+    };
+  if (!overrides) return base;
+  return {
+    ...base,
+    label: overrides.label ?? base.label,
+    tagline: overrides.description ?? overrides.tagline ?? base.tagline,
+    brandColor: overrides.brand_color ?? overrides.brandColor ?? base.brandColor,
+    accentColor: overrides.icon_bg_color ?? overrides.accentColor ?? base.accentColor,
+  };
 }
+
