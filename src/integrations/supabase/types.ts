@@ -1825,6 +1825,62 @@ export type Database = {
         }
         Relationships: []
       }
+      product_import_export_history: {
+        Row: {
+          created_at: string
+          failed: number
+          file_name: string | null
+          filters: Json | null
+          format: string | null
+          id: string
+          imported: number
+          kind: string
+          skipped: number
+          store_id: string
+          total: number
+          updated: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          failed?: number
+          file_name?: string | null
+          filters?: Json | null
+          format?: string | null
+          id?: string
+          imported?: number
+          kind: string
+          skipped?: number
+          store_id: string
+          total?: number
+          updated?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          failed?: number
+          file_name?: string | null
+          filters?: Json | null
+          format?: string | null
+          id?: string
+          imported?: number
+          kind?: string
+          skipped?: number
+          store_id?: string
+          total?: number
+          updated?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_import_export_history_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           brand: string | null
