@@ -232,18 +232,31 @@ function CheckoutPage() {
             <Label htmlFor="area">Delivery area (optional)</Label>
             <Input id="area" value={area} onChange={(e) => setArea(e.target.value)} />
           </div>
-          {(Number(delivery.inside_city) || Number(delivery.outside_city)) ? (
+          {zones.length > 0 ? (
             <div className="space-y-1.5">
               <Label>Delivery zone</Label>
-              <div className="flex gap-2">
-                <label className={`flex-1 cursor-pointer rounded-md border p-2 text-sm ${insideCity ? "border-primary bg-primary/5" : ""}`}>
-                  <input type="radio" className="mr-2" checked={insideCity} onChange={() => setInsideCity(true)} />
-                  Inside city · ৳{Number(delivery.inside_city ?? 0).toFixed(0)}
-                </label>
-                <label className={`flex-1 cursor-pointer rounded-md border p-2 text-sm ${!insideCity ? "border-primary bg-primary/5" : ""}`}>
-                  <input type="radio" className="mr-2" checked={!insideCity} onChange={() => setInsideCity(false)} />
-                  Outside city · ৳{Number(delivery.outside_city ?? 0).toFixed(0)}
-                </label>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {zones.map((z: any) => (
+                  <label
+                    key={z.id}
+                    className={`flex cursor-pointer items-start gap-2 rounded-md border p-3 text-sm ${zoneId === z.id ? "border-primary bg-primary/5" : ""}`}
+                  >
+                    <input
+                      type="radio"
+                      name="zone"
+                      className="mt-0.5"
+                      checked={zoneId === z.id}
+                      onChange={() => setZoneId(z.id)}
+                    />
+                    <span className="flex-1">
+                      <span className="block font-medium">{z.name}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        ৳{Number(z.charge).toFixed(0)}
+                        {z.eta ? ` · ${z.eta}` : ""}
+                      </span>
+                    </span>
+                  </label>
+                ))}
               </div>
             </div>
           ) : null}
