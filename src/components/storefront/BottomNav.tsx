@@ -9,6 +9,7 @@ export function BottomNav({ slug }: { slug: string }) {
   const [cart, setCart] = useState(0);
   const [wish, setWish] = useState(0);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const searchStr = useRouterState({ select: (s) => s.location.searchStr });
 
   useEffect(() => {
     const updateCart = () => setCart(cartCount(slug));
