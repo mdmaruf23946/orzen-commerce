@@ -54,6 +54,7 @@ import { Route as AuthenticatedOwnerDomainsRouteImport } from './routes/_authent
 import { Route as AuthenticatedOwnerDevLogsRouteImport } from './routes/_authenticated/owner/dev-logs'
 import { Route as AuthenticatedOwnerCustomersRouteImport } from './routes/_authenticated/owner/customers'
 import { Route as AuthenticatedOwnerCouriersRouteImport } from './routes/_authenticated/owner/couriers'
+import { Route as AuthenticatedOwnerBrandAssetsRouteImport } from './routes/_authenticated/owner/brand-assets'
 import { Route as AuthenticatedOwnerBillingRouteImport } from './routes/_authenticated/owner/billing'
 import { Route as AuthenticatedOwnerBackupsRouteImport } from './routes/_authenticated/owner/backups'
 import { Route as AuthenticatedOwnerAuditRouteImport } from './routes/_authenticated/owner/audit'
@@ -355,6 +356,12 @@ const AuthenticatedOwnerCouriersRoute =
   AuthenticatedOwnerCouriersRouteImport.update({
     id: '/couriers',
     path: '/couriers',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerBrandAssetsRoute =
+  AuthenticatedOwnerBrandAssetsRouteImport.update({
+    id: '/brand-assets',
+    path: '/brand-assets',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
 const AuthenticatedOwnerBillingRoute =
@@ -750,6 +757,7 @@ export interface FileRoutesByFullPath {
   '/owner/audit': typeof AuthenticatedOwnerAuditRoute
   '/owner/backups': typeof AuthenticatedOwnerBackupsRoute
   '/owner/billing': typeof AuthenticatedOwnerBillingRoute
+  '/owner/brand-assets': typeof AuthenticatedOwnerBrandAssetsRoute
   '/owner/couriers': typeof AuthenticatedOwnerCouriersRoute
   '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
@@ -849,6 +857,7 @@ export interface FileRoutesByTo {
   '/owner/audit': typeof AuthenticatedOwnerAuditRoute
   '/owner/backups': typeof AuthenticatedOwnerBackupsRoute
   '/owner/billing': typeof AuthenticatedOwnerBillingRoute
+  '/owner/brand-assets': typeof AuthenticatedOwnerBrandAssetsRoute
   '/owner/couriers': typeof AuthenticatedOwnerCouriersRoute
   '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
@@ -955,6 +964,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/audit': typeof AuthenticatedOwnerAuditRoute
   '/_authenticated/owner/backups': typeof AuthenticatedOwnerBackupsRoute
   '/_authenticated/owner/billing': typeof AuthenticatedOwnerBillingRoute
+  '/_authenticated/owner/brand-assets': typeof AuthenticatedOwnerBrandAssetsRoute
   '/_authenticated/owner/couriers': typeof AuthenticatedOwnerCouriersRoute
   '/_authenticated/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/_authenticated/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
@@ -1061,6 +1071,7 @@ export interface FileRouteTypes {
     | '/owner/audit'
     | '/owner/backups'
     | '/owner/billing'
+    | '/owner/brand-assets'
     | '/owner/couriers'
     | '/owner/customers'
     | '/owner/dev-logs'
@@ -1160,6 +1171,7 @@ export interface FileRouteTypes {
     | '/owner/audit'
     | '/owner/backups'
     | '/owner/billing'
+    | '/owner/brand-assets'
     | '/owner/couriers'
     | '/owner/customers'
     | '/owner/dev-logs'
@@ -1265,6 +1277,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/audit'
     | '/_authenticated/owner/backups'
     | '/_authenticated/owner/billing'
+    | '/_authenticated/owner/brand-assets'
     | '/_authenticated/owner/couriers'
     | '/_authenticated/owner/customers'
     | '/_authenticated/owner/dev-logs'
@@ -1651,6 +1664,13 @@ declare module '@tanstack/react-router' {
       path: '/couriers'
       fullPath: '/owner/couriers'
       preLoaderRoute: typeof AuthenticatedOwnerCouriersRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/brand-assets': {
+      id: '/_authenticated/owner/brand-assets'
+      path: '/brand-assets'
+      fullPath: '/owner/brand-assets'
+      preLoaderRoute: typeof AuthenticatedOwnerBrandAssetsRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/owner/billing': {
@@ -2200,6 +2220,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerAuditRoute: typeof AuthenticatedOwnerAuditRoute
   AuthenticatedOwnerBackupsRoute: typeof AuthenticatedOwnerBackupsRoute
   AuthenticatedOwnerBillingRoute: typeof AuthenticatedOwnerBillingRoute
+  AuthenticatedOwnerBrandAssetsRoute: typeof AuthenticatedOwnerBrandAssetsRoute
   AuthenticatedOwnerCouriersRoute: typeof AuthenticatedOwnerCouriersRoute
   AuthenticatedOwnerCustomersRoute: typeof AuthenticatedOwnerCustomersRoute
   AuthenticatedOwnerDevLogsRoute: typeof AuthenticatedOwnerDevLogsRoute
@@ -2237,6 +2258,7 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerAuditRoute: AuthenticatedOwnerAuditRoute,
     AuthenticatedOwnerBackupsRoute: AuthenticatedOwnerBackupsRoute,
     AuthenticatedOwnerBillingRoute: AuthenticatedOwnerBillingRoute,
+    AuthenticatedOwnerBrandAssetsRoute: AuthenticatedOwnerBrandAssetsRoute,
     AuthenticatedOwnerCouriersRoute: AuthenticatedOwnerCouriersRoute,
     AuthenticatedOwnerCustomersRoute: AuthenticatedOwnerCustomersRoute,
     AuthenticatedOwnerDevLogsRoute: AuthenticatedOwnerDevLogsRoute,
