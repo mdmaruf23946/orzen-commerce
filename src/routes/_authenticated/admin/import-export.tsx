@@ -1,139 +1,203 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { toast } from "sonner";
-import { Download, Upload } from "lucide-react";
-import { bulkImportProducts, exportProductsCsv } from "@/lib/business.functions";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Upload, Download, Package, Clock, FileSpreadsheet } from "lucide-react";
+import { getImportExportHistory } from "@/lib/business.functions";
+import { ImportDialog } from "@/components/admin/import-export/ImportDialog";
+import { ExportDialog } from "@/components/admin/import-export/ExportDialog";
 
 export const Route = createFileRoute("/_authenticated/admin/import-export")({
-  component: () => <FeatureGate feature="import_export"><ImportExportPage /></FeatureGate>,
+  head: () => ({
+    meta: [
+      { title: "Import & Export Products — Admin" },
+      { name: "description", content: "Bulk import and export your product catalog via CSV, Excel, or Google Sheets." },
+    ],
+  }),
+  component: () => (
+    <FeatureGate feature="import_export">
+      <ImportExportPage />
+    </FeatureGate>
+  ),
 });
 
-// Minimal CSV parser supporting quoted fields and escaped quotes.
-function parseCsv(text: string): string[][] {
-  const rows: string[][] = []; let row: string[] = []; let cur = ""; let inQ = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (inQ) {
-      if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else inQ = false; }
-      else cur += c;
-    } else {
-      if (c === '"') inQ = true;
-      else if (c === ",") { row.push(cur); cur = ""; }
-      else if (c === "\n") { row.push(cur); rows.push(row); row = []; cur = ""; }
-      else if (c === "\r") {/* skip */}
-      else cur += c;
-    }
-  }
-  if (cur.length || row.length) { row.push(cur); rows.push(row); }
-  return rows.filter((r) => r.some((c) => c.trim() !== ""));
+function timeAgo(iso: string) {
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60); if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60); if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24); return `${d}d ago`;
 }
 
 function ImportExportPage() {
-  const importFn = useServerFn(bulkImportProducts);
-  const exportFn = useServerFn(exportProductsCsv);
-  const [preview, setPreview] = useState<any[]>([]);
-  const [errors, setErrors] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
+  const historyFn = useServerFn(getImportExportHistory);
+  const { data, refetch } = useQuery({
+    queryKey: ["import-export-history"],
+    queryFn: () => historyFn(),
+  });
+  const [importOpen, setImportOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
-  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0]; if (!f) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const rows = parseCsv(String(reader.result ?? ""));
-      if (rows.length < 2) { toast.error("CSV must have a header and at least one row"); return; }
-      const header = rows[0].map((h) => h.trim().toLowerCase());
-      const errs: string[] = [];
-      const out = rows.slice(1).map((r, idx) => {
-        const obj: any = {};
-        header.forEach((h, i) => (obj[h] = r[i]?.trim() ?? ""));
-        if (!obj.name) errs.push(`Row ${idx + 2}: missing name`);
-        if (isNaN(Number(obj.price))) errs.push(`Row ${idx + 2}: invalid price`);
-        return {
-          name: obj.name,
-          price: Number(obj.price || 0),
-          old_price: obj.old_price ? Number(obj.old_price) : null,
-          cost_price: obj.cost_price ? Number(obj.cost_price) : 0,
-          stock: obj.stock ? Number(obj.stock) : 0,
-          sku: obj.sku || null,
-          status: (obj.status || "active") as "active" | "draft" | "out_of_stock",
-          description: obj.description || null,
-        };
-      });
-      setPreview(out); setErrors(errs);
-    };
-    reader.readAsText(f);
-  }
-
-  async function commit() {
-    if (errors.length) { toast.error("Fix validation errors first"); return; }
-    setLoading(true);
-    try {
-      const res = await importFn({ data: { rows: preview } });
-      toast.success(`Imported ${res.count} products`);
-      setPreview([]);
-    } catch (err) { toast.error((err as Error).message); }
-    finally { setLoading(false); }
-  }
-
-  async function download() {
-    const csv = await exportFn();
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `products-${Date.now()}.csv`; a.click();
-    URL.revokeObjectURL(url);
-  }
+  const history = data?.history ?? [];
+  const totalProducts = data?.totalProducts ?? 0;
+  const lastImport = history.find((h: any) => h.kind === "import");
+  const lastExport = history.find((h: any) => h.kind === "export");
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Import / Export Products</h1>
+    <div className="space-y-4 sm:space-y-6 max-w-6xl">
+      <div>
+        <h1 className="text-xl sm:text-2xl font-bold">Import & Export Products</h1>
+        <p className="text-sm text-muted-foreground">Bulk update your catalog with CSV, Excel, or Google Sheets.</p>
+      </div>
 
-      <div className="rounded-xl border bg-card p-4">
-        <div className="flex items-center gap-2 text-sm font-semibold"><Upload className="h-4 w-4" /> Import CSV</div>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Required header: <code>name,price</code>. Optional: <code>sku,old_price,cost_price,stock,status,description</code>.
-        </p>
-        <input type="file" accept=".csv,text/csv" onChange={onFile} className="mt-3 block w-full text-sm" />
-        {errors.length > 0 && (
-          <ul className="mt-3 list-disc rounded-md bg-destructive/10 p-3 pl-6 text-xs text-destructive">
-            {errors.slice(0, 10).map((e, i) => <li key={i}>{e}</li>)}
-          </ul>
-        )}
-        {preview.length > 0 && (
-          <>
-            <div className="mt-3 overflow-x-auto rounded-md border">
-              <table className="w-full text-xs">
-                <thead className="bg-muted/50 text-left">
-                  <tr><th className="p-2">Name</th><th className="p-2 text-right">Price</th><th className="p-2 text-right">Stock</th><th className="p-2">Status</th></tr>
-                </thead>
-                <tbody>
-                  {preview.slice(0, 20).map((p, i) => (
-                    <tr key={i} className="border-t">
-                      <td className="p-2">{p.name}</td>
-                      <td className="p-2 text-right">৳{p.price}</td>
-                      <td className="p-2 text-right">{p.stock}</td>
-                      <td className="p-2">{p.status}</td>
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <StatCard icon={<Package className="w-4 h-4" />} label="Total Products" value={String(totalProducts)} />
+        <StatCard
+          icon={<Upload className="w-4 h-4" />}
+          label="Last Import"
+          value={lastImport ? `${lastImport.imported + lastImport.updated} rows` : "—"}
+          sub={lastImport ? timeAgo(lastImport.created_at) : "No imports yet"}
+        />
+        <StatCard
+          icon={<Download className="w-4 h-4" />}
+          label="Last Export"
+          value={lastExport ? `${lastExport.total} rows` : "—"}
+          sub={lastExport ? timeAgo(lastExport.created_at) : "No exports yet"}
+        />
+      </div>
+
+      {/* Action cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <ActionCard
+          icon={<Upload className="w-6 h-6" />}
+          title="Import Products"
+          desc="Upload CSV, Excel, or link a Google Sheet. Preview and validate before saving."
+          cta="Start Import"
+          onClick={() => setImportOpen(true)}
+        />
+        <ActionCard
+          icon={<Download className="w-6 h-6" />}
+          title="Export Products"
+          desc="Filter by category, brand, stock, date, then download as CSV or Excel."
+          cta="Start Export"
+          onClick={() => setExportOpen(true)}
+          variant="secondary"
+        />
+      </div>
+
+      {/* History */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2"><Clock className="w-4 h-4" />Recent activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {history.length === 0 ? (
+            <div className="text-sm text-muted-foreground text-center py-6">No activity yet.</div>
+          ) : (
+            <>
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-left text-xs text-muted-foreground border-b">
+                    <tr>
+                      <th className="py-2 pr-3">Type</th>
+                      <th className="py-2 pr-3">File</th>
+                      <th className="py-2 pr-3">Format</th>
+                      <th className="py-2 pr-3">Total</th>
+                      <th className="py-2 pr-3">Imported</th>
+                      <th className="py-2 pr-3">Updated</th>
+                      <th className="py-2 pr-3">Skipped</th>
+                      <th className="py-2 pr-3">Failed</th>
+                      <th className="py-2 pr-3">When</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">{preview.length} rows ready · showing first 20</p>
-            <Button onClick={commit} disabled={loading || errors.length > 0} className="mt-3">
-              {loading ? "Importing…" : `Import ${preview.length} products`}
-            </Button>
-          </>
-        )}
-      </div>
+                  </thead>
+                  <tbody>
+                    {history.map((h: any) => (
+                      <tr key={h.id} className="border-b last:border-0">
+                        <td className="py-2 pr-3">
+                          <Badge variant={h.kind === "import" ? "default" : "secondary"}>{h.kind}</Badge>
+                        </td>
+                        <td className="py-2 pr-3 max-w-[200px] truncate">{h.file_name ?? "—"}</td>
+                        <td className="py-2 pr-3">{h.format ?? "—"}</td>
+                        <td className="py-2 pr-3">{h.total}</td>
+                        <td className="py-2 pr-3 text-green-600">{h.imported || "—"}</td>
+                        <td className="py-2 pr-3 text-blue-600">{h.updated || "—"}</td>
+                        <td className="py-2 pr-3 text-amber-600">{h.skipped || "—"}</td>
+                        <td className="py-2 pr-3 text-red-600">{h.failed || "—"}</td>
+                        <td className="py-2 pr-3 text-muted-foreground">{timeAgo(h.created_at)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {/* Mobile card list */}
+              <div className="md:hidden space-y-2">
+                {history.map((h: any) => (
+                  <div key={h.id} className="border rounded-lg p-3 text-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge variant={h.kind === "import" ? "default" : "secondary"}>{h.kind}</Badge>
+                      <span className="text-xs text-muted-foreground">{timeAgo(h.created_at)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileSpreadsheet className="w-4 h-4 text-muted-foreground shrink-0" />
+                      <span className="truncate text-xs">{h.file_name ?? "—"}</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-1 text-xs">
+                      <MiniStat label="Total" v={h.total} />
+                      <MiniStat label="OK" v={h.imported + h.updated} tone="green" />
+                      <MiniStat label="Skip" v={h.skipped} tone="amber" />
+                      <MiniStat label="Fail" v={h.failed} tone="red" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
-      <div className="rounded-xl border bg-card p-4">
-        <div className="flex items-center gap-2 text-sm font-semibold"><Download className="h-4 w-4" /> Export CSV</div>
-        <p className="mt-1 text-xs text-muted-foreground">Downloads all products with pricing and stock data.</p>
-        <Button onClick={download} variant="outline" className="mt-3">Download CSV</Button>
-      </div>
+      <ImportDialog open={importOpen} onOpenChange={setImportOpen} onDone={() => refetch()} />
+      <ExportDialog open={exportOpen} onOpenChange={setExportOpen} onDone={() => refetch()} />
+    </div>
+  );
+}
+
+function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">{icon}{label}</div>
+        <div className="text-xl sm:text-2xl font-bold mt-1">{value}</div>
+        {sub && <div className="text-xs text-muted-foreground mt-0.5">{sub}</div>}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ActionCard({ icon, title, desc, cta, onClick, variant }: { icon: React.ReactNode; title: string; desc: string; cta: string; onClick: () => void; variant?: "default" | "secondary" }) {
+  return (
+    <Card className="group hover:shadow-md transition">
+      <CardContent className="p-5 sm:p-6 flex flex-col h-full">
+        <div className="w-11 h-11 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-3">{icon}</div>
+        <div className="text-base font-semibold">{title}</div>
+        <div className="text-sm text-muted-foreground mt-1 flex-1">{desc}</div>
+        <Button size="lg" variant={variant} className="mt-4 w-full sm:w-auto self-start" onClick={onClick}>{cta}</Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MiniStat({ label, v, tone }: { label: string; v: number; tone?: "green" | "amber" | "red" }) {
+  const cls = tone === "green" ? "text-green-600" : tone === "amber" ? "text-amber-600" : tone === "red" ? "text-red-600" : "";
+  return (
+    <div className="text-center border rounded p-1">
+      <div className={`font-semibold ${cls}`}>{v || 0}</div>
+      <div className="text-[10px] text-muted-foreground">{label}</div>
     </div>
   );
 }
