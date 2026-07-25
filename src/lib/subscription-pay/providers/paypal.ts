@@ -7,8 +7,17 @@ export const paypal: SubscriptionPaymentProvider = {
     methods: ["paypal", "visa", "mastercard"],
     supportsSandbox: true,
     credentialFields: [
-      { key: "client_id", label: "Client ID", type: "text" },
-      { key: "client_secret", label: "Client Secret", type: "password" },
+      { key: "client_id", label: "Client ID", type: "text", required: true, group: "Credentials" },
+      { key: "client_secret", label: "Client Secret", type: "password", required: true, group: "Credentials" },
+      { key: "webhook_id", label: "Webhook ID", type: "text", group: "Credentials", helper: "From PayPal Developer → Webhooks." },
+      { key: "currency", label: "Currency", type: "select", group: "Credentials",
+        options: [
+          { label: "USD — US Dollar", value: "USD" },
+          { label: "EUR — Euro", value: "EUR" },
+          { label: "GBP — British Pound", value: "GBP" },
+        ], placeholder: "USD" },
+      { key: "return_url", label: "Return URL", type: "url", group: "Callback URLs" },
+      { key: "cancel_url", label: "Cancel URL", type: "url", group: "Callback URLs" },
     ],
   },
   async testConnection(cfg) {

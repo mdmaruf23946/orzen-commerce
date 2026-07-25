@@ -16,8 +16,19 @@ export const sslcommerz: SubscriptionPaymentProvider = {
     methods: ["bkash", "nagad", "rocket", "visa", "mastercard", "amex", "bank", "internet_banking"],
     supportsSandbox: true,
     credentialFields: [
-      { key: "store_id", label: "Store ID", type: "text", placeholder: "yourstore" },
-      { key: "store_passwd", label: "Store Password / API Key", type: "password" },
+      { key: "store_id", label: "Store ID", type: "text", placeholder: "yourstore", required: true, group: "Credentials" },
+      { key: "store_passwd", label: "Store Password / API Key", type: "password", required: true, group: "Credentials" },
+      { key: "currency", label: "Currency", type: "select", group: "Credentials",
+        options: [
+          { label: "BDT — Bangladeshi Taka", value: "BDT" },
+          { label: "USD — US Dollar", value: "USD" },
+          { label: "EUR — Euro", value: "EUR" },
+          { label: "GBP — British Pound", value: "GBP" },
+        ], placeholder: "BDT" },
+      { key: "success_url", label: "Success URL", type: "url", group: "Callback URLs", helper: "Leave blank to use the ORZEN default." },
+      { key: "fail_url", label: "Fail URL", type: "url", group: "Callback URLs" },
+      { key: "cancel_url", label: "Cancel URL", type: "url", group: "Callback URLs" },
+      { key: "ipn_url", label: "IPN / Webhook URL", type: "url", group: "Callback URLs", helper: "Paste this into your SSLCommerz dashboard." },
     ],
   },
   async testConnection(cfg) {
@@ -27,14 +38,12 @@ export const sslcommerz: SubscriptionPaymentProvider = {
     if (!storeId || !storePasswd) {
       return { ok: false, message: "Store ID and password are required", latency_ms: Date.now() - start };
     }
-    // Ping the session endpoint with a tiny throwaway payload — SSLCommerz
-    // returns status=SUCCESS when credentials are valid.
     try {
       const body = new URLSearchParams({
         store_id: storeId,
         store_passwd: storePasswd,
         total_amount: "10",
-        currency: "BDT",
+        currency: String(cfg.credentials.currency ?? "BDT") || "BDT",
         tran_id: `test_${Date.now()}`,
         success_url: "https://example.com/s",
         fail_url: "https://example.com/f",
@@ -74,10 +83,10 @@ export const sslcommerz: SubscriptionPaymentProvider = {
       total_amount: ctx.amount.toFixed(2),
       currency: ctx.currency,
       tran_id: ctx.invoiceNo,
-      success_url: ctx.returnUrl,
-      fail_url: ctx.cancelUrl,
-      cancel_url: ctx.cancelUrl,
-      ipn_url: ctx.webhookUrl,
+      success_url: String(cfg.credentials.success_url ?? "").trim() || ctx.returnUrl,
+      fail_url: String(cfg.credentials.fail_url ?? "").trim() || ctx.cancelUrl,
+      cancel_url: String(cfg.credentials.cancel_url ?? "").trim() || ctx.cancelUrl,
+      ipn_url: String(cfg.credentials.ipn_url ?? "").trim() || ctx.webhookUrl,
       cus_name: ctx.customerName || "Customer",
       cus_email: ctx.customerEmail,
       cus_phone: ctx.customerPhone || "01700000000",

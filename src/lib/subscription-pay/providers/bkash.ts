@@ -10,10 +10,12 @@ export const bkash: SubscriptionPaymentProvider = {
     methods: ["bkash"],
     supportsSandbox: true,
     credentialFields: [
-      { key: "app_key", label: "App Key", type: "text" },
-      { key: "app_secret", label: "App Secret", type: "password" },
-      { key: "username", label: "Username", type: "text" },
-      { key: "password", label: "Password", type: "password" },
+      { key: "app_key", label: "App Key", type: "text", required: true, group: "Credentials" },
+      { key: "app_secret", label: "App Secret", type: "password", required: true, group: "Credentials" },
+      { key: "username", label: "Username", type: "text", required: true, group: "Credentials" },
+      { key: "password", label: "Password", type: "password", required: true, group: "Credentials" },
+      { key: "merchant_number", label: "Merchant Number", type: "text", group: "Credentials", helper: "Your bKash merchant account number." },
+      { key: "callback_url", label: "Callback URL", type: "url", group: "Callback URLs" },
     ],
   },
   async testConnection() {

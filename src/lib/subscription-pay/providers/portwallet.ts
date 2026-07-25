@@ -7,9 +7,17 @@ export const portwallet: SubscriptionPaymentProvider = {
     methods: ["visa", "mastercard", "amex", "bkash", "nagad"],
     supportsSandbox: true,
     credentialFields: [
-      { key: "merchant_id", label: "Merchant ID", type: "text" },
-      { key: "api_key", label: "API Key", type: "password" },
-      { key: "secret_key", label: "Secret Key", type: "password" },
+      { key: "merchant_id", label: "Merchant ID", type: "text", required: true, group: "Credentials" },
+      { key: "api_key", label: "API Key", type: "password", required: true, group: "Credentials" },
+      { key: "secret_key", label: "Secret Key", type: "password", required: true, group: "Credentials" },
+      { key: "currency", label: "Currency", type: "select", group: "Credentials",
+        options: [
+          { label: "BDT — Bangladeshi Taka", value: "BDT" },
+          { label: "USD — US Dollar", value: "USD" },
+        ], placeholder: "BDT" },
+      { key: "success_url", label: "Success URL", type: "url", group: "Callback URLs" },
+      { key: "fail_url", label: "Fail URL", type: "url", group: "Callback URLs" },
+      { key: "ipn_url", label: "IPN URL", type: "url", group: "Callback URLs" },
     ],
   },
   async testConnection(cfg) {

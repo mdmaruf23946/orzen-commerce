@@ -4,10 +4,17 @@
 export type CredentialField = {
   key: string;
   label: string;
-  type: "text" | "password" | "select";
+  type: "text" | "password" | "select" | "textarea" | "url" | "image" | "number";
   placeholder?: string;
   options?: { label: string; value: string }[];
   helper?: string;
+  /** Grouping label for sectioned UI (e.g. "Credentials", "URLs", "Bank details") */
+  group?: string;
+  /** When true, the UI blocks Save if empty (server still trusts adapter.testConnection) */
+  required?: boolean;
+  /** Regex hint (client-side only) used to show inline format warnings */
+  pattern?: string;
+  patternHint?: string;
 };
 
 export type ProviderMeta = {
