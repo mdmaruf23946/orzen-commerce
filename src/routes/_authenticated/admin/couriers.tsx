@@ -34,12 +34,25 @@ function CouriersPage() {
   const fetchStore = useServerFn(getMyStore);
   const saveFn = useServerFn(updateCouriers);
   const testFn = useServerFn(testCourierConnection);
+  const fetchProviders = useServerFn(listPublicCourierProviders);
   const qc = useQueryClient();
 
   const { data: store } = useQuery({
     queryKey: ["admin", "store"],
     queryFn: () => fetchStore(),
   });
+
+  const { data: providers } = useQuery({
+    queryKey: ["courier-providers-public"],
+    queryFn: () => fetchProviders(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const logoByCode: Record<string, string | null> = {};
+  for (const p of (providers ?? []) as Array<{ code: string; logo_url: string | null }>) {
+    logoByCode[p.code] = p.logo_url;
+  }
+
 
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState<CourierKey | null>(null);
