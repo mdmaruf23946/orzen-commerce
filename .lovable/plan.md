@@ -1,91 +1,69 @@
+## Goal
 
-# Zone-Based Delivery System
+Redesign `/admin/settings` into a clean, sectioned Store Settings page with cards, sticky Save bar, and the new fields listed — without touching sidebar menus or duplicating features that live elsewhere (Invoice numbering, Delivery, Payments, Theme colors, Marketing, SEO, Legal etc. stay where they are).
 
-Replace the two-field `delivery` JSON (`inside_city` / `outside_city` / `free_min` / `cod_enabled`) with a scalable per-store delivery zones table, while keeping the existing `delivery.free_min` and `delivery.cod_enabled` toggles (no regression in checkout/order behavior).
+## Scope check vs current page
 
-## Database
+The existing page currently mixes: Branding, Contact, Mobile wallet, Customer accounts (Require login), Invoice numbering, Danger zone. The redesign will:
 
-New migration adds `public.delivery_zones`:
+- Keep: Store Identity, Contact, Customer login setting, Danger zone (with confirm — already present).
+- Move OUT of this page: Mobile wallet fields (belong in Payment Gateway module) and Invoice numbering card (already has its own settings surface; keep only if user wants — see Q1). Header/title-bar/footer/button colors already live in Theme page and are not re-added here.
+- Add: Social Links (Instagram, YouTube, TikTok, LinkedIn, Website), Business Information, Localization, Guest Checkout toggle, Email address.
 
-- `id uuid pk`
-- `store_id uuid` → `stores(id)`
-- `name text` (e.g. "Dhaka City")
-- `charge numeric(10,2)` (delivery fee)
-- `eta text` (free-form, e.g. "1–2 Days")
-- `is_active bool default true`
-- `is_default bool default false`
-- `sort_order int default 0`
-- `courier_code text null` — future courier mapping (steadfast/pathao/redx/paperfly/sundarban)
-- `courier_config jsonb default '{}'` — future per-zone courier settings (area codes, IDs)
-- `created_at`, `updated_at` timestamps + trigger
+## Database changes (one migration)
 
-Constraints:
-- Partial unique index: only one default per store where `is_default = true`.
-- GRANT: `authenticated` SELECT/INSERT/UPDATE/DELETE, `service_role` ALL, `anon` SELECT (needed by public storefront checkout).
-- RLS: owner full manage via `is_store_owner(store_id)`; public SELECT when the parent store is active AND zone `is_active = true`.
-- Backfill trigger: seed two zones from the current `stores.delivery` JSON for existing stores (`Inside City` default + `Outside City`) on first read is not viable — handled instead by a one-time migration `INSERT ... SELECT` over `stores` that reads `delivery->>inside_city` / `outside_city`. Missing values → skip. Ensures no store is left with zero zones.
+Add nullable columns to `public.stores`:
 
-Keep `stores.delivery` JSON as-is for `free_min` and `cod_enabled` (already read in checkout).
+- `email text`, `instagram text`, `youtube text`, `tiktok text`, `linkedin text`, `website text`
+- `business_name text`, `owner_name text`, `trade_license text`, `tax_number text`
+- `currency text default 'BDT'`, `language text default 'en'`, `timezone text default 'Asia/Dhaka'`
+- `allow_guest_checkout boolean default true`
 
-## Server functions (`src/lib/admin.functions.ts`)
+No new tables, no RLS changes (existing owner policies cover these).
 
-New protected fns (owner scoped via `requireSupabaseAuth` + `is_store_owner` check):
-- `listDeliveryZones()` — returns all zones for the owner's store, ordered by `sort_order, name`.
-- `createDeliveryZone({ name, charge, eta, is_active, is_default })`.
-- `updateDeliveryZone({ id, ...fields })`.
-- `deleteDeliveryZone({ id })`.
-- `setDefaultDeliveryZone({ id })` — atomic: clears any other default, sets this one.
-- `reorderDeliveryZones({ ids: string[] })`.
+## Server functions
 
-Setting/creating a zone with `is_default = true` unsets others in the same transaction.
+Update `updateMyStore` in `src/lib/admin.functions.ts`:
+- Extend Zod schema with the new optional fields.
+- Persist them in the update payload.
+- Keep existing fields (name, slug, logo, phone, whatsapp, facebook, address, primary_color, bkash/nagad) working — bkash/nagad remain writable via API for backward compat; only the UI moves.
 
-Keep the existing `updateDelivery` fn but narrow its schema to `{ free_min, cod_enabled }` — inside/outside fields are removed from the settings form.
+Storefront helper `getPublicStoreBySlug` / storefront queries: extend safe-column projection to include the new social links + currency + language so the storefront can hide empty ones automatically.
 
-## Public/storefront
+## UI: `src/routes/_authenticated/admin/settings.tsx`
 
-`src/lib/storefront.functions.ts`:
-- `getStoreDeliveryZones({ storeId })` — public SECURITY DEFINER-safe read (via RLS `anon` SELECT) returning only active zones with `id, name, charge, eta, is_default`.
-- `placeOrder` — replace `insideCity` with `deliveryZoneId`. Look up zone by id AND store_id AND `is_active`; use its `charge` for `delivery_amount`. Keep the free-shipping coupon + `free_min` logic.
+Rewrite the page structure. One `<form>` with a sticky bottom Save bar (mobile + desktop). Sections rendered as cards with icon + heading + description:
 
-`orders` table already stores `delivery_amount` as a numeric — no schema change needed. Add nullable `delivery_zone_id uuid` column to `orders` in the same migration for reporting (FK, on delete set null).
+1. **Store Identity** — logo uploader, name*, slug*, description, primary color (picker + hex).
+2. **Contact Information** — phone, whatsapp, email, address.
+3. **Social Links** — facebook, instagram, youtube, tiktok, linkedin, website. Note under card: "Empty links are automatically hidden on your storefront."
+4. **Business Information** — business_name, owner_name, trade_license, tax_number.
+5. **Customer Login Settings** — three switches: Enable customer accounts (existing `require_customer_login` inverse + new dedicated toggle — see Q2), Allow guest checkout, Require login before checkout (uses existing `adminSetRequireCustomerLogin`).
+6. **Localization** — currency select (BDT/USD/EUR/GBP/INR + free text), language select (en/bn), timezone select (common list).
+7. **Danger Zone** — unchanged Reset to Default Template with existing AlertDialog.
 
-## Admin UI
+Sticky save bar: `sticky bottom-0` container with backdrop blur, showing "Save changes" button (loading state) and unsaved-changes indicator. Zod client validation for required fields (name, slug). Toast on success/error (already wired via sonner).
 
-Replace `src/routes/_authenticated/admin/delivery.tsx` with a zone manager:
-
-- Top card: general settings — `Free delivery minimum (৳)` + `Cash on Delivery` switch (calls existing `updateDelivery`).
-- Zones card:
-  - Header with "Add zone" primary button.
-  - Table (desktop) / stacked cards (mobile) listing zones with columns: Name, Charge, ETA, Default (radio), Enabled (switch), actions (Edit, Delete).
-  - Inline dialog for add/edit with fields Name, Charge (৳), ETA (text), Active switch, Default switch.
-  - Drag handle for reorder (optional; simple up/down arrows to stay lightweight — no dnd-kit dep needed).
-- Mutations use `useMutation` + `queryClient.invalidateQueries(['admin','delivery-zones'])` — no full page reloads.
-- Empty state: "No zones yet — add your first delivery zone" with CTA.
-- Reuse existing `Button`, `Input`, `Label`, `Switch`, `Dialog`, `Card` shadcn primitives to match admin design.
-
-## Checkout UI (`src/routes/store/$slug/checkout.tsx`)
-
-- Replace the two hard-coded radio buttons ("Inside city / Outside city") with a dynamic zone selector fed by `getStoreDeliveryZones`.
-  - If ≥1 zones: render as radio cards (name + ETA + charge) — pre-select `is_default` (or first).
-  - If 0 zones: hide the selector; `delivery_amount = 0`.
-- Compute `shipping` from selected zone's `charge` (respecting `free_min` and coupon `free_shipping`).
-- Pass `deliveryZoneId` to `placeOrder` instead of `insideCity`.
-- Fully client-side, one query on mount, no reloads.
-
-## Courier future-proofing
-
-`courier_code` + `courier_config` on `delivery_zones` let a future courier module map a zone to a provider (e.g. `{ courier_code: 'steadfast', courier_config: { area_id: 'dhaka-1' } }`) without further schema changes. The order confirmation flow can later read the selected zone's courier config to auto-create a shipment.
-
-## Out of scope
-
-- Actual courier API integrations (SteadFast, Pathao, etc.) — only schema hooks.
-- District/thana pre-seeded lookup — owners define zones freely.
-- Weight/volume-based pricing tiers.
+Storefront: `src/components/storefront/*` footer/social bar reads new fields and skips falsy ones (single-line change wherever social links render).
 
 ## Files touched
 
-- New migration (delivery_zones table + orders.delivery_zone_id + backfill).
-- `src/lib/admin.functions.ts` — zone CRUD fns + narrowed `updateDelivery`.
-- `src/lib/storefront.functions.ts` — `getStoreDeliveryZones` + `placeOrder` zone lookup.
-- `src/routes/_authenticated/admin/delivery.tsx` — full rewrite.
-- `src/routes/store/$slug/checkout.tsx` — dynamic zone selector, remove `insideCity` state.
+- Migration (add columns).
+- `src/lib/admin.functions.ts` — extend `updateMyStore` schema + payload.
+- `src/lib/storefront.functions.ts` — extend public store projection.
+- `src/routes/_authenticated/admin/settings.tsx` — full redesign.
+- Storefront social/footer component — hide-empty logic (one file, once identified).
+
+## Out of scope (explicit)
+
+- Invoice numbering card (has its own settings). See Q1.
+- Mobile wallet numbers (owned by Payment Gateway module).
+- Theme colors beyond Primary (owned by Theme page).
+- No sidebar changes.
+
+## Questions
+
+Q1. Should the existing **Invoice numbering** card stay on this page, or move out (it's operational config, not "general store settings")?
+Q2. "Enable/Disable Customer Account Login" vs existing "Require login before checkout" — treat as two independent switches (enable accounts feature + separately require login), or is "Enable accounts" just a rename of the existing toggle?
+
+If you're fine with: keep Invoice card in place (Q1 = keep) and treat customer-accounts as a single existing toggle (Q2 = same), I'll proceed with that default.
