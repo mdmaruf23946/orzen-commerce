@@ -743,7 +743,10 @@ export type Database = {
           code: string
           config: Json
           created_at: string
+          dark_logo_url: string | null
           description: string | null
+          docs_url: string | null
+          favicon_url: string | null
           icon_bg_color: string | null
           id: string
           is_active: boolean
@@ -751,7 +754,10 @@ export type Database = {
           logo_url: string | null
           name: string
           secondary_color: string | null
+          sort_order: number
+          support_url: string | null
           updated_at: string
+          website_url: string | null
         }
         Insert: {
           api_key?: string | null
@@ -760,7 +766,10 @@ export type Database = {
           code: string
           config?: Json
           created_at?: string
+          dark_logo_url?: string | null
           description?: string | null
+          docs_url?: string | null
+          favicon_url?: string | null
           icon_bg_color?: string | null
           id?: string
           is_active?: boolean
@@ -768,7 +777,10 @@ export type Database = {
           logo_url?: string | null
           name: string
           secondary_color?: string | null
+          sort_order?: number
+          support_url?: string | null
           updated_at?: string
+          website_url?: string | null
         }
         Update: {
           api_key?: string | null
@@ -777,7 +789,10 @@ export type Database = {
           code?: string
           config?: Json
           created_at?: string
+          dark_logo_url?: string | null
           description?: string | null
+          docs_url?: string | null
+          favicon_url?: string | null
           icon_bg_color?: string | null
           id?: string
           is_active?: boolean
@@ -785,7 +800,10 @@ export type Database = {
           logo_url?: string | null
           name?: string
           secondary_color?: string | null
+          sort_order?: number
+          support_url?: string | null
           updated_at?: string
+          website_url?: string | null
         }
         Relationships: []
       }
@@ -3903,12 +3921,18 @@ export type Database = {
         Returns: {
           brand_color: string
           code: string
+          dark_logo_url: string
           description: string
+          docs_url: string
+          favicon_url: string
           icon_bg_color: string
           is_active: boolean
           logo_url: string
           name: string
           secondary_color: string
+          sort_order: number
+          support_url: string
+          website_url: string
         }[]
       }
       get_public_delivery_zones: {
