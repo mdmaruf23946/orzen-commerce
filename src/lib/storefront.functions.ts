@@ -396,7 +396,7 @@ export const placeOrder = createServerFn({ method: "POST" })
           paymentMethod: data.paymentMethod,
           txnId: data.txnId,
           notes: data.notes,
-          insideCity: data.insideCity,
+          deliveryZoneId: data.deliveryZoneId,
           itemRows,
           subtotal,
           delivery_amount,
