@@ -1,8 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import {
+  Store as StoreIcon,
+  Phone as PhoneIcon,
+  Share2,
+  Building2,
+  Users,
+  Globe,
+  AlertTriangle,
+} from "lucide-react";
 import {
   getMyStore,
   updateMyStore,
@@ -10,16 +19,11 @@ import {
   adminGetRequireCustomerLogin,
   adminSetRequireCustomerLogin,
 } from "@/lib/admin.functions";
-import {
-  getInvoiceSettings,
-  updateInvoiceSettings,
-  computeInvoicePreview,
-  type InvoiceSettingsInput,
-} from "@/lib/invoice-settings.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { AdSlot } from "@/components/admin/AdSlot";
 import {
@@ -33,65 +37,153 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import type { ReactNode } from "react";
 
 export const Route = createFileRoute("/_authenticated/admin/settings")({
   component: SettingsPage,
 });
 
+const CURRENCIES = ["BDT", "USD", "EUR", "GBP", "INR", "PKR", "AED", "SAR"];
+const LANGUAGES = [
+  { value: "en", label: "English" },
+  { value: "bn", label: "বাংলা" },
+  { value: "hi", label: "हिन्दी" },
+  { value: "ar", label: "العربية" },
+];
+const TIMEZONES = [
+  "Asia/Dhaka",
+  "Asia/Kolkata",
+  "Asia/Karachi",
+  "Asia/Dubai",
+  "Asia/Riyadh",
+  "Asia/Singapore",
+  "Europe/London",
+  "America/New_York",
+  "UTC",
+];
+
+function Section({
+  icon: Icon,
+  title,
+  description,
+  children,
+}: {
+  icon: any;
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-6">
+      <div className="mb-4 flex items-start gap-3">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+          <Icon className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold leading-tight">{title}</h2>
+          {description && <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>}
+        </div>
+      </div>
+      <div className="space-y-4">{children}</div>
+    </section>
+  );
+}
+
+function Field({
+  label,
+  htmlFor,
+  hint,
+  children,
+}: {
+  label: string;
+  htmlFor?: string;
+  hint?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={htmlFor}>{label}</Label>
+      {children}
+      {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
 function SettingsPage() {
   const fetchStore = useServerFn(getMyStore);
   const save = useServerFn(updateMyStore);
   const resetFn = useServerFn(resetStoreToTemplate);
-  const qc = useQueryClient();
-  const { data: store } = useQuery({ queryKey: ["admin", "store"], queryFn: () => fetchStore() });
-  const [form, setForm] = useState<any>(null);
-  const [saving, setSaving] = useState(false);
-  const [resetting, setResetting] = useState(false);
   const getReqLogin = useServerFn(adminGetRequireCustomerLogin);
   const setReqLogin = useServerFn(adminSetRequireCustomerLogin);
+  const qc = useQueryClient();
+
+  const { data: store } = useQuery({ queryKey: ["admin", "store"], queryFn: () => fetchStore() });
   const { data: reqLogin } = useQuery({
     queryKey: ["admin", "require-customer-login"],
     queryFn: () => getReqLogin(),
   });
+
+  const [form, setForm] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [savingLogin, setSavingLogin] = useState(false);
 
-  // Invoice numbering
-  const fetchInvoice = useServerFn(getInvoiceSettings);
-  const saveInvoice = useServerFn(updateInvoiceSettings);
-  const { data: invoice } = useQuery({
-    queryKey: ["admin", "invoice-settings"],
-    queryFn: () => fetchInvoice(),
-  });
-  const [invForm, setInvForm] = useState<InvoiceSettingsInput | null>(null);
-  const [savingInv, setSavingInv] = useState(false);
   useEffect(() => {
-    if (invoice) {
-      setInvForm({
-        prefix: invoice.prefix,
-        separator: invoice.separator,
-        padding: invoice.padding,
-        start_number: invoice.start_number,
-        include_year: invoice.include_year,
-        include_month: invoice.include_month,
-      });
-    }
-  }, [invoice]);
+    if (store && !form) setForm({ ...store });
+  }, [store]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function submitInvoice(e: React.FormEvent) {
-    e.preventDefault();
-    if (!invForm) return;
-    setSavingInv(true);
-    try {
-      await saveInvoice({ data: invForm });
-      await qc.invalidateQueries({ queryKey: ["admin", "invoice-settings"] });
-      toast.success("Invoice settings saved");
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setSavingInv(false);
-    }
+  const dirty = useMemo(() => {
+    if (!store || !form) return false;
+    return JSON.stringify(store) !== JSON.stringify(form);
+  }, [store, form]);
+
+  if (!form) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
+
+  function set<K extends string>(k: K, v: any) {
+    setForm((f: any) => ({ ...f, [k]: v }));
   }
 
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.name?.trim()) return toast.error("Store name is required");
+    if (!form.slug?.trim()) return toast.error("Store slug is required");
+    setSaving(true);
+    try {
+      await save({
+        data: {
+          name: form.name,
+          slug: form.slug,
+          description: form.description,
+          logo_url: form.logo_url,
+          phone: form.phone,
+          whatsapp: form.whatsapp,
+          email: form.email || null,
+          facebook: form.facebook,
+          instagram: form.instagram,
+          youtube: form.youtube,
+          tiktok: form.tiktok,
+          linkedin: form.linkedin,
+          website: form.website,
+          address: form.address,
+          primary_color: form.primary_color || "#0f172a",
+          business_name: form.business_name,
+          owner_name: form.owner_name,
+          trade_license: form.trade_license,
+          tax_number: form.tax_number,
+          currency: form.currency || "BDT",
+          language: form.language || "en",
+          timezone: form.timezone || "Asia/Dhaka",
+          allow_guest_checkout: !!form.allow_guest_checkout,
+        },
+      });
+      await qc.invalidateQueries({ queryKey: ["admin", "store"] });
+      toast.success("Settings saved");
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function toggleRequireLogin(enabled: boolean) {
     setSavingLogin(true);
@@ -119,289 +211,239 @@ function SettingsPage() {
     }
   }
 
-
-
-  useEffect(() => {
-    if (store) setForm({ ...store });
-  }, [store]);
-
-  if (!form) return <div className="text-sm text-muted-foreground">Loading…</div>;
-
-  function set<K extends string>(k: K, v: any) {
-    setForm((f: any) => ({ ...f, [k]: v }));
-  }
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      await save({
-        data: {
-          name: form.name,
-          slug: form.slug,
-          description: form.description,
-          logo_url: form.logo_url,
-          phone: form.phone,
-          whatsapp: form.whatsapp,
-          facebook: form.facebook,
-          address: form.address,
-          primary_color: form.primary_color || "#0f172a",
-          header_color: form.header_color || null,
-          title_bar_color: form.title_bar_color || null,
-          footer_color: form.footer_color || null,
-          button_color: form.button_color || null,
-          bkash_number: form.bkash_number,
-          nagad_number: form.nagad_number,
-        },
-      });
-      qc.invalidateQueries({ queryKey: ["admin", "store"] });
-      toast.success("Saved");
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setSaving(false);
-    }
-  }
-
   return (
-    <form onSubmit={submit} className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-semibold">Store Settings</h1>
+    <form onSubmit={submit} className="mx-auto max-w-3xl pb-28">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold">Store Settings</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          General information customers see and how your store behaves.
+        </p>
+      </div>
 
-      <section className="space-y-4 rounded-xl border bg-card p-4">
-        <h2 className="text-sm font-semibold">Branding</h2>
-        <div className="space-y-1.5">
-          <Label>Logo</Label>
-          <ImageUploader storeId={form.id} value={form.logo_url} onChange={(v) => set("logo_url", v)} />
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="n">Store name</Label>
-            <Input id="n" required value={form.name} onChange={(e) => set("name", e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="s">Slug</Label>
-            <Input id="s" required value={form.slug} onChange={(e) => set("slug", e.target.value)} />
-          </div>
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="d">Description</Label>
-          <Textarea id="d" rows={3} value={form.description ?? ""} onChange={(e) => set("description", e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="pc">Primary color</Label>
-          <div className="flex items-center gap-2">
-            <input
-              id="pc"
-              type="color"
-              value={form.primary_color || "#0f172a"}
-              onChange={(e) => set("primary_color", e.target.value)}
-              className="h-10 w-14 rounded-md border"
-            />
-            <Input value={form.primary_color || ""} onChange={(e) => set("primary_color", e.target.value)} />
-          </div>
-        </div>
-      </section>
-
-      <section className="space-y-4 rounded-xl border bg-card p-4">
-        <h2 className="text-sm font-semibold">Contact</h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="ph">Phone</Label>
-            <Input id="ph" value={form.phone ?? ""} onChange={(e) => set("phone", e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="wa">WhatsApp</Label>
-            <Input id="wa" value={form.whatsapp ?? ""} onChange={(e) => set("whatsapp", e.target.value)} />
-          </div>
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="fb">Facebook link</Label>
-          <Input id="fb" value={form.facebook ?? ""} onChange={(e) => set("facebook", e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="ad">Address</Label>
-          <Textarea id="ad" rows={2} value={form.address ?? ""} onChange={(e) => set("address", e.target.value)} />
-        </div>
-      </section>
-
-      <section className="space-y-4 rounded-xl border bg-card p-4">
-        <h2 className="text-sm font-semibold">Mobile wallet (manual)</h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="bk">bKash number</Label>
-            <Input id="bk" value={form.bkash_number ?? ""} onChange={(e) => set("bkash_number", e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="ng">Nagad number</Label>
-            <Input id="ng" value={form.nagad_number ?? ""} onChange={(e) => set("nagad_number", e.target.value)} />
-          </div>
-        </div>
-      </section>
-
-      <Button type="submit" disabled={saving} className="w-full sm:w-auto">
-        {saving ? "Saving…" : "Save changes"}
-      </Button>
-
-      <section className="space-y-3 rounded-xl border bg-card p-4">
-        <h2 className="text-sm font-semibold">Customer accounts</h2>
-        <label className="flex items-start gap-3">
-          <input
-            type="checkbox"
-            className="mt-1 h-4 w-4"
-            checked={!!reqLogin?.enabled}
-            disabled={savingLogin}
-            onChange={(e) => toggleRequireLogin(e.target.checked)}
-          />
-          <span className="text-sm">
-            <span className="font-medium">Require customer login before checkout</span>
-            <span className="mt-0.5 block text-xs text-muted-foreground">
-              When enabled, shoppers must sign in or create a customer account before placing an order.
-            </span>
-          </span>
-        </label>
-      </section>
-
-      {invForm && (
-        <section className="space-y-4 rounded-xl border bg-card p-4">
-          <div>
-            <h2 className="text-sm font-semibold">Invoice numbering</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Customize how invoice numbers are generated when an order is confirmed. Numbers are always
-              unique per store and never reused.
-            </p>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="inv-prefix">Prefix</Label>
+      <div className="space-y-5">
+        {/* 1. Store Identity */}
+        <Section icon={StoreIcon} title="Store Identity" description="Logo, name, and brand color.">
+          <Field label="Store logo">
+            <ImageUploader storeId={form.id} value={form.logo_url} onChange={(v) => set("logo_url", v)} />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Store name *" htmlFor="s-name">
+              <Input id="s-name" required maxLength={120} value={form.name ?? ""} onChange={(e) => set("name", e.target.value)} />
+            </Field>
+            <Field label="Store slug *" htmlFor="s-slug" hint="Lowercase letters, numbers, hyphens.">
               <Input
-                id="inv-prefix"
-                value={invForm.prefix}
-                maxLength={10}
-                onChange={(e) =>
-                  setInvForm({
-                    ...invForm,
-                    prefix: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""),
-                  })
-                }
+                id="s-slug"
+                required
+                maxLength={60}
+                value={form.slug ?? ""}
+                onChange={(e) => set("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
               />
-              <p className="text-[11px] text-muted-foreground">Letters and digits only, up to 10 characters.</p>
+            </Field>
+          </div>
+          <Field label="Description" htmlFor="s-desc">
+            <Textarea id="s-desc" rows={3} maxLength={1000} value={form.description ?? ""} onChange={(e) => set("description", e.target.value)} />
+          </Field>
+          <Field label="Primary brand color" htmlFor="s-color">
+            <div className="flex items-center gap-2">
+              <input
+                id="s-color"
+                type="color"
+                value={form.primary_color || "#0f172a"}
+                onChange={(e) => set("primary_color", e.target.value)}
+                className="h-10 w-14 shrink-0 rounded-md border"
+              />
+              <Input
+                value={form.primary_color || ""}
+                onChange={(e) => set("primary_color", e.target.value)}
+                placeholder="#0f172a"
+                className="font-mono"
+              />
             </div>
-            <div className="space-y-1.5">
-              <Label>Separator</Label>
-              <div className="flex gap-1">
-                {(["-", "/", "_", ""] as const).map((sep) => (
-                  <button
-                    key={sep || "none"}
-                    type="button"
-                    onClick={() => setInvForm({ ...invForm, separator: sep })}
-                    className={`h-9 flex-1 rounded-md border text-sm ${
-                      invForm.separator === sep
-                        ? "border-primary bg-primary/10 font-medium"
-                        : "border-input hover:bg-muted"
-                    }`}
-                  >
-                    {sep === "" ? "None" : sep}
-                  </button>
-                ))}
+          </Field>
+        </Section>
+
+        {/* 2. Contact Information */}
+        <Section icon={PhoneIcon} title="Contact Information" description="How customers can reach you.">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Phone number" htmlFor="c-phone">
+              <Input id="c-phone" value={form.phone ?? ""} onChange={(e) => set("phone", e.target.value)} />
+            </Field>
+            <Field label="WhatsApp number" htmlFor="c-wa">
+              <Input id="c-wa" value={form.whatsapp ?? ""} onChange={(e) => set("whatsapp", e.target.value)} />
+            </Field>
+            <Field label="Email address" htmlFor="c-email">
+              <Input id="c-email" type="email" value={form.email ?? ""} onChange={(e) => set("email", e.target.value)} />
+            </Field>
+          </div>
+          <Field label="Store address" htmlFor="c-addr">
+            <Textarea id="c-addr" rows={2} value={form.address ?? ""} onChange={(e) => set("address", e.target.value)} />
+          </Field>
+        </Section>
+
+        {/* 3. Social Links */}
+        <Section
+          icon={Share2}
+          title="Social Links"
+          description="Empty links are automatically hidden on your storefront."
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[
+              ["facebook", "Facebook", "https://facebook.com/yourpage"],
+              ["instagram", "Instagram", "https://instagram.com/yourhandle"],
+              ["youtube", "YouTube", "https://youtube.com/@channel"],
+              ["tiktok", "TikTok", "https://tiktok.com/@handle"],
+              ["linkedin", "LinkedIn", "https://linkedin.com/company/..."],
+              ["website", "Website (optional)", "https://yourdomain.com"],
+            ].map(([k, label, ph]) => (
+              <Field key={k} label={label} htmlFor={`soc-${k}`}>
+                <Input
+                  id={`soc-${k}`}
+                  value={form[k] ?? ""}
+                  placeholder={ph}
+                  onChange={(e) => set(k, e.target.value)}
+                />
+              </Field>
+            ))}
+          </div>
+        </Section>
+
+        {/* 4. Business Information */}
+        <Section icon={Building2} title="Business Information" description="Used on invoices and legal pages.">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Business name" htmlFor="b-name">
+              <Input id="b-name" value={form.business_name ?? ""} onChange={(e) => set("business_name", e.target.value)} />
+            </Field>
+            <Field label="Owner name" htmlFor="b-owner">
+              <Input id="b-owner" value={form.owner_name ?? ""} onChange={(e) => set("owner_name", e.target.value)} />
+            </Field>
+            <Field label="Trade license (optional)" htmlFor="b-tl">
+              <Input id="b-tl" value={form.trade_license ?? ""} onChange={(e) => set("trade_license", e.target.value)} />
+            </Field>
+            <Field label="Tax / VAT number (optional)" htmlFor="b-tax">
+              <Input id="b-tax" value={form.tax_number ?? ""} onChange={(e) => set("tax_number", e.target.value)} />
+            </Field>
+          </div>
+        </Section>
+
+        {/* 5. Customer Login Settings */}
+        <Section icon={Users} title="Customer Login Settings" description="Control how shoppers check out.">
+          <label className="flex items-start justify-between gap-3 rounded-lg border p-3">
+            <div className="min-w-0">
+              <div className="text-sm font-medium">Allow guest checkout</div>
+              <div className="text-xs text-muted-foreground">Shoppers can order without creating an account.</div>
+            </div>
+            <Switch
+              checked={!!form.allow_guest_checkout}
+              onCheckedChange={(v) => set("allow_guest_checkout", v)}
+            />
+          </label>
+          <label className="flex items-start justify-between gap-3 rounded-lg border p-3">
+            <div className="min-w-0">
+              <div className="text-sm font-medium">Require login before checkout</div>
+              <div className="text-xs text-muted-foreground">
+                When enabled, shoppers must sign in or create a customer account before placing an order.
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="inv-padding">Number padding ({invForm.padding} digits)</Label>
-              <input
-                id="inv-padding"
-                type="range"
-                min={4}
-                max={8}
-                step={1}
-                value={invForm.padding}
-                onChange={(e) => setInvForm({ ...invForm, padding: Number(e.target.value) })}
-                className="w-full"
-              />
+            <Switch
+              checked={!!reqLogin?.enabled}
+              disabled={savingLogin}
+              onCheckedChange={toggleRequireLogin}
+            />
+          </label>
+        </Section>
+
+        {/* 6. Localization */}
+        <Section icon={Globe} title="Localization" description="Currency, language, and timezone.">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="Currency" htmlFor="loc-cur">
+              <select
+                id="loc-cur"
+                value={form.currency || "BDT"}
+                onChange={(e) => set("currency", e.target.value)}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                {CURRENCIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Language" htmlFor="loc-lang">
+              <select
+                id="loc-lang"
+                value={form.language || "en"}
+                onChange={(e) => set("language", e.target.value)}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                {LANGUAGES.map((l) => (
+                  <option key={l.value} value={l.value}>{l.label}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Time zone" htmlFor="loc-tz">
+              <select
+                id="loc-tz"
+                value={form.timezone || "Asia/Dhaka"}
+                onChange={(e) => set("timezone", e.target.value)}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                {TIMEZONES.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </Field>
+          </div>
+        </Section>
+
+        {/* 7. Danger Zone */}
+        <section className="rounded-2xl border border-destructive/40 bg-destructive/5 p-4 sm:p-6">
+          <div className="mb-3 flex items-start gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-destructive/10 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="inv-start">Starting number</Label>
-              <Input
-                id="inv-start"
-                type="number"
-                min={1}
-                value={invForm.start_number}
-                onChange={(e) =>
-                  setInvForm({ ...invForm, start_number: Math.max(1, Number(e.target.value) || 1) })
-                }
-              />
-              <p className="text-[11px] text-muted-foreground">
-                Applied only if higher than the current sequence.
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold text-destructive">Danger Zone</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Replace your current design, banners, categories and products with the latest default template. This cannot be undone.
               </p>
             </div>
           </div>
-
-          <div className="flex flex-wrap gap-4">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="h-4 w-4"
-                checked={invForm.include_year}
-                onChange={(e) => setInvForm({ ...invForm, include_year: e.target.checked })}
-              />
-              Include year (YYYY)
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="h-4 w-4"
-                checked={invForm.include_month}
-                onChange={(e) => setInvForm({ ...invForm, include_month: e.target.checked })}
-              />
-              Include month (MM)
-            </label>
-          </div>
-
-          <div className="rounded-lg bg-muted p-3">
-            <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Preview</div>
-            <div className="mt-1 font-mono text-base">
-              {computeInvoicePreview(invForm, Math.max(invoice?.next_number ?? 1, invForm.start_number))}
-            </div>
-          </div>
-
-          <Button type="button" onClick={submitInvoice} disabled={savingInv} size="sm">
-            {savingInv ? "Saving…" : "Save invoice settings"}
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button type="button" variant="destructive" size="sm" disabled={resetting}>
+                {resetting ? "Resetting…" : "Reset to Default Template"}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reset to default template?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Your current banners, categories and products will be deleted and replaced with the platform's
+                  latest default template. Your store settings (design, theme, defaults) will also be overwritten.
+                  This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={reset}>Yes, reset</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </section>
-      )}
 
+        <AdSlot slotKey="admin_settings_bottom" />
+      </div>
 
-
-
-      <section className="space-y-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
-        <h2 className="text-sm font-semibold text-destructive">Danger zone</h2>
-        <p className="text-xs text-muted-foreground">
-          Replace your current design, theme, banners, categories and products with the latest default template
-          set by the platform. This cannot be undone.
-        </p>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button type="button" variant="destructive" size="sm" disabled={resetting}>
-              {resetting ? "Resetting…" : "Reset to Default Template"}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Reset to default template?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Your current banners, categories and products will be deleted and replaced with the platform's
-                latest default template. Your store settings (design, theme, defaults) will also be overwritten.
-                This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={reset}>Yes, reset</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </section>
-      <AdSlot slotKey="admin_settings_bottom" />
+      {/* Sticky save bar */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <p className="hidden text-xs text-muted-foreground sm:block">
+            {dirty ? "You have unsaved changes." : "All changes saved."}
+          </p>
+          <Button type="submit" disabled={saving || !dirty} className="ml-auto min-w-32">
+            {saving ? "Saving…" : "Save changes"}
+          </Button>
+        </div>
+      </div>
     </form>
   );
 }
