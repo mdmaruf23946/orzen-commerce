@@ -1,66 +1,91 @@
 
-# Import / Export Products — Professional Redesign
+# Zone-Based Delivery System
 
-Replace the current thin `import-export.tsx` (CSV only, no preview, no update, no history) with a modern wizard UI plus stronger server functions and a history table.
+Replace the two-field `delivery` JSON (`inside_city` / `outside_city` / `free_min` / `cod_enabled`) with a scalable per-store delivery zones table, while keeping the existing `delivery.free_min` and `delivery.cod_enabled` toggles (no regression in checkout/order behavior).
 
-## Scope
-- Route: `src/routes/_authenticated/admin/import-export.tsx` — full redesign.
-- Server logic: `src/lib/business.functions.ts` — extend import/export functions.
-- New DB table: `product_import_export_history` for last activity tracking.
-- New component files under `src/components/admin/import-export/`.
-- Plan-gated via existing `FeatureGate feature="import_export"`.
+## Database
 
-## UI (wizard, no page reloads)
+New migration adds `public.delivery_zones`:
 
-Top summary cards (responsive grid):
-- Total Products, Last Import (time + user + rows), Last Export (time + user + rows).
-- Two large primary CTAs: **Import Products**, **Export Products** (open dialogs).
+- `id uuid pk`
+- `store_id uuid` → `stores(id)`
+- `name text` (e.g. "Dhaka City")
+- `charge numeric(10,2)` (delivery fee)
+- `eta text` (free-form, e.g. "1–2 Days")
+- `is_active bool default true`
+- `is_default bool default false`
+- `sort_order int default 0`
+- `courier_code text null` — future courier mapping (steadfast/pathao/redx/paperfly/sundarban)
+- `courier_config jsonb default '{}'` — future per-zone courier settings (area codes, IDs)
+- `created_at`, `updated_at` timestamps + trigger
 
-### Import dialog — 4 steps
-1. **Source** — Drag-and-drop uploader accepting `.csv`, `.xlsx`, or Google Sheets URL/ID. "Download sample template" (CSV + XLSX) button. Table of required/optional columns with descriptions.
-2. **Mode** — radio: Add new only / Update existing (by SKU) / Add + Update. Match key selector (SKU or Product Code).
-3. **Preview & validate** — table of first 20 parsed rows, per-row status badge (New / Update / Error), inline reason for failures with row numbers. Toggle "Skip invalid rows" or "Fix in place" (editable cells for common fixes: price, stock, status). Summary counters update live.
-4. **Import** — real-time progress bar (chunked 100 rows/request via server fn), final summary card: Total / Imported / Updated / Skipped / Failed with downloadable error report CSV.
+Constraints:
+- Partial unique index: only one default per store where `is_default = true`.
+- GRANT: `authenticated` SELECT/INSERT/UPDATE/DELETE, `service_role` ALL, `anon` SELECT (needed by public storefront checkout).
+- RLS: owner full manage via `is_store_owner(store_id)`; public SELECT when the parent store is active AND zone `is_active = true`.
+- Backfill trigger: seed two zones from the current `stores.delivery` JSON for existing stores (`Inside City` default + `Outside City`) on first read is not viable — handled instead by a one-time migration `INSERT ... SELECT` over `stores` that reads `delivery->>inside_city` / `outside_city`. Missing values → skip. Ensures no store is left with zero zones.
 
-### Export dialog
-- Filters: Category (multi), Brand, Stock status, Active/Inactive, Date range (created_at).
-- Column picker (checkbox list, sensible defaults).
-- Format: CSV / XLSX.
-- Progress indicator; result streamed to a Blob download; log to history.
+Keep `stores.delivery` JSON as-is for `free_min` and `cod_enabled` (already read in checkout).
 
-### History section
-- Bottom card listing last 20 import/export runs: type, file name, rows, status, user, time. Pulled from new table.
+## Server functions (`src/lib/admin.functions.ts`)
 
-Responsive: cards stack on mobile, dialogs full-screen `<480px`, tables become card lists.
+New protected fns (owner scoped via `requireSupabaseAuth` + `is_store_owner` check):
+- `listDeliveryZones()` — returns all zones for the owner's store, ordered by `sort_order, name`.
+- `createDeliveryZone({ name, charge, eta, is_active, is_default })`.
+- `updateDeliveryZone({ id, ...fields })`.
+- `deleteDeliveryZone({ id })`.
+- `setDefaultDeliveryZone({ id })` — atomic: clears any other default, sets this one.
+- `reorderDeliveryZones({ ids: string[] })`.
 
-## Technical details
+Setting/creating a zone with `is_default = true` unsets others in the same transaction.
 
-### Parsing
-- Add `xlsx` npm package for `.xlsx` (SheetJS) and reuse for CSV read/write. For Google Sheets, accept a public sheet URL, extract `spreadsheetId`, fetch via existing `google_sheets` gateway if a workspace connection exists, else instruct user to publish as CSV and paste URL (fallback fetch through server fn to avoid CORS).
-- All parsing happens client-side except Sheets fetch (server fn).
+Keep the existing `updateDelivery` fn but narrow its schema to `{ free_min, cod_enabled }` — inside/outside fields are removed from the settings form.
 
-### Server functions (extend `src/lib/business.functions.ts`)
-- `bulkImportProducts` — extend input: `mode: "add" | "update" | "upsert"`, `matchKey: "sku" | "code"`, wider optional fields (brand, category_slug, images[], features, specifications, etc.), keep chunk size 500. Returns `{ imported, updated, skipped, failed, errors: {row, reason}[] }`. Update path uses `update ... where store_id=sid and sku=?`. Add path insert; Upsert combines. Writes a history row on completion.
-- `exportProductsFiltered` — inputs: filters, columns[], format (`csv`|`xlsx_data`). Returns rows + header (client builds XLSX to keep worker light). Writes a history row.
-- `getImportExportHistory` — last 20 rows for current store.
-- `fetchGoogleSheetCsv` — server fn: given URL, fetch CSV, return text (validates it's a Google Sheets host).
+## Public/storefront
 
-### Database
-New migration:
-- `public.product_import_export_history` (store_id, user_id, kind ['import'|'export'], file_name, format, total, imported, updated, skipped, failed, filters jsonb, created_at).
-- GRANT + RLS: store owner select/insert own rows.
+`src/lib/storefront.functions.ts`:
+- `getStoreDeliveryZones({ storeId })` — public SECURITY DEFINER-safe read (via RLS `anon` SELECT) returning only active zones with `id, name, charge, eta, is_default`.
+- `placeOrder` — replace `insideCity` with `deliveryZoneId`. Look up zone by id AND store_id AND `is_active`; use its `charge` for `delivery_amount`. Keep the free-shipping coupon + `free_min` logic.
 
-### Files
-- New: `src/components/admin/import-export/ImportDialog.tsx`, `ExportDialog.tsx`, `HistoryCard.tsx`, `SummaryCards.tsx`, `sample-template.ts` (builds sample CSV/XLSX Blob).
-- Rewrite: `src/routes/_authenticated/admin/import-export.tsx` (composes above).
-- Extend: `src/lib/business.functions.ts` (functions above).
-- Add dep: `xlsx` via `bun add xlsx`.
+`orders` table already stores `delivery_amount` as a numeric — no schema change needed. Add nullable `delivery_zone_id uuid` column to `orders` in the same migration for reporting (FK, on delete set null).
 
-### Performance
-- Chunked async imports (100/req) with progress via sequential awaits.
-- Preview limited to 20 rows; full validation runs in a `requestIdleCallback` loop with counters, no UI freeze.
-- Export uses `useQuery` with `enabled:false`; run on click, no route reloads.
+## Admin UI
+
+Replace `src/routes/_authenticated/admin/delivery.tsx` with a zone manager:
+
+- Top card: general settings — `Free delivery minimum (৳)` + `Cash on Delivery` switch (calls existing `updateDelivery`).
+- Zones card:
+  - Header with "Add zone" primary button.
+  - Table (desktop) / stacked cards (mobile) listing zones with columns: Name, Charge, ETA, Default (radio), Enabled (switch), actions (Edit, Delete).
+  - Inline dialog for add/edit with fields Name, Charge (৳), ETA (text), Active switch, Default switch.
+  - Drag handle for reorder (optional; simple up/down arrows to stay lightweight — no dnd-kit dep needed).
+- Mutations use `useMutation` + `queryClient.invalidateQueries(['admin','delivery-zones'])` — no full page reloads.
+- Empty state: "No zones yet — add your first delivery zone" with CTA.
+- Reuse existing `Button`, `Input`, `Label`, `Switch`, `Dialog`, `Card` shadcn primitives to match admin design.
+
+## Checkout UI (`src/routes/store/$slug/checkout.tsx`)
+
+- Replace the two hard-coded radio buttons ("Inside city / Outside city") with a dynamic zone selector fed by `getStoreDeliveryZones`.
+  - If ≥1 zones: render as radio cards (name + ETA + charge) — pre-select `is_default` (or first).
+  - If 0 zones: hide the selector; `delivery_amount = 0`.
+- Compute `shipping` from selected zone's `charge` (respecting `free_min` and coupon `free_shipping`).
+- Pass `deliveryZoneId` to `placeOrder` instead of `insideCity`.
+- Fully client-side, one query on mount, no reloads.
+
+## Courier future-proofing
+
+`courier_code` + `courier_config` on `delivery_zones` let a future courier module map a zone to a provider (e.g. `{ courier_code: 'steadfast', courier_config: { area_id: 'dhaka-1' } }`) without further schema changes. The order confirmation flow can later read the selected zone's courier config to auto-create a shipment.
 
 ## Out of scope
-- Editing product variants via CSV (kept minimal — variants stay in product editor).
-- Image file uploads via CSV (only URLs supported, matching existing schema).
+
+- Actual courier API integrations (SteadFast, Pathao, etc.) — only schema hooks.
+- District/thana pre-seeded lookup — owners define zones freely.
+- Weight/volume-based pricing tiers.
+
+## Files touched
+
+- New migration (delivery_zones table + orders.delivery_zone_id + backfill).
+- `src/lib/admin.functions.ts` — zone CRUD fns + narrowed `updateDelivery`.
+- `src/lib/storefront.functions.ts` — `getStoreDeliveryZones` + `placeOrder` zone lookup.
+- `src/routes/_authenticated/admin/delivery.tsx` — full rewrite.
+- `src/routes/store/$slug/checkout.tsx` — dynamic zone selector, remove `insideCity` state.
