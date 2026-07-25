@@ -877,7 +877,13 @@ export const updateDeliveryZone = createServerFn({ method: "POST" })
         .eq("store_id", storeId)
         .neq("id", data.id);
     }
-    const patch: Record<string, any> = {};
+    const patch: {
+      name?: string;
+      charge?: number;
+      eta?: string | null;
+      is_active?: boolean;
+      is_default?: boolean;
+    } = {};
     if (data.name !== undefined) patch.name = data.name;
     if (data.charge !== undefined) patch.charge = data.charge;
     if (data.eta !== undefined) patch.eta = data.eta;
