@@ -1,77 +1,70 @@
 
-# Payment Gateway UI/UX Professional Upgrade
+## Goal
 
-Scope: Store Admin → Payment Gateway page and its provider adapters. Winner Admin toggle page is untouched. All existing server functions (`listStorePaymentGateways`, `saveStorePaymentGateway`, `testStorePaymentGateway`, `setActiveStorePaymentGateway`, `toggleStorePaymentGateway`, `disconnectStorePaymentGateway`) keep their signatures; we only extend provider metadata and the UI.
+Give the Winner Admin one place to control the branding (logo, colors, description, status) of every Payment Gateway and Courier. Store admins automatically pick up those brand values everywhere — no per-store logo uploads.
 
-## 1. Provider branding registry
+## Current state (verified)
 
-New file `src/components/admin/payments/providers.ts` — central registry for all 8 providers (SSLCommerz, ShurjoPay, AmarPay, PortWallet, Stripe, PayPal, bKash, Manual/Bank Transfer):
+- `platform_payment_gateways` table stores `id, label, enabled, sort_order, logo_url, notes` — no brand color, secondary color, background, or description columns yet. Owner page (`owner/payment-gateways.tsx`) only toggles enabled; there is no upload UI.
+- `courier_providers` already has `logo_url`, `is_active`, `is_default`. Owner page (`owner/couriers.tsx`) already uploads logos to `store-assets` under `courier-logos/…`. No brand color fields yet.
+- Store side already reads shared logos via `get_public_courier_providers` RPC (couriers) but payment gateway brand is currently hard-coded in `src/components/admin/payments/providers.ts` (`PAYMENT_BRANDS`) — store admin never fetches gateway branding from the DB.
+- `BrandMark` (payments) already accepts a `logoUrl` prop; couriers use `BrandBadge` similarly. Both just need to be fed dynamic values.
 
-- `id`, `label`, `tagline`, `brandColor` (hex), `accentColor`, `logo` (inline SVG component or `/assets` PNG), `icon` (lucide fallback), `docsUrl`, `region`.
-- Consumed by the card, the config sheet, badges, loading spinners, and success/error toasts so branding is consistent everywhere.
+## What to build
 
-New component `src/components/admin/payments/BrandMark.tsx` — renders the logo tile with brand-colored ring, works in light + dark mode (white inner tile like the courier `BrandBadge`).
+### 1. Database migration — extend both branding tables
 
-## 2. Expanded provider credential schemas
+Add these columns (nullable, with sensible defaults) to `platform_payment_gateways` and `courier_providers`:
 
-Edit each adapter under `src/lib/subscription-pay/providers/*` to expand `credentialFields` per each provider's official docs, keeping existing keys for backward compatibility. Fields added become optional so already-saved connections still validate.
+- `brand_color TEXT` (hex)
+- `secondary_color TEXT` (hex, optional)
+- `icon_bg_color TEXT` (hex, optional)
+- `description TEXT` (short tagline)
 
-- **SSLCommerz**: `store_id`, `store_password`, `sandbox`, `success_url`, `fail_url`, `cancel_url`, `ipn_url`, `currency`.
-- **ShurjoPay**: `merchant_username`, `merchant_password`, `prefix`, `return_url`, `callback_url`, `currency`.
-- **AmarPay**: `store_id`, `signature_key`, `success_url`, `fail_url`, `cancel_url`, `ipn_url`, `currency`.
-- **PortWallet**: `merchant_id`, `api_key`, `secret_key`, `success_url`, `fail_url`, `ipn_url`, `currency`.
-- **Stripe**: `publishable_key`, `secret_key`, `webhook_secret`, `currency`, `statement_descriptor`.
-- **PayPal**: `client_id`, `client_secret`, `webhook_id`, `return_url`, `cancel_url`, `currency`.
-- **bKash**: `app_key`, `app_secret`, `username`, `password`, `merchant_number`, `callback_url`.
-- **Manual / Bank Transfer**: `bank_name`, `account_name`, `account_number`, `branch`, `routing_number`, `swift`, `iban`, `bkash_number`, `nagad_number`, `rocket_number`, `upay_number`, `qr_code_url` (uploaded via existing `ImageUploader` → `store-assets/payment-qr/`), `instructions` (textarea).
+Also add matching fields to the existing public RPCs so store-side reads get them:
 
-Extend `CredentialField.type` in `providers/types.ts` with `"textarea"`, `"url"`, `"image"`, and a `group` string so the config form can render sectioned accordions (Credentials, URLs, Bank details, etc.).
+- Extend `get_public_courier_providers()` to return the new columns.
+- Add `get_public_payment_gateways()` RPC returning `id, label, logo_url, brand_color, secondary_color, icon_bg_color, description, enabled` (only where `enabled = true`), granted to `anon` + `authenticated`.
 
-## 3. Redesigned config sheet
+### 2. Winner Admin — unified "Brand Assets" page
 
-Rewrite `ConfigureForm` inside `src/routes/_authenticated/admin/payment-gateway.tsx`:
+Create `src/routes/_authenticated/owner/brand-assets.tsx` with two tabbed sections: **Payment Gateways** and **Couriers**. Register it in the Owner sidebar under Platform Settings.
 
-- Branded header with `BrandMark`, tagline, docs link.
-- Fields grouped by `group` in collapsible sections.
-- Per-field UX: show/hide toggle for `password`, copy button, paste support, `onBlur` auto-trim, inline format hints (e.g. Stripe `sk_…`, PayPal client id length), `url` fields validated with `z.string().url()`.
-- Image field uses existing `ImageUploader` component for QR code.
-- Textarea for manual instructions with 1000-char counter.
-- Sticky footer: **Test Connection**, **Save**, **Save & Set as Default** — Save is blocked when required fields are empty or format checks fail; Test runs the existing `testStorePaymentGateway` and shows an inline result banner (branded colors).
-- Preserves current "leave blank to keep existing credential" behavior.
+Each row is a professional brand card:
 
-## 4. Redesigned gateway card
+- Logo preview (SVG/PNG/WebP; upload via existing `ImageUploader` → `store-assets` bucket, path `brand-logos/<kind>/<code>-<ts>.<ext>`).
+- Brand name (label).
+- Brand color, secondary color, icon background — color-picker inputs with hex text fallback and swatch preview.
+- Short description (textarea).
+- Status toggle (Active/Inactive → maps to existing `enabled` / `is_active`).
+- Save button per card; live preview of the resulting brand card at the top of the editor.
 
-Update `GatewayCard`:
+The existing owner pages (`owner/payment-gateways.tsx`, `owner/couriers.tsx`) stay as they are for compatibility, but the new page becomes the recommended entry point (add a link/notice).
 
-- Brand-tinted top strip using `brandColor`.
-- `BrandMark` + provider name + tagline.
-- Status pill states: **Connected**, **Verified** (connected + last successful test), **Not Connected**, **Disabled**, **Error** — with icons and brand-consistent colors.
-- Meta rows: last connection time, last successful test, last error message (truncated with tooltip), sandbox/live badge, active badge.
-- Actions row keeps existing buttons: Configure, Test, Set active, Enable/Disable switch, Disconnect. Loading spinners use brand color.
+### 3. Extend server functions
 
-## 5. Active-gateway hero
+- `store-payments.functions.ts` → extend `upsertPlatformPaymentGateway` input & write to accept the new fields.
+- `owner-ext.functions.ts` → extend `upsertCourier` similarly (already handles logo_url).
+- Add `listPublicPaymentGateways` server fn wrapping the new RPC for store admin consumption.
 
-Redesign the top summary card to a brand-forward hero: large `BrandMark`, active provider name, environment badge, last successful sync timestamp; fallback empty state gets a friendlier CTA linking to the first non-connected provider.
+### 4. Store Admin — auto-sync branding from DB
 
-## 6. Toasts, loading, empty states
+- Replace the hard-coded `PAYMENT_BRANDS` lookups on `src/routes/_authenticated/admin/payment-gateway.tsx` with a query to `listPublicPaymentGateways`, then merge DB values over the static registry (DB wins; static acts as a fallback for anything not yet configured). `BrandMark` receives `logoUrl`, and card border/background use `brand_color` / `icon_bg_color` from DB.
+- Courier cards on `admin/couriers.tsx` already pull `logo_url` from the public RPC; extend the same query to also read `brand_color` / `description` and forward to `CourierCard` / `BrandBadge`.
+- No store-side upload UI for these logos anywhere.
 
-- Toast helpers wrap `sonner` to prepend the brand icon on success/error.
-- Skeleton cards while loading (replace the plain "Loading…" line).
-- Empty grid state (no providers enabled globally by owner) shows a note pointing to the owner-managed availability.
+### 5. Future-ready
 
-## 7. No backend/schema changes
+Because both tables are the source of truth and the store reads via generic RPCs, adding a new gateway or courier is just inserting a row from the Winner Admin (or a migration for a brand-new adapter). No code change is required for branding — only when a new adapter's business logic is added.
 
-- No new tables or migrations. `store_payment_gateways.credentials` is already `jsonb`, so new fields serialize without schema work.
-- Existing server-side encryption, validation, and test-result persistence continue to power the UI (last test result, connected_at, credentials_preview already exist on the returned rows).
+## Technical details
 
-## 8. Files touched
+- Migration follows the standard 4-step block for altered tables (ALTER + GRANT already exists + policies unchanged). New RPC is `SECURITY DEFINER`, `STABLE`, `search_path = public`, granted to `anon, authenticated`.
+- Color inputs: `<input type="color">` + text field, validated as `/^#([0-9a-f]{3}|[0-9a-f]{6})$/i` client-side.
+- Logo upload reuses `compressImage({ maxEdge: 512, quality: 0.9 })` and `store-assets` bucket, mirroring the existing courier flow. Rendering uses the existing `/api/img/<path>` proxy so no bucket policy changes are needed.
+- Backward compatibility: all new columns nullable; store UI falls back to the static `PAYMENT_BRANDS` registry when DB value is null, so nothing breaks before the owner configures brands.
 
-- New: `src/components/admin/payments/providers.ts`, `src/components/admin/payments/BrandMark.tsx`, `src/components/admin/payments/StatusBadge.tsx`, `src/components/admin/payments/logos/*.svg` (inline components).
-- Edited: `src/lib/subscription-pay/providers/types.ts`, all 8 files in `src/lib/subscription-pay/providers/*`, `src/routes/_authenticated/admin/payment-gateway.tsx`.
-- Untouched: `src/routes/_authenticated/owner/payment-gateways.tsx`, all `.functions.ts` server files, database.
+## Out of scope
 
-## 9. Verification
-
-- `tsgo` typecheck.
-- Manual walk-through of one card per provider: open config, toggle show/hide, paste + auto-trim, test connection (branded result), save, set active, disconnect.
-- Light + dark mode screenshot check via Playwright on the payment-gateway route.
+- Removing the existing separate owner pages (kept for continuity; new page is additive).
+- Any change to actual payment/courier adapter logic — this is branding only.
