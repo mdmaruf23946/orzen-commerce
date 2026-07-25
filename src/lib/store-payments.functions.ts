@@ -363,9 +363,6 @@ export const testStorePaymentWebhook = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertStoreOwnership(context.supabase, data.storeId, context.userId);
     const provider = getProvider(data.providerId);
-    if (!provider.adapter.parseWebhook && !provider.parseWebhook) {
-      // getProvider from registry returns adapter directly; guard defensively
-    }
     if (!provider.parseWebhook) {
       return {
         ok: false as const,
