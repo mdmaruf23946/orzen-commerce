@@ -150,6 +150,10 @@ export const upsertCourier = createServerFn({ method: "POST" })
     logo_url: z.string().max(500).nullish(),
     is_default: z.boolean().default(false),
     is_active: z.boolean().default(true),
+    brand_color: z.string().max(20).nullish(),
+    secondary_color: z.string().max(20).nullish(),
+    icon_bg_color: z.string().max(20).nullish(),
+    description: z.string().max(500).nullish(),
     config: z.record(z.string(), z.any()).default({}),
   }).parse(d))
   .handler(async ({ data, context }) => {
@@ -169,6 +173,7 @@ export const upsertCourier = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
+
 
 
 export const deleteCourier = createServerFn({ method: "POST" })
