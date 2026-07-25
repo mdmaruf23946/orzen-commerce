@@ -111,6 +111,7 @@ import { Route as AuthenticatedAdminInvoiceOrderIdRouteImport } from './routes/_
 import { Route as AuthenticatedAdminBillingReturnRouteImport } from './routes/_authenticated/admin/billing.return'
 import { Route as ApiPublicSubscriptionPayWebhookProviderRouteImport } from './routes/api/public/subscription-pay/webhook.$provider'
 import { Route as AuthenticatedAdminBillingCheckoutPackageIdRouteImport } from './routes/_authenticated/admin/billing.checkout.$packageId'
+import { Route as ApiPublicStorePaymentsWebhookStoreProviderRouteImport } from './routes/api/public/store-payments/webhook.$store.$provider'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -686,6 +687,12 @@ const AuthenticatedAdminBillingCheckoutPackageIdRoute =
     path: '/checkout/$packageId',
     getParentRoute: () => AuthenticatedAdminBillingRouteRoute,
   } as any)
+const ApiPublicStorePaymentsWebhookStoreProviderRoute =
+  ApiPublicStorePaymentsWebhookStoreProviderRouteImport.update({
+    id: '/api/public/store-payments/webhook/$store/$provider',
+    path: '/api/public/store-payments/webhook/$store/$provider',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -789,6 +796,7 @@ export interface FileRoutesByFullPath {
   '/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
+  '/api/public/store-payments/webhook/$store/$provider': typeof ApiPublicStorePaymentsWebhookStoreProviderRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -887,6 +895,7 @@ export interface FileRoutesByTo {
   '/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
+  '/api/public/store-payments/webhook/$store/$provider': typeof ApiPublicStorePaymentsWebhookStoreProviderRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -992,6 +1001,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/_authenticated/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
+  '/api/public/store-payments/webhook/$store/$provider': typeof ApiPublicStorePaymentsWebhookStoreProviderRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -1097,6 +1107,7 @@ export interface FileRouteTypes {
     | '/owner/subscription-pay/'
     | '/admin/billing/checkout/$packageId'
     | '/api/public/subscription-pay/webhook/$provider'
+    | '/api/public/store-payments/webhook/$store/$provider'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1195,6 +1206,7 @@ export interface FileRouteTypes {
     | '/owner/subscription-pay'
     | '/admin/billing/checkout/$packageId'
     | '/api/public/subscription-pay/webhook/$provider'
+    | '/api/public/store-payments/webhook/$store/$provider'
   id:
     | '__root__'
     | '/'
@@ -1299,6 +1311,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/subscription-pay/'
     | '/_authenticated/admin/billing/checkout/$packageId'
     | '/api/public/subscription-pay/webhook/$provider'
+    | '/api/public/store-payments/webhook/$store/$provider'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1320,6 +1333,7 @@ export interface RootRouteChildren {
   ApiPublicFbCapiTrackRoute: typeof ApiPublicFbCapiTrackRoute
   ApiPublicMessengerWebhookRoute: typeof ApiPublicMessengerWebhookRoute
   ApiPublicSubscriptionPayWebhookProviderRoute: typeof ApiPublicSubscriptionPayWebhookProviderRoute
+  ApiPublicStorePaymentsWebhookStoreProviderRoute: typeof ApiPublicStorePaymentsWebhookStoreProviderRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -2038,6 +2052,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminBillingCheckoutPackageIdRouteImport
       parentRoute: typeof AuthenticatedAdminBillingRouteRoute
     }
+    '/api/public/store-payments/webhook/$store/$provider': {
+      id: '/api/public/store-payments/webhook/$store/$provider'
+      path: '/api/public/store-payments/webhook/$store/$provider'
+      fullPath: '/api/public/store-payments/webhook/$store/$provider'
+      preLoaderRoute: typeof ApiPublicStorePaymentsWebhookStoreProviderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -2311,6 +2332,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicMessengerWebhookRoute: ApiPublicMessengerWebhookRoute,
   ApiPublicSubscriptionPayWebhookProviderRoute:
     ApiPublicSubscriptionPayWebhookProviderRoute,
+  ApiPublicStorePaymentsWebhookStoreProviderRoute:
+    ApiPublicStorePaymentsWebhookStoreProviderRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

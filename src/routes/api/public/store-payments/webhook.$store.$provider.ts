@@ -128,8 +128,8 @@ export const Route = createFileRoute("/api/public/store-payments/webhook/$store/
           method,
           amount,
           currency,
-          payload_summary: summarize(payload),
-          headers: headersToObject(request),
+          payload_summary: summarize(payload) as any,
+          headers: headersToObject(request) as any,
           status_code: statusCode,
           error_message: errorMessage,
         });
