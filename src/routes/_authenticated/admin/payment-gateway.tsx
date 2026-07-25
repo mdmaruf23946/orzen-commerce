@@ -16,6 +16,7 @@ import {
   ExternalLink,
   Info,
   Sparkles,
+  Zap,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -59,6 +60,7 @@ import { ImageUploader } from "@/components/admin/ImageUploader";
 import { BrandMark } from "@/components/admin/payments/BrandMark";
 import { StatusBadge, type GatewayStatus } from "@/components/admin/payments/StatusBadge";
 import { getBrand } from "@/components/admin/payments/providers";
+import { WebhookEventsPanel } from "@/components/admin/payments/WebhookEventsPanel";
 
 export const Route = createFileRoute("/_authenticated/admin/payment-gateway")({
   component: PaymentGatewayPage,
