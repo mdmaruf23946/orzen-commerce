@@ -1339,12 +1339,17 @@ export async function getModelForStore(opts?: { fast?: boolean; modelOverride?: 
   return { model: gateway(modelId), modelId, settings: (settings ?? null) as GlobalAiSettings | null, gateway };
 }
 
-function generationParams(settings: GlobalAiSettings | null | undefined) {
+function generationParams(settings: GlobalAiSettings | null | undefined, modelId?: string) {
   const params: { temperature?: number; maxOutputTokens?: number } = {};
   const t = settings?.temperature;
   if (typeof t === "number" && Number.isFinite(t)) params.temperature = Math.max(0, Math.min(2, t));
   const m = settings?.max_tokens;
-  if (typeof m === "number" && Number.isFinite(m) && m > 0) params.maxOutputTokens = Math.floor(m);
+  // Skip maxOutputTokens for OpenAI models — newer models (o1/gpt-5 family) reject
+  // `max_tokens` and require `max_completion_tokens`, which the AI SDK doesn't emit here.
+  const isOpenAI = typeof modelId === "string" && modelId.startsWith("openai/");
+  if (!isOpenAI && typeof m === "number" && Number.isFinite(m) && m > 0) {
+    params.maxOutputTokens = Math.floor(m);
+  }
   return params;
 }
 
@@ -1361,7 +1366,7 @@ export function streamAgentResponse(opts: {
       messages: opts.messages,
       tools: buildTools(opts.ctx),
       stopWhen: stepCountIs(50),
-      ...generationParams(settings),
+      ...generationParams(settings, modelId),
       onFinish: ({ usage }) => {
         void logUsage(opts.ctx.storeId, modelId, usage, "chat");
       },
@@ -1416,7 +1421,7 @@ async function runGenerate(opts: {
     messages: opts.messages,
     tools: buildTools(opts.ctx),
     stopWhen: stepCountIs(50),
-    ...generationParams(settings),
+    ...generationParams(settings, modelId),
   });
   return { result, modelId, settings };
 }
