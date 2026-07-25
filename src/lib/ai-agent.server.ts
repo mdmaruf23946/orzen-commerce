@@ -1421,7 +1421,7 @@ async function runGenerate(opts: {
     messages: opts.messages,
     tools: buildTools(opts.ctx),
     stopWhen: stepCountIs(50),
-    ...generationParams(settings),
+    ...generationParams(settings, modelId),
   });
   return { result, modelId, settings };
 }
