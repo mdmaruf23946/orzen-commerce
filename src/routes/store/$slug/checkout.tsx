@@ -87,6 +87,14 @@ function CheckoutPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customer]);
 
+  // Auto-select default zone when zones load
+  useEffect(() => {
+    if (!zoneId && zones.length > 0) {
+      const def = zones.find((z: any) => z.is_default) ?? zones[0];
+      setZoneId(def.id);
+    }
+  }, [zones, zoneId]);
+
 
   if (!store) return null;
   const s: any = store;
