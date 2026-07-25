@@ -562,6 +562,7 @@ function ConfigureForm({
 }) {
   const save = useServerFn(saveStorePaymentGateway);
   const test = useServerFn(testStorePaymentGateway);
+  const testHook = useServerFn(testStorePaymentWebhook);
   const brand = getBrand(g.provider_id);
   const hasExisting = !!g.connection?.has_credentials;
 
