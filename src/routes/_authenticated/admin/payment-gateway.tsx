@@ -203,6 +203,13 @@ function PaymentGatewayPage() {
         </div>
       )}
 
+      {storeId && data && data.length > 0 && (
+        <WebhookEventsPanel
+          storeId={storeId}
+          providers={data.map((g) => ({ provider_id: g.provider_id, label: g.label }))}
+        />
+      )}
+
       <Sheet open={!!open} onOpenChange={(v) => !v && setOpenId(null)}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
           {open && storeId && (
