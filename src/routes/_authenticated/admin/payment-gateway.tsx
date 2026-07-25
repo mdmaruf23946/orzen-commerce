@@ -118,7 +118,7 @@ function PaymentGatewayPage() {
   const [openId, setOpenId] = useState<string | null>(null);
   const open = useMemo(() => data?.find((g) => g.provider_id === openId) ?? null, [openId, data]);
   const active = data?.find((g) => g.connection?.is_active) ?? null;
-  const activeBrand = active ? getBrand(active.provider_id) : null;
+  const activeBrand = active ? getBrand(active.provider_id, active as any) : null;
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["storePaymentGateways", storeId] });
 
