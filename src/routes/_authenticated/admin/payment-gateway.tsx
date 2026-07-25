@@ -244,7 +244,7 @@ function GatewayCard({
   const toggle = useServerFn(toggleStorePaymentGateway);
   const disconnect = useServerFn(disconnectStorePaymentGateway);
   const [busy, setBusy] = useState<string | null>(null);
-  const brand = getBrand(g.provider_id);
+  const brand = getBrand(g.provider_id, g as any);
   const status = computeStatus(g);
   const c = g.connection;
   const lastResult = c?.last_test_result as any;
