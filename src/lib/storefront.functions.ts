@@ -442,6 +442,7 @@ export const placeOrder = createServerFn({ method: "POST" })
         delivery_amount,
         discount_amount,
         coupon_id,
+        delivery_zone_id: zoneId,
         status: "pending",
         fingerprint: data.fingerprint ?? null,
         device_id: data.deviceId ?? null,
