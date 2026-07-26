@@ -150,6 +150,7 @@ export const upsertCourier = createServerFn({ method: "POST" })
     logo_url: z.string().max(500).nullish(),
     dark_logo_url: z.string().max(500).nullish(),
     favicon_url: z.string().max(500).nullish(),
+    wordmark_url: z.string().max(500).nullish(),
     is_default: z.boolean().default(false),
     is_active: z.boolean().default(true),
     brand_color: z.string().max(20).nullish(),
