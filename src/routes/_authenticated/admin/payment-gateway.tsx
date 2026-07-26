@@ -702,9 +702,17 @@ function ConfigureForm({
         <div className="flex items-center gap-3">
           <BrandMark brand={brand} logoUrl={g.logo_url} size="md" />
           <div className="min-w-0 flex-1 text-left">
-            <SheetTitle className="truncate text-left text-base sm:text-lg" style={{ color: brand.brandColor }}>
-              {brand.label}
-            </SheetTitle>
+            {g.wordmark_url ? (
+              <img
+                src={g.wordmark_url.startsWith("http") ? g.wordmark_url : `/api/img/${g.wordmark_url}`}
+                alt={brand.label}
+                className="h-6 w-auto max-w-[180px] object-contain sm:h-7"
+              />
+            ) : (
+              <SheetTitle className="truncate text-left text-base sm:text-lg" style={{ color: brand.brandColor }}>
+                {brand.label}
+              </SheetTitle>
+            )}
             <SheetDescription className="mt-0.5 truncate text-left text-xs sm:text-sm">
               {brand.tagline}
             </SheetDescription>
