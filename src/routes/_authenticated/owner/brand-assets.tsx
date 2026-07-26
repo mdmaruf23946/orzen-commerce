@@ -25,6 +25,7 @@ export const Route = createFileRoute("/_authenticated/owner/brand-assets")({
 
 type BrandFields = {
   logo_url: string | null;
+  wordmark_url: string | null;
   brand_color: string | null;
   secondary_color: string | null;
   icon_bg_color: string | null;
