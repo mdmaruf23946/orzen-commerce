@@ -1473,6 +1473,6 @@ export const listPublicCourierProviders = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await (context.supabase as any).rpc("get_public_courier_providers");
     if (error) throw new Error(error.message);
-    return (data ?? []) as Array<{ code: string; name: string; logo_url: string | null; is_active: boolean }>;
+    return (data ?? []) as Array<{ code: string; name: string; logo_url: string | null; wordmark_url: string | null; is_active: boolean }>;
   });
 
