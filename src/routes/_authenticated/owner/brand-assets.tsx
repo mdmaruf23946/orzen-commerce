@@ -3,22 +3,21 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Palette, Truck, Wallet, Upload, Loader2 } from "lucide-react";
+import { Upload, Loader2 } from "lucide-react";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { compressImage } from "@/lib/compress-image";
 import {
   listPlatformPaymentGateways,
   upsertPlatformPaymentGateway,
 } from "@/lib/store-payments.functions";
-import { listCouriers, upsertCourier } from "@/lib/owner-ext.functions";
 import { PAYMENT_BRANDS } from "@/components/admin/payments/providers";
+
 
 export const Route = createFileRoute("/_authenticated/owner/brand-assets")({
   component: BrandAssetsPage,
@@ -282,85 +281,15 @@ function PaymentGatewaysTab() {
   );
 }
 
-function CouriersTab() {
-  const list = useServerFn(listCouriers);
-  const upsert = useServerFn(upsertCourier);
-  const qc = useQueryClient();
-  const { data = [] } = useQuery({ queryKey: ["owner", "brandCouriers"], queryFn: () => list() });
-
-  return (
-    <div className="grid gap-4 md:grid-cols-2">
-      {(data as any[]).map((r) => (
-        <BrandCard
-          key={r.id}
-          title={r.name}
-          subtitle={r.code}
-          kind="courier"
-          code={r.code}
-          initial={{
-            logo_url: r.logo_url ?? null,
-            brand_color: r.brand_color ?? null,
-            secondary_color: r.secondary_color ?? null,
-            icon_bg_color: r.icon_bg_color ?? null,
-            description: r.description ?? null,
-            active: !!r.is_active,
-            label: r.name,
-          }}
-          onSave={async (b) => {
-            await upsert({
-              data: {
-                id: r.id,
-                name: b.label || r.name,
-                code: r.code,
-                base_url: r.base_url,
-                clear_api_key: false,
-                logo_url: b.logo_url,
-                is_default: !!r.is_default,
-                is_active: b.active,
-                brand_color: b.brand_color,
-                secondary_color: b.secondary_color,
-                icon_bg_color: b.icon_bg_color,
-                description: b.description,
-                config: r.config ?? {},
-              },
-            });
-            qc.invalidateQueries({ queryKey: ["owner", "brandCouriers"] });
-            qc.invalidateQueries({ queryKey: ["courier-providers-public"] });
-          }}
-        />
-      ))}
-      {(data as any[]).length === 0 && (
-        <div className="rounded-xl border bg-card p-6 text-sm text-muted-foreground">
-          No couriers configured yet. Add couriers from the Couriers page first, then return here to manage their branding.
-        </div>
-      )}
-    </div>
-  );
-}
-
 function BrandAssetsPage() {
   return (
     <div>
       <OwnerPageHeader
-        title="Brand Assets"
-        description="Central branding for every payment gateway and courier. Changes propagate to every store admin panel automatically."
+        title="Payment Gateway Brand Assets"
+        description="Central branding for every payment gateway. Courier branding lives in Courier Brand Assets."
       />
-      <Tabs defaultValue="payments" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="payments" className="gap-2">
-            <Wallet className="h-4 w-4" /> Payment Gateways
-          </TabsTrigger>
-          <TabsTrigger value="couriers" className="gap-2">
-            <Truck className="h-4 w-4" /> Couriers
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="payments">
-          <PaymentGatewaysTab />
-        </TabsContent>
-        <TabsContent value="couriers">
-          <CouriersTab />
-        </TabsContent>
-      </Tabs>
+      <PaymentGatewaysTab />
     </div>
   );
 }
+
