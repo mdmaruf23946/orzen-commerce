@@ -6,6 +6,20 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const idSchema = z.string().uuid();
 
+async function assertOwnedConnection(
+  supabase: any,
+  connectionId: string,
+): Promise<{ id: string; store_id: string }> {
+  const { data, error } = await supabase
+    .from("landing_page_connections")
+    .select("id,store_id")
+    .eq("id", connectionId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Connection not found");
+  return data;
+}
+
 async function myStoreId(supabase: any, userId: string): Promise<string> {
   const { data } = await supabase
     .from("stores")
