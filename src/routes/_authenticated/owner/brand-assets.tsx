@@ -148,13 +148,13 @@ function BrandCard({
   }
 
   return (
-    <div className="space-y-4 rounded-xl border bg-card p-3 sm:p-4">
+    <div className="space-y-3 rounded-xl border bg-card p-2.5 sm:space-y-4 sm:p-3 md:p-4">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold sm:text-base">{title}</div>
-          {subtitle && <div className="truncate text-[11px] text-muted-foreground sm:text-xs">{subtitle}</div>}
+          <div className="truncate text-sm font-semibold md:text-base">{title}</div>
+          {subtitle && <div className="truncate text-[10px] text-muted-foreground sm:text-xs">{subtitle}</div>}
         </div>
-        <label className="flex shrink-0 items-center gap-1.5 text-[11px] sm:text-xs">
+        <label className="flex shrink-0 items-center gap-1.5 text-[10px] sm:text-xs">
           <span className="hidden text-muted-foreground xs:inline sm:inline">{f.active ? "Active" : "Inactive"}</span>
           <Switch checked={f.active} onCheckedChange={(v) => setF((s) => ({ ...s, active: v }))} />
         </label>
@@ -162,15 +162,15 @@ function BrandCard({
 
       <BrandPreview label={f.label || title} brand={f} logo={f.logo_url} />
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label className="text-xs">Brand name</Label>
-          <Input value={f.label ?? ""} onChange={(e) => setF({ ...f, label: e.target.value })} />
+      <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+        <div className="space-y-1 sm:space-y-1.5 sm:col-span-2">
+          <Label className="text-[11px] sm:text-xs">Brand name</Label>
+          <Input value={f.label ?? ""} onChange={(e) => setF({ ...f, label: e.target.value })} className="h-8 text-xs sm:h-9 sm:text-sm" />
         </div>
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label className="text-xs">Logo (SVG / PNG / WebP)</Label>
+        <div className="space-y-1 sm:space-y-1.5 sm:col-span-2">
+          <Label className="text-[11px] sm:text-xs">Logo (SVG / PNG / WebP)</Label>
           <div className="flex flex-wrap items-center gap-2">
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-xs hover:bg-muted">
+            <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1.5 text-[11px] hover:bg-muted sm:px-3 sm:py-2 sm:text-xs">
               {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
               {uploading ? "Uploading…" : "Upload logo"}
               <input
@@ -181,7 +181,7 @@ function BrandCard({
               />
             </label>
             {f.logo_url && (
-              <Button variant="ghost" size="sm" onClick={() => setF({ ...f, logo_url: null })}>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-[11px] sm:h-8 sm:px-3 sm:text-xs" onClick={() => setF({ ...f, logo_url: null })}>
                 Remove
               </Button>
             )}
@@ -190,19 +190,20 @@ function BrandCard({
         <ColorInput label="Brand color" value={f.brand_color} onChange={(v) => setF({ ...f, brand_color: v })} />
         <ColorInput label="Secondary color" value={f.secondary_color} onChange={(v) => setF({ ...f, secondary_color: v })} />
         <ColorInput label="Icon background" value={f.icon_bg_color} onChange={(v) => setF({ ...f, icon_bg_color: v })} />
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label className="text-xs">Short description</Label>
+        <div className="space-y-1 sm:space-y-1.5 sm:col-span-2">
+          <Label className="text-[11px] sm:text-xs">Short description</Label>
           <Textarea
             rows={2}
             value={f.description ?? ""}
             onChange={(e) => setF({ ...f, description: e.target.value })}
             placeholder="Shown in connection cards and configuration pages."
+            className="text-xs sm:text-sm"
           />
         </div>
       </div>
 
       <div className="flex justify-end">
-        <Button onClick={save} disabled={saving} size="sm" className="w-full sm:w-auto">
+        <Button onClick={save} disabled={saving} size="sm" className="w-full text-xs sm:w-auto sm:text-sm">
           {saving ? "Saving…" : "Save branding"}
         </Button>
       </div>
