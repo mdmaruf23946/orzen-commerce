@@ -415,6 +415,40 @@ export function CourierCard({
           </AccordionItem>
         )}
 
+        {meta.supportsWebhook && (
+          <AccordionItem value="webhook">
+            <AccordionTrigger className="text-sm">
+              <span className="flex items-center gap-2">
+                <Webhook className="h-4 w-4" style={{ color: meta.brandColor }} />
+                Webhook / Callback
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-3 pb-4">
+              <Field label="Callback URL">
+                <Input
+                  readOnly
+                  value={
+                    typeof window !== "undefined"
+                      ? `${window.location.origin}/api/public/couriers/${meta.key}/webhook`
+                      : ""
+                  }
+                />
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Paste this URL into your {meta.label} dashboard to receive delivery status updates.
+                </p>
+              </Field>
+              <Field label="Verification token (optional)">
+                <Input
+                  type="password"
+                  value={cfg.webhook?.verify_token ?? ""}
+                  onChange={(e) => setWebhook({ verify_token: e.target.value })}
+                />
+              </Field>
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+
         <AccordionItem value="diag">
           <AccordionTrigger className="text-sm">
             <span className="flex items-center gap-2">
