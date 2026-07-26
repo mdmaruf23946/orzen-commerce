@@ -127,20 +127,14 @@ export const createLandingPageConnection = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { data: store } = await context.supabase
-      .from("stores")
-      .select("id")
-      .eq("id", data.storeId)
-      .eq("owner_user_id", context.userId)
-      .maybeSingle();
-    if (!store) throw new Error("Store not found or access denied");
+    const storeId = await myStoreId(context.supabase, context.userId);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { generateApiKey, generateWebhookSecret } = await import("@/lib/landing-pages.server");
     const { data: conn, error } = await supabaseAdmin
       .from("landing_page_connections")
       .insert({
-        store_id: data.storeId,
+        store_id: storeId,
         name: data.name,
         landing_page_name: data.landing_page_name ?? null,
         url: data.url ?? null,
