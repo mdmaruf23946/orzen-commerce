@@ -148,9 +148,17 @@ function PaymentGatewayPage() {
                 Active gateway
               </div>
               <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                <span className="text-lg font-semibold" style={{ color: activeBrand.brandColor }}>
-                  {active.label}
-                </span>
+                {active.wordmark_url ? (
+                  <img
+                    src={active.wordmark_url.startsWith("http") ? active.wordmark_url : `/api/img/${active.wordmark_url}`}
+                    alt={active.label}
+                    className="h-6 w-auto object-contain sm:h-7"
+                  />
+                ) : (
+                  <span className="text-lg font-semibold" style={{ color: activeBrand.brandColor }}>
+                    {active.label}
+                  </span>
+                )}
                 <Badge variant="outline">{active.connection?.sandbox ? "Sandbox" : "Live"}</Badge>
                 <StatusBadge status={computeStatus(active)} color={activeBrand.brandColor} />
               </div>
