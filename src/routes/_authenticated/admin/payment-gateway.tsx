@@ -148,9 +148,17 @@ function PaymentGatewayPage() {
                 Active gateway
               </div>
               <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                <span className="text-lg font-semibold" style={{ color: activeBrand.brandColor }}>
-                  {active.label}
-                </span>
+                {active.wordmark_url ? (
+                  <img
+                    src={active.wordmark_url.startsWith("http") ? active.wordmark_url : `/api/img/${active.wordmark_url}`}
+                    alt={active.label}
+                    className="h-6 w-auto object-contain sm:h-7"
+                  />
+                ) : (
+                  <span className="text-lg font-semibold" style={{ color: activeBrand.brandColor }}>
+                    {active.label}
+                  </span>
+                )}
                 <Badge variant="outline">{active.connection?.sandbox ? "Sandbox" : "Live"}</Badge>
                 <StatusBadge status={computeStatus(active)} color={activeBrand.brandColor} />
               </div>
@@ -276,9 +284,17 @@ function GatewayCard({
           <BrandMark brand={brand} logoUrl={g.logo_url} />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="truncate font-semibold" style={{ color: brand.brandColor }}>
-                {g.label}
-              </span>
+              {g.wordmark_url ? (
+                <img
+                  src={g.wordmark_url.startsWith("http") ? g.wordmark_url : `/api/img/${g.wordmark_url}`}
+                  alt={g.label}
+                  className="h-5 w-auto max-w-[140px] object-contain sm:h-6"
+                />
+              ) : (
+                <span className="truncate font-semibold" style={{ color: brand.brandColor }}>
+                  {g.label}
+                </span>
+              )}
               {c?.is_active && (
                 <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700">
                   <Star className="mr-1 h-3 w-3 fill-current" /> Default
@@ -686,9 +702,17 @@ function ConfigureForm({
         <div className="flex items-center gap-3">
           <BrandMark brand={brand} logoUrl={g.logo_url} size="md" />
           <div className="min-w-0 flex-1 text-left">
-            <SheetTitle className="truncate text-left text-base sm:text-lg" style={{ color: brand.brandColor }}>
-              {brand.label}
-            </SheetTitle>
+            {g.wordmark_url ? (
+              <img
+                src={g.wordmark_url.startsWith("http") ? g.wordmark_url : `/api/img/${g.wordmark_url}`}
+                alt={brand.label}
+                className="h-6 w-auto max-w-[180px] object-contain sm:h-7"
+              />
+            ) : (
+              <SheetTitle className="truncate text-left text-base sm:text-lg" style={{ color: brand.brandColor }}>
+                {brand.label}
+              </SheetTitle>
+            )}
             <SheetDescription className="mt-0.5 truncate text-left text-xs sm:text-sm">
               {brand.tagline}
             </SheetDescription>
