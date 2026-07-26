@@ -242,7 +242,7 @@ function PaymentGatewaysTab() {
   }, [data]);
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
       {rows.map((r) => (
         <BrandCard
           key={r.id}
