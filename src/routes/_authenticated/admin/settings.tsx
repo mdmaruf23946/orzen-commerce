@@ -176,7 +176,9 @@ function SettingsPage() {
           allow_guest_checkout: !!form.allow_guest_checkout,
         },
       });
-      await qc.invalidateQueries({ queryKey: ["admin", "store"] });
+      const { data: fresh } = await qc.invalidateQueries({ queryKey: ["admin", "store"] }) as any;
+      const next = await qc.fetchQuery({ queryKey: ["admin", "store"], queryFn: () => fetchStore() });
+      if (next) setForm({ ...(next as any) });
       toast.success("Settings saved");
     } catch (err) {
       toast.error((err as Error).message);
