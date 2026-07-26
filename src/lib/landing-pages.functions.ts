@@ -111,7 +111,6 @@ export const createLandingPageConnection = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z
       .object({
-        storeId: idSchema,
         name: z.string().trim().min(1).max(120),
         landing_page_name: z.string().trim().max(120).optional(),
         url: z.string().trim().max(500).optional(),
