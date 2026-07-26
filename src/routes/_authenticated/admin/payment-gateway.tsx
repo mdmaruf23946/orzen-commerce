@@ -682,26 +682,31 @@ function ConfigureForm({
 
   return (
     <>
-      <SheetHeader className="border-b pb-4">
-        <div className="flex items-start gap-3">
+      <SheetHeader className="space-y-0 border-b pb-4 text-left">
+        <div className="flex items-center gap-3">
           <BrandMark brand={brand} logoUrl={g.logo_url} size="md" />
-          <div className="min-w-0 flex-1">
-            <SheetTitle className="truncate text-base sm:text-lg" style={{ color: brand.brandColor }}>
+          <div className="min-w-0 flex-1 text-left">
+            <SheetTitle className="truncate text-left text-base sm:text-lg" style={{ color: brand.brandColor }}>
               {brand.label}
             </SheetTitle>
-            <SheetDescription className="mt-1 text-xs sm:text-sm">{brand.tagline}</SheetDescription>
-            {brand.docsUrl && (
-              <a
-                href={brand.docsUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-              >
-                Read docs <ExternalLink className="h-3 w-3" />
-              </a>
-            )}
+            <SheetDescription className="mt-0.5 truncate text-left text-xs sm:text-sm">
+              {brand.tagline}
+            </SheetDescription>
           </div>
         </div>
+        {brand.docsUrl && (
+          <div className="mt-3 flex">
+            <a
+              href={brand.docsUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2.5 py-1.5 text-xs font-medium shadow-sm transition-colors hover:bg-muted"
+              style={{ borderColor: brand.brandColor + "40", color: brand.brandColor }}
+            >
+              <ExternalLink className="h-3.5 w-3.5" /> Read docs
+            </a>
+          </div>
+        )}
       </SheetHeader>
 
 
