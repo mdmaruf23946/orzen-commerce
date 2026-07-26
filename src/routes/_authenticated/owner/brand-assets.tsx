@@ -109,30 +109,38 @@ function BrandCard({
   onSave: (b: BrandFields) => Promise<void>;
 }) {
   const [f, setF] = useState<BrandFields>(initial);
-  const [uploading, setUploading] = useState(false);
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+  const [uploadingWord, setUploadingWord] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => setF(initial), [initial]);
 
-  async function handleLogo(file: File) {
+  async function handleLogo(file: File, variant: "icon" | "wordmark") {
     if (!file.type.startsWith("image/")) return toast.error("Please choose an image");
-    setUploading(true);
+    const setBusy = variant === "icon" ? setUploadingIcon : setUploadingWord;
+    setBusy(true);
     try {
-      const toUpload = file.type === "image/svg+xml" ? file : await compressImage(file, { maxEdge: 512, quality: 0.92 });
+      const toUpload =
+        file.type === "image/svg+xml"
+          ? file
+          : await compressImage(file, {
+              maxEdge: variant === "wordmark" ? 800 : 512,
+              quality: 0.92,
+            });
       const ext = (toUpload.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "png";
       const safeCode = code.toLowerCase().replace(/[^a-z0-9]/g, "") || "brand";
-      const path = `brand-logos/${kind}/${safeCode}-${Date.now()}.${ext}`;
+      const path = `brand-logos/${kind}/${safeCode}-${variant}-${Date.now()}.${ext}`;
       const { error } = await supabase.storage.from("store-assets").upload(path, toUpload, {
         upsert: true,
         contentType: toUpload.type,
       });
       if (error) throw new Error(error.message);
-      setF((s) => ({ ...s, logo_url: path }));
-      toast.success("Logo uploaded");
+      setF((s) => (variant === "icon" ? { ...s, logo_url: path } : { ...s, wordmark_url: path }));
+      toast.success(variant === "icon" ? "Icon logo uploaded" : "Name logo uploaded");
     } catch (e: any) {
       toast.error(e?.message ?? "Upload failed");
     } finally {
-      setUploading(false);
+      setBusy(false);
     }
   }
 
@@ -147,6 +155,8 @@ function BrandCard({
       setSaving(false);
     }
   }
+
+  const wordSrc = logoSrc(f.wordmark_url);
 
   return (
     <div className="space-y-3 rounded-xl border bg-card p-2.5 sm:space-y-4 sm:p-3 md:p-4">
@@ -163,22 +173,32 @@ function BrandCard({
 
       <BrandPreview label={f.label || title} brand={f} logo={f.logo_url} />
 
+      {wordSrc && (
+        <div
+          className="flex items-center justify-center overflow-hidden rounded-lg border p-2"
+          style={{ background: (f.icon_bg_color || "#ffffff") }}
+        >
+          <img src={wordSrc} alt={`${f.label} wordmark`} className="max-h-10 w-auto object-contain sm:max-h-12" />
+        </div>
+      )}
+
       <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
         <div className="space-y-1 sm:space-y-1.5 sm:col-span-2">
           <Label className="text-[11px] sm:text-xs">Brand name</Label>
           <Input value={f.label ?? ""} onChange={(e) => setF({ ...f, label: e.target.value })} className="h-8 text-xs sm:h-9 sm:text-sm" />
         </div>
+
         <div className="space-y-1 sm:space-y-1.5 sm:col-span-2">
-          <Label className="text-[11px] sm:text-xs">Logo (SVG / PNG / WebP)</Label>
+          <Label className="text-[11px] sm:text-xs">Icon logo (square — SVG / PNG / WebP)</Label>
           <div className="flex flex-wrap items-center gap-2">
             <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1.5 text-[11px] hover:bg-muted sm:px-3 sm:py-2 sm:text-xs">
-              {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-              {uploading ? "Uploading…" : "Upload logo"}
+              {uploadingIcon ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+              {uploadingIcon ? "Uploading…" : f.logo_url ? "Replace icon" : "Upload icon"}
               <input
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={(e) => e.target.files?.[0] && handleLogo(e.target.files[0])}
+                onChange={(e) => e.target.files?.[0] && handleLogo(e.target.files[0], "icon")}
               />
             </label>
             {f.logo_url && (
@@ -188,6 +208,28 @@ function BrandCard({
             )}
           </div>
         </div>
+
+        <div className="space-y-1 sm:space-y-1.5 sm:col-span-2">
+          <Label className="text-[11px] sm:text-xs">Name logo (wordmark — SVG / PNG / WebP)</Label>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1.5 text-[11px] hover:bg-muted sm:px-3 sm:py-2 sm:text-xs">
+              {uploadingWord ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+              {uploadingWord ? "Uploading…" : f.wordmark_url ? "Replace name logo" : "Upload name logo"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => e.target.files?.[0] && handleLogo(e.target.files[0], "wordmark")}
+              />
+            </label>
+            {f.wordmark_url && (
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-[11px] sm:h-8 sm:px-3 sm:text-xs" onClick={() => setF({ ...f, wordmark_url: null })}>
+                Remove
+              </Button>
+            )}
+          </div>
+        </div>
+
         <ColorInput label="Brand color" value={f.brand_color} onChange={(v) => setF({ ...f, brand_color: v })} />
         <ColorInput label="Secondary color" value={f.secondary_color} onChange={(v) => setF({ ...f, secondary_color: v })} />
         <ColorInput label="Icon background" value={f.icon_bg_color} onChange={(v) => setF({ ...f, icon_bg_color: v })} />
