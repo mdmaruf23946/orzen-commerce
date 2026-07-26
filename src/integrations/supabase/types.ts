@@ -1919,6 +1919,7 @@ export type Database = {
           secondary_color: string | null
           sort_order: number
           updated_at: string
+          wordmark_url: string | null
         }
         Insert: {
           brand_color?: string | null
@@ -1933,6 +1934,7 @@ export type Database = {
           secondary_color?: string | null
           sort_order?: number
           updated_at?: string
+          wordmark_url?: string | null
         }
         Update: {
           brand_color?: string | null
@@ -1947,6 +1949,7 @@ export type Database = {
           secondary_color?: string | null
           sort_order?: number
           updated_at?: string
+          wordmark_url?: string | null
         }
         Relationships: []
       }

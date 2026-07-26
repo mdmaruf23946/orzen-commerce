@@ -259,7 +259,7 @@ export const listPlatformPaymentGateways = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("platform_payment_gateways")
-      .select("id,label,enabled,sort_order,logo_url,notes,brand_color,secondary_color,icon_bg_color,description,updated_at")
+      .select("id,label,enabled,sort_order,logo_url,wordmark_url,notes,brand_color,secondary_color,icon_bg_color,description,updated_at")
       .order("sort_order", { ascending: true });
     if (error) throw new Error(error.message);
     const meta = listProviderMeta();
@@ -292,6 +292,7 @@ export const upsertPlatformPaymentGateway = createServerFn({ method: "POST" })
         label: z.string().min(1).max(80),
         sort_order: z.number().int().min(0).max(9999).default(100),
         logo_url: z.string().nullable().optional(),
+        wordmark_url: z.string().nullable().optional(),
         notes: z.string().max(2000).nullable().optional(),
         brand_color: z.string().max(20).nullable().optional(),
         secondary_color: z.string().max(20).nullable().optional(),
@@ -309,6 +310,7 @@ export const upsertPlatformPaymentGateway = createServerFn({ method: "POST" })
       label: data.label,
       sort_order: data.sort_order,
       logo_url: data.logo_url ?? null,
+      wordmark_url: data.wordmark_url ?? null,
       notes: data.notes ?? null,
       brand_color: data.brand_color ?? null,
       secondary_color: data.secondary_color ?? null,
