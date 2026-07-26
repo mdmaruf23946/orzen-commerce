@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Save, Zap, MapPin, Truck, Settings2, Activity } from "lucide-react";
+import { Save, Zap, MapPin, Truck, Settings2, Activity, Webhook } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,9 +16,13 @@ import { BrandBadge, StatusChip, VerifiedBadge } from "./BrandBadge";
 import { CourierDiagnosticsPanel } from "./CourierDiagnostics";
 import {
   emptyConfig,
+  DEFAULT_CREDENTIAL_FIELDS,
+  readCredential,
   type CourierConfig,
   type CourierMeta,
+  type CredentialFieldSpec,
 } from "./providers";
+
 
 type Props = {
   meta: CourierMeta;
@@ -54,10 +58,15 @@ export function CourierCard({
     set({ pickup: { ...(cfg.pickup ?? {}), ...patch } });
   const setAuto = (patch: Partial<NonNullable<CourierConfig["automation"]>>) =>
     set({ automation: { ...(cfg.automation ?? {}), ...patch } });
+  const setCred = (key: string, value: string) =>
+    set({ credentials: { ...(cfg.credentials ?? {}), [key]: value } });
+  const setWebhook = (patch: Partial<NonNullable<CourierConfig["webhook"]>>) =>
+    set({ webhook: { ...(cfg.webhook ?? {}), ...patch } });
 
-  const [showApi, setShowApi] = useState(false);
-  const [showSecret, setShowSecret] = useState(false);
+  const [shown, setShown] = useState<Record<string, boolean>>({});
   const status = cfg.diagnostics?.lastStatus ?? "unknown";
+  const fields: CredentialFieldSpec[] = meta.credentialFields ?? DEFAULT_CREDENTIAL_FIELDS;
+
 
   async function handleTest() {
     try {
@@ -134,49 +143,38 @@ export function CourierCard({
           </AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="API Key">
-                <div className="flex gap-2">
-                  <Input
-                    type={showApi ? "text" : "password"}
-                    value={cfg.api_key ?? ""}
-                    onChange={(e) => set({ api_key: e.target.value })}
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowApi((v) => !v)}
-                  >
-                    {showApi ? "Hide" : "Show"}
-                  </Button>
-                </div>
-              </Field>
-              <Field label="Secret Key">
-                <div className="flex gap-2">
-                  <Input
-                    type={showSecret ? "text" : "password"}
-                    value={cfg.secret ?? ""}
-                    onChange={(e) => set({ secret: e.target.value })}
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowSecret((v) => !v)}
-                  >
-                    {showSecret ? "Hide" : "Show"}
-                  </Button>
-                </div>
-              </Field>
-              <div className="sm:col-span-2">
-                <Field label="Base URL">
-                  <Input
-                    placeholder="https://"
-                    value={cfg.base_url ?? ""}
-                    onChange={(e) => set({ base_url: e.target.value })}
-                  />
-                </Field>
-              </div>
+              {fields.map((f) => {
+                const isSecret = f.type === "password";
+                const isShown = !!shown[f.key];
+                const inputType = isSecret ? (isShown ? "text" : "password") : "text";
+                const val = readCredential(cfg, f.key);
+                const full = f.type === "url" || fields.length === 1;
+                return (
+                  <div key={f.key} className={full ? "sm:col-span-2" : undefined}>
+                    <Field label={f.label + (f.required ? " *" : "")}>
+                      <div className="flex gap-2">
+                        <Input
+                          type={inputType}
+                          placeholder={f.placeholder}
+                          value={val}
+                          onChange={(e) => setCred(f.key, e.target.value)}
+                        />
+                        {isSecret && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setShown((s) => ({ ...s, [f.key]: !s[f.key] }))}
+                          >
+                            {isShown ? "Hide" : "Show"}
+                          </Button>
+                        )}
+                      </div>
+                      {f.help && <p className="mt-1 text-[11px] text-muted-foreground">{f.help}</p>}
+                    </Field>
+                  </div>
+                );
+              })}
               {s.sandbox && (
                 <label className="flex items-center gap-2 text-sm">
                   <Switch
@@ -209,6 +207,7 @@ export function CourierCard({
               )}
             </div>
           </AccordionContent>
+
         </AccordionItem>
 
         <AccordionItem value="ship">
