@@ -461,17 +461,9 @@ function SettingsPage() {
 
 function InvoiceNumberingSection() {
   const qc = useQueryClient();
-  const getFn = useServerFn(
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    require("@/lib/invoice-settings.functions").getInvoiceSettings,
-  );
-  const saveFn = useServerFn(
-    require("@/lib/invoice-settings.functions").updateInvoiceSettings,
-  );
-  const computePreview = require("@/lib/invoice-settings.functions").computeInvoicePreview as (
-    s: any,
-    seq: number,
-  ) => string;
+  const getFn = useServerFn(getInvoiceSettings);
+  const saveFn = useServerFn(updateInvoiceSettings);
+
 
   const { data } = useQuery({
     queryKey: ["admin", "invoice-settings"],
