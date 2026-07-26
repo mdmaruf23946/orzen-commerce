@@ -1174,6 +1174,263 @@ export type Database = {
         }
         Relationships: []
       }
+      landing_page_connections: {
+        Row: {
+          created_at: string
+          default_product_id: string | null
+          description: string | null
+          failed_count: number
+          id: string
+          landing_page_name: string | null
+          last_error: string | null
+          last_error_at: string | null
+          last_order_at: string | null
+          method: string
+          name: string
+          orders_received: number
+          platform: string
+          status: string
+          store_id: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          default_product_id?: string | null
+          description?: string | null
+          failed_count?: number
+          id?: string
+          landing_page_name?: string | null
+          last_error?: string | null
+          last_error_at?: string | null
+          last_order_at?: string | null
+          method?: string
+          name: string
+          orders_received?: number
+          platform?: string
+          status?: string
+          store_id: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          default_product_id?: string | null
+          description?: string | null
+          failed_count?: number
+          id?: string
+          landing_page_name?: string | null
+          last_error?: string | null
+          last_error_at?: string | null
+          last_order_at?: string | null
+          method?: string
+          name?: string
+          orders_received?: number
+          platform?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_connections_default_product_id_fkey"
+            columns: ["default_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_page_connections_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_page_credentials: {
+        Row: {
+          api_key_hash: string | null
+          api_key_last4: string | null
+          api_secret_enc: string | null
+          connection_id: string
+          rotated_at: string
+          webhook_secret_enc: string | null
+        }
+        Insert: {
+          api_key_hash?: string | null
+          api_key_last4?: string | null
+          api_secret_enc?: string | null
+          connection_id: string
+          rotated_at?: string
+          webhook_secret_enc?: string | null
+        }
+        Update: {
+          api_key_hash?: string | null
+          api_key_last4?: string | null
+          api_secret_enc?: string | null
+          connection_id?: string
+          rotated_at?: string
+          webhook_secret_enc?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_credentials_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: true
+            referencedRelation: "landing_page_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_page_field_map: {
+        Row: {
+          connection_id: string
+          mapping: Json
+          updated_at: string
+        }
+        Insert: {
+          connection_id: string
+          mapping?: Json
+          updated_at?: string
+        }
+        Update: {
+          connection_id?: string
+          mapping?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_field_map_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: true
+            referencedRelation: "landing_page_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_page_logs: {
+        Row: {
+          connection_id: string
+          error: string | null
+          external_order_id: string | null
+          id: string
+          ip: string | null
+          order_id: string | null
+          processing_ms: number | null
+          received_at: string
+          request_hash: string | null
+          request_snippet: string | null
+          response_snippet: string | null
+          status: string
+          store_id: string
+          ua: string | null
+        }
+        Insert: {
+          connection_id: string
+          error?: string | null
+          external_order_id?: string | null
+          id?: string
+          ip?: string | null
+          order_id?: string | null
+          processing_ms?: number | null
+          received_at?: string
+          request_hash?: string | null
+          request_snippet?: string | null
+          response_snippet?: string | null
+          status: string
+          store_id: string
+          ua?: string | null
+        }
+        Update: {
+          connection_id?: string
+          error?: string | null
+          external_order_id?: string | null
+          id?: string
+          ip?: string | null
+          order_id?: string | null
+          processing_ms?: number | null
+          received_at?: string
+          request_hash?: string | null
+          request_snippet?: string | null
+          response_snippet?: string | null
+          status?: string
+          store_id?: string
+          ua?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_logs_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "landing_page_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_page_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_page_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_page_product_map: {
+        Row: {
+          connection_id: string
+          created_at: string
+          external_id: string | null
+          external_sku: string | null
+          id: string
+          qty_multiplier: number
+          store_product_id: string | null
+          variant_map: Json | null
+        }
+        Insert: {
+          connection_id: string
+          created_at?: string
+          external_id?: string | null
+          external_sku?: string | null
+          id?: string
+          qty_multiplier?: number
+          store_product_id?: string | null
+          variant_map?: Json | null
+        }
+        Update: {
+          connection_id?: string
+          created_at?: string
+          external_id?: string | null
+          external_sku?: string | null
+          id?: string
+          qty_multiplier?: number
+          store_product_id?: string | null
+          variant_map?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_product_map_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "landing_page_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_page_product_map_store_product_id_fkey"
+            columns: ["store_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       low_stock_alerts: {
         Row: {
           created_at: string
@@ -1593,17 +1850,23 @@ export type Database = {
           delivery_zone_id: string | null
           device_id: string | null
           discount_amount: number | null
+          external_order_id: string | null
           fingerprint: string | null
           id: string
           invoice_no: string | null
+          is_test: boolean
+          landing_page_connection_id: string | null
+          landing_page_url: string | null
           notes: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           phone: string
+          source: string
           status: Database["public"]["Enums"]["order_status"]
           store_id: string
           subtotal: number
           txn_id: string | null
           updated_at: string
+          utm: Json | null
         }
         Insert: {
           address: string
@@ -1622,17 +1885,23 @@ export type Database = {
           delivery_zone_id?: string | null
           device_id?: string | null
           discount_amount?: number | null
+          external_order_id?: string | null
           fingerprint?: string | null
           id?: string
           invoice_no?: string | null
+          is_test?: boolean
+          landing_page_connection_id?: string | null
+          landing_page_url?: string | null
           notes?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           phone: string
+          source?: string
           status?: Database["public"]["Enums"]["order_status"]
           store_id: string
           subtotal?: number
           txn_id?: string | null
           updated_at?: string
+          utm?: Json | null
         }
         Update: {
           address?: string
@@ -1651,17 +1920,23 @@ export type Database = {
           delivery_zone_id?: string | null
           device_id?: string | null
           discount_amount?: number | null
+          external_order_id?: string | null
           fingerprint?: string | null
           id?: string
           invoice_no?: string | null
+          is_test?: boolean
+          landing_page_connection_id?: string | null
+          landing_page_url?: string | null
           notes?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           phone?: string
+          source?: string
           status?: Database["public"]["Enums"]["order_status"]
           store_id?: string
           subtotal?: number
           txn_id?: string | null
           updated_at?: string
+          utm?: Json | null
         }
         Relationships: [
           {
