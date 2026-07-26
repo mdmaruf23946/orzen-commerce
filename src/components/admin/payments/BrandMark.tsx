@@ -14,11 +14,7 @@ export function BrandMark({
 
   if (src) {
     return (
-      <div
-        className={`${dim} flex shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-white p-1 shadow-sm dark:bg-white/95`}
-        style={{ borderColor: brand.brandColor + "33" }}
-        aria-label={brand.label}
-      >
+      <div className={`${dim} flex shrink-0 items-center justify-center overflow-hidden`} aria-label={brand.label}>
         <img src={src} alt={brand.label} loading="lazy" decoding="async" className="h-full w-full object-contain" />
       </div>
     );
