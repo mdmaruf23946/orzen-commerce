@@ -758,6 +758,7 @@ export type Database = {
           support_url: string | null
           updated_at: string
           website_url: string | null
+          wordmark_url: string | null
         }
         Insert: {
           api_key?: string | null
@@ -781,6 +782,7 @@ export type Database = {
           support_url?: string | null
           updated_at?: string
           website_url?: string | null
+          wordmark_url?: string | null
         }
         Update: {
           api_key?: string | null
@@ -804,6 +806,7 @@ export type Database = {
           support_url?: string | null
           updated_at?: string
           website_url?: string | null
+          wordmark_url?: string | null
         }
         Relationships: []
       }
@@ -3936,6 +3939,7 @@ export type Database = {
           sort_order: number
           support_url: string
           website_url: string
+          wordmark_url: string
         }[]
       }
       get_public_delivery_zones: {

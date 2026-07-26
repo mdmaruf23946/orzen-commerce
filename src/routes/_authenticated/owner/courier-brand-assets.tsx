@@ -26,6 +26,7 @@ type Courier = {
   logo_url: string | null;
   dark_logo_url: string | null;
   favicon_url: string | null;
+  wordmark_url: string | null;
   brand_color: string | null;
   secondary_color: string | null;
   icon_bg_color: string | null;
@@ -51,23 +52,23 @@ function proxied(u: string | null | undefined) {
 function PreviewCard({ c }: { c: Courier }) {
   const logo = proxied(c.logo_url);
   const dark = proxied(c.dark_logo_url);
+  const wordmark = proxied(c.wordmark_url);
   const color = c.brand_color || "#0F172A";
-  const bg = c.icon_bg_color || "#ffffff";
   const soft = (c.secondary_color || color) + "14";
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {[
-        { label: "Light theme", bgCard: "#ffffff", src: logo },
-        { label: "Dark theme", bgCard: "#0B1220", src: dark || logo },
+        { label: "Light theme", bgCard: "#ffffff", src: logo, textColor: color },
+        { label: "Dark theme", bgCard: "#0B1220", src: dark || logo, textColor: "#F8FAFC" },
       ].map((v) => (
         <div key={v.label} className="rounded-xl border p-3" style={{ background: v.bgCard, borderColor: color + "33" }}>
           <div className="mb-2 text-[10px] font-medium uppercase tracking-wide" style={{ color: v.bgCard === "#ffffff" ? "#64748b" : "#94a3b8" }}>
             {v.label}
           </div>
           <div className="flex items-center gap-3 rounded-lg p-2" style={{ background: soft }}>
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border" style={{ background: bg, borderColor: color + "40" }}>
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden">
               {v.src ? (
-                <img src={v.src} alt={c.name} className="h-full w-full object-contain p-1" />
+                <img src={v.src} alt={c.name} className="h-full w-full object-contain" />
               ) : (
                 <span className="text-sm font-bold" style={{ color }}>
                   {(c.name || "?").slice(0, 2).toUpperCase()}
@@ -76,7 +77,11 @@ function PreviewCard({ c }: { c: Courier }) {
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <div className="truncate text-sm font-semibold" style={{ color: v.bgCard === "#ffffff" ? color : "#F8FAFC" }}>{c.name || "Untitled courier"}</div>
+                {wordmark ? (
+                  <img src={wordmark} alt={c.name} className="h-5 max-w-[160px] object-contain" style={{ filter: v.bgCard === "#ffffff" ? "none" : "brightness(0) invert(1)" }} />
+                ) : (
+                  <div className="truncate text-sm font-semibold" style={{ color: v.textColor }}>{c.name || "Untitled courier"}</div>
+                )}
                 <span
                   className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
                   style={{
@@ -122,7 +127,7 @@ function ColorField({ label, value, onChange }: { label: string; value: string |
   );
 }
 
-async function uploadLogo(file: File, code: string, kind: "logo" | "dark" | "favicon") {
+async function uploadLogo(file: File, code: string, kind: "logo" | "dark" | "favicon" | "wordmark") {
   const ok = ["image/svg+xml", "image/png", "image/webp"];
   if (!ok.includes(file.type)) throw new Error("Only SVG, PNG or WebP allowed");
   if (file.size > 2 * 1024 * 1024) throw new Error("Max 2MB per file");
@@ -135,16 +140,17 @@ async function uploadLogo(file: File, code: string, kind: "logo" | "dark" | "fav
       img.onerror = () => rej(new Error("Unable to read image"));
       img.src = URL.createObjectURL(file);
     });
-    const minEdge = kind === "favicon" ? 32 : 64;
+    const minEdge = kind === "favicon" ? 32 : kind === "wordmark" ? 40 : 64;
     if (Math.min(dim.w, dim.h) < minEdge) {
       throw new Error(`Image too small — minimum ${minEdge}px shortest edge`);
     }
   }
 
+  const maxEdge = kind === "favicon" ? 128 : kind === "wordmark" ? 640 : 512;
   const toUpload =
     file.type === "image/svg+xml"
       ? file
-      : await compressImage(file, { maxEdge: kind === "favicon" ? 128 : 512, quality: 0.92 });
+      : await compressImage(file, { maxEdge, quality: 0.92 });
   const ext = file.type === "image/svg+xml" ? "svg" : file.type === "image/webp" ? "webp" : "png";
   const safe = code.toLowerCase().replace(/[^a-z0-9]/g, "") || "brand";
   const path = `brand-logos/courier/${safe}/${kind}-${Date.now()}.${ext}`;
@@ -164,7 +170,7 @@ function LogoField({
   label: string;
   hint: string;
   code: string;
-  kind: "logo" | "dark" | "favicon";
+  kind: "logo" | "dark" | "favicon" | "wordmark";
   value: string | null;
   onChange: (v: string | null) => void;
 }) {
@@ -262,6 +268,7 @@ function CourierEditor({
           logo_url: c.logo_url,
           dark_logo_url: c.dark_logo_url,
           favicon_url: c.favicon_url,
+          wordmark_url: c.wordmark_url,
           is_default: c.is_default,
           is_active: c.is_active,
           brand_color: c.brand_color,
@@ -328,14 +335,22 @@ function CourierEditor({
           />
         </div>
 
-        <div className="md:col-span-2 grid gap-4 sm:grid-cols-3">
+        <div className="md:col-span-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <LogoField
-            label="Primary logo"
-            hint="SVG or PNG with transparency. Max 2MB. Shortest edge ≥ 64px."
+            label="Icon logo"
+            hint="Square profile logo. SVG/PNG, max 2MB. Shortest edge ≥ 64px."
             code={c.code}
             kind="logo"
             value={c.logo_url}
             onChange={(v) => setC({ ...c, logo_url: v })}
+          />
+          <LogoField
+            label="Name logo (wordmark)"
+            hint="Horizontal brand name logo. Shown beside provider name in the store panel. Transparent PNG/SVG recommended."
+            code={c.code}
+            kind="wordmark"
+            value={c.wordmark_url}
+            onChange={(v) => setC({ ...c, wordmark_url: v })}
           />
           <LogoField
             label="Dark / monochrome logo"
@@ -517,6 +532,7 @@ function CourierBrandAssetsPage() {
         logo_url: r.logo_url ?? null,
         dark_logo_url: r.dark_logo_url ?? null,
         favicon_url: r.favicon_url ?? null,
+        wordmark_url: r.wordmark_url ?? null,
         brand_color: r.brand_color ?? null,
         secondary_color: r.secondary_color ?? null,
         icon_bg_color: r.icon_bg_color ?? null,
