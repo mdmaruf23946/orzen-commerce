@@ -48,6 +48,7 @@ export const listStorePaymentGateways = createServerFn({ method: "GET" })
         provider_id: p.id,
         label: p.label,
         logo_url: p.logo_url,
+        wordmark_url: p.wordmark_url,
         notes: p.notes,
         brand_color: p.brand_color,
         secondary_color: p.secondary_color,
