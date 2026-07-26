@@ -11,6 +11,7 @@ import {
   Users,
   Globe,
   AlertTriangle,
+  Hash,
 } from "lucide-react";
 import {
   getMyStore,
