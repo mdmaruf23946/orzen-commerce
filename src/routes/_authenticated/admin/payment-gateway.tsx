@@ -284,9 +284,17 @@ function GatewayCard({
           <BrandMark brand={brand} logoUrl={g.logo_url} />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="truncate font-semibold" style={{ color: brand.brandColor }}>
-                {g.label}
-              </span>
+              {g.wordmark_url ? (
+                <img
+                  src={g.wordmark_url.startsWith("http") ? g.wordmark_url : `/api/img/${g.wordmark_url}`}
+                  alt={g.label}
+                  className="h-5 w-auto max-w-[140px] object-contain sm:h-6"
+                />
+              ) : (
+                <span className="truncate font-semibold" style={{ color: brand.brandColor }}>
+                  {g.label}
+                </span>
+              )}
               {c?.is_active && (
                 <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700">
                   <Star className="mr-1 h-3 w-3 fill-current" /> Default
