@@ -51,6 +51,7 @@ const links: LinkDef[] = [
   { to: "/admin/product-defaults", label: "Product Defaults", icon: ClipboardList },
   { to: "/admin/domains", label: "Domains", icon: Globe },
   { to: "/admin/dns-check", label: "DNS Checker", icon: Radar },
+  { to: "/admin/landing-pages", label: "Landing Pages", icon: ExternalLink },
   { to: "/admin/import-export", label: "Import / Export", icon: FileUp },
   { to: "/admin/subscription", label: "Subscription", icon: CreditCard },
   { to: "/admin/billing", label: "Billing & Plans", icon: Wallet },
