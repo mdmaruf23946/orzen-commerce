@@ -44,24 +44,24 @@ function BrandPreview({ label, brand, logo }: { label: string; brand: BrandField
   const color = brand.brand_color || "#64748B";
   return (
     <div
-      className="flex items-center gap-3 overflow-hidden rounded-xl border p-3"
+      className="flex items-center gap-2 overflow-hidden rounded-xl border p-2 sm:gap-3 sm:p-3"
       style={{ borderColor: color + "40", background: (brand.secondary_color || color) + "0D" }}
     >
       <div
-        className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border shadow-sm sm:h-12 sm:w-12"
+        className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border shadow-sm sm:h-10 sm:w-10 md:h-12 md:w-12"
         style={{ background: bg, borderColor: color + "33" }}
       >
         {src ? (
           <img src={src} alt={label} className="h-full w-full object-contain p-1" />
         ) : (
-          <span className="text-sm font-bold" style={{ color }}>
+          <span className="text-xs font-bold sm:text-sm" style={{ color }}>
             {label.slice(0, 2).toUpperCase()}
           </span>
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold sm:text-base" style={{ color }}>{label}</div>
-        <div className="truncate text-[11px] text-muted-foreground sm:text-xs">
+        <div className="truncate text-xs font-semibold md:text-base" style={{ color }}>{label}</div>
+        <div className="truncate text-[10px] text-muted-foreground sm:text-xs">
           {brand.description || "No description set"}
         </div>
       </div>
@@ -72,20 +72,20 @@ function BrandPreview({ label, brand, logo }: { label: string; brand: BrandField
 function ColorInput({ label, value, onChange }: { label: string; value: string | null; onChange: (v: string) => void }) {
   const v = value || "#000000";
   return (
-    <div className="space-y-1.5">
-      <Label className="text-xs">{label}</Label>
-      <div className="flex items-center gap-2">
+    <div className="space-y-1 sm:space-y-1.5">
+      <Label className="text-[11px] sm:text-xs">{label}</Label>
+      <div className="flex items-center gap-1.5 sm:gap-2">
         <input
           type="color"
           value={v}
           onChange={(e) => onChange(e.target.value)}
-          className="h-9 w-12 shrink-0 cursor-pointer rounded-md border bg-transparent"
+          className="h-8 w-11 shrink-0 cursor-pointer rounded-md border bg-transparent sm:h-9 sm:w-12"
         />
         <Input
           value={value ?? ""}
           onChange={(e) => onChange(e.target.value)}
           placeholder="#RRGGBB"
-          className="font-mono text-xs"
+          className="h-8 font-mono text-[11px] sm:h-9 sm:text-xs"
         />
       </div>
     </div>
