@@ -496,7 +496,7 @@ function InvoiceNumberingSection() {
   const nextSeq = Math.max(Number(data.next_number ?? 1), Number(form.start_number || 1));
   const preview = (() => {
     try {
-      return computePreview(form, nextSeq);
+      return computeInvoicePreview(form, nextSeq);
     } catch {
       return "";
     }
