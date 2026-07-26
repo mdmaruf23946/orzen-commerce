@@ -397,6 +397,9 @@ function SettingsPage() {
           </div>
         </Section>
 
+        {/* 6b. Invoice Numbering */}
+        <InvoiceNumberingSection />
+
         {/* 7. Danger Zone */}
         <section className="rounded-2xl border border-destructive/40 bg-destructive/5 p-4 sm:p-6">
           <div className="mb-3 flex items-start gap-3">
