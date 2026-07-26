@@ -99,6 +99,7 @@ import { Route as AuthenticatedAdminAiAgentRouteImport } from './routes/_authent
 import { Route as AuthenticatedOwnerSubscriptionPayRouteRouteImport } from './routes/_authenticated/owner/subscription-pay.route'
 import { Route as AuthenticatedAdminBillingRouteRouteImport } from './routes/_authenticated/admin/billing.route'
 import { Route as AuthenticatedOwnerSubscriptionPayIndexRouteImport } from './routes/_authenticated/owner/subscription-pay.index'
+import { Route as AuthenticatedAdminLandingPagesIndexRouteImport } from './routes/_authenticated/admin/landing-pages.index'
 import { Route as AuthenticatedAdminBillingIndexRouteImport } from './routes/_authenticated/admin/billing.index'
 import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
 import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/order.$orderId'
@@ -109,11 +110,15 @@ import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/publ
 import { Route as ApiPublicFbCapiTrackRouteImport } from './routes/api/public/fb-capi/track'
 import { Route as ApiPublicCronNotifyOrdersRouteImport } from './routes/api/public/cron/notify-orders'
 import { Route as AuthenticatedOwnerSubscriptionPayProvidersRouteImport } from './routes/_authenticated/owner/subscription-pay.providers'
+import { Route as AuthenticatedAdminLandingPagesIdRouteImport } from './routes/_authenticated/admin/landing-pages.$id'
 import { Route as AuthenticatedAdminInvoiceOrderIdRouteImport } from './routes/_authenticated/admin/invoice.$orderId'
 import { Route as AuthenticatedAdminBillingReturnRouteImport } from './routes/_authenticated/admin/billing.return'
 import { Route as ApiPublicSubscriptionPayWebhookProviderRouteImport } from './routes/api/public/subscription-pay/webhook.$provider'
+import { Route as ApiPublicLandingPagesConnectionIdOrdersRouteImport } from './routes/api/public/landing-pages/$connectionId/orders'
 import { Route as AuthenticatedAdminBillingCheckoutPackageIdRouteImport } from './routes/_authenticated/admin/billing.checkout.$packageId'
 import { Route as ApiPublicStorePaymentsWebhookStoreProviderRouteImport } from './routes/api/public/store-payments/webhook.$store.$provider'
+import { Route as ApiPublicLandingPagesConnectionIdEmbedOrdersRouteImport } from './routes/api/public/landing-pages/$connectionId/embed.orders'
+import { Route as ApiPublicLandingPagesConnectionIdApiOrdersRouteImport } from './routes/api/public/landing-pages/$connectionId/api.orders'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -622,6 +627,12 @@ const AuthenticatedOwnerSubscriptionPayIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedOwnerSubscriptionPayRouteRoute,
   } as any)
+const AuthenticatedAdminLandingPagesIndexRoute =
+  AuthenticatedAdminLandingPagesIndexRouteImport.update({
+    id: '/landing-pages/',
+    path: '/landing-pages/',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminBillingIndexRoute =
   AuthenticatedAdminBillingIndexRouteImport.update({
     id: '/',
@@ -677,6 +688,12 @@ const AuthenticatedOwnerSubscriptionPayProvidersRoute =
     path: '/providers',
     getParentRoute: () => AuthenticatedOwnerSubscriptionPayRouteRoute,
   } as any)
+const AuthenticatedAdminLandingPagesIdRoute =
+  AuthenticatedAdminLandingPagesIdRouteImport.update({
+    id: '/landing-pages/$id',
+    path: '/landing-pages/$id',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminInvoiceOrderIdRoute =
   AuthenticatedAdminInvoiceOrderIdRouteImport.update({
     id: '/invoice/$orderId',
@@ -695,6 +712,12 @@ const ApiPublicSubscriptionPayWebhookProviderRoute =
     path: '/api/public/subscription-pay/webhook/$provider',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicLandingPagesConnectionIdOrdersRoute =
+  ApiPublicLandingPagesConnectionIdOrdersRouteImport.update({
+    id: '/api/public/landing-pages/$connectionId/orders',
+    path: '/api/public/landing-pages/$connectionId/orders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedAdminBillingCheckoutPackageIdRoute =
   AuthenticatedAdminBillingCheckoutPackageIdRouteImport.update({
     id: '/checkout/$packageId',
@@ -705,6 +728,18 @@ const ApiPublicStorePaymentsWebhookStoreProviderRoute =
   ApiPublicStorePaymentsWebhookStoreProviderRouteImport.update({
     id: '/api/public/store-payments/webhook/$store/$provider',
     path: '/api/public/store-payments/webhook/$store/$provider',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicLandingPagesConnectionIdEmbedOrdersRoute =
+  ApiPublicLandingPagesConnectionIdEmbedOrdersRouteImport.update({
+    id: '/api/public/landing-pages/$connectionId/embed/orders',
+    path: '/api/public/landing-pages/$connectionId/embed/orders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicLandingPagesConnectionIdApiOrdersRoute =
+  ApiPublicLandingPagesConnectionIdApiOrdersRouteImport.update({
+    id: '/api/public/landing-pages/$connectionId/api/orders',
+    path: '/api/public/landing-pages/$connectionId/api/orders',
     getParentRoute: () => rootRouteImport,
   } as any)
 
@@ -799,6 +834,7 @@ export interface FileRoutesByFullPath {
   '/store/$slug/': typeof StoreSlugIndexRoute
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
+  '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
@@ -809,9 +845,13 @@ export interface FileRoutesByFullPath {
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
+  '/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
+  '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
+  '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
+  '/api/public/landing-pages/$connectionId/embed/orders': typeof ApiPublicLandingPagesConnectionIdEmbedOrdersRoute
   '/api/public/store-payments/webhook/$store/$provider': typeof ApiPublicStorePaymentsWebhookStoreProviderRoute
 }
 export interface FileRoutesByTo {
@@ -900,6 +940,7 @@ export interface FileRoutesByTo {
   '/store/$slug': typeof StoreSlugIndexRoute
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
+  '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
@@ -910,9 +951,13 @@ export interface FileRoutesByTo {
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing': typeof AuthenticatedAdminBillingIndexRoute
+  '/admin/landing-pages': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
+  '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
+  '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
+  '/api/public/landing-pages/$connectionId/embed/orders': typeof ApiPublicLandingPagesConnectionIdEmbedOrdersRoute
   '/api/public/store-payments/webhook/$store/$provider': typeof ApiPublicStorePaymentsWebhookStoreProviderRoute
 }
 export interface FileRoutesById {
@@ -1008,6 +1053,7 @@ export interface FileRoutesById {
   '/store/$slug/': typeof StoreSlugIndexRoute
   '/_authenticated/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/_authenticated/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
+  '/_authenticated/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
   '/_authenticated/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
@@ -1018,9 +1064,13 @@ export interface FileRoutesById {
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/_authenticated/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
+  '/_authenticated/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/_authenticated/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/_authenticated/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
+  '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
+  '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
+  '/api/public/landing-pages/$connectionId/embed/orders': typeof ApiPublicLandingPagesConnectionIdEmbedOrdersRoute
   '/api/public/store-payments/webhook/$store/$provider': typeof ApiPublicStorePaymentsWebhookStoreProviderRoute
 }
 export interface FileRouteTypes {
@@ -1116,6 +1166,7 @@ export interface FileRouteTypes {
     | '/store/$slug/'
     | '/admin/billing/return'
     | '/admin/invoice/$orderId'
+    | '/admin/landing-pages/$id'
     | '/owner/subscription-pay/providers'
     | '/api/public/cron/notify-orders'
     | '/api/public/fb-capi/track'
@@ -1126,9 +1177,13 @@ export interface FileRouteTypes {
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/admin/billing/'
+    | '/admin/landing-pages/'
     | '/owner/subscription-pay/'
     | '/admin/billing/checkout/$packageId'
+    | '/api/public/landing-pages/$connectionId/orders'
     | '/api/public/subscription-pay/webhook/$provider'
+    | '/api/public/landing-pages/$connectionId/api/orders'
+    | '/api/public/landing-pages/$connectionId/embed/orders'
     | '/api/public/store-payments/webhook/$store/$provider'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -1217,6 +1272,7 @@ export interface FileRouteTypes {
     | '/store/$slug'
     | '/admin/billing/return'
     | '/admin/invoice/$orderId'
+    | '/admin/landing-pages/$id'
     | '/owner/subscription-pay/providers'
     | '/api/public/cron/notify-orders'
     | '/api/public/fb-capi/track'
@@ -1227,9 +1283,13 @@ export interface FileRouteTypes {
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/admin/billing'
+    | '/admin/landing-pages'
     | '/owner/subscription-pay'
     | '/admin/billing/checkout/$packageId'
+    | '/api/public/landing-pages/$connectionId/orders'
     | '/api/public/subscription-pay/webhook/$provider'
+    | '/api/public/landing-pages/$connectionId/api/orders'
+    | '/api/public/landing-pages/$connectionId/embed/orders'
     | '/api/public/store-payments/webhook/$store/$provider'
   id:
     | '__root__'
@@ -1324,6 +1384,7 @@ export interface FileRouteTypes {
     | '/store/$slug/'
     | '/_authenticated/admin/billing/return'
     | '/_authenticated/admin/invoice/$orderId'
+    | '/_authenticated/admin/landing-pages/$id'
     | '/_authenticated/owner/subscription-pay/providers'
     | '/api/public/cron/notify-orders'
     | '/api/public/fb-capi/track'
@@ -1334,9 +1395,13 @@ export interface FileRouteTypes {
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/_authenticated/admin/billing/'
+    | '/_authenticated/admin/landing-pages/'
     | '/_authenticated/owner/subscription-pay/'
     | '/_authenticated/admin/billing/checkout/$packageId'
+    | '/api/public/landing-pages/$connectionId/orders'
     | '/api/public/subscription-pay/webhook/$provider'
+    | '/api/public/landing-pages/$connectionId/api/orders'
+    | '/api/public/landing-pages/$connectionId/embed/orders'
     | '/api/public/store-payments/webhook/$store/$provider'
   fileRoutesById: FileRoutesById
 }
@@ -1358,7 +1423,10 @@ export interface RootRouteChildren {
   ApiPublicCronNotifyOrdersRoute: typeof ApiPublicCronNotifyOrdersRoute
   ApiPublicFbCapiTrackRoute: typeof ApiPublicFbCapiTrackRoute
   ApiPublicMessengerWebhookRoute: typeof ApiPublicMessengerWebhookRoute
+  ApiPublicLandingPagesConnectionIdOrdersRoute: typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   ApiPublicSubscriptionPayWebhookProviderRoute: typeof ApiPublicSubscriptionPayWebhookProviderRoute
+  ApiPublicLandingPagesConnectionIdApiOrdersRoute: typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
+  ApiPublicLandingPagesConnectionIdEmbedOrdersRoute: typeof ApiPublicLandingPagesConnectionIdEmbedOrdersRoute
   ApiPublicStorePaymentsWebhookStoreProviderRoute: typeof ApiPublicStorePaymentsWebhookStoreProviderRoute
 }
 
@@ -1994,6 +2062,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerSubscriptionPayIndexRouteImport
       parentRoute: typeof AuthenticatedOwnerSubscriptionPayRouteRoute
     }
+    '/_authenticated/admin/landing-pages/': {
+      id: '/_authenticated/admin/landing-pages/'
+      path: '/landing-pages'
+      fullPath: '/admin/landing-pages/'
+      preLoaderRoute: typeof AuthenticatedAdminLandingPagesIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/billing/': {
       id: '/_authenticated/admin/billing/'
       path: '/'
@@ -2064,6 +2139,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerSubscriptionPayProvidersRouteImport
       parentRoute: typeof AuthenticatedOwnerSubscriptionPayRouteRoute
     }
+    '/_authenticated/admin/landing-pages/$id': {
+      id: '/_authenticated/admin/landing-pages/$id'
+      path: '/landing-pages/$id'
+      fullPath: '/admin/landing-pages/$id'
+      preLoaderRoute: typeof AuthenticatedAdminLandingPagesIdRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/invoice/$orderId': {
       id: '/_authenticated/admin/invoice/$orderId'
       path: '/invoice/$orderId'
@@ -2085,6 +2167,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSubscriptionPayWebhookProviderRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/landing-pages/$connectionId/orders': {
+      id: '/api/public/landing-pages/$connectionId/orders'
+      path: '/api/public/landing-pages/$connectionId/orders'
+      fullPath: '/api/public/landing-pages/$connectionId/orders'
+      preLoaderRoute: typeof ApiPublicLandingPagesConnectionIdOrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/admin/billing/checkout/$packageId': {
       id: '/_authenticated/admin/billing/checkout/$packageId'
       path: '/checkout/$packageId'
@@ -2097,6 +2186,20 @@ declare module '@tanstack/react-router' {
       path: '/api/public/store-payments/webhook/$store/$provider'
       fullPath: '/api/public/store-payments/webhook/$store/$provider'
       preLoaderRoute: typeof ApiPublicStorePaymentsWebhookStoreProviderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/landing-pages/$connectionId/embed/orders': {
+      id: '/api/public/landing-pages/$connectionId/embed/orders'
+      path: '/api/public/landing-pages/$connectionId/embed/orders'
+      fullPath: '/api/public/landing-pages/$connectionId/embed/orders'
+      preLoaderRoute: typeof ApiPublicLandingPagesConnectionIdEmbedOrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/landing-pages/$connectionId/api/orders': {
+      id: '/api/public/landing-pages/$connectionId/api/orders'
+      path: '/api/public/landing-pages/$connectionId/api/orders'
+      fullPath: '/api/public/landing-pages/$connectionId/api/orders'
+      preLoaderRoute: typeof ApiPublicLandingPagesConnectionIdApiOrdersRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -2158,6 +2261,8 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminThemeRoute: typeof AuthenticatedAdminThemeRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminInvoiceOrderIdRoute: typeof AuthenticatedAdminInvoiceOrderIdRoute
+  AuthenticatedAdminLandingPagesIdRoute: typeof AuthenticatedAdminLandingPagesIdRoute
+  AuthenticatedAdminLandingPagesIndexRoute: typeof AuthenticatedAdminLandingPagesIndexRoute
 }
 
 const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
@@ -2206,6 +2311,10 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
     AuthenticatedAdminInvoiceOrderIdRoute:
       AuthenticatedAdminInvoiceOrderIdRoute,
+    AuthenticatedAdminLandingPagesIdRoute:
+      AuthenticatedAdminLandingPagesIdRoute,
+    AuthenticatedAdminLandingPagesIndexRoute:
+      AuthenticatedAdminLandingPagesIndexRoute,
   }
 
 const AuthenticatedAdminRouteRouteWithChildren =
@@ -2375,21 +2484,17 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicCronNotifyOrdersRoute: ApiPublicCronNotifyOrdersRoute,
   ApiPublicFbCapiTrackRoute: ApiPublicFbCapiTrackRoute,
   ApiPublicMessengerWebhookRoute: ApiPublicMessengerWebhookRoute,
+  ApiPublicLandingPagesConnectionIdOrdersRoute:
+    ApiPublicLandingPagesConnectionIdOrdersRoute,
   ApiPublicSubscriptionPayWebhookProviderRoute:
     ApiPublicSubscriptionPayWebhookProviderRoute,
+  ApiPublicLandingPagesConnectionIdApiOrdersRoute:
+    ApiPublicLandingPagesConnectionIdApiOrdersRoute,
+  ApiPublicLandingPagesConnectionIdEmbedOrdersRoute:
+    ApiPublicLandingPagesConnectionIdEmbedOrdersRoute,
   ApiPublicStorePaymentsWebhookStoreProviderRoute:
     ApiPublicStorePaymentsWebhookStoreProviderRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
