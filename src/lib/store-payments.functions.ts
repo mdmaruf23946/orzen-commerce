@@ -259,7 +259,7 @@ export const listPlatformPaymentGateways = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("platform_payment_gateways")
-      .select("id,label,enabled,sort_order,logo_url,notes,brand_color,secondary_color,icon_bg_color,description,updated_at")
+      .select("id,label,enabled,sort_order,logo_url,wordmark_url,notes,brand_color,secondary_color,icon_bg_color,description,updated_at")
       .order("sort_order", { ascending: true });
     if (error) throw new Error(error.message);
     const meta = listProviderMeta();
