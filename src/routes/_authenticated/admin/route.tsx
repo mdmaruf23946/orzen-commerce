@@ -66,7 +66,7 @@ const groupDefs: { label: string; paths: string[] }[] = [
   { label: "AI & Automation", paths: ["/admin/ai-agent", "/admin/ai-recommendations", "/admin/handoff-queue", "/admin/low-stock", "/admin/messenger", "/admin/messenger-inbox"] },
   { label: "Marketing", paths: ["/admin/marketing", "/admin/coupons", "/admin/seo", "/admin/banners", "/admin/notifications"] },
   { label: "Finance", paths: ["/admin/payments", "/admin/payment-gateway", "/admin/finance", "/admin/analytics"] },
-  { label: "Operations", paths: ["/admin/delivery", "/admin/couriers"] },
+  { label: "Operations", paths: ["/admin/delivery", "/admin/couriers", "/admin/landing-pages"] },
   { label: "System", paths: ["/admin/theme", "/admin/legal", "/admin/domains", "/admin/dns-check", "/admin/import-export"] },
   { label: "Account", paths: ["/admin/subscription", "/admin/billing", "/admin/settings"] },
 ];
