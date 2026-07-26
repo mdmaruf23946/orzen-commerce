@@ -274,6 +274,7 @@ function PaymentGatewaysTab() {
         label: row?.label ?? staticBrand?.label ?? id,
         sort_order: row?.sort_order ?? 100,
         logo_url: row?.logo_url ?? null,
+        wordmark_url: row?.wordmark_url ?? null,
         brand_color: row?.brand_color ?? staticBrand?.brandColor ?? null,
         secondary_color: row?.secondary_color ?? null,
         icon_bg_color: row?.icon_bg_color ?? staticBrand?.accentColor ?? null,
@@ -295,6 +296,7 @@ function PaymentGatewaysTab() {
           code={r.id}
           initial={{
             logo_url: r.logo_url,
+            wordmark_url: r.wordmark_url,
             brand_color: r.brand_color,
             secondary_color: r.secondary_color,
             icon_bg_color: r.icon_bg_color,
@@ -309,6 +311,7 @@ function PaymentGatewaysTab() {
                 label: b.label || r.label,
                 sort_order: r.sort_order,
                 logo_url: b.logo_url,
+                wordmark_url: b.wordmark_url,
                 brand_color: b.brand_color,
                 secondary_color: b.secondary_color,
                 icon_bg_color: b.icon_bg_color,
