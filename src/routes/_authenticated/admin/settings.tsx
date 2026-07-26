@@ -129,7 +129,7 @@ function SettingsPage() {
   const [savingLogin, setSavingLogin] = useState(false);
 
   useEffect(() => {
-    if (store) setForm({ ...store });
+    if (store && !form) setForm({ ...store });
   }, [store]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const dirty = useMemo(() => {
