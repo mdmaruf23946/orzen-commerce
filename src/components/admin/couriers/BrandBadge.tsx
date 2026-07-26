@@ -18,7 +18,7 @@ export function BrandBadge({ meta, logoUrl }: { meta: CourierMeta; logoUrl?: str
   if (src) {
     return (
       <div
-        className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-white p-1 shadow-sm dark:bg-white/95"
+        className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden"
         aria-label={meta.label}
       >
         <img

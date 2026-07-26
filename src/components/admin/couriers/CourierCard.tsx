@@ -30,6 +30,7 @@ type Props = {
   saving?: boolean;
   testing?: boolean;
   logoUrl?: string | null;
+  wordmarkUrl?: string | null;
 };
 
 export function CourierCard({
@@ -42,6 +43,7 @@ export function CourierCard({
   saving,
   testing,
   logoUrl,
+  wordmarkUrl,
 }: Props) {
 
   const cfg = { ...emptyConfig, ...value } as CourierConfig;
@@ -84,7 +86,17 @@ export function CourierCard({
         <BrandBadge meta={meta} logoUrl={logoUrl} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="truncate text-base font-semibold">{meta.label}</h3>
+            {wordmarkUrl ? (
+              <img
+                src={wordmarkUrl.startsWith("http") ? wordmarkUrl : `/api/img/${wordmarkUrl}`}
+                alt={meta.label}
+                loading="lazy"
+                decoding="async"
+                className="h-6 max-w-[180px] object-contain dark:brightness-0 dark:invert"
+              />
+            ) : (
+              <h3 className="truncate text-base font-semibold">{meta.label}</h3>
+            )}
             <VerifiedBadge color={meta.brandColor} />
             <StatusChip status={status} />
             {cfg.is_default && (

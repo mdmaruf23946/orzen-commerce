@@ -49,8 +49,10 @@ function CouriersPage() {
   });
 
   const logoByCode: Record<string, string | null> = {};
-  for (const p of (providers ?? []) as Array<{ code: string; logo_url: string | null }>) {
+  const wordmarkByCode: Record<string, string | null> = {};
+  for (const p of (providers ?? []) as Array<{ code: string; logo_url: string | null; wordmark_url: string | null }>) {
     logoByCode[p.code] = p.logo_url;
+    wordmarkByCode[p.code] = p.wordmark_url;
   }
 
 
@@ -141,6 +143,7 @@ function CouriersPage() {
             saving={saving === meta.key}
             testing={testing === meta.key}
             logoUrl={logoByCode[meta.key] ?? null}
+            wordmarkUrl={wordmarkByCode[meta.key] ?? null}
           />
         ))}
       </div>
