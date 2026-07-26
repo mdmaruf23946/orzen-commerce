@@ -812,6 +812,11 @@ const courierDiagnostics = z
     latencyMs: z.number().int().min(0).max(600000).optional().nullable(),
   })
   .partial();
+const courierWebhook = z
+  .object({
+    verify_token: z.string().trim().max(300).optional().nullable(),
+  })
+  .partial();
 const courierProvider = z
   .object({
     api_key: z.string().trim().max(300).optional().nullable(),
@@ -820,18 +825,33 @@ const courierProvider = z
     enabled: z.boolean().optional(),
     sandbox: z.boolean().optional(),
     is_default: z.boolean().optional(),
+    credentials: z.record(z.string().max(500)).optional(),
     shipping: courierShipping.optional(),
     pickup: courierPickup.optional(),
     automation: courierAutomation.optional(),
     diagnostics: courierDiagnostics.optional(),
+    webhook: courierWebhook.optional(),
   })
   .partial();
+const COURIER_KEYS = [
+  "steadfast",
+  "pathao",
+  "redx",
+  "paperfly",
+  "ecourier",
+  "sa_paribahan",
+  "sundarban",
+] as const;
 const couriersSchema = z.object({
   steadfast: courierProvider.optional(),
   pathao: courierProvider.optional(),
   redx: courierProvider.optional(),
   paperfly: courierProvider.optional(),
+  ecourier: courierProvider.optional(),
+  sa_paribahan: courierProvider.optional(),
+  sundarban: courierProvider.optional(),
 });
+
 
 export const updateCouriers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -847,7 +867,7 @@ export const updateCouriers = createServerFn({ method: "POST" })
 export const testCourierConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ key: z.enum(["steadfast", "pathao", "redx", "paperfly"]) }).parse(d),
+    z.object({ key: z.enum(COURIER_KEYS) }).parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertPlan(context.supabase, context.userId, "courier");
@@ -859,7 +879,15 @@ export const testCourierConnection = createServerFn({ method: "POST" })
     if (!store) throw new Error("No store");
     const couriers: any = (store as any).couriers ?? {};
     const cfg = couriers[data.key] ?? {};
-    const url: string | null = cfg.base_url || null;
+    const creds: Record<string, string> = cfg.credentials ?? {};
+    const url: string | null =
+      creds.base_url || cfg.base_url || null;
+    const apiKey = creds.api_key || cfg.api_key || "";
+    const apiSecret = creds.api_secret || creds.secret || cfg.secret || "";
+    const userId = creds.user_id || "";
+    const username = creds.username || "";
+    const password = creds.password || "";
+    const merchantCode = creds.merchant_code || "";
     const startedAt = Date.now();
     let status: "connected" | "error" = "error";
     let message = "";
@@ -868,15 +896,32 @@ export const testCourierConnection = createServerFn({ method: "POST" })
       if (!url) throw new Error("Base URL is not set");
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 8000);
-      const res = await fetch(url, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          ...(cfg.api_key ? { Authorization: `Bearer ${cfg.api_key}`, "Api-Key": String(cfg.api_key) } : {}),
-          ...(cfg.secret ? { "Secret-Key": String(cfg.secret) } : {}),
-        },
-        signal: controller.signal,
-      });
+      // Provider-specific auth headers where known; fall back to generic bearer.
+      const headers: Record<string, string> = { Accept: "application/json" };
+      switch (data.key) {
+        case "ecourier":
+          if (userId) headers["USER-ID"] = userId;
+          if (apiKey) headers["API-KEY"] = apiKey;
+          if (apiSecret) headers["API-SECRET"] = apiSecret;
+          break;
+        case "sa_paribahan":
+          if (merchantCode) headers["X-Merchant-Code"] = merchantCode;
+          if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+          break;
+        case "sundarban":
+          if (username && password) {
+            const token = Buffer.from(`${username}:${password}`).toString("base64");
+            headers["Authorization"] = `Basic ${token}`;
+          }
+          break;
+        default:
+          if (apiKey) {
+            headers["Authorization"] = `Bearer ${apiKey}`;
+            headers["Api-Key"] = apiKey;
+          }
+          if (apiSecret) headers["Secret-Key"] = apiSecret;
+      }
+      const res = await fetch(url, { method: "GET", headers, signal: controller.signal });
       clearTimeout(timer);
       responseSnippet = (await res.text().catch(() => "")).slice(0, 500);
       if (res.status < 500) {
@@ -890,6 +935,7 @@ export const testCourierConnection = createServerFn({ method: "POST" })
       status = "error";
       message = (e as Error).message || "Network error";
     }
+
     const latencyMs = Date.now() - startedAt;
     const diagnostics = {
       lastConnectedAt: new Date().toISOString(),

@@ -28,7 +28,11 @@ const defaultForm: FormState = {
   pathao: { ...emptyConfig },
   redx: { ...emptyConfig },
   paperfly: { ...emptyConfig },
+  ecourier: { ...emptyConfig },
+  sa_paribahan: { ...emptyConfig },
+  sundarban: { ...emptyConfig },
 };
+
 
 function CouriersPage() {
   const fetchStore = useServerFn(getMyStore);
@@ -68,7 +72,11 @@ function CouriersPage() {
       pathao: { ...emptyConfig, ...(c.pathao ?? {}) },
       redx: { ...emptyConfig, ...(c.redx ?? {}) },
       paperfly: { ...emptyConfig, ...(c.paperfly ?? {}) },
+      ecourier: { ...emptyConfig, ...(c.ecourier ?? {}) },
+      sa_paribahan: { ...emptyConfig, ...(c.sa_paribahan ?? {}) },
+      sundarban: { ...emptyConfig, ...(c.sundarban ?? {}) },
     });
+
   }, [store]);
 
   if (!form) {
