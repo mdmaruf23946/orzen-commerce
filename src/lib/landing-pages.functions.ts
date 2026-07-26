@@ -6,30 +6,26 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const idSchema = z.string().uuid();
 
-async function assertOwnedConnection(
-  supabase: any,
-  connectionId: string,
-): Promise<{ id: string; store_id: string }> {
-  const { data, error } = await supabase
-    .from("landing_page_connections")
-    .select("id,store_id")
-    .eq("id", connectionId)
+async function myStoreId(supabase: any, userId: string): Promise<string> {
+  const { data } = await supabase
+    .from("stores")
+    .select("id")
+    .eq("owner_user_id", userId)
     .maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error("Connection not found");
-  return data;
+  if (!data) throw new Error("No store found for current user");
+  return data.id;
 }
 
 export const listLandingPageConnections = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ storeId: idSchema }).parse(d))
-  .handler(async ({ data, context }) => {
+  .handler(async ({ context }) => {
+    const storeId = await myStoreId(context.supabase, context.userId);
     const { data: rows, error } = await context.supabase
       .from("landing_page_connections")
       .select(
         "id,name,landing_page_name,url,platform,method,status,default_product_id,orders_received,failed_count,last_order_at,last_error,last_error_at,created_at",
       )
-      .eq("store_id", data.storeId)
+      .eq("store_id", storeId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return rows ?? [];
@@ -37,17 +33,17 @@ export const listLandingPageConnections = createServerFn({ method: "GET" })
 
 export const landingPageStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ storeId: idSchema }).parse(d))
-  .handler(async ({ data, context }) => {
+  .handler(async ({ context }) => {
     const sb = context.supabase;
+    const storeId = await myStoreId(sb, context.userId);
     const [connsRes, ordersRes, todayRes, failRes] = await Promise.all([
-      sb.from("landing_page_connections").select("id,status,last_order_at").eq("store_id", data.storeId),
-      sb.from("orders").select("id", { count: "exact", head: true }).eq("store_id", data.storeId).eq("source", "landing_page"),
+      sb.from("landing_page_connections").select("id,status,last_order_at").eq("store_id", storeId),
+      sb.from("orders").select("id", { count: "exact", head: true }).eq("store_id", storeId).eq("source", "landing_page"),
       sb.from("orders").select("id", { count: "exact", head: true })
-        .eq("store_id", data.storeId).eq("source", "landing_page")
+        .eq("store_id", storeId).eq("source", "landing_page")
         .gte("created_at", new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
       sb.from("landing_page_logs").select("id", { count: "exact", head: true })
-        .eq("store_id", data.storeId).in("status", ["failed", "unauthorized", "invalid"])
+        .eq("store_id", storeId).in("status", ["failed", "unauthorized", "invalid"])
         .gte("received_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
     ]);
     const conns = (connsRes.data ?? []) as any[];
