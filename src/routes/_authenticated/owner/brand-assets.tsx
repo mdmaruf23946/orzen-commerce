@@ -44,11 +44,11 @@ function BrandPreview({ label, brand, logo }: { label: string; brand: BrandField
   const color = brand.brand_color || "#64748B";
   return (
     <div
-      className="flex items-center gap-3 rounded-xl border p-3"
+      className="flex items-center gap-3 overflow-hidden rounded-xl border p-3"
       style={{ borderColor: color + "40", background: (brand.secondary_color || color) + "0D" }}
     >
       <div
-        className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border shadow-sm"
+        className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border shadow-sm sm:h-12 sm:w-12"
         style={{ background: bg, borderColor: color + "33" }}
       >
         {src ? (
@@ -59,9 +59,9 @@ function BrandPreview({ label, brand, logo }: { label: string; brand: BrandField
           </span>
         )}
       </div>
-      <div className="min-w-0">
-        <div className="truncate font-semibold" style={{ color }}>{label}</div>
-        <div className="truncate text-xs text-muted-foreground">
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-semibold sm:text-base" style={{ color }}>{label}</div>
+        <div className="truncate text-[11px] text-muted-foreground sm:text-xs">
           {brand.description || "No description set"}
         </div>
       </div>
