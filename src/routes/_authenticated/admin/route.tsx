@@ -145,7 +145,7 @@ function AdminLayout() {
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur md:hidden">
         <button className="flex items-center gap-2 font-semibold" onClick={() => setOpen((v) => !v)}>
           <Menu className="h-5 w-5" />
-          <span>Store Admin</span>
+          <BrandMark placement="mobile_header" fallbackText="Store Admin" />
         </button>
         <button
           onClick={toggleDark}
