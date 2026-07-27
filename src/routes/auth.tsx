@@ -104,13 +104,14 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
+      const next = getNext();
       if (mode === "signup") {
         if (!canSubmitSignup) throw new Error("Please complete the form correctly.");
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin + "/admin",
+            emailRedirectTo: window.location.origin + next,
             data: { owner_name: ownerName, store_name: storeName, store_slug: slug },
           },
         });
@@ -128,7 +129,7 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
-      navigate({ to: "/admin", replace: true });
+      navigate({ to: next, replace: true });
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
