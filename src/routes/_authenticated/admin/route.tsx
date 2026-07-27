@@ -115,7 +115,18 @@ function AdminLayout() {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const ownerCheck = useServerFn(amIOwner);
   const { data: ownerData } = useQuery({ queryKey: ["amIOwner"], queryFn: () => ownerCheck() });
-  const { counts } = useBadgeCounts();
+  const { counts, storeId } = useBadgeCounts();
+  const markSeen = useMarkSeen();
+
+  useEffect(() => {
+    if (!storeId) return;
+    const link = links.find((l) => l.to === currentPath && l.badgeKey);
+    if (link?.badgeKey) {
+      markSeen.mutate({ store_id: storeId, feature: link.badgeKey });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeId, currentPath]);
+
 
   const currentPath = useRouterState({ select: (s) => s.location.pathname });
 
