@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, X, Sparkles, Crown, Sparkle, Download } from "lucide-react";
 import {
   myBillingStatus,
@@ -15,6 +15,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/admin/billing/")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    highlight: typeof s.highlight === "string" ? s.highlight : undefined,
+    plan: typeof s.plan === "string" ? s.plan : undefined,
+    from: typeof s.from === "string" ? s.from : undefined,
+  }),
   component: BillingPage,
 });
 
