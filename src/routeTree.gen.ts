@@ -40,6 +40,7 @@ import { Route as AuthenticatedOwnerSubscriptionCouponsRouteImport } from './rou
 import { Route as AuthenticatedOwnerStoresRouteImport } from './routes/_authenticated/owner/stores'
 import { Route as AuthenticatedOwnerStoreTemplateRouteImport } from './routes/_authenticated/owner/store-template'
 import { Route as AuthenticatedOwnerReportsRouteImport } from './routes/_authenticated/owner/reports'
+import { Route as AuthenticatedOwnerPlatformBrandingRouteImport } from './routes/_authenticated/owner/platform-branding'
 import { Route as AuthenticatedOwnerPlanFeaturesRouteImport } from './routes/_authenticated/owner/plan-features'
 import { Route as AuthenticatedOwnerPaymentSettingsRouteImport } from './routes/_authenticated/owner/payment-settings'
 import { Route as AuthenticatedOwnerPaymentGatewaysRouteImport } from './routes/_authenticated/owner/payment-gateways'
@@ -280,6 +281,12 @@ const AuthenticatedOwnerReportsRoute =
   AuthenticatedOwnerReportsRouteImport.update({
     id: '/reports',
     path: '/reports',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerPlatformBrandingRoute =
+  AuthenticatedOwnerPlatformBrandingRouteImport.update({
+    id: '/platform-branding',
+    path: '/platform-branding',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
 const AuthenticatedOwnerPlanFeaturesRoute =
@@ -815,6 +822,7 @@ export interface FileRoutesByFullPath {
   '/owner/payment-gateways': typeof AuthenticatedOwnerPaymentGatewaysRoute
   '/owner/payment-settings': typeof AuthenticatedOwnerPaymentSettingsRoute
   '/owner/plan-features': typeof AuthenticatedOwnerPlanFeaturesRoute
+  '/owner/platform-branding': typeof AuthenticatedOwnerPlatformBrandingRoute
   '/owner/reports': typeof AuthenticatedOwnerReportsRoute
   '/owner/store-template': typeof AuthenticatedOwnerStoreTemplateRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
@@ -921,6 +929,7 @@ export interface FileRoutesByTo {
   '/owner/payment-gateways': typeof AuthenticatedOwnerPaymentGatewaysRoute
   '/owner/payment-settings': typeof AuthenticatedOwnerPaymentSettingsRoute
   '/owner/plan-features': typeof AuthenticatedOwnerPlanFeaturesRoute
+  '/owner/platform-branding': typeof AuthenticatedOwnerPlatformBrandingRoute
   '/owner/reports': typeof AuthenticatedOwnerReportsRoute
   '/owner/store-template': typeof AuthenticatedOwnerStoreTemplateRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
@@ -1034,6 +1043,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/payment-gateways': typeof AuthenticatedOwnerPaymentGatewaysRoute
   '/_authenticated/owner/payment-settings': typeof AuthenticatedOwnerPaymentSettingsRoute
   '/_authenticated/owner/plan-features': typeof AuthenticatedOwnerPlanFeaturesRoute
+  '/_authenticated/owner/platform-branding': typeof AuthenticatedOwnerPlatformBrandingRoute
   '/_authenticated/owner/reports': typeof AuthenticatedOwnerReportsRoute
   '/_authenticated/owner/store-template': typeof AuthenticatedOwnerStoreTemplateRoute
   '/_authenticated/owner/stores': typeof AuthenticatedOwnerStoresRoute
@@ -1147,6 +1157,7 @@ export interface FileRouteTypes {
     | '/owner/payment-gateways'
     | '/owner/payment-settings'
     | '/owner/plan-features'
+    | '/owner/platform-branding'
     | '/owner/reports'
     | '/owner/store-template'
     | '/owner/stores'
@@ -1253,6 +1264,7 @@ export interface FileRouteTypes {
     | '/owner/payment-gateways'
     | '/owner/payment-settings'
     | '/owner/plan-features'
+    | '/owner/platform-branding'
     | '/owner/reports'
     | '/owner/store-template'
     | '/owner/stores'
@@ -1365,6 +1377,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/payment-gateways'
     | '/_authenticated/owner/payment-settings'
     | '/_authenticated/owner/plan-features'
+    | '/_authenticated/owner/platform-branding'
     | '/_authenticated/owner/reports'
     | '/_authenticated/owner/store-template'
     | '/_authenticated/owner/stores'
@@ -1647,6 +1660,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/owner/reports'
       preLoaderRoute: typeof AuthenticatedOwnerReportsRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/platform-branding': {
+      id: '/_authenticated/owner/platform-branding'
+      path: '/platform-branding'
+      fullPath: '/owner/platform-branding'
+      preLoaderRoute: typeof AuthenticatedOwnerPlatformBrandingRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/owner/plan-features': {
@@ -2365,6 +2385,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerPaymentGatewaysRoute: typeof AuthenticatedOwnerPaymentGatewaysRoute
   AuthenticatedOwnerPaymentSettingsRoute: typeof AuthenticatedOwnerPaymentSettingsRoute
   AuthenticatedOwnerPlanFeaturesRoute: typeof AuthenticatedOwnerPlanFeaturesRoute
+  AuthenticatedOwnerPlatformBrandingRoute: typeof AuthenticatedOwnerPlatformBrandingRoute
   AuthenticatedOwnerReportsRoute: typeof AuthenticatedOwnerReportsRoute
   AuthenticatedOwnerStoreTemplateRoute: typeof AuthenticatedOwnerStoreTemplateRoute
   AuthenticatedOwnerStoresRoute: typeof AuthenticatedOwnerStoresRoute
@@ -2407,6 +2428,8 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerPaymentSettingsRoute:
       AuthenticatedOwnerPaymentSettingsRoute,
     AuthenticatedOwnerPlanFeaturesRoute: AuthenticatedOwnerPlanFeaturesRoute,
+    AuthenticatedOwnerPlatformBrandingRoute:
+      AuthenticatedOwnerPlatformBrandingRoute,
     AuthenticatedOwnerReportsRoute: AuthenticatedOwnerReportsRoute,
     AuthenticatedOwnerStoreTemplateRoute: AuthenticatedOwnerStoreTemplateRoute,
     AuthenticatedOwnerStoresRoute: AuthenticatedOwnerStoresRoute,
