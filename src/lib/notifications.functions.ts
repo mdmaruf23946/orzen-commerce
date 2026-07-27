@@ -158,7 +158,7 @@ export const sendCampaign = createServerFn({ method: "POST" })
 
       let recipientId = existing?.id as string | undefined;
       if (!recipientId) {
-        const { data: ins, error: insErr } = await supabaseAdmin
+        const { data: ins, error: insErr } = await (supabaseAdmin as any)
           .from("notification_recipients").insert({
             campaign_id: data.id, store_id: r.store_id, user_id: r.user_id, email: r.email,
           }).select("id").maybeSingle();
