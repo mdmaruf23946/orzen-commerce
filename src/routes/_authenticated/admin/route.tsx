@@ -115,6 +115,8 @@ function AdminLayout() {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const ownerCheck = useServerFn(amIOwner);
   const { data: ownerData } = useQuery({ queryKey: ["amIOwner"], queryFn: () => ownerCheck() });
+  const { counts } = useBadgeCounts();
+
   const currentPath = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
