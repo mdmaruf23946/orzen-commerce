@@ -1,67 +1,112 @@
-# Professional Soft-Lock Feature Gating
+# Platform Branding Management System (Winner Admin)
 
-Replace the current "Upgrade Required" full-page block with a soft-lock system that keeps every gated page visually intact, intercepts restricted actions, and shows a shared upgrade modal that deep-links to `/admin/billing`.
+Add a new, isolated "Platform Branding" hub to the Winner Admin. It centralizes the platform's own branding (Winner + Store Admin shells, auth pages, footer, favicon). Nothing existing is removed. Store-owner store branding, courier brand assets, and payment brand assets remain in their current pages untouched.
 
-## Approach
+## Scope guardrails
 
-Instead of touching each of the ~10 gated pages individually, refactor the two touchpoints they all share (`FeatureGate` and `useFeature`) so every existing call site inherits the new behavior automatically.
+- Do NOT edit: `courier-brand-assets.tsx`, `brand-assets.tsx` (payment gateways), `store-template`, store settings, or any Store Admin branding controls.
+- Do NOT change existing sidebar/header component APIs — only swap the currently hard-coded logo/text source to read from the new branding config with a safe fallback to today's exact defaults.
+- Every placement falls back to current behavior when unset, so unpublished/empty config leaves the UI unchanged.
 
-### 1. Shared upgrade modal + context (`src/components/admin/UpgradeModal.tsx`)
+## Data model
 
-- `UpgradeProvider` at the admin route root (`src/routes/_authenticated/admin/route.tsx`) exposes a `useUpgradePrompt()` hook.
-- `openUpgrade(feature, opts?)` opens a single global modal with:
-  - 🔒 Premium Feature title
-  - Feature label (from `FEATURE_LABELS`) + short description
-  - Current plan name vs required plan (derived from `subscription_packages` where `features[key] === true`, resolved from `myBillingStatus`)
-  - Main benefit copy (per-feature map with sensible defaults)
-  - Primary CTA "Upgrade Plan" → navigate to `/admin/billing?highlight=<packageId|feature>&return=<currentPath>`
-  - Secondary CTA "Maybe Later" (close)
-- Fully responsive (`max-w-md`, stacked buttons on mobile), uses existing shadcn `Dialog`, tokens, and radii — no hard-coded colors.
-- Billing page reads the `highlight` query param and adds a ring/scroll to the matching plan card (best-effort; skip silently if not found).
-
-### 2. Rework `src/components/admin/FeatureGate.tsx`
-
-- `<FeatureGate feature=...>` **always renders `children`**. When the feature is not allowed, it wraps them in a relative container with:
-  - Pointer-events blocker over the content (transparent, click captured)
-  - Subtle top-right "🔒 Available on <plan>" pill badge
-  - Very light overlay tint (no heavy blur) so UI stays readable
-  - Click on the blocker → `openUpgrade(feature)`
-- New optional prop `mode?: "soft" | "inline-badge" | "passthrough"`:
-  - `soft` (default) — behavior above.
-  - `inline-badge` — no blocker, just renders children plus a lock badge (for pages that already have their own interactive logic gated by `useFeature`, like `orders.tsx` fraud).
-- `useFeature(key)` unchanged signature, but returned object also includes `promptUpgrade()` so any handler can call `if (!allowed) return promptUpgrade()`.
-- Remove the old "Upgrade Required" full-screen block entirely.
-
-### 3. Action interception helper
-
-Add `guardAction(feature, fn)` from `useFeature` so click handlers on premium buttons can wrap themselves:
+New table `public.platform_branding` (single row, `id = 'global'`), JSONB-first so we can extend without migrations:
 
 ```
-const { guard } = useFeature("ai_messenger");
-<Button onClick={guard(() => connectMessenger())}>Connect</Button>
+id text pk default 'global'
+assets jsonb        -- { primaryLogo, compactLogo, squareLogo, lightLogo, darkLogo,
+                    --   primaryWordmark, lightWordmark, darkWordmark, compactWordmark,
+                    --   favicon, appIcon192, appIcon512 }
+                    -- each entry: { url, width, height, mime, size }
+combo jsonb         -- { mode: 'logo'|'wordmark'|'both',
+                    --   layout: 'left'|'top'|'centered',
+                    --   align: 'start'|'center'|'end',
+                    --   gap: number, logoSize, wordmarkSize }
+placements jsonb    -- keyed by placement id (winner_header, store_header, sidebar,
+                    --   mobile_header, website_header, customer_store, auth_login,
+                    --   auth_register, auth_forgot, footer, checkout, order_confirm,
+                    --   loading, invoice, email). Each: {
+                    --     source: 'global'|'custom',
+                    --     mode, layout, align, visible,
+                    --     logo:{url,width,height}, wordmark:{...},
+                    --     sizes:{ desktop, tablet, mobile },
+                    --     lightAsset, darkAsset }
+published_at timestamptz
+updated_at timestamptz default now()
 ```
 
-If the feature is locked, `guard` shows the upgrade modal instead of calling `fn`. Apply this in the small number of pages that have interactive premium actions inside an already-visible layout (AIProductBuilderDialog trigger, orders fraud button, messenger connect, courier connect, landing-page create, analytics export). All other pages already wrap the whole route in `<FeatureGate>` and will automatically get soft-lock overlay + modal — no per-page code change needed.
+GRANTs: `SELECT` to `anon` + `authenticated` (branding is public), full CRUD to `service_role`. RLS: `SELECT` open; `INSERT/UPDATE` restricted to `has_role(auth.uid(),'admin')` (owner).
 
-### 4. Backend enforcement (already exists — verify only)
+Public read RPC `get_platform_branding()` (SECURITY DEFINER, STABLE) returns the row so SSR/anonymous pages can read it without exposing the table directly.
 
-`src/lib/plan-guard.ts` (`assertPlan`) is already used by server functions. Confirm the premium server functions call it; add `assertPlan` calls where missing during implementation (spot-check: `ai-agent`, `ai-web-chat`, `messenger-inbox`, `landing-pages`, `fraud`, `import-export`, `domains`, `coupons`, `returns`, `invoice-settings`, `business.analytics`). No behavior change for allowed users; ensures modal cannot be bypassed via direct RPC.
+Storage: reuse existing `store-assets` bucket under path `platform-branding/…`; add an authenticated-admin write policy for that prefix (public read already covered by existing policy pattern used by courier/payment brand assets).
 
-### 5. Billing page highlight
+## Server functions
 
-`src/routes/_authenticated/admin/billing.index.tsx`: read `?highlight=<featureKey>` search param, find the cheapest plan whose `features[key] === true`, add `ring-2 ring-primary` and `scrollIntoView` on mount.
+New file `src/lib/platform-branding.functions.ts`:
+- `getPlatformBranding()` — public GET, reads via RPC (used by shells + SSR).
+- `updatePlatformBranding({ patch })` — owner-only, deep-merges into `assets`/`combo`/`placements`.
+- `publishPlatformBranding()` — owner-only, stamps `published_at = now()`.
+- `resetPlatformBrandingPlacement({ key })` — clears a placement override back to `source:'global'`.
 
-## Files touched
+All owner mutations gated by `assertOwner()` (already used elsewhere in `owner-ext.functions.ts`).
 
-- `src/components/admin/UpgradeModal.tsx` (new)
-- `src/components/admin/FeatureGate.tsx` (rewrite — soft-lock + guard helper, keep exported API)
-- `src/routes/_authenticated/admin/route.tsx` (mount `UpgradeProvider`)
-- `src/routes/_authenticated/admin/billing.index.tsx` (highlight param)
-- Minor `guard(...)` wraps in the small set of pages listed above; **no page layout is removed or replaced**.
-- Server: add `assertPlan(...)` in premium server-fn handlers that are missing it.
+## Winner Admin UI
 
-## Out of scope
+New route `src/routes/_authenticated/owner/platform-branding.tsx`, added to the owner sidebar under the existing Branding group (does not replace Payment/Courier brand asset pages).
 
-- Redesigning any admin page.
-- Changing plan definitions, billing flow, or payment providers.
-- Storefront gating (this is Admin Panel only, per request).
+Sections (accordion / tabs, mobile-friendly like existing owner pages):
+
+1. **Global Brand Logo** — upload/replace/remove for Primary, Compact, Square, Light, Dark.
+2. **Brand Name / Wordmark** — Primary, Light, Dark, Compact.
+3. **Logo + Name Combination** — mode (logo / wordmark / both), layout (left / top / centered), alignment, spacing, logo/wordmark size sliders.
+4. **Favicon & App Icon** — favicon (ico/png/svg), PWA 192, PWA 512.
+5. **Placement Manager** — one card per placement key with `Use Global` / `Use Custom` toggle, mode selector, visibility, sizes per breakpoint, light/dark assets.
+6. **Live Preview** — sandboxed mock frames for Desktop Header, Mobile Header, Sidebar (collapsed + expanded), Login, Customer Store, Footer, updating instantly from local form state.
+7. **Save Changes / Publish Branding** buttons; save persists draft, publish stamps `published_at`.
+
+Reuse existing patterns:
+- `compressImage` helper for uploads.
+- Upload flow mirrors `brand-assets.tsx` (Supabase storage → save returned path).
+- `OwnerPageHeader` for consistent header.
+
+Client-side validation: file type allowlist (png/jpg/webp/svg + ico for favicon), max size (2 MB logo, 512 KB favicon), reject 0-dim, preserve aspect ratio via `object-contain`.
+
+## Consumer wiring (surgical, additive)
+
+Introduce `src/lib/platform-branding.ts` with `useBranding(placementKey)` hook + `resolveBranding(cfg, key)` helper implementing the fallback chain:
+
+```
+custom placement → global asset → existing default
+dark asset → primary asset
+wordmark missing → existing plain text brand name
+```
+
+Wire consumers only where logos/brand text currently live, always keeping the existing default as the final fallback so behavior is unchanged until the owner publishes:
+
+- `src/routes/__root.tsx` head links → favicon + apple-touch-icon from `assets.favicon` / `assets.appIcon192`.
+- Winner Admin shell header (owner `route.tsx`).
+- Store Admin shell header + sidebar (admin `route.tsx`).
+- Auth pages: `src/routes/auth.tsx`, store `auth.login/signup/forgot`.
+- Storefront header/footer (`src/components/storefront/*`) only for platform "Powered by" mark — the merchant's store logo stays as-is.
+- Order confirmation + invoice pages: platform mark only (does not touch merchant invoice branding logic).
+
+A single `<BrandMark placement="…" />` component renders the resolved logo/wordmark/combo with responsive sizing classes derived from `sizes.{desktop,tablet,mobile}` (Tailwind arbitrary values kept minimal via inline `style`).
+
+## Fallback + safety
+
+- If `platform_branding` row missing → hook returns null → components render today's hard-coded logo/text (zero regression).
+- Images use `onError` to fall back to the next tier in the chain to prevent broken image icons.
+- SSR reads via the public RPC; no auth needed.
+
+## Non-goals this turn
+
+- No changes to per-store branding, courier branding, payment branding, or email template HTML (email placement is stored but wired later — kept in the placement schema so future turns don't need another migration).
+- No PWA manifest regeneration pipeline; `appIcon` URLs are surfaced via `<link rel="apple-touch-icon">` only.
+
+## Deliverables checklist
+
+- Migration: `platform_branding` table + GRANTs + RLS + `get_platform_branding()` + storage policy for `platform-branding/*`.
+- `src/lib/platform-branding.functions.ts` (server fns) + `src/lib/platform-branding.ts` (hook/resolver + `<BrandMark>`).
+- `src/routes/_authenticated/owner/platform-branding.tsx` (new page) + sidebar link.
+- Consumer wiring in root head, owner shell, admin shell, auth pages, storefront platform mark — each behind fallback to current defaults.
