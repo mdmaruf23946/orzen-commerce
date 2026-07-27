@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { SubscriptionStatusBanner } from "@/components/admin/SubscriptionStatusBanner";
 import { StickyMobileAdBar } from "@/components/admin/StickyMobileAdBar";
 import { UpgradeProvider } from "@/components/admin/UpgradeModal";
+import { BrandMark } from "@/lib/platform-branding";
 
 type LinkDef = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
 
