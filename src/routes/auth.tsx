@@ -45,9 +45,18 @@ function AuthPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [slugStatus, setSlugStatus] = useState<SlugStatus>("idle");
 
+  // Safe next redirect: same-origin relative path only.
+  function getNext(): string {
+    if (typeof window === "undefined") return "/admin";
+    const raw = new URLSearchParams(window.location.search).get("next");
+    if (!raw) return "/admin";
+    if (!raw.startsWith("/") || raw.startsWith("//")) return "/admin";
+    return raw;
+  }
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/admin", replace: true });
+      if (data.user) navigate({ to: getNext(), replace: true });
     });
   }, [navigate]);
 
