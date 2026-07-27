@@ -96,7 +96,9 @@ function OwnerLayout() {
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background px-4 md:hidden">
-        <Link to="/owner" className="truncate font-semibold">Platform Owner</Link>
+        <Link to="/owner" className="truncate font-semibold">
+          <BrandMark placement="winner_header" fallbackText="Platform Owner" />
+        </Link>
         <Button variant="ghost" size="icon" onClick={() => setOpen((v) => !v)} aria-label="Menu">
           <Menu className="h-5 w-5" />
         </Button>
