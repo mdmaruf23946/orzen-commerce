@@ -1,97 +1,95 @@
-# Landing Page Integrations — Plan
+# Payment Gateway Integration System Upgrade
 
-Additive feature under **Store Admin → Integrations → Landing Pages**. Reuses the existing `orders` / `order_items` tables, courier, payment, and invoicing pipelines. No existing feature, table, RLS, or route is removed.
+Additive upgrade to the existing Store Admin payment gateway module. No existing provider, credential, webhook route, or DB row is removed. The current adapter registry (`src/lib/subscription-pay/providers/*`) and store-scoped tables (`platform_payment_gateways`, `store_payment_gateways`, `payment_webhook_events`) are extended, not replaced.
 
-## 1. Database (one migration)
+## Goals
 
-New tables, all scoped by `store_id`, RLS = owner-only, `GRANT` to `authenticated` + `service_role`:
+1. Turn provider configuration into a schema-driven engine so Winner Admin can add new providers without code edits to the Store panel.
+2. Add 10 new provider slots: BDGate, NagorikPay, PaybyBD, Fastaar, PayBD, iPayBD, UrbdPay, bKash Merchant, Nagad Merchant, Upay Merchant — each with its own credential schema and branding.
+3. Show only fields required per provider, mask secrets, encrypt at rest, and never leak another store's credentials.
+4. Keep the existing card + brand-mark layout (logo left of name, wordmark support already in place) and extend it with status metadata, diagnostics, priority ordering, and a step wizard.
 
-- `landing_page_connections` — id, store_id, name, landing_page_name, url, description, platform (`custom|wordpress|woocommerce|shopify|webflow|wix|custom_php|custom_react|universal|other`), method (`webhook|api|embed`), status (`active|paused|pending|failed`), default_product_id, orders_received, failed_count, last_order_at, last_error, last_error_at, created_at, updated_at.
-- `landing_page_credentials` — connection_id, api_key (hash + last4), webhook_secret_encrypted (AES-GCM via existing `credentials.server.ts`), rotated_at.
-- `landing_page_product_map` — connection_id, external_id/sku, store_product_id, qty_multiplier, variant_map jsonb.
-- `landing_page_field_map` — connection_id, mapping jsonb (external→internal).
-- `landing_page_logs` — connection_id, store_id, received_at, status (`success|failed|duplicate|invalid|unauthorized|test`), external_order_id, order_id (nullable FK to `orders`), request_hash, ip, ua, request_snippet, response_snippet, error, processing_ms.
-- `landing_page_events` — lightweight event log (rotated separately from logs for status pings).
+## What changes
 
-Extend existing `public.orders` (additive columns only, all nullable):
-- `source` text default `'store'` (values: `store|landing_page|shopify|woocommerce|other`)
-- `landing_page_connection_id uuid` (FK, nullable, on delete set null)
-- `external_order_id text`
-- `landing_page_url text`
-- `utm jsonb` (utm_source/medium/campaign/term/content, fbclid, gclid)
-- Unique partial index on `(landing_page_connection_id, external_order_id)` where both not null — idempotency.
+### 1. Schema-driven provider engine (backend)
 
-Existing orders (source is null) are treated as `store` in code — no data migration needed.
+- Extend `platform_payment_gateways` with additive columns (nullable, safe to backfill):
+  - `provider_type` (enum-like text: `direct_mfs`, `aggregator`, `card`, `bank`, `unified`, `manual`)
+  - `credential_schema jsonb` — array of `{ key, label, type, required, group, helper, pattern, secret }` describing the fields the connect form should render.
+  - `webhook_support boolean`, `callback_support boolean`, `sandbox_support boolean`, `live_support boolean`
+  - `docs_url`, `website_url`, `default_methods text[]`
+- Seed the 10 new providers as rows (disabled by default) with placeholder brand assets and empty `credential_schema` for MFS direct integrations where we won't invent field names.
+- Extend `store_payment_gateways` with:
+  - `priority int` (display order at checkout)
+  - `last_test_at timestamptz`, `last_test_ok boolean`, `last_test_message text`
+  - Keep existing `is_active`, `enabled`, `status`, `sandbox`, `credentials_ciphertext`.
 
-## 2. Server functions (`src/lib/landing-pages.functions.ts`)
+### 2. Adapter registry (backend)
 
-Auth via `requireSupabaseAuth` + `is_store_owner` check:
+- Add empty adapter stubs in `src/lib/subscription-pay/providers/` for each new provider (`bkash-merchant.ts`, `nagad-merchant.ts`, `upay-merchant.ts`, `bdgate.ts`, `nagorikpay.ts`, `paybybd.ts`, `fastaar.ts`, `paybd.ts`, `ipaybd.ts`, `urbdpay.ts`) implementing `SubscriptionPaymentProvider`.
+- `testConnection` / `createCheckout` / `verifyPayment` return a clear "not yet implemented — configure via Winner Admin once official API docs are wired" error for now. This satisfies the rule to not invent endpoints.
+- Register all in `providers/registry.ts` so the schema-driven form still works and webhook receiver can log deliveries.
 
-- `listConnections`, `getConnection`, `createConnection`, `updateConnection`, `deleteConnection`, `pauseConnection`, `resumeConnection`
-- `regenerateWebhookSecret`, `regenerateApiKey`, `revokeApiKey` (returns plaintext once, then only stores hash + last4)
-- `setProductMap`, `setFieldMap`
-- `testConnection` (self-invokes intake endpoint with a signed sample payload; does NOT touch courier)
-- `sendTestOrder` (creates a flagged test order with `notes` prefixed `TEST ORDER` and `source='landing_page'`, skips courier dispatch — matches existing "no automatic courier push" behavior; test orders excluded from courier automation via a `is_test boolean default false` column added to `orders`)
-- `listConnectionLogs`, `retryLog`, `listConnectionOrders`
+### 3. Store Admin UI upgrades (`src/routes/_authenticated/admin/payment-gateway.tsx`)
 
-## 3. Public intake endpoints (server routes)
+Keep the existing page shell, cards, and BrandMark layout. Add:
 
-Under `src/routes/api/public/landing-pages/` — bypass site auth, verify their own credentials:
+- **Provider card metadata row**: connection status pill, sandbox/live pill, enabled/disabled pill, "Last verified …" line, and action buttons `Configure`, `Test Connection`, `Enable/Disable`.
+- **Dynamic connect drawer** rendered from `credential_schema` — one component `DynamicCredentialForm` iterating fields, grouping by `group`, respecting `type` (`text | password | url | number | textarea | select`), and rendering Show/Hide + Copy on secret fields.
+- **Environment toggle**: single Sandbox↔Live switch; on switch, form clears and loads credentials for the chosen environment (stored as two ciphertexts on the same row: `credentials_ciphertext_sandbox`, `credentials_ciphertext_live`, added in migration).
+- **Webhook panel**: auto-generated URL `https://{host}/api/public/store-payments/webhook/{storeId}/{providerId}` with Copy buttons and a "Send test event" action that hits the existing route with `?source=test`.
+- **Diagnostics section** (collapsible): reachability, credentials valid, webhook status, last success/failure — populated from `last_test_*` columns and `payment_webhook_events`.
+- **Setup wizard**: 4-step drawer (Provider → Credentials → Test → Activate) with a progress header, reusing the same DynamicCredentialForm.
+- **Checkout priority list**: drag-and-drop reordering of enabled gateways, writing back to `priority`.
+- **Human-readable errors**: friendly toast + "View technical details" expander.
 
-- `POST /api/public/landing-pages/$connectionId/orders` — webhook method. Verifies `X-Signature: sha256=hex(HMAC(secret, rawBody))` with timing-safe compare and `X-Timestamp` within ±5 min for replay protection.
-- `POST /api/public/landing-pages/$connectionId/api/orders` — API-key method. Verifies `Authorization: Bearer <apiKey>` against stored hash.
-- `POST /api/public/landing-pages/$connectionId/embed/orders` — embed/JS method with per-connection public token + Origin allow-list.
-- `GET  /api/public/landing-pages/$connectionId/health` — simple ping for the Test button.
-- `GET  /api/public/landing-pages/embed.js` — tiny form-serialization script; posts to embed endpoint.
+### 4. Winner Admin — provider management (`src/routes/_authenticated/owner/brand-assets.tsx` payments tab, plus a new "Provider Config" section)
 
-Shared pipeline inside a server-only helper `landing-pages.server.ts`:
+Extend the existing payment brand assets page:
 
-```text
-Verify auth/signature → parse+Zod validate → apply field map →
-resolve product (map or default_product_id) → build idempotency key
-(external_order_id || sha256(body)) → check unique index →
-supabaseAdmin insert into orders + order_items with source metadata →
-write success log → return { ok, orderId, invoiceNo }
-```
+- Manage the additive columns: type, docs URL, website URL, supported methods, sandbox/live/webhook toggles.
+- JSON editor for `credential_schema` with a field-by-field builder (add row: key, label, type, required, group, helper).
+- Existing logo / wordmark / brand color management stays intact.
 
-On duplicate: return 200 with `{ ok: true, duplicate: true, orderId }` and log as `duplicate`. On failure: log with human message, return sanitized error. Rate limit per connection (in-memory token bucket per worker + persisted counter on the connection row — best-effort, not billing-critical).
+### 5. Security
 
-Order arrives in existing Store Admin orders list, invoice numbering runs on confirm as today. Courier + payment flows unchanged.
+- Credentials remain encrypted via `src/lib/crypto/credentials.server.ts` (AES-256-GCM). New sandbox/live split reuses the same encryptor.
+- All server functions stay under `requireSupabaseAuth` middleware and scope every query by `store_id = owner's store`.
+- RLS on `store_payment_gateways`: keep existing owner-only policy; add explicit deny for `anon`. GRANTs remain unchanged.
+- Never return `credentials_ciphertext` to the client — server functions return only `{ hasCredentials: true, preview: '••••1234' }` via `credentialsPreview`.
 
-## 4. UI
+### 6. Checkout & verification (no breaking changes)
 
-- New sidebar entry: **Integrations → Landing Pages** (add to existing Store Admin sidebar group; do not touch other entries).
-- Route: `src/routes/_authenticated/admin/landing-pages.index.tsx` — dashboard: 6 summary cards, connection table/cards, `+ Connect Landing Page` button.
-- Route: `src/routes/_authenticated/admin/landing-pages.$id.tsx` — tabs: Overview / Configuration / Product Mapping / Field Mapping / Orders / Logs / Documentation.
-- Wizard dialog `LandingPageWizard.tsx`: Step 1 Basics → Step 2 Platform → Step 3 Method (webhook/api/embed) → Step 4 Product Mapping → Done (shows credentials once with copy buttons; secret masked after leaving).
-- Copy/reveal/regenerate buttons, confirmation dialogs, empty/loading/error states, mobile-friendly cards — matches existing Payment Gateway page conventions and tokens.
-- Docs tab renders platform-specific instructions (Custom HTML, WordPress, WooCommerce, Shopify, Webflow, Wix, Universal) from a static content map — beginner-friendly, no code dumps beyond what's needed.
+- Existing checkout flow keeps working. `get_active_store_gateway_public` gains a `priority`-ordered variant `get_public_store_gateways` returning multiple enabled gateways so the storefront can render them in order (used only when store enables >1). Single-default path unchanged.
+- Order payment statuses already exist; add missing values (`verification_required`, `partially_refunded`) to the status handling in payment write paths — no enum removal.
 
-## 5. Orders page additions (non-destructive)
+## Files to add or edit
 
-- Add filter chips: All / Store / Landing Page / Shopify / WooCommerce / Other. Existing status filter kept.
-- Order row: show source badge when `source != 'store'`; `TEST ORDER` badge when `is_test`.
-- Order details drawer: new "Source" section with landing page name (link to its detail page), platform, integration method, external order ID, landing page URL, UTM table.
+**New**
+- `src/lib/subscription-pay/providers/{bkash-merchant,nagad-merchant,upay-merchant,bdgate,nagorikpay,paybybd,fastaar,paybd,ipaybd,urbdpay}.ts`
+- `src/components/admin/payments/DynamicCredentialForm.tsx`
+- `src/components/admin/payments/ConnectionWizard.tsx`
+- `src/components/admin/payments/DiagnosticsPanel.tsx`
+- `src/components/admin/payments/WebhookPanel.tsx`
+- `src/components/owner/payments/CredentialSchemaEditor.tsx`
 
-## 6. Security
+**Edited (additive only)**
+- `src/lib/subscription-pay/providers/registry.ts` (register new adapters)
+- `src/lib/store-payments.functions.ts` (new: `getProviderSchema`, `savePriority`, `testStoreGateway`, `sendTestWebhook`, split sandbox/live credentials)
+- `src/routes/_authenticated/admin/payment-gateway.tsx` (integrate new components; keep current cards)
+- `src/routes/_authenticated/owner/brand-assets.tsx` (extend payments tab with schema editor + toggles)
+- Migration file: new columns on `platform_payment_gateways` and `store_payment_gateways`, seed rows for new providers.
 
-- Owner-only RLS on all new tables + `is_store_owner` guard in every server fn.
-- Webhook secret + API secret encrypted with existing `PAYMENT_CREDENTIALS_KEY` (AES-256-GCM via `src/lib/crypto/credentials.server.ts`); plaintext returned only at create/rotate.
-- API key stored as `sha256` hash + last-4 for display.
-- HMAC signature verification, timestamp replay window, idempotency unique index, per-connection rate limit, input Zod validation, origin allow-list for embed.
-- Test orders never dispatched to couriers (existing courier flow already manual).
+## Non-goals
 
-## 7. Out of scope (kept as future-safe hooks)
+- Not implementing real bKash/Nagad/Upay merchant HTTP calls — those need official API access. Adapters are scaffolded and clearly marked pending; Winner Admin can fill in schema and endpoints later without touching Store Admin code.
+- Not touching subscription payments (`src/routes/_authenticated/owner/subscription-pay.*`).
+- Not changing existing orders, webhooks, or checkout for currently connected gateways.
 
-- Order status push-back to external platform (columns/log types reserved; not wired).
-- Dedicated WordPress plugin binary (architecture supports it via API/webhook endpoints).
-- Automatic Shopify product sync (only order intake; product mapping is manual).
+## Rollout
 
-## Verification
-
-- Migration applies clean; new tables invisible to other stores (RLS check via `read_query` as two users).
-- Dashboard renders; wizard creates a connection; credentials shown once.
-- `Test Connection` and `Send Test Order` succeed; test order appears in Orders with `TEST ORDER` + Landing Page badges, no courier call.
-- Real webhook POST with valid HMAC creates an order; second identical POST returns duplicate, no new order.
-- Invalid signature / bad API key → 401, logged as `unauthorized`.
-- Existing Orders, Couriers, Payments, Products pages unchanged.
+1. Migration (schema additions + seed rows).
+2. Backend adapters + server functions.
+3. Store Admin UI (dynamic form, wizard, diagnostics, priority).
+4. Winner Admin schema editor.
+5. Manual smoke test: existing SSLCommerz/Manual gateway still connects, tests, and receives webhooks unchanged.
