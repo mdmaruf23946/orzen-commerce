@@ -10,7 +10,7 @@ const bodySchema = z.object({
   event: z.string().min(1).max(60),
   event_id: z.string().min(1).max(120),
   event_source_url: z.string().max(2000).optional(),
-  custom_data: z.record(z.any()).optional(),
+  custom_data: z.record(z.string(), z.any()).optional(),
   user_data: z
     .object({
       email: z.string().max(200).optional().nullable(),

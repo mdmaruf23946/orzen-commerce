@@ -177,7 +177,7 @@ export const updateMyAgent = createServerFn({ method: "POST" })
               .optional()
               .default([]),
           })
-          .default({}),
+          .default(() => ({ store_info: "", delivery_policy: "", return_policy: "", warranty_policy: "", payment_methods: "", business_hours: "", faqs: [] })),
       })
       .parse(d),
   )

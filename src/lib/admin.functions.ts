@@ -825,7 +825,7 @@ const courierProvider = z
     enabled: z.boolean().optional(),
     sandbox: z.boolean().optional(),
     is_default: z.boolean().optional(),
-    credentials: z.record(z.string().max(500)).optional(),
+    credentials: z.record(z.string(), z.string().max(500)).optional(),
     shipping: courierShipping.optional(),
     pickup: courierPickup.optional(),
     automation: courierAutomation.optional(),
