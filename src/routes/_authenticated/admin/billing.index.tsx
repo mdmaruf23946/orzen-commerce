@@ -61,6 +61,7 @@ function BillingPage() {
   const statusFn = useServerFn(myBillingStatus);
   const plansFn = useServerFn(listPublicPlans);
   const settingsFn = useServerFn(getBillingSettings);
+  const search = Route.useSearch();
 
   const { data: status } = useQuery({ queryKey: ["admin", "billing"], queryFn: () => statusFn() });
   const { data: plansRaw } = useQuery({ queryKey: ["admin", "billingPlans"], queryFn: () => plansFn() });
@@ -71,6 +72,7 @@ function BillingPage() {
   });
 
   const [cycle, setCycle] = useState<CycleKey>("monthly");
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const plans = (plansRaw ?? []) as Plan[];
   const store = status?.store as any;
