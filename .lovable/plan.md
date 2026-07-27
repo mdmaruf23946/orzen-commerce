@@ -1,112 +1,124 @@
-# Platform Branding Management System (Winner Admin)
+# Global Unread Count & Activity Badge System
 
-Add a new, isolated "Platform Branding" hub to the Winner Admin. It centralizes the platform's own branding (Winner + Store Admin shells, auth pages, footer, favicon). Nothing existing is removed. Store-owner store branding, courier brand assets, and payment brand assets remain in their current pages untouched.
+Add a scalable, per-store, real-time badge system to the Store Admin sidebar and dashboard — without changing any existing menus, pages, or features.
 
-## Scope guardrails
+## Architecture
 
-- Do NOT edit: `courier-brand-assets.tsx`, `brand-assets.tsx` (payment gateways), `store-template`, store settings, or any Store Admin branding controls.
-- Do NOT change existing sidebar/header component APIs — only swap the currently hard-coded logo/text source to read from the new branding config with a safe fallback to today's exact defaults.
-- Every placement falls back to current behavior when unset, so unpublished/empty config leaves the UI unchanged.
+A single reusable hook drives every badge. Each menu item that opts in registers a "counter" with:
+- A **query key** (React Query)
+- A **fetcher** (server fn that returns a number, scoped to `store_id` via `requireSupabaseAuth`)
+- A **Realtime subscription** (Supabase channel on the relevant table) that invalidates the query
+- A **mark-as-read** action tied to the natural "viewed" moment on that page
 
-## Data model
+Counts are stored as **read cursors per store owner**, not by recomputing over all rows. One tiny table holds the last-seen timestamp per (user, store, feature). Counts = rows created/updated after that cursor, filtered by feature-specific "actionable" predicate.
 
-New table `public.platform_branding` (single row, `id = 'global'`), JSONB-first so we can extend without migrations:
+### New table
 
-```
-id text pk default 'global'
-assets jsonb        -- { primaryLogo, compactLogo, squareLogo, lightLogo, darkLogo,
-                    --   primaryWordmark, lightWordmark, darkWordmark, compactWordmark,
-                    --   favicon, appIcon192, appIcon512 }
-                    -- each entry: { url, width, height, mime, size }
-combo jsonb         -- { mode: 'logo'|'wordmark'|'both',
-                    --   layout: 'left'|'top'|'centered',
-                    --   align: 'start'|'center'|'end',
-                    --   gap: number, logoSize, wordmarkSize }
-placements jsonb    -- keyed by placement id (winner_header, store_header, sidebar,
-                    --   mobile_header, website_header, customer_store, auth_login,
-                    --   auth_register, auth_forgot, footer, checkout, order_confirm,
-                    --   loading, invoice, email). Each: {
-                    --     source: 'global'|'custom',
-                    --     mode, layout, align, visible,
-                    --     logo:{url,width,height}, wordmark:{...},
-                    --     sizes:{ desktop, tablet, mobile },
-                    --     lightAsset, darkAsset }
-published_at timestamptz
-updated_at timestamptz default now()
-```
+`admin_read_cursors`
+- `user_id`, `store_id`, `feature` (text), `last_seen_at` (timestamptz)
+- PK (user_id, store_id, feature)
+- RLS: owner-only, scoped by `is_store_owner(store_id)`
+- GRANTs for authenticated + service_role
 
-GRANTs: `SELECT` to `anon` + `authenticated` (branding is public), full CRUD to `service_role`. RLS: `SELECT` open; `INSERT/UPDATE` restricted to `has_role(auth.uid(),'admin')` (owner).
+### Per-feature counting rules
 
-Public read RPC `get_platform_branding()` (SECURITY DEFINER, STABLE) returns the row so SSR/anonymous pages can read it without exposing the table directly.
+| Sidebar item | Rule | Source |
+|---|---|---|
+| Orders | orders with `created_at > cursor`, status ≠ cancelled (includes landing-page orders — they already insert into `orders`) | `orders` |
+| Returns | `returns` created_at > cursor, status = pending | `returns` |
+| Customers | new `store_customers` created_at > cursor | `store_customers` |
+| Customer Accounts | same as Customers cursor (shared) | `store_customers` |
+| Messenger / Messenger Inbox | **distinct conversations** with `last_customer_message_at > cursor` AND unresolved | `ai_conversations` |
+| Handoff Queue | conversations where `handoff_at IS NOT NULL AND handoff_resolved_at IS NULL` (no cursor — pure pending state) | `ai_conversations` |
+| Low Stock Alerts | `low_stock_alerts` where `resolved_at IS NULL` (pure state) | `low_stock_alerts` |
+| Notifications | `admin_notifications` where `read_at IS NULL` for this user/store | `admin_notifications` |
+| Payments | `payments` with status in (failed, requires_action, pending_verification) created_at > cursor | `payments` |
+| Payment Gateway | `payment_webhook_events` with error status since cursor | `payment_webhook_events` |
+| Delivery / Couriers | orders with `courier_status` in exception set since cursor | `orders` |
+| Landing Pages | `landing_page_logs` with status=failed since cursor | `landing_page_logs` |
+| Duplicate Protection | `store_duplicate_blocks` created_at > cursor | `store_duplicate_blocks` |
+| AI Recommendations | pending recs since cursor | `ai_product_recommendations` |
+| Coupons / Marketing / Import-Export / Billing / Subscription | no badge unless a specific actionable event exists (skip for now to avoid noise) | — |
 
-Storage: reuse existing `store-assets` bucket under path `platform-branding/…`; add an authenticated-admin write policy for that prefix (public read already covered by existing policy pattern used by courier/payment brand assets).
+Pure-state counters (Handoff, Low Stock, Notifications) ignore cursors — they naturally clear when the underlying row is resolved/read.
 
-## Server functions
+## Backend
 
-New file `src/lib/platform-branding.functions.ts`:
-- `getPlatformBranding()` — public GET, reads via RPC (used by shells + SSR).
-- `updatePlatformBranding({ patch })` — owner-only, deep-merges into `assets`/`combo`/`placements`.
-- `publishPlatformBranding()` — owner-only, stamps `published_at = now()`.
-- `resetPlatformBrandingPlacement({ key })` — clears a placement override back to `source:'global'`.
+New `src/lib/badge-counts.functions.ts`:
+- `getAdminBadgeCounts({ store_id })` → returns `{ orders, returns, customers, messenger, handoff, low_stock, notifications, payments, payment_gateway, delivery, landing_pages, duplicate_protection, ai_recommendations }` in one round-trip
+- `markFeatureSeen({ store_id, feature })` → upserts cursor to `now()`
+- `markConversationRead({ conversation_id })` → sets `last_read_at` on that conversation (new column) for per-thread inbox indicator
+- `markNotificationRead({ id })` / `markAllNotificationsRead({ store_id })`
 
-All owner mutations gated by `assertOwner()` (already used elsewhere in `owner-ext.functions.ts`).
+All server fns use `requireSupabaseAuth` + verify `is_store_owner(store_id)`.
 
-## Winner Admin UI
+Migration also enables `supabase_realtime` publication for: `orders`, `returns`, `store_customers`, `ai_conversations`, `low_stock_alerts`, `admin_notifications`, `payments`, `payment_webhook_events`, `landing_page_logs`, `store_duplicate_blocks`, `ai_product_recommendations` (only those not already added).
 
-New route `src/routes/_authenticated/owner/platform-branding.tsx`, added to the owner sidebar under the existing Branding group (does not replace Payment/Courier brand asset pages).
+Adds `ai_conversations.last_read_at` (nullable timestamptz) for per-conversation read state and Messenger Inbox indicator.
 
-Sections (accordion / tabs, mobile-friendly like existing owner pages):
+## Frontend
 
-1. **Global Brand Logo** — upload/replace/remove for Primary, Compact, Square, Light, Dark.
-2. **Brand Name / Wordmark** — Primary, Light, Dark, Compact.
-3. **Logo + Name Combination** — mode (logo / wordmark / both), layout (left / top / centered), alignment, spacing, logo/wordmark size sliders.
-4. **Favicon & App Icon** — favicon (ico/png/svg), PWA 192, PWA 512.
-5. **Placement Manager** — one card per placement key with `Use Global` / `Use Custom` toggle, mode selector, visibility, sizes per breakpoint, light/dark assets.
-6. **Live Preview** — sandboxed mock frames for Desktop Header, Mobile Header, Sidebar (collapsed + expanded), Login, Customer Store, Footer, updating instantly from local form state.
-7. **Save Changes / Publish Branding** buttons; save persists draft, publish stamps `published_at`.
+### New `src/lib/use-badge-counts.ts`
+- `useBadgeCounts()` — resolves current `store_id`, fetches counts (React Query, 30s stale), subscribes to one Realtime channel per relevant table, invalidates the counts query on any change. Returns typed `{feature: count}` map.
+- `useMarkSeen(feature)` — mutation that upserts the cursor and invalidates counts.
 
-Reuse existing patterns:
-- `compressImage` helper for uploads.
-- Upload flow mirrors `brand-assets.tsx` (Supabase storage → save returned path).
-- `OwnerPageHeader` for consistent header.
+### Sidebar (`src/routes/_authenticated/admin/route.tsx`)
+- Extend `LinkDef` with optional `badgeKey: keyof BadgeCounts`
+- Add `badgeKey` to the relevant `links` entries only (Orders, Returns, Customers, Customer Accounts, Messenger, Messenger Inbox, Handoff Queue, Low Stock Alerts, Notifications, Payments, Payment Gateway, Delivery, Couriers, Landing Pages, Duplicate Protection, AI Recommendations)
+- Render a compact `<CountBadge>` beside label; when sidebar is collapsed render a small dot on the icon (absolute-positioned)
+- Format: hide at 0, show `n` up to 99, show `99+` beyond
+- Subtle `animate-pulse` for ~2s when count increases (tracked via previous value ref)
+- `aria-label` includes "N unread <feature>"
 
-Client-side validation: file type allowlist (png/jpg/webp/svg + ico for favicon), max size (2 MB logo, 512 KB favicon), reject 0-dim, preserve aspect ratio via `object-contain`.
+### CountBadge component
+`src/components/admin/CountBadge.tsx` — pill with `bg-primary text-primary-foreground`, `text-[10px]`, `min-w-[18px]`, matches existing accent tokens.
 
-## Consumer wiring (surgical, additive)
+### Mark-as-read wiring (page-level, minimal touch)
+Each target page adds a single `useEffect(() => markSeen("<feature>"), [])` on mount:
+- `orders.tsx` → "orders" + "delivery" + "landing_pages" (Orders page acknowledges those newer rows the admin now sees)
+- `returns.tsx` → "returns"
+- `customers.tsx` → "customers"
+- `customers-accounts.tsx` → "customers"
+- `messenger-inbox.tsx` → "messenger"; opening a specific conversation calls `markConversationRead`
+- `low-stock.tsx` → no cursor (state-based)
+- `handoff-queue.tsx` → no cursor (state-based)
+- `notifications.tsx` → calls `markAllNotificationsRead`
+- `payments.tsx` → "payments"
+- `payment-gateway.tsx` → "payment_gateway"
+- `duplicate-protection.tsx` → "duplicate_protection"
+- `ai-recommendations.tsx` → "ai_recommendations"
+- `landing-pages.index.tsx` → "landing_pages"
+- `couriers.tsx` → "delivery"
 
-Introduce `src/lib/platform-branding.ts` with `useBranding(placementKey)` hook + `resolveBranding(cfg, key)` helper implementing the fallback chain:
+### Dashboard sync
+`WelcomeCard.tsx` / dashboard already shows some counts — swap those specific numbers to consume the same `useBadgeCounts()` map so sidebar and dashboard never disagree. No visual redesign.
 
-```
-custom placement → global asset → existing default
-dark asset → primary asset
-wordmark missing → existing plain text brand name
-```
+### Messenger Inbox per-conversation indicator
+In the conversation list of `messenger-inbox.tsx`, show a small unread pill next to each conversation where `last_customer_message_at > (last_read_at ?? epoch)`; badge count on the row equals message count since `last_read_at` (already available from `ai_messages`, computed client-side from already-loaded conversation rows).
 
-Wire consumers only where logos/brand text currently live, always keeping the existing default as the final fallback so behavior is unchanged until the owner publishes:
+## Store Isolation & Security
 
-- `src/routes/__root.tsx` head links → favicon + apple-touch-icon from `assets.favicon` / `assets.appIcon192`.
-- Winner Admin shell header (owner `route.tsx`).
-- Store Admin shell header + sidebar (admin `route.tsx`).
-- Auth pages: `src/routes/auth.tsx`, store `auth.login/signup/forgot`.
-- Storefront header/footer (`src/components/storefront/*`) only for platform "Powered by" mark — the merchant's store logo stays as-is.
-- Order confirmation + invoice pages: platform mark only (does not touch merchant invoice branding logic).
+- Every fetcher scopes `WHERE store_id = _store_id` AND `is_store_owner(_store_id)` check
+- `admin_read_cursors` RLS: `user_id = auth.uid()` AND `is_store_owner(store_id)`
+- Realtime channels are opened per resolved `store_id`; RLS on the underlying tables already prevents cross-store leakage
+- Zero-state: badge component returns `null` when count is 0
 
-A single `<BrandMark placement="…" />` component renders the resolved logo/wordmark/combo with responsive sizing classes derived from `sizes.{desktop,tablet,mobile}` (Tailwind arbitrary values kept minimal via inline `style`).
+## Performance
 
-## Fallback + safety
+- One combined server fn returns all counters via parallel small `SELECT count(*)` with proper indexes (all target tables already indexed on `store_id` + `created_at`)
+- One React Query key; Realtime invalidates it instead of refetching per event
+- Cursors avoid full-table scans on `admin_notifications` etc.
 
-- If `platform_branding` row missing → hook returns null → components render today's hard-coded logo/text (zero regression).
-- Images use `onError` to fall back to the next tier in the chain to prevent broken image icons.
-- SSR reads via the public RPC; no auth needed.
+## Out of scope (explicitly not touched)
 
-## Non-goals this turn
+- Existing menu structure, icons, groupings, or ordering
+- Any page's layout, business logic, or existing counts other than reading from the new hook
+- Coupons, Marketing, Import/Export, Billing, Subscription menus — no badge unless a clear actionable event exists
 
-- No changes to per-store branding, courier branding, payment branding, or email template HTML (email placement is stored but wired later — kept in the placement schema so future turns don't need another migration).
-- No PWA manifest regeneration pipeline; `appIcon` URLs are surfaced via `<link rel="apple-touch-icon">` only.
+## Technical details
 
-## Deliverables checklist
-
-- Migration: `platform_branding` table + GRANTs + RLS + `get_platform_branding()` + storage policy for `platform-branding/*`.
-- `src/lib/platform-branding.functions.ts` (server fns) + `src/lib/platform-branding.ts` (hook/resolver + `<BrandMark>`).
-- `src/routes/_authenticated/owner/platform-branding.tsx` (new page) + sidebar link.
-- Consumer wiring in root head, owner shell, admin shell, auth pages, storefront platform mark — each behind fallback to current defaults.
+- Realtime channel names: `admin-badges:<store_id>` with multiple `postgres_changes` listeners; unmount tears down
+- Migration order per new table: CREATE → GRANT (authenticated, service_role; no anon) → ENABLE RLS → POLICY
+- `admin_read_cursors` uses `on conflict (user_id, store_id, feature) do update set last_seen_at = excluded.last_seen_at`
+- `ai_conversations.last_read_at` added via `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`
+- Publication additions guarded with `DO $$ ... IF NOT EXISTS ... $$` blocks

@@ -127,6 +127,35 @@ export type Database = {
           },
         ]
       }
+      admin_read_cursors: {
+        Row: {
+          feature: string
+          last_seen_at: string
+          store_id: string
+          user_id: string
+        }
+        Insert: {
+          feature: string
+          last_seen_at?: string
+          store_id: string
+          user_id: string
+        }
+        Update: {
+          feature?: string
+          last_seen_at?: string
+          store_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_read_cursors_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_conversations: {
         Row: {
           address: string | null
@@ -141,6 +170,7 @@ export type Database = {
           id: string
           last_message_at: string | null
           last_message_preview: string | null
+          last_read_at: string | null
           lead_status: string | null
           phone: string | null
           psid_profile: Json
@@ -165,6 +195,7 @@ export type Database = {
           id?: string
           last_message_at?: string | null
           last_message_preview?: string | null
+          last_read_at?: string | null
           lead_status?: string | null
           phone?: string | null
           psid_profile?: Json
@@ -189,6 +220,7 @@ export type Database = {
           id?: string
           last_message_at?: string | null
           last_message_preview?: string | null
+          last_read_at?: string | null
           lead_status?: string | null
           phone?: string | null
           psid_profile?: Json
