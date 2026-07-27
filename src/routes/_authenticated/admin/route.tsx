@@ -19,18 +19,23 @@ import { StickyMobileAdBar } from "@/components/admin/StickyMobileAdBar";
 import { UpgradeProvider } from "@/components/admin/UpgradeModal";
 import { BrandMark } from "@/lib/platform-branding";
 
-type LinkDef = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
+type BadgeKey =
+  | "orders" | "returns" | "customers" | "messenger" | "handoff"
+  | "low_stock" | "notifications" | "payments" | "payment_gateway"
+  | "delivery" | "landing_pages" | "duplicate_protection" | "ai_recommendations";
+
+type LinkDef = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean; badgeKey?: BadgeKey };
 
 const links: LinkDef[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { to: "/admin/orders", label: "Orders", icon: ShoppingBag },
+  { to: "/admin/orders", label: "Orders", icon: ShoppingBag, badgeKey: "orders" },
   { to: "/admin/products", label: "Products", icon: Package },
   { to: "/admin/categories", label: "Categories", icon: Tags },
   { to: "/admin/inventory", label: "Inventory", icon: Boxes },
-  { to: "/admin/customers", label: "Customers", icon: Users },
-  { to: "/admin/customers-accounts", label: "Customer Accounts", icon: Users },
-  { to: "/admin/duplicate-protection", label: "Duplicate Protection", icon: ShieldCheck },
-  { to: "/admin/returns", label: "Returns", icon: RotateCcw },
+  { to: "/admin/customers", label: "Customers", icon: Users, badgeKey: "customers" },
+  { to: "/admin/customers-accounts", label: "Customer Accounts", icon: Users, badgeKey: "customers" },
+  { to: "/admin/duplicate-protection", label: "Duplicate Protection", icon: ShieldCheck, badgeKey: "duplicate_protection" },
+  { to: "/admin/returns", label: "Returns", icon: RotateCcw, badgeKey: "returns" },
   { to: "/admin/coupons", label: "Coupons", icon: Ticket },
   { to: "/admin/finance", label: "Finance", icon: Wallet },
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
@@ -39,26 +44,27 @@ const links: LinkDef[] = [
   { to: "/admin/theme", label: "Theme", icon: Palette },
   { to: "/admin/seo", label: "SEO", icon: SearchIcon },
   { to: "/admin/legal", label: "Legal & Info Pages", icon: FileText },
-  { to: "/admin/delivery", label: "Delivery", icon: PackageOpen },
-  { to: "/admin/couriers", label: "Couriers", icon: Truck },
-  { to: "/admin/payment-gateway", label: "Payment Gateway", icon: CreditCard },
-  { to: "/admin/payments", label: "Payments", icon: Wallet },
+  { to: "/admin/delivery", label: "Delivery", icon: PackageOpen, badgeKey: "delivery" },
+  { to: "/admin/couriers", label: "Couriers", icon: Truck, badgeKey: "delivery" },
+  { to: "/admin/payment-gateway", label: "Payment Gateway", icon: CreditCard, badgeKey: "payment_gateway" },
+  { to: "/admin/payments", label: "Payments", icon: Wallet, badgeKey: "payments" },
   { to: "/admin/ai-agent", label: "AI Sales Agent", icon: Bot },
-  { to: "/admin/ai-recommendations", label: "AI Recommendations", icon: Sparkles },
-  { to: "/admin/handoff-queue", label: "Handoff Queue", icon: UserCog },
-  { to: "/admin/low-stock", label: "Low Stock Alerts", icon: AlertTriangle },
-  { to: "/admin/messenger", label: "Messenger", icon: MessageSquare },
-  { to: "/admin/messenger-inbox", label: "Messenger Inbox", icon: MessageSquare },
-  { to: "/admin/notifications", label: "Notifications", icon: Bell },
+  { to: "/admin/ai-recommendations", label: "AI Recommendations", icon: Sparkles, badgeKey: "ai_recommendations" },
+  { to: "/admin/handoff-queue", label: "Handoff Queue", icon: UserCog, badgeKey: "handoff" },
+  { to: "/admin/low-stock", label: "Low Stock Alerts", icon: AlertTriangle, badgeKey: "low_stock" },
+  { to: "/admin/messenger", label: "Messenger", icon: MessageSquare, badgeKey: "messenger" },
+  { to: "/admin/messenger-inbox", label: "Messenger Inbox", icon: MessageSquare, badgeKey: "messenger" },
+  { to: "/admin/notifications", label: "Notifications", icon: Bell, badgeKey: "notifications" },
   { to: "/admin/product-defaults", label: "Product Defaults", icon: ClipboardList },
   { to: "/admin/domains", label: "Domains", icon: Globe },
   { to: "/admin/dns-check", label: "DNS Checker", icon: Radar },
-  { to: "/admin/landing-pages", label: "Landing Pages", icon: ExternalLink },
+  { to: "/admin/landing-pages", label: "Landing Pages", icon: ExternalLink, badgeKey: "landing_pages" },
   { to: "/admin/import-export", label: "Import / Export", icon: FileUp },
   { to: "/admin/subscription", label: "Subscription", icon: CreditCard },
   { to: "/admin/billing", label: "Billing & Plans", icon: Wallet },
   { to: "/admin/settings", label: "Store Settings", icon: Settings },
 ];
+
 
 const groupDefs: { label: string; paths: string[] }[] = [
   { label: "Main", paths: ["/admin"] },
