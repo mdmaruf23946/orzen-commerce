@@ -131,6 +131,34 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function PlatformFavicon() {
+  const { data } = usePlatformBranding();
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const favicon = data?.assets?.favicon?.url;
+    const apple = data?.assets?.appIcon192?.url ?? favicon;
+    if (favicon) {
+      let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "icon";
+        document.head.appendChild(link);
+      }
+      link.href = favicon;
+    }
+    if (apple) {
+      let link = document.querySelector<HTMLLinkElement>("link[rel='apple-touch-icon']");
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "apple-touch-icon";
+        document.head.appendChild(link);
+      }
+      link.href = apple;
+    }
+  }, [data]);
+  return null;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
@@ -152,8 +180,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <PlatformFavicon />
       <Outlet />
       <Toaster richColors position="top-center" />
     </QueryClientProvider>
   );
 }
+
