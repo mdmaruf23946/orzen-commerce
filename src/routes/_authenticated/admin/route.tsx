@@ -18,6 +18,9 @@ import { SubscriptionStatusBanner } from "@/components/admin/SubscriptionStatusB
 import { StickyMobileAdBar } from "@/components/admin/StickyMobileAdBar";
 import { UpgradeProvider } from "@/components/admin/UpgradeModal";
 import { BrandMark } from "@/lib/platform-branding";
+import { CountBadge } from "@/components/admin/CountBadge";
+import { useBadgeCounts } from "@/lib/use-badge-counts";
+
 
 type BadgeKey =
   | "orders" | "returns" | "customers" | "messenger" | "handoff"
