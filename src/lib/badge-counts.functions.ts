@@ -57,21 +57,22 @@ async function count(
 
 export const getAdminBadgeCounts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { store_id: string }) => d)
-  .handler(async ({ data, context }): Promise<BadgeCounts> => {
+  .handler(async ({ context }): Promise<{ store_id: string | null; counts: BadgeCounts }> => {
     const { supabase, userId } = context;
-    const storeId = data.store_id;
 
-    // Verify ownership
-    const { data: owned } = await supabase
+    const { data: store } = await supabase
       .from("stores")
       .select("id")
-      .eq("id", storeId)
       .eq("owner_user_id", userId)
       .maybeSingle();
-    if (!owned) {
-      throw new Error("Forbidden");
-    }
+    const storeId = store?.id ?? null;
+    const empty: BadgeCounts = {
+      orders: 0, returns: 0, customers: 0, messenger: 0, handoff: 0,
+      low_stock: 0, notifications: 0, payments: 0, payment_gateway: 0,
+      delivery: 0, landing_pages: 0, duplicate_protection: 0, ai_recommendations: 0,
+    };
+    if (!storeId) return { store_id: null, counts: empty };
+
 
     // Load cursors
     const { data: cursorRows } = await supabase
