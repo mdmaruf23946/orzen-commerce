@@ -1807,9 +1807,11 @@ export type Database = {
           created_by: string | null
           id: string
           idempotency_key: string | null
+          notification_body: string | null
           priority: string
           scheduled_at: string | null
           scheduled_tz: string | null
+          sender_email: string | null
           sent_at: string | null
           status: string
           title: string
@@ -1831,9 +1833,11 @@ export type Database = {
           created_by?: string | null
           id?: string
           idempotency_key?: string | null
+          notification_body?: string | null
           priority?: string
           scheduled_at?: string | null
           scheduled_tz?: string | null
+          sender_email?: string | null
           sent_at?: string | null
           status?: string
           title: string
@@ -1855,9 +1859,11 @@ export type Database = {
           created_by?: string | null
           id?: string
           idempotency_key?: string | null
+          notification_body?: string | null
           priority?: string
           scheduled_at?: string | null
           scheduled_tz?: string | null
+          sender_email?: string | null
           sent_at?: string | null
           status?: string
           title?: string
@@ -1875,14 +1881,17 @@ export type Database = {
           email_attempts: number
           email_last_error: string | null
           email_message_id: string | null
+          email_sent_at: string | null
           email_status: string
           id: string
           inapp_notification_id: string | null
           inapp_status: string
           read_at: string | null
+          sent_via: string | null
           store_id: string | null
           updated_at: string
           user_id: string
+          variables: Json
         }
         Insert: {
           campaign_id: string
@@ -1891,14 +1900,17 @@ export type Database = {
           email_attempts?: number
           email_last_error?: string | null
           email_message_id?: string | null
+          email_sent_at?: string | null
           email_status?: string
           id?: string
           inapp_notification_id?: string | null
           inapp_status?: string
           read_at?: string | null
+          sent_via?: string | null
           store_id?: string | null
           updated_at?: string
           user_id: string
+          variables?: Json
         }
         Update: {
           campaign_id?: string
@@ -1907,14 +1919,17 @@ export type Database = {
           email_attempts?: number
           email_last_error?: string | null
           email_message_id?: string | null
+          email_sent_at?: string | null
           email_status?: string
           id?: string
           inapp_notification_id?: string | null
           inapp_status?: string
           read_at?: string | null
+          sent_via?: string | null
           store_id?: string | null
           updated_at?: string
           user_id?: string
+          variables?: Json
         }
         Relationships: [
           {
@@ -2280,6 +2295,75 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      owner_gmail_state: {
+        Row: {
+          connected_at: string | null
+          connected_email: string | null
+          google_account_name: string | null
+          last_test_error: string | null
+          last_test_ok: boolean | null
+          last_tested_at: string | null
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          connected_at?: string | null
+          connected_email?: string | null
+          google_account_name?: string | null
+          last_test_error?: string | null
+          last_test_ok?: boolean | null
+          last_tested_at?: string | null
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          connected_at?: string | null
+          connected_email?: string | null
+          google_account_name?: string | null
+          last_test_error?: string | null
+          last_test_ok?: boolean | null
+          last_tested_at?: string | null
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      owner_message_templates: {
+        Row: {
+          body_html: string
+          created_at: string
+          id: string
+          name: string
+          notification_body: string | null
+          notification_title: string | null
+          owner_id: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          body_html?: string
+          created_at?: string
+          id?: string
+          name: string
+          notification_body?: string | null
+          notification_title?: string | null
+          owner_id: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string
+          created_at?: string
+          id?: string
+          name?: string
+          notification_body?: string | null
+          notification_title?: string | null
+          owner_id?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       payment_webhook_events: {
         Row: {
