@@ -12,6 +12,7 @@ import { amIOwner } from "@/lib/owner.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { BrandMark } from "@/lib/platform-branding";
 
 type NavLink = { to: string; label: string; icon: any; exact?: boolean };
 type NavGroup = { label: string; links: NavLink[] };
@@ -95,7 +96,9 @@ function OwnerLayout() {
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background px-4 md:hidden">
-        <Link to="/owner" className="truncate font-semibold">Platform Owner</Link>
+        <Link to="/owner" className="truncate font-semibold">
+          <BrandMark placement="winner_header" fallbackText="Platform Owner" />
+        </Link>
         <Button variant="ghost" size="icon" onClick={() => setOpen((v) => !v)} aria-label="Menu">
           <Menu className="h-5 w-5" />
         </Button>
@@ -108,7 +111,9 @@ function OwnerLayout() {
             open ? "translate-x-0" : "-translate-x-full",
           )}
         >
-          <div className="flex h-14 shrink-0 items-center border-b px-5 font-semibold">Platform Owner</div>
+          <div className="flex h-14 shrink-0 items-center border-b px-5 font-semibold">
+            <BrandMark placement="winner_header" fallbackText="Platform Owner" />
+          </div>
           <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
             {groups.map((group) => {
               const isCollapsed = collapsed[group.label];

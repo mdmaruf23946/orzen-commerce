@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { checkStoreSlugAvailable, createMyStoreWithSlug } from "@/lib/admin.functions";
 import { CheckCircle2, XCircle, Loader2, AlertCircle } from "lucide-react";
+import { BrandMark } from "@/lib/platform-branding";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Sign in — ORZEN" }] }),
@@ -133,8 +134,12 @@ function AuthPage() {
       <div
         className={`w-full ${mode === "signup" ? "max-w-md" : "max-w-sm"} rounded-2xl border bg-card p-5 sm:p-6 shadow-sm`}
       >
-        <Link to="/" className="block text-center text-sm font-bold tracking-tight">
-          ORZEN
+        <Link to="/" className="flex items-center justify-center">
+          <BrandMark
+            placement={mode === "signup" ? "auth_register" : "auth_login"}
+            fallbackText="ORZEN"
+            className="text-sm font-bold tracking-tight"
+          />
         </Link>
         <h1 className="mt-3 text-center text-lg sm:text-xl font-semibold">
           {mode === "signin" ? "Sign in to your store" : "Create your store"}

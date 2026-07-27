@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { SubscriptionStatusBanner } from "@/components/admin/SubscriptionStatusBanner";
 import { StickyMobileAdBar } from "@/components/admin/StickyMobileAdBar";
 import { UpgradeProvider } from "@/components/admin/UpgradeModal";
+import { BrandMark } from "@/lib/platform-branding";
 
 type LinkDef = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
 
@@ -144,7 +145,7 @@ function AdminLayout() {
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur md:hidden">
         <button className="flex items-center gap-2 font-semibold" onClick={() => setOpen((v) => !v)}>
           <Menu className="h-5 w-5" />
-          <span>Store Admin</span>
+          <BrandMark placement="mobile_header" fallbackText="Store Admin" />
         </button>
         <button
           onClick={toggleDark}
@@ -170,7 +171,9 @@ function AdminLayout() {
             </div>
             {(!collapsed || open) && (
               <div className="min-w-0 md:group-[]:block">
-                <div className="truncate text-sm font-bold tracking-tight">MyStore</div>
+                <div className="truncate text-sm font-bold tracking-tight">
+                  <BrandMark placement="store_header" fallbackText="MyStore" />
+                </div>
                 <div className="truncate text-[11px] text-muted-foreground">Store Admin</div>
               </div>
             )}
