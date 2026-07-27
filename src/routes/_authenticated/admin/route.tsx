@@ -307,10 +307,15 @@ function AdminLayout() {
             <div className="ml-auto flex items-center gap-2">
               <Link
                 to="/admin/messenger-inbox"
-                className="grid h-9 w-9 place-items-center rounded-full border hover:bg-muted"
+                className="relative grid h-9 w-9 place-items-center rounded-full border hover:bg-muted"
                 aria-label="Messenger inbox"
               >
                 <MessageSquare className="h-4 w-4" />
+                {counts.messenger > 0 && (
+                  <span className="absolute -right-1 -top-1">
+                    <CountBadge count={counts.messenger} label="messenger" />
+                  </span>
+                )}
               </Link>
               <Link
                 to="/admin/notifications"
@@ -318,7 +323,13 @@ function AdminLayout() {
                 aria-label="Notifications"
               >
                 <Bell className="h-4 w-4" />
+                {counts.notifications > 0 && (
+                  <span className="absolute -right-1 -top-1">
+                    <CountBadge count={counts.notifications} label="notifications" />
+                  </span>
+                )}
               </Link>
+
               <button
                 onClick={toggleDark}
                 className="grid h-9 w-9 place-items-center rounded-full border hover:bg-muted"
