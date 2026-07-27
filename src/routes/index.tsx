@@ -1238,8 +1238,11 @@ function Footer() {
         <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
             <div className="flex items-center gap-2">
-              <LogoMark />
-              <span className="text-lg font-extrabold tracking-tight">ORZEN</span>
+              <BrandMark
+                placement="footer"
+                fallbackText="ORZEN"
+                className="text-lg font-extrabold tracking-tight"
+              />
             </div>
             <p className="mt-4 max-w-sm text-sm text-[color:var(--orzen-muted)]">
               An all-in-one eCommerce SaaS built for Bangladesh — store builder, AI sales agent,
