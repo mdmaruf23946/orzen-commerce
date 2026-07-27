@@ -81,6 +81,7 @@ import { Route as AuthenticatedAdminMarketingRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminLowStockRouteImport } from './routes/_authenticated/admin/low-stock'
 import { Route as AuthenticatedAdminLegalRouteImport } from './routes/_authenticated/admin/legal'
 import { Route as AuthenticatedAdminInventoryRouteImport } from './routes/_authenticated/admin/inventory'
+import { Route as AuthenticatedAdminInboxRouteImport } from './routes/_authenticated/admin/inbox'
 import { Route as AuthenticatedAdminImportExportRouteImport } from './routes/_authenticated/admin/import-export'
 import { Route as AuthenticatedAdminHandoffQueueRouteImport } from './routes/_authenticated/admin/handoff-queue'
 import { Route as AuthenticatedAdminFinanceRouteImport } from './routes/_authenticated/admin/finance'
@@ -98,8 +99,10 @@ import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminAiRecommendationsRouteImport } from './routes/_authenticated/admin/ai-recommendations'
 import { Route as AuthenticatedAdminAiAgentRouteImport } from './routes/_authenticated/admin/ai-agent'
 import { Route as AuthenticatedOwnerSubscriptionPayRouteRouteImport } from './routes/_authenticated/owner/subscription-pay.route'
+import { Route as AuthenticatedOwnerNotificationCenterRouteRouteImport } from './routes/_authenticated/owner/notification-center.route'
 import { Route as AuthenticatedAdminBillingRouteRouteImport } from './routes/_authenticated/admin/billing.route'
 import { Route as AuthenticatedOwnerSubscriptionPayIndexRouteImport } from './routes/_authenticated/owner/subscription-pay.index'
+import { Route as AuthenticatedOwnerNotificationCenterIndexRouteImport } from './routes/_authenticated/owner/notification-center.index'
 import { Route as AuthenticatedAdminLandingPagesIndexRouteImport } from './routes/_authenticated/admin/landing-pages.index'
 import { Route as AuthenticatedAdminBillingIndexRouteImport } from './routes/_authenticated/admin/billing.index'
 import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
@@ -111,6 +114,9 @@ import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/publ
 import { Route as ApiPublicFbCapiTrackRouteImport } from './routes/api/public/fb-capi/track'
 import { Route as ApiPublicCronNotifyOrdersRouteImport } from './routes/api/public/cron/notify-orders'
 import { Route as AuthenticatedOwnerSubscriptionPayProvidersRouteImport } from './routes/_authenticated/owner/subscription-pay.providers'
+import { Route as AuthenticatedOwnerNotificationCenterTemplatesRouteImport } from './routes/_authenticated/owner/notification-center.templates'
+import { Route as AuthenticatedOwnerNotificationCenterComposeRouteImport } from './routes/_authenticated/owner/notification-center.compose'
+import { Route as AuthenticatedOwnerNotificationCenterIdRouteImport } from './routes/_authenticated/owner/notification-center.$id'
 import { Route as AuthenticatedAdminLandingPagesIdRouteImport } from './routes/_authenticated/admin/landing-pages.$id'
 import { Route as AuthenticatedAdminInvoiceOrderIdRouteImport } from './routes/_authenticated/admin/invoice.$orderId'
 import { Route as AuthenticatedAdminBillingReturnRouteImport } from './routes/_authenticated/admin/billing.return'
@@ -520,6 +526,11 @@ const AuthenticatedAdminInventoryRoute =
     path: '/inventory',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminInboxRoute = AuthenticatedAdminInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
 const AuthenticatedAdminImportExportRoute =
   AuthenticatedAdminImportExportRouteImport.update({
     id: '/import-export',
@@ -622,6 +633,12 @@ const AuthenticatedOwnerSubscriptionPayRouteRoute =
     path: '/subscription-pay',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
+const AuthenticatedOwnerNotificationCenterRouteRoute =
+  AuthenticatedOwnerNotificationCenterRouteRouteImport.update({
+    id: '/notification-center',
+    path: '/notification-center',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
 const AuthenticatedAdminBillingRouteRoute =
   AuthenticatedAdminBillingRouteRouteImport.update({
     id: '/billing',
@@ -633,6 +650,12 @@ const AuthenticatedOwnerSubscriptionPayIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedOwnerSubscriptionPayRouteRoute,
+  } as any)
+const AuthenticatedOwnerNotificationCenterIndexRoute =
+  AuthenticatedOwnerNotificationCenterIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedOwnerNotificationCenterRouteRoute,
   } as any)
 const AuthenticatedAdminLandingPagesIndexRoute =
   AuthenticatedAdminLandingPagesIndexRouteImport.update({
@@ -694,6 +717,24 @@ const AuthenticatedOwnerSubscriptionPayProvidersRoute =
     id: '/providers',
     path: '/providers',
     getParentRoute: () => AuthenticatedOwnerSubscriptionPayRouteRoute,
+  } as any)
+const AuthenticatedOwnerNotificationCenterTemplatesRoute =
+  AuthenticatedOwnerNotificationCenterTemplatesRouteImport.update({
+    id: '/templates',
+    path: '/templates',
+    getParentRoute: () => AuthenticatedOwnerNotificationCenterRouteRoute,
+  } as any)
+const AuthenticatedOwnerNotificationCenterComposeRoute =
+  AuthenticatedOwnerNotificationCenterComposeRouteImport.update({
+    id: '/compose',
+    path: '/compose',
+    getParentRoute: () => AuthenticatedOwnerNotificationCenterRouteRoute,
+  } as any)
+const AuthenticatedOwnerNotificationCenterIdRoute =
+  AuthenticatedOwnerNotificationCenterIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedOwnerNotificationCenterRouteRoute,
   } as any)
 const AuthenticatedAdminLandingPagesIdRoute =
   AuthenticatedAdminLandingPagesIdRouteImport.update({
@@ -765,6 +806,7 @@ export interface FileRoutesByFullPath {
   '/owner': typeof AuthenticatedOwnerRouteRouteWithChildren
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
   '/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
+  '/owner/notification-center': typeof AuthenticatedOwnerNotificationCenterRouteRouteWithChildren
   '/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
@@ -782,6 +824,7 @@ export interface FileRoutesByFullPath {
   '/admin/finance': typeof AuthenticatedAdminFinanceRoute
   '/admin/handoff-queue': typeof AuthenticatedAdminHandoffQueueRoute
   '/admin/import-export': typeof AuthenticatedAdminImportExportRoute
+  '/admin/inbox': typeof AuthenticatedAdminInboxRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryRoute
   '/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
@@ -843,6 +886,9 @@ export interface FileRoutesByFullPath {
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
+  '/owner/notification-center/$id': typeof AuthenticatedOwnerNotificationCenterIdRoute
+  '/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
+  '/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
@@ -854,6 +900,7 @@ export interface FileRoutesByFullPath {
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
   '/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
+  '/owner/notification-center/': typeof AuthenticatedOwnerNotificationCenterIndexRoute
   '/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
   '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
@@ -889,6 +936,7 @@ export interface FileRoutesByTo {
   '/admin/finance': typeof AuthenticatedAdminFinanceRoute
   '/admin/handoff-queue': typeof AuthenticatedAdminHandoffQueueRoute
   '/admin/import-export': typeof AuthenticatedAdminImportExportRoute
+  '/admin/inbox': typeof AuthenticatedAdminInboxRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryRoute
   '/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
@@ -950,6 +998,9 @@ export interface FileRoutesByTo {
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
+  '/owner/notification-center/$id': typeof AuthenticatedOwnerNotificationCenterIdRoute
+  '/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
+  '/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
@@ -961,6 +1012,7 @@ export interface FileRoutesByTo {
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing': typeof AuthenticatedAdminBillingIndexRoute
   '/admin/landing-pages': typeof AuthenticatedAdminLandingPagesIndexRoute
+  '/owner/notification-center': typeof AuthenticatedOwnerNotificationCenterIndexRoute
   '/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
   '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
@@ -986,6 +1038,7 @@ export interface FileRoutesById {
   '/_authenticated/owner': typeof AuthenticatedOwnerRouteRouteWithChildren
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
   '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
+  '/_authenticated/owner/notification-center': typeof AuthenticatedOwnerNotificationCenterRouteRouteWithChildren
   '/_authenticated/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
   '/_authenticated/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/_authenticated/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
@@ -1003,6 +1056,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/finance': typeof AuthenticatedAdminFinanceRoute
   '/_authenticated/admin/handoff-queue': typeof AuthenticatedAdminHandoffQueueRoute
   '/_authenticated/admin/import-export': typeof AuthenticatedAdminImportExportRoute
+  '/_authenticated/admin/inbox': typeof AuthenticatedAdminInboxRoute
   '/_authenticated/admin/inventory': typeof AuthenticatedAdminInventoryRoute
   '/_authenticated/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/_authenticated/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
@@ -1064,6 +1118,9 @@ export interface FileRoutesById {
   '/_authenticated/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/_authenticated/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/_authenticated/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
+  '/_authenticated/owner/notification-center/$id': typeof AuthenticatedOwnerNotificationCenterIdRoute
+  '/_authenticated/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
+  '/_authenticated/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/_authenticated/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
@@ -1075,6 +1132,7 @@ export interface FileRoutesById {
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/_authenticated/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
   '/_authenticated/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
+  '/_authenticated/owner/notification-center/': typeof AuthenticatedOwnerNotificationCenterIndexRoute
   '/_authenticated/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/_authenticated/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
   '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
@@ -1100,6 +1158,7 @@ export interface FileRouteTypes {
     | '/owner'
     | '/store/$slug'
     | '/admin/billing'
+    | '/owner/notification-center'
     | '/owner/subscription-pay'
     | '/admin/ai-agent'
     | '/admin/ai-recommendations'
@@ -1117,6 +1176,7 @@ export interface FileRouteTypes {
     | '/admin/finance'
     | '/admin/handoff-queue'
     | '/admin/import-export'
+    | '/admin/inbox'
     | '/admin/inventory'
     | '/admin/legal'
     | '/admin/low-stock'
@@ -1178,6 +1238,9 @@ export interface FileRouteTypes {
     | '/admin/billing/return'
     | '/admin/invoice/$orderId'
     | '/admin/landing-pages/$id'
+    | '/owner/notification-center/$id'
+    | '/owner/notification-center/compose'
+    | '/owner/notification-center/templates'
     | '/owner/subscription-pay/providers'
     | '/api/public/cron/notify-orders'
     | '/api/public/fb-capi/track'
@@ -1189,6 +1252,7 @@ export interface FileRouteTypes {
     | '/store/$slug/product/$productId'
     | '/admin/billing/'
     | '/admin/landing-pages/'
+    | '/owner/notification-center/'
     | '/owner/subscription-pay/'
     | '/admin/billing/checkout/$packageId'
     | '/api/public/landing-pages/$connectionId/orders'
@@ -1224,6 +1288,7 @@ export interface FileRouteTypes {
     | '/admin/finance'
     | '/admin/handoff-queue'
     | '/admin/import-export'
+    | '/admin/inbox'
     | '/admin/inventory'
     | '/admin/legal'
     | '/admin/low-stock'
@@ -1285,6 +1350,9 @@ export interface FileRouteTypes {
     | '/admin/billing/return'
     | '/admin/invoice/$orderId'
     | '/admin/landing-pages/$id'
+    | '/owner/notification-center/$id'
+    | '/owner/notification-center/compose'
+    | '/owner/notification-center/templates'
     | '/owner/subscription-pay/providers'
     | '/api/public/cron/notify-orders'
     | '/api/public/fb-capi/track'
@@ -1296,6 +1364,7 @@ export interface FileRouteTypes {
     | '/store/$slug/product/$productId'
     | '/admin/billing'
     | '/admin/landing-pages'
+    | '/owner/notification-center'
     | '/owner/subscription-pay'
     | '/admin/billing/checkout/$packageId'
     | '/api/public/landing-pages/$connectionId/orders'
@@ -1320,6 +1389,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner'
     | '/store/$slug'
     | '/_authenticated/admin/billing'
+    | '/_authenticated/owner/notification-center'
     | '/_authenticated/owner/subscription-pay'
     | '/_authenticated/admin/ai-agent'
     | '/_authenticated/admin/ai-recommendations'
@@ -1337,6 +1407,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/finance'
     | '/_authenticated/admin/handoff-queue'
     | '/_authenticated/admin/import-export'
+    | '/_authenticated/admin/inbox'
     | '/_authenticated/admin/inventory'
     | '/_authenticated/admin/legal'
     | '/_authenticated/admin/low-stock'
@@ -1398,6 +1469,9 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/billing/return'
     | '/_authenticated/admin/invoice/$orderId'
     | '/_authenticated/admin/landing-pages/$id'
+    | '/_authenticated/owner/notification-center/$id'
+    | '/_authenticated/owner/notification-center/compose'
+    | '/_authenticated/owner/notification-center/templates'
     | '/_authenticated/owner/subscription-pay/providers'
     | '/api/public/cron/notify-orders'
     | '/api/public/fb-capi/track'
@@ -1409,6 +1483,7 @@ export interface FileRouteTypes {
     | '/store/$slug/product/$productId'
     | '/_authenticated/admin/billing/'
     | '/_authenticated/admin/landing-pages/'
+    | '/_authenticated/owner/notification-center/'
     | '/_authenticated/owner/subscription-pay/'
     | '/_authenticated/admin/billing/checkout/$packageId'
     | '/api/public/landing-pages/$connectionId/orders'
@@ -1949,6 +2024,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminInventoryRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/inbox': {
+      id: '/_authenticated/admin/inbox'
+      path: '/inbox'
+      fullPath: '/admin/inbox'
+      preLoaderRoute: typeof AuthenticatedAdminInboxRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/import-export': {
       id: '/_authenticated/admin/import-export'
       path: '/import-export'
@@ -2068,6 +2150,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerSubscriptionPayRouteRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
+    '/_authenticated/owner/notification-center': {
+      id: '/_authenticated/owner/notification-center'
+      path: '/notification-center'
+      fullPath: '/owner/notification-center'
+      preLoaderRoute: typeof AuthenticatedOwnerNotificationCenterRouteRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
     '/_authenticated/admin/billing': {
       id: '/_authenticated/admin/billing'
       path: '/billing'
@@ -2081,6 +2170,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/owner/subscription-pay/'
       preLoaderRoute: typeof AuthenticatedOwnerSubscriptionPayIndexRouteImport
       parentRoute: typeof AuthenticatedOwnerSubscriptionPayRouteRoute
+    }
+    '/_authenticated/owner/notification-center/': {
+      id: '/_authenticated/owner/notification-center/'
+      path: '/'
+      fullPath: '/owner/notification-center/'
+      preLoaderRoute: typeof AuthenticatedOwnerNotificationCenterIndexRouteImport
+      parentRoute: typeof AuthenticatedOwnerNotificationCenterRouteRoute
     }
     '/_authenticated/admin/landing-pages/': {
       id: '/_authenticated/admin/landing-pages/'
@@ -2158,6 +2254,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/owner/subscription-pay/providers'
       preLoaderRoute: typeof AuthenticatedOwnerSubscriptionPayProvidersRouteImport
       parentRoute: typeof AuthenticatedOwnerSubscriptionPayRouteRoute
+    }
+    '/_authenticated/owner/notification-center/templates': {
+      id: '/_authenticated/owner/notification-center/templates'
+      path: '/templates'
+      fullPath: '/owner/notification-center/templates'
+      preLoaderRoute: typeof AuthenticatedOwnerNotificationCenterTemplatesRouteImport
+      parentRoute: typeof AuthenticatedOwnerNotificationCenterRouteRoute
+    }
+    '/_authenticated/owner/notification-center/compose': {
+      id: '/_authenticated/owner/notification-center/compose'
+      path: '/compose'
+      fullPath: '/owner/notification-center/compose'
+      preLoaderRoute: typeof AuthenticatedOwnerNotificationCenterComposeRouteImport
+      parentRoute: typeof AuthenticatedOwnerNotificationCenterRouteRoute
+    }
+    '/_authenticated/owner/notification-center/$id': {
+      id: '/_authenticated/owner/notification-center/$id'
+      path: '/$id'
+      fullPath: '/owner/notification-center/$id'
+      preLoaderRoute: typeof AuthenticatedOwnerNotificationCenterIdRouteImport
+      parentRoute: typeof AuthenticatedOwnerNotificationCenterRouteRoute
     }
     '/_authenticated/admin/landing-pages/$id': {
       id: '/_authenticated/admin/landing-pages/$id'
@@ -2262,6 +2379,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminFinanceRoute: typeof AuthenticatedAdminFinanceRoute
   AuthenticatedAdminHandoffQueueRoute: typeof AuthenticatedAdminHandoffQueueRoute
   AuthenticatedAdminImportExportRoute: typeof AuthenticatedAdminImportExportRoute
+  AuthenticatedAdminInboxRoute: typeof AuthenticatedAdminInboxRoute
   AuthenticatedAdminInventoryRoute: typeof AuthenticatedAdminInventoryRoute
   AuthenticatedAdminLegalRoute: typeof AuthenticatedAdminLegalRoute
   AuthenticatedAdminLowStockRoute: typeof AuthenticatedAdminLowStockRoute
@@ -2308,6 +2426,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminFinanceRoute: AuthenticatedAdminFinanceRoute,
     AuthenticatedAdminHandoffQueueRoute: AuthenticatedAdminHandoffQueueRoute,
     AuthenticatedAdminImportExportRoute: AuthenticatedAdminImportExportRoute,
+    AuthenticatedAdminInboxRoute: AuthenticatedAdminInboxRoute,
     AuthenticatedAdminInventoryRoute: AuthenticatedAdminInventoryRoute,
     AuthenticatedAdminLegalRoute: AuthenticatedAdminLegalRoute,
     AuthenticatedAdminLowStockRoute: AuthenticatedAdminLowStockRoute,
@@ -2342,6 +2461,30 @@ const AuthenticatedAdminRouteRouteWithChildren =
     AuthenticatedAdminRouteRouteChildren,
   )
 
+interface AuthenticatedOwnerNotificationCenterRouteRouteChildren {
+  AuthenticatedOwnerNotificationCenterIdRoute: typeof AuthenticatedOwnerNotificationCenterIdRoute
+  AuthenticatedOwnerNotificationCenterComposeRoute: typeof AuthenticatedOwnerNotificationCenterComposeRoute
+  AuthenticatedOwnerNotificationCenterTemplatesRoute: typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
+  AuthenticatedOwnerNotificationCenterIndexRoute: typeof AuthenticatedOwnerNotificationCenterIndexRoute
+}
+
+const AuthenticatedOwnerNotificationCenterRouteRouteChildren: AuthenticatedOwnerNotificationCenterRouteRouteChildren =
+  {
+    AuthenticatedOwnerNotificationCenterIdRoute:
+      AuthenticatedOwnerNotificationCenterIdRoute,
+    AuthenticatedOwnerNotificationCenterComposeRoute:
+      AuthenticatedOwnerNotificationCenterComposeRoute,
+    AuthenticatedOwnerNotificationCenterTemplatesRoute:
+      AuthenticatedOwnerNotificationCenterTemplatesRoute,
+    AuthenticatedOwnerNotificationCenterIndexRoute:
+      AuthenticatedOwnerNotificationCenterIndexRoute,
+  }
+
+const AuthenticatedOwnerNotificationCenterRouteRouteWithChildren =
+  AuthenticatedOwnerNotificationCenterRouteRoute._addFileChildren(
+    AuthenticatedOwnerNotificationCenterRouteRouteChildren,
+  )
+
 interface AuthenticatedOwnerSubscriptionPayRouteRouteChildren {
   AuthenticatedOwnerSubscriptionPayProvidersRoute: typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   AuthenticatedOwnerSubscriptionPayIndexRoute: typeof AuthenticatedOwnerSubscriptionPayIndexRoute
@@ -2361,6 +2504,7 @@ const AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren =
   )
 
 interface AuthenticatedOwnerRouteRouteChildren {
+  AuthenticatedOwnerNotificationCenterRouteRoute: typeof AuthenticatedOwnerNotificationCenterRouteRouteWithChildren
   AuthenticatedOwnerSubscriptionPayRouteRoute: typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
   AuthenticatedOwnerAdsRoute: typeof AuthenticatedOwnerAdsRoute
   AuthenticatedOwnerAiRoute: typeof AuthenticatedOwnerAiRoute
@@ -2400,6 +2544,8 @@ interface AuthenticatedOwnerRouteRouteChildren {
 
 const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren =
   {
+    AuthenticatedOwnerNotificationCenterRouteRoute:
+      AuthenticatedOwnerNotificationCenterRouteRouteWithChildren,
     AuthenticatedOwnerSubscriptionPayRouteRoute:
       AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren,
     AuthenticatedOwnerAdsRoute: AuthenticatedOwnerAdsRoute,
@@ -2521,13 +2667,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

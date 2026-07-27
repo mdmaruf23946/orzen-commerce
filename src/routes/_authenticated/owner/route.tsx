@@ -62,7 +62,8 @@ const groups: NavGroup[] = [
     { to: "/owner/reports", label: "Reports", icon: BarChart3 },
     { to: "/owner/customers", label: "Customer Accounts", icon: Users },
     { to: "/owner/support", label: "Support", icon: LifeBuoy },
-    { to: "/owner/notifications", label: "Notifications", icon: Bell },
+    { to: "/owner/notification-center", label: "Notification Center", icon: Bell },
+    { to: "/owner/notifications", label: "Announcements", icon: Megaphone },
   ]},
   { label: "Security", links: [
     { to: "/owner/logs", label: "Login Logs", icon: FileText },

@@ -1,124 +1,140 @@
-# Global Unread Count & Activity Badge System
 
-Add a scalable, per-store, real-time badge system to the Store Admin sidebar and dashboard — without changing any existing menus, pages, or features.
+# Notification Center — Plan
 
-## Architecture
+Build a platform-scale communication system in Winner Admin that sends messages to Store Admins over Email + In-App, with per-recipient delivery/read tracking, queueing, retries, scheduling, drafts, templates, and analytics.
 
-A single reusable hook drives every badge. Each menu item that opts in registers a "counter" with:
-- A **query key** (React Query)
-- A **fetcher** (server fn that returns a number, scoped to `store_id` via `requireSupabaseAuth`)
-- A **Realtime subscription** (Supabase channel on the relevant table) that invalidates the query
-- A **mark-as-read** action tied to the natural "viewed" moment on that page
+Existing pieces to reuse (verified):
+- `admin_notifications` table (per-store in-app notifications) + `admin_read_cursors` — badge system already wired to `admin_notifications` in `src/lib/badge-counts.functions.ts`.
+- `announcements` table + `owner/notifications.tsx` — will remain as a lightweight draft page; new Notification Center becomes the primary experience (announcements page repurposed as legacy shortcut, not removed).
+- Platform branding (`platform_branding`) for email header/footer.
+- Lovable Email infrastructure (auth + transactional) will be scaffolded to provide the queue, cron worker, `email_send_log`, suppression list, and templates.
 
-Counts are stored as **read cursors per store owner**, not by recomputing over all rows. One tiny table holds the last-seen timestamp per (user, store, feature). Counts = rows created/updated after that cursor, filtered by feature-specific "actionable" predicate.
+## 1. Prerequisites (email infra)
 
-### New table
+Before code changes:
+1. Verify email domain via `email_domain--check_email_domain_status`. If none, show the email setup dialog and pause until the user configures a sender domain.
+2. Run `email_domain--setup_email_infra` (creates pgmq queues, cron, `email_send_log`, suppression, unsubscribe tokens).
+3. Run `email_domain--scaffold_transactional_email` to install `/lovable/email/transactional/send`, preview route, and templates directory.
 
-`admin_read_cursors`
-- `user_id`, `store_id`, `feature` (text), `last_seen_at` (timestamptz)
-- PK (user_id, store_id, feature)
-- RLS: owner-only, scoped by `is_store_owner(store_id)`
-- GRANTs for authenticated + service_role
+If the user does not want to configure a domain, we still ship the in-app half and mark email channel as “not configured” with a clear inline setup CTA — no fake sends.
 
-### Per-feature counting rules
+## 2. Database (single migration)
 
-| Sidebar item | Rule | Source |
-|---|---|---|
-| Orders | orders with `created_at > cursor`, status ≠ cancelled (includes landing-page orders — they already insert into `orders`) | `orders` |
-| Returns | `returns` created_at > cursor, status = pending | `returns` |
-| Customers | new `store_customers` created_at > cursor | `store_customers` |
-| Customer Accounts | same as Customers cursor (shared) | `store_customers` |
-| Messenger / Messenger Inbox | **distinct conversations** with `last_customer_message_at > cursor` AND unresolved | `ai_conversations` |
-| Handoff Queue | conversations where `handoff_at IS NOT NULL AND handoff_resolved_at IS NULL` (no cursor — pure pending state) | `ai_conversations` |
-| Low Stock Alerts | `low_stock_alerts` where `resolved_at IS NULL` (pure state) | `low_stock_alerts` |
-| Notifications | `admin_notifications` where `read_at IS NULL` for this user/store | `admin_notifications` |
-| Payments | `payments` with status in (failed, requires_action, pending_verification) created_at > cursor | `payments` |
-| Payment Gateway | `payment_webhook_events` with error status since cursor | `payment_webhook_events` |
-| Delivery / Couriers | orders with `courier_status` in exception set since cursor | `orders` |
-| Landing Pages | `landing_page_logs` with status=failed since cursor | `landing_page_logs` |
-| Duplicate Protection | `store_duplicate_blocks` created_at > cursor | `store_duplicate_blocks` |
-| AI Recommendations | pending recs since cursor | `ai_product_recommendations` |
-| Coupons / Marketing / Import-Export / Billing / Subscription | no badge unless a specific actionable event exists (skip for now to avoid noise) | — |
+New tables in `public`, each with GRANTs + RLS.
 
-Pure-state counters (Handoff, Low Stock, Notifications) ignore cursors — they naturally clear when the underlying row is resolved/read.
+- `notification_campaigns`
+  - `id`, `title`, `body_html`, `type` (announcement|important_update|maintenance|system_alert|feature_update|billing_notice|security_alert|general), `priority` (normal|important|urgent), `channels` `text[]` (email, in_app), `action_label`, `action_type` (internal|external|none), `action_target`, `audience_kind` (all|stores|users|plan|status), `audience_ids` `uuid[]`, `audience_filter` `jsonb`, `status` (draft|scheduled|queued|sending|completed|failed|cancelled), `scheduled_at`, `scheduled_tz`, `created_by`, `sent_at`, `completed_at`, `totals` `jsonb` (recipients/email_sent/email_failed/inapp_created/inapp_read), `idempotency_key` UNIQUE.
+  - RLS: owners (users with `owner` role via `has_role`) full access; no anon/authenticated read.
 
-## Backend
+- `notification_recipients` (one row per store-admin recipient per campaign)
+  - `id`, `campaign_id` → campaigns, `store_id`, `user_id`, `email`, `email_status` (pending|sent|failed|suppressed), `email_message_id`, `email_last_error`, `email_attempts`, `inapp_notification_id` → `admin_notifications.id`, `inapp_status` (pending|created|read), `read_at`, `created_at`, `updated_at`. Unique `(campaign_id, user_id)` for idempotency.
+  - RLS: owners full access; the recipient user can `SELECT` their own row (`user_id = auth.uid()`).
 
-New `src/lib/badge-counts.functions.ts`:
-- `getAdminBadgeCounts({ store_id })` → returns `{ orders, returns, customers, messenger, handoff, low_stock, notifications, payments, payment_gateway, delivery, landing_pages, duplicate_protection, ai_recommendations }` in one round-trip
-- `markFeatureSeen({ store_id, feature })` → upserts cursor to `now()`
-- `markConversationRead({ conversation_id })` → sets `last_read_at` on that conversation (new column) for per-thread inbox indicator
-- `markNotificationRead({ id })` / `markAllNotificationsRead({ store_id })`
+- `notification_templates`
+  - `id`, `name`, `type`, `priority`, `title`, `body_html`, `action_label`, `action_type`, `action_target`, `created_by`, timestamps. Owner-only RLS.
 
-All server fns use `requireSupabaseAuth` + verify `is_store_owner(store_id)`.
+- Extend `admin_notifications`:
+  - Add `campaign_id uuid null` FK, `priority text`, `type text`, `action_label`, `action_type`, `action_target`. Backfill nulls; keep existing rows untouched.
+  - Existing RLS/badge logic continues to work; new columns are additive.
 
-Migration also enables `supabase_realtime` publication for: `orders`, `returns`, `store_customers`, `ai_conversations`, `low_stock_alerts`, `admin_notifications`, `payments`, `payment_webhook_events`, `landing_page_logs`, `store_duplicate_blocks`, `ai_product_recommendations` (only those not already added).
+All tables include `service_role` GRANT since the queue worker uses `supabaseAdmin`.
 
-Adds `ai_conversations.last_read_at` (nullable timestamptz) for per-conversation read state and Messenger Inbox indicator.
+## 3. Server functions (Winner Admin)
 
-## Frontend
+`src/lib/notifications.functions.ts` (owner-only, `requireSupabaseAuth` + `has_role('owner')`):
 
-### New `src/lib/use-badge-counts.ts`
-- `useBadgeCounts()` — resolves current `store_id`, fetches counts (React Query, 30s stale), subscribes to one Realtime channel per relevant table, invalidates the counts query on any change. Returns typed `{feature: count}` map.
-- `useMarkSeen(feature)` — mutation that upserts the cursor and invalidates counts.
+- `listCampaigns({ status?, q?, limit, cursor })`
+- `getCampaign(id)` — includes recipient roll-up counts and 50 most recent recipients.
+- `saveCampaign(input)` — create/update draft.
+- `deleteCampaign(id)` — draft only.
+- `resolveAudience(input)` — returns count + preview of first N store-admin users (name, store, email) for the confirm dialog.
+- `sendCampaign({ id, idempotency_key })` — transitions draft→queued, materializes `notification_recipients`, creates `admin_notifications` rows immediately (in-app is instant), enqueues one `enqueue_email` call per email recipient into the `transactional_emails` pgmq queue using template `platform-notification` with per-recipient `templateData` and `idempotencyKey = campaign_id + user_id`.
+- `scheduleCampaign({ id, at, tz })` — sets `scheduled_at`; a pg_cron job (created in migration) calls a small `/api/public/cron/notifications-tick` route every minute that flips due campaigns to `queued` and invokes `sendCampaign` server-side with a service-role fetch.
+- `sendTestEmail({ id | draftPayload, email })` — one-off enqueue that does NOT create recipients or in-app rows.
+- `listTemplates`, `saveTemplate`, `deleteTemplate`.
 
-### Sidebar (`src/routes/_authenticated/admin/route.tsx`)
-- Extend `LinkDef` with optional `badgeKey: keyof BadgeCounts`
-- Add `badgeKey` to the relevant `links` entries only (Orders, Returns, Customers, Customer Accounts, Messenger, Messenger Inbox, Handoff Queue, Low Stock Alerts, Notifications, Payments, Payment Gateway, Delivery, Couriers, Landing Pages, Duplicate Protection, AI Recommendations)
-- Render a compact `<CountBadge>` beside label; when sidebar is collapsed render a small dot on the icon (absolute-positioned)
-- Format: hide at 0, show `n` up to 99, show `99+` beyond
-- Subtle `animate-pulse` for ~2s when count increases (tracked via previous value ref)
-- `aria-label` includes "N unread <feature>"
+`src/lib/notifications-inbox.functions.ts` (store admin, `requireSupabaseAuth`):
+- `listMyNotifications({ status, limit, cursor })` — joins `admin_notifications` for stores the user owns, includes campaign metadata; recipient rows for the user’s own `user_id` are the source of truth for read state.
+- `markNotificationRead(id)` / `markAllRead()` — updates `notification_recipients.read_at` and `admin_notifications.read_at` in one transaction; badge counter picks it up via existing cursor system.
 
-### CountBadge component
-`src/components/admin/CountBadge.tsx` — pill with `bg-primary text-primary-foreground`, `text-[10px]`, `min-w-[18px]`, matches existing accent tokens.
+## 4. Email template
 
-### Mark-as-read wiring (page-level, minimal touch)
-Each target page adds a single `useEffect(() => markSeen("<feature>"), [])` on mount:
-- `orders.tsx` → "orders" + "delivery" + "landing_pages" (Orders page acknowledges those newer rows the admin now sees)
-- `returns.tsx` → "returns"
-- `customers.tsx` → "customers"
-- `customers-accounts.tsx` → "customers"
-- `messenger-inbox.tsx` → "messenger"; opening a specific conversation calls `markConversationRead`
-- `low-stock.tsx` → no cursor (state-based)
-- `handoff-queue.tsx` → no cursor (state-based)
-- `notifications.tsx` → calls `markAllNotificationsRead`
-- `payments.tsx` → "payments"
-- `payment-gateway.tsx` → "payment_gateway"
-- `duplicate-protection.tsx` → "duplicate_protection"
-- `ai-recommendations.tsx` → "ai_recommendations"
-- `landing-pages.index.tsx` → "landing_pages"
-- `couriers.tsx` → "delivery"
+New React Email template `src/lib/email-templates/platform-notification.tsx`:
+- Props: `title`, `bodyHtml` (sanitized server-side with DOMPurify), `type`, `priority`, `actionLabel?`, `actionUrl?`, brand assets fetched via `platform_branding`.
+- Registered in `src/lib/email-templates/registry.ts`.
 
-### Dashboard sync
-`WelcomeCard.tsx` / dashboard already shows some counts — swap those specific numbers to consume the same `useBadgeCounts()` map so sidebar and dashboard never disagree. No visual redesign.
+Body HTML sanitization happens in `sendCampaign` before enqueueing so raw HTML never reaches `dangerouslySetInnerHTML` in a template.
 
-### Messenger Inbox per-conversation indicator
-In the conversation list of `messenger-inbox.tsx`, show a small unread pill next to each conversation where `last_customer_message_at > (last_read_at ?? epoch)`; badge count on the row equals message count since `last_read_at` (already available from `ai_messages`, computed client-side from already-loaded conversation rows).
+## 5. Queue + retry + idempotency
 
-## Store Isolation & Security
+- Reuse the Lovable transactional queue (`transactional_emails` pgmq + `process-email-queue` cron). It already handles Retry-After, 5xx retries, DLQ after 5 attempts, and suppression checks.
+- Idempotency key format: `notif-<campaign_id>-<user_id>` — guarantees no duplicate sends if `sendCampaign` is invoked twice.
+- `notification_recipients` unique `(campaign_id, user_id)` blocks duplicate row creation at the DB level.
 
-- Every fetcher scopes `WHERE store_id = _store_id` AND `is_store_owner(_store_id)` check
-- `admin_read_cursors` RLS: `user_id = auth.uid()` AND `is_store_owner(store_id)`
-- Realtime channels are opened per resolved `store_id`; RLS on the underlying tables already prevents cross-store leakage
-- Zero-state: badge component returns `null` when count is 0
+## 6. Winner Admin UI
 
-## Performance
+New route `src/routes/_authenticated/owner/notification-center.route.tsx` with children:
 
-- One combined server fn returns all counters via parallel small `SELECT count(*)` with proper indexes (all target tables already indexed on `store_id` + `created_at`)
-- One React Query key; Realtime invalidates it instead of refetching per event
-- Cursors avoid full-table scans on `admin_notifications` etc.
+- `notification-center.index.tsx` — Campaigns list: title, recipients, channels, status, sent date, actions (view, duplicate, cancel-if-scheduled, delete-if-draft). Filter by status/type.
+- `notification-center.compose.tsx` — Composer (also handles `?draft=<id>`):
+  - Title, Type, Priority.
+  - Rich text editor (reuses `src/components/admin/product-form/RichTextEditor.tsx`).
+  - Recipient selector (tabs: All / Stores / Users / Groups) with search + multi-select; live count via `resolveAudience`.
+  - Channels checkboxes (defaults Email+In-App), disabled Email if domain not configured with inline CTA.
+  - Optional action button config.
+  - Schedule: Send now / Schedule (date/time/tz).
+  - Preview drawer (Email + In-App renders).
+  - Test send input.
+  - Footer: Save draft / Confirm & Send (opens confirmation modal showing counts).
+- `notification-center.templates.tsx` — CRUD templates; “Use template” loads composer.
+- `notification-center.$id.tsx` — Campaign detail: totals, per-recipient table (email status, in-app status, read_at) with search + CSV export.
 
-## Out of scope (explicitly not touched)
+Sidebar link added to `owner/route.tsx` under Communications section. The existing “Announcements” page stays as-is (legacy), no removal.
 
-- Existing menu structure, icons, groupings, or ordering
-- Any page's layout, business logic, or existing counts other than reading from the new hook
-- Coupons, Marketing, Import/Export, Billing, Subscription menus — no badge unless a clear actionable event exists
+## 7. Store Admin UI
 
-## Technical details
+- New route `src/routes/_authenticated/admin/notifications.inbox.tsx` — inbox with unread/all tabs, filters by type, mark-read, mark-all-read. Uses `listMyNotifications`.
+- Header bell in `admin/route.tsx` already renders `admin_notifications` badge; extend the popover (or link the bell) to open the new inbox route. Visiting the inbox marks the `notifications` cursor seen (existing plumbing).
+- Notification detail modal renders sanitized body, type/priority chip, action button (internal → `useNavigate`; external → validated https URL opened in new tab with `rel="noopener"`).
 
-- Realtime channel names: `admin-badges:<store_id>` with multiple `postgres_changes` listeners; unmount tears down
-- Migration order per new table: CREATE → GRANT (authenticated, service_role; no anon) → ENABLE RLS → POLICY
-- `admin_read_cursors` uses `on conflict (user_id, store_id, feature) do update set last_seen_at = excluded.last_seen_at`
-- `ai_conversations.last_read_at` added via `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`
-- Publication additions guarded with `DO $$ ... IF NOT EXISTS ... $$` blocks
+## 8. Multi-tenant security
+
+- All owner functions gate on `has_role(auth.uid(), 'owner')`.
+- `notification_recipients` RLS: recipient can only see own row; owner sees all.
+- `admin_notifications` continues to use existing store-owner RLS.
+- Bulk email uses per-recipient `enqueue_email` — no CC/BCC, no address leakage.
+- Body HTML sanitized (DOMPurify) server-side; action URLs validated (`https:` for external, allowlist for internal).
+
+## 9. Analytics + status semantics
+
+Campaign detail rollup pulls counts from `notification_recipients` (email_status, inapp_status, read_at). We surface real counts only:
+- Email: pending / sent / failed / suppressed (from `email_send_log` correlated via `email_message_id`).
+- In-App: created / read.
+- No fabricated delivered/opened metrics unless the provider actually reports them.
+
+## 10. Cron
+
+- Existing `pg_cron` schedules `process-email-queue`.
+- Add a new 1-minute cron: `SELECT net.http_post(... /api/public/cron/notifications-tick ...)` with `apikey` = anon key. Route dispatches due `scheduled` campaigns.
+
+## Technical Details
+
+Files created:
+- Migration (tables + RLS + grants + cron + `admin_notifications` extension).
+- `src/lib/notifications.functions.ts`, `src/lib/notifications-inbox.functions.ts`, `src/lib/notifications.server.ts` (audience resolver, enqueue helper).
+- `src/lib/email-templates/platform-notification.tsx` + registry update.
+- `src/routes/_authenticated/owner/notification-center.route.tsx` + `.index`, `.compose`, `.templates`, `.$id`.
+- `src/routes/_authenticated/admin/notifications.inbox.tsx`.
+- `src/routes/api/public/cron/notifications-tick.ts`.
+- Small UI atoms: `NotificationTypeBadge`, `PriorityBadge`, `RecipientPicker`.
+
+Files edited (additive):
+- `src/routes/_authenticated/owner/route.tsx` (sidebar entry).
+- `src/routes/_authenticated/admin/route.tsx` (bell → inbox link).
+- `src/lib/badge-counts.functions.ts` (no change needed; `admin_notifications` already counted).
+- `src/lib/email-templates/registry.ts`.
+
+Non-goals / preserved:
+- Existing `announcements` and `owner/notifications.tsx` page remain intact.
+- Existing badge counting logic unchanged.
+- No new email provider added; delivery uses Lovable Emails infrastructure.

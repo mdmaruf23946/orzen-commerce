@@ -1,0 +1,1 @@
+ALTER TABLE public.admin_notifications ALTER COLUMN store_id DROP NOT NULL;
