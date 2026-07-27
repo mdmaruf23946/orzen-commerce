@@ -190,16 +190,13 @@ function AdminLayout() {
         >
           {/* Brand */}
           <div className={cn("flex h-16 shrink-0 items-center gap-3 border-b px-4", collapsed && "md:justify-center md:px-2")}>
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand text-brand-foreground shadow-sm">
-              <ShoppingBag className="h-5 w-5" />
-            </div>
-            {(!collapsed || open) && (
-              <div className="min-w-0 md:group-[]:block">
-                <div className="truncate text-sm font-bold tracking-tight">
-                  <BrandMark placement="store_header" fallbackText="MyStore" />
-                </div>
-                <div className="truncate text-[11px] text-muted-foreground">Store Admin</div>
+            {(!collapsed || open) ? (
+              <div className="flex min-w-0 flex-col leading-tight">
+                <StoreBrandMark />
+                <span className="mt-0.5 truncate text-[11px] text-muted-foreground">Store Admin</span>
               </div>
+            ) : (
+              <StoreBrandMark iconOnly />
             )}
             <button
               className="ml-auto hidden md:inline-flex items-center rounded-md p-1 text-muted-foreground hover:bg-muted"
