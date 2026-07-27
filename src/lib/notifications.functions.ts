@@ -168,7 +168,7 @@ export const sendCampaign = createServerFn({ method: "POST" })
 
       // In-app notification
       if (wantInApp && !existing?.inapp_notification_id) {
-        const { data: notif } = await supabaseAdmin.from("admin_notifications").insert({
+        const { data: notif } = await (supabaseAdmin as any).from("admin_notifications").insert({
           store_id: r.store_id, user_id: r.user_id, campaign_id: data.id,
           kind: "campaign", type: campaign.type, priority: campaign.priority,
           title: campaign.title, body: stripHtml(campaign.body_html),
