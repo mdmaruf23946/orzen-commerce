@@ -185,7 +185,7 @@ export const sendCampaign = createServerFn({ method: "POST" })
       // Email
       if (wantEmail && r.email) {
         try {
-          const { error: qErr } = await supabaseAdmin.rpc("enqueue_email", {
+          const { error: qErr } = await (supabaseAdmin as any).rpc("enqueue_email", {
             queue_name: "transactional_emails",
             payload: {
               template_name: "platform-notification",
