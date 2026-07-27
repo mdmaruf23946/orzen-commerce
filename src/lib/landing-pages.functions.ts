@@ -294,7 +294,7 @@ export const setLandingPageFieldMap = createServerFn({ method: "POST" })
     z
       .object({
         id: idSchema,
-        mapping: z.record(z.string().trim().max(80)),
+        mapping: z.record(z.string(), z.string().trim().max(80)),
       })
       .parse(d),
   )
@@ -302,7 +302,7 @@ export const setLandingPageFieldMap = createServerFn({ method: "POST" })
     await assertOwnedConnection(context.supabase, data.id);
     const { error } = await context.supabase.from("landing_page_field_map").upsert({
       connection_id: data.id,
-      mapping: data.mapping,
+      mapping: data.mapping as Record<string, string>,
       updated_at: new Date().toISOString(),
     });
     if (error) throw new Error(error.message);
