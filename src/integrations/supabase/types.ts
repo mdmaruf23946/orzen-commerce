@@ -1814,6 +1814,7 @@ export type Database = {
           sender_email: string | null
           sent_at: string | null
           status: string
+          subject: string | null
           title: string
           totals: Json
           type: string
@@ -1840,6 +1841,7 @@ export type Database = {
           sender_email?: string | null
           sent_at?: string | null
           status?: string
+          subject?: string | null
           title: string
           totals?: Json
           type?: string
@@ -1866,6 +1868,7 @@ export type Database = {
           sender_email?: string | null
           sent_at?: string | null
           status?: string
+          subject?: string | null
           title?: string
           totals?: Json
           type?: string
