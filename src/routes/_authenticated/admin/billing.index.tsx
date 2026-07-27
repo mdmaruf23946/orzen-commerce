@@ -266,14 +266,22 @@ function BillingPage() {
 
             const calc = !isFree && !isCustom ? computeCycleTotal(Number(p.price), cycle, s) : null;
 
+            const isHighlighted = highlightedPlanId === p.id;
+
             return (
               <div
                 key={tier}
-                className={`relative flex flex-col rounded-xl border bg-card p-3 sm:p-4 ${
-                  isPopular ? "border-primary ring-2 ring-primary/30" : ""
+                ref={(el) => { cardRefs.current[p.id] = el; }}
+                className={`relative flex flex-col rounded-xl border bg-card p-3 transition sm:p-4 ${
+                  isHighlighted ? "border-primary ring-4 ring-primary/40 shadow-lg" : isPopular ? "border-primary ring-2 ring-primary/30" : ""
                 } ${isCurrent ? "border-emerald-500" : ""}`}
               >
-                {isPopular && (
+                {isHighlighted && (
+                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase text-primary-foreground shadow sm:text-[10px]">
+                    <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Recommended
+                  </div>
+                )}
+                {isPopular && !isHighlighted && (
                   <div className="absolute -top-2 left-3 inline-flex items-center gap-1 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold uppercase text-primary-foreground sm:left-4 sm:px-2 sm:text-[10px]">
                     <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Popular
                   </div>
