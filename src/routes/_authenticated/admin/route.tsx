@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { SubscriptionStatusBanner } from "@/components/admin/SubscriptionStatusBanner";
 import { StickyMobileAdBar } from "@/components/admin/StickyMobileAdBar";
 import { UpgradeProvider } from "@/components/admin/UpgradeModal";
-import { BrandMark } from "@/lib/platform-branding";
+import { StoreBrandMark } from "@/components/admin/StoreBrandMark";
 import { CountBadge } from "@/components/admin/CountBadge";
 import { useBadgeCounts, useMarkSeen } from "@/lib/use-badge-counts";
 
@@ -164,9 +164,12 @@ function AdminLayout() {
     <div className="min-h-screen bg-muted/40">
       {/* Mobile top bar */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur md:hidden">
-        <button className="flex items-center gap-2 font-semibold" onClick={() => setOpen((v) => !v)}>
-          <Menu className="h-5 w-5" />
-          <BrandMark placement="mobile_header" fallbackText="Store Admin" />
+        <button className="flex min-w-0 items-center gap-2 font-semibold" onClick={() => setOpen((v) => !v)}>
+          <Menu className="h-5 w-5 shrink-0" />
+          <span className="flex min-w-0 flex-col items-start leading-tight">
+            <StoreBrandMark compact />
+            <span className="text-[10px] font-normal text-muted-foreground">Store Admin</span>
+          </span>
         </button>
         <button
           onClick={toggleDark}
@@ -187,16 +190,13 @@ function AdminLayout() {
         >
           {/* Brand */}
           <div className={cn("flex h-16 shrink-0 items-center gap-3 border-b px-4", collapsed && "md:justify-center md:px-2")}>
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand text-brand-foreground shadow-sm">
-              <ShoppingBag className="h-5 w-5" />
-            </div>
-            {(!collapsed || open) && (
-              <div className="min-w-0 md:group-[]:block">
-                <div className="truncate text-sm font-bold tracking-tight">
-                  <BrandMark placement="store_header" fallbackText="MyStore" />
-                </div>
-                <div className="truncate text-[11px] text-muted-foreground">Store Admin</div>
+            {(!collapsed || open) ? (
+              <div className="flex min-w-0 flex-col leading-tight">
+                <StoreBrandMark />
+                <span className="mt-0.5 truncate text-[11px] text-muted-foreground">Store Admin</span>
               </div>
+            ) : (
+              <StoreBrandMark iconOnly />
             )}
             <button
               className="ml-auto hidden md:inline-flex items-center rounded-md p-1 text-muted-foreground hover:bg-muted"
