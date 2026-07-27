@@ -122,6 +122,21 @@ function BillingPage() {
   return (
     <div className="space-y-3 pb-6 max-w-full overflow-x-hidden sm:space-y-6 sm:pb-10">
 
+      {search.highlight && FEATURE_LABELS[search.highlight as keyof typeof FEATURE_LABELS] && (
+        <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold text-foreground">
+              Upgrade to unlock {FEATURE_LABELS[search.highlight as keyof typeof FEATURE_LABELS]}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              We highlighted the plan that includes this feature.
+            </p>
+          </div>
+        </div>
+      )}
+
+
       {/* 1. Free Trial Banner — only when trialing */}
       {isTrialing && (
         <div className="rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-2.5 sm:rounded-xl sm:p-4 dark:border-amber-900/50 dark:from-amber-950/30 dark:to-orange-950/30">
