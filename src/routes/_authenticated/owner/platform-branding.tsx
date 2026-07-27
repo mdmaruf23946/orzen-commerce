@@ -94,12 +94,14 @@ function AssetUploader({
         .from("store-assets")
         .upload(path, toUpload, { upsert: true, contentType: toUpload.type });
       if (error) throw new Error(error.message);
-      const { data: pub } = supabase.storage.from("store-assets").getPublicUrl(path);
+      // store-assets is a private bucket — serve via the /api/img proxy
+      // so the URL works for anonymous visitors (favicon, storefront, etc.).
       onChange({
-        url: pub.publicUrl,
+        url: `/api/img/${path}`,
         mime: toUpload.type || null,
         size: toUpload.size,
       });
+
       toast.success(`${label} uploaded`);
     } catch (e: any) {
       toast.error(e?.message ?? "Upload failed");
