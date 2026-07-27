@@ -164,9 +164,12 @@ function AdminLayout() {
     <div className="min-h-screen bg-muted/40">
       {/* Mobile top bar */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur md:hidden">
-        <button className="flex items-center gap-2 font-semibold" onClick={() => setOpen((v) => !v)}>
-          <Menu className="h-5 w-5" />
-          <BrandMark placement="mobile_header" fallbackText="Store Admin" />
+        <button className="flex min-w-0 items-center gap-2 font-semibold" onClick={() => setOpen((v) => !v)}>
+          <Menu className="h-5 w-5 shrink-0" />
+          <span className="flex min-w-0 flex-col items-start leading-tight">
+            <StoreBrandMark compact />
+            <span className="text-[10px] font-normal text-muted-foreground">Store Admin</span>
+          </span>
         </button>
         <button
           onClick={toggleDark}
