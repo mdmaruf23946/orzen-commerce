@@ -99,7 +99,7 @@ export type Database = {
           meta: Json
           priority: string | null
           read_at: string | null
-          store_id: string
+          store_id: string | null
           title: string
           type: string | null
           user_id: string | null
@@ -116,7 +116,7 @@ export type Database = {
           meta?: Json
           priority?: string | null
           read_at?: string | null
-          store_id: string
+          store_id?: string | null
           title: string
           type?: string | null
           user_id?: string | null
@@ -133,7 +133,7 @@ export type Database = {
           meta?: Json
           priority?: string | null
           read_at?: string | null
-          store_id?: string
+          store_id?: string | null
           title?: string
           type?: string | null
           user_id?: string | null
