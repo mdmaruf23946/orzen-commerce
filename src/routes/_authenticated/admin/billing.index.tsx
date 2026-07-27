@@ -93,6 +93,25 @@ function BillingPage() {
   const currentTier = pkg ? tierOf(pkg) : isTrialing ? null : "free";
   const s = settings ?? { discount_3m: 5, discount_6m: 10, discount_yearly: 20 };
 
+  // Highlight logic: prefer explicit `plan` id, else the cheapest paid plan
+  // that includes the requested `highlight` feature key.
+  const highlightedPlanId = useMemo<string | null>(() => {
+    if (search.plan) return search.plan;
+    if (!search.highlight) return null;
+    const eligible = plans
+      .filter((p) => !p.is_trial && p.features?.[search.highlight as string] === true)
+      .sort((a, b) => Number(a.price) - Number(b.price));
+    return eligible[0]?.id ?? null;
+  }, [plans, search.plan, search.highlight]);
+
+  useEffect(() => {
+    if (!highlightedPlanId) return;
+    const el = cardRefs.current[highlightedPlanId];
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [highlightedPlanId]);
+
   const cycleOptions: { key: CycleKey; label: string; discount: number }[] = [
     { key: "monthly", label: "Monthly", discount: 0 },
     { key: "3m", label: "3 Months", discount: s.discount_3m },
