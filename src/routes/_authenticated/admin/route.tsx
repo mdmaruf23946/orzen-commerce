@@ -328,7 +328,7 @@ function AdminLayout() {
                 )}
               </Link>
               <Link
-                to="/admin/notifications"
+                to="/admin/inbox"
                 className="relative grid h-9 w-9 place-items-center rounded-full border hover:bg-muted"
                 aria-label="Notifications"
               >
