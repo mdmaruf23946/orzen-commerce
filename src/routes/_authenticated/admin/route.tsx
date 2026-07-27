@@ -117,6 +117,7 @@ function AdminLayout() {
   const { data: ownerData } = useQuery({ queryKey: ["amIOwner"], queryFn: () => ownerCheck() });
   const { counts, storeId } = useBadgeCounts();
   const markSeen = useMarkSeen();
+  const currentPath = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     if (!storeId) return;
@@ -127,8 +128,6 @@ function AdminLayout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeId, currentPath]);
 
-
-  const currentPath = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     setCollapsed(localStorage.getItem("admin.sidebar.collapsed") === "1");
