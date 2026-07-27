@@ -1,140 +1,153 @@
+## Goal
 
-# Notification Center — Plan
+Add a professional **Communication** section to the Winner Admin Panel that lets the Platform Owner connect their personal Gmail (via Google OAuth), send emails through that Gmail to Store Admins, and deliver in-app notifications — extending the existing Notification Center (no duplicate tables, no parallel module).
 
-Build a platform-scale communication system in Winner Admin that sends messages to Store Admins over Email + In-App, with per-recipient delivery/read tracking, queueing, retries, scheduling, drafts, templates, and analytics.
+## Approach at a glance
 
-Existing pieces to reuse (verified):
-- `admin_notifications` table (per-store in-app notifications) + `admin_read_cursors` — badge system already wired to `admin_notifications` in `src/lib/badge-counts.functions.ts`.
-- `announcements` table + `owner/notifications.tsx` — will remain as a lightweight draft page; new Notification Center becomes the primary experience (announcements page repurposed as legacy shortcut, not removed).
-- Platform branding (`platform_branding`) for email header/footer.
-- Lovable Email infrastructure (auth + transactional) will be scaffolded to provide the queue, cron worker, `email_send_log`, suppression list, and templates.
+- **Gmail** = Lovable's built-in `google_mail` App connector. Lovable handles OAuth, tokens, refresh, and encryption. Owner clicks "Connect with Google" → picks account → done. No manual Google Cloud setup, no Client ID/Secret handling, no token storage in our DB.
+- **Sending** = Gmail API (`users/me/messages/send`) through the Lovable connector gateway, one request per recipient (privacy: no shared To field). Runs in the existing pgmq queue infrastructure.
+- **UI** = new routes under `/_authenticated/owner/communication/*`, reusing existing shadcn primitives, dark mode, sidebar branding.
+- **DB** = extend existing `notification_campaigns` / `notification_recipients` (already has per-recipient status, retries, plan/status targeting). Add small `message_templates` table + a per-owner `gmail_connection_state` row (metadata only — no tokens).
 
-## 1. Prerequisites (email infra)
+## Menu (Winner Admin sidebar)
 
-Before code changes:
-1. Verify email domain via `email_domain--check_email_domain_status`. If none, show the email setup dialog and pause until the user configures a sender domain.
-2. Run `email_domain--setup_email_infra` (creates pgmq queues, cron, `email_send_log`, suppression, unsubscribe tokens).
-3. Run `email_domain--scaffold_transactional_email` to install `/lovable/email/transactional/send`, preview route, and templates directory.
+New group **Communication**:
+- Email & Notifications (dashboard)
+- Compose Message
+- Email History
+- Notification History
+- Message Templates
+- Gmail Connection
 
-If the user does not want to configure a domain, we still ship the in-app half and mark email channel as “not configured” with a clear inline setup CTA — no fake sends.
+## Screens
 
-## 2. Database (single migration)
+### 1. Gmail Connection (`/owner/communication/gmail`)
+- Reads status from `standard_connectors--list_connections` (server fn).
+- **Disconnected**: "Gmail Not Connected" + `Connect with Google` button → triggers `standard_connectors--connect` flow via a lightweight server-side redirect helper (the connector card handles the OAuth popup).
+- **Connected**: shows Gmail address + profile name (fetched once via `gmail/v1/users/me/profile` and cached), connected date, last test time, buttons: `Send Test Email`, `Reconnect`, `Disconnect`.
+- **Test**: server fn sends a small email to the connected address via gateway; records `last_tested_at` and result.
+- Setup help drawer explains what Lovable is doing under the hood in plain language (no client secret exposure — there isn't one for the owner to manage).
 
-New tables in `public`, each with GRANTs + RLS.
+### 2. Compose Message (`/owner/communication/compose`)
+Reuses existing `notification-center.compose.tsx` layout, adds:
+- Recipient modes: **All / Selected / Single / By Plan / By Status** (plans loaded from `subscription_packages`, not hardcoded).
+- Searchable recipient picker (store name, admin name, email, plan, status, checkbox; Select All / Clear All; live count).
+- Composer: `From` (read-only, connected Gmail), `Subject`, rich-text body (reuses existing `RichTextEditor`).
+- Delivery Options: `☑ Send Email  ☑ Send In-App Notification` (independent — either or both).
+- Notification Title + optional separate Notification Message ("Use same as email" toggle).
+- Variables: `{{store_name}} {{admin_name}} {{admin_email}} {{plan_name}} {{subscription_end_date}} {{dashboard_url}}` resolved per recipient at send time.
+- Load-from-Template dropdown.
+- Confirmation dialog with recipient count + preview before send.
+- If Email is checked but Gmail is disconnected → modal "Gmail Connection Required" with Connect / Cancel. In-app still sends.
 
-- `notification_campaigns`
-  - `id`, `title`, `body_html`, `type` (announcement|important_update|maintenance|system_alert|feature_update|billing_notice|security_alert|general), `priority` (normal|important|urgent), `channels` `text[]` (email, in_app), `action_label`, `action_type` (internal|external|none), `action_target`, `audience_kind` (all|stores|users|plan|status), `audience_ids` `uuid[]`, `audience_filter` `jsonb`, `status` (draft|scheduled|queued|sending|completed|failed|cancelled), `scheduled_at`, `scheduled_tz`, `created_by`, `sent_at`, `completed_at`, `totals` `jsonb` (recipients/email_sent/email_failed/inapp_created/inapp_read), `idempotency_key` UNIQUE.
-  - RLS: owners (users with `owner` role via `has_role`) full access; no anon/authenticated read.
+### 3. Email History (`/owner/communication/history/email`)
+- Table (desktop) / cards (mobile): Date, Subject, Sender, Recipients, Sent/Failed/Pending, Status.
+- Drill-in shows per-recipient status with `Retry Failed` (re-enqueues only `failed` rows).
 
-- `notification_recipients` (one row per store-admin recipient per campaign)
-  - `id`, `campaign_id` → campaigns, `store_id`, `user_id`, `email`, `email_status` (pending|sent|failed|suppressed), `email_message_id`, `email_last_error`, `email_attempts`, `inapp_notification_id` → `admin_notifications.id`, `inapp_status` (pending|created|read), `read_at`, `created_at`, `updated_at`. Unique `(campaign_id, user_id)` for idempotency.
-  - RLS: owners full access; the recipient user can `SELECT` their own row (`user_id = auth.uid()`).
+### 4. Notification History (`/owner/communication/history/notifications`)
+- Title, Recipients, Read count, Unread count, Delivery status.
 
-- `notification_templates`
-  - `id`, `name`, `type`, `priority`, `title`, `body_html`, `action_label`, `action_type`, `action_target`, `created_by`, timestamps. Owner-only RLS.
+### 5. Message Templates (`/owner/communication/templates`)
+- CRUD list; fields: name, subject, body, notification_title, notification_body.
+- Seed a few examples (Platform Announcement, Maintenance Notice, Welcome, Payment Reminder).
 
-- Extend `admin_notifications`:
-  - Add `campaign_id uuid null` FK, `priority text`, `type text`, `action_label`, `action_type`, `action_target`. Backfill nulls; keep existing rows untouched.
-  - Existing RLS/badge logic continues to work; new columns are additive.
+### 6. Dashboard (`/owner/communication`)
+- Summary cards: Gmail Status, Emails Sent (today/month), Notifications (today/month), Failed Emails, Unread Notifications.
+- Recent Communication feed.
 
-All tables include `service_role` GRANT since the queue worker uses `supabaseAdmin`.
+## Store-Admin side (in-app inbox)
 
-## 3. Server functions (Winner Admin)
+Already exists at `/admin/inbox` + bell with unread badge via `useBadgeCounts` — reuse as-is; new campaigns automatically flow through `notification_recipients`. No changes needed except confirming realtime update on `admin_notifications` is subscribed (it already is).
 
-`src/lib/notifications.functions.ts` (owner-only, `requireSupabaseAuth` + `has_role('owner')`):
+## Backend
 
-- `listCampaigns({ status?, q?, limit, cursor })`
-- `getCampaign(id)` — includes recipient roll-up counts and 50 most recent recipients.
-- `saveCampaign(input)` — create/update draft.
-- `deleteCampaign(id)` — draft only.
-- `resolveAudience(input)` — returns count + preview of first N store-admin users (name, store, email) for the confirm dialog.
-- `sendCampaign({ id, idempotency_key })` — transitions draft→queued, materializes `notification_recipients`, creates `admin_notifications` rows immediately (in-app is instant), enqueues one `enqueue_email` call per email recipient into the `transactional_emails` pgmq queue using template `platform-notification` with per-recipient `templateData` and `idempotencyKey = campaign_id + user_id`.
-- `scheduleCampaign({ id, at, tz })` — sets `scheduled_at`; a pg_cron job (created in migration) calls a small `/api/public/cron/notifications-tick` route every minute that flips due campaigns to `queued` and invokes `sendCampaign` server-side with a service-role fetch.
-- `sendTestEmail({ id | draftPayload, email })` — one-off enqueue that does NOT create recipients or in-app rows.
-- `listTemplates`, `saveTemplate`, `deleteTemplate`.
+### Database migration
+```
+-- Gmail metadata (no tokens — Lovable connector holds those)
+CREATE TABLE public.owner_gmail_state (
+  owner_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  connected_email text,
+  google_account_name text,
+  connected_at timestamptz,
+  last_tested_at timestamptz,
+  last_test_ok boolean,
+  updated_at timestamptz DEFAULT now()
+);
+-- GRANT + owner-only RLS via has_role('owner').
 
-`src/lib/notifications-inbox.functions.ts` (store admin, `requireSupabaseAuth`):
-- `listMyNotifications({ status, limit, cursor })` — joins `admin_notifications` for stores the user owns, includes campaign metadata; recipient rows for the user’s own `user_id` are the source of truth for read state.
-- `markNotificationRead(id)` / `markAllRead()` — updates `notification_recipients.read_at` and `admin_notifications.read_at` in one transaction; badge counter picks it up via existing cursor system.
+-- Templates
+CREATE TABLE public.message_templates (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  subject text NOT NULL,
+  body_html text NOT NULL,
+  notification_title text,
+  notification_body text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+-- GRANT + owner-only RLS.
 
-## 4. Email template
+-- Extend notification_campaigns with retry counters (only if missing).
+-- notification_recipients already tracks per-user email_status, in_app_status, error.
+```
 
-New React Email template `src/lib/email-templates/platform-notification.tsx`:
-- Props: `title`, `bodyHtml` (sanitized server-side with DOMPurify), `type`, `priority`, `actionLabel?`, `actionUrl?`, brand assets fetched via `platform_branding`.
-- Registered in `src/lib/email-templates/registry.ts`.
+### Server functions (`src/lib/communication.functions.ts`)
+- `getGmailStatus()` → reads `owner_gmail_state` + queries connector list, returns `{ connected, email, name, connectedAt, lastTestedAt }`.
+- `sendGmailTest()` → gateway POST to `/gmail/v1/users/me/messages/send` with a minimal RFC 2822 body encoded base64url; updates state.
+- `disconnectGmail()` → calls `standard_connectors--disconnect` equivalent via server-side helper + clears `owner_gmail_state`.
+- `listStoreAdminRecipients({ mode, ids, plan, status })` → aggregates over `stores` + `subscription_packages` + `auth.users` (via existing admin client), returns `{ user_id, email, name, store, plan, status }[]`.
+- `saveTemplate / listTemplates / deleteTemplate`.
+- Extends existing `sendCampaign` to (a) resolve variables per recipient, (b) for each recipient with `send_email`, enqueue a Gmail-gateway job into `transactional_emails` pgmq queue with a new `transport: 'gmail_owner'` payload flag.
 
-Body HTML sanitization happens in `sendCampaign` before enqueueing so raw HTML never reaches `dangerouslySetInnerHTML` in a template.
+### Queue processor
+Extend existing `src/routes/lovable/email/queue/process.ts` (or the Gmail path) to branch on `transport`:
+- `transport: 'gmail_owner'` → build MIME, base64url encode, POST to gateway `https://connector-gateway.lovable.dev/google_mail/gmail/v1/users/me/messages/send` with `Authorization: Bearer ${LOVABLE_API_KEY}` + `X-Connection-Api-Key: ${GOOGLE_MAIL_API_KEY}`.
+- On 403 insufficient-scope → mark failed with actionable error; UI shows Reconnect.
+- On 429 → respect `Retry-After` via existing throttle (`email_send_state`).
+- On 5xx → let pgmq visibility timeout retry (existing DLQ after 5 failures).
 
-## 5. Queue + retry + idempotency
+### Individual sends, privacy
+One gateway POST per recipient. Never a shared To. Failures logged per row; UI shows per-recipient error text (redacted — no raw provider JSON).
 
-- Reuse the Lovable transactional queue (`transactional_emails` pgmq + `process-email-queue` cron). It already handles Retry-After, 5xx retries, DLQ after 5 attempts, and suppression checks.
-- Idempotency key format: `notif-<campaign_id>-<user_id>` — guarantees no duplicate sends if `sendCampaign` is invoked twice.
-- `notification_recipients` unique `(campaign_id, user_id)` blocks duplicate row creation at the DB level.
+## Security
 
-## 6. Winner Admin UI
+- Gmail tokens never touch our DB, our frontend, localStorage, URLs, or logs. Lovable connector gateway holds them.
+- `LOVABLE_API_KEY` and `GOOGLE_MAIL_API_KEY` are server-only (already are).
+- All new server fns use `requireSupabaseAuth` + `has_role(auth.uid(), 'owner')` check; store-admin users cannot reach any of it.
+- RLS on `owner_gmail_state` and `message_templates`: owner-only via `has_role`.
+- Store-admin in-app inbox: existing `notification_recipients` RLS (user can only read/update own rows) unchanged.
 
-New route `src/routes/_authenticated/owner/notification-center.route.tsx` with children:
+## Connector setup step (one-time, first turn of build)
 
-- `notification-center.index.tsx` — Campaigns list: title, recipients, channels, status, sent date, actions (view, duplicate, cancel-if-scheduled, delete-if-draft). Filter by status/type.
-- `notification-center.compose.tsx` — Composer (also handles `?draft=<id>`):
-  - Title, Type, Priority.
-  - Rich text editor (reuses `src/components/admin/product-form/RichTextEditor.tsx`).
-  - Recipient selector (tabs: All / Stores / Users / Groups) with search + multi-select; live count via `resolveAudience`.
-  - Channels checkboxes (defaults Email+In-App), disabled Email if domain not configured with inline CTA.
-  - Optional action button config.
-  - Schedule: Send now / Schedule (date/time/tz).
-  - Preview drawer (Email + In-App renders).
-  - Test send input.
-  - Footer: Save draft / Confirm & Send (opens confirmation modal showing counts).
-- `notification-center.templates.tsx` — CRUD templates; “Use template” loads composer.
-- `notification-center.$id.tsx` — Campaign detail: totals, per-recipient table (email status, in-app status, read_at) with search + CSV export.
+Call `standard_connectors--connect` with `connector_id: "google_mail"`. Owner completes the popup, secret `GOOGLE_MAIL_API_KEY` is injected into project env, gateway is ready.
 
-Sidebar link added to `owner/route.tsx` under Communications section. The existing “Announcements” page stays as-is (legacy), no removal.
+## Failure UX
 
-## 7. Store Admin UI
+Friendly messages for: OAuth cancelled, revoked, expired refresh, insufficient scope, rate limit, invalid email, network error. Each maps to a copy string; no raw gateway body shown.
 
-- New route `src/routes/_authenticated/admin/notifications.inbox.tsx` — inbox with unread/all tabs, filters by type, mark-read, mark-all-read. Uses `listMyNotifications`.
-- Header bell in `admin/route.tsx` already renders `admin_notifications` badge; extend the popover (or link the bell) to open the new inbox route. Visiting the inbox marks the `notifications` cursor seen (existing plumbing).
-- Notification detail modal renders sanitized body, type/priority chip, action button (internal → `useNavigate`; external → validated https URL opened in new tab with `rel="noopener"`).
+## Mobile & dark mode
 
-## 8. Multi-tenant security
+All new routes use existing tokens/shadcn primitives, table→card breakpoint at `md`, tested to 320px. Dark-mode contrast verified on badges and status pills.
 
-- All owner functions gate on `has_role(auth.uid(), 'owner')`.
-- `notification_recipients` RLS: recipient can only see own row; owner sees all.
-- `admin_notifications` continues to use existing store-owner RLS.
-- Bulk email uses per-recipient `enqueue_email` — no CC/BCC, no address leakage.
-- Body HTML sanitized (DOMPurify) server-side; action URLs validated (`https:` for external, allowlist for internal).
+## Out of scope (kept for later)
 
-## 9. Analytics + status semantics
+- Scheduled sends UI already exists in current Notification Center — leave as-is.
+- Marketing / bulk newsletters — not permitted by platform email policy; templates enforce "notice-style" content only.
+- Attachments — Gmail API supports them but not requested; can add later behind a flag.
 
-Campaign detail rollup pulls counts from `notification_recipients` (email_status, inapp_status, read_at). We surface real counts only:
-- Email: pending / sent / failed / suppressed (from `email_send_log` correlated via `email_message_id`).
-- In-App: created / read.
-- No fabricated delivered/opened metrics unless the provider actually reports them.
+## File map
 
-## 10. Cron
+- `supabase/migrations/*` — 1 migration (owner_gmail_state, message_templates, grants, RLS).
+- `src/lib/communication.functions.ts` — new (Gmail status, test, disconnect, recipients, templates).
+- `src/lib/communication-send.server.ts` — new (Gmail gateway send, MIME builder, variable resolver).
+- Extend `src/routes/lovable/email/queue/process.ts` — branch on transport.
+- Extend `src/lib/notifications.functions.ts` — hook variable resolver + gmail transport into `sendCampaign`.
+- `src/routes/_authenticated/owner/communication/` — 6 new route files (index, gmail, compose, history.email, history.notifications, templates).
+- `src/routes/_authenticated/owner/route.tsx` sidebar — add Communication group.
+- Store-admin bell/inbox — no code changes (already wired).
 
-- Existing `pg_cron` schedules `process-email-queue`.
-- Add a new 1-minute cron: `SELECT net.http_post(... /api/public/cron/notifications-tick ...)` with `apikey` = anon key. Route dispatches due `scheduled` campaigns.
+## Verification
 
-## Technical Details
-
-Files created:
-- Migration (tables + RLS + grants + cron + `admin_notifications` extension).
-- `src/lib/notifications.functions.ts`, `src/lib/notifications-inbox.functions.ts`, `src/lib/notifications.server.ts` (audience resolver, enqueue helper).
-- `src/lib/email-templates/platform-notification.tsx` + registry update.
-- `src/routes/_authenticated/owner/notification-center.route.tsx` + `.index`, `.compose`, `.templates`, `.$id`.
-- `src/routes/_authenticated/admin/notifications.inbox.tsx`.
-- `src/routes/api/public/cron/notifications-tick.ts`.
-- Small UI atoms: `NotificationTypeBadge`, `PriorityBadge`, `RecipientPicker`.
-
-Files edited (additive):
-- `src/routes/_authenticated/owner/route.tsx` (sidebar entry).
-- `src/routes/_authenticated/admin/route.tsx` (bell → inbox link).
-- `src/lib/badge-counts.functions.ts` (no change needed; `admin_notifications` already counted).
-- `src/lib/email-templates/registry.ts`.
-
-Non-goals / preserved:
-- Existing `announcements` and `owner/notifications.tsx` page remain intact.
-- Existing badge counting logic unchanged.
-- No new email provider added; delivery uses Lovable Emails infrastructure.
+After build: connect Gmail via the connector card, run Send Test Email (confirm arrival in owner inbox), create a campaign to a single store admin with email + in-app, verify per-recipient row in Email History, verify in-app badge increments in that admin's panel, mark read → badge decrements, disconnect Gmail → Compose modal appears when Email checked, in-app still works. Test at 320px width and in dark mode.
