@@ -26,7 +26,7 @@ const CampaignSchema = z.object({
   action_target: z.string().max(500).nullish(),
   audience_kind: z.enum(["all", "stores", "users", "plan", "status"]).default("all"),
   audience_ids: z.array(z.string().uuid()).default([]),
-  audience_filter: z.record(z.any()).default({}),
+  audience_filter: z.record(z.string(), z.any()).default(() => ({})),
   scheduled_at: z.string().nullish(),
   scheduled_tz: z.string().nullish(),
 });
@@ -71,7 +71,7 @@ export const saveCampaign = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => CampaignSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId);
-    const payload = { ...data, created_by: context.userId };
+    const payload = { ...data, audience_filter: data.audience_filter as any, created_by: context.userId };
     if (data.id) {
       const { data: r, error } = await context.supabase
         .from("notification_campaigns").update(payload).eq("id", data.id).select("id").maybeSingle();
@@ -109,7 +109,7 @@ export const cancelCampaign = createServerFn({ method: "POST" })
 const AudienceSchema = z.object({
   audience_kind: z.enum(["all", "stores", "users", "plan", "status"]),
   audience_ids: z.array(z.string().uuid()).default([]),
-  audience_filter: z.record(z.any()).default({}),
+  audience_filter: z.record(z.string(), z.any()).default(() => ({})),
 });
 
 export const resolveAudience = createServerFn({ method: "POST" })
