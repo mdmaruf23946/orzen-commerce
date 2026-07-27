@@ -2126,6 +2126,33 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_branding: {
+        Row: {
+          assets: Json
+          combo: Json
+          id: string
+          placements: Json
+          published_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          assets?: Json
+          combo?: Json
+          id?: string
+          placements?: Json
+          published_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assets?: Json
+          combo?: Json
+          id?: string
+          placements?: Json
+          published_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_feature_flags: {
         Row: {
           category: string | null
@@ -4203,6 +4230,7 @@ export type Database = {
       get_fraud_public_status: { Args: never; Returns: Json }
       get_messenger_daily_stats: { Args: { _store_id: string }; Returns: Json }
       get_my_active_ads: { Args: never; Returns: Json }
+      get_platform_branding: { Args: never; Returns: Json }
       get_public_courier_providers: {
         Args: never
         Returns: {
