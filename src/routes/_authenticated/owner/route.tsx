@@ -58,6 +58,13 @@ const groups: NavGroup[] = [
     { to: "/owner/users", label: "Users", icon: UserCog },
     { to: "/owner/audit", label: "Role Audit", icon: ShieldCheck },
   ]},
+  { label: "Communication", links: [
+    { to: "/owner/communication", label: "Communication Center", icon: Bell },
+    { to: "/owner/communication/gmail", label: "Gmail Connection", icon: Bell },
+    { to: "/owner/communication/compose", label: "Compose Message", icon: Megaphone },
+    { to: "/owner/communication/history", label: "Message History", icon: FileText },
+    { to: "/owner/communication/templates", label: "Templates", icon: FileText },
+  ]},
   { label: "Insights", links: [
     { to: "/owner/reports", label: "Reports", icon: BarChart3 },
     { to: "/owner/customers", label: "Customer Accounts", icon: Users },

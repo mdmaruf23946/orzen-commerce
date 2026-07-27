@@ -105,9 +105,11 @@ import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as AuthenticatedOwnerSubscriptionPayRouteRouteImport } from './routes/_authenticated/owner/subscription-pay.route'
 import { Route as AuthenticatedOwnerNotificationCenterRouteRouteImport } from './routes/_authenticated/owner/notification-center.route'
+import { Route as AuthenticatedOwnerCommunicationRouteRouteImport } from './routes/_authenticated/owner/communication.route'
 import { Route as AuthenticatedAdminBillingRouteRouteImport } from './routes/_authenticated/admin/billing.route'
 import { Route as AuthenticatedOwnerSubscriptionPayIndexRouteImport } from './routes/_authenticated/owner/subscription-pay.index'
 import { Route as AuthenticatedOwnerNotificationCenterIndexRouteImport } from './routes/_authenticated/owner/notification-center.index'
+import { Route as AuthenticatedOwnerCommunicationIndexRouteImport } from './routes/_authenticated/owner/communication.index'
 import { Route as AuthenticatedAdminLandingPagesIndexRouteImport } from './routes/_authenticated/admin/landing-pages.index'
 import { Route as AuthenticatedAdminBillingIndexRouteImport } from './routes/_authenticated/admin/billing.index'
 import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
@@ -123,11 +125,16 @@ import { Route as AuthenticatedOwnerSubscriptionPayProvidersRouteImport } from '
 import { Route as AuthenticatedOwnerNotificationCenterTemplatesRouteImport } from './routes/_authenticated/owner/notification-center.templates'
 import { Route as AuthenticatedOwnerNotificationCenterComposeRouteImport } from './routes/_authenticated/owner/notification-center.compose'
 import { Route as AuthenticatedOwnerNotificationCenterIdRouteImport } from './routes/_authenticated/owner/notification-center.$id'
+import { Route as AuthenticatedOwnerCommunicationTemplatesRouteImport } from './routes/_authenticated/owner/communication.templates'
+import { Route as AuthenticatedOwnerCommunicationHistoryRouteImport } from './routes/_authenticated/owner/communication.history'
+import { Route as AuthenticatedOwnerCommunicationGmailRouteImport } from './routes/_authenticated/owner/communication.gmail'
+import { Route as AuthenticatedOwnerCommunicationComposeRouteImport } from './routes/_authenticated/owner/communication.compose'
 import { Route as AuthenticatedAdminLandingPagesIdRouteImport } from './routes/_authenticated/admin/landing-pages.$id'
 import { Route as AuthenticatedAdminInvoiceOrderIdRouteImport } from './routes/_authenticated/admin/invoice.$orderId'
 import { Route as AuthenticatedAdminBillingReturnRouteImport } from './routes/_authenticated/admin/billing.return'
 import { Route as ApiPublicSubscriptionPayWebhookProviderRouteImport } from './routes/api/public/subscription-pay/webhook.$provider'
 import { Route as ApiPublicLandingPagesConnectionIdOrdersRouteImport } from './routes/api/public/landing-pages/$connectionId/orders'
+import { Route as AuthenticatedOwnerCommunicationHistoryIdRouteImport } from './routes/_authenticated/owner/communication.history.$id'
 import { Route as AuthenticatedAdminBillingCheckoutPackageIdRouteImport } from './routes/_authenticated/admin/billing.checkout.$packageId'
 import { Route as ApiPublicStorePaymentsWebhookStoreProviderRouteImport } from './routes/api/public/store-payments/webhook.$store.$provider'
 import { Route as ApiPublicLandingPagesConnectionIdEmbedOrdersRouteImport } from './routes/api/public/landing-pages/$connectionId/embed.orders'
@@ -673,6 +680,12 @@ const AuthenticatedOwnerNotificationCenterRouteRoute =
     path: '/notification-center',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
+const AuthenticatedOwnerCommunicationRouteRoute =
+  AuthenticatedOwnerCommunicationRouteRouteImport.update({
+    id: '/communication',
+    path: '/communication',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
 const AuthenticatedAdminBillingRouteRoute =
   AuthenticatedAdminBillingRouteRouteImport.update({
     id: '/billing',
@@ -690,6 +703,12 @@ const AuthenticatedOwnerNotificationCenterIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedOwnerNotificationCenterRouteRoute,
+  } as any)
+const AuthenticatedOwnerCommunicationIndexRoute =
+  AuthenticatedOwnerCommunicationIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedOwnerCommunicationRouteRoute,
   } as any)
 const AuthenticatedAdminLandingPagesIndexRoute =
   AuthenticatedAdminLandingPagesIndexRouteImport.update({
@@ -776,6 +795,30 @@ const AuthenticatedOwnerNotificationCenterIdRoute =
     path: '/$id',
     getParentRoute: () => AuthenticatedOwnerNotificationCenterRouteRoute,
   } as any)
+const AuthenticatedOwnerCommunicationTemplatesRoute =
+  AuthenticatedOwnerCommunicationTemplatesRouteImport.update({
+    id: '/templates',
+    path: '/templates',
+    getParentRoute: () => AuthenticatedOwnerCommunicationRouteRoute,
+  } as any)
+const AuthenticatedOwnerCommunicationHistoryRoute =
+  AuthenticatedOwnerCommunicationHistoryRouteImport.update({
+    id: '/history',
+    path: '/history',
+    getParentRoute: () => AuthenticatedOwnerCommunicationRouteRoute,
+  } as any)
+const AuthenticatedOwnerCommunicationGmailRoute =
+  AuthenticatedOwnerCommunicationGmailRouteImport.update({
+    id: '/gmail',
+    path: '/gmail',
+    getParentRoute: () => AuthenticatedOwnerCommunicationRouteRoute,
+  } as any)
+const AuthenticatedOwnerCommunicationComposeRoute =
+  AuthenticatedOwnerCommunicationComposeRouteImport.update({
+    id: '/compose',
+    path: '/compose',
+    getParentRoute: () => AuthenticatedOwnerCommunicationRouteRoute,
+  } as any)
 const AuthenticatedAdminLandingPagesIdRoute =
   AuthenticatedAdminLandingPagesIdRouteImport.update({
     id: '/landing-pages/$id',
@@ -805,6 +848,12 @@ const ApiPublicLandingPagesConnectionIdOrdersRoute =
     id: '/api/public/landing-pages/$connectionId/orders',
     path: '/api/public/landing-pages/$connectionId/orders',
     getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedOwnerCommunicationHistoryIdRoute =
+  AuthenticatedOwnerCommunicationHistoryIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedOwnerCommunicationHistoryRoute,
   } as any)
 const AuthenticatedAdminBillingCheckoutPackageIdRoute =
   AuthenticatedAdminBillingCheckoutPackageIdRouteImport.update({
@@ -849,6 +898,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
+  '/owner/communication': typeof AuthenticatedOwnerCommunicationRouteRouteWithChildren
   '/owner/notification-center': typeof AuthenticatedOwnerNotificationCenterRouteRouteWithChildren
   '/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -931,6 +981,10 @@ export interface FileRoutesByFullPath {
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
+  '/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
+  '/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
+  '/owner/communication/history': typeof AuthenticatedOwnerCommunicationHistoryRouteWithChildren
+  '/owner/communication/templates': typeof AuthenticatedOwnerCommunicationTemplatesRoute
   '/owner/notification-center/$id': typeof AuthenticatedOwnerNotificationCenterIdRoute
   '/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
   '/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
@@ -946,9 +1000,11 @@ export interface FileRoutesByFullPath {
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
   '/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
+  '/owner/communication/': typeof AuthenticatedOwnerCommunicationIndexRoute
   '/owner/notification-center/': typeof AuthenticatedOwnerNotificationCenterIndexRoute
   '/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
+  '/owner/communication/history/$id': typeof AuthenticatedOwnerCommunicationHistoryIdRoute
   '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
   '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
@@ -1049,6 +1105,10 @@ export interface FileRoutesByTo {
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
+  '/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
+  '/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
+  '/owner/communication/history': typeof AuthenticatedOwnerCommunicationHistoryRouteWithChildren
+  '/owner/communication/templates': typeof AuthenticatedOwnerCommunicationTemplatesRoute
   '/owner/notification-center/$id': typeof AuthenticatedOwnerNotificationCenterIdRoute
   '/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
   '/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
@@ -1064,9 +1124,11 @@ export interface FileRoutesByTo {
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing': typeof AuthenticatedAdminBillingIndexRoute
   '/admin/landing-pages': typeof AuthenticatedAdminLandingPagesIndexRoute
+  '/owner/communication': typeof AuthenticatedOwnerCommunicationIndexRoute
   '/owner/notification-center': typeof AuthenticatedOwnerNotificationCenterIndexRoute
   '/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
+  '/owner/communication/history/$id': typeof AuthenticatedOwnerCommunicationHistoryIdRoute
   '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
   '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
@@ -1093,6 +1155,7 @@ export interface FileRoutesById {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
+  '/_authenticated/owner/communication': typeof AuthenticatedOwnerCommunicationRouteRouteWithChildren
   '/_authenticated/owner/notification-center': typeof AuthenticatedOwnerNotificationCenterRouteRouteWithChildren
   '/_authenticated/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -1175,6 +1238,10 @@ export interface FileRoutesById {
   '/_authenticated/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/_authenticated/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/_authenticated/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
+  '/_authenticated/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
+  '/_authenticated/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
+  '/_authenticated/owner/communication/history': typeof AuthenticatedOwnerCommunicationHistoryRouteWithChildren
+  '/_authenticated/owner/communication/templates': typeof AuthenticatedOwnerCommunicationTemplatesRoute
   '/_authenticated/owner/notification-center/$id': typeof AuthenticatedOwnerNotificationCenterIdRoute
   '/_authenticated/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
   '/_authenticated/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
@@ -1190,9 +1257,11 @@ export interface FileRoutesById {
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/_authenticated/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
   '/_authenticated/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
+  '/_authenticated/owner/communication/': typeof AuthenticatedOwnerCommunicationIndexRoute
   '/_authenticated/owner/notification-center/': typeof AuthenticatedOwnerNotificationCenterIndexRoute
   '/_authenticated/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/_authenticated/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
+  '/_authenticated/owner/communication/history/$id': typeof AuthenticatedOwnerCommunicationHistoryIdRoute
   '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
   '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
@@ -1219,6 +1288,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin/billing'
+    | '/owner/communication'
     | '/owner/notification-center'
     | '/owner/subscription-pay'
     | '/.lovable/oauth/consent'
@@ -1301,6 +1371,10 @@ export interface FileRouteTypes {
     | '/admin/billing/return'
     | '/admin/invoice/$orderId'
     | '/admin/landing-pages/$id'
+    | '/owner/communication/compose'
+    | '/owner/communication/gmail'
+    | '/owner/communication/history'
+    | '/owner/communication/templates'
     | '/owner/notification-center/$id'
     | '/owner/notification-center/compose'
     | '/owner/notification-center/templates'
@@ -1316,9 +1390,11 @@ export interface FileRouteTypes {
     | '/store/$slug/product/$productId'
     | '/admin/billing/'
     | '/admin/landing-pages/'
+    | '/owner/communication/'
     | '/owner/notification-center/'
     | '/owner/subscription-pay/'
     | '/admin/billing/checkout/$packageId'
+    | '/owner/communication/history/$id'
     | '/api/public/landing-pages/$connectionId/orders'
     | '/api/public/subscription-pay/webhook/$provider'
     | '/api/public/landing-pages/$connectionId/api/orders'
@@ -1419,6 +1495,10 @@ export interface FileRouteTypes {
     | '/admin/billing/return'
     | '/admin/invoice/$orderId'
     | '/admin/landing-pages/$id'
+    | '/owner/communication/compose'
+    | '/owner/communication/gmail'
+    | '/owner/communication/history'
+    | '/owner/communication/templates'
     | '/owner/notification-center/$id'
     | '/owner/notification-center/compose'
     | '/owner/notification-center/templates'
@@ -1434,9 +1514,11 @@ export interface FileRouteTypes {
     | '/store/$slug/product/$productId'
     | '/admin/billing'
     | '/admin/landing-pages'
+    | '/owner/communication'
     | '/owner/notification-center'
     | '/owner/subscription-pay'
     | '/admin/billing/checkout/$packageId'
+    | '/owner/communication/history/$id'
     | '/api/public/landing-pages/$connectionId/orders'
     | '/api/public/subscription-pay/webhook/$provider'
     | '/api/public/landing-pages/$connectionId/api/orders'
@@ -1462,6 +1544,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/admin/billing'
+    | '/_authenticated/owner/communication'
     | '/_authenticated/owner/notification-center'
     | '/_authenticated/owner/subscription-pay'
     | '/.lovable/oauth/consent'
@@ -1544,6 +1627,10 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/billing/return'
     | '/_authenticated/admin/invoice/$orderId'
     | '/_authenticated/admin/landing-pages/$id'
+    | '/_authenticated/owner/communication/compose'
+    | '/_authenticated/owner/communication/gmail'
+    | '/_authenticated/owner/communication/history'
+    | '/_authenticated/owner/communication/templates'
     | '/_authenticated/owner/notification-center/$id'
     | '/_authenticated/owner/notification-center/compose'
     | '/_authenticated/owner/notification-center/templates'
@@ -1559,9 +1646,11 @@ export interface FileRouteTypes {
     | '/store/$slug/product/$productId'
     | '/_authenticated/admin/billing/'
     | '/_authenticated/admin/landing-pages/'
+    | '/_authenticated/owner/communication/'
     | '/_authenticated/owner/notification-center/'
     | '/_authenticated/owner/subscription-pay/'
     | '/_authenticated/admin/billing/checkout/$packageId'
+    | '/_authenticated/owner/communication/history/$id'
     | '/api/public/landing-pages/$connectionId/orders'
     | '/api/public/subscription-pay/webhook/$provider'
     | '/api/public/landing-pages/$connectionId/api/orders'
@@ -2274,6 +2363,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerNotificationCenterRouteRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
+    '/_authenticated/owner/communication': {
+      id: '/_authenticated/owner/communication'
+      path: '/communication'
+      fullPath: '/owner/communication'
+      preLoaderRoute: typeof AuthenticatedOwnerCommunicationRouteRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
     '/_authenticated/admin/billing': {
       id: '/_authenticated/admin/billing'
       path: '/billing'
@@ -2294,6 +2390,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/owner/notification-center/'
       preLoaderRoute: typeof AuthenticatedOwnerNotificationCenterIndexRouteImport
       parentRoute: typeof AuthenticatedOwnerNotificationCenterRouteRoute
+    }
+    '/_authenticated/owner/communication/': {
+      id: '/_authenticated/owner/communication/'
+      path: '/'
+      fullPath: '/owner/communication/'
+      preLoaderRoute: typeof AuthenticatedOwnerCommunicationIndexRouteImport
+      parentRoute: typeof AuthenticatedOwnerCommunicationRouteRoute
     }
     '/_authenticated/admin/landing-pages/': {
       id: '/_authenticated/admin/landing-pages/'
@@ -2400,6 +2503,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerNotificationCenterIdRouteImport
       parentRoute: typeof AuthenticatedOwnerNotificationCenterRouteRoute
     }
+    '/_authenticated/owner/communication/templates': {
+      id: '/_authenticated/owner/communication/templates'
+      path: '/templates'
+      fullPath: '/owner/communication/templates'
+      preLoaderRoute: typeof AuthenticatedOwnerCommunicationTemplatesRouteImport
+      parentRoute: typeof AuthenticatedOwnerCommunicationRouteRoute
+    }
+    '/_authenticated/owner/communication/history': {
+      id: '/_authenticated/owner/communication/history'
+      path: '/history'
+      fullPath: '/owner/communication/history'
+      preLoaderRoute: typeof AuthenticatedOwnerCommunicationHistoryRouteImport
+      parentRoute: typeof AuthenticatedOwnerCommunicationRouteRoute
+    }
+    '/_authenticated/owner/communication/gmail': {
+      id: '/_authenticated/owner/communication/gmail'
+      path: '/gmail'
+      fullPath: '/owner/communication/gmail'
+      preLoaderRoute: typeof AuthenticatedOwnerCommunicationGmailRouteImport
+      parentRoute: typeof AuthenticatedOwnerCommunicationRouteRoute
+    }
+    '/_authenticated/owner/communication/compose': {
+      id: '/_authenticated/owner/communication/compose'
+      path: '/compose'
+      fullPath: '/owner/communication/compose'
+      preLoaderRoute: typeof AuthenticatedOwnerCommunicationComposeRouteImport
+      parentRoute: typeof AuthenticatedOwnerCommunicationRouteRoute
+    }
     '/_authenticated/admin/landing-pages/$id': {
       id: '/_authenticated/admin/landing-pages/$id'
       path: '/landing-pages/$id'
@@ -2434,6 +2565,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/public/landing-pages/$connectionId/orders'
       preLoaderRoute: typeof ApiPublicLandingPagesConnectionIdOrdersRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/owner/communication/history/$id': {
+      id: '/_authenticated/owner/communication/history/$id'
+      path: '/$id'
+      fullPath: '/owner/communication/history/$id'
+      preLoaderRoute: typeof AuthenticatedOwnerCommunicationHistoryIdRouteImport
+      parentRoute: typeof AuthenticatedOwnerCommunicationHistoryRoute
     }
     '/_authenticated/admin/billing/checkout/$packageId': {
       id: '/_authenticated/admin/billing/checkout/$packageId'
@@ -2585,6 +2723,48 @@ const AuthenticatedAdminRouteRouteWithChildren =
     AuthenticatedAdminRouteRouteChildren,
   )
 
+interface AuthenticatedOwnerCommunicationHistoryRouteChildren {
+  AuthenticatedOwnerCommunicationHistoryIdRoute: typeof AuthenticatedOwnerCommunicationHistoryIdRoute
+}
+
+const AuthenticatedOwnerCommunicationHistoryRouteChildren: AuthenticatedOwnerCommunicationHistoryRouteChildren =
+  {
+    AuthenticatedOwnerCommunicationHistoryIdRoute:
+      AuthenticatedOwnerCommunicationHistoryIdRoute,
+  }
+
+const AuthenticatedOwnerCommunicationHistoryRouteWithChildren =
+  AuthenticatedOwnerCommunicationHistoryRoute._addFileChildren(
+    AuthenticatedOwnerCommunicationHistoryRouteChildren,
+  )
+
+interface AuthenticatedOwnerCommunicationRouteRouteChildren {
+  AuthenticatedOwnerCommunicationComposeRoute: typeof AuthenticatedOwnerCommunicationComposeRoute
+  AuthenticatedOwnerCommunicationGmailRoute: typeof AuthenticatedOwnerCommunicationGmailRoute
+  AuthenticatedOwnerCommunicationHistoryRoute: typeof AuthenticatedOwnerCommunicationHistoryRouteWithChildren
+  AuthenticatedOwnerCommunicationTemplatesRoute: typeof AuthenticatedOwnerCommunicationTemplatesRoute
+  AuthenticatedOwnerCommunicationIndexRoute: typeof AuthenticatedOwnerCommunicationIndexRoute
+}
+
+const AuthenticatedOwnerCommunicationRouteRouteChildren: AuthenticatedOwnerCommunicationRouteRouteChildren =
+  {
+    AuthenticatedOwnerCommunicationComposeRoute:
+      AuthenticatedOwnerCommunicationComposeRoute,
+    AuthenticatedOwnerCommunicationGmailRoute:
+      AuthenticatedOwnerCommunicationGmailRoute,
+    AuthenticatedOwnerCommunicationHistoryRoute:
+      AuthenticatedOwnerCommunicationHistoryRouteWithChildren,
+    AuthenticatedOwnerCommunicationTemplatesRoute:
+      AuthenticatedOwnerCommunicationTemplatesRoute,
+    AuthenticatedOwnerCommunicationIndexRoute:
+      AuthenticatedOwnerCommunicationIndexRoute,
+  }
+
+const AuthenticatedOwnerCommunicationRouteRouteWithChildren =
+  AuthenticatedOwnerCommunicationRouteRoute._addFileChildren(
+    AuthenticatedOwnerCommunicationRouteRouteChildren,
+  )
+
 interface AuthenticatedOwnerNotificationCenterRouteRouteChildren {
   AuthenticatedOwnerNotificationCenterIdRoute: typeof AuthenticatedOwnerNotificationCenterIdRoute
   AuthenticatedOwnerNotificationCenterComposeRoute: typeof AuthenticatedOwnerNotificationCenterComposeRoute
@@ -2628,6 +2808,7 @@ const AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren =
   )
 
 interface AuthenticatedOwnerRouteRouteChildren {
+  AuthenticatedOwnerCommunicationRouteRoute: typeof AuthenticatedOwnerCommunicationRouteRouteWithChildren
   AuthenticatedOwnerNotificationCenterRouteRoute: typeof AuthenticatedOwnerNotificationCenterRouteRouteWithChildren
   AuthenticatedOwnerSubscriptionPayRouteRoute: typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
   AuthenticatedOwnerAdsRoute: typeof AuthenticatedOwnerAdsRoute
@@ -2668,6 +2849,8 @@ interface AuthenticatedOwnerRouteRouteChildren {
 
 const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren =
   {
+    AuthenticatedOwnerCommunicationRouteRoute:
+      AuthenticatedOwnerCommunicationRouteRouteWithChildren,
     AuthenticatedOwnerNotificationCenterRouteRoute:
       AuthenticatedOwnerNotificationCenterRouteRouteWithChildren,
     AuthenticatedOwnerSubscriptionPayRouteRoute:
