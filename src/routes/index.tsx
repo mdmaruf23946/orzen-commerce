@@ -125,8 +125,11 @@ function Header() {
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 md:px-8">
         <a href="#top" className="flex items-center gap-2">
-          <LogoMark />
-          <span className="text-lg font-extrabold tracking-tight">ORZEN</span>
+          <BrandMark
+            placement="website_header"
+            fallbackText="ORZEN"
+            className="text-lg font-extrabold tracking-tight"
+          />
         </a>
         <nav className="hidden lg:flex items-center gap-8">
           {NAV.map((n) => (
