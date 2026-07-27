@@ -159,20 +159,24 @@ export const getAdminBadgeCounts = createServerFn({ method: "POST" })
     );
 
     return {
-      orders,
-      returns,
-      customers,
-      messenger,
-      handoff,
-      low_stock,
-      notifications,
-      payments,
-      payment_gateway,
-      delivery,
-      landing_pages,
-      duplicate_protection,
-      ai_recommendations,
+      store_id: storeId,
+      counts: {
+        orders,
+        returns,
+        customers,
+        messenger,
+        handoff,
+        low_stock,
+        notifications,
+        payments,
+        payment_gateway,
+        delivery,
+        landing_pages,
+        duplicate_protection,
+        ai_recommendations,
+      },
     };
+
   });
 
 export const markFeatureSeen = createServerFn({ method: "POST" })
