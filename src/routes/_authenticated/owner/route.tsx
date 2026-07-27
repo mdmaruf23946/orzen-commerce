@@ -111,7 +111,9 @@ function OwnerLayout() {
             open ? "translate-x-0" : "-translate-x-full",
           )}
         >
-          <div className="flex h-14 shrink-0 items-center border-b px-5 font-semibold">Platform Owner</div>
+          <div className="flex h-14 shrink-0 items-center border-b px-5 font-semibold">
+            <BrandMark placement="winner_header" fallbackText="Platform Owner" />
+          </div>
           <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
             {groups.map((group) => {
               const isCollapsed = collapsed[group.label];
