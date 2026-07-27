@@ -102,6 +102,7 @@ import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminAiRecommendationsRouteImport } from './routes/_authenticated/admin/ai-recommendations'
 import { Route as AuthenticatedAdminAiAgentRouteImport } from './routes/_authenticated/admin/ai-agent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as AuthenticatedOwnerSubscriptionPayRouteRouteImport } from './routes/_authenticated/owner/subscription-pay.route'
 import { Route as AuthenticatedOwnerNotificationCenterRouteRouteImport } from './routes/_authenticated/owner/notification-center.route'
 import { Route as AuthenticatedAdminBillingRouteRouteImport } from './routes/_authenticated/admin/billing.route'
@@ -655,6 +656,11 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedOwnerSubscriptionPayRouteRoute =
   AuthenticatedOwnerSubscriptionPayRouteRouteImport.update({
     id: '/subscription-pay',
@@ -845,6 +851,7 @@ export interface FileRoutesByFullPath {
   '/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
   '/owner/notification-center': typeof AuthenticatedOwnerNotificationCenterRouteRouteWithChildren
   '/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
@@ -962,6 +969,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
@@ -1087,6 +1095,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
   '/_authenticated/owner/notification-center': typeof AuthenticatedOwnerNotificationCenterRouteRouteWithChildren
   '/_authenticated/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/_authenticated/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
@@ -1212,6 +1221,7 @@ export interface FileRouteTypes {
     | '/admin/billing'
     | '/owner/notification-center'
     | '/owner/subscription-pay'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/ai-agent'
     | '/admin/ai-recommendations'
@@ -1329,6 +1339,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/ai-agent'
     | '/admin/ai-recommendations'
@@ -1453,6 +1464,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/billing'
     | '/_authenticated/owner/notification-center'
     | '/_authenticated/owner/subscription-pay'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/admin/ai-agent'
     | '/_authenticated/admin/ai-recommendations'
@@ -1573,6 +1585,7 @@ export interface RootRouteChildren {
   StoreSlugRouteRoute: typeof StoreSlugRouteRouteWithChildren
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiImgSplatRoute: typeof ApiImgSplatRoute
@@ -2240,6 +2253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/owner/subscription-pay': {
       id: '/_authenticated/owner/subscription-pay'
       path: '/subscription-pay'
@@ -2756,6 +2776,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiAiChatRoute: ApiAiChatRoute,
   ApiImgSplatRoute: ApiImgSplatRoute,
