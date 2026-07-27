@@ -246,7 +246,29 @@ function BrandCard({
             className="text-xs sm:text-sm"
           />
         </div>
+
+        <div className="space-y-1 sm:space-y-1.5">
+          <Label className="text-[11px] sm:text-xs">Official website URL</Label>
+          <Input
+            type="url"
+            value={f.website_url ?? ""}
+            onChange={(e) => setF({ ...f, website_url: e.target.value })}
+            placeholder="https://provider.com"
+            className="h-8 text-[11px] sm:h-9 sm:text-xs"
+          />
+        </div>
+        <div className="space-y-1 sm:space-y-1.5">
+          <Label className="text-[11px] sm:text-xs">API / documentation URL</Label>
+          <Input
+            type="url"
+            value={f.docs_url ?? ""}
+            onChange={(e) => setF({ ...f, docs_url: e.target.value })}
+            placeholder="https://docs.provider.com"
+            className="h-8 text-[11px] sm:h-9 sm:text-xs"
+          />
+        </div>
       </div>
+
 
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving} size="sm" className="w-full text-xs sm:w-auto sm:text-sm">
