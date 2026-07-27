@@ -30,9 +30,12 @@ type BrandFields = {
   secondary_color: string | null;
   icon_bg_color: string | null;
   description: string | null;
+  website_url: string | null;
+  docs_url: string | null;
   active: boolean;
   label: string;
 };
+
 
 function logoSrc(v: string | null | undefined) {
   if (!v) return null;
