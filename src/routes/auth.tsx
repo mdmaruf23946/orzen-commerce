@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { checkStoreSlugAvailable, createMyStoreWithSlug } from "@/lib/admin.functions";
 import { CheckCircle2, XCircle, Loader2, AlertCircle } from "lucide-react";
+import { BrandMark } from "@/lib/platform-branding";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Sign in — ORZEN" }] }),
