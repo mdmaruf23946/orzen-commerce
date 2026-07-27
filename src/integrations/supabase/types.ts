@@ -4620,10 +4620,10 @@ export type Database = {
       customer_login: {
         Args: {
           _identifier: string
-          _ip?: string
+          _ip: string
           _password: string
           _store_id: string
-          _ua?: string
+          _ua: string
         }
         Returns: Json
       }
@@ -4631,12 +4631,12 @@ export type Database = {
       customer_signup: {
         Args: {
           _email: string
-          _ip?: string
+          _ip: string
           _name: string
           _password: string
           _phone: string
           _store_id: string
-          _ua?: string
+          _ua: string
         }
         Returns: Json
       }

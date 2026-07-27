@@ -214,6 +214,16 @@ export const updateMyStore = createServerFn({ method: "POST" })
         language: z.string().trim().min(2).max(8).optional(),
         timezone: z.string().trim().max(60).optional(),
         allow_guest_checkout: z.boolean().optional(),
+        branding: z
+          .object({
+            source: z.enum(["platform", "custom"]).optional(),
+            mode: z.enum(["logo", "wordmark", "both"]).optional(),
+            logo_url: z.string().max(1000).optional().nullable(),
+            wordmark_url: z.string().max(1000).optional().nullable(),
+            name: z.string().max(120).optional().nullable(),
+          })
+          .partial()
+          .optional(),
       })
       .parse(d),
   )
@@ -221,7 +231,7 @@ export const updateMyStore = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: updated, error } = await supabase
       .from("stores")
-      .update(data)
+      .update(data as any)
       .eq("owner_user_id", userId)
       .select("*")
       .single();
