@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, X, Sparkles, Crown, Sparkle, Download } from "lucide-react";
 import {
   myBillingStatus,
@@ -15,6 +15,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/admin/billing/")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    highlight: typeof s.highlight === "string" ? s.highlight : undefined,
+    plan: typeof s.plan === "string" ? s.plan : undefined,
+    from: typeof s.from === "string" ? s.from : undefined,
+  }),
   component: BillingPage,
 });
 
@@ -56,6 +61,7 @@ function BillingPage() {
   const statusFn = useServerFn(myBillingStatus);
   const plansFn = useServerFn(listPublicPlans);
   const settingsFn = useServerFn(getBillingSettings);
+  const search = Route.useSearch();
 
   const { data: status } = useQuery({ queryKey: ["admin", "billing"], queryFn: () => statusFn() });
   const { data: plansRaw } = useQuery({ queryKey: ["admin", "billingPlans"], queryFn: () => plansFn() });
@@ -66,6 +72,7 @@ function BillingPage() {
   });
 
   const [cycle, setCycle] = useState<CycleKey>("monthly");
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const plans = (plansRaw ?? []) as Plan[];
   const store = status?.store as any;
@@ -86,6 +93,25 @@ function BillingPage() {
   const currentTier = pkg ? tierOf(pkg) : isTrialing ? null : "free";
   const s = settings ?? { discount_3m: 5, discount_6m: 10, discount_yearly: 20 };
 
+  // Highlight logic: prefer explicit `plan` id, else the cheapest paid plan
+  // that includes the requested `highlight` feature key.
+  const highlightedPlanId = useMemo<string | null>(() => {
+    if (search.plan) return search.plan;
+    if (!search.highlight) return null;
+    const eligible = plans
+      .filter((p) => !p.is_trial && p.features?.[search.highlight as string] === true)
+      .sort((a, b) => Number(a.price) - Number(b.price));
+    return eligible[0]?.id ?? null;
+  }, [plans, search.plan, search.highlight]);
+
+  useEffect(() => {
+    if (!highlightedPlanId) return;
+    const el = cardRefs.current[highlightedPlanId];
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [highlightedPlanId]);
+
   const cycleOptions: { key: CycleKey; label: string; discount: number }[] = [
     { key: "monthly", label: "Monthly", discount: 0 },
     { key: "3m", label: "3 Months", discount: s.discount_3m },
@@ -95,6 +121,21 @@ function BillingPage() {
 
   return (
     <div className="space-y-3 pb-6 max-w-full overflow-x-hidden sm:space-y-6 sm:pb-10">
+
+      {search.highlight && FEATURE_LABELS[search.highlight as keyof typeof FEATURE_LABELS] && (
+        <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold text-foreground">
+              Upgrade to unlock {FEATURE_LABELS[search.highlight as keyof typeof FEATURE_LABELS]}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              We highlighted the plan that includes this feature.
+            </p>
+          </div>
+        </div>
+      )}
+
 
       {/* 1. Free Trial Banner — only when trialing */}
       {isTrialing && (
@@ -240,14 +281,22 @@ function BillingPage() {
 
             const calc = !isFree && !isCustom ? computeCycleTotal(Number(p.price), cycle, s) : null;
 
+            const isHighlighted = highlightedPlanId === p.id;
+
             return (
               <div
                 key={tier}
-                className={`relative flex flex-col rounded-xl border bg-card p-3 sm:p-4 ${
-                  isPopular ? "border-primary ring-2 ring-primary/30" : ""
+                ref={(el) => { cardRefs.current[p.id] = el; }}
+                className={`relative flex flex-col rounded-xl border bg-card p-3 transition sm:p-4 ${
+                  isHighlighted ? "border-primary ring-4 ring-primary/40 shadow-lg" : isPopular ? "border-primary ring-2 ring-primary/30" : ""
                 } ${isCurrent ? "border-emerald-500" : ""}`}
               >
-                {isPopular && (
+                {isHighlighted && (
+                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase text-primary-foreground shadow sm:text-[10px]">
+                    <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Recommended
+                  </div>
+                )}
+                {isPopular && !isHighlighted && (
                   <div className="absolute -top-2 left-3 inline-flex items-center gap-1 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold uppercase text-primary-foreground sm:left-4 sm:px-2 sm:text-[10px]">
                     <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Popular
                   </div>

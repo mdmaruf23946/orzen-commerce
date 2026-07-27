@@ -1,67 +1,67 @@
-# Provider Website & Docs Links (Payment Gateways)
+# Professional Soft-Lock Feature Gating
 
-Make the "Visit Provider Website" and "Read API Docs" links data-driven per provider, managed centrally from Winner Admin, and rendered on every Store Admin provider connection page.
+Replace the current "Upgrade Required" full-page block with a soft-lock system that keeps every gated page visually intact, intercepts restricted actions, and shows a shared upgrade modal that deep-links to `/admin/billing`.
 
-## 1. Database
+## Approach
 
-Migration on `public.platform_payment_gateways`:
-- Add `website_url text`
-- Add `docs_url text`
+Instead of touching each of the ~10 gated pages individually, refactor the two touchpoints they all share (`FeatureGate` and `useFeature`) so every existing call site inherits the new behavior automatically.
 
-Backfill existing rows with the current hard-coded docs URLs from `src/components/admin/payments/providers.ts` (`docsUrl`) so nothing regresses on first load. Website URLs left null unless already known (Stripe, PayPal, SSLCommerz, ShurjoPay, AmarPay, PortWallet, bKash, Nagad, Upay, BDGate, NagorikPay, PaybyBD, Fastaar, PayBD, iPayBD, UrbdPay).
+### 1. Shared upgrade modal + context (`src/components/admin/UpgradeModal.tsx`)
 
-No RLS changes — table already readable by owners and writable by winner admins.
+- `UpgradeProvider` at the admin route root (`src/routes/_authenticated/admin/route.tsx`) exposes a `useUpgradePrompt()` hook.
+- `openUpgrade(feature, opts?)` opens a single global modal with:
+  - 🔒 Premium Feature title
+  - Feature label (from `FEATURE_LABELS`) + short description
+  - Current plan name vs required plan (derived from `subscription_packages` where `features[key] === true`, resolved from `myBillingStatus`)
+  - Main benefit copy (per-feature map with sensible defaults)
+  - Primary CTA "Upgrade Plan" → navigate to `/admin/billing?highlight=<packageId|feature>&return=<currentPath>`
+  - Secondary CTA "Maybe Later" (close)
+- Fully responsive (`max-w-md`, stacked buttons on mobile), uses existing shadcn `Dialog`, tokens, and radii — no hard-coded colors.
+- Billing page reads the `highlight` query param and adds a ring/scroll to the matching plan card (best-effort; skip silently if not found).
 
-## 2. Winner Admin – Brand Assets page
+### 2. Rework `src/components/admin/FeatureGate.tsx`
 
-File: `src/routes/_authenticated/owner/brand-assets.tsx`
+- `<FeatureGate feature=...>` **always renders `children`**. When the feature is not allowed, it wraps them in a relative container with:
+  - Pointer-events blocker over the content (transparent, click captured)
+  - Subtle top-right "🔒 Available on <plan>" pill badge
+  - Very light overlay tint (no heavy blur) so UI stays readable
+  - Click on the blocker → `openUpgrade(feature)`
+- New optional prop `mode?: "soft" | "inline-badge" | "passthrough"`:
+  - `soft` (default) — behavior above.
+  - `inline-badge` — no blocker, just renders children plus a lock badge (for pages that already have their own interactive logic gated by `useFeature`, like `orders.tsx` fraud).
+- `useFeature(key)` unchanged signature, but returned object also includes `promptUpgrade()` so any handler can call `if (!allowed) return promptUpgrade()`.
+- Remove the old "Upgrade Required" full-screen block entirely.
 
-For each provider row, add two inputs under the existing branding fields:
-- Official Website URL (`website_url`)
-- API / Developer Documentation URL (`docs_url`)
+### 3. Action interception helper
 
-Both optional, URL-typed with light validation (must start with `https://` or be empty). Saved through the existing update mutation (extend the payload + server fn to accept the two new columns).
+Add `guardAction(feature, fn)` from `useFeature` so click handlers on premium buttons can wrap themselves:
 
-## 3. Server functions
-
-File: `src/lib/store-payments.functions.ts`
-- `listStorePaymentGateways` / owner list functions: include `website_url` and `docs_url` in the SELECT and returned shape.
-
-Winner update fn (wherever brand-assets currently saves): whitelist the two new fields.
-
-## 4. Store Admin – Provider connection page
-
-File: `src/routes/_authenticated/admin/payment-gateway.tsx` (provider header block).
-
-Below the existing `[Logo] Provider Name / description` header, render a button row:
-- `Visit Provider Website` → `website_url` (only if present)
-- `Read API Docs` → `docs_url` (only if present)
-- Both missing → render nothing (remove the current always-on "Read docs" fallback that uses the static registry).
-
-Buttons:
-- Open in new tab, `rel="noopener noreferrer"`.
-- Primary button uses the provider's `brand_color` as background with white text; secondary uses outline styled with the same brand color for border/text — falls back to theme tokens if `brand_color` missing.
-- `flex flex-wrap gap-2 w-full sm:w-auto`, buttons `w-full sm:w-auto` for mobile.
-
-Remove hard-coded `docsUrl` reads from `providers.ts` in the header render path (keep the constant file intact for other metadata so nothing else breaks).
-
-## 5. Non-goals / preserved
-
-- No changes to credential forms, webhooks, encryption, adapters, or registry.
-- `PAYMENT_BRANDS.docsUrl` stays in the file as legacy fallback but is not used to render buttons.
-- No new provider-specific URLs hard-coded in the frontend.
-
-## Technical notes
-
-```text
-platform_payment_gateways
-├─ website_url  text  (nullable)
-└─ docs_url     text  (nullable)
+```
+const { guard } = useFeature("ai_messenger");
+<Button onClick={guard(() => connectMessenger())}>Connect</Button>
 ```
 
-Header render logic:
+If the feature is locked, `guard` shows the upgrade modal instead of calling `fn`. Apply this in the small number of pages that have interactive premium actions inside an already-visible layout (AIProductBuilderDialog trigger, orders fraud button, messenger connect, courier connect, landing-page create, analytics export). All other pages already wrap the whole route in `<FeatureGate>` and will automatically get soft-lock overlay + modal — no per-page code change needed.
 
-```text
-if (!website_url && !docs_url) → no button row
-else render [Website?] [Docs?] with brand_color styling
-```
+### 4. Backend enforcement (already exists — verify only)
+
+`src/lib/plan-guard.ts` (`assertPlan`) is already used by server functions. Confirm the premium server functions call it; add `assertPlan` calls where missing during implementation (spot-check: `ai-agent`, `ai-web-chat`, `messenger-inbox`, `landing-pages`, `fraud`, `import-export`, `domains`, `coupons`, `returns`, `invoice-settings`, `business.analytics`). No behavior change for allowed users; ensures modal cannot be bypassed via direct RPC.
+
+### 5. Billing page highlight
+
+`src/routes/_authenticated/admin/billing.index.tsx`: read `?highlight=<featureKey>` search param, find the cheapest plan whose `features[key] === true`, add `ring-2 ring-primary` and `scrollIntoView` on mount.
+
+## Files touched
+
+- `src/components/admin/UpgradeModal.tsx` (new)
+- `src/components/admin/FeatureGate.tsx` (rewrite — soft-lock + guard helper, keep exported API)
+- `src/routes/_authenticated/admin/route.tsx` (mount `UpgradeProvider`)
+- `src/routes/_authenticated/admin/billing.index.tsx` (highlight param)
+- Minor `guard(...)` wraps in the small set of pages listed above; **no page layout is removed or replaced**.
+- Server: add `assertPlan(...)` in premium server-fn handlers that are missing it.
+
+## Out of scope
+
+- Redesigning any admin page.
+- Changing plan definitions, billing flow, or payment providers.
+- Storefront gating (this is Admin Panel only, per request).
