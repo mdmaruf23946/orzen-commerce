@@ -182,6 +182,7 @@ function SettingsPage() {
           language: form.language || "en",
           timezone: form.timezone || "Asia/Dhaka",
           allow_guest_checkout: !!form.allow_guest_checkout,
+          branding: form.branding ?? { source: "platform" },
         },
       });
       await qc.invalidateQueries({ queryKey: ["admin", "store"] });
