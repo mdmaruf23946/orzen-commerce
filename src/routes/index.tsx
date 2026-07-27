@@ -44,6 +44,7 @@ import {
 import { useCountUp, useReveal } from "@/hooks/use-reveal";
 import { cn } from "@/lib/utils";
 import { resolveHost } from "@/lib/domains.functions";
+import { BrandMark } from "@/lib/platform-branding";
 
 export const Route = createFileRoute("/")({
   // If the request host is a store subdomain or a verified custom domain,
