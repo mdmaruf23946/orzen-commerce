@@ -110,6 +110,7 @@ import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/
 import { Route as StoreSlugAuthSignupRouteImport } from './routes/store/$slug/auth.signup'
 import { Route as StoreSlugAuthLoginRouteImport } from './routes/store/$slug/auth.login'
 import { Route as StoreSlugAuthForgotRouteImport } from './routes/store/$slug/auth.forgot'
+import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
 import { Route as ApiPublicFbCapiTrackRouteImport } from './routes/api/public/fb-capi/track'
 import { Route as ApiPublicCronNotifyOrdersRouteImport } from './routes/api/public/cron/notify-orders'
@@ -695,6 +696,12 @@ const StoreSlugAuthForgotRoute = StoreSlugAuthForgotRouteImport.update({
   path: '/auth/forgot',
   getParentRoute: () => StoreSlugRouteRoute,
 } as any)
+const LovableEmailQueueProcessRoute =
+  LovableEmailQueueProcessRouteImport.update({
+    id: '/lovable/email/queue/process',
+    path: '/lovable/email/queue/process',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicMessengerWebhookRoute =
   ApiPublicMessengerWebhookRouteImport.update({
     id: '/api/public/messenger/webhook',
@@ -893,6 +900,7 @@ export interface FileRoutesByFullPath {
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
   '/store/$slug/auth/signup': typeof StoreSlugAuthSignupRoute
@@ -1005,6 +1013,7 @@ export interface FileRoutesByTo {
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
   '/store/$slug/auth/signup': typeof StoreSlugAuthSignupRoute
@@ -1125,6 +1134,7 @@ export interface FileRoutesById {
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
   '/store/$slug/auth/signup': typeof StoreSlugAuthSignupRoute
@@ -1245,6 +1255,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/notify-orders'
     | '/api/public/fb-capi/track'
     | '/api/public/messenger/webhook'
+    | '/lovable/email/queue/process'
     | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
     | '/store/$slug/auth/signup'
@@ -1357,6 +1368,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/notify-orders'
     | '/api/public/fb-capi/track'
     | '/api/public/messenger/webhook'
+    | '/lovable/email/queue/process'
     | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
     | '/store/$slug/auth/signup'
@@ -1476,6 +1488,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/notify-orders'
     | '/api/public/fb-capi/track'
     | '/api/public/messenger/webhook'
+    | '/lovable/email/queue/process'
     | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
     | '/store/$slug/auth/signup'
@@ -1511,6 +1524,7 @@ export interface RootRouteChildren {
   ApiPublicCronNotifyOrdersRoute: typeof ApiPublicCronNotifyOrdersRoute
   ApiPublicFbCapiTrackRoute: typeof ApiPublicFbCapiTrackRoute
   ApiPublicMessengerWebhookRoute: typeof ApiPublicMessengerWebhookRoute
+  LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   ApiPublicLandingPagesConnectionIdOrdersRoute: typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   ApiPublicSubscriptionPayWebhookProviderRoute: typeof ApiPublicSubscriptionPayWebhookProviderRoute
   ApiPublicLandingPagesConnectionIdApiOrdersRoute: typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
@@ -2227,6 +2241,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreSlugAuthForgotRouteImport
       parentRoute: typeof StoreSlugRouteRoute
     }
+    '/lovable/email/queue/process': {
+      id: '/lovable/email/queue/process'
+      path: '/lovable/email/queue/process'
+      fullPath: '/lovable/email/queue/process'
+      preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/messenger/webhook': {
       id: '/api/public/messenger/webhook'
       path: '/api/public/messenger/webhook'
@@ -2653,6 +2674,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicCronNotifyOrdersRoute: ApiPublicCronNotifyOrdersRoute,
   ApiPublicFbCapiTrackRoute: ApiPublicFbCapiTrackRoute,
   ApiPublicMessengerWebhookRoute: ApiPublicMessengerWebhookRoute,
+  LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   ApiPublicLandingPagesConnectionIdOrdersRoute:
     ApiPublicLandingPagesConnectionIdOrdersRoute,
   ApiPublicSubscriptionPayWebhookProviderRoute:
