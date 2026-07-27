@@ -12,6 +12,7 @@ import { amIOwner } from "@/lib/owner.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { BrandMark } from "@/lib/platform-branding";
 
 type NavLink = { to: string; label: string; icon: any; exact?: boolean };
 type NavGroup = { label: string; links: NavLink[] };
