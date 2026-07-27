@@ -227,23 +227,35 @@ function AdminLayout() {
                   )}
                   {(!collapsedGroup || collapsed) && (
                     <div className="space-y-0.5">
-                      {g.items.map((l) => (
+                      {g.items.map((l) => {
+                        const badgeVal = l.badgeKey ? (counts as any)[l.badgeKey] ?? 0 : 0;
+                        return (
                         <Link
                           key={l.to}
                           to={l.to}
                           onClick={() => setOpen(false)}
                           activeOptions={l.exact ? { exact: true } : undefined}
                           activeProps={{ className: "bg-primary/10 text-primary font-medium" }}
-                          title={collapsed ? l.label : undefined}
+                          title={collapsed ? `${l.label}${badgeVal ? ` (${badgeVal})` : ""}` : undefined}
                           className={cn(
                             "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground",
                             collapsed && "md:justify-center md:px-2",
                           )}
                         >
-                          <l.icon className="h-4 w-4 shrink-0" />
+                          <span className="relative shrink-0">
+                            <l.icon className="h-4 w-4" />
+                            {collapsed && badgeVal > 0 && (
+                              <CountBadge count={badgeVal} variant="dot" label={l.label} />
+                            )}
+                          </span>
                           {(!collapsed || open) && <span className="truncate">{l.label}</span>}
+                          {(!collapsed || open) && badgeVal > 0 && (
+                            <CountBadge count={badgeVal} label={l.label} />
+                          )}
                         </Link>
-                      ))}
+                        );
+                      })}
+
                     </div>
                   )}
                 </div>
