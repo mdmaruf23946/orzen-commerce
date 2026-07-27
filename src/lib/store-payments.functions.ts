@@ -30,7 +30,7 @@ export const listStorePaymentGateways = createServerFn({ method: "GET" })
     const [{ data: platform, error: pErr }, { data: rows, error: rErr }] = await Promise.all([
       context.supabase
         .from("platform_payment_gateways")
-        .select("id,label,enabled,sort_order,logo_url,wordmark_url,notes,brand_color,secondary_color,icon_bg_color,description")
+        .select("id,label,enabled,sort_order,logo_url,wordmark_url,notes,brand_color,secondary_color,icon_bg_color,description,website_url,docs_url")
         .eq("enabled", true)
         .order("sort_order", { ascending: true }),
       context.supabase
@@ -54,6 +54,9 @@ export const listStorePaymentGateways = createServerFn({ method: "GET" })
         secondary_color: p.secondary_color,
         icon_bg_color: p.icon_bg_color,
         description: p.description,
+        website_url: p.website_url,
+        docs_url: p.docs_url,
+
 
         methods: meta?.methods ?? [],
         supportsSandbox: meta?.supportsSandbox ?? false,
@@ -260,9 +263,10 @@ export const listPlatformPaymentGateways = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("platform_payment_gateways")
-      .select("id,label,enabled,sort_order,logo_url,wordmark_url,notes,brand_color,secondary_color,icon_bg_color,description,updated_at")
+      .select("id,label,enabled,sort_order,logo_url,wordmark_url,notes,brand_color,secondary_color,icon_bg_color,description,website_url,docs_url,updated_at")
       .order("sort_order", { ascending: true });
     if (error) throw new Error(error.message);
+
     const meta = listProviderMeta();
     return (data ?? []).map((row: any) => ({
       ...row,
@@ -299,6 +303,8 @@ export const upsertPlatformPaymentGateway = createServerFn({ method: "POST" })
         secondary_color: z.string().max(20).nullable().optional(),
         icon_bg_color: z.string().max(20).nullable().optional(),
         description: z.string().max(500).nullable().optional(),
+        website_url: z.string().max(500).nullable().optional(),
+        docs_url: z.string().max(500).nullable().optional(),
         enabled: z.boolean().optional(),
       })
       .parse(d),
@@ -306,6 +312,11 @@ export const upsertPlatformPaymentGateway = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const normalizeUrl = (v: string | null | undefined) => {
+      const t = (v ?? "").trim();
+      if (!t) return null;
+      return /^https?:\/\//i.test(t) ? t : `https://${t}`;
+    };
     const patch: any = {
       id: data.providerId,
       label: data.label,
@@ -317,12 +328,15 @@ export const upsertPlatformPaymentGateway = createServerFn({ method: "POST" })
       secondary_color: data.secondary_color ?? null,
       icon_bg_color: data.icon_bg_color ?? null,
       description: data.description ?? null,
+      website_url: normalizeUrl(data.website_url),
+      docs_url: normalizeUrl(data.docs_url),
     };
     if (typeof data.enabled === "boolean") patch.enabled = data.enabled;
     const { error } = await supabaseAdmin.from("platform_payment_gateways").upsert(patch, { onConflict: "id" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 export const listPublicPaymentGateways = createServerFn({ method: "GET" })
   .handler(async () => {

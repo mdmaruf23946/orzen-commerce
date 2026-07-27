@@ -718,19 +718,33 @@ function ConfigureForm({
             </SheetDescription>
           </div>
         </div>
-        {brand.docsUrl && (
-          <div className="mt-3 flex">
-            <a
-              href={brand.docsUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2.5 py-1.5 text-xs font-medium shadow-sm transition-colors hover:bg-muted"
-              style={{ borderColor: brand.brandColor + "40", color: brand.brandColor }}
-            >
-              <ExternalLink className="h-3.5 w-3.5" /> Read docs
-            </a>
+        {(g.website_url || g.docs_url) && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {g.website_url && (
+              <a
+                href={g.website_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-opacity hover:opacity-90 sm:w-auto"
+                style={{ background: brand.brandColor }}
+              >
+                <ExternalLink className="h-3.5 w-3.5" /> Visit provider website
+              </a>
+            )}
+            {g.docs_url && (
+              <a
+                href={g.docs_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border bg-background px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors hover:bg-muted sm:w-auto"
+                style={{ borderColor: brand.brandColor + "66", color: brand.brandColor }}
+              >
+                <ExternalLink className="h-3.5 w-3.5" /> Read API docs
+              </a>
+            )}
           </div>
         )}
+
       </SheetHeader>
 
 

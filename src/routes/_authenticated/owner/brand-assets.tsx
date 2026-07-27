@@ -30,9 +30,12 @@ type BrandFields = {
   secondary_color: string | null;
   icon_bg_color: string | null;
   description: string | null;
+  website_url: string | null;
+  docs_url: string | null;
   active: boolean;
   label: string;
 };
+
 
 function logoSrc(v: string | null | undefined) {
   if (!v) return null;
@@ -243,7 +246,29 @@ function BrandCard({
             className="text-xs sm:text-sm"
           />
         </div>
+
+        <div className="space-y-1 sm:space-y-1.5">
+          <Label className="text-[11px] sm:text-xs">Official website URL</Label>
+          <Input
+            type="url"
+            value={f.website_url ?? ""}
+            onChange={(e) => setF({ ...f, website_url: e.target.value })}
+            placeholder="https://provider.com"
+            className="h-8 text-[11px] sm:h-9 sm:text-xs"
+          />
+        </div>
+        <div className="space-y-1 sm:space-y-1.5">
+          <Label className="text-[11px] sm:text-xs">API / documentation URL</Label>
+          <Input
+            type="url"
+            value={f.docs_url ?? ""}
+            onChange={(e) => setF({ ...f, docs_url: e.target.value })}
+            placeholder="https://docs.provider.com"
+            className="h-8 text-[11px] sm:h-9 sm:text-xs"
+          />
+        </div>
       </div>
+
 
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving} size="sm" className="w-full text-xs sm:w-auto sm:text-sm">
@@ -279,6 +304,8 @@ function PaymentGatewaysTab() {
         secondary_color: row?.secondary_color ?? null,
         icon_bg_color: row?.icon_bg_color ?? staticBrand?.accentColor ?? null,
         description: row?.description ?? staticBrand?.tagline ?? null,
+        website_url: row?.website_url ?? null,
+        docs_url: row?.docs_url ?? staticBrand?.docsUrl ?? null,
         enabled: row?.enabled ?? false,
         methods: row?.methods ?? [],
       };
@@ -301,6 +328,8 @@ function PaymentGatewaysTab() {
             secondary_color: r.secondary_color,
             icon_bg_color: r.icon_bg_color,
             description: r.description,
+            website_url: r.website_url,
+            docs_url: r.docs_url,
             active: r.enabled,
             label: r.label,
           }}
@@ -316,6 +345,8 @@ function PaymentGatewaysTab() {
                 secondary_color: b.secondary_color,
                 icon_bg_color: b.icon_bg_color,
                 description: b.description,
+                website_url: b.website_url,
+                docs_url: b.docs_url,
                 enabled: b.active,
               },
             });
@@ -323,6 +354,7 @@ function PaymentGatewaysTab() {
             qc.invalidateQueries({ queryKey: ["public-payment-gateways"] });
           }}
         />
+
       ))}
     </div>
   );

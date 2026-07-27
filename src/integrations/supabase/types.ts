@@ -2188,6 +2188,7 @@ export type Database = {
           brand_color: string | null
           created_at: string
           description: string | null
+          docs_url: string | null
           enabled: boolean
           icon_bg_color: string | null
           id: string
@@ -2197,12 +2198,14 @@ export type Database = {
           secondary_color: string | null
           sort_order: number
           updated_at: string
+          website_url: string | null
           wordmark_url: string | null
         }
         Insert: {
           brand_color?: string | null
           created_at?: string
           description?: string | null
+          docs_url?: string | null
           enabled?: boolean
           icon_bg_color?: string | null
           id: string
@@ -2212,12 +2215,14 @@ export type Database = {
           secondary_color?: string | null
           sort_order?: number
           updated_at?: string
+          website_url?: string | null
           wordmark_url?: string | null
         }
         Update: {
           brand_color?: string | null
           created_at?: string
           description?: string | null
+          docs_url?: string | null
           enabled?: boolean
           icon_bg_color?: string | null
           id?: string
@@ -2227,6 +2232,7 @@ export type Database = {
           secondary_color?: string | null
           sort_order?: number
           updated_at?: string
+          website_url?: string | null
           wordmark_url?: string | null
         }
         Relationships: []
