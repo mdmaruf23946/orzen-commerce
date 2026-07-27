@@ -171,7 +171,9 @@ function AdminLayout() {
             </div>
             {(!collapsed || open) && (
               <div className="min-w-0 md:group-[]:block">
-                <div className="truncate text-sm font-bold tracking-tight">MyStore</div>
+                <div className="truncate text-sm font-bold tracking-tight">
+                  <BrandMark placement="store_header" fallbackText="MyStore" />
+                </div>
                 <div className="truncate text-[11px] text-muted-foreground">Store Admin</div>
               </div>
             )}
