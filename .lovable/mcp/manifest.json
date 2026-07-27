@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "sdk_version": "0.24.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://dqhfxvhzagitytpvildw.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "orzen-mcp",
+      "version": "0.1.0",
+      "title": "ORZEN Commerce"
+    },
+    "tools": [
+      {
+        "name": "list_my_stores",
+        "title": "List my stores",
+        "description": "List all stores owned by the signed-in user (id, slug, name, status, plan).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_products",
+        "title": "List products in a store",
+        "description": "List products for a store owned by the signed-in user. Pass the store's id (uuid) or slug. Returns up to 50 products newest first.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "store": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Store id (uuid) or store slug."
+            },
+            "limit": {
+              "description": "Max products to return (default 20).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          "required": [
+            "store"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_recent_orders",
+        "title": "List recent orders",
+        "description": "List the most recent orders for a store owned by the signed-in user. Pass the store's id (uuid) or slug.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "store": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Store id (uuid) or store slug."
+            },
+            "limit": {
+              "description": "Max orders to return (default 20).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "status": {
+              "description": "Optional filter: pending, confirmed, processing, delivered, cancelled.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "store"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
