@@ -304,6 +304,8 @@ function PaymentGatewaysTab() {
         secondary_color: row?.secondary_color ?? null,
         icon_bg_color: row?.icon_bg_color ?? staticBrand?.accentColor ?? null,
         description: row?.description ?? staticBrand?.tagline ?? null,
+        website_url: row?.website_url ?? null,
+        docs_url: row?.docs_url ?? staticBrand?.docsUrl ?? null,
         enabled: row?.enabled ?? false,
         methods: row?.methods ?? [],
       };
@@ -326,6 +328,8 @@ function PaymentGatewaysTab() {
             secondary_color: r.secondary_color,
             icon_bg_color: r.icon_bg_color,
             description: r.description,
+            website_url: r.website_url,
+            docs_url: r.docs_url,
             active: r.enabled,
             label: r.label,
           }}
@@ -341,6 +345,8 @@ function PaymentGatewaysTab() {
                 secondary_color: b.secondary_color,
                 icon_bg_color: b.icon_bg_color,
                 description: b.description,
+                website_url: b.website_url,
+                docs_url: b.docs_url,
                 enabled: b.active,
               },
             });
@@ -348,6 +354,7 @@ function PaymentGatewaysTab() {
             qc.invalidateQueries({ queryKey: ["public-payment-gateways"] });
           }}
         />
+
       ))}
     </div>
   );
