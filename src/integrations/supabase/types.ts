@@ -88,34 +88,55 @@ export type Database = {
       }
       admin_notifications: {
         Row: {
+          action_label: string | null
+          action_target: string | null
+          action_type: string | null
           body: string | null
+          campaign_id: string | null
           created_at: string
           id: string
           kind: string
           meta: Json
+          priority: string | null
           read_at: string | null
           store_id: string
           title: string
+          type: string | null
+          user_id: string | null
         }
         Insert: {
+          action_label?: string | null
+          action_target?: string | null
+          action_type?: string | null
           body?: string | null
+          campaign_id?: string | null
           created_at?: string
           id?: string
           kind: string
           meta?: Json
+          priority?: string | null
           read_at?: string | null
           store_id: string
           title: string
+          type?: string | null
+          user_id?: string | null
         }
         Update: {
+          action_label?: string | null
+          action_target?: string | null
+          action_type?: string | null
           body?: string | null
+          campaign_id?: string | null
           created_at?: string
           id?: string
           kind?: string
           meta?: Json
+          priority?: string | null
           read_at?: string | null
           store_id?: string
           title?: string
+          type?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1683,6 +1704,185 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notification_campaigns: {
+        Row: {
+          action_label: string | null
+          action_target: string | null
+          action_type: string | null
+          audience_filter: Json
+          audience_ids: string[]
+          audience_kind: string
+          body_html: string
+          channels: string[]
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          idempotency_key: string | null
+          priority: string
+          scheduled_at: string | null
+          scheduled_tz: string | null
+          sent_at: string | null
+          status: string
+          title: string
+          totals: Json
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          action_label?: string | null
+          action_target?: string | null
+          action_type?: string | null
+          audience_filter?: Json
+          audience_ids?: string[]
+          audience_kind?: string
+          body_html?: string
+          channels?: string[]
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key?: string | null
+          priority?: string
+          scheduled_at?: string | null
+          scheduled_tz?: string | null
+          sent_at?: string | null
+          status?: string
+          title: string
+          totals?: Json
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          action_label?: string | null
+          action_target?: string | null
+          action_type?: string | null
+          audience_filter?: Json
+          audience_ids?: string[]
+          audience_kind?: string
+          body_html?: string
+          channels?: string[]
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key?: string | null
+          priority?: string
+          scheduled_at?: string | null
+          scheduled_tz?: string | null
+          sent_at?: string | null
+          status?: string
+          title?: string
+          totals?: Json
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notification_recipients: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          email: string | null
+          email_attempts: number
+          email_last_error: string | null
+          email_message_id: string | null
+          email_status: string
+          id: string
+          inapp_notification_id: string | null
+          inapp_status: string
+          read_at: string | null
+          store_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          email?: string | null
+          email_attempts?: number
+          email_last_error?: string | null
+          email_message_id?: string | null
+          email_status?: string
+          id?: string
+          inapp_notification_id?: string | null
+          inapp_status?: string
+          read_at?: string | null
+          store_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          email?: string | null
+          email_attempts?: number
+          email_last_error?: string | null
+          email_message_id?: string | null
+          email_status?: string
+          id?: string
+          inapp_notification_id?: string | null
+          inapp_status?: string
+          read_at?: string | null
+          store_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "notification_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_templates: {
+        Row: {
+          action_label: string | null
+          action_target: string | null
+          action_type: string | null
+          body_html: string
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          priority: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          action_label?: string | null
+          action_target?: string | null
+          action_type?: string | null
+          body_html?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          priority?: string
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          action_label?: string | null
+          action_target?: string | null
+          action_type?: string | null
+          body_html?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          priority?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       order_internal_notes: {
         Row: {
