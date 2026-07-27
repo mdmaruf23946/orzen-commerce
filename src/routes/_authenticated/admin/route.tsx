@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SubscriptionStatusBanner } from "@/components/admin/SubscriptionStatusBanner";
 import { StickyMobileAdBar } from "@/components/admin/StickyMobileAdBar";
+import { UpgradeProvider } from "@/components/admin/UpgradeModal";
 
 type LinkDef = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
 
@@ -137,6 +138,7 @@ function AdminLayout() {
   const asideWidth = collapsed ? "md:w-[72px]" : "md:w-64";
 
   return (
+    <UpgradeProvider>
     <div className="min-h-screen bg-muted/40">
       {/* Mobile top bar */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur md:hidden">
@@ -318,5 +320,6 @@ function AdminLayout() {
       </div>
       <StickyMobileAdBar />
     </div>
+    </UpgradeProvider>
   );
 }
