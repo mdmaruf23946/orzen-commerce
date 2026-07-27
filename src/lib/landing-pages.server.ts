@@ -366,11 +366,20 @@ export async function intakeLandingPageOrder(input: IntakeInput): Promise<Intake
       error: oErr?.message ?? "Insert failed",
     });
     // increment failed
-    await sb.rpc as any;
+    const { data: curFail } = await sb
+      .from("landing_page_connections")
+      .select("failed_count")
+      .eq("id", conn.id)
+      .single();
     await sb
       .from("landing_page_connections")
-      .update({ failed_count: 0, last_error: oErr?.message ?? "Insert failed", last_error_at: new Date().toISOString() })
+      .update({
+        failed_count: (curFail?.failed_count ?? 0) + 1,
+        last_error: oErr?.message ?? "Insert failed",
+        last_error_at: new Date().toISOString(),
+      })
       .eq("id", conn.id);
+
     return { status: 500, body: { ok: false, error: "Could not create order" } };
   }
 
