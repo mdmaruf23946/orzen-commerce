@@ -103,7 +103,7 @@ function StoreLayout() {
           slug={slug}
           storeId={store.id}
           name={store.name}
-          logoUrl={store.logo_url}
+          logoUrl={(store as any).icon_url || store.logo_url}
           showSearch={!isAccount && !isCheckoutFlow}
         />
         <main className="mx-auto max-w-5xl px-4 pb-24 pt-4 sm:px-6 md:pb-12">
