@@ -863,6 +863,209 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_payment_gateway_audit: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          created_at: string
+          gateway_id: string | null
+          id: string
+          meta: Json
+          store_id: string
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          created_at?: string
+          gateway_id?: string | null
+          id?: string
+          meta?: Json
+          store_id: string
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          created_at?: string
+          gateway_id?: string | null
+          id?: string
+          meta?: Json
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_payment_gateway_audit_gateway_id_fkey"
+            columns: ["gateway_id"]
+            isOneToOne: false
+            referencedRelation: "custom_payment_gateways"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_payment_gateway_audit_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_payment_gateway_events: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_id: string | null
+          event_type: string | null
+          gateway_id: string
+          headers: Json | null
+          id: string
+          normalized_status: string | null
+          payload: Json | null
+          processed_at: string | null
+          processing_status: string
+          provider_ref: string | null
+          signature_valid: boolean | null
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_id?: string | null
+          event_type?: string | null
+          gateway_id: string
+          headers?: Json | null
+          id?: string
+          normalized_status?: string | null
+          payload?: Json | null
+          processed_at?: string | null
+          processing_status?: string
+          provider_ref?: string | null
+          signature_valid?: boolean | null
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_id?: string | null
+          event_type?: string | null
+          gateway_id?: string
+          headers?: Json | null
+          id?: string
+          normalized_status?: string | null
+          payload?: Json | null
+          processed_at?: string | null
+          processing_status?: string
+          provider_ref?: string | null
+          signature_valid?: boolean | null
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_payment_gateway_events_gateway_id_fkey"
+            columns: ["gateway_id"]
+            isOneToOne: false
+            referencedRelation: "custom_payment_gateways"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_payment_gateway_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_payment_gateways: {
+        Row: {
+          api_base_url: string | null
+          auth_type: string
+          config: Json
+          created_at: string
+          credentials_ciphertext: string | null
+          credentials_preview: string | null
+          currencies: string[]
+          currency: string
+          description: string | null
+          docs_url: string | null
+          environment: string
+          id: string
+          is_active: boolean
+          is_default: boolean
+          last_test_result: Json | null
+          last_tested_at: string | null
+          logo_url: string | null
+          name: string
+          sandbox_base_url: string | null
+          slug: string
+          status: string
+          store_id: string
+          support_email: string | null
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          api_base_url?: string | null
+          auth_type?: string
+          config?: Json
+          created_at?: string
+          credentials_ciphertext?: string | null
+          credentials_preview?: string | null
+          currencies?: string[]
+          currency?: string
+          description?: string | null
+          docs_url?: string | null
+          environment?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          last_test_result?: Json | null
+          last_tested_at?: string | null
+          logo_url?: string | null
+          name: string
+          sandbox_base_url?: string | null
+          slug: string
+          status?: string
+          store_id: string
+          support_email?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          api_base_url?: string | null
+          auth_type?: string
+          config?: Json
+          created_at?: string
+          credentials_ciphertext?: string | null
+          credentials_preview?: string | null
+          currencies?: string[]
+          currency?: string
+          description?: string | null
+          docs_url?: string | null
+          environment?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          last_test_result?: Json | null
+          last_tested_at?: string | null
+          logo_url?: string | null
+          name?: string
+          sandbox_base_url?: string | null
+          slug?: string
+          status?: string
+          store_id?: string
+          support_email?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_payment_gateways_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_notes: {
         Row: {
           created_at: string
@@ -4681,6 +4884,7 @@ export type Database = {
         Returns: Json
       }
       get_billing_discounts: { Args: never; Returns: Json }
+      get_custom_gateway_public: { Args: { _id: string }; Returns: Json }
       get_fraud_public_status: { Args: never; Returns: Json }
       get_messenger_daily_stats: { Args: { _store_id: string }; Returns: Json }
       get_my_active_ads: { Args: never; Returns: Json }
