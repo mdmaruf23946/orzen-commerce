@@ -222,7 +222,7 @@ function SettingsPage() {
   }
 
   return (
-    <form onSubmit={submit} className="mx-auto max-w-3xl pb-28">
+    <form onSubmit={submit} className="mx-auto max-w-3xl pb-32">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold">Store Settings</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -445,10 +445,20 @@ function SettingsPage() {
         </section>
 
         <AdSlot slotKey="admin_settings_bottom" />
+
+        {/* Inline save button — always visible at the end of the form */}
+        <div className="flex flex-col-reverse items-stretch gap-3 rounded-2xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <p className="text-xs text-muted-foreground">
+            {dirty ? "You have unsaved changes." : "All changes saved."}
+          </p>
+          <Button type="submit" disabled={saving || !dirty} className="w-full sm:w-auto sm:min-w-40">
+            {saving ? "Saving…" : "Save changes"}
+          </Button>
+        </div>
       </div>
 
-      {/* Sticky save bar */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      {/* Sticky save bar (desktop / when dirty) */}
+      <div className="fixed inset-x-0 bottom-[60px] z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:bottom-0">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <p className="hidden text-xs text-muted-foreground sm:block">
             {dirty ? "You have unsaved changes." : "All changes saved."}
@@ -461,6 +471,7 @@ function SettingsPage() {
     </form>
   );
 }
+
 
 function InvoiceNumberingSection() {
   const qc = useQueryClient();
