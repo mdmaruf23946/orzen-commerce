@@ -190,7 +190,7 @@ export function CustomGatewaySection({ storeId }: { storeId: string }) {
         {isLoading ? (
           <div className="col-span-full text-sm text-muted-foreground">Loading…</div>
         ) : data && data.length > 0 ? (
-          data.map((g) => (
+          data.map((g: any) => (
             <CustomGatewayCard
               key={g.id}
               gateway={g as Gateway}
