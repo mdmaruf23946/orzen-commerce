@@ -1,68 +1,109 @@
-## Goal
+# Store Icon + Favicon Management System
 
-Fix the Store Admin sidebar/header so the top branding area shows the **ORZEN platform icon + wordmark** together (from Winner Admin defaults), with "Store Admin" as a small subtitle underneath. Remove the duplicate hard-coded ShoppingBag icon. Add a Store Branding section in Store Settings so each store can either use platform defaults or override with its own logo/wordmark/name.
+Adds a dedicated per-store square identity icon that also drives the storefront favicon, on top of the existing `stores.logo_url` (wordmark/logo) and `seo.favicon_url` fields.
 
-## Changes
+## 1. Database
 
-### 1. `src/routes/_authenticated/admin/route.tsx` — sidebar + mobile header
-- Remove the hard-coded `ShoppingBag` icon block (currently rendered on the far left of the brand row).
-- Replace the brand row with a single `<StoreBrandMark />` component (new, see #2) that renders either:
-  - ORZEN platform icon + wordmark (`primaryLogo` + `primaryWordmark` from `platform_branding`, theme-aware), or
-  - The store's custom logo/wordmark/name when the store opted into custom branding.
-- Below it, keep the small `Store Admin` subtitle in `text-[11px] text-muted-foreground` (unchanged hierarchy — platform brand dominant, subtitle subdued).
-- Mobile top bar (`md:hidden`): replace the current `BrandMark placement="mobile_header"` with the same `<StoreBrandMark compact />` (icon + short wordmark), no duplicated icon.
-- Collapsed sidebar state: show icon only (no wordmark, no subtitle).
+Migration on `public.stores`:
+- Add `icon_url text` — square store icon (512×512 preferred).
+- Add `favicon_url text` — resolved favicon (mirrors `icon_url` when auto mode).
+- Add `use_icon_as_favicon boolean not null default true`.
+- Add `custom_favicon_url text` — optional separate favicon upload.
 
-### 2. New component `src/components/admin/StoreBrandMark.tsx`
-- Reads:
-  - `usePlatformBranding()` for ORZEN defaults (already exists in `src/lib/platform-branding.tsx`).
-  - Current store via existing `["admin","store"]` query (`getMyStore`) to read the new `branding` JSONB column.
-- Logic:
-  - If `store.branding.source === "custom"`: render according to `store.branding.mode` (`logo` | `wordmark` | `both`) using `store.branding.logo_url`, `store.branding.wordmark_url`, `store.branding.name` (text fallback when no wordmark image).
-  - Else: render ORZEN platform `primaryLogo` + `primaryWordmark` (dark/light variant based on `documentElement.classList.contains('dark')`). Falls back to text "ORZEN" if assets missing.
-- Props: `compact?: boolean` (smaller sizes for mobile), `iconOnly?: boolean` (collapsed sidebar).
+No new table — extends the existing `stores` row, matching the current architecture. Existing RLS on `stores` (owner-only update) already enforces tenant isolation. `get_public_store_by_slug` RPC is extended to return the four new fields for public storefront rendering.
 
-### 3. Database — add `branding` JSONB to `stores`
-Migration:
-```sql
-ALTER TABLE public.stores
-  ADD COLUMN IF NOT EXISTS branding jsonb NOT NULL DEFAULT '{"source":"platform"}'::jsonb;
+Do **not** touch `platform_branding` (ORZEN global) or `branding` jsonb.
+
+## 2. Storage
+
+Reuse existing `store-assets` bucket. Path convention:
 ```
-Shape:
-```json
-{
-  "source": "platform" | "custom",
-  "mode": "logo" | "wordmark" | "both",
-  "logo_url": "…",
-  "wordmark_url": "…",
-  "name": "…"
-}
+stores/{store_id}/branding/icon-{timestamp}.{ext}
+stores/{store_id}/branding/favicon-{timestamp}.{ext}
 ```
-No new RLS needed — `stores` policies already cover owner read/write.
+Timestamp suffix busts CDN/browser cache on replace. Existing storage RLS already scopes writes to `{store_id}/…` for the store owner.
 
-### 4. `src/lib/admin.functions.ts` — extend `updateStore` validator
-- Add `branding` to the store update Zod schema (optional object matching the shape above).
-- Add `branding` to the returned store shape (already returned via `select *`).
+## 3. Upload + Crop UI
 
-### 5. `src/routes/_authenticated/admin/settings.tsx` — new "Store Branding" section
-- Add a card titled **Store Branding** with:
-  - Radio: `Use Default Platform Branding` / `Use Custom Store Branding`.
-  - When custom: show `Display mode` select (Logo only / Wordmark only / Logo + Wordmark), plus `ImageUploader` for custom logo, `ImageUploader` for custom wordmark, and a text input for `Store brand name` (used as wordmark text fallback).
-  - When default: show a small preview of the current ORZEN platform branding.
-- Saves through existing `updateStore` server fn using the new `branding` field.
-- Keeps the existing (legacy) `logo_url` field untouched to avoid regressions elsewhere.
+New component `src/components/admin/StoreIconUploader.tsx`:
+- Accepts PNG/JPG/WebP (SVG rejected for safety).
+- Max 2 MB, validates square-ish aspect, warns if <256px.
+- Opens a crop dialog using the existing `react-easy-crop` pattern from `src/components/admin/product-form/CropDialog.tsx` — locked 1:1 aspect, zoom slider.
+- Compresses via existing `src/lib/compress-image.ts` to 512×512 WebP before upload.
+- Uploads to Supabase Storage, returns the public URL.
 
-### 6. Winner Admin controls
-No changes required. `updatePlatformBranding` in `src/lib/platform-branding.functions.ts` already supports `primaryLogo`, `primaryWordmark`, `lightLogo`, `darkLogo`, `lightWordmark`, `darkWordmark` assets — this covers requirement #5 (light/dark variants). Winner Admin UI already exposes these upload slots.
+## 4. Store Settings Section
 
-## Out of scope
-- Navigation, permissions, menu items, badge counts — untouched.
-- Global platform branding management UI — already exists, no change.
-- `platform_branding` schema — unchanged.
+In `src/routes/_authenticated/admin/settings.tsx`, add a new `Store Icon` section (icon: `ImageIcon`) placed after Store Identity:
 
-## Verification
-- Load Store Admin: sidebar shows ORZEN icon+wordmark (from platform defaults) with "Store Admin" small underneath; no duplicate ShoppingBag icon.
-- Toggle dark mode: platform brand swaps to dark asset when configured.
-- Settings → Store Branding → switch to Custom, upload assets, save → sidebar updates to custom branding for that store only.
-- Switch back to Default → ORZEN branding returns.
-- Confirm another store (different owner) is unaffected.
+- **Store Icon card**: current icon preview (square, 96×96), file name, `Upload / Replace / Remove` buttons. Remove button opens an `AlertDialog` confirmation. Fallback message when unset: "Using Default Store Icon" showing platform default.
+- **Favicon card**:
+  - Switch `Use Store Icon as Favicon` (default ON) → hides custom uploader.
+  - When OFF, show custom favicon uploader (PNG/ICO/WebP, ≤512 KB).
+- **Live Preview panel** (3 mini previews, updates on state change):
+  1. Store Admin identity — `[icon] Store Name / Store`
+  2. Browser tab — rounded rect with icon + store name
+  3. Storefront header — `[icon] Store Name`
+  Rendered on both light and dark backgrounds.
+
+Save uses the existing sticky bar + inline save via `updateMyStore`.
+
+## 5. Server function updates
+
+`src/lib/admin.functions.ts` → extend `updateMyStore` Zod schema and update payload with:
+`icon_url`, `favicon_url`, `use_icon_as_favicon`, `custom_favicon_url`.
+
+Server also computes `favicon_url` on save:
+- if `use_icon_as_favicon` → `favicon_url = icon_url`
+- else → `favicon_url = custom_favicon_url || icon_url || null`
+
+## 6. Fallback resolver
+
+New helper `src/lib/store-icon.ts` exporting `resolveStoreIcon(store, platformBranding)` and `resolveStoreFavicon(store, platformBranding)` implementing the spec's priority (store icon → platform default → 'O' letter mark).
+
+## 7. Store Admin sidebar/header
+
+`src/routes/_authenticated/admin/route.tsx`: below the existing `<StoreBrandMark>` (ORZEN, unchanged), render a new store identity row using the resolver:
+```
+[Store Icon] Store Name
+             Store
+```
+No duplicate ORZEN icon.
+
+## 8. Storefront injection
+
+`src/routes/store/$slug/route.tsx` `head()`:
+- Compute favicon from `store.favicon_url ?? store.icon_url ?? store.seo?.favicon_url`.
+- Emit `<link rel="icon">`, `<link rel="apple-touch-icon">`, `<meta name="theme-color">`.
+- Also update `StoreHeader` to use `icon_url` (fallback to `logo_url`) beside the store name.
+
+Store-scoped, so Store A never shows Store B's icon.
+
+## 9. Winner Admin visibility
+
+`src/routes/_authenticated/owner/…` stores list (existing): add `icon_url` column with thumbnail + "custom favicon" badge. Read-only.
+
+## 10. Cache invalidation
+
+- Upload paths carry a timestamp → new URL each replace.
+- After save, invalidate `["admin","store"]` and `["store", slug]` React Query keys.
+- Storefront `<link rel="icon">` re-renders per store because head is per-route.
+
+## Technical notes
+
+- No new tables, no changes to `platform_branding`, `branding` jsonb, or `seo.favicon_url` (kept as legacy fallback and still honored in the resolver).
+- SVG intentionally excluded to avoid XSS via storage.
+- Uses existing crop dialog, image compressor, `store-assets` bucket, and RLS — no security posture change.
+- All wiring is additive; existing logo/wordmark flows are untouched.
+
+## Files touched
+
+- Migration (add 4 columns to `stores`; update `get_public_store_by_slug`).
+- `src/lib/admin.functions.ts` — extend `updateMyStore`.
+- `src/lib/store-icon.ts` — new resolver.
+- `src/components/admin/StoreIconUploader.tsx` — new.
+- `src/routes/_authenticated/admin/settings.tsx` — new sections + previews.
+- `src/routes/_authenticated/admin/route.tsx` — store identity row under ORZEN mark.
+- `src/routes/store/$slug/route.tsx` — favicon in `head()` + header icon.
+- `src/lib/storefront.functions.ts` — pass new fields through `get_public_store_by_slug`.
+- Owner stores list — add icon column.
