@@ -182,7 +182,7 @@ function SettingsPage() {
           language: form.language || "en",
           timezone: form.timezone || "Asia/Dhaka",
           allow_guest_checkout: !!form.allow_guest_checkout,
-          branding: form.branding ?? { source: "platform" },
+          
         },
       });
       await qc.invalidateQueries({ queryKey: ["admin", "store"] });
@@ -273,116 +273,6 @@ function SettingsPage() {
           </Field>
         </Section>
 
-        {/* 1b. Store Branding (sidebar/header) */}
-        <Section
-          icon={Palette}
-          title="Store Branding"
-          description="Controls the logo and brand name shown in your Store Admin header and sidebar."
-        >
-          {(() => {
-            const b = form.branding ?? { source: "platform" };
-            const source = b.source ?? "platform";
-            const mode = b.mode ?? "both";
-            const setB = (patch: any) => set("branding", { ...b, ...patch });
-            return (
-              <div className="space-y-4">
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <label
-                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${
-                      source === "platform" ? "border-primary bg-primary/5" : "border-input"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="branding-source"
-                      checked={source === "platform"}
-                      onChange={() => setB({ source: "platform" })}
-                      className="mt-1"
-                    />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-medium">Use Default Platform Branding</span>
-                      <span className="mt-1 block text-xs text-muted-foreground">
-                        Show the ORZEN logo and wordmark set by the platform owner.
-                      </span>
-                    </span>
-                  </label>
-                  <label
-                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${
-                      source === "custom" ? "border-primary bg-primary/5" : "border-input"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="branding-source"
-                      checked={source === "custom"}
-                      onChange={() => setB({ source: "custom", mode: b.mode ?? "both" })}
-                      className="mt-1"
-                    />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-medium">Use Custom Store Branding</span>
-                      <span className="mt-1 block text-xs text-muted-foreground">
-                        Upload your own logo / wordmark for this store only.
-                      </span>
-                    </span>
-                  </label>
-                </div>
-
-                {source === "platform" ? (
-                  <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
-                    <span className="text-xs text-muted-foreground">Preview:</span>
-                    <StoreBrandMark />
-                  </div>
-                ) : (
-                  <div className="space-y-4 rounded-lg border p-3">
-                    <Field label="Display mode">
-                      <select
-                        value={mode}
-                        onChange={(e) => setB({ mode: e.target.value })}
-                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                      >
-                        <option value="both">Logo + Wordmark</option>
-                        <option value="logo">Logo only</option>
-                        <option value="wordmark">Wordmark only</option>
-                      </select>
-                    </Field>
-                    {(mode === "logo" || mode === "both") && (
-                      <Field label="Custom logo / icon">
-                        <ImageUploader
-                          storeId={form.id}
-                          value={b.logo_url ?? ""}
-                          onChange={(v) => setB({ logo_url: v })}
-                        />
-                      </Field>
-                    )}
-                    {(mode === "wordmark" || mode === "both") && (
-                      <>
-                        <Field label="Custom wordmark image (optional)">
-                          <ImageUploader
-                            storeId={form.id}
-                            value={b.wordmark_url ?? ""}
-                            onChange={(v) => setB({ wordmark_url: v })}
-                          />
-                        </Field>
-                        <Field label="Brand name (shown when no wordmark image)">
-                          <Input
-                            value={b.name ?? ""}
-                            maxLength={120}
-                            placeholder={form.name ?? "My Store"}
-                            onChange={(e) => setB({ name: e.target.value })}
-                          />
-                        </Field>
-                      </>
-                    )}
-                    <div className="flex items-center gap-3 rounded-md bg-muted/30 p-3">
-                      <span className="text-xs text-muted-foreground">Preview:</span>
-                      <StoreBrandMark />
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-        </Section>
 
         {/* 2. Contact Information */}
         <Section icon={PhoneIcon} title="Contact Information" description="How customers can reach you.">
