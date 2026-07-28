@@ -1,15 +1,17 @@
 // UI for the Custom Payment Gateway Builder.
 // Renders a section on the Payment Gateway page listing store-defined custom
-// gateways plus a "+ Add Custom Gateway" card. The Sheet-based editor is
-// organised into the 10 sections from the spec (basic info, auth, endpoint,
-// request mapping, response mapping, webhook, verification, refunds, methods,
-// review). Secrets are only ever sent to the server on save/test.
+// gateways plus a "+ Add Custom Gateway" card. The Sheet-based editor is a
+// short 3-step wizard (Provider → Connection → Test & finish); everything else
+// lives behind smart defaults inside an "Advanced settings" area.
+// Secrets are only ever sent to the server on save/test.
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Copy,
   Loader2,
   Plus,
@@ -68,7 +70,6 @@ import {
   listCustomGatewayEvents,
 } from "@/lib/custom-gateway/gateways.functions";
 import {
-  AUTH_TYPES,
   CustomGatewayConfigSchema,
   InternalVariables,
   type CustomGatewayPublic,
@@ -76,16 +77,52 @@ import {
 
 type Gateway = CustomGatewayPublic;
 
+/** Auth types surfaced in the simple form. Others stay valid but are rare. */
+const SIMPLE_AUTH_TYPES = [
+  { value: "api_key", label: "API key" },
+  { value: "api_key_secret", label: "API key + secret" },
+  { value: "bearer", label: "Bearer token" },
+  { value: "basic", label: "Username & password" },
+  { value: "custom_header", label: "Custom header" },
+  { value: "none", label: "No authentication" },
+] as const;
+
+const DEFAULT_STATUS_MAP = [
+  { from: "SUCCESS", to: "paid" as const },
+  { from: "PAID", to: "paid" as const },
+  { from: "COMPLETED", to: "paid" as const },
+  { from: "PENDING", to: "pending" as const },
+  { from: "FAILED", to: "failed" as const },
+  { from: "CANCELLED", to: "cancelled" as const },
+];
+
 const EMPTY_CONFIG = CustomGatewayConfigSchema.parse({
-  request: {},
-  checkout: {},
+  request: { method: "POST", contentType: "json" },
+  checkout: { type: "hosted" },
   response: {},
-  webhook: {
-    signature: {},
-  },
-  verification: {},
-  refund: {},
+  webhook: { signature: {} },
+  statusMap: DEFAULT_STATUS_MAP,
+  verification: { method: "webhook_only" },
+  refund: { enabled: false },
 });
+
+type EditorState = {
+  name: string;
+  slug: string;
+  logo_url: string;
+  description: string;
+  website_url: string;
+  docs_url: string;
+  support_email: string;
+  currency: string;
+  currencies: string[];
+  environment: "sandbox" | "production";
+  auth_type: string;
+  api_base_url: string;
+  sandbox_base_url: string;
+  config: typeof EMPTY_CONFIG;
+  credentials: Record<string, string>;
+};
 
 const DEFAULT_FORM: EditorState = {
   name: "",
@@ -105,25 +142,17 @@ const DEFAULT_FORM: EditorState = {
   credentials: {},
 };
 
-type EditorState = {
-  name: string;
-  slug: string;
-  logo_url: string;
-  description: string;
-  website_url: string;
-  docs_url: string;
-  support_email: string;
-  currency: string;
-  currencies: string[];
-  environment: "sandbox" | "production";
-  auth_type: (typeof AUTH_TYPES)[number];
-  api_base_url: string;
-  sandbox_base_url: string;
-  config: typeof EMPTY_CONFIG;
-  credentials: Record<string, string>;
-};
+function slugify(s: string) {
+  return s
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+}
 
 function seedFromGateway(g: Gateway): EditorState {
+  const c = (g.config ?? {}) as any;
   return {
     name: g.name,
     slug: g.slug,
@@ -140,13 +169,19 @@ function seedFromGateway(g: Gateway): EditorState {
     sandbox_base_url: g.sandbox_base_url ?? "",
     config: {
       ...EMPTY_CONFIG,
-      ...(g.config as any),
-      webhook: { ...EMPTY_CONFIG.webhook, ...((g.config as any)?.webhook ?? {}), signature: { ...EMPTY_CONFIG.webhook.signature, ...((g.config as any)?.webhook?.signature ?? {}) } },
-      verification: { ...EMPTY_CONFIG.verification, ...((g.config as any)?.verification ?? {}) },
-      refund: { ...EMPTY_CONFIG.refund, ...((g.config as any)?.refund ?? {}) },
-      request: { ...EMPTY_CONFIG.request, ...((g.config as any)?.request ?? {}) },
-      checkout: { ...EMPTY_CONFIG.checkout, ...((g.config as any)?.checkout ?? {}) },
-      response: { ...EMPTY_CONFIG.response, ...((g.config as any)?.response ?? {}) },
+      ...c,
+      request: { ...EMPTY_CONFIG.request, ...(c?.request ?? {}) },
+      checkout: { ...EMPTY_CONFIG.checkout, ...(c?.checkout ?? {}) },
+      response: { ...EMPTY_CONFIG.response, ...(c?.response ?? {}) },
+      webhook: {
+        ...EMPTY_CONFIG.webhook,
+        ...(c?.webhook ?? {}),
+        signature: { ...EMPTY_CONFIG.webhook.signature, ...(c?.webhook?.signature ?? {}) },
+      },
+      statusMap: c?.statusMap?.length ? c.statusMap : DEFAULT_STATUS_MAP,
+      verification: { ...EMPTY_CONFIG.verification, ...(c?.verification ?? {}) },
+      refund: { ...EMPTY_CONFIG.refund, ...(c?.refund ?? {}) },
+      methods: c?.methods ?? [],
     },
     credentials: {},
   };
@@ -178,7 +213,7 @@ export function CustomGatewaySection({ storeId }: { storeId: string }) {
         <div>
           <h2 className="text-lg font-semibold">Custom Payment Gateways</h2>
           <p className="text-xs text-muted-foreground">
-            Connect any provider that isn't in the built-in list by describing its checkout, response and webhook contract.
+            Connect any provider that isn't in the built-in list — it only takes three short steps.
           </p>
         </div>
         <Button size="sm" onClick={() => setOpen({ mode: "new" })}>
@@ -204,22 +239,20 @@ export function CustomGatewaySection({ storeId }: { storeId: string }) {
             className="col-span-full grid place-items-center rounded-xl border border-dashed bg-muted/30 p-8 text-center text-sm text-muted-foreground transition hover:bg-muted/60"
           >
             <Wand2 className="mb-2 h-6 w-6" />
-            No custom gateways yet. Click to build your first one.
+            No custom gateways yet. Click to connect your first one.
           </button>
         )}
       </div>
 
       <Sheet open={!!open} onOpenChange={(v) => !v && setOpen(null)}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
+        <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
           {open && (
             <GatewayEditor
               storeId={storeId}
               initial={open.mode === "edit" ? seedFromGateway(open.gateway) : DEFAULT_FORM}
               existing={open.mode === "edit" ? open.gateway : null}
               onClose={() => setOpen(null)}
-              onSaved={() => {
-                refresh();
-              }}
+              onSaved={refresh}
             />
           )}
         </SheetContent>
@@ -330,6 +363,8 @@ function CustomGatewayCard({
   );
 }
 
+const STEP_LABELS = ["Provider", "Connection", "Test & finish"];
+
 function GatewayEditor({
   storeId,
   initial,
@@ -344,25 +379,36 @@ function GatewayEditor({
   onSaved: () => void;
 }) {
   const [form, setForm] = useState<EditorState>(initial);
+  const [step, setStep] = useState(0);
+  const [savedId, setSavedId] = useState<string | null>(existing?.id ?? null);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<null | { ok: boolean; message: string; redirect_url?: string | null }>(null);
+  const [testResult, setTestResult] = useState<null | { ok: boolean; message: string; redirect_url?: string | null }>(
+    null,
+  );
   const save = useServerFn(saveCustomGateway);
   const test = useServerFn(testCustomGateway);
   const listEvents = useServerFn(listCustomGatewayEvents);
+  const toggle = useServerFn(setCustomGatewayEnabled);
   const events = useQuery({
-    queryKey: ["customGatewayEvents", existing?.id],
-    queryFn: () => listEvents({ data: { gatewayId: existing!.id, limit: 20 } }),
-    enabled: !!existing,
+    queryKey: ["customGatewayEvents", savedId],
+    queryFn: () => listEvents({ data: { gatewayId: savedId!, limit: 20 } }),
+    enabled: !!savedId && step === 2,
   });
 
   const webhookUrl = useMemo(() => {
-    if (!existing) return "";
+    if (!savedId) return "";
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    return `${origin}/api/public/store-payments/custom-webhook/${storeId}/${existing.id}`;
-  }, [existing, storeId]);
+    return `${origin}/api/public/store-payments/custom-webhook/${storeId}/${savedId}`;
+  }, [savedId, storeId]);
 
-  useEffect(() => setForm(initial), [initial]);
+  useEffect(() => {
+    setForm(initial);
+    setSavedId(existing?.id ?? null);
+    setStep(0);
+    setTestResult(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial]);
 
   function update<K extends keyof EditorState>(k: K, v: EditorState[K]) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -371,36 +417,48 @@ function GatewayEditor({
     setForm((f) => ({ ...f, config: fn(f.config) }));
   }
 
-  async function submit() {
+  const step1Valid = form.name.trim().length >= 2;
+  const step2Valid =
+    form.api_base_url.trim().length > 0 &&
+    form.config.request.endpoint.trim().length > 0 &&
+    form.config.checkout.responsePayUrlPath.trim().length > 0;
+
+  /** Persists the current form and returns the saved gateway id. */
+  async function persist(): Promise<string> {
+    const payload = {
+      storeId,
+      id: savedId ?? undefined,
+      name: form.name.trim(),
+      slug: (form.slug.trim() ? slugify(form.slug) : slugify(form.name)) || "custom-gateway",
+      logo_url: form.logo_url || null,
+      description: form.description || null,
+      website_url: form.website_url || null,
+      docs_url: form.docs_url || null,
+      support_email: form.support_email || null,
+      currency: form.currency || "BDT",
+      currencies: form.currencies?.length ? form.currencies : [form.currency || "BDT"],
+      environment: form.environment,
+      auth_type: form.auth_type as any,
+      api_base_url: form.api_base_url || null,
+      sandbox_base_url: form.sandbox_base_url || null,
+      config: form.config,
+      credentials: Object.fromEntries(Object.entries(form.credentials).filter(([, v]) => v && v.length > 0)),
+    };
+    const parsed = CustomGatewayConfigSchema.safeParse(payload.config);
+    if (!parsed.success) throw new Error("Configuration is invalid: " + parsed.error.issues[0]?.message);
+    const row: any = await save({ data: payload as any });
+    setSavedId(row.id);
+    onSaved();
+    return row.id as string;
+  }
+
+  async function submit(activate = false) {
     try {
       setSaving(true);
-      const payload = {
-        storeId,
-        id: existing?.id,
-        name: form.name.trim(),
-        slug: (form.slug || form.name).toLowerCase().replace(/[^a-z0-9_-]/g, "-"),
-        logo_url: form.logo_url || null,
-        description: form.description || null,
-        website_url: form.website_url || null,
-        docs_url: form.docs_url || null,
-        support_email: form.support_email || null,
-        currency: form.currency,
-        currencies: form.currencies,
-        environment: form.environment,
-        auth_type: form.auth_type,
-        api_base_url: form.api_base_url || null,
-        sandbox_base_url: form.sandbox_base_url || null,
-        config: form.config,
-        credentials: Object.fromEntries(Object.entries(form.credentials).filter(([, v]) => v && v.length > 0)),
-      };
-      const parsed = CustomGatewayConfigSchema.safeParse(payload.config);
-      if (!parsed.success) {
-        toast.error("Configuration is invalid: " + parsed.error.issues[0]?.message);
-        return;
-      }
-      await save({ data: payload });
-      toast.success("Saved");
+      const id = await persist();
+      if (activate) await toggle({ data: { id, enabled: true } });
       onSaved();
+      toast.success(activate ? "Gateway connected and enabled" : "Saved");
       onClose();
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to save");
@@ -409,27 +467,28 @@ function GatewayEditor({
     }
   }
 
+  /** Saves silently first, so testing never requires a manual save. */
   async function runTest() {
-    if (!existing) {
-      toast.info("Save the gateway before running a live test.");
-      return;
-    }
     setTesting(true);
     setTestResult(null);
     try {
-      const res = await test({
+      const id = await persist();
+      const res: any = await test({
         data: {
-          id: existing.id,
+          id,
           credentialsOverride: Object.keys(form.credentials).length > 0 ? form.credentials : undefined,
         },
       });
       setTestResult({
         ok: !!res.ok,
         message: res.ok
-          ? `Connection succeeded (${res.status_code}). ${res.redirect_url ? "Checkout URL received." : "No checkout URL in response."}`
-          : `Connection failed (${res.status_code}). ${res.error ?? res.message ?? ""}`,
+          ? `Connection succeeded (HTTP ${res.status_code}). ${
+              res.redirect_url ? "Checkout URL received." : "No checkout URL in the response."
+            }`
+          : `Connection failed (HTTP ${res.status_code}). ${res.error ?? res.message ?? "Check the endpoint and credentials."}`,
         redirect_url: res.redirect_url,
       });
+      events.refetch?.();
     } catch (e: any) {
       setTestResult({ ok: false, message: e?.message ?? "Test failed" });
     } finally {
@@ -437,524 +496,600 @@ function GatewayEditor({
     }
   }
 
-  const canSave = form.name.trim().length >= 2 && form.api_base_url.trim().length > 0;
-
   return (
     <>
       <SheetHeader>
         <SheetTitle className="flex items-center gap-2">
           <Wand2 className="h-4 w-4" />
-          {existing ? `Configure ${existing.name}` : "New custom gateway"}
+          {existing ? `Configure ${existing.name}` : "Connect a custom gateway"}
         </SheetTitle>
         <SheetDescription>
-          Describe how your provider expects the checkout request and how it reports success back to your store.
+          Three short steps: who the provider is, how to reach it, and a live connection test.
         </SheetDescription>
       </SheetHeader>
 
-      <div className="mt-4 space-y-4 pb-24">
-        <Accordion type="multiple" defaultValue={["basic"]} className="w-full">
-          {/* 1. Basic info */}
-          <AccordionItem value="basic">
-            <AccordionTrigger>1. Basic information</AccordionTrigger>
-            <AccordionContent className="space-y-3">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Gateway name" required>
-                  <Input value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="e.g. My Local PSP" />
-                </Field>
-                <Field label="Slug" helper="Used in URLs. Lowercase, no spaces.">
-                  <Input value={form.slug} onChange={(e) => update("slug", e.target.value)} placeholder="my-local-psp" />
-                </Field>
-                <Field label="Logo URL">
-                  <Input value={form.logo_url} onChange={(e) => update("logo_url", e.target.value)} placeholder="https://…" />
-                </Field>
-                <Field label="Support email">
-                  <Input value={form.support_email} onChange={(e) => update("support_email", e.target.value)} placeholder="support@provider.com" />
-                </Field>
-                <Field label="Website">
-                  <Input value={form.website_url} onChange={(e) => update("website_url", e.target.value)} />
-                </Field>
-                <Field label="Docs URL">
-                  <Input value={form.docs_url} onChange={(e) => update("docs_url", e.target.value)} />
-                </Field>
-                <Field label="Currency">
-                  <Input value={form.currency} onChange={(e) => update("currency", e.target.value.toUpperCase())} maxLength={4} />
-                </Field>
-                <Field label="Environment">
-                  <Select value={form.environment} onValueChange={(v) => update("environment", v as any)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sandbox">Sandbox</SelectItem>
-                      <SelectItem value="production">Production</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </div>
-              <Field label="Description">
-                <Textarea rows={2} value={form.description} onChange={(e) => update("description", e.target.value)} />
-              </Field>
-            </AccordionContent>
-          </AccordionItem>
+      {/* Stepper */}
+      <div className="mt-4 flex items-center gap-2">
+        {STEP_LABELS.map((label, i) => (
+          <button
+            key={label}
+            type="button"
+            onClick={() => (i <= step || (i === 1 && step1Valid) || (i === 2 && step1Valid && step2Valid)) && setStep(i)}
+            className={`flex flex-1 items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] font-medium transition ${
+              i === step
+                ? "border-primary bg-primary/10 text-primary"
+                : i < step
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-dashed text-muted-foreground"
+            }`}
+          >
+            <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-current/15 text-[9px]">
+              {i + 1}
+            </span>
+            <span className="truncate">{label}</span>
+          </button>
+        ))}
+      </div>
 
-          {/* 2. Authentication */}
-          <AccordionItem value="auth">
-            <AccordionTrigger>2. Authentication</AccordionTrigger>
-            <AccordionContent className="space-y-3">
-              <Field label="Authentication type">
-                <Select value={form.auth_type} onValueChange={(v) => update("auth_type", v as any)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+      <div className="mt-4 space-y-4 pb-28">
+        {/* ---------------- Step 1: Provider ---------------- */}
+        {step === 0 && (
+          <div className="space-y-3">
+            <Field label="Gateway name" required helper="Shown to your customers at checkout.">
+              <Input
+                value={form.name}
+                onChange={(e) => update("name", e.target.value)}
+                placeholder="e.g. My Local PSP"
+              />
+            </Field>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Currency">
+                <Input
+                  value={form.currency}
+                  onChange={(e) => update("currency", e.target.value.toUpperCase())}
+                  maxLength={4}
+                />
+              </Field>
+              <Field label="Mode" helper="Start in Sandbox, switch to Live once tested.">
+                <Select value={form.environment} onValueChange={(v) => update("environment", v as any)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    {AUTH_TYPES.map((t) => (
-                      <SelectItem key={t} value={t}>{t}</SelectItem>
-                    ))}
+                    <SelectItem value="sandbox">Sandbox (test)</SelectItem>
+                    <SelectItem value="production">Live</SelectItem>
                   </SelectContent>
                 </Select>
               </Field>
-              <CredentialFields
-                authType={form.auth_type}
-                values={form.credentials}
-                existingHint={existing?.credentials_preview ?? null}
-                onChange={(k, v) => update("credentials", { ...form.credentials, [k]: v })}
+            </div>
+            <Field label="Logo URL" helper="Optional.">
+              <Input value={form.logo_url} onChange={(e) => update("logo_url", e.target.value)} placeholder="https://…" />
+            </Field>
+          </div>
+        )}
+
+        {/* ---------------- Step 2: Connection ---------------- */}
+        {step === 1 && (
+          <div className="space-y-3">
+            <Field label="Authentication">
+              <Select value={form.auth_type} onValueChange={(v) => update("auth_type", v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SIMPLE_AUTH_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <CredentialFields
+              authType={form.auth_type}
+              values={form.credentials}
+              existingHint={existing?.credentials_preview ?? null}
+              onChange={(k, v) => update("credentials", { ...form.credentials, [k]: v })}
+            />
+
+            <Field
+              label={form.environment === "sandbox" ? "Sandbox base URL" : "Live base URL"}
+              required
+              helper="The provider's API root, e.g. https://api.provider.com"
+            >
+              <Input
+                value={form.environment === "sandbox" ? form.sandbox_base_url : form.api_base_url}
+                onChange={(e) =>
+                  form.environment === "sandbox"
+                    ? setForm((f) => ({
+                        ...f,
+                        sandbox_base_url: e.target.value,
+                        api_base_url: f.api_base_url || e.target.value,
+                      }))
+                    : update("api_base_url", e.target.value)
+                }
+                placeholder="https://api.provider.com"
               />
-              <p className="text-[11px] text-muted-foreground">
-                Credentials are encrypted at rest with AES-256-GCM and never returned to your browser. Leave fields blank to keep existing values.
-              </p>
-            </AccordionContent>
-          </AccordionItem>
+            </Field>
 
-          {/* 3. Endpoints */}
-          <AccordionItem value="endpoints">
-            <AccordionTrigger>3. API endpoints</AccordionTrigger>
-            <AccordionContent className="space-y-3">
-              <Field label="Live base URL" required>
-                <Input value={form.api_base_url} onChange={(e) => update("api_base_url", e.target.value)} placeholder="https://api.provider.com" />
-              </Field>
-              <Field label="Sandbox base URL">
-                <Input value={form.sandbox_base_url} onChange={(e) => update("sandbox_base_url", e.target.value)} placeholder="https://sandbox.provider.com" />
-              </Field>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <Field label="Checkout method">
-                  <Select
-                    value={form.config.request.method}
-                    onValueChange={(v) => updateConfig((c) => ({ ...c, request: { ...c.request, method: v as any } }))}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {["POST", "GET", "PUT", "PATCH"].map((m) => (
-                        <SelectItem key={m} value={m}>{m}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Checkout endpoint" helper="Relative to base URL">
-                  <Input
-                    value={form.config.request.endpoint}
-                    onChange={(e) => updateConfig((c) => ({ ...c, request: { ...c.request, endpoint: e.target.value } }))}
-                    placeholder="/v1/checkout/session"
-                  />
-                </Field>
-                <Field label="Content type">
-                  <Select
-                    value={form.config.request.contentType}
-                    onValueChange={(v) => updateConfig((c) => ({ ...c, request: { ...c.request, contentType: v as any } }))}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {["json", "form_urlencoded", "form_data", "xml"].map((v) => (
-                        <SelectItem key={v} value={v}>{v}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
+            <Field label="Checkout endpoint" required helper="Path relative to the base URL.">
+              <Input
+                value={form.config.request.endpoint}
+                onChange={(e) => updateConfig((c) => ({ ...c, request: { ...c.request, endpoint: e.target.value } }))}
+                placeholder="/v1/checkout/session"
+              />
+            </Field>
+
+            <Field
+              label="Payment URL field in the response"
+              required
+              helper="Where the provider returns the customer's payment link, e.g. data.checkout_url"
+            >
+              <Input
+                value={form.config.checkout.responsePayUrlPath}
+                onChange={(e) =>
+                  updateConfig((c) => ({ ...c, checkout: { ...c.checkout, responsePayUrlPath: e.target.value } }))
+                }
+                placeholder="data.checkout_url"
+              />
+            </Field>
+
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="pr-3">
+                <Label className="text-xs">Provider signs webhooks</Label>
+                <p className="text-[11px] text-muted-foreground">Turn on if your provider sends an HMAC signature.</p>
               </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* 4. Request mapping */}
-          <AccordionItem value="request">
-            <AccordionTrigger>4. Request mapping</AccordionTrigger>
-            <AccordionContent className="space-y-3">
-              <p className="text-xs text-muted-foreground">
-                Use <code>{"{{order_id}}"}</code>, <code>{"{{amount}}"}</code>, <code>{"{{customer_email}}"}</code>, <code>{"{{creds.api_key}}"}</code>, etc.
-                Available variables: {InternalVariables.join(", ")}.
-              </p>
-              <Field label="Custom headers">
-                <KeyValueEditor
-                  rows={form.config.request.headers}
-                  onChange={(rows) => updateConfig((c) => ({ ...c, request: { ...c.request, headers: rows } }))}
-                  keyPlaceholder="Header"
-                  valuePlaceholder="Value or {{template}}"
-                />
-              </Field>
-              <Field label="Body template (optional — overrides mapping)">
-                <Textarea
-                  rows={5}
-                  value={form.config.request.bodyTemplate}
-                  onChange={(e) => updateConfig((c) => ({ ...c, request: { ...c.request, bodyTemplate: e.target.value } }))}
-                  placeholder={`{\n  "amount": "{{amount}}",\n  "order_id": "{{order_id}}"\n}`}
-                />
-              </Field>
-              <Field label="Field mapping" helper="Source → destination field on the provider's request body.">
-                <MappingEditor
-                  rows={form.config.request.mapping}
-                  onChange={(rows) => updateConfig((c) => ({ ...c, request: { ...c.request, mapping: rows } }))}
-                />
-              </Field>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* 5. Response mapping */}
-          <AccordionItem value="response">
-            <AccordionTrigger>5. Response mapping</AccordionTrigger>
-            <AccordionContent className="space-y-3">
+              <Switch
+                checked={form.config.webhook.signature.type !== "none"}
+                onCheckedChange={(v) =>
+                  updateConfig((c) => ({
+                    ...c,
+                    webhook: {
+                      ...c.webhook,
+                      signature: { ...c.webhook.signature, type: v ? "hmac" : "none" },
+                    },
+                  }))
+                }
+              />
+            </div>
+            {form.config.webhook.signature.type !== "none" && (
               <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Checkout type">
-                  <Select
-                    value={form.config.checkout.type}
-                    onValueChange={(v) => updateConfig((c) => ({ ...c, checkout: { ...c.checkout, type: v as any } }))}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {["hosted", "redirect", "api_response_url", "embedded", "direct_api", "manual"].map((v) => (
-                        <SelectItem key={v} value={v}>{v}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Redirect URL path" helper="Dotted path in the response JSON.">
-                  <Input
-                    value={form.config.checkout.responsePayUrlPath}
-                    onChange={(e) => updateConfig((c) => ({ ...c, checkout: { ...c.checkout, responsePayUrlPath: e.target.value } }))}
-                    placeholder="data.checkout_url"
-                  />
-                </Field>
-                <Field label="Transaction ID path">
-                  <Input
-                    value={form.config.response.transactionIdPath}
-                    onChange={(e) => updateConfig((c) => ({ ...c, response: { ...c.response, transactionIdPath: e.target.value } }))}
-                  />
-                </Field>
-                <Field label="Reference path">
-                  <Input
-                    value={form.config.response.referencePath}
-                    onChange={(e) => updateConfig((c) => ({ ...c, response: { ...c.response, referencePath: e.target.value } }))}
-                  />
-                </Field>
-                <Field label="Status path">
-                  <Input
-                    value={form.config.response.statusPath}
-                    onChange={(e) => updateConfig((c) => ({ ...c, response: { ...c.response, statusPath: e.target.value } }))}
-                  />
-                </Field>
-                <Field label="Message path">
-                  <Input
-                    value={form.config.response.messagePath}
-                    onChange={(e) => updateConfig((c) => ({ ...c, response: { ...c.response, messagePath: e.target.value } }))}
-                  />
-                </Field>
-              </div>
-              <Field label="Status mapping" helper="Provider status → platform status.">
-                <StatusMapEditor
-                  rows={form.config.statusMap}
-                  onChange={(rows) => updateConfig((c) => ({ ...c, statusMap: rows }))}
-                />
-              </Field>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* 6. Webhook */}
-          <AccordionItem value="webhook">
-            <AccordionTrigger>6. Webhook</AccordionTrigger>
-            <AccordionContent className="space-y-3">
-              {existing ? (
-                <Field label="Webhook URL (paste this in your provider dashboard)">
-                  <div className="flex items-center gap-2">
-                    <Input readOnly value={webhookUrl} />
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={() => {
-                        navigator.clipboard.writeText(webhookUrl);
-                        toast.success("Copied");
-                      }}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </Field>
-              ) : (
-                <p className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
-                  Save the gateway once to receive your webhook URL.
-                </p>
-              )}
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Signature type">
-                  <Select
-                    value={form.config.webhook.signature.type}
-                    onValueChange={(v) =>
-                      updateConfig((c) => ({ ...c, webhook: { ...c.webhook, signature: { ...c.webhook.signature, type: v as any } } }))
-                    }
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {["none", "hmac", "shared_secret", "custom"].map((v) => (
-                        <SelectItem key={v} value={v}>{v}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
                 <Field label="Signature header">
                   <Input
                     value={form.config.webhook.signature.header}
                     onChange={(e) =>
-                      updateConfig((c) => ({ ...c, webhook: { ...c.webhook, signature: { ...c.webhook.signature, header: e.target.value } } }))
+                      updateConfig((c) => ({
+                        ...c,
+                        webhook: { ...c.webhook, signature: { ...c.webhook.signature, header: e.target.value } },
+                      }))
                     }
                     placeholder="X-Signature"
                   />
                 </Field>
-                <Field label="Algorithm">
-                  <Select
-                    value={form.config.webhook.signature.algorithm}
-                    onValueChange={(v) =>
-                      updateConfig((c) => ({ ...c, webhook: { ...c.webhook, signature: { ...c.webhook.signature, algorithm: v as any } } }))
-                    }
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {["sha256", "sha512"].map((v) => (
-                        <SelectItem key={v} value={v}>{v}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Encoding">
-                  <Select
-                    value={form.config.webhook.signature.encoding}
-                    onValueChange={(v) =>
-                      updateConfig((c) => ({ ...c, webhook: { ...c.webhook, signature: { ...c.webhook.signature, encoding: v as any } } }))
-                    }
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {["hex", "base64"].map((v) => (
-                        <SelectItem key={v} value={v}>{v}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Event ID path" helper="Path used to deduplicate events.">
+                <Field label="Webhook secret">
                   <Input
-                    value={form.config.webhook.eventIdPath}
-                    onChange={(e) => updateConfig((c) => ({ ...c, webhook: { ...c.webhook, eventIdPath: e.target.value } }))}
-                    placeholder="data.event_id"
-                  />
-                </Field>
-                <Field label="Event type path">
-                  <Input
-                    value={form.config.webhook.eventTypePath}
-                    onChange={(e) => updateConfig((c) => ({ ...c, webhook: { ...c.webhook, eventTypePath: e.target.value } }))}
-                  />
-                </Field>
-                <Field label="Provider ref path">
-                  <Input
-                    value={form.config.webhook.providerRefPath}
-                    onChange={(e) => updateConfig((c) => ({ ...c, webhook: { ...c.webhook, providerRefPath: e.target.value } }))}
-                  />
-                </Field>
-                <Field label="Status path">
-                  <Input
-                    value={form.config.webhook.statusPath}
-                    onChange={(e) => updateConfig((c) => ({ ...c, webhook: { ...c.webhook, statusPath: e.target.value } }))}
+                    type="password"
+                    value={form.credentials.hmac_secret ?? ""}
+                    onChange={(e) => update("credentials", { ...form.credentials, hmac_secret: e.target.value })}
+                    placeholder={existing?.credentials_preview ? "Leave blank to keep current" : ""}
                   />
                 </Field>
               </div>
+            )}
 
-              {existing && (
-                <div className="rounded-md border p-3">
-                  <div className="mb-2 flex items-center gap-2 text-sm font-medium">
-                    <Webhook className="h-4 w-4" /> Recent webhook events
-                  </div>
-                  <div className="max-h-56 space-y-1.5 overflow-y-auto text-xs">
-                    {events.isLoading ? (
-                      <div className="text-muted-foreground">Loading…</div>
-                    ) : events.data && events.data.length > 0 ? (
-                      events.data.map((e: any) => (
-                        <div key={e.id} className="flex items-center justify-between gap-2 rounded border p-2">
-                          <div className="min-w-0">
-                            <div className="truncate font-medium">
-                              {e.event_type ?? "event"} · {e.normalized_status ?? "—"}
-                            </div>
-                            <div className="truncate text-muted-foreground">
-                              {new Date(e.created_at).toLocaleString()} · sig {String(e.signature_valid)}
-                            </div>
-                            {e.error_message && <div className="truncate text-destructive">{e.error_message}</div>}
-                          </div>
-                          <span className="shrink-0 text-[10px] uppercase text-muted-foreground">{e.processing_status}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-muted-foreground">No events received yet.</div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </AccordionContent>
-          </AccordionItem>
+            <p className="text-[11px] text-muted-foreground">
+              Credentials are encrypted at rest with AES-256-GCM and never returned to your browser. Leave a field blank
+              to keep the saved value.
+            </p>
 
-          {/* 7. Verification */}
-          <AccordionItem value="verify">
-            <AccordionTrigger>7. Payment verification</AccordionTrigger>
-            <AccordionContent className="space-y-3">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Verification method">
-                  <Select
-                    value={form.config.verification.method}
-                    onValueChange={(v) => updateConfig((c) => ({ ...c, verification: { ...c.verification, method: v as any } }))}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {["api_status", "webhook_only", "callback", "manual"].map((v) => (
-                        <SelectItem key={v} value={v}>{v}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Verification endpoint">
-                  <Input
-                    value={form.config.verification.endpoint}
-                    onChange={(e) => updateConfig((c) => ({ ...c, verification: { ...c.verification, endpoint: e.target.value } }))}
-                    placeholder="/v1/transactions/{{transaction_id}}"
-                  />
-                </Field>
-                <Field label="Success values" helper="Comma-separated provider status values that count as paid.">
-                  <Input
-                    value={form.config.verification.successValues.join(",")}
-                    onChange={(e) =>
-                      updateConfig((c) => ({
-                        ...c,
-                        verification: {
-                          ...c.verification,
-                          successValues: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
-                        },
-                      }))
-                    }
-                  />
-                </Field>
-                <Field label="Status path">
-                  <Input
-                    value={form.config.verification.statusPath}
-                    onChange={(e) => updateConfig((c) => ({ ...c, verification: { ...c.verification, statusPath: e.target.value } }))}
-                  />
-                </Field>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
+            <AdvancedSettings form={form} update={update} updateConfig={updateConfig} />
+          </div>
+        )}
 
-          {/* 8. Refunds */}
-          <AccordionItem value="refund">
-            <AccordionTrigger>8. Refunds</AccordionTrigger>
-            <AccordionContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>Refunds enabled</Label>
-                <Switch
-                  checked={form.config.refund.enabled}
-                  onCheckedChange={(v) => updateConfig((c) => ({ ...c, refund: { ...c.refund, enabled: v } }))}
-                />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Refund endpoint">
-                  <Input
-                    value={form.config.refund.endpoint}
-                    onChange={(e) => updateConfig((c) => ({ ...c, refund: { ...c.refund, endpoint: e.target.value } }))}
-                    placeholder="/v1/refunds"
-                  />
-                </Field>
-                <Field label="Refund method">
-                  <Select
-                    value={form.config.refund.httpMethod}
-                    onValueChange={(v) => updateConfig((c) => ({ ...c, refund: { ...c.refund, httpMethod: v as any } }))}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {["POST", "PUT"].map((m) => (
-                        <SelectItem key={m} value={m}>{m}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* 9. Methods */}
-          <AccordionItem value="methods">
-            <AccordionTrigger>9. Displayed payment methods</AccordionTrigger>
-            <AccordionContent className="space-y-3">
-              <MethodEditor
-                rows={form.config.methods}
-                onChange={(rows) => updateConfig((c) => ({ ...c, methods: rows }))}
+        {/* ---------------- Step 3: Test & finish ---------------- */}
+        {step === 2 && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <ReviewLine label="Name" value={form.name} />
+              <ReviewLine label="Mode" value={form.environment === "sandbox" ? "Sandbox" : "Live"} />
+              <ReviewLine label="Auth" value={form.auth_type} />
+              <ReviewLine label="Currency" value={form.currency} />
+              <ReviewLine
+                label="Base URL"
+                value={form.environment === "sandbox" ? form.sandbox_base_url || form.api_base_url : form.api_base_url}
+                mono
               />
-            </AccordionContent>
-          </AccordionItem>
+              <ReviewLine label="Endpoint" value={form.config.request.endpoint} mono />
+            </div>
 
-          {/* 10. Review */}
-          <AccordionItem value="review">
-            <AccordionTrigger>10. Review & test</AccordionTrigger>
-            <AccordionContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <ReviewLine label="Name" value={form.name} />
-                <ReviewLine label="Environment" value={form.environment} />
-                <ReviewLine label="Auth" value={form.auth_type} />
-                <ReviewLine label="Currency" value={form.currency} />
-                <ReviewLine label="Base URL" value={form.api_base_url} mono />
-                <ReviewLine label="Checkout endpoint" value={form.config.request.endpoint} mono />
-              </div>
-              <Button variant="outline" onClick={runTest} disabled={testing} className="w-full">
-                {testing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <TestTube className="mr-2 h-4 w-4" />}
-                Run test checkout call
-              </Button>
-              {testResult && (
-                <div
-                  className={`flex items-start gap-2 rounded-md border p-3 text-sm ${
-                    testResult.ok ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"
-                  }`}
-                >
-                  {testResult.ok ? (
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                  ) : (
-                    <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <Button onClick={runTest} disabled={testing || saving} className="w-full" variant="outline">
+              {testing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <TestTube className="mr-2 h-4 w-4" />}
+              Test connection
+            </Button>
+
+            {testResult && (
+              <div
+                className={`flex items-start gap-2 rounded-md border p-3 text-sm ${
+                  testResult.ok
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                    : "border-red-200 bg-red-50 text-red-800"
+                }`}
+              >
+                {testResult.ok ? (
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                ) : (
+                  <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                )}
+                <div className="min-w-0">
+                  <div>{testResult.message}</div>
+                  {testResult.redirect_url && (
+                    <a
+                      href={testResult.redirect_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1 block truncate underline"
+                    >
+                      {testResult.redirect_url}
+                    </a>
                   )}
-                  <div className="min-w-0">
-                    <div>{testResult.message}</div>
-                    {testResult.redirect_url && (
-                      <a
-                        href={testResult.redirect_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-1 block truncate underline"
-                      >
-                        {testResult.redirect_url}
-                      </a>
-                    )}
-                  </div>
                 </div>
-              )}
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+              </div>
+            )}
+
+            {savedId ? (
+              <Field label="Webhook URL — paste this into your provider dashboard">
+                <div className="flex items-center gap-2">
+                  <Input readOnly value={webhookUrl} className="font-mono text-[11px]" />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(webhookUrl);
+                      toast.success("Copied");
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </Field>
+            ) : (
+              <p className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+                Run the test (or save) once to get your webhook URL.
+              </p>
+            )}
+
+            {savedId && (
+              <div className="rounded-md border p-3">
+                <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+                  <Webhook className="h-4 w-4" /> Recent webhook events
+                </div>
+                <div className="max-h-48 space-y-1.5 overflow-y-auto text-xs">
+                  {events.isLoading ? (
+                    <div className="text-muted-foreground">Loading…</div>
+                  ) : events.data && events.data.length > 0 ? (
+                    events.data.map((e: any) => (
+                      <div key={e.id} className="flex items-center justify-between gap-2 rounded border p-2">
+                        <div className="min-w-0">
+                          <div className="truncate font-medium">
+                            {e.event_type ?? "event"} · {e.normalized_status ?? "—"}
+                          </div>
+                          <div className="truncate text-muted-foreground">
+                            {new Date(e.created_at).toLocaleString()}
+                          </div>
+                        </div>
+                        <span className="shrink-0 text-[10px] uppercase text-muted-foreground">
+                          {e.processing_status}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-muted-foreground">No events received yet.</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <SheetFooter className="sticky bottom-0 -mx-6 flex-col gap-2 border-t bg-background/95 px-6 py-3 backdrop-blur sm:flex-col">
         <div className="flex w-full gap-2">
-          <Button variant="outline" className="flex-1" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button className="flex-1" onClick={submit} disabled={!canSave || saving}>
-            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-            Save
-          </Button>
+          {step > 0 ? (
+            <Button variant="outline" className="flex-1" onClick={() => setStep((s) => s - 1)}>
+              <ChevronLeft className="mr-1 h-4 w-4" /> Back
+            </Button>
+          ) : (
+            <Button variant="outline" className="flex-1" onClick={onClose}>
+              Cancel
+            </Button>
+          )}
+          {step < 2 ? (
+            <Button
+              className="flex-1"
+              onClick={() => setStep((s) => s + 1)}
+              disabled={step === 0 ? !step1Valid : !step2Valid}
+            >
+              Next <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          ) : (
+            <Button className="flex-1" onClick={() => submit(!!testResult?.ok)} disabled={saving || testing}>
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+              {testResult?.ok ? "Save & activate" : "Save"}
+            </Button>
+          )}
         </div>
       </SheetFooter>
     </>
+  );
+}
+
+/** Everything power users occasionally need, hidden by default. */
+function AdvancedSettings({
+  form,
+  update,
+  updateConfig,
+}: {
+  form: EditorState;
+  update: <K extends keyof EditorState>(k: K, v: EditorState[K]) => void;
+  updateConfig: (fn: (c: EditorState["config"]) => EditorState["config"]) => void;
+}) {
+  return (
+    <Accordion type="multiple" className="w-full">
+      <AccordionItem value="adv">
+        <AccordionTrigger className="text-sm">Advanced settings (optional)</AccordionTrigger>
+        <AccordionContent className="space-y-4 pt-1">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Slug" helper="Auto-generated from the name.">
+              <Input value={form.slug} onChange={(e) => update("slug", e.target.value)} placeholder="my-local-psp" />
+            </Field>
+            <Field label="Live base URL">
+              <Input value={form.api_base_url} onChange={(e) => update("api_base_url", e.target.value)} />
+            </Field>
+            <Field label="Sandbox base URL">
+              <Input value={form.sandbox_base_url} onChange={(e) => update("sandbox_base_url", e.target.value)} />
+            </Field>
+            <Field label="Support email">
+              <Input value={form.support_email} onChange={(e) => update("support_email", e.target.value)} />
+            </Field>
+            <Field label="Website">
+              <Input value={form.website_url} onChange={(e) => update("website_url", e.target.value)} />
+            </Field>
+            <Field label="Docs URL">
+              <Input value={form.docs_url} onChange={(e) => update("docs_url", e.target.value)} />
+            </Field>
+          </div>
+          <Field label="Description">
+            <Textarea rows={2} value={form.description} onChange={(e) => update("description", e.target.value)} />
+          </Field>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field label="HTTP method">
+              <Select
+                value={form.config.request.method}
+                onValueChange={(v) => updateConfig((c) => ({ ...c, request: { ...c.request, method: v as any } }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {["POST", "GET", "PUT", "PATCH"].map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Content type">
+              <Select
+                value={form.config.request.contentType}
+                onValueChange={(v) => updateConfig((c) => ({ ...c, request: { ...c.request, contentType: v as any } }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {["json", "form_urlencoded", "form_data", "xml"].map((v) => (
+                    <SelectItem key={v} value={v}>
+                      {v}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Checkout type">
+              <Select
+                value={form.config.checkout.type}
+                onValueChange={(v) => updateConfig((c) => ({ ...c, checkout: { ...c.checkout, type: v as any } }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {["hosted", "redirect", "api_response_url", "embedded", "direct_api", "manual"].map((v) => (
+                    <SelectItem key={v} value={v}>
+                      {v}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
+
+          <p className="text-[11px] text-muted-foreground">
+            Templates support <code>{"{{order_id}}"}</code>, <code>{"{{amount}}"}</code>,{" "}
+            <code>{"{{creds.api_key}}"}</code>. Available: {InternalVariables.join(", ")}.
+          </p>
+
+          <Field label="Custom headers">
+            <KeyValueEditor
+              rows={form.config.request.headers}
+              onChange={(rows) => updateConfig((c) => ({ ...c, request: { ...c.request, headers: rows } }))}
+              keyPlaceholder="Header"
+              valuePlaceholder="Value or {{template}}"
+            />
+          </Field>
+
+          <Field label="Body template" helper="Leave blank to build the body from field mapping.">
+            <Textarea
+              rows={4}
+              value={form.config.request.bodyTemplate}
+              onChange={(e) => updateConfig((c) => ({ ...c, request: { ...c.request, bodyTemplate: e.target.value } }))}
+              placeholder={`{\n  "amount": "{{amount}}",\n  "order_id": "{{order_id}}"\n}`}
+            />
+          </Field>
+
+          <Field label="Field mapping" helper="Source → destination field on the provider's request body.">
+            <MappingEditor
+              rows={form.config.request.mapping}
+              onChange={(rows) => updateConfig((c) => ({ ...c, request: { ...c.request, mapping: rows } }))}
+            />
+          </Field>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Transaction ID path">
+              <Input
+                value={form.config.response.transactionIdPath}
+                onChange={(e) =>
+                  updateConfig((c) => ({ ...c, response: { ...c.response, transactionIdPath: e.target.value } }))
+                }
+              />
+            </Field>
+            <Field label="Reference path">
+              <Input
+                value={form.config.response.referencePath}
+                onChange={(e) =>
+                  updateConfig((c) => ({ ...c, response: { ...c.response, referencePath: e.target.value } }))
+                }
+              />
+            </Field>
+            <Field label="Status path">
+              <Input
+                value={form.config.response.statusPath}
+                onChange={(e) => updateConfig((c) => ({ ...c, response: { ...c.response, statusPath: e.target.value } }))}
+              />
+            </Field>
+            <Field label="Message path">
+              <Input
+                value={form.config.response.messagePath}
+                onChange={(e) =>
+                  updateConfig((c) => ({ ...c, response: { ...c.response, messagePath: e.target.value } }))
+                }
+              />
+            </Field>
+          </div>
+
+          <Field label="Status mapping" helper="Provider status → platform status.">
+            <StatusMapEditor
+              rows={form.config.statusMap}
+              onChange={(rows) => updateConfig((c) => ({ ...c, statusMap: rows as any }))}
+            />
+          </Field>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Webhook status path">
+              <Input
+                value={form.config.webhook.statusPath}
+                onChange={(e) => updateConfig((c) => ({ ...c, webhook: { ...c.webhook, statusPath: e.target.value } }))}
+                placeholder="data.status"
+              />
+            </Field>
+            <Field label="Webhook event ID path" helper="Used to deduplicate events.">
+              <Input
+                value={form.config.webhook.eventIdPath}
+                onChange={(e) => updateConfig((c) => ({ ...c, webhook: { ...c.webhook, eventIdPath: e.target.value } }))}
+                placeholder="data.event_id"
+              />
+            </Field>
+            <Field label="Webhook provider ref path">
+              <Input
+                value={form.config.webhook.providerRefPath}
+                onChange={(e) =>
+                  updateConfig((c) => ({ ...c, webhook: { ...c.webhook, providerRefPath: e.target.value } }))
+                }
+              />
+            </Field>
+            <Field label="Signature encoding">
+              <Select
+                value={form.config.webhook.signature.encoding}
+                onValueChange={(v) =>
+                  updateConfig((c) => ({
+                    ...c,
+                    webhook: { ...c.webhook, signature: { ...c.webhook.signature, encoding: v as any } },
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {["hex", "base64"].map((v) => (
+                    <SelectItem key={v} value={v}>
+                      {v}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Verification method">
+              <Select
+                value={form.config.verification.method}
+                onValueChange={(v) =>
+                  updateConfig((c) => ({ ...c, verification: { ...c.verification, method: v as any } }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {["webhook_only", "api_status", "callback", "manual"].map((v) => (
+                    <SelectItem key={v} value={v}>
+                      {v}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Verification endpoint">
+              <Input
+                value={form.config.verification.endpoint}
+                onChange={(e) =>
+                  updateConfig((c) => ({ ...c, verification: { ...c.verification, endpoint: e.target.value } }))
+                }
+                placeholder="/v1/transactions/{{transaction_id}}"
+              />
+            </Field>
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <Label className="text-xs">Refunds supported</Label>
+            <Switch
+              checked={form.config.refund.enabled}
+              onCheckedChange={(v) => updateConfig((c) => ({ ...c, refund: { ...c.refund, enabled: v } }))}
+            />
+          </div>
+          {form.config.refund.enabled && (
+            <Field label="Refund endpoint">
+              <Input
+                value={form.config.refund.endpoint}
+                onChange={(e) => updateConfig((c) => ({ ...c, refund: { ...c.refund, endpoint: e.target.value } }))}
+                placeholder="/v1/refunds"
+              />
+            </Field>
+          )}
+
+          <Field label="Displayed payment methods" helper="Leave empty to show the gateway name only.">
+            <MethodEditor
+              rows={form.config.methods as any}
+              onChange={(rows) => updateConfig((c) => ({ ...c, methods: rows as any }))}
+            />
+          </Field>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 }
 
@@ -1114,11 +1249,15 @@ function MappingEditor({
               onChange(next);
             }}
           >
-            <SelectTrigger><SelectValue placeholder="Source" /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue placeholder="Source" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="__static">Static value</SelectItem>
               {InternalVariables.map((v) => (
-                <SelectItem key={v} value={v}>{v}</SelectItem>
+                <SelectItem key={v} value={v}>
+                  {v}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -1183,10 +1322,14 @@ function StatusMapEditor({
               onChange(next);
             }}
           >
-            <SelectTrigger><SelectValue placeholder="Platform status" /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue placeholder="Platform status" />
+            </SelectTrigger>
             <SelectContent>
               {targets.map((t) => (
-                <SelectItem key={t} value={t}>{t}</SelectItem>
+                <SelectItem key={t} value={t}>
+                  {t}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -1207,14 +1350,14 @@ function MethodEditor({
   onChange,
 }: {
   rows: { code: string; label: string; enabled: boolean; icon_url?: string }[];
-  onChange: (rows: any[]) => void;
+  onChange: (rows: { code: string; label: string; enabled: boolean; icon_url?: string }[]) => void;
 }) {
   return (
     <div className="space-y-2">
       {rows.map((row, i) => (
-        <div key={i} className="grid grid-cols-[1fr_1fr_auto_auto] items-center gap-2">
+        <div key={i} className="flex items-center gap-2">
           <Input
-            placeholder="Code (e.g. bkash)"
+            placeholder="Code (bkash)"
             value={row.code}
             onChange={(e) => {
               const next = [...rows];
@@ -1223,7 +1366,7 @@ function MethodEditor({
             }}
           />
           <Input
-            placeholder="Display label"
+            placeholder="Label (bKash)"
             value={row.label}
             onChange={(e) => {
               const next = [...rows];
@@ -1244,7 +1387,11 @@ function MethodEditor({
           </Button>
         </div>
       ))}
-      <Button size="sm" variant="outline" onClick={() => onChange([...rows, { code: "", label: "", enabled: true }])}>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => onChange([...rows, { code: "", label: "", enabled: true }])}
+      >
         <Plus className="mr-1 h-3.5 w-3.5" /> Add method
       </Button>
     </div>
