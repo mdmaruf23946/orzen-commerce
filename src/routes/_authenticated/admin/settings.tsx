@@ -222,7 +222,7 @@ function SettingsPage() {
   }
 
   return (
-    <form onSubmit={submit} className="mx-auto max-w-3xl pb-28">
+    <form onSubmit={submit} className="mx-auto max-w-3xl pb-32">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold">Store Settings</h1>
         <p className="mt-1 text-sm text-muted-foreground">
