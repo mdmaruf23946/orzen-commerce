@@ -52,7 +52,7 @@ const links: LinkDef[] = [
   { to: "/admin/delivery", label: "Delivery", icon: PackageOpen, badgeKey: "delivery" },
   { to: "/admin/couriers", label: "Couriers", icon: Truck, badgeKey: "delivery" },
   { to: "/admin/payment-gateway", label: "Payment Gateway", icon: CreditCard, badgeKey: "payment_gateway" },
-  { to: "/admin/payments", label: "Payments", icon: Wallet, badgeKey: "payments" },
+  
   { to: "/admin/ai-agent", label: "AI Sales Agent", icon: Bot },
   { to: "/admin/ai-recommendations", label: "AI Recommendations", icon: Sparkles, badgeKey: "ai_recommendations" },
   { to: "/admin/handoff-queue", label: "Handoff Queue", icon: UserCog, badgeKey: "handoff" },
@@ -78,7 +78,7 @@ const groupDefs: { label: string; paths: string[] }[] = [
   { label: "Customers", paths: ["/admin/customers", "/admin/customers-accounts", "/admin/duplicate-protection"] },
   { label: "AI & Automation", paths: ["/admin/ai-agent", "/admin/ai-recommendations", "/admin/handoff-queue", "/admin/low-stock", "/admin/messenger", "/admin/messenger-inbox"] },
   { label: "Marketing", paths: ["/admin/marketing", "/admin/coupons", "/admin/seo", "/admin/banners", "/admin/notifications"] },
-  { label: "Finance", paths: ["/admin/payments", "/admin/payment-gateway", "/admin/finance", "/admin/analytics"] },
+  { label: "Finance", paths: ["/admin/payment-gateway", "/admin/finance", "/admin/analytics"] },
   { label: "Operations", paths: ["/admin/delivery", "/admin/couriers", "/admin/landing-pages"] },
   { label: "System", paths: ["/admin/theme", "/admin/legal", "/admin/domains", "/admin/dns-check", "/admin/import-export"] },
   { label: "Account", paths: ["/admin/subscription", "/admin/billing", "/admin/settings"] },
