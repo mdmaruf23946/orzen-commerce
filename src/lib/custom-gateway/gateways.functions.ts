@@ -308,10 +308,11 @@ export const testCustomGateway = createServerFn({ method: "POST" })
       redirect_url: result.redirect_url,
       provider_ref: result.provider_ref,
       provider_status: result.provider_status,
-      message: result.message,
+      message: result.message ?? (result.raw_text ? String(result.raw_text).slice(0, 300) : null),
       error: result.error ?? null,
       tested_at: new Date().toISOString(),
     };
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin
       .from("custom_payment_gateways")
