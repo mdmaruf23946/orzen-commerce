@@ -699,3 +699,60 @@ function InvoiceNumberingSection() {
     </Section>
   );
 }
+
+function iconDisplayUrl(v?: string | null): string | null {
+  if (!v) return null;
+  if (v.startsWith("http") || v.startsWith("/")) return v;
+  return `/api/img/${v}`;
+}
+
+function IconPreviewCard({
+  label,
+  iconPath,
+  storeName,
+  subtitle,
+  browserTab,
+}: {
+  label: string;
+  iconPath?: string | null;
+  storeName: string;
+  subtitle?: string;
+  browserTab?: boolean;
+}) {
+  const url = iconDisplayUrl(iconPath);
+  const letter = (storeName || "S").charAt(0).toUpperCase();
+  return (
+    <div className="rounded-lg border bg-muted/30 p-3">
+      <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </div>
+      {browserTab ? (
+        <div className="flex items-center gap-2 rounded-md border bg-background px-2 py-1.5 shadow-sm">
+          {url ? (
+            <img src={url} alt="" className="h-4 w-4 rounded-sm object-cover" />
+          ) : (
+            <div className="grid h-4 w-4 place-items-center rounded-sm bg-primary text-[9px] font-bold text-primary-foreground">
+              {letter}
+            </div>
+          )}
+          <div className="truncate text-xs">{storeName}</div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2.5">
+          {url ? (
+            <img src={url} alt="" className="h-9 w-9 rounded-md border object-cover" />
+          ) : (
+            <div className="grid h-9 w-9 place-items-center rounded-md bg-primary text-sm font-bold text-primary-foreground">
+              {letter}
+            </div>
+          )}
+          <div className="min-w-0 leading-tight">
+            <div className="truncate text-sm font-semibold">{storeName}</div>
+            {subtitle && <div className="text-[11px] text-muted-foreground">{subtitle}</div>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
