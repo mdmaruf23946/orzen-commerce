@@ -103,7 +103,7 @@ export const listCustomGateways = createServerFn({ method: "GET" })
       .eq("store_id", data.storeId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return (rows ?? []).map(toPublic);
+    return (rows ?? []).map(toPublic) as any;
   });
 
 export const getCustomGateway = createServerFn({ method: "GET" })
@@ -111,7 +111,7 @@ export const getCustomGateway = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const row = await loadGatewayOwned(data.id, context.userId);
-    return toPublic(row);
+    return toPublic(row) as any;
   });
 
 // ------------ SAVE (create / update) ----------------------------------------
@@ -198,7 +198,7 @@ export const saveCustomGateway = createServerFn({ method: "POST" })
       if (owned.store_id !== data.storeId) throw new Error("Store mismatch");
       const { data: row, error } = await supabaseAdmin
         .from("custom_payment_gateways")
-        .update(patch)
+        .update(patch as any)
         .eq("id", data.id)
         .select("*")
         .single();
@@ -208,7 +208,7 @@ export const saveCustomGateway = createServerFn({ method: "POST" })
     } else {
       const { data: row, error } = await supabaseAdmin
         .from("custom_payment_gateways")
-        .insert({ ...patch, status: "draft" })
+        .insert({ ...patch, status: "draft" } as any)
         .select("*")
         .single();
       if (error) {
@@ -219,7 +219,7 @@ export const saveCustomGateway = createServerFn({ method: "POST" })
       await audit(data.storeId, saved.id, context.userId, "gateway_created");
     }
 
-    return toPublic(saved);
+    return toPublic(saved) as any;
   });
 
 export const deleteCustomGateway = createServerFn({ method: "POST" })
@@ -245,7 +245,7 @@ export const setCustomGatewayEnabled = createServerFn({ method: "POST" })
     const status = data.enabled ? (owned.status === "disabled" ? "connected" : owned.status) : "disabled";
     const { error } = await supabaseAdmin
       .from("custom_payment_gateways")
-      .update({ is_active: data.enabled, status })
+      .update({ is_active: data.enabled, status } as any)
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     await audit(owned.store_id, data.id, context.userId, data.enabled ? "gateway_enabled" : "gateway_disabled");
