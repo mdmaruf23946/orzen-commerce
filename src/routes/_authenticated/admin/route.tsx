@@ -163,12 +163,12 @@ function AdminLayout() {
     <UpgradeProvider>
     <div className="min-h-screen bg-muted/40">
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur md:hidden">
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur md:hidden">
         <button className="flex min-w-0 items-center gap-2 font-semibold" onClick={() => setOpen((v) => !v)}>
           <Menu className="h-5 w-5 shrink-0" />
           <span className="flex min-w-0 flex-col items-start leading-tight">
             <StoreBrandMark compact />
-            <span className="text-[10px] font-normal text-muted-foreground">Store Admin</span>
+            <span className="text-[11px] font-normal text-muted-foreground">Store Admin</span>
           </span>
         </button>
         <button
@@ -189,11 +189,11 @@ function AdminLayout() {
           )}
         >
           {/* Brand */}
-          <div className={cn("flex h-16 shrink-0 items-center gap-3 border-b px-4", collapsed && "md:justify-center md:px-2")}>
+          <div className={cn("flex h-20 shrink-0 items-center gap-3 border-b px-4", collapsed && "md:justify-center md:px-2")}>
             {(!collapsed || open) ? (
               <div className="flex min-w-0 flex-col leading-tight">
                 <StoreBrandMark />
-                <span className="mt-0.5 truncate text-[11px] text-muted-foreground">Store Admin</span>
+                <span className="mt-1 truncate text-[12px] text-muted-foreground">Store Admin</span>
               </div>
             ) : (
               <StoreBrandMark iconOnly />
