@@ -3886,13 +3886,16 @@ export type Database = {
           couriers: Json
           created_at: string
           currency: string
+          custom_favicon_url: string | null
           delivery: Json
           description: string | null
           email: string | null
           expires_at: string | null
           facebook: string | null
+          favicon_url: string | null
           footer_color: string | null
           header_color: string | null
+          icon_url: string | null
           id: string
           instagram: string | null
           language: string
@@ -3925,6 +3928,7 @@ export type Database = {
           trade_license: string | null
           trial_ends_at: string | null
           updated_at: string
+          use_icon_as_favicon: boolean
           website: string | null
           whatsapp: string | null
           youtube: string | null
@@ -3939,13 +3943,16 @@ export type Database = {
           couriers?: Json
           created_at?: string
           currency?: string
+          custom_favicon_url?: string | null
           delivery?: Json
           description?: string | null
           email?: string | null
           expires_at?: string | null
           facebook?: string | null
+          favicon_url?: string | null
           footer_color?: string | null
           header_color?: string | null
+          icon_url?: string | null
           id?: string
           instagram?: string | null
           language?: string
@@ -3978,6 +3985,7 @@ export type Database = {
           trade_license?: string | null
           trial_ends_at?: string | null
           updated_at?: string
+          use_icon_as_favicon?: boolean
           website?: string | null
           whatsapp?: string | null
           youtube?: string | null
@@ -3992,13 +4000,16 @@ export type Database = {
           couriers?: Json
           created_at?: string
           currency?: string
+          custom_favicon_url?: string | null
           delivery?: Json
           description?: string | null
           email?: string | null
           expires_at?: string | null
           facebook?: string | null
+          favicon_url?: string | null
           footer_color?: string | null
           header_color?: string | null
+          icon_url?: string | null
           id?: string
           instagram?: string | null
           language?: string
@@ -4031,6 +4042,7 @@ export type Database = {
           trade_license?: string | null
           trial_ends_at?: string | null
           updated_at?: string
+          use_icon_as_favicon?: boolean
           website?: string | null
           whatsapp?: string | null
           youtube?: string | null
