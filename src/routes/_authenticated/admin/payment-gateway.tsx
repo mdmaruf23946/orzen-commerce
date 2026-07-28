@@ -219,6 +219,8 @@ function PaymentGatewayPage() {
         />
       )}
 
+      {storeId && <CustomGatewaySection storeId={storeId} />}
+
       <Sheet open={!!open} onOpenChange={(v) => !v && setOpenId(null)}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
           {open && storeId && (
