@@ -214,6 +214,10 @@ export const updateMyStore = createServerFn({ method: "POST" })
         language: z.string().trim().min(2).max(8).optional(),
         timezone: z.string().trim().max(60).optional(),
         allow_guest_checkout: z.boolean().optional(),
+        icon_url: z.string().max(500).optional().nullable(),
+        favicon_url: z.string().max(500).optional().nullable(),
+        custom_favicon_url: z.string().max(500).optional().nullable(),
+        use_icon_as_favicon: z.boolean().optional(),
         branding: z
           .object({
             source: z.enum(["platform", "custom"]).optional(),
