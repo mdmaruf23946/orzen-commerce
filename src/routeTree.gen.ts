@@ -74,7 +74,6 @@ import { Route as AuthenticatedAdminSeoRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAdminReturnsRouteImport } from './routes/_authenticated/admin/returns'
 import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authenticated/admin/products'
 import { Route as AuthenticatedAdminProductDefaultsRouteImport } from './routes/_authenticated/admin/product-defaults'
-import { Route as AuthenticatedAdminPaymentsRouteImport } from './routes/_authenticated/admin/payments'
 import { Route as AuthenticatedAdminPaymentGatewayRouteImport } from './routes/_authenticated/admin/payment-gateway'
 import { Route as AuthenticatedAdminOrdersRouteImport } from './routes/_authenticated/admin/orders'
 import { Route as AuthenticatedAdminNotificationsRouteImport } from './routes/_authenticated/admin/notifications'
@@ -496,12 +495,6 @@ const AuthenticatedAdminProductDefaultsRoute =
   AuthenticatedAdminProductDefaultsRouteImport.update({
     id: '/product-defaults',
     path: '/product-defaults',
-    getParentRoute: () => AuthenticatedAdminRouteRoute,
-  } as any)
-const AuthenticatedAdminPaymentsRoute =
-  AuthenticatedAdminPaymentsRouteImport.update({
-    id: '/payments',
-    path: '/payments',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminPaymentGatewayRoute =
@@ -936,7 +929,6 @@ export interface FileRoutesByFullPath {
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/payment-gateway': typeof AuthenticatedAdminPaymentGatewayRoute
-  '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/admin/product-defaults': typeof AuthenticatedAdminProductDefaultsRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/returns': typeof AuthenticatedAdminReturnsRoute
@@ -1061,7 +1053,6 @@ export interface FileRoutesByTo {
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/payment-gateway': typeof AuthenticatedAdminPaymentGatewayRoute
-  '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/admin/product-defaults': typeof AuthenticatedAdminProductDefaultsRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/returns': typeof AuthenticatedAdminReturnsRoute
@@ -1195,7 +1186,6 @@ export interface FileRoutesById {
   '/_authenticated/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/_authenticated/admin/payment-gateway': typeof AuthenticatedAdminPaymentGatewayRoute
-  '/_authenticated/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/_authenticated/admin/product-defaults': typeof AuthenticatedAdminProductDefaultsRoute
   '/_authenticated/admin/products': typeof AuthenticatedAdminProductsRoute
   '/_authenticated/admin/returns': typeof AuthenticatedAdminReturnsRoute
@@ -1329,7 +1319,6 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/orders'
     | '/admin/payment-gateway'
-    | '/admin/payments'
     | '/admin/product-defaults'
     | '/admin/products'
     | '/admin/returns'
@@ -1454,7 +1443,6 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/orders'
     | '/admin/payment-gateway'
-    | '/admin/payments'
     | '/admin/product-defaults'
     | '/admin/products'
     | '/admin/returns'
@@ -1587,7 +1575,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/notifications'
     | '/_authenticated/admin/orders'
     | '/_authenticated/admin/payment-gateway'
-    | '/_authenticated/admin/payments'
     | '/_authenticated/admin/product-defaults'
     | '/_authenticated/admin/products'
     | '/_authenticated/admin/returns'
@@ -2160,13 +2147,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminProductDefaultsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
-    '/_authenticated/admin/payments': {
-      id: '/_authenticated/admin/payments'
-      path: '/payments'
-      fullPath: '/admin/payments'
-      preLoaderRoute: typeof AuthenticatedAdminPaymentsRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
-    }
     '/_authenticated/admin/payment-gateway': {
       id: '/_authenticated/admin/payment-gateway'
       path: '/payment-gateway'
@@ -2672,7 +2652,6 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminNotificationsRoute: typeof AuthenticatedAdminNotificationsRoute
   AuthenticatedAdminOrdersRoute: typeof AuthenticatedAdminOrdersRoute
   AuthenticatedAdminPaymentGatewayRoute: typeof AuthenticatedAdminPaymentGatewayRoute
-  AuthenticatedAdminPaymentsRoute: typeof AuthenticatedAdminPaymentsRoute
   AuthenticatedAdminProductDefaultsRoute: typeof AuthenticatedAdminProductDefaultsRoute
   AuthenticatedAdminProductsRoute: typeof AuthenticatedAdminProductsRoute
   AuthenticatedAdminReturnsRoute: typeof AuthenticatedAdminReturnsRoute
@@ -2721,7 +2700,6 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminOrdersRoute: AuthenticatedAdminOrdersRoute,
     AuthenticatedAdminPaymentGatewayRoute:
       AuthenticatedAdminPaymentGatewayRoute,
-    AuthenticatedAdminPaymentsRoute: AuthenticatedAdminPaymentsRoute,
     AuthenticatedAdminProductDefaultsRoute:
       AuthenticatedAdminProductDefaultsRoute,
     AuthenticatedAdminProductsRoute: AuthenticatedAdminProductsRoute,
