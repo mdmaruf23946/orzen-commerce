@@ -20,6 +20,8 @@ import { UpgradeProvider } from "@/components/admin/UpgradeModal";
 import { StoreBrandMark } from "@/components/admin/StoreBrandMark";
 import { CountBadge } from "@/components/admin/CountBadge";
 import { useBadgeCounts, useMarkSeen } from "@/lib/use-badge-counts";
+import { getMyStore } from "@/lib/admin.functions";
+import { resolveStoreIcon } from "@/lib/store-icon";
 
 
 type BadgeKey =
