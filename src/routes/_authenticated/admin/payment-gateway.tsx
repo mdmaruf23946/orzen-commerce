@@ -58,6 +58,7 @@ import {
 } from "@/components/ui/accordion";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { BrandMark } from "@/components/admin/payments/BrandMark";
+import { CustomGatewaySection } from "@/components/admin/payments/CustomGatewaySection";
 import { StatusBadge, type GatewayStatus } from "@/components/admin/payments/StatusBadge";
 import { getBrand } from "@/components/admin/payments/providers";
 import { WebhookEventsPanel } from "@/components/admin/payments/WebhookEventsPanel";
