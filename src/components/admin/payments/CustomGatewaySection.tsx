@@ -142,6 +142,71 @@ const DEFAULT_FORM: EditorState = {
   credentials: {},
 };
 
+/** One-click presets for providers we have verified end-to-end. */
+const PROVIDER_PRESETS: { id: string; label: string; hint: string; apply: (f: EditorState) => EditorState }[] = [
+  {
+    id: "rupantorpay",
+    label: "Rupantor Pay",
+    hint: "BDT · bKash, Nagad, cards",
+    apply: (f) => ({
+      ...f,
+      name: "Rupantor Pay",
+      slug: "rupantor-pay",
+      website_url: "https://rupantorpay.com",
+      docs_url: "https://rupantorpay.com/developers/docs",
+      currency: "BDT",
+      currencies: ["BDT"],
+      environment: "production",
+      auth_type: "api_key",
+      api_base_url: "https://payment.rupantorpay.com",
+      sandbox_base_url: "https://payment.rupantorpay.com",
+      config: {
+        ...f.config,
+        request: {
+          ...f.config.request,
+          method: "POST",
+          contentType: "json",
+          endpoint: "/api/payment/checkout",
+          bodyTemplate: "",
+          headers: [],
+          mapping: [
+            { source: "customer_name", target: "fullname" },
+            { source: "customer_email", target: "email" },
+            { source: "amount", target: "amount" },
+            { source: "success_url", target: "success_url" },
+            { source: "cancel_url", target: "cancel_url" },
+            { source: "webhook_url", target: "webhook_url" },
+            { source: "order_id", target: "metadata.order_id" },
+          ],
+        },
+        checkout: { ...f.config.checkout, type: "hosted", responsePayUrlPath: "payment_url" },
+        response: {
+          ...f.config.response,
+          statusPath: "status",
+          messagePath: "message",
+          transactionIdPath: "transaction_id",
+          referencePath: "transaction_id",
+        },
+        webhook: {
+          ...f.config.webhook,
+          statusPath: "status",
+          providerRefPath: "transaction_id",
+          signature: { ...f.config.webhook.signature, type: "none" },
+        },
+        verification: {
+          ...f.config.verification,
+          method: "api_status",
+          endpoint: "/api/payment/verify-payment",
+          httpMethod: "POST",
+          transactionIdParam: "transaction_id",
+          statusPath: "status",
+          successValues: ["COMPLETED", "SUCCESS", "PAID"],
+        },
+      } as EditorState["config"],
+    }),
+  },
+];
+
 function slugify(s: string) {
   return s
     .toLowerCase()
