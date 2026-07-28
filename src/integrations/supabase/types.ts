@@ -3880,6 +3880,7 @@ export type Database = {
           address: string | null
           allow_guest_checkout: boolean
           bkash_number: string | null
+          branding: Json
           business_name: string | null
           button_color: string | null
           couriers: Json
@@ -3932,6 +3933,7 @@ export type Database = {
           address?: string | null
           allow_guest_checkout?: boolean
           bkash_number?: string | null
+          branding?: Json
           business_name?: string | null
           button_color?: string | null
           couriers?: Json
@@ -3984,6 +3986,7 @@ export type Database = {
           address?: string | null
           allow_guest_checkout?: boolean
           bkash_number?: string | null
+          branding?: Json
           business_name?: string | null
           button_color?: string | null
           couriers?: Json
