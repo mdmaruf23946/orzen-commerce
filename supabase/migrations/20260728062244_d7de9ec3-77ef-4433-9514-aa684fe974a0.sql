@@ -1,0 +1,1 @@
+ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS branding jsonb NOT NULL DEFAULT '{"source":"platform"}'::jsonb;
