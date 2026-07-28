@@ -233,9 +233,16 @@ export const updateMyStore = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    // Auto-derive favicon_url from icon/custom based on toggle.
+    const patch: any = { ...data };
+    if (patch.use_icon_as_favicon !== false) {
+      patch.favicon_url = patch.icon_url ?? null;
+    } else {
+      patch.favicon_url = patch.custom_favicon_url ?? patch.icon_url ?? null;
+    }
     const { data: updated, error } = await supabase
       .from("stores")
-      .update(data as any)
+      .update(patch as any)
       .eq("owner_user_id", userId)
       .select("*")
       .single();
