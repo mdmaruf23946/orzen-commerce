@@ -52,7 +52,7 @@ const links: LinkDef[] = [
   { to: "/admin/delivery", label: "Delivery", icon: PackageOpen, badgeKey: "delivery" },
   { to: "/admin/couriers", label: "Couriers", icon: Truck, badgeKey: "delivery" },
   { to: "/admin/payment-gateway", label: "Payment Gateway", icon: CreditCard, badgeKey: "payment_gateway" },
-  { to: "/admin/payments", label: "Payments", icon: Wallet, badgeKey: "payments" },
+  
   { to: "/admin/ai-agent", label: "AI Sales Agent", icon: Bot },
   { to: "/admin/ai-recommendations", label: "AI Recommendations", icon: Sparkles, badgeKey: "ai_recommendations" },
   { to: "/admin/handoff-queue", label: "Handoff Queue", icon: UserCog, badgeKey: "handoff" },
