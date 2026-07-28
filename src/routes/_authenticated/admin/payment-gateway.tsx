@@ -58,6 +58,7 @@ import {
 } from "@/components/ui/accordion";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { BrandMark } from "@/components/admin/payments/BrandMark";
+import { CustomGatewaySection } from "@/components/admin/payments/CustomGatewaySection";
 import { StatusBadge, type GatewayStatus } from "@/components/admin/payments/StatusBadge";
 import { getBrand } from "@/components/admin/payments/providers";
 import { WebhookEventsPanel } from "@/components/admin/payments/WebhookEventsPanel";
@@ -217,6 +218,8 @@ function PaymentGatewayPage() {
           providers={data.map((g) => ({ provider_id: g.provider_id, label: g.label }))}
         />
       )}
+
+      {storeId && <CustomGatewaySection storeId={storeId} />}
 
       <Sheet open={!!open} onOpenChange={(v) => !v && setOpenId(null)}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-lg">

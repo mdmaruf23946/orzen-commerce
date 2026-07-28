@@ -137,6 +137,7 @@ import { Route as ApiPublicLandingPagesConnectionIdOrdersRouteImport } from './r
 import { Route as AuthenticatedOwnerCommunicationHistoryIdRouteImport } from './routes/_authenticated/owner/communication.history.$id'
 import { Route as AuthenticatedAdminBillingCheckoutPackageIdRouteImport } from './routes/_authenticated/admin/billing.checkout.$packageId'
 import { Route as ApiPublicStorePaymentsWebhookStoreProviderRouteImport } from './routes/api/public/store-payments/webhook.$store.$provider'
+import { Route as ApiPublicStorePaymentsCustomWebhookStoreGatewayRouteImport } from './routes/api/public/store-payments/custom-webhook.$store.$gateway'
 import { Route as ApiPublicLandingPagesConnectionIdEmbedOrdersRouteImport } from './routes/api/public/landing-pages/$connectionId/embed.orders'
 import { Route as ApiPublicLandingPagesConnectionIdApiOrdersRouteImport } from './routes/api/public/landing-pages/$connectionId/api.orders'
 
@@ -867,6 +868,12 @@ const ApiPublicStorePaymentsWebhookStoreProviderRoute =
     path: '/api/public/store-payments/webhook/$store/$provider',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicStorePaymentsCustomWebhookStoreGatewayRoute =
+  ApiPublicStorePaymentsCustomWebhookStoreGatewayRouteImport.update({
+    id: '/api/public/store-payments/custom-webhook/$store/$gateway',
+    path: '/api/public/store-payments/custom-webhook/$store/$gateway',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicLandingPagesConnectionIdEmbedOrdersRoute =
   ApiPublicLandingPagesConnectionIdEmbedOrdersRouteImport.update({
     id: '/api/public/landing-pages/$connectionId/embed/orders',
@@ -1009,6 +1016,7 @@ export interface FileRoutesByFullPath {
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
   '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
   '/api/public/landing-pages/$connectionId/embed/orders': typeof ApiPublicLandingPagesConnectionIdEmbedOrdersRoute
+  '/api/public/store-payments/custom-webhook/$store/$gateway': typeof ApiPublicStorePaymentsCustomWebhookStoreGatewayRoute
   '/api/public/store-payments/webhook/$store/$provider': typeof ApiPublicStorePaymentsWebhookStoreProviderRoute
 }
 export interface FileRoutesByTo {
@@ -1133,6 +1141,7 @@ export interface FileRoutesByTo {
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
   '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
   '/api/public/landing-pages/$connectionId/embed/orders': typeof ApiPublicLandingPagesConnectionIdEmbedOrdersRoute
+  '/api/public/store-payments/custom-webhook/$store/$gateway': typeof ApiPublicStorePaymentsCustomWebhookStoreGatewayRoute
   '/api/public/store-payments/webhook/$store/$provider': typeof ApiPublicStorePaymentsWebhookStoreProviderRoute
 }
 export interface FileRoutesById {
@@ -1266,6 +1275,7 @@ export interface FileRoutesById {
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
   '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
   '/api/public/landing-pages/$connectionId/embed/orders': typeof ApiPublicLandingPagesConnectionIdEmbedOrdersRoute
+  '/api/public/store-payments/custom-webhook/$store/$gateway': typeof ApiPublicStorePaymentsCustomWebhookStoreGatewayRoute
   '/api/public/store-payments/webhook/$store/$provider': typeof ApiPublicStorePaymentsWebhookStoreProviderRoute
 }
 export interface FileRouteTypes {
@@ -1399,6 +1409,7 @@ export interface FileRouteTypes {
     | '/api/public/subscription-pay/webhook/$provider'
     | '/api/public/landing-pages/$connectionId/api/orders'
     | '/api/public/landing-pages/$connectionId/embed/orders'
+    | '/api/public/store-payments/custom-webhook/$store/$gateway'
     | '/api/public/store-payments/webhook/$store/$provider'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -1523,6 +1534,7 @@ export interface FileRouteTypes {
     | '/api/public/subscription-pay/webhook/$provider'
     | '/api/public/landing-pages/$connectionId/api/orders'
     | '/api/public/landing-pages/$connectionId/embed/orders'
+    | '/api/public/store-payments/custom-webhook/$store/$gateway'
     | '/api/public/store-payments/webhook/$store/$provider'
   id:
     | '__root__'
@@ -1655,6 +1667,7 @@ export interface FileRouteTypes {
     | '/api/public/subscription-pay/webhook/$provider'
     | '/api/public/landing-pages/$connectionId/api/orders'
     | '/api/public/landing-pages/$connectionId/embed/orders'
+    | '/api/public/store-payments/custom-webhook/$store/$gateway'
     | '/api/public/store-payments/webhook/$store/$provider'
   fileRoutesById: FileRoutesById
 }
@@ -1686,6 +1699,7 @@ export interface RootRouteChildren {
   ApiPublicSubscriptionPayWebhookProviderRoute: typeof ApiPublicSubscriptionPayWebhookProviderRoute
   ApiPublicLandingPagesConnectionIdApiOrdersRoute: typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
   ApiPublicLandingPagesConnectionIdEmbedOrdersRoute: typeof ApiPublicLandingPagesConnectionIdEmbedOrdersRoute
+  ApiPublicStorePaymentsCustomWebhookStoreGatewayRoute: typeof ApiPublicStorePaymentsCustomWebhookStoreGatewayRoute
   ApiPublicStorePaymentsWebhookStoreProviderRoute: typeof ApiPublicStorePaymentsWebhookStoreProviderRoute
 }
 
@@ -2587,6 +2601,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicStorePaymentsWebhookStoreProviderRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/store-payments/custom-webhook/$store/$gateway': {
+      id: '/api/public/store-payments/custom-webhook/$store/$gateway'
+      path: '/api/public/store-payments/custom-webhook/$store/$gateway'
+      fullPath: '/api/public/store-payments/custom-webhook/$store/$gateway'
+      preLoaderRoute: typeof ApiPublicStorePaymentsCustomWebhookStoreGatewayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/landing-pages/$connectionId/embed/orders': {
       id: '/api/public/landing-pages/$connectionId/embed/orders'
       path: '/api/public/landing-pages/$connectionId/embed/orders'
@@ -2975,6 +2996,8 @@ const rootRouteChildren: RootRouteChildren = {
     ApiPublicLandingPagesConnectionIdApiOrdersRoute,
   ApiPublicLandingPagesConnectionIdEmbedOrdersRoute:
     ApiPublicLandingPagesConnectionIdEmbedOrdersRoute,
+  ApiPublicStorePaymentsCustomWebhookStoreGatewayRoute:
+    ApiPublicStorePaymentsCustomWebhookStoreGatewayRoute,
   ApiPublicStorePaymentsWebhookStoreProviderRoute:
     ApiPublicStorePaymentsWebhookStoreProviderRoute,
 }

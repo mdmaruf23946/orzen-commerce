@@ -1,109 +1,91 @@
-# Store Icon + Favicon Management System
 
-Adds a dedicated per-store square identity icon that also drives the storefront favicon, on top of the existing `stores.logo_url` (wordmark/logo) and `seo.favicon_url` fields.
+# Custom Payment Gateway Builder
 
-## 1. Database
+Extends the existing Store Admin → Payment Gateway page with a configurable, per-store custom gateway system. All existing hard-coded gateways (SSLCommerz, Stripe, bKash, etc.) remain untouched.
 
-Migration on `public.stores`:
-- Add `icon_url text` — square store icon (512×512 preferred).
-- Add `favicon_url text` — resolved favicon (mirrors `icon_url` when auto mode).
-- Add `use_icon_as_favicon boolean not null default true`.
-- Add `custom_favicon_url text` — optional separate favicon upload.
+## Architecture overview
 
-No new table — extends the existing `stores` row, matching the current architecture. Existing RLS on `stores` (owner-only update) already enforces tenant isolation. `get_public_store_by_slug` RPC is extended to return the four new fields for public storefront rendering.
+Custom gateways live in their own tables and their own runtime path — they do NOT join the `PROVIDERS` registry. The existing gateway list on the Payment Gateway page shows platform providers first, then a new "Custom gateways" section listing this store's custom gateways plus an "+ Add Custom Gateway" card. Checkout picks the store's active gateway from either source.
 
-Do **not** touch `platform_branding` (ORZEN global) or `branding` jsonb.
+## Database (new migration)
 
-## 2. Storage
+1. `public.custom_payment_gateways`
+   - `id uuid pk`, `store_id uuid → stores`, `name text`, `slug text`, `logo_url text`, `description text`, `website_url text`, `docs_url text`, `support_email text`, `currency text default 'BDT'`, `currencies text[]`
+   - `status text` in (`draft`,`testing`,`connected`,`active`,`error`,`disabled`)
+   - `environment text` in (`sandbox`,`production`) default `sandbox`
+   - `auth_type text`, `api_base_url text`, `sandbox_base_url text`
+   - `config jsonb` (non-secret: request/response mapping, headers template with `{{placeholders}}`, checkout type, response paths, webhook config, status map, verification config, refund config, payment methods)
+   - `credentials_encrypted text` (AES-256-GCM via existing `src/lib/crypto/credentials.server.ts`)
+   - `credentials_preview text` (masked hint only)
+   - `is_default boolean`, `is_active boolean`, `last_tested_at`, `last_test_result jsonb`
+   - `created_at`, `updated_at`
+   - Unique `(store_id, slug)`; partial unique index enforcing one `is_default=true` per store
+2. `public.custom_payment_gateway_events` (webhook log + idempotency)
+   - `id uuid pk`, `store_id`, `gateway_id`, `event_id text`, `event_type text`, `payload jsonb` (sanitized), `signature_valid boolean`, `processing_status text`, `processed_at`, `created_at`
+   - Unique `(gateway_id, event_id)` for idempotency
+3. `public.custom_payment_gateway_audit` — `id, store_id, gateway_id, actor_user_id, action, meta jsonb, created_at`
 
-Reuse existing `store-assets` bucket. Path convention:
-```
-stores/{store_id}/branding/icon-{timestamp}.{ext}
-stores/{store_id}/branding/favicon-{timestamp}.{ext}
-```
-Timestamp suffix busts CDN/browser cache on replace. Existing storage RLS already scopes writes to `{store_id}/…` for the store owner.
+GRANTs + RLS: `authenticated` gets `SELECT/INSERT/UPDATE/DELETE` on rows where `is_store_owner(store_id)`. `service_role` full. `credentials_encrypted` is never selected from client — a `SECURITY DEFINER` RPC `get_custom_gateway_public(_id uuid)` returns everything except that column for the admin UI. Webhook events are read-only for owners; inserted only by service_role.
 
-## 3. Upload + Crop UI
+## Server code
 
-New component `src/components/admin/StoreIconUploader.tsx`:
-- Accepts PNG/JPG/WebP (SVG rejected for safety).
-- Max 2 MB, validates square-ish aspect, warns if <256px.
-- Opens a crop dialog using the existing `react-easy-crop` pattern from `src/components/admin/product-form/CropDialog.tsx` — locked 1:1 aspect, zoom slider.
-- Compresses via existing `src/lib/compress-image.ts` to 512×512 WebP before upload.
-- Uploads to Supabase Storage, returns the public URL.
+Files (all thin `createServerFn` wrappers, real logic in `.server.ts`):
 
-## 4. Store Settings Section
+- `src/lib/custom-gateway/types.ts` — Zod schemas for config, mapping, headers, status map, verification, refund.
+- `src/lib/custom-gateway/engine.server.ts` — pure engine:
+  - `renderTemplate(str, vars)` — safe `{{var}}` substitution (no eval).
+  - `buildRequest(config, vars, creds)` — assembles method, URL, headers, body per Content-Type.
+  - `readPath(obj, "a.b.c")` — response mapping.
+  - `signHmac(body, secret, algo, encoding)` and `verifyWebhookSignature(config, rawBody, headers, creds)`.
+  - `normalizeStatus(providerStatus, statusMap)` → `pending|processing|paid|failed|cancelled|refunded|expired`.
+  - `executeCheckout`, `executeVerification`, `executeRefund` — server-side `fetch` to provider.
+- `src/lib/custom-gateway/gateways.functions.ts` — `listCustomGateways`, `getCustomGateway`, `upsertCustomGateway` (splits secret fields into `credentials_encrypted` + preview), `deleteCustomGateway`, `toggleCustomGateway`, `setDefaultCustomGateway` (rejects unverified), `testCustomGatewayConnection`, `testCustomGatewayPayment`, `importCustomGatewayConfig`, `exportCustomGatewayConfig` (strips secrets). All `.middleware([requireSupabaseAuth])` + `assertStoreOwnership`.
+- `src/routes/api/public/store-payments/custom-webhook.$store.$gateway.ts` — POST handler: loads gateway via `supabaseAdmin`, verifies signature per config, checks idempotency on `(gateway_id, event_id)`, normalizes status, updates matching `payments`/`orders` row, records event. Returns 200 for known events, 401 on bad signature, 409 on duplicate.
+- Extend existing checkout flow (`src/lib/store-payments.functions.ts` create-intent path) to detect custom gateway selection and call `engine.executeCheckout` instead of the `PROVIDERS` registry. Response mapping extracts payment URL / transaction id.
+- Extend the return/callback route to call `engine.executeVerification` server-side before marking paid — never trust redirect params.
 
-In `src/routes/_authenticated/admin/settings.tsx`, add a new `Store Icon` section (icon: `ImageIcon`) placed after Store Identity:
+## URLs (auto-generated per store + gateway)
 
-- **Store Icon card**: current icon preview (square, 96×96), file name, `Upload / Replace / Remove` buttons. Remove button opens an `AlertDialog` confirmation. Fallback message when unset: "Using Default Store Icon" showing platform default.
-- **Favicon card**:
-  - Switch `Use Store Icon as Favicon` (default ON) → hides custom uploader.
-  - When OFF, show custom favicon uploader (PNG/ICO/WebP, ≤512 KB).
-- **Live Preview panel** (3 mini previews, updates on state change):
-  1. Store Admin identity — `[icon] Store Name / Store`
-  2. Browser tab — rounded rect with icon + store name
-  3. Storefront header — `[icon] Store Name`
-  Rendered on both light and dark backgrounds.
+Built from `window.location.origin` / server request origin:
+- Success: `/store/{slug}/payment/return?gw={gatewayId}&status=success`
+- Cancel: `.../return?gw={gatewayId}&status=cancel`
+- Failure: `.../return?gw={gatewayId}&status=fail`
+- Callback: `.../return?gw={gatewayId}` (server-verified)
+- Webhook: `/api/public/store-payments/custom-webhook/{storeId}/{gatewayId}`
 
-Save uses the existing sticky bar + inline save via `updateMyStore`.
+Copy buttons in the UI use these.
 
-## 5. Server function updates
+## UI
 
-`src/lib/admin.functions.ts` → extend `updateMyStore` Zod schema and update payload with:
-`icon_url`, `favicon_url`, `use_icon_as_favicon`, `custom_favicon_url`.
+- `src/components/admin/payments/custom/CustomGatewayCard.tsx` — matches existing card style; shows logo, methods, status badge, Manage/Test/Toggle/Delete/Set-default.
+- `src/components/admin/payments/custom/CustomGatewayWizard.tsx` — Sheet-based 10-step wizard with progress rail, back/next preserving form state (single `useState` object). Steps: Basic Info · Authentication · Environment · Payment Request (headers/body builders with monaco-lite `Textarea` + JSON validation on blur) · Checkout/Redirect · Response Mapping · Callback & Webhook (copy URLs, signature config) · Payment Verification · Refund (toggle) · Payment Methods · Test Connection · Review & Activate.
+  - Auth-type driven dynamic fields; all secrets rendered as password inputs with show/hide; on save, empty secret keeps existing value.
+  - Field-mapping builder = repeatable rows (internal var → provider path) plus static values.
+  - Header/body builders support `{{order_id}}`, `{{amount}}`, `{{currency}}`, `{{customer_*}}`, `{{success_url}}`, `{{cancel_url}}`, `{{fail_url}}`, `{{callback_url}}`, `{{webhook_url}}`, `{{store_id}}`.
+  - Status-mapping table (provider value → internal enum).
+  - Import/Export JSON (secrets stripped on export; validated on import).
+- Insert `CustomGatewaySection` on `src/routes/_authenticated/admin/payment-gateway.tsx` below existing platform cards. No changes to existing cards.
 
-Server also computes `favicon_url` on save:
-- if `use_icon_as_favicon` → `favicon_url = icon_url`
-- else → `favicon_url = custom_favicon_url || icon_url || null`
+## Checkout integration
 
-## 6. Fallback resolver
+- Storefront checkout gateway picker lists platform-active gateway + all `active` custom gateways.
+- On submit for a custom gateway: server creates `payments` row (`pending`), runs `executeCheckout`, stores `provider_ref`, returns `redirect_url` or renders embedded per `checkoutType`. Never marks paid client-side.
+- Return route: `executeVerification` when method = API status check; otherwise wait for webhook. Status set only from verified source.
 
-New helper `src/lib/store-icon.ts` exporting `resolveStoreIcon(store, platformBranding)` and `resolveStoreFavicon(store, platformBranding)` implementing the spec's priority (store icon → platform default → 'O' letter mark).
+## Security
 
-## 7. Store Admin sidebar/header
+- Credentials encrypted at rest with existing `encryptJSON`/`decryptJSON`; secret keys defined by auth-type map so they're stripped from `config` before persist.
+- No secret ever selected client-side; UI only sees `credentials_preview` and boolean `has_credentials`.
+- RLS scopes every table by `store_id` via `is_store_owner`; webhook route uses `supabaseAdmin` only after signature verification.
+- Idempotent webhook via unique `(gateway_id, event_id)`.
+- Audit log entry on create/update/activate/disable/test/delete/webhook/refund; payload sanitized (no secrets, truncated bodies).
+- Rate-limit test-connection per store (soft: max 20/hour recorded in audit).
 
-`src/routes/_authenticated/admin/route.tsx`: below the existing `<StoreBrandMark>` (ORZEN, unchanged), render a new store identity row using the resolver:
-```
-[Store Icon] Store Name
-             Store
-```
-No duplicate ORZEN icon.
+## Acceptance verification
 
-## 8. Storefront injection
+After build: create two stores in the same account, add one custom gateway to each with different credentials, confirm store A's admin cannot fetch/manage/test store B's gateway (RLS query check), confirm webhook to store A's URL updates only store A's order, confirm exported config contains no secret keys, confirm existing SSLCommerz/Stripe cards still render and save.
 
-`src/routes/store/$slug/route.tsx` `head()`:
-- Compute favicon from `store.favicon_url ?? store.icon_url ?? store.seo?.favicon_url`.
-- Emit `<link rel="icon">`, `<link rel="apple-touch-icon">`, `<meta name="theme-color">`.
-- Also update `StoreHeader` to use `icon_url` (fallback to `logo_url`) beside the store name.
+## Out of scope
 
-Store-scoped, so Store A never shows Store B's icon.
-
-## 9. Winner Admin visibility
-
-`src/routes/_authenticated/owner/…` stores list (existing): add `icon_url` column with thumbnail + "custom favicon" badge. Read-only.
-
-## 10. Cache invalidation
-
-- Upload paths carry a timestamp → new URL each replace.
-- After save, invalidate `["admin","store"]` and `["store", slug]` React Query keys.
-- Storefront `<link rel="icon">` re-renders per store because head is per-route.
-
-## Technical notes
-
-- No new tables, no changes to `platform_branding`, `branding` jsonb, or `seo.favicon_url` (kept as legacy fallback and still honored in the resolver).
-- SVG intentionally excluded to avoid XSS via storage.
-- Uses existing crop dialog, image compressor, `store-assets` bucket, and RLS — no security posture change.
-- All wiring is additive; existing logo/wordmark flows are untouched.
-
-## Files touched
-
-- Migration (add 4 columns to `stores`; update `get_public_store_by_slug`).
-- `src/lib/admin.functions.ts` — extend `updateMyStore`.
-- `src/lib/store-icon.ts` — new resolver.
-- `src/components/admin/StoreIconUploader.tsx` — new.
-- `src/routes/_authenticated/admin/settings.tsx` — new sections + previews.
-- `src/routes/_authenticated/admin/route.tsx` — store identity row under ORZEN mark.
-- `src/routes/store/$slug/route.tsx` — favicon in `head()` + header icon.
-- `src/lib/storefront.functions.ts` — pass new fields through `get_public_store_by_slug`.
-- Owner stores list — add icon column.
+- Providers requiring proprietary SDKs / device signing — wizard's Review step surfaces the "dedicated integration required" message when config is incomplete for the chosen checkout type.
+- Changes to subscription-pay providers, courier system, or platform admin panel.
