@@ -216,6 +216,31 @@ function AdminLayout() {
             </button>
           </div>
 
+          {/* Store identity (per-store icon + name) */}
+          {(!collapsed || open) && storeName && (
+            <div className="flex items-center gap-2.5 border-b px-4 py-2.5">
+              {storeIcon ? (
+                <img
+                  src={storeIcon}
+                  alt=""
+                  className="h-8 w-8 shrink-0 rounded-md border object-cover"
+                />
+              ) : (
+                <div
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-xs font-bold text-white"
+                  style={{ backgroundColor: (myStore as any)?.primary_color || "hsl(var(--primary))" }}
+                >
+                  {storeName.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0 leading-tight">
+                <div className="truncate text-sm font-semibold">{storeName}</div>
+                <div className="text-[11px] text-muted-foreground">Store</div>
+              </div>
+            </div>
+          )}
+
+
           {/* Search */}
           {(!collapsed || open) && (
             <div className="border-b p-3">
