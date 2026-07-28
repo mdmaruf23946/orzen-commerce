@@ -277,8 +277,88 @@ function SettingsPage() {
           </Field>
         </Section>
 
+        {/* 1b. Store Icon & Favicon */}
+        <Section
+          icon={ImageIcon}
+          title="Store Icon & Favicon"
+          description="A square icon used for your store identity, browser tab, and PWA icon."
+        >
+          <Field label="Store icon" hint="Square PNG, JPG or WebP. Recommended 512×512.">
+            <ImageUploader
+              storeId={form.id}
+              folder={form.id ? `${form.id}/branding` : undefined}
+              value={form.icon_url ?? null}
+              onChange={(v) => set("icon_url", v)}
+              accept="image/png,image/jpeg,image/webp"
+              maxBytes={2 * 1024 * 1024}
+              label="Upload icon"
+            />
+            {!form.icon_url && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Using default store icon (first letter of store name).
+              </p>
+            )}
+          </Field>
 
-        {/* 2. Contact Information */}
+          <label className="flex items-start justify-between gap-3 rounded-lg border p-3">
+            <div className="min-w-0">
+              <div className="text-sm font-medium">Use Store Icon as Favicon</div>
+              <div className="text-xs text-muted-foreground">
+                Browser tab, apple-touch and PWA icons use your Store Icon automatically.
+              </div>
+            </div>
+            <Switch
+              checked={form.use_icon_as_favicon !== false}
+              onCheckedChange={(v) => set("use_icon_as_favicon", v)}
+            />
+          </label>
+
+          {form.use_icon_as_favicon === false && (
+            <Field
+              label="Custom favicon"
+              hint="PNG or WebP. Recommended 180×180 or larger."
+            >
+              <ImageUploader
+                storeId={form.id}
+                folder={form.id ? `${form.id}/branding` : undefined}
+                value={form.custom_favicon_url ?? null}
+                onChange={(v) => set("custom_favicon_url", v)}
+                accept="image/png,image/webp,image/x-icon"
+                maxBytes={512 * 1024}
+                label="Upload favicon"
+              />
+            </Field>
+          )}
+
+          {/* Live previews */}
+          <div className="grid gap-3 sm:grid-cols-3">
+            <IconPreviewCard
+              label="Store Admin"
+              iconPath={form.icon_url}
+              storeName={form.name || "Your Store"}
+              subtitle="Store"
+            />
+            <IconPreviewCard
+              label="Browser tab"
+              iconPath={
+                form.use_icon_as_favicon === false
+                  ? (form.custom_favicon_url || form.icon_url)
+                  : form.icon_url
+              }
+              storeName={form.name || "Your Store"}
+              browserTab
+            />
+            <IconPreviewCard
+              label="Storefront"
+              iconPath={form.icon_url}
+              storeName={form.name || "Your Store"}
+              subtitle="Home"
+            />
+          </div>
+        </Section>
+
+
+
         <Section icon={PhoneIcon} title="Contact Information" description="How customers can reach you.">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Phone number" htmlFor="c-phone">
