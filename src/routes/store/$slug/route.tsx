@@ -46,8 +46,16 @@ export const Route = createFileRoute("/store/$slug")({
     ];
     if (seo.keywords) meta.push({ name: "keywords", content: seo.keywords });
     if (seo.og_image_url) meta.push({ property: "og:image", content: seo.og_image_url });
+    // Prefer per-store favicon → store icon → legacy seo.favicon_url → store logo.
+    const useIcon = s.use_icon_as_favicon !== false;
+    const favicon = useIcon
+      ? (s.favicon_url || s.icon_url || s.custom_favicon_url || seo.favicon_url || s.logo_url)
+      : (s.custom_favicon_url || s.favicon_url || s.icon_url || seo.favicon_url || s.logo_url);
     const links: any[] = [];
-    if (seo.favicon_url) links.push({ rel: "icon", href: seo.favicon_url });
+    if (favicon) {
+      links.push({ rel: "icon", href: favicon });
+      links.push({ rel: "apple-touch-icon", href: favicon });
+    }
     return { meta, links };
   },
   notFoundComponent: () => (
