@@ -26,7 +26,13 @@ export const getStoreBySlug = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     if (!row) return null;
     const store = row as any;
-    return { ...store, logo_url: imgUrl(store.logo_url) };
+    return {
+      ...store,
+      logo_url: imgUrl(store.logo_url),
+      icon_url: imgUrl(store.icon_url),
+      favicon_url: imgUrl(store.favicon_url),
+      custom_favicon_url: imgUrl(store.custom_favicon_url),
+    };
   });
 
 export const getStoreActiveGateway = createServerFn({ method: "GET" })
