@@ -117,6 +117,10 @@ function AdminLayout() {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const ownerCheck = useServerFn(amIOwner);
   const { data: ownerData } = useQuery({ queryKey: ["amIOwner"], queryFn: () => ownerCheck() });
+  const fetchStore = useServerFn(getMyStore);
+  const { data: myStore } = useQuery({ queryKey: ["admin", "store"], queryFn: () => fetchStore() });
+  const storeIcon = resolveStoreIcon(myStore as any);
+  const storeName = (myStore as any)?.name ?? "";
   const { counts, storeId } = useBadgeCounts();
   const markSeen = useMarkSeen();
   const currentPath = useRouterState({ select: (s) => s.location.pathname });
