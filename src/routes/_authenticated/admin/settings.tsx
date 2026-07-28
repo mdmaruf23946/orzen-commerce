@@ -12,6 +12,8 @@ import {
   Globe,
   AlertTriangle,
   Hash,
+  Image as ImageIcon,
+  Sparkles,
 } from "lucide-react";
 
 import {
