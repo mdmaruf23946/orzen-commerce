@@ -600,7 +600,23 @@ function GatewayEditor({
         {/* ---------------- Step 1: Provider ---------------- */}
         {step === 0 && (
           <div className="space-y-3">
+            <Field label="Quick setup" helper="Pick a verified provider to auto-fill every technical field.">
+              <div className="flex flex-wrap gap-2">
+                {PROVIDER_PRESETS.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setForm((f) => p.apply(f))}
+                    className="rounded-lg border px-3 py-2 text-left text-xs hover:border-primary hover:bg-accent"
+                  >
+                    <div className="font-medium">{p.label}</div>
+                    <div className="text-[10px] text-muted-foreground">{p.hint}</div>
+                  </button>
+                ))}
+              </div>
+            </Field>
             <Field label="Gateway name" required helper="Shown to your customers at checkout.">
+
               <Input
                 value={form.name}
                 onChange={(e) => update("name", e.target.value)}
