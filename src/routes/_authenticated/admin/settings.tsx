@@ -12,9 +12,8 @@ import {
   Globe,
   AlertTriangle,
   Hash,
-  Palette,
 } from "lucide-react";
-import { StoreBrandMark } from "@/components/admin/StoreBrandMark";
+
 import {
   getMyStore,
   updateMyStore,
