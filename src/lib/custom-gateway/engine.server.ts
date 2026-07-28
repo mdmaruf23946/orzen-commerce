@@ -92,14 +92,31 @@ export function buildHeaders(
   else if (contentType === "form_urlencoded") headers["Content-Type"] = "application/x-www-form-urlencoded";
   else if (contentType === "xml") headers["Content-Type"] = "application/xml";
 
+  // Defaults that keep provider WAFs (Cloudflare etc.) from returning 403
+  headers["Accept"] = "application/json";
+  headers["User-Agent"] = "ORZEN-Commerce/1.0 (+https://orzen.com)";
+
+  // Origin host used by providers such as Rupantor Pay (X-CLIENT)
+  const originHost = (() => {
+    const candidate = String(vars.success_url ?? vars.callback_url ?? vars.webhook_url ?? "");
+    try {
+      return candidate ? new URL(candidate).hostname : "";
+    } catch {
+      return "";
+    }
+  })();
+
   // Auth headers
   switch (authType) {
     case "api_key":
-      if (creds.api_key) headers["X-API-Key"] = creds.api_key;
+      if (creds.api_key) {
+        headers["X-API-KEY"] = creds.api_key;
+        if (!creds.custom_header_name) headers["X-CLIENT"] = creds.client ?? originHost;
+      }
       break;
     case "api_key_secret":
-      if (creds.api_key) headers["X-API-Key"] = creds.api_key;
-      if (creds.api_secret) headers["X-API-Secret"] = creds.api_secret;
+      if (creds.api_key) headers["X-API-KEY"] = creds.api_key;
+      if (creds.api_secret) headers["X-API-SECRET"] = creds.api_secret;
       break;
     case "bearer":
       if (creds.bearer_token) headers["Authorization"] = `Bearer ${creds.bearer_token}`;
@@ -119,6 +136,7 @@ export function buildHeaders(
     default:
       break;
   }
+
 
   // User overrides / additions
   for (const h of headerTemplate ?? []) {
