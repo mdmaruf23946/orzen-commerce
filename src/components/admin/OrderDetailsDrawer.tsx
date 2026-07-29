@@ -140,7 +140,14 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                   <Printer className="h-3 w-3" /> Invoice
                 </Link>
               )}
-            </SheetTitle>
+              <Link
+                to="/admin/courier-orders"
+                search={{ tab: "ready" }}
+                className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-normal hover:bg-muted"
+              >
+                <Truck className="h-3 w-3" /> Send to Courier
+              </Link>
+
           </SheetHeader>
 
           {isLoading || !order ? (
