@@ -922,3 +922,99 @@ export const getOrder = createServerFn({ method: "GET" })
     return row as any;
   });
 
+
+/**
+ * Shopper-facing payment timeline: a sanitized view of what the gateway told
+ * us about this order. Never exposes raw payloads, headers or credentials.
+ */
+export const getOrderPaymentTimeline = createServerFn({ method: "GET" })
+  .inputValidator((d) => z.object({ orderId: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: order } = await supabaseAdmin
+      .from("orders")
+      .select(
+        "id,store_id,invoice_no,payment_method,payment_status,payment_ref,payment_gateway_id,created_at,updated_at",
+      )
+      .eq("id", data.orderId)
+      .maybeSingle();
+    if (!order) return null;
+    const o = order as any;
+
+    const refs = [o.payment_ref, o.invoice_no, o.id].filter(Boolean).map(String);
+    const inList = `(${refs.map((r) => `"${r.replace(/["\\]/g, "")}"`).join(",")})`;
+
+    let gatewayLabel: string | null = null;
+    if (o.payment_gateway_id) {
+      const { data: gw } = await supabaseAdmin
+        .from("custom_payment_gateways")
+        .select("name,environment")
+        .eq("id", o.payment_gateway_id)
+        .maybeSingle();
+      if (gw) gatewayLabel = (gw as any).name ?? null;
+    }
+
+    type Ev = {
+      at: string;
+      source: string;
+      status: string | null;
+      ok: boolean | null;
+      message: string | null;
+      amount: number | null;
+      currency: string | null;
+    };
+    const events: Ev[] = [];
+
+    if (refs.length) {
+      const [{ data: customEvents }, { data: builtinEvents }] = await Promise.all([
+        supabaseAdmin
+          .from("custom_payment_gateway_events")
+          .select("created_at,normalized_status,processing_status,error_message,signature_valid,provider_ref")
+          .eq("store_id", o.store_id)
+          .filter("provider_ref", "in", inList)
+          .order("created_at", { ascending: true })
+          .limit(20),
+        supabaseAdmin
+          .from("payment_webhook_events")
+          .select("received_at,verified_status,error_message,signature_valid,amount,currency,provider_ref,source")
+          .eq("store_id", o.store_id)
+          .filter("provider_ref", "in", inList)
+          .order("received_at", { ascending: true })
+          .limit(20),
+      ]);
+
+      for (const e of (customEvents ?? []) as any[]) {
+        events.push({
+          at: e.created_at,
+          source: gatewayLabel ?? "Payment gateway",
+          status: e.normalized_status ?? e.processing_status ?? null,
+          ok: e.processing_status === "processed" ? true : e.processing_status === "received" ? null : false,
+          message: e.error_message ?? null,
+          amount: null,
+          currency: null,
+        });
+      }
+      for (const e of (builtinEvents ?? []) as any[]) {
+        events.push({
+          at: e.received_at,
+          source: gatewayLabel ?? "Payment gateway",
+          status: e.verified_status ?? null,
+          ok: e.verified_status === "paid" ? true : e.verified_status === "failed" ? false : null,
+          message: e.error_message ?? null,
+          amount: e.amount != null ? Number(e.amount) : null,
+          currency: e.currency ?? null,
+        });
+      }
+      events.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+    }
+
+    return {
+      payment_status: (o.payment_status ?? "pending") as string,
+      payment_method: o.payment_method as string,
+      gateway_label: gatewayLabel,
+      reference: o.payment_ref ?? o.invoice_no ?? null,
+      initiated_at: o.created_at as string,
+      settled_at: o.payment_status === "paid" ? ((o.updated_at as string) ?? null) : null,
+      events,
+    };
+  });
