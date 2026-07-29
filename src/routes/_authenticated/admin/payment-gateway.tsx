@@ -59,6 +59,7 @@ import {
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { BrandMark } from "@/components/admin/payments/BrandMark";
 import { CustomGatewaySection } from "@/components/admin/payments/CustomGatewaySection";
+import { PaymentStatusRules } from "@/components/admin/payments/PaymentStatusRules";
 import { StatusBadge, type GatewayStatus } from "@/components/admin/payments/StatusBadge";
 import { getBrand } from "@/components/admin/payments/providers";
 import { WebhookEventsPanel } from "@/components/admin/payments/WebhookEventsPanel";
