@@ -9,6 +9,7 @@ import { Link } from "@tanstack/react-router";
 import { getOrderDetails, addInternalNote, deleteInternalNote } from "@/lib/business.functions";
 import { updateOrderCourierInfo } from "@/lib/ai-review.functions";
 import { setOrderAllowDuplicate } from "@/lib/admin.functions";
+import { getOrderCustomerStats } from "@/lib/orders-admin.functions";
 import { getCachedFraudCheck, ensureAutoFraudCheck } from "@/lib/fraud.functions";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -382,6 +383,32 @@ function MiniStat({ label, value }: { label: string; value: any }) {
     <div className="rounded-lg border bg-muted/30 p-2">
       <div className="text-[10px] uppercase text-muted-foreground">{label}</div>
       <div className="text-sm font-semibold">{value}</div>
+    </div>
+  );
+}
+
+/** Lifetime history for this customer (read-only, by phone). */
+function CustomerStats({ phone, enabled }: { phone: string; enabled: boolean }) {
+  const statsFn = useServerFn(getOrderCustomerStats);
+  const { data } = useQuery({
+    queryKey: ["order-customer-stats", phone],
+    queryFn: () => statsFn({ data: { phone } }),
+    enabled: enabled && !!phone,
+    staleTime: 60_000,
+  });
+  if (!data) return null;
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-2 border-t pt-3">
+      <MiniStat label="Total orders" value={data.total} />
+      <MiniStat label="Delivered" value={data.delivered} />
+      <MiniStat label="Cancelled" value={data.cancelled} />
+      <MiniStat label="COD success" value={data.codSuccess == null ? "—" : `${data.codSuccess}%`} />
+      <div className="col-span-2">
+        <MiniStat
+          label="Lifetime value"
+          value={`৳${Number(data.lifetime).toLocaleString("en-BD")} · since ${new Date(data.since).toLocaleDateString()}`}
+        />
+      </div>
     </div>
   );
 }
