@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getOrder, verifyOrderPayment } from "@/lib/storefront.functions";
 import { fbTrack, purchaseEventId } from "@/lib/fb-track";
+import { PaymentTimeline } from "@/components/storefront/PaymentTimeline";
 
 const orderQuery = (orderId: string) =>
   queryOptions({
@@ -164,6 +165,8 @@ function OrderConfirmation() {
           </div>
         ) : null}
       </div>
+
+      <PaymentTimeline orderId={order.id} refreshKey={String((order as any).payment_status ?? "")} />
 
       <div className="mt-4 rounded-xl border bg-card p-4">
         <div className="mb-2 flex items-center gap-2 text-xs uppercase text-muted-foreground">
