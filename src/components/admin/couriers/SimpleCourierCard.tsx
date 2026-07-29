@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Link } from "@tanstack/react-router";
-import { Save, Zap, MapPin, Truck, Activity, RefreshCw, Unplug, Package } from "lucide-react";
+import { Save, Zap, MapPin, Truck, Activity, RefreshCw, Unplug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
