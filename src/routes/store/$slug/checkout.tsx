@@ -51,7 +51,7 @@ function CheckoutPage() {
   const { customer, token: customerToken } = useCustomerSession(slug);
   const requireLogin = !!(store as any)?.require_customer_login;
 
-  type PM = "cod" | "bkash" | "nagad" | "rocket" | "bank";
+  type PM = string;
   const [items, setItems] = useState<CartItem[]>([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
