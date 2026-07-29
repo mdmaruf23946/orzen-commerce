@@ -221,16 +221,20 @@ function CheckoutPage() {
       });
 
       if ((res as any)?.warning) toast.warning((res as any).warning);
-      clearCart(slug);
 
       if (isOnlineMethod) {
-        // Hand the shopper over to the payment gateway.
+        // Hand the shopper over to the payment gateway BEFORE emptying the
+        // cart, so a failed session leaves them able to retry.
         const pay = await startPay({ data: { orderId: res.orderId, gatewayKey: method } });
         if (pay?.redirect_url) {
+          clearCart(slug);
           window.location.href = pay.redirect_url;
           return;
         }
+        throw new Error("Payment could not be started. Please try another payment method.");
       }
+
+      clearCart(slug);
       navigate({ to: "/store/$slug/order/$orderId", params: { slug, orderId: res.orderId } });
     } catch (err) {
       const msg = (err as Error).message;

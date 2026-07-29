@@ -97,6 +97,35 @@ export const Route = createFileRoute("/api/public/store-payments/webhook/$store/
                 method = verify.method ?? null;
                 amount = Number(verify.amount ?? 0) || null;
                 currency = verify.currency ?? null;
+
+                // Reconcile the order once the provider confirms payment.
+                if (verify.status === "paid") {
+                  const { data: st } = await supabaseAdmin
+                    .from("stores")
+                    .select("payments_config")
+                    .eq("id", storeId)
+                    .maybeSingle();
+                  const rules: any = ((st as any)?.payments_config ?? {}).order_status ?? {};
+                  const allowed = ["pending", "confirmed", "processing", "delivered", "cancelled"];
+                  const paidStatus = allowed.includes(rules.online_paid) ? rules.online_paid : "confirmed";
+                  const refs = Array.from(
+                    new Set(
+                      [providerRef, verify.provider_ref]
+                        .filter((r): r is string => !!r)
+                        .map((r) => r.replace(/[,()]/g, "")),
+                    ),
+                  );
+                  const filter = refs
+                    .flatMap((r) => [`payment_ref.eq.${r}`, `invoice_no.eq.${r}`])
+                    .join(",");
+                  if (filter) {
+                    await supabaseAdmin
+                      .from("orders")
+                      .update({ payment_status: "paid", status: paidStatus } as any)
+                      .eq("store_id", storeId)
+                      .or(filter);
+                  }
+                }
               } catch (e: any) {
                 errorMessage = `verifyPayment failed: ${e?.message ?? e}`;
               }

@@ -116,11 +116,14 @@ export const Route = createFileRoute("/api/public/store-payments/custom-webhook/
               const rules: any = ((st as any)?.payments_config ?? {}).order_status ?? {};
               const allowed = ["pending", "confirmed", "processing", "delivered", "cancelled"];
               const paidStatus = allowed.includes(rules.online_paid) ? rules.online_paid : "confirmed";
+              // Providers that echo our own transaction id (rather than issuing
+              // one) must still resolve to the right order.
+              const safeRef = providerRef.replace(/[,()]/g, "");
               await supabaseAdmin
                 .from("orders")
                 .update({ payment_status: "paid", status: paidStatus } as any)
                 .eq("store_id", storeId)
-                .eq("payment_ref", providerRef);
+                .or(`payment_ref.eq.${safeRef},invoice_no.eq.${safeRef}`);
             }
           }
         } catch (e: unknown) {

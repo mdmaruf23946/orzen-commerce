@@ -320,6 +320,13 @@ function GatewayCard({
           ))}
         </div>
 
+        {!g.storefrontCheckout && (
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-2 text-[11px] leading-snug text-amber-800">
+            Storefront checkout for {g.label} is coming soon. You can save and test your credentials
+            now — the gateway stays hidden at checkout until live payment routing ships.
+          </div>
+        )}
+
         {c && (
           <div className="space-y-0.5 rounded-md bg-muted/50 p-2 text-[11px] text-muted-foreground">
             <div className="flex items-center justify-between">
