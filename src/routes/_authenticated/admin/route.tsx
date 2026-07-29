@@ -34,6 +34,7 @@ type LinkDef = { to: string; label: string; icon: typeof LayoutDashboard; exact?
 const links: LinkDef[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag, badgeKey: "orders" },
+  { to: "/admin/courier-orders", label: "Courier Orders", icon: Truck, badgeKey: "delivery" },
   { to: "/admin/products", label: "Products", icon: Package },
   { to: "/admin/categories", label: "Categories", icon: Tags },
   { to: "/admin/inventory", label: "Inventory", icon: Boxes },
@@ -73,7 +74,7 @@ const links: LinkDef[] = [
 
 const groupDefs: { label: string; paths: string[] }[] = [
   { label: "Main", paths: ["/admin"] },
-  { label: "Orders", paths: ["/admin/orders", "/admin/returns"] },
+  { label: "Orders", paths: ["/admin/orders", "/admin/courier-orders", "/admin/returns"] },
   { label: "Products", paths: ["/admin/products", "/admin/categories", "/admin/inventory", "/admin/product-defaults"] },
   { label: "Customers", paths: ["/admin/customers", "/admin/customers-accounts", "/admin/duplicate-protection"] },
   { label: "AI & Automation", paths: ["/admin/ai-agent", "/admin/ai-recommendations", "/admin/handoff-queue", "/admin/low-stock", "/admin/messenger", "/admin/messenger-inbox"] },
