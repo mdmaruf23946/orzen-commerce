@@ -3,7 +3,7 @@ import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getStoreBySlug, getStoreActiveGateway, placeOrder, validateCoupon, getStoreDeliveryZones } from "@/lib/storefront.functions";
+import { getStoreBySlug, listStoreOnlineGateways, startOnlineCheckout, placeOrder, validateCoupon, getStoreDeliveryZones } from "@/lib/storefront.functions";
 import { readCart, clearCart, type CartItem } from "@/lib/cart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,12 +34,13 @@ function CheckoutPage() {
   const { data: store } = useSuspenseQuery(storeQuery(slug));
   const place = useServerFn(placeOrder);
   const valCoupon = useServerFn(validateCoupon);
-  const getGw = useServerFn(getStoreActiveGateway);
+  const listGw = useServerFn(listStoreOnlineGateways);
+  const startPay = useServerFn(startOnlineCheckout);
   const getZones = useServerFn(getStoreDeliveryZones);
-  const { data: activeGateway } = useQuery({
+  const { data: onlineGateways = [] } = useQuery({
     enabled: !!store?.id,
-    queryKey: ["activeGateway", store?.id],
-    queryFn: () => getGw({ data: { storeId: store!.id } }),
+    queryKey: ["onlineGateways", store?.id],
+    queryFn: () => listGw({ data: { storeId: store!.id } }),
   });
   const { data: zones = [] } = useQuery({
     enabled: !!store?.id,
@@ -50,7 +51,7 @@ function CheckoutPage() {
   const { customer, token: customerToken } = useCustomerSession(slug);
   const requireLogin = !!(store as any)?.require_customer_login;
 
-  type PM = "cod" | "bkash" | "nagad" | "rocket" | "bank";
+  type PM = string;
   const [items, setItems] = useState<CartItem[]>([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -121,12 +122,24 @@ function CheckoutPage() {
   }
 
 
-  const methods: { id: PM; label: string; desc: string }[] = [];
+  const methods: { id: PM; label: string; desc: string; online?: boolean; logo?: string | null }[] = [];
+  // Online gateways connected by the store owner come first.
+  for (const g of onlineGateways as any[]) {
+    methods.push({
+      id: g.key,
+      label: g.label,
+      desc: g.sandbox ? "Pay online (sandbox)" : "Pay online securely",
+      online: true,
+      logo: g.logo_url,
+    });
+  }
   if (pc.cod?.enabled !== false) methods.push({ id: "cod", label: "Cash on Delivery", desc: "Pay when you receive" });
-  const bk = pc.bkash?.number ?? s.bkash_number;
-  if ((pc.bkash?.enabled ?? !!bk) && bk) methods.push({ id: "bkash", label: "bKash", desc: `Send to ${bk}` });
-  const ng = pc.nagad?.number ?? s.nagad_number;
-  if ((pc.nagad?.enabled ?? !!ng) && ng) methods.push({ id: "nagad", label: "Nagad", desc: `Send to ${ng}` });
+  // Manual numbers come only from payments_config so removing a number in the
+  // admin panel immediately hides it at checkout.
+  const bk = pc.bkash?.number;
+  if (pc.bkash?.enabled !== false && bk) methods.push({ id: "bkash", label: "bKash", desc: `Send to ${bk}` });
+  const ng = pc.nagad?.number;
+  if (pc.nagad?.enabled !== false && ng) methods.push({ id: "nagad", label: "Nagad", desc: `Send to ${ng}` });
   if (pc.rocket?.enabled && pc.rocket?.number) methods.push({ id: "rocket", label: "Rocket", desc: `Send to ${pc.rocket.number}` });
   if (pc.bank?.enabled && pc.bank?.account)
     methods.push({ id: "bank", label: "Bank Transfer", desc: `${pc.bank.name ?? ""} ${pc.bank.account}`.trim() });
@@ -181,6 +194,9 @@ function CheckoutPage() {
     );
   }
 
+  const isOnlineMethod = method.startsWith("custom:") || method.startsWith("builtin:");
+  const isManual = !isOnlineMethod && method !== "cod";
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
@@ -194,7 +210,7 @@ function CheckoutPage() {
           address,
           area: area || undefined,
           paymentMethod: method,
-          txnId: method === "cod" ? undefined : txnId,
+          txnId: isManual ? txnId : undefined,
           items: items.map((i) => ({ productId: i.productId, qty: i.qty })),
           couponCode: coupon?.code,
           deliveryZoneId: zoneId ?? undefined,
@@ -206,6 +222,15 @@ function CheckoutPage() {
 
       if ((res as any)?.warning) toast.warning((res as any).warning);
       clearCart(slug);
+
+      if (isOnlineMethod) {
+        // Hand the shopper over to the payment gateway.
+        const pay = await startPay({ data: { orderId: res.orderId, gatewayKey: method } });
+        if (pay?.redirect_url) {
+          window.location.href = pay.redirect_url;
+          return;
+        }
+      }
       navigate({ to: "/store/$slug/order/$orderId", params: { slug, orderId: res.orderId } });
     } catch (err) {
       const msg = (err as Error).message;
@@ -271,12 +296,7 @@ function CheckoutPage() {
         </div>
 
         <h2 className="mt-6 text-sm font-semibold">Payment method</h2>
-        {activeGateway ? (
-          <div className="mt-2 rounded-md border border-emerald-200 bg-emerald-50 p-2 text-xs text-emerald-800">
-            Online payment available via <b>{(activeGateway as any).label}</b>
-            {(activeGateway as any).sandbox ? " (sandbox)" : ""}.
-          </div>
-        ) : (
+        {onlineGateways.length === 0 && (
           <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
             No online payment gateway is configured for this store. Please use one of the manual options below.
           </div>
@@ -302,7 +322,7 @@ function CheckoutPage() {
             </label>
           ))}
         </div>
-        {method !== "cod" && (
+        {isManual && (
           <>
             {pc.instructions && (
               <p className="mt-3 whitespace-pre-line rounded-md bg-muted p-3 text-xs text-muted-foreground">
@@ -358,7 +378,7 @@ function CheckoutPage() {
             className="mt-4 h-12 w-full"
             style={{ backgroundColor: "var(--primary)", color: "white" }}
           >
-            {submitting ? "Placing order…" : "Confirm Order"}
+            {submitting ? "Placing order…" : isOnlineMethod ? "Pay now" : "Confirm Order"}
           </Button>
         </div>
       </aside>

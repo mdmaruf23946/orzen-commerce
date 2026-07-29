@@ -101,6 +101,27 @@ export const Route = createFileRoute("/api/public/store-payments/custom-webhook/
             } else {
               processingStatus = "processed";
             }
+
+            // Reconcile the matching order when the provider reports success.
+            if (
+              processingStatus === "processed" &&
+              providerRef &&
+              ["paid", "success", "completed", "succeeded"].includes(String(normalized).toLowerCase())
+            ) {
+              const { data: st } = await supabaseAdmin
+                .from("stores")
+                .select("payments_config")
+                .eq("id", storeId)
+                .maybeSingle();
+              const rules: any = ((st as any)?.payments_config ?? {}).order_status ?? {};
+              const allowed = ["pending", "confirmed", "processing", "delivered", "cancelled"];
+              const paidStatus = allowed.includes(rules.online_paid) ? rules.online_paid : "confirmed";
+              await supabaseAdmin
+                .from("orders")
+                .update({ payment_status: "paid", status: paidStatus } as any)
+                .eq("store_id", storeId)
+                .eq("payment_ref", providerRef);
+            }
           }
         } catch (e: unknown) {
           processingStatus = "error";

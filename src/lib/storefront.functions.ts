@@ -1,5 +1,6 @@
 // Public server functions: storefront reads + guest checkout.
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeader } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
@@ -10,6 +11,19 @@ function publicClient() {
     process.env.SUPABASE_PUBLISHABLE_KEY!,
     { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
   );
+}
+
+function publicOrigin(): string {
+  try {
+    const host = getRequestHeader("x-forwarded-host") || getRequestHeader("host");
+    const proto = getRequestHeader("x-forwarded-proto") || "https";
+    if (host) return `${proto}://${host}`.replace(/\/$/, "");
+  } catch {
+    /* not in a request context */
+  }
+  const explicit = process.env.PUBLIC_APP_URL || process.env.VITE_APP_URL;
+  if (explicit) return explicit.replace(/\/$/, "");
+  return "https://orzen.top";
 }
 
 function imgUrl(path: string | null): string | null {
@@ -45,6 +59,198 @@ export const getStoreActiveGateway = createServerFn({ method: "GET" })
     if (error) return null;
     return (row as any) ?? null;
   });
+
+/**
+ * Every online gateway a shopper can actually pay with: built-in providers
+ * connected by the store owner plus Custom Payment Gateway Builder entries.
+ * Secrets never leave the server — only label/logo/kind are returned.
+ */
+export const listStoreOnlineGateways = createServerFn({ method: "GET" })
+  .inputValidator((d) => z.object({ storeId: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const out: {
+      key: string;
+      kind: "builtin" | "custom";
+      ref: string;
+      label: string;
+      logo_url: string | null;
+      sandbox: boolean;
+    }[] = [];
+
+    const [{ data: builtins }, { data: customs }] = await Promise.all([
+      supabaseAdmin
+        .from("store_payment_gateways")
+        .select("provider_id,sandbox,enabled,status")
+        .eq("store_id", data.storeId)
+        .eq("enabled", true)
+        .eq("status", "connected"),
+      supabaseAdmin
+        .from("custom_payment_gateways")
+        .select("id,name,logo_url,environment,is_active,status")
+        .eq("store_id", data.storeId)
+        .eq("is_active", true)
+        .eq("status", "connected"),
+    ]);
+
+    if (builtins?.length) {
+      const ids = builtins.map((b: any) => b.provider_id);
+      const { data: platform } = await supabaseAdmin
+        .from("platform_payment_gateways")
+        .select("id,label,logo_url,enabled")
+        .in("id", ids);
+      const byId = new Map((platform ?? []).map((p: any) => [p.id, p]));
+      for (const b of builtins as any[]) {
+        const p: any = byId.get(b.provider_id);
+        if (!p || p.enabled === false) continue;
+        out.push({
+          key: `builtin:${b.provider_id}`,
+          kind: "builtin",
+          ref: b.provider_id,
+          label: p.label,
+          logo_url: imgUrl(p.logo_url ?? null),
+          sandbox: !!b.sandbox,
+        });
+      }
+    }
+
+    for (const c of (customs ?? []) as any[]) {
+      out.push({
+        key: `custom:${c.id}`,
+        kind: "custom",
+        ref: c.id,
+        label: c.name,
+        logo_url: imgUrl(c.logo_url ?? null),
+        sandbox: c.environment !== "production",
+      });
+    }
+
+    return out;
+  });
+
+/**
+ * Creates the provider checkout session for an already-placed order and
+ * returns the redirect URL the shopper must be sent to.
+ */
+export const startOnlineCheckout = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z.object({ orderId: z.string().uuid(), gatewayKey: z.string().min(3).max(120) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: order } = await supabaseAdmin
+      .from("orders")
+      .select("id,store_id,customer_name,phone,address,subtotal,invoice_no")
+      .eq("id", data.orderId)
+      .maybeSingle();
+    if (!order) throw new Error("Order not found");
+    const { data: store } = await supabaseAdmin
+      .from("stores")
+      .select("slug,name")
+      .eq("id", (order as any).store_id)
+      .maybeSingle();
+
+    const origin = publicOrigin();
+    const slug = (store as any)?.slug ?? "";
+    const successUrl = `${origin}/store/${slug}/order/${order.id}`;
+    const cancelUrl = `${origin}/store/${slug}/checkout`;
+    const amount = Number((order as any).subtotal ?? 0);
+    const [kind, ref] = data.gatewayKey.split(":");
+
+    if (kind === "custom") {
+      const { data: gw } = await supabaseAdmin
+        .from("custom_payment_gateways")
+        .select("*")
+        .eq("id", ref)
+        .eq("store_id", (order as any).store_id)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (!gw) throw new Error("Payment gateway unavailable");
+      let creds: Record<string, string> = {};
+      if ((gw as any).credentials_ciphertext) {
+        const { decryptJSON } = await import("@/lib/crypto/credentials.server");
+        try {
+          creds = decryptJSON<Record<string, string>>((gw as any).credentials_ciphertext);
+        } catch {
+          creds = {};
+        }
+      }
+      const { executeCheckout } = await import("@/lib/custom-gateway/engine.server");
+      const webhookUrl = `${origin}/api/public/store-payments/custom-webhook/${(order as any).store_id}/${(gw as any).id}`;
+      const result = await executeCheckout(
+        {
+          ...(gw as any),
+          config: (gw as any).config ?? {},
+        } as any,
+        creds,
+        {
+          order_id: (order as any).invoice_no ?? order.id,
+          amount,
+          currency: (gw as any).currency ?? "BDT",
+          customer_name: (order as any).customer_name,
+          customer_email: `noreply@${slug || "store"}.orzen.top`,
+          customer_phone: (order as any).phone,
+          product_name: `Order ${(order as any).invoice_no ?? order.id}`,
+          product_quantity: 1,
+          shipping_address: (order as any).address ?? "N/A",
+          success_url: successUrl,
+          cancel_url: cancelUrl,
+          fail_url: cancelUrl,
+          callback_url: webhookUrl,
+          webhook_url: webhookUrl,
+          store_id: (order as any).store_id,
+        },
+      );
+      if (!result.ok || !result.redirect_url) {
+        throw new Error(result.message ?? result.error ?? "Could not start payment");
+      }
+      await supabaseAdmin
+        .from("orders")
+        .update({ payment_ref: result.provider_ref ?? null } as any)
+        .eq("id", order.id);
+      return { redirect_url: result.redirect_url };
+    }
+
+    if (kind === "builtin") {
+      const { data: conn } = await supabaseAdmin
+        .from("store_payment_gateways")
+        .select("*")
+        .eq("store_id", (order as any).store_id)
+        .eq("provider_id", ref)
+        .eq("enabled", true)
+        .maybeSingle();
+      if (!conn) throw new Error("Payment gateway unavailable");
+      const { getProvider } = await import("@/lib/subscription-pay/providers/registry");
+      const adapter = getProvider(ref);
+      const res = await adapter.createCheckout(
+        {
+          credentials: ((conn as any).credentials ?? {}) as Record<string, string | boolean>,
+          sandbox: !!(conn as any).sandbox,
+        },
+        {
+          invoiceId: order.id,
+          invoiceNo: (order as any).invoice_no ?? order.id,
+          amount,
+          currency: "BDT",
+          customerName: (order as any).customer_name,
+          customerEmail: `noreply@${slug || "store"}.orzen.top`,
+          customerPhone: (order as any).phone,
+          returnUrl: successUrl,
+          cancelUrl,
+          webhookUrl: `${origin}/api/public/store-payments/webhook/${(order as any).store_id}/${ref}`,
+          packageLabel: `Order ${(order as any).invoice_no ?? order.id}`,
+        },
+      );
+      await supabaseAdmin
+        .from("orders")
+        .update({ payment_ref: res.provider_ref ?? null } as any)
+        .eq("id", order.id);
+      return { redirect_url: res.redirect_url };
+    }
+
+    throw new Error("Unsupported gateway");
+  });
+
 
 export const listStoreBanners = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ storeId: z.string().uuid() }).parse(d))
@@ -270,7 +476,8 @@ export const placeOrder = createServerFn({ method: "POST" })
         phone: z.string().trim().min(5).max(40),
         address: z.string().trim().min(3).max(500),
         area: z.string().trim().max(120).optional(),
-        paymentMethod: z.enum(["cod", "bkash", "nagad", "rocket", "bank"]),
+        // "cod" | "bkash" | "nagad" | "rocket" | "bank" | "builtin:<id>" | "custom:<uuid>"
+        paymentMethod: z.string().trim().min(2).max(120),
         txnId: z.string().trim().max(120).optional(),
         notes: z.string().trim().max(500).optional(),
         items: z.array(itemSchema).min(1).max(50),
@@ -289,7 +496,7 @@ export const placeOrder = createServerFn({ method: "POST" })
     const sb = supabaseAdmin;
     const { data: store } = await sb
       .from("stores")
-      .select("id,status,delivery,require_customer_login")
+      .select("id,status,delivery,require_customer_login,payments_config")
       .eq("id", data.storeId)
       .maybeSingle();
     if (!store || store.status !== "active") throw new Error("Store unavailable");
@@ -428,6 +635,44 @@ export const placeOrder = createServerFn({ method: "POST" })
       });
     }
 
+    // Resolve payment method + the order status the owner configured for it.
+    const isOnline = data.paymentMethod.startsWith("custom:") || data.paymentMethod.startsWith("builtin:");
+    const dbMethod = (isOnline ? "online" : data.paymentMethod) as
+      | "cod" | "bkash" | "nagad" | "rocket" | "bank" | "online";
+    const statusRules: any = ((store as any).payments_config ?? {}).order_status ?? {};
+    const allowedStatuses = ["pending", "confirmed", "processing", "delivered", "cancelled"];
+    const pick = (v: any, fb: string) => (allowedStatuses.includes(v) ? v : fb);
+    const orderStatus = isOnline
+      ? pick(statusRules.online_pending, "pending")
+      : data.paymentMethod === "cod"
+        ? pick(statusRules.cod, "pending")
+        : pick(statusRules.manual, "pending");
+
+    let gatewayId: string | null = null;
+    let gatewayName: string | null = null;
+    if (isOnline) {
+      const [kind, ref] = data.paymentMethod.split(":");
+      if (kind === "custom") {
+        const { data: gw } = await sb
+          .from("custom_payment_gateways")
+          .select("id,name")
+          .eq("id", ref)
+          .eq("store_id", data.storeId)
+          .eq("is_active", true)
+          .maybeSingle();
+        if (!gw) throw new Error("Payment gateway unavailable");
+        gatewayId = (gw as any).id;
+        gatewayName = (gw as any).name;
+      } else {
+        const { data: p } = await sb
+          .from("platform_payment_gateways")
+          .select("id,label")
+          .eq("id", ref)
+          .maybeSingle();
+        gatewayName = (p as any)?.label ?? ref;
+      }
+    }
+
     const { data: order, error: oErr } = await sb
       .from("orders")
       .insert({
@@ -437,7 +682,10 @@ export const placeOrder = createServerFn({ method: "POST" })
         phone: data.phone,
         address: data.address,
         area: data.area ?? null,
-        payment_method: data.paymentMethod,
+        payment_method: dbMethod,
+        payment_gateway_id: gatewayId,
+        payment_gateway_name: gatewayName,
+        payment_status: "unpaid",
         txn_id: data.txnId ?? null,
         notes: data.notes ?? null,
         subtotal: subtotal + delivery_amount - discount_amount,
@@ -445,10 +693,10 @@ export const placeOrder = createServerFn({ method: "POST" })
         discount_amount,
         coupon_id,
         delivery_zone_id: zoneId,
-        status: "pending",
+        status: orderStatus,
         fingerprint: data.fingerprint ?? null,
         device_id: data.deviceId ?? null,
-      })
+      } as any)
       .select("id")
       .single();
     if (oErr || !order) throw new Error(oErr?.message ?? "Order failed");
