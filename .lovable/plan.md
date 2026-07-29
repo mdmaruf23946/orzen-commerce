@@ -1,46 +1,62 @@
 ## Goal
 
-Courier Integration page = connection & configuration only. All parcel operations move to a new **Courier Orders** page under the Orders group in the sidebar.
+Rebuild the Store Admin → Orders screen as a premium, one-screen order management surface (Shopify/Linear feel) using the existing database, order workflow, courier and payment integrations exactly as they are.
 
-## 1. Courier Integration cleanup
+## What exists today (verified)
 
-- Remove the "Manage Parcels" button/link from `SimpleCourierCard.tsx` and `CourierCard.tsx`.
-- Everything else on `/admin/couriers` stays: enable/disable, credentials, pickup info, shipping options, save, test connection, sync info, disconnect, diagnostics, default courier.
+- `/admin/orders` is a plain list: expandable rows, a status `<select>`, invoice link, fraud button, plus an existing `OrderDetailsDrawer`.
+- `listMyOrders` returns all orders with `order_items(name_snapshot, price_snapshot, qty)`.
+- `getOrderDetails` returns order + items (joined `products.primary_image_url, sku`) + `order_timeline` + `order_internal_notes` + store.
+- Courier operations already live in `/admin/courier-orders` with `courier_parcels`, `dispatchParcel`, `syncActiveParcels`, and shared UI in `parcel-ui.tsx`.
+- Order status enum is only: pending, confirmed, processing, delivered, cancelled. Timeline stages additionally include courier_assigned, shipped, returned.
 
-## 2. Sidebar
+## Data reality vs the request (no DB changes)
 
-- Add `Courier Orders` (truck icon) to the **Orders** group, after Orders and Returns, with the existing `delivery` badge key.
-- `/admin/parcels` becomes a redirect to the new page so old links keep working.
+These requested fields are not stored, so they will be derived or omitted rather than adding columns:
 
-## 3. New page `/admin/courier-orders`
+- Courier / In Transit / Returned tabs → derived from the order's `courier_parcels` status, not from `orders.status`.
+- Variant → not stored on `order_items`; product name + SKU shown instead.
+- Profit → computed as (item price − current `products.cost_price`) × qty, labelled as an estimate; hidden when cost is unset.
+- IP address / browser → not stored; the Order Info section will show `source`, `landing_page_url`, `utm`, and `device_id`/`fingerprint` presence instead.
+- Activity Log → rendered from the existing `order_timeline` plus courier parcel events; no new logging table.
+- Customer statistics (total orders, delivered, cancelled, returned, COD success, lifetime spend, customer since) → computed on the fly from this store's orders by phone (the fraud cache already supplies some of this).
 
-Header strip showing the connected courier:
-- "Current Courier: SteadFast — Connected · Default Courier" (logo + badges), or a fallback card "No courier connected yet." with a **Go to Courier Integration** button.
+## Build plan
 
-Tabs (counts on each): Ready to Send, Sent Parcels, Processing, Delivered, Partial Delivered, Cancelled, Returned, Failed, Hold. Tab state stored in the URL search param so tabs are shareable and don't remount the page. Mobile-first: horizontally scrollable tab bar, stacked cards on small screens, table-like rows on desktop.
+### 1. Read-only server helpers (additive, no schema/workflow change)
 
-**Ready to Send tab** — every confirmed/processing order with no live parcel. Each card shows Order ID/invoice, customer name, phone, full address, product summary, COD amount, delivery charge, selected (default) courier, payment status. Buttons: View Details, Send to Courier, Print Invoice, Print Label.
+In `src/lib/business.functions.ts` (or a new `orders-admin.functions.ts`):
 
-**Send to Courier dialog** — confirmation showing customer, address, products, COD amount, courier, pickup location, package weight (editable, defaults from courier shipping options), delivery type. On confirm: creates the parcel through the connected courier adapter, stores tracking id / consignment id / courier name / created time on the parcel and mirrors them onto the order, then the order moves to Sent Parcels automatically.
+- `listAdminOrders` — orders + first item image/SKU + `courier_parcels` (courier key, tracking, parcel status) + computed total, COD amount, estimated profit, and customer tags (new/repeat/high value) in one query pass. Replaces the raw `listMyOrders` call on this page only; `listMyOrders` stays for other callers.
+- `getOrderCustomerStats` — aggregates the customer's history by phone for the drawer.
 
-**Sent Parcels and status tabs** — tracking number, courier name, current status, last updated, plus Track (opens courier tracking URL), Sync Status, Print Label, Print Invoice, Cancel Parcel (only where the adapter supports it). Bulk select for send/refresh/print stays. Detail drawer keeps the timeline, COD info and API logs.
+Existing mutations (`updateOrderStatus`, `dispatchParcel`, notes, fraud) are reused untouched.
 
-**Auto sync** — the existing `sync-parcels` cron continues to refresh active parcels; the page adds a **Sync Now** button (all active parcels) and shows the last-synced time.
+### 2. Orders list redesign — `src/routes/_authenticated/admin/orders.tsx`
 
-## 4. Order Details
+- Header: title, order count, Export placeholder removed (not requested), search bar.
+- Status tabs with per-tab counters and distinct accent colors: All, Pending, Confirmed, Processing, Courier, In Transit, Delivered, Cancelled, Returned (last four courier-derived where the order enum lacks them).
+- Search across order ID/invoice, customer name, phone, product name, tracking ID — instant client-side filtering, no reload.
+- Advanced filter popover: payment method, payment status, courier, district/area, date range, amount range, repeat customer, risk level. Selections persisted to `localStorage` so the last used filters return.
+- New `OrderCard` component (`src/components/admin/orders/OrderCard.tsx`):
+  - Left: lazy-loaded product thumbnail, order ID, date/time, NEW badge for recent orders.
+  - Center: customer, phone, district + area, product summary, qty, customer tags (Repeat / New / High Value / Risk).
+  - Right: total, delivery charge, estimated profit, payment badge (COD / Online Paid / Partial), large status badge, courier badge with brand color.
+  - Quick actions row: View, Invoice, Send to Courier, Call, WhatsApp, Copy Address, More menu (status change, fraud check, allow duplicate).
+- Desktop keeps the same card grid (no table, no horizontal scroll); mobile shows a compact collapsed card that expands in place.
+- Lists longer than ~60 rows render through a lightweight windowed list; images use `loading="lazy"`.
+- Transitions kept at 150–250ms using existing tokens.
 
-In `OrderDetailsDrawer`, replace the manual courier name/tracking/status editor with a single **Send to Courier** action (opening the same confirmation dialog). If a parcel already exists, it shows read-only tracking info with a link to Courier Orders — no parcel management duplicated there.
+### 3. Order Details drawer redesign — `src/components/admin/OrderDetailsDrawer.tsx`
 
-## 5. Backend (small additions, adapter layer unchanged)
+Right-side sheet on desktop, full-height bottom sheet on mobile, with a sticky header (customer, order ID, status/courier/payment badges) and a quick-action bar (Invoice, Print, Send to Courier, Call, WhatsApp, More).
 
-- Extend `listSendableOrders` to also return order items summary, payment status and delivery charge.
-- Add `sendOrderToCourier({ orderId, courierKey?, weight?, deliveryType?, note? })` — one call that builds the draft from the order and dispatches through `dispatchParcel`, so the UI never has to do draft-then-send.
-- Add `syncActiveParcels()` for the Sync Now button.
-- Courier resolution always uses the store's default/connected courier via the existing registry, so adding a new provider needs no page changes.
+Sections, in order: Product & pricing breakdown (incl. discount/coupon, total, estimated profit) · Customer (avatar, contacts, address, Google Maps link, computed statistics) · Order information (IDs, dates, payment, source/UTM, device presence) · Courier (parcel data with Track / Sync / Update status / Cancel / Print label, disabled when no courier connected, wired to the existing courier functions) · Timeline · Internal notes in a chat style · Activity log from timeline + parcel events.
 
-## Technical notes
+### 4. Styling
 
-- No schema changes; `courier_parcels`, events, logs and pickup tables already cover this.
-- New file `src/routes/_authenticated/admin/courier-orders.tsx`, with the parcel drawer, send dialog and order card extracted into `src/components/admin/couriers/` components to keep files small.
-- `src/routes/_authenticated/admin/parcels.tsx` reduced to a redirect.
-- Page keeps the `courier` FeatureGate for plan gating.
+Reuse existing semantic tokens with ORZEN purple as the accent; rounded cards, soft shadows, clear hierarchy. No new color hardcoding.
+
+## Out of scope
+
+No changes to database schema, RLS, order status workflow, courier dispatch logic, or payment handling. Note-pinning and note replies are shown as a flat chat list since the notes table has no parent/pin fields.
