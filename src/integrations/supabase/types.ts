@@ -788,6 +788,287 @@ export type Database = {
           },
         ]
       }
+      courier_api_logs: {
+        Row: {
+          action: string
+          courier_key: string
+          created_at: string
+          duration_ms: number | null
+          endpoint: string | null
+          error: string | null
+          http_status: number | null
+          id: string
+          method: string | null
+          ok: boolean
+          parcel_id: string | null
+          request: Json | null
+          response: Json | null
+          store_id: string
+        }
+        Insert: {
+          action: string
+          courier_key: string
+          created_at?: string
+          duration_ms?: number | null
+          endpoint?: string | null
+          error?: string | null
+          http_status?: number | null
+          id?: string
+          method?: string | null
+          ok?: boolean
+          parcel_id?: string | null
+          request?: Json | null
+          response?: Json | null
+          store_id: string
+        }
+        Update: {
+          action?: string
+          courier_key?: string
+          created_at?: string
+          duration_ms?: number | null
+          endpoint?: string | null
+          error?: string | null
+          http_status?: number | null
+          id?: string
+          method?: string | null
+          ok?: boolean
+          parcel_id?: string | null
+          request?: Json | null
+          response?: Json | null
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courier_api_logs_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "courier_parcels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courier_api_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courier_parcel_events: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          parcel_id: string
+          raw: Json | null
+          source: string
+          status: string
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          parcel_id: string
+          raw?: Json | null
+          source?: string
+          status: string
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          parcel_id?: string
+          raw?: Json | null
+          source?: string
+          status?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courier_parcel_events_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "courier_parcels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courier_parcel_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courier_parcels: {
+        Row: {
+          cod_amount: number
+          collection_status: string
+          consignment_id: string | null
+          courier_key: string
+          created_at: string
+          delivery_charge: number
+          dimensions: string | null
+          id: string
+          item_count: number
+          items: Json
+          last_error: string | null
+          last_synced_at: string | null
+          note: string | null
+          order_id: string | null
+          recipient_address: string | null
+          recipient_area: string | null
+          recipient_city: string | null
+          recipient_name: string | null
+          recipient_phone: string | null
+          recipient_zone: string | null
+          request_payload: Json | null
+          response_payload: Json | null
+          return_charge: number
+          status: string
+          store_id: string
+          tracking_code: string | null
+          tracking_url: string | null
+          updated_at: string
+          weight: number | null
+        }
+        Insert: {
+          cod_amount?: number
+          collection_status?: string
+          consignment_id?: string | null
+          courier_key: string
+          created_at?: string
+          delivery_charge?: number
+          dimensions?: string | null
+          id?: string
+          item_count?: number
+          items?: Json
+          last_error?: string | null
+          last_synced_at?: string | null
+          note?: string | null
+          order_id?: string | null
+          recipient_address?: string | null
+          recipient_area?: string | null
+          recipient_city?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          recipient_zone?: string | null
+          request_payload?: Json | null
+          response_payload?: Json | null
+          return_charge?: number
+          status?: string
+          store_id: string
+          tracking_code?: string | null
+          tracking_url?: string | null
+          updated_at?: string
+          weight?: number | null
+        }
+        Update: {
+          cod_amount?: number
+          collection_status?: string
+          consignment_id?: string | null
+          courier_key?: string
+          created_at?: string
+          delivery_charge?: number
+          dimensions?: string | null
+          id?: string
+          item_count?: number
+          items?: Json
+          last_error?: string | null
+          last_synced_at?: string | null
+          note?: string | null
+          order_id?: string | null
+          recipient_address?: string | null
+          recipient_area?: string | null
+          recipient_city?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          recipient_zone?: string | null
+          request_payload?: Json | null
+          response_payload?: Json | null
+          return_charge?: number
+          status?: string
+          store_id?: string
+          tracking_code?: string | null
+          tracking_url?: string | null
+          updated_at?: string
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courier_parcels_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courier_parcels_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courier_pickup_requests: {
+        Row: {
+          address: string | null
+          contact_name: string | null
+          courier_key: string
+          created_at: string
+          id: string
+          note: string | null
+          parcel_count: number
+          phone: string | null
+          pickup_date: string | null
+          response: Json | null
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          contact_name?: string | null
+          courier_key: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          parcel_count?: number
+          phone?: string | null
+          pickup_date?: string | null
+          response?: Json | null
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          contact_name?: string | null
+          courier_key?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          parcel_count?: number
+          phone?: string | null
+          pickup_date?: string | null
+          response?: Json | null
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courier_pickup_requests_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courier_providers: {
         Row: {
           api_key: string | null
