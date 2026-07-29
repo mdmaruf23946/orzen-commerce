@@ -207,7 +207,7 @@ function CheckoutPage() {
           address,
           area: area || undefined,
           paymentMethod: method,
-          txnId: method === "cod" ? undefined : txnId,
+          txnId: isManual ? txnId : undefined,
           items: items.map((i) => ({ productId: i.productId, qty: i.qty })),
           couponCode: coupon?.code,
           deliveryZoneId: zoneId ?? undefined,
@@ -219,6 +219,15 @@ function CheckoutPage() {
 
       if ((res as any)?.warning) toast.warning((res as any).warning);
       clearCart(slug);
+
+      if (isOnlineMethod) {
+        // Hand the shopper over to the payment gateway.
+        const pay = await startPay({ data: { orderId: res.orderId, gatewayKey: method } });
+        if (pay?.redirect_url) {
+          window.location.href = pay.redirect_url;
+          return;
+        }
+      }
       navigate({ to: "/store/$slug/order/$orderId", params: { slug, orderId: res.orderId } });
     } catch (err) {
       const msg = (err as Error).message;
