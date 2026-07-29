@@ -3448,6 +3448,35 @@ export type Database = {
           },
         ]
       }
+      store_customer_credentials: {
+        Row: {
+          created_at: string
+          customer_id: string
+          password_hash: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          password_hash: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          password_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_customer_credentials_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "store_customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_customer_sessions: {
         Row: {
           created_at: string
@@ -3502,7 +3531,6 @@ export type Database = {
           id: string
           is_active: boolean
           last_login_at: string | null
-          password_hash: string
           phone: string | null
           preferred_language: string | null
           store_id: string
@@ -3516,7 +3544,6 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_login_at?: string | null
-          password_hash: string
           phone?: string | null
           preferred_language?: string | null
           store_id: string
@@ -3530,7 +3557,6 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_login_at?: string | null
-          password_hash?: string
           phone?: string | null
           preferred_language?: string | null
           store_id?: string
