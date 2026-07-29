@@ -12,6 +12,19 @@ function publicClient() {
   );
 }
 
+function publicOrigin(): string {
+  try {
+    const host = getRequestHeader("x-forwarded-host") || getRequestHeader("host");
+    const proto = getRequestHeader("x-forwarded-proto") || "https";
+    if (host) return `${proto}://${host}`.replace(/\/$/, "");
+  } catch {
+    /* not in a request context */
+  }
+  const explicit = process.env.PUBLIC_APP_URL || process.env.VITE_APP_URL;
+  if (explicit) return explicit.replace(/\/$/, "");
+  return "https://orzen.top";
+}
+
 function imgUrl(path: string | null): string | null {
   if (!path) return null;
   if (path.startsWith("http")) return path;
