@@ -122,12 +122,24 @@ function CheckoutPage() {
   }
 
 
-  const methods: { id: PM; label: string; desc: string }[] = [];
+  const methods: { id: PM; label: string; desc: string; online?: boolean; logo?: string | null }[] = [];
+  // Online gateways connected by the store owner come first.
+  for (const g of onlineGateways as any[]) {
+    methods.push({
+      id: g.key,
+      label: g.label,
+      desc: g.sandbox ? "Pay online (sandbox)" : "Pay online securely",
+      online: true,
+      logo: g.logo_url,
+    });
+  }
   if (pc.cod?.enabled !== false) methods.push({ id: "cod", label: "Cash on Delivery", desc: "Pay when you receive" });
-  const bk = pc.bkash?.number ?? s.bkash_number;
-  if ((pc.bkash?.enabled ?? !!bk) && bk) methods.push({ id: "bkash", label: "bKash", desc: `Send to ${bk}` });
-  const ng = pc.nagad?.number ?? s.nagad_number;
-  if ((pc.nagad?.enabled ?? !!ng) && ng) methods.push({ id: "nagad", label: "Nagad", desc: `Send to ${ng}` });
+  // Manual numbers come only from payments_config so removing a number in the
+  // admin panel immediately hides it at checkout.
+  const bk = pc.bkash?.number;
+  if (pc.bkash?.enabled !== false && bk) methods.push({ id: "bkash", label: "bKash", desc: `Send to ${bk}` });
+  const ng = pc.nagad?.number;
+  if (pc.nagad?.enabled !== false && ng) methods.push({ id: "nagad", label: "Nagad", desc: `Send to ${ng}` });
   if (pc.rocket?.enabled && pc.rocket?.number) methods.push({ id: "rocket", label: "Rocket", desc: `Send to ${pc.rocket.number}` });
   if (pc.bank?.enabled && pc.bank?.account)
     methods.push({ id: "bank", label: "Bank Transfer", desc: `${pc.bank.name ?? ""} ${pc.bank.account}`.trim() });
