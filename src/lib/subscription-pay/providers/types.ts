@@ -24,6 +24,12 @@ export type ProviderMeta = {
   supportsSandbox: boolean;
   credentialFields: CredentialField[];
   logo?: string;
+  /**
+   * True only when createCheckout + verifyPayment are wired against the real
+   * provider API. Storefront checkout NEVER offers a gateway without this,
+   * so shoppers can't be sent to a dead redirect.
+   */
+  storefrontCheckout?: boolean;
 };
 
 export type ProviderConfig = {

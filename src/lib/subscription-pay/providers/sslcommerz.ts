@@ -15,6 +15,7 @@ export const sslcommerz: SubscriptionPaymentProvider = {
     label: "SSLCommerz",
     methods: ["bkash", "nagad", "rocket", "visa", "mastercard", "amex", "bank", "internet_banking"],
     supportsSandbox: true,
+    storefrontCheckout: true,
     credentialFields: [
       { key: "store_id", label: "Store ID", type: "text", placeholder: "yourstore", required: true, group: "Credentials" },
       { key: "store_passwd", label: "Store Password / API Key", type: "password", required: true, group: "Credentials" },
