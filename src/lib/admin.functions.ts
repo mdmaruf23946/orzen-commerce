@@ -1150,6 +1150,55 @@ export const updatePayments = createServerFn({ method: "POST" })
     updateStoreColumn(context.supabase, context.userId, "payments_config", data),
   );
 
+const orderStatusEnum = z.enum(["pending", "confirmed", "processing", "delivered", "cancelled"]);
+const statusRulesSchema = z.object({
+  online_pending: orderStatusEnum.default("pending"),
+  online_paid: orderStatusEnum.default("confirmed"),
+  manual: orderStatusEnum.default("pending"),
+  cod: orderStatusEnum.default("pending"),
+});
+
+/** Reads the store's payment order-status rules. */
+export const getPaymentStatusRules = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("stores")
+      .select("payments_config")
+      .eq("owner_user_id", context.userId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    const rules = ((data as any)?.payments_config ?? {}).order_status ?? {};
+    return statusRulesSchema.parse({
+      online_pending: rules.online_pending ?? "pending",
+      online_paid: rules.online_paid ?? "confirmed",
+      manual: rules.manual ?? "pending",
+      cod: rules.cod ?? "pending",
+    });
+  });
+
+/** Merges the order-status rules into payments_config without losing other keys. */
+export const updatePaymentStatusRules = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => statusRulesSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: store, error } = await context.supabase
+      .from("stores")
+      .select("id,payments_config")
+      .eq("owner_user_id", context.userId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!store) throw new Error("Store not found");
+    const next = { ...(((store as any).payments_config ?? {}) as any), order_status: data };
+    const { error: uErr } = await context.supabase
+      .from("stores")
+      .update({ payments_config: next } as any)
+      .eq("id", (store as any).id);
+    if (uErr) throw new Error(uErr.message);
+    return { ok: true };
+  });
+
+
 const notificationsSchema = z.object({
   whatsapp: z.string().trim().max(40).optional().nullable(),
   email_enabled: z.boolean().optional(),
