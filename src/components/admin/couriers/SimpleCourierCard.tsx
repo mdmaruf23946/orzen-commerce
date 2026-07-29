@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Save, Zap, MapPin, Truck, Activity, RefreshCw, Unplug } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Save, Zap, MapPin, Truck, Activity, RefreshCw, Unplug, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -389,6 +390,14 @@ export function SimpleCourierCard({
           <Button size="sm" variant="outline" onClick={handleSync} disabled={syncing}>
             <RefreshCw className={`mr-1 h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
             {syncing ? "Syncing…" : "Sync courier info"}
+          </Button>
+        )}
+        {cfg.enabled && status === "connected" && (
+          <Button size="sm" variant="secondary" asChild>
+            <Link to="/admin/parcels" search={{ courier: meta.key }}>
+              <Package className="mr-1 h-3.5 w-3.5" />
+              Manage Parcels
+            </Link>
           </Button>
         )}
         {onDisconnect && (
