@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { FeatureGate } from "@/components/admin/FeatureGate";
-import { getMyStore, updateCouriers, testCourierConnection, listPublicCourierProviders } from "@/lib/admin.functions";
+import { getMyStore, updateCouriers, testCourierConnection, syncCourierInfo, listPublicCourierProviders } from "@/lib/admin.functions";
 import { CourierCard } from "@/components/admin/couriers/CourierCard";
 import {
   COURIERS,
