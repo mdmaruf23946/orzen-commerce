@@ -496,7 +496,7 @@ export const placeOrder = createServerFn({ method: "POST" })
     const sb = supabaseAdmin;
     const { data: store } = await sb
       .from("stores")
-      .select("id,status,delivery,require_customer_login")
+      .select("id,status,delivery,require_customer_login,payments_config")
       .eq("id", data.storeId)
       .maybeSingle();
     if (!store || store.status !== "active") throw new Error("Store unavailable");
