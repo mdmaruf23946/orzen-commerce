@@ -88,7 +88,7 @@ export const listAdminOrders = createServerFn({ method: "GET" })
         .in("order_id", ids),
       supabase
         .from("courier_parcels")
-        .select("id,order_id,courier,status,tracking_code,consignment_id,created_at")
+        .select("id,order_id,courier_key,status,tracking_code,consignment_id,created_at")
         .eq("store_id", sid)
         .in("order_id", ids)
         .order("created_at", { ascending: false }),
@@ -162,13 +162,13 @@ export const listAdminOrders = createServerFn({ method: "GET" })
         parcel: parcel
           ? {
               id: parcel.id,
-              courier: parcel.courier ?? null,
+              courier: parcel.courier_key ?? null,
               status: parcel.status,
               tracking: parcel.tracking_code ?? null,
               consignment: parcel.consignment_id ?? null,
             }
           : null,
-        courier_key: parcel?.courier ?? raw.courier_code ?? raw.courier_name ?? null,
+        courier_key: parcel?.courier_key ?? raw.courier_code ?? raw.courier_name ?? null,
         courier_status: parcel?.status ?? raw.courier_status ?? null,
         tracking: parcel?.tracking_code ?? raw.courier_tracking_id ?? null,
         tags,
