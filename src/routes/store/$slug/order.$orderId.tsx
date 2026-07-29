@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getOrder, verifyOrderPayment } from "@/lib/storefront.functions";
 import { fbTrack, purchaseEventId } from "@/lib/fb-track";
+import { PaymentTimeline } from "@/components/storefront/PaymentTimeline";
 
 const orderQuery = (orderId: string) =>
   queryOptions({
