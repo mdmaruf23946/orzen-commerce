@@ -60,6 +60,7 @@ export const listStorePaymentGateways = createServerFn({ method: "GET" })
 
         methods: meta?.methods ?? [],
         supportsSandbox: meta?.supportsSandbox ?? false,
+        storefrontCheckout: meta?.storefrontCheckout ?? false,
         credentialFields: meta?.credentialFields ?? [],
         connection: conn
           ? {
