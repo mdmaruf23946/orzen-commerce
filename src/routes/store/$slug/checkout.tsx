@@ -122,7 +122,14 @@ function CheckoutPage() {
   }
 
 
-  const methods: { id: PM; label: string; desc: string; online?: boolean; logo?: string | null }[] = [];
+  const methods: {
+    id: PM;
+    label: string;
+    desc: string;
+    online?: boolean;
+    logo?: string | null;
+    sandbox?: boolean;
+  }[] = [];
   // Online gateways connected by the store owner come first.
   for (const g of onlineGateways as any[]) {
     methods.push({
@@ -131,6 +138,7 @@ function CheckoutPage() {
       desc: g.sandbox ? "Pay online (sandbox)" : "Pay online securely",
       online: true,
       logo: g.logo_url,
+      sandbox: !!g.sandbox,
     });
   }
   if (pc.cod?.enabled !== false) methods.push({ id: "cod", label: "Cash on Delivery", desc: "Pay when you receive" });
@@ -320,9 +328,17 @@ function CheckoutPage() {
                 className="mt-1"
               />
               <div>
-                <div className="text-sm font-medium">{m.label}</div>
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  {m.label}
+                  {m.sandbox && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                      Test mode
+                    </span>
+                  )}
+                </div>
                 <div className="text-xs text-muted-foreground">{m.desc}</div>
               </div>
+
             </label>
           ))}
         </div>

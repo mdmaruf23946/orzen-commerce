@@ -1,51 +1,43 @@
-## What I verified
+## Payment Gateway — full audit result
 
-I traced the full path end to end: Store Admin gateway list → connect/test → save (encrypted) → storefront checkout list → order placed → provider redirect → webhook → order status. I read every adapter, both webhook receivers, `startOnlineCheckout`, `placeOrder`, and queried the live `platform_payment_gateways` table.
+I traced the whole path: Store Admin connect/test → checkout gateway list → order placement → provider redirect → webhook → order reconciliation, for both built-in adapters and Custom Gateway Builder. Below is what I verified in code, and what must be fixed.
 
-**Good news:** the Custom Payment Gateway Builder path (Rupantor Pay) is sound — credentials decrypt, checkout executes, webhook verifies and updates the order.
+### Critical (real money / security impact)
 
-**Bad news:** the built-in provider path is broken in several places. Confirmed by reading the code and DB:
+**1. Online payment charges the wrong amount**
+`startOnlineCheckout` in `src/lib/storefront.functions.ts` sends `amount = order.subtotal`. The order total is `subtotal + delivery_amount − discount_amount` (computed in `placeOrder`). So the shopper is charged without the delivery fee, and a coupon discount is not applied at the gateway either. Fix: read `delivery_amount`/`discount_amount` and send the true payable total.
 
-### 1. Built-in checkout sends EMPTY credentials (critical)
-`startOnlineCheckout` reads `conn.credentials` — that column does not exist on `store_payment_gateways`. The real value is `credentials_ciphertext` and must be decrypted. So **even SSLCommerz, the only fully wired provider, would fail** at "Pay now".
+**2. Anyone can mark an order as paid via the custom webhook**
+`src/routes/api/public/store-payments/custom-webhook.$store.$gateway.ts` runs the order-reconciliation block (`payment_status = 'paid'` + owner's paid status) even when:
+- `?source=test` is used — signature verification is explicitly skipped on that path, yet reconciliation still runs;
+- the gateway has `signature.type = "none"` (the Rupantor Pay preset), where `verifyWebhookSignature` returns `null` and is treated as acceptable.
 
-### 2. 16 of 17 built-in providers throw on checkout, yet all are offered to shoppers (critical)
-All 18 rows in `platform_payment_gateways` are `enabled = true`. Only `sslcommerz` implements `createCheckout`. Every other adapter (Stripe, PayPal, ShurjoPay, AmarPay, PortWallet, bKash, bKash/Nagad/Upay Merchant, BDGate, NagorikPay, PaybyBD, Fastaar, PayBD, iPayBD, UrbdPay) throws "not yet wired".
+Since `providerRef` is matched against `invoice_no`, a forged POST with a guessed invoice number flips a real order to paid. Fixes: never reconcile when `source=test`; when the signature is not cryptographically verified, confirm through the gateway's own verification endpoint (`executeVerification`) before marking paid, and refuse to mark paid if neither signature nor verification succeeded.
 
-Because `pendingAdapter.testConnection` returns success, the owner's connection is saved with `status = 'connected'`, so `listStoreOnlineGateways` shows it at checkout. The shopper then: places the order → cart is cleared → stock/flow proceeds → "Pay now" throws. Order stranded, no payment, bad UX.
+**3. No fallback when the webhook never arrives**
+Reconciliation happens only in the webhook. If the provider fails to call back (or the store has no verification configured), the order stays pending forever and the shopper sees no payment status on `/store/$slug/order/$orderId`. Fix: add a `verifyOrderPayment` server function that the order page calls on load for online orders in a non-paid state — it calls the provider's verify endpoint (custom) or `verifyPayment` (built-in) and applies the same status rules. Show a "Payment confirmed / awaiting confirmation" line on the order page.
 
-### 3. Built-in webhook never marks orders paid (critical)
-`api/public/store-payments/webhook.$store.$provider.ts` parses, verifies, and logs into `payment_webhook_events` — but never touches `orders`. Nothing sets `payment_status = 'paid'` or applies the owner's "online paid" status rule. Only the custom-gateway webhook does that. So a real SSLCommerz payment would stay `unpaid`.
+**4. `startOnlineCheckout` is an unguarded public endpoint**
+It accepts any `orderId`, always creates a provider session, and overwrites `payment_ref`. Fix: reject orders that are already `paid`, cancelled, or older than a short window; require the gateway key to match the order's recorded `payment_gateway_id`.
 
-### 4. Payment reference can be null, so the webhook can't find the order
-Both webhooks match on `orders.payment_ref`. Providers that only return a redirect URL (Rupantor Pay returns just `payment_url`) leave `payment_ref` null → the successful webhook silently matches zero rows.
+### Medium (will bite later)
 
-### 5. Cart is cleared before payment even starts
-In `checkout.tsx`, `clearCart()` runs before `startOnlineCheckout`. If the gateway call fails, the shopper loses their cart and sees only an error.
+**5. Currency hardcoded** — the built-in path sends `currency: "BDT"` regardless of `stores.currency`. Use the store currency (custom path already reads gateway currency).
 
-Minor (no change needed, noting it): `orders.subtotal` actually stores the grand total (items + delivery − discount); the charged amount is therefore correct.
+**6. No amount check on webhooks** — a callback reporting a smaller paid amount still marks the order paid. Compare the reported amount to the order total (with a small tolerance) and log a mismatch instead of confirming.
 
-## The fix
+**7. Store-active not checked in `listStoreOnlineGateways`** — it queries with the admin client and skips the `stores.status = 'active'` guard used elsewhere.
 
-**A. Decrypt credentials for built-in checkout** — `src/lib/storefront.functions.ts`: load `credentials_ciphertext` + `status`, decrypt via `@/lib/crypto/credentials.server`, require `status = 'connected'`, and pass the real credentials to `adapter.createCheckout`.
+**8. Sandbox gateways are indistinguishable at checkout** — a gateway left in sandbox/test mode is offered to real shoppers with no label. Add a "Test mode" badge and warn the owner in the admin card.
 
-**B. Capability flag so shoppers never see a dead gateway**
-- `providers/types.ts`: add `storefrontCheckout?: boolean` to `ProviderMeta`.
-- `providers/sslcommerz.ts`: set `storefrontCheckout: true` (the only one, until each real API is wired).
-- `listStoreOnlineGateways`: skip built-ins whose adapter lacks the flag.
-- `startOnlineCheckout`: hard-fail early with a clear message if the flag is missing.
-- Store Admin gateway card (`payment-gateway.tsx` / provider list): show a "Storefront checkout coming soon — credentials saved" note on those providers, so owners understand they can save keys but not yet collect payments. Nothing is removed; every provider stays connectable.
+**9. Failed/abandoned online orders never expire** — they hold reserved intent as `pending` with no cleanup. Keep behaviour, but record `payment_status = 'failed'` when a verification returns a failed/cancelled state so the admin order list is truthful.
 
-**C. Reconcile orders in the built-in webhook** — in `webhook.$store.$provider.ts`, when `verifyPayment` returns `paid`, update the matching order: `payment_status = 'paid'` plus the store's configured `payments_config.order_status.online_paid` (default `confirmed`), mirroring the custom-gateway webhook exactly.
+### Verified as correct (no change)
+- Credentials are AES-256-GCM encrypted, decrypted only server-side; previews are masked; secrets never enter the client payloads.
+- `saveStorePaymentGateway` merges blank fields with previous values so partial edits don't wipe keys, and only persists after a successful `testConnection`.
+- Only providers with `meta.storefrontCheckout` are offered at checkout, so the 16 stub adapters cannot strand a shopper.
+- Owner-side platform gateway management is role-gated via `has_role`.
+- Order status rules (`online_pending`, `online_paid`, `manual`, `cod`) are validated against the allowed enum in every writer.
 
-**D. Always have a matchable reference**
-- `startOnlineCheckout` writes `payment_ref = provider_ref ?? invoice_no ?? order.id` for both built-in and custom paths.
-- Both webhooks match on `payment_ref` **or** `invoice_no` (sanitised value, scoped to `store_id`), so a provider echoing our transaction id still reconciles.
-
-**E. Don't clear the cart until payment is under way** — `src/routes/store/$slug/checkout.tsx`: for online methods, call `startOnlineCheckout` first, clear the cart only once a `redirect_url` is returned, and on failure keep the cart and show the provider's error.
-
-## Notes
-
-- No database migration is required; all `orders` payment columns already exist.
-- No existing gateway, credential, or UI feature is removed.
-- After the changes I'll re-check the Rupantor Pay custom gateway still starts a session, and confirm the built-in path now carries real credentials.
+### Technical notes
+Files to change: `src/lib/storefront.functions.ts` (total amount, currency, guards, new `verifyOrderPayment`), `src/routes/api/public/store-payments/custom-webhook.$store.$gateway.ts` (test-source + unsigned reconciliation, amount check), `src/routes/api/public/store-payments/webhook.$store.$provider.ts` (amount check), `src/routes/store/$slug/order.$orderId.tsx` (payment status + verify-on-load), `src/routes/store/$slug/checkout.tsx` and `src/routes/_authenticated/admin/payment-gateway.tsx` (sandbox badge). No schema migration is required — `payment_status`, `payment_ref`, `payment_gateway_id` already exist on `orders`.

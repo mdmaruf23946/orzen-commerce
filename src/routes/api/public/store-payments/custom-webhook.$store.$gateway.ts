@@ -103,28 +103,93 @@ export const Route = createFileRoute("/api/public/store-payments/custom-webhook/
             }
 
             // Reconcile the matching order when the provider reports success.
-            if (
-              processingStatus === "processed" &&
-              providerRef &&
-              ["paid", "success", "completed", "succeeded"].includes(String(normalized).toLowerCase())
-            ) {
-              const { data: st } = await supabaseAdmin
-                .from("stores")
-                .select("payments_config")
-                .eq("id", storeId)
-                .maybeSingle();
-              const rules: any = ((st as any)?.payments_config ?? {}).order_status ?? {};
-              const allowed = ["pending", "confirmed", "processing", "delivered", "cancelled"];
-              const paidStatus = allowed.includes(rules.online_paid) ? rules.online_paid : "confirmed";
-              // Providers that echo our own transaction id (rather than issuing
-              // one) must still resolve to the right order.
-              const safeRef = providerRef.replace(/[,()]/g, "");
-              await supabaseAdmin
-                .from("orders")
-                .update({ payment_status: "paid", status: paidStatus } as any)
-                .eq("store_id", storeId)
-                .or(`payment_ref.eq.${safeRef},invoice_no.eq.${safeRef}`);
+            // Test deliveries are logged only — they must never move money state.
+            const claimsPaid = ["paid", "success", "completed", "succeeded"].includes(
+              String(normalized).toLowerCase(),
+            );
+            if (processingStatus === "processed" && providerRef && claimsPaid && source === "live") {
+              // Unsigned webhooks are unauthenticated by definition: confirm
+              // with the provider's own verification endpoint before we mark
+              // an order paid, otherwise anyone could forge this callback.
+              let trusted = signatureValid === true;
+              if (!trusted) {
+                try {
+                  const { executeVerification } = await import("@/lib/custom-gateway/engine.server");
+                  const v = await executeVerification(
+                    { ...(gw as any), config: cfg } as any,
+                    creds,
+                    {
+                      order_id: providerRef,
+                      amount: 0,
+                      currency: (gw as any).currency ?? "BDT",
+                      customer_name: "",
+                      customer_email: "",
+                      customer_phone: "",
+                      product_name: "",
+                      product_quantity: 1,
+                      shipping_address: "",
+                      success_url: "",
+                      cancel_url: "",
+                      fail_url: "",
+                      callback_url: "",
+                      webhook_url: "",
+                      store_id: storeId,
+                      transaction_id: providerRef,
+                    } as any,
+                  );
+                  trusted = v.status === "paid";
+                  if (!trusted) errorMessage = v.error ?? "Provider verification did not confirm payment";
+                } catch (e: unknown) {
+                  errorMessage = e instanceof Error ? e.message : String(e);
+                }
+              }
+
+              if (!trusted) {
+                processingStatus = "invalid_signature";
+                statusCode = 401;
+                errorMessage = errorMessage ?? "Unverified payment callback rejected";
+              } else {
+                const { data: st } = await supabaseAdmin
+                  .from("stores")
+                  .select("payments_config")
+                  .eq("id", storeId)
+                  .maybeSingle();
+                const rules: any = ((st as any)?.payments_config ?? {}).order_status ?? {};
+                const allowed = ["pending", "confirmed", "processing", "delivered", "cancelled"];
+                const paidStatus = allowed.includes(rules.online_paid) ? rules.online_paid : "confirmed";
+                // Providers that echo our own transaction id (rather than issuing
+                // one) must still resolve to the right order.
+                const safeRef = providerRef.replace(/[,()]/g, "");
+                const { data: matched } = await supabaseAdmin
+                  .from("orders")
+                  .select("id,subtotal,delivery_amount,discount_amount")
+                  .eq("store_id", storeId)
+                  .or(`payment_ref.eq.${safeRef},invoice_no.eq.${safeRef}`);
+
+                // Amount guard: never confirm an underpayment.
+                const reported = Number(
+                  (readPath(payload, (cfg.verification?.amountPath || "amount")) as any) ?? NaN,
+                );
+                for (const ord of (matched ?? []) as any[]) {
+                  const due =
+                    Number(ord.subtotal ?? 0) +
+                    Number(ord.delivery_amount ?? 0) -
+                    Number(ord.discount_amount ?? 0);
+                  if (Number.isFinite(reported) && reported > 0 && reported + 0.5 < due) {
+                    errorMessage = `Reported amount ${reported} is below order total ${due}`;
+                    processingStatus = "error";
+                    statusCode = 409;
+                    continue;
+                  }
+                  await supabaseAdmin
+                    .from("orders")
+                    .update({ payment_status: "paid", status: paidStatus } as any)
+                    .eq("id", ord.id)
+                    .neq("payment_status", "paid");
+                }
+              }
             }
+
           }
         } catch (e: unknown) {
           processingStatus = "error";
