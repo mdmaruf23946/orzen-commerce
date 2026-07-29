@@ -95,6 +95,7 @@ export const listStoreOnlineGateways = createServerFn({ method: "GET" })
 
     if (builtins?.length) {
       const ids = builtins.map((b: any) => b.provider_id);
+      const { PROVIDERS } = await import("@/lib/subscription-pay/providers/registry");
       const { data: platform } = await supabaseAdmin
         .from("platform_payment_gateways")
         .select("id,label,logo_url,enabled")
@@ -103,6 +104,9 @@ export const listStoreOnlineGateways = createServerFn({ method: "GET" })
       for (const b of builtins as any[]) {
         const p: any = byId.get(b.provider_id);
         if (!p || p.enabled === false) continue;
+        // Never offer a provider whose live checkout API isn't wired yet —
+        // otherwise the shopper is redirected nowhere after ordering.
+        if (!PROVIDERS[b.provider_id]?.meta.storefrontCheckout) continue;
         out.push({
           key: `builtin:${b.provider_id}`,
           kind: "builtin",
