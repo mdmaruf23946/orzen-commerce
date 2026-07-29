@@ -115,13 +115,122 @@ export const listSendableOrders = createServerFn({ method: "POST" })
     const used = new Set((parcels ?? []).map((p: any) => p.order_id).filter(Boolean));
     const { data: orders } = await supabase
       .from("orders")
-      .select("id,invoice_no,customer_name,phone,address,area,subtotal,delivery_amount,discount_amount,payment_method,status,created_at")
+      .select(
+        "id,invoice_no,customer_name,phone,address,area,subtotal,delivery_amount,discount_amount,payment_method,payment_status,status,created_at",
+      )
       .eq("store_id", store.id)
       .in("status", ["confirmed", "processing"])
       .order("created_at", { ascending: false })
       .limit(data.limit ?? 50);
-    return (orders ?? []).filter((o: any) => !used.has(o.id));
+    const list = (orders ?? []).filter((o: any) => !used.has(o.id));
+    if (!list.length) return [];
+    const { data: items } = await supabase
+      .from("order_items")
+      .select("order_id,name_snapshot,price_snapshot,qty")
+      .in(
+        "order_id",
+        list.map((o: any) => o.id),
+      );
+    const byOrder: Record<string, Array<{ name: string; qty: number; price: number }>> = {};
+    for (const i of items ?? []) {
+      const row = i as any;
+      (byOrder[row.order_id] ??= []).push({
+        name: row.name_snapshot,
+        qty: row.qty,
+        price: Number(row.price_snapshot ?? 0),
+      });
+    }
+    const defaultKey = defaultCourier(store);
+    return list.map((o: any) => {
+      const prepaid = o.payment_method !== "cod" && o.payment_status === "paid";
+      const total = Math.max(
+        0,
+        Number(o.subtotal ?? 0) + Number(o.delivery_amount ?? 0) - Number(o.discount_amount ?? 0),
+      );
+      return {
+        ...o,
+        items: byOrder[o.id] ?? [],
+        total,
+        cod_amount: prepaid ? 0 : total,
+        courier_key: defaultKey,
+      };
+    });
   });
+
+/** Connected courier summary for the Courier Orders header + send dialog. */
+export const getCourierOverview = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const store = await getStore(context.supabase, context.userId);
+    const all = (store.couriers ?? {}) as Record<string, any>;
+    const couriers = COURIER_KEYS.filter((k) => all[k]?.enabled).map((k) => ({
+      key: k,
+      isDefault: !!all[k]?.is_default,
+      sandbox: !!all[k]?.sandbox,
+      pickup: all[k]?.pickup ?? {},
+      shipping: all[k]?.shipping ?? {},
+      manual: isManualCourier(k),
+    }));
+    return { defaultKey: defaultCourier(store), couriers };
+  });
+
+/** One-click: build the parcel from an order and push it to the courier. */
+export const sendOrderToCourier = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        orderId: uuid,
+        courierKey: z.enum(COURIER_KEYS).optional(),
+        weight: z.number().finite().min(0).max(1000).optional(),
+        deliveryType: z.string().trim().max(40).optional(),
+        note: z.string().trim().max(500).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertPlan(supabase, userId, "courier");
+    const store = await getStore(supabase, userId);
+    const note = [data.deliveryType ? `Delivery: ${data.deliveryType}` : null, data.note || null]
+      .filter(Boolean)
+      .join(" · ");
+    return dispatchParcel(supabase, store, {
+      orderId: data.orderId,
+      courierKey: data.courierKey,
+      weight: data.weight,
+      note: note || undefined,
+    });
+  });
+
+/** Refresh every still-moving parcel (the "Sync Now" button). */
+export const syncActiveParcels = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ courierKey: z.enum(COURIER_KEYS).optional() }).parse(d ?? {}))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertPlan(supabase, userId, "courier");
+    const store = await getStore(supabase, userId);
+    let q = supabase
+      .from("courier_parcels")
+      .select("id")
+      .eq("store_id", store.id)
+      .in("status", ACTIVE_STATUSES)
+      .order("last_synced_at", { ascending: true, nullsFirst: true })
+      .limit(50);
+    if (data.courierKey) q = q.eq("courier_key", data.courierKey);
+    const { data: rows } = await q;
+    let updated = 0;
+    for (const r of rows ?? []) {
+      try {
+        if (await syncOne(supabase, store, (r as any).id)) updated += 1;
+      } catch {
+        /* per-parcel failures are recorded on the parcel row */
+      }
+    }
+    return { checked: (rows ?? []).length, updated };
+  });
+
 
 const draftSchema = z.object({
   id: uuid.optional(),
