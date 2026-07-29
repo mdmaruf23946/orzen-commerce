@@ -2398,7 +2398,11 @@ export type Database = {
           landing_page_connection_id: string | null
           landing_page_url: string | null
           notes: string | null
+          payment_gateway_id: string | null
+          payment_gateway_name: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_ref: string | null
+          payment_status: string
           phone: string
           source: string
           status: Database["public"]["Enums"]["order_status"]
@@ -2433,7 +2437,11 @@ export type Database = {
           landing_page_connection_id?: string | null
           landing_page_url?: string | null
           notes?: string | null
+          payment_gateway_id?: string | null
+          payment_gateway_name?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_ref?: string | null
+          payment_status?: string
           phone: string
           source?: string
           status?: Database["public"]["Enums"]["order_status"]
@@ -2468,7 +2476,11 @@ export type Database = {
           landing_page_connection_id?: string | null
           landing_page_url?: string | null
           notes?: string | null
+          payment_gateway_id?: string | null
+          payment_gateway_name?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_ref?: string | null
+          payment_status?: string
           phone?: string
           source?: string
           status?: Database["public"]["Enums"]["order_status"]
@@ -5014,7 +5026,7 @@ export type Database = {
         | "processing"
         | "delivered"
         | "cancelled"
-      payment_method: "cod" | "bkash" | "nagad" | "rocket" | "bank"
+      payment_method: "cod" | "bkash" | "nagad" | "rocket" | "bank" | "online"
       product_status: "active" | "draft" | "out_of_stock"
       return_status:
         | "requested"
@@ -5178,7 +5190,7 @@ export const Constants = {
         "delivered",
         "cancelled",
       ],
-      payment_method: ["cod", "bkash", "nagad", "rocket", "bank"],
+      payment_method: ["cod", "bkash", "nagad", "rocket", "bank", "online"],
       product_status: ["active", "draft", "out_of_stock"],
       return_status: [
         "requested",
