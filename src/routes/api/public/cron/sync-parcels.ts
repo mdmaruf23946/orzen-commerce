@@ -41,7 +41,7 @@ export const Route = createFileRoute("/api/public/cron/sync-parcels")({
           checked += 1;
           try {
             const r: any = await syncOne(supabaseAdmin, store as any, (p as any).id);
-            if (r?.changed) updated += 1;
+            if (r) updated += 1;
           } catch (e) {
             errors.push((e as Error).message);
           }
