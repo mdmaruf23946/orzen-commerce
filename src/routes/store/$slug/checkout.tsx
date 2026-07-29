@@ -194,6 +194,9 @@ function CheckoutPage() {
     );
   }
 
+  const isOnlineMethod = method.startsWith("custom:") || method.startsWith("builtin:");
+  const isManual = !isOnlineMethod && method !== "cod";
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
