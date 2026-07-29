@@ -322,7 +322,7 @@ function CheckoutPage() {
             </label>
           ))}
         </div>
-        {method !== "cod" && (
+        {isManual && (
           <>
             {pc.instructions && (
               <p className="mt-3 whitespace-pre-line rounded-md bg-muted p-3 text-xs text-muted-foreground">
