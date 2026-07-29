@@ -885,14 +885,11 @@ export const updateCouriers = createServerFn({ method: "POST" })
     return updateStoreColumn(context.supabase, context.userId, "couriers", data);
   });
 
-// Lightweight reachability/auth ping against the courier's base URL.
-// Persists diagnostics into stores.couriers[key] so the UI can show
-// last-connected time, latency, and errors without a bespoke adapter.
+// Verifies credentials against each courier's official auth endpoint and
+// persists diagnostics into stores.couriers[key].
 export const testCourierConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
-    z.object({ key: z.enum(COURIER_KEYS) }).parse(d),
-  )
+  .inputValidator((d) => z.object({ key: z.enum(COURIER_KEYS) }).parse(d))
   .handler(async ({ data, context }) => {
     await assertPlan(context.supabase, context.userId, "courier");
     const { data: store } = await context.supabase
@@ -903,58 +900,21 @@ export const testCourierConnection = createServerFn({ method: "POST" })
     if (!store) throw new Error("No store");
     const couriers: any = (store as any).couriers ?? {};
     const cfg = couriers[data.key] ?? {};
-    const creds: Record<string, string> = cfg.credentials ?? {};
-    const url: string | null =
-      creds.base_url || cfg.base_url || null;
-    const apiKey = creds.api_key || cfg.api_key || "";
-    const apiSecret = creds.api_secret || creds.secret || cfg.secret || "";
-    const userId = creds.user_id || "";
-    const username = creds.username || "";
-    const password = creds.password || "";
-    const merchantCode = creds.merchant_code || "";
+    const creds: Record<string, string> = { ...(cfg.credentials ?? {}) };
+    if (!creds.api_key && cfg.api_key) creds.api_key = cfg.api_key;
+    if (!creds.secret && cfg.secret) creds.secret = cfg.secret;
+    const url: string = creds.base_url || cfg.base_url || "";
     const startedAt = Date.now();
     let status: "connected" | "error" = "error";
     let message = "";
     let responseSnippet = "";
     try {
-      if (!url) throw new Error("Base URL is not set");
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 8000);
-      // Provider-specific auth headers where known; fall back to generic bearer.
-      const headers: Record<string, string> = { Accept: "application/json" };
-      switch (data.key) {
-        case "ecourier":
-          if (userId) headers["USER-ID"] = userId;
-          if (apiKey) headers["API-KEY"] = apiKey;
-          if (apiSecret) headers["API-SECRET"] = apiSecret;
-          break;
-        case "sa_paribahan":
-          if (merchantCode) headers["X-Merchant-Code"] = merchantCode;
-          if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
-          break;
-        case "sundarban":
-          if (username && password) {
-            const token = Buffer.from(`${username}:${password}`).toString("base64");
-            headers["Authorization"] = `Basic ${token}`;
-          }
-          break;
-        default:
-          if (apiKey) {
-            headers["Authorization"] = `Bearer ${apiKey}`;
-            headers["Api-Key"] = apiKey;
-          }
-          if (apiSecret) headers["Secret-Key"] = apiSecret;
-      }
-      const res = await fetch(url, { method: "GET", headers, signal: controller.signal });
-      clearTimeout(timer);
-      responseSnippet = (await res.text().catch(() => "")).slice(0, 500);
-      if (res.status < 500) {
-        status = "connected";
-        message = `Reachable (HTTP ${res.status})`;
-      } else {
-        status = "error";
-        message = `Server error (HTTP ${res.status})`;
-      }
+      if (!url) throw new Error("Base API URL is not set");
+      const { probeCourier } = await import("./couriers.server");
+      const r = await probeCourier(data.key, url, creds);
+      status = r.ok ? "connected" : "error";
+      message = r.message;
+      responseSnippet = (r.snippet ?? "").slice(0, 500);
     } catch (e) {
       status = "error";
       message = (e as Error).message || "Network error";
@@ -962,6 +922,7 @@ export const testCourierConnection = createServerFn({ method: "POST" })
 
     const latencyMs = Date.now() - startedAt;
     const diagnostics = {
+      ...(cfg.diagnostics ?? {}),
       lastConnectedAt: new Date().toISOString(),
       lastStatus: status,
       lastError: status === "error" ? message : null,
@@ -972,6 +933,37 @@ export const testCourierConnection = createServerFn({ method: "POST" })
     await context.supabase.from("stores").update({ couriers: next }).eq("id", (store as any).id);
     return { ok: status === "connected", status, message, latencyMs };
   });
+
+// Pulls courier-side location/store lists (Pathao, RedX) and records the sync time.
+export const syncCourierInfo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ key: z.enum(COURIER_KEYS) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "courier");
+    const { data: store } = await context.supabase
+      .from("stores")
+      .select("id, couriers")
+      .eq("owner_user_id", context.userId)
+      .maybeSingle();
+    if (!store) throw new Error("No store");
+    const couriers: any = (store as any).couriers ?? {};
+    const cfg = couriers[data.key] ?? {};
+    const creds: Record<string, string> = { ...(cfg.credentials ?? {}) };
+    const url: string = creds.base_url || cfg.base_url || "";
+    if (!url) throw new Error("Base API URL is not set");
+    const { syncCourierData } = await import("./couriers.server");
+    const r = await syncCourierData(data.key, url, creds);
+    const diagnostics = {
+      ...(cfg.diagnostics ?? {}),
+      ...(r.ok
+        ? { lastSyncAt: new Date().toISOString(), lastSyncSummary: r.summary ?? null, lastError: null }
+        : { lastError: r.message, lastStatus: "error" as const }),
+    };
+    const next = { ...couriers, [data.key]: { ...cfg, diagnostics } };
+    await context.supabase.from("stores").update({ couriers: next }).eq("id", (store as any).id);
+    return { ok: r.ok, message: r.message, summary: r.summary ?? null };
+  });
+
 
 const seoSchema = z.object({
   title: z.string().trim().max(160).optional().nullable(),
