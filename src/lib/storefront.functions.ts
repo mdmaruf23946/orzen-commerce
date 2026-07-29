@@ -210,7 +210,7 @@ export const startOnlineCheckout = createServerFn({ method: "POST" })
       }
       await supabaseAdmin
         .from("orders")
-        .update({ payment_ref: result.provider_ref ?? null } as any)
+        .update({ payment_ref: result.provider_ref ?? fallbackRef } as any)
         .eq("id", order.id);
       return { redirect_url: result.redirect_url };
     }
@@ -224,11 +224,30 @@ export const startOnlineCheckout = createServerFn({ method: "POST" })
         .eq("enabled", true)
         .maybeSingle();
       if (!conn) throw new Error("Payment gateway unavailable");
+      if ((conn as any).status !== "connected") {
+        throw new Error("Payment gateway is not connected");
+      }
       const { getProvider } = await import("@/lib/subscription-pay/providers/registry");
       const adapter = getProvider(ref);
+      if (!adapter.meta.storefrontCheckout) {
+        throw new Error(
+          `${adapter.meta.label} cannot process storefront payments yet. Please choose another payment method.`,
+        );
+      }
+      // Credentials are stored encrypted — decrypt them here or the provider
+      // receives an empty payload and rejects the session.
+      let creds: Record<string, string | boolean> = {};
+      if ((conn as any).credentials_ciphertext) {
+        const { decryptJSON } = await import("@/lib/crypto/credentials.server");
+        try {
+          creds = decryptJSON<Record<string, string | boolean>>((conn as any).credentials_ciphertext);
+        } catch {
+          throw new Error("Payment gateway credentials could not be read");
+        }
+      }
       const res = await adapter.createCheckout(
         {
-          credentials: ((conn as any).credentials ?? {}) as Record<string, string | boolean>,
+          credentials: creds,
           sandbox: !!(conn as any).sandbox,
         },
         {
@@ -247,7 +266,7 @@ export const startOnlineCheckout = createServerFn({ method: "POST" })
       );
       await supabaseAdmin
         .from("orders")
-        .update({ payment_ref: res.provider_ref ?? null } as any)
+        .update({ payment_ref: res.provider_ref ?? fallbackRef } as any)
         .eq("id", order.id);
       return { redirect_url: res.redirect_url };
     }
