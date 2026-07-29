@@ -359,7 +359,10 @@ export type CourierDiagnostics = {
   lastError?: string | null;
   lastResponse?: string | null;
   latencyMs?: number | null;
+  lastSyncAt?: string | null;
+  lastSyncSummary?: string | null;
 };
+
 
 export type CourierWebhook = {
   verify_token?: string | null;
