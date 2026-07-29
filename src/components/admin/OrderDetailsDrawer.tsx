@@ -194,8 +194,18 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                   <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
                     <MapPin className="mt-0.5 h-3 w-3 shrink-0" /> {order.address}
                   </div>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${order.address} ${order.area ?? ""}`)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    <MapPin className="h-3 w-3" /> Open in Google Maps
+                  </a>
                 </div>
+                <CustomerStats phone={order.phone} enabled={open} />
               </Section>
+
 
               {/* Order info */}
               <Section icon={ScrollText} title="Order">
