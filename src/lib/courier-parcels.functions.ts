@@ -339,7 +339,7 @@ export const updateParcelManual = createServerFn({ method: "POST" })
     await assertPlan(supabase, userId, "courier");
     const store = await getStore(supabase, userId);
     const parcel = await loadParcel(supabase, store.id, data.id);
-    const patch: Record<string, unknown> = {};
+    const patch: Record<string, any> = {};
     if (data.status) patch.status = data.status;
     if (data.trackingCode !== undefined) {
       patch.tracking_code = data.trackingCode;
