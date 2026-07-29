@@ -378,7 +378,7 @@ function CheckoutPage() {
             className="mt-4 h-12 w-full"
             style={{ backgroundColor: "var(--primary)", color: "white" }}
           >
-            {submitting ? "Placing order…" : "Confirm Order"}
+            {submitting ? "Placing order…" : isOnlineMethod ? "Pay now" : "Confirm Order"}
           </Button>
         </div>
       </aside>
