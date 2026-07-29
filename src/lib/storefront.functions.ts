@@ -635,6 +635,44 @@ export const placeOrder = createServerFn({ method: "POST" })
       });
     }
 
+    // Resolve payment method + the order status the owner configured for it.
+    const isOnline = data.paymentMethod.startsWith("custom:") || data.paymentMethod.startsWith("builtin:");
+    const dbMethod = (isOnline ? "online" : data.paymentMethod) as
+      | "cod" | "bkash" | "nagad" | "rocket" | "bank" | "online";
+    const statusRules: any = ((store as any).payments_config ?? {}).order_status ?? {};
+    const allowedStatuses = ["pending", "confirmed", "processing", "delivered", "cancelled"];
+    const pick = (v: any, fb: string) => (allowedStatuses.includes(v) ? v : fb);
+    const orderStatus = isOnline
+      ? pick(statusRules.online_pending, "pending")
+      : data.paymentMethod === "cod"
+        ? pick(statusRules.cod, "pending")
+        : pick(statusRules.manual, "pending");
+
+    let gatewayId: string | null = null;
+    let gatewayName: string | null = null;
+    if (isOnline) {
+      const [kind, ref] = data.paymentMethod.split(":");
+      if (kind === "custom") {
+        const { data: gw } = await sb
+          .from("custom_payment_gateways")
+          .select("id,name")
+          .eq("id", ref)
+          .eq("store_id", data.storeId)
+          .eq("is_active", true)
+          .maybeSingle();
+        if (!gw) throw new Error("Payment gateway unavailable");
+        gatewayId = (gw as any).id;
+        gatewayName = (gw as any).name;
+      } else {
+        const { data: p } = await sb
+          .from("platform_payment_gateways")
+          .select("id,label")
+          .eq("id", ref)
+          .maybeSingle();
+        gatewayName = (p as any)?.label ?? ref;
+      }
+    }
+
     const { data: order, error: oErr } = await sb
       .from("orders")
       .insert({
@@ -644,7 +682,10 @@ export const placeOrder = createServerFn({ method: "POST" })
         phone: data.phone,
         address: data.address,
         area: data.area ?? null,
-        payment_method: data.paymentMethod,
+        payment_method: dbMethod,
+        payment_gateway_id: gatewayId,
+        payment_gateway_name: gatewayName,
+        payment_status: "unpaid",
         txn_id: data.txnId ?? null,
         notes: data.notes ?? null,
         subtotal: subtotal + delivery_amount - discount_amount,
@@ -652,10 +693,10 @@ export const placeOrder = createServerFn({ method: "POST" })
         discount_amount,
         coupon_id,
         delivery_zone_id: zoneId,
-        status: "pending",
+        status: orderStatus,
         fingerprint: data.fingerprint ?? null,
         device_id: data.deviceId ?? null,
-      })
+      } as any)
       .select("id")
       .single();
     if (oErr || !order) throw new Error(oErr?.message ?? "Order failed");
