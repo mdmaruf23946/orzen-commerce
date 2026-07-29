@@ -831,8 +831,11 @@ const courierDiagnostics = z
     lastError: z.string().max(1000).optional().nullable(),
     lastResponse: z.string().max(4000).optional().nullable(),
     latencyMs: z.number().int().min(0).max(600000).optional().nullable(),
+    lastSyncAt: z.string().max(60).optional().nullable(),
+    lastSyncSummary: z.string().max(300).optional().nullable(),
   })
   .partial();
+
 const courierWebhook = z
   .object({
     verify_token: z.string().trim().max(300).optional().nullable(),
