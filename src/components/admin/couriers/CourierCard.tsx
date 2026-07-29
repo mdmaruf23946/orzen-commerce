@@ -24,20 +24,30 @@ import {
 } from "./providers";
 
 
+import { SimpleCourierCard } from "./SimpleCourierCard";
+
 type Props = {
   meta: CourierMeta;
   value: CourierConfig;
   onChange: (next: CourierConfig) => void;
   onSave: () => Promise<void> | void;
   onTest: () => Promise<void> | void;
+  onSync?: () => Promise<void> | void;
+  onDisconnect?: () => Promise<void> | void;
   onSetDefault: () => void;
   saving?: boolean;
   testing?: boolean;
+  syncing?: boolean;
   logoUrl?: string | null;
   wordmarkUrl?: string | null;
 };
 
-export function CourierCard({
+export function CourierCard(props: Props) {
+  if (props.meta.profile === "simple") return <SimpleCourierCard {...props} />;
+  return <FullCourierCard {...props} />;
+}
+
+function FullCourierCard({
   meta,
   value,
   onChange,
@@ -49,6 +59,7 @@ export function CourierCard({
   logoUrl,
   wordmarkUrl,
 }: Props) {
+
 
   const cfg = { ...emptyConfig, ...value } as CourierConfig;
   const set = (patch: Partial<CourierConfig>) => onChange({ ...cfg, ...patch });

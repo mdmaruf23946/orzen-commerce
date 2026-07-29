@@ -22,6 +22,8 @@ export type CourierSupports = {
   autoLabel: boolean;
   autoSms: boolean;
   autoNotify: boolean;
+  /** Courier exposes a location/store listing endpoint we can sync. */
+  sync?: boolean;
 };
 
 export type CredentialFieldSpec = {
@@ -31,6 +33,7 @@ export type CredentialFieldSpec = {
   required?: boolean;
   placeholder?: string;
   help?: string;
+  defaultValue?: string;
   options?: { label: string; value: string }[];
 };
 
@@ -43,7 +46,16 @@ export type CourierMeta = {
   supports: CourierSupports;
   credentialFields?: CredentialFieldSpec[];
   supportsWebhook?: boolean;
+  /**
+   * "simple" renders the beginner-friendly official-spec form
+   * (credentials → pickup → shipping → actions → diagnostics).
+   * "full" keeps the legacy card with automation/webhook sections.
+   */
+  profile?: "simple" | "full";
+  /** Base URL used when Sandbox mode is on (simple profile only). */
+  sandboxBaseUrl?: string;
 };
+
 
 // Legacy default fields kept for backward compatibility with existing
 // SteadFast/Pathao/RedX/Paperfly configurations.
@@ -60,7 +72,31 @@ export const COURIERS: CourierMeta[] = [
     tagline: "Nationwide COD courier",
     brandColor: "#0E9F6E",
     brandColorSoft: "#0E9F6E1A",
-    credentialFields: DEFAULT_CREDENTIAL_FIELDS,
+    profile: "simple",
+    credentialFields: [
+      {
+        key: "api_key",
+        label: "API Key",
+        type: "password",
+        required: true,
+        help: "SteadFast merchant panel → API. Sent as the Api-Key header.",
+      },
+      {
+        key: "secret",
+        label: "Secret Key",
+        type: "password",
+        required: true,
+        help: "Sent as the Secret-Key header.",
+      },
+      {
+        key: "base_url",
+        label: "Base API URL",
+        type: "url",
+        required: true,
+        defaultValue: "https://portal.packzy.com/api/v1",
+        placeholder: "https://portal.packzy.com/api/v1",
+      },
+    ],
     supports: {
       sandbox: false,
       subCity: false,
@@ -73,6 +109,7 @@ export const COURIERS: CourierMeta[] = [
       autoLabel: false,
       autoSms: true,
       autoNotify: true,
+      sync: false,
     },
   },
   {
@@ -81,7 +118,36 @@ export const COURIERS: CourierMeta[] = [
     tagline: "Urban express & COD",
     brandColor: "#E8541C",
     brandColorSoft: "#E8541C1A",
-    credentialFields: DEFAULT_CREDENTIAL_FIELDS,
+    profile: "simple",
+    sandboxBaseUrl: "https://courier-api-sandbox.pathao.com",
+    credentialFields: [
+      { key: "client_id", label: "Client ID", type: "text", required: true },
+      { key: "client_secret", label: "Client Secret", type: "password", required: true },
+      {
+        key: "username",
+        label: "Username (email)",
+        type: "text",
+        required: true,
+        placeholder: "merchant@example.com",
+      },
+      { key: "password", label: "Password", type: "password", required: true },
+      {
+        key: "store_id",
+        label: "Store ID",
+        type: "text",
+        required: true,
+        help: "Pathao merchant panel → Stores.",
+      },
+      {
+        key: "base_url",
+        label: "Base API URL",
+        type: "url",
+        required: true,
+        defaultValue: "https://api-hermes.pathao.com",
+        placeholder: "https://api-hermes.pathao.com",
+        help: "Sandbox uses https://courier-api-sandbox.pathao.com",
+      },
+    ],
     supports: {
       sandbox: true,
       subCity: true,
@@ -94,6 +160,7 @@ export const COURIERS: CourierMeta[] = [
       autoLabel: true,
       autoSms: true,
       autoNotify: true,
+      sync: true,
     },
   },
   {
@@ -102,7 +169,24 @@ export const COURIERS: CourierMeta[] = [
     tagline: "Fast delivery across BD",
     brandColor: "#E11D48",
     brandColorSoft: "#E11D481A",
-    credentialFields: DEFAULT_CREDENTIAL_FIELDS,
+    profile: "simple",
+    credentialFields: [
+      {
+        key: "api_key",
+        label: "API Access Token",
+        type: "password",
+        required: true,
+        help: "RedX merchant panel → API. Sent as the API-ACCESS-TOKEN header.",
+      },
+      {
+        key: "base_url",
+        label: "Base API URL",
+        type: "url",
+        required: true,
+        defaultValue: "https://openapi.redx.com.bd/v1.0.0-beta",
+        placeholder: "https://openapi.redx.com.bd/v1.0.0-beta",
+      },
+    ],
     supports: {
       sandbox: false,
       subCity: true,
@@ -115,6 +199,7 @@ export const COURIERS: CourierMeta[] = [
       autoLabel: true,
       autoSms: false,
       autoNotify: true,
+      sync: true,
     },
   },
   {
@@ -123,9 +208,28 @@ export const COURIERS: CourierMeta[] = [
     tagline: "Nationwide logistics",
     brandColor: "#1E3A8A",
     brandColorSoft: "#1E3A8A1A",
-    credentialFields: DEFAULT_CREDENTIAL_FIELDS,
+    profile: "simple",
+    credentialFields: [
+      { key: "username", label: "Username", type: "text", required: true },
+      { key: "password", label: "Password", type: "password", required: true },
+      {
+        key: "api_key",
+        label: "API Key (paperflykey)",
+        type: "password",
+        required: true,
+        help: "Sent as the paperflykey header alongside Basic auth.",
+      },
+      {
+        key: "base_url",
+        label: "Base API URL",
+        type: "url",
+        required: true,
+        defaultValue: "https://mplog.paperfly.com.bd/api",
+        placeholder: "https://mplog.paperfly.com.bd/api",
+      },
+    ],
     supports: {
-      sandbox: true,
+      sandbox: false,
       subCity: false,
       pickupPoint: true,
       exchange: false,
@@ -136,8 +240,10 @@ export const COURIERS: CourierMeta[] = [
       autoLabel: true,
       autoSms: false,
       autoNotify: true,
+      sync: false,
     },
   },
+
   {
     key: "ecourier",
     label: "eCourier",
@@ -253,7 +359,10 @@ export type CourierDiagnostics = {
   lastError?: string | null;
   lastResponse?: string | null;
   latencyMs?: number | null;
+  lastSyncAt?: string | null;
+  lastSyncSummary?: string | null;
 };
+
 
 export type CourierWebhook = {
   verify_token?: string | null;

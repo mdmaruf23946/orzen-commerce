@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { FeatureGate } from "@/components/admin/FeatureGate";
-import { getMyStore, updateCouriers, testCourierConnection, listPublicCourierProviders } from "@/lib/admin.functions";
+import { getMyStore, updateCouriers, testCourierConnection, syncCourierInfo, listPublicCourierProviders } from "@/lib/admin.functions";
 import { CourierCard } from "@/components/admin/couriers/CourierCard";
 import {
   COURIERS,
@@ -38,8 +38,10 @@ function CouriersPage() {
   const fetchStore = useServerFn(getMyStore);
   const saveFn = useServerFn(updateCouriers);
   const testFn = useServerFn(testCourierConnection);
+  const syncFn = useServerFn(syncCourierInfo);
   const fetchProviders = useServerFn(listPublicCourierProviders);
   const qc = useQueryClient();
+
 
   const { data: store } = useQuery({
     queryKey: ["admin", "store"],
@@ -63,6 +65,8 @@ function CouriersPage() {
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState<CourierKey | null>(null);
   const [testing, setTesting] = useState<CourierKey | null>(null);
+  const [syncing, setSyncing] = useState<CourierKey | null>(null);
+
 
   useEffect(() => {
     if (!store) return;
@@ -126,6 +130,33 @@ function CouriersPage() {
     }
   }
 
+  async function sync(key: CourierKey) {
+    if (!form) return;
+    setSyncing(key);
+    try {
+      await saveFn({ data: form });
+      const res = await syncFn({ data: { key } });
+      if (res.ok) toast.success(`${key}: ${res.message}${res.summary ? ` · ${res.summary}` : ""}`);
+      else toast.error(`${key}: ${res.message}`);
+      qc.invalidateQueries({ queryKey: ["admin", "store"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSyncing(null);
+    }
+  }
+
+  async function disconnect(key: CourierKey) {
+    if (!form) return;
+    const next: FormState = {
+      ...form,
+      [key]: { ...emptyConfig, credentials: {}, shipping: { ...(form[key].shipping ?? {}) } },
+    };
+    setForm(next);
+    await saveFn({ data: next });
+    qc.invalidateQueries({ queryKey: ["admin", "store"] });
+  }
+
   const enabledCount = (Object.values(form) as CourierConfig[]).filter((c) => c.enabled).length;
 
   return (
@@ -147,13 +178,17 @@ function CouriersPage() {
             onChange={(next) => updateOne(meta.key, next)}
             onSave={() => save(meta.key)}
             onTest={() => test(meta.key)}
+            onSync={meta.supports.sync ? () => sync(meta.key) : undefined}
+            onDisconnect={meta.profile === "simple" ? () => disconnect(meta.key) : undefined}
             onSetDefault={() => setDefault(meta.key)}
             saving={saving === meta.key}
             testing={testing === meta.key}
+            syncing={syncing === meta.key}
             logoUrl={logoByCode[meta.key] ?? null}
             wordmarkUrl={wordmarkByCode[meta.key] ?? null}
           />
         ))}
+
       </div>
     </div>
   );
