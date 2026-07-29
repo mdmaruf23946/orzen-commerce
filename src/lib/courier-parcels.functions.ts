@@ -740,7 +740,7 @@ async function invoiceFor(supabase: any, parcel: any) {
   return String(parcel.id).slice(0, 8).toUpperCase();
 }
 
-async function syncOne(supabase: any, store: { id: string; couriers: any }, id: string) {
+export async function syncOne(supabase: any, store: { id: string; couriers: any }, id: string) {
   const parcel = await loadParcel(supabase, store.id, id);
   const { getAdapter } = await import("@/lib/couriers/registry.server");
   const adapter = getAdapter(parcel.courier_key);

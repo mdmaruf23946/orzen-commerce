@@ -75,6 +75,7 @@ import { Route as AuthenticatedAdminReturnsRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authenticated/admin/products'
 import { Route as AuthenticatedAdminProductDefaultsRouteImport } from './routes/_authenticated/admin/product-defaults'
 import { Route as AuthenticatedAdminPaymentGatewayRouteImport } from './routes/_authenticated/admin/payment-gateway'
+import { Route as AuthenticatedAdminParcelsRouteImport } from './routes/_authenticated/admin/parcels'
 import { Route as AuthenticatedAdminOrdersRouteImport } from './routes/_authenticated/admin/orders'
 import { Route as AuthenticatedAdminNotificationsRouteImport } from './routes/_authenticated/admin/notifications'
 import { Route as AuthenticatedAdminMessengerInboxRouteImport } from './routes/_authenticated/admin/messenger-inbox'
@@ -119,6 +120,7 @@ import { Route as StoreSlugAuthForgotRouteImport } from './routes/store/$slug/au
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
 import { Route as ApiPublicFbCapiTrackRouteImport } from './routes/api/public/fb-capi/track'
+import { Route as ApiPublicCronSyncParcelsRouteImport } from './routes/api/public/cron/sync-parcels'
 import { Route as ApiPublicCronNotifyOrdersRouteImport } from './routes/api/public/cron/notify-orders'
 import { Route as AuthenticatedOwnerSubscriptionPayProvidersRouteImport } from './routes/_authenticated/owner/subscription-pay.providers'
 import { Route as AuthenticatedOwnerNotificationCenterTemplatesRouteImport } from './routes/_authenticated/owner/notification-center.templates'
@@ -503,6 +505,12 @@ const AuthenticatedAdminPaymentGatewayRoute =
     path: '/payment-gateway',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminParcelsRoute =
+  AuthenticatedAdminParcelsRouteImport.update({
+    id: '/parcels',
+    path: '/parcels',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminOrdersRoute =
   AuthenticatedAdminOrdersRouteImport.update({
     id: '/orders',
@@ -759,6 +767,12 @@ const ApiPublicFbCapiTrackRoute = ApiPublicFbCapiTrackRouteImport.update({
   path: '/api/public/fb-capi/track',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCronSyncParcelsRoute =
+  ApiPublicCronSyncParcelsRouteImport.update({
+    id: '/api/public/cron/sync-parcels',
+    path: '/api/public/cron/sync-parcels',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicCronNotifyOrdersRoute =
   ApiPublicCronNotifyOrdersRouteImport.update({
     id: '/api/public/cron/notify-orders',
@@ -928,6 +942,7 @@ export interface FileRoutesByFullPath {
   '/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
+  '/admin/parcels': typeof AuthenticatedAdminParcelsRoute
   '/admin/payment-gateway': typeof AuthenticatedAdminPaymentGatewayRoute
   '/admin/product-defaults': typeof AuthenticatedAdminProductDefaultsRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
@@ -989,6 +1004,7 @@ export interface FileRoutesByFullPath {
   '/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
+  '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -1052,6 +1068,7 @@ export interface FileRoutesByTo {
   '/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
+  '/admin/parcels': typeof AuthenticatedAdminParcelsRoute
   '/admin/payment-gateway': typeof AuthenticatedAdminPaymentGatewayRoute
   '/admin/product-defaults': typeof AuthenticatedAdminProductDefaultsRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
@@ -1113,6 +1130,7 @@ export interface FileRoutesByTo {
   '/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
+  '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -1185,6 +1203,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
   '/_authenticated/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
+  '/_authenticated/admin/parcels': typeof AuthenticatedAdminParcelsRoute
   '/_authenticated/admin/payment-gateway': typeof AuthenticatedAdminPaymentGatewayRoute
   '/_authenticated/admin/product-defaults': typeof AuthenticatedAdminProductDefaultsRoute
   '/_authenticated/admin/products': typeof AuthenticatedAdminProductsRoute
@@ -1246,6 +1265,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/_authenticated/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
+  '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -1318,6 +1338,7 @@ export interface FileRouteTypes {
     | '/admin/messenger-inbox'
     | '/admin/notifications'
     | '/admin/orders'
+    | '/admin/parcels'
     | '/admin/payment-gateway'
     | '/admin/product-defaults'
     | '/admin/products'
@@ -1379,6 +1400,7 @@ export interface FileRouteTypes {
     | '/owner/notification-center/templates'
     | '/owner/subscription-pay/providers'
     | '/api/public/cron/notify-orders'
+    | '/api/public/cron/sync-parcels'
     | '/api/public/fb-capi/track'
     | '/api/public/messenger/webhook'
     | '/lovable/email/queue/process'
@@ -1442,6 +1464,7 @@ export interface FileRouteTypes {
     | '/admin/messenger-inbox'
     | '/admin/notifications'
     | '/admin/orders'
+    | '/admin/parcels'
     | '/admin/payment-gateway'
     | '/admin/product-defaults'
     | '/admin/products'
@@ -1503,6 +1526,7 @@ export interface FileRouteTypes {
     | '/owner/notification-center/templates'
     | '/owner/subscription-pay/providers'
     | '/api/public/cron/notify-orders'
+    | '/api/public/cron/sync-parcels'
     | '/api/public/fb-capi/track'
     | '/api/public/messenger/webhook'
     | '/lovable/email/queue/process'
@@ -1574,6 +1598,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/messenger-inbox'
     | '/_authenticated/admin/notifications'
     | '/_authenticated/admin/orders'
+    | '/_authenticated/admin/parcels'
     | '/_authenticated/admin/payment-gateway'
     | '/_authenticated/admin/product-defaults'
     | '/_authenticated/admin/products'
@@ -1635,6 +1660,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/notification-center/templates'
     | '/_authenticated/owner/subscription-pay/providers'
     | '/api/public/cron/notify-orders'
+    | '/api/public/cron/sync-parcels'
     | '/api/public/fb-capi/track'
     | '/api/public/messenger/webhook'
     | '/lovable/email/queue/process'
@@ -1679,6 +1705,7 @@ export interface RootRouteChildren {
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiImgSplatRoute: typeof ApiImgSplatRoute
   ApiPublicCronNotifyOrdersRoute: typeof ApiPublicCronNotifyOrdersRoute
+  ApiPublicCronSyncParcelsRoute: typeof ApiPublicCronSyncParcelsRoute
   ApiPublicFbCapiTrackRoute: typeof ApiPublicFbCapiTrackRoute
   ApiPublicMessengerWebhookRoute: typeof ApiPublicMessengerWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
@@ -2154,6 +2181,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPaymentGatewayRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/parcels': {
+      id: '/_authenticated/admin/parcels'
+      path: '/parcels'
+      fullPath: '/admin/parcels'
+      preLoaderRoute: typeof AuthenticatedAdminParcelsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/orders': {
       id: '/_authenticated/admin/orders'
       path: '/orders'
@@ -2462,6 +2496,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicFbCapiTrackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cron/sync-parcels': {
+      id: '/api/public/cron/sync-parcels'
+      path: '/api/public/cron/sync-parcels'
+      fullPath: '/api/public/cron/sync-parcels'
+      preLoaderRoute: typeof ApiPublicCronSyncParcelsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/cron/notify-orders': {
       id: '/api/public/cron/notify-orders'
       path: '/api/public/cron/notify-orders'
@@ -2651,6 +2692,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminMessengerInboxRoute: typeof AuthenticatedAdminMessengerInboxRoute
   AuthenticatedAdminNotificationsRoute: typeof AuthenticatedAdminNotificationsRoute
   AuthenticatedAdminOrdersRoute: typeof AuthenticatedAdminOrdersRoute
+  AuthenticatedAdminParcelsRoute: typeof AuthenticatedAdminParcelsRoute
   AuthenticatedAdminPaymentGatewayRoute: typeof AuthenticatedAdminPaymentGatewayRoute
   AuthenticatedAdminProductDefaultsRoute: typeof AuthenticatedAdminProductDefaultsRoute
   AuthenticatedAdminProductsRoute: typeof AuthenticatedAdminProductsRoute
@@ -2698,6 +2740,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
       AuthenticatedAdminMessengerInboxRoute,
     AuthenticatedAdminNotificationsRoute: AuthenticatedAdminNotificationsRoute,
     AuthenticatedAdminOrdersRoute: AuthenticatedAdminOrdersRoute,
+    AuthenticatedAdminParcelsRoute: AuthenticatedAdminParcelsRoute,
     AuthenticatedAdminPaymentGatewayRoute:
       AuthenticatedAdminPaymentGatewayRoute,
     AuthenticatedAdminProductDefaultsRoute:
@@ -2963,6 +3006,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiChatRoute: ApiAiChatRoute,
   ApiImgSplatRoute: ApiImgSplatRoute,
   ApiPublicCronNotifyOrdersRoute: ApiPublicCronNotifyOrdersRoute,
+  ApiPublicCronSyncParcelsRoute: ApiPublicCronSyncParcelsRoute,
   ApiPublicFbCapiTrackRoute: ApiPublicFbCapiTrackRoute,
   ApiPublicMessengerWebhookRoute: ApiPublicMessengerWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,

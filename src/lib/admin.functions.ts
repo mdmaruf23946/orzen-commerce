@@ -450,7 +450,45 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
       messenger = { sent: 0, failed: 1, considered: 0, error: (e as Error).message };
       console.error("[updateOrderStatus] messenger drain failed:", (e as Error).message);
     }
-    return { ok: true, messenger };
+
+    // Auto Create Courier Parcel: when an order is confirmed and a connected
+    // courier has automation.autoParcel enabled, create + send the parcel.
+    let parcel: { ok: boolean; courier?: string; error?: string } | null = null;
+    if (data.status === "confirmed") {
+      try {
+        const { data: full } = await supabase
+          .from("stores")
+          .select("id, couriers")
+          .eq("id", store.id)
+          .maybeSingle();
+        const couriers = ((full as any)?.couriers ?? {}) as Record<string, any>;
+        const entries = Object.entries(couriers).filter(
+          ([, c]) => c?.enabled && c?.automation?.autoParcel,
+        );
+        const chosen = entries.find(([, c]) => c?.is_default) ?? entries[0];
+        if (chosen) {
+          const { data: existing } = await supabase
+            .from("courier_parcels")
+            .select("id")
+            .eq("order_id", data.id)
+            .not("status", "in", "(cancelled,failed)")
+            .maybeSingle();
+          if (!existing) {
+            const { dispatchParcel } = await import("@/lib/courier-parcels.functions");
+            await dispatchParcel(supabase, full as any, {
+              orderId: data.id,
+              courierKey: chosen[0],
+            });
+            parcel = { ok: true, courier: chosen[0] };
+          }
+        }
+      } catch (e) {
+        parcel = { ok: false, error: (e as Error).message };
+        console.error("[updateOrderStatus] auto parcel failed:", (e as Error).message);
+      }
+    }
+
+    return { ok: true, messenger, parcel };
   });
 
 export const setOrderAllowDuplicate = createServerFn({ method: "POST" })
