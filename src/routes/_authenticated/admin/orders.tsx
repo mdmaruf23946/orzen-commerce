@@ -1,124 +1,256 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, Printer, Trash2, ShieldCheck, Eye } from "lucide-react";
-import { listMyOrders, updateOrderStatus } from "@/lib/admin.functions";
-import { getOrderDetails, addInternalNote, deleteInternalNote } from "@/lib/business.functions";
+import { Search, SlidersHorizontal, RefreshCw, ShoppingBag, TrendingUp, Wallet, Clock } from "lucide-react";
+import { listAdminOrders, type AdminOrderRow } from "@/lib/orders-admin.functions";
+import { updateOrderStatus } from "@/lib/admin.functions";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { FraudCheckModal } from "@/components/admin/FraudCheckModal";
 import { OrderDetailsDrawer } from "@/components/admin/OrderDetailsDrawer";
 import { useFeature } from "@/components/admin/FeatureGate";
-
-const STATUSES = ["pending", "confirmed", "processing", "delivered", "cancelled"] as const;
-type Status = (typeof STATUSES)[number];
+import { OrderCard, money } from "@/components/admin/orders/OrderCard";
 
 export const Route = createFileRoute("/_authenticated/admin/orders")({
+  head: () => ({
+    meta: [
+      { title: "Orders — ORZEN Store Admin" },
+      { name: "description", content: "Manage, track and fulfil every store order from one premium dashboard." },
+      { property: "og:title", content: "Orders — ORZEN Store Admin" },
+      { property: "og:description", content: "Manage, track and fulfil every store order from one premium dashboard." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: OrdersPage,
 });
 
+type TabKey =
+  | "all" | "pending" | "confirmed" | "processing"
+  | "courier" | "in_transit" | "delivered" | "cancelled" | "returned";
+
+const TABS: { key: TabKey; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "pending", label: "Pending" },
+  { key: "confirmed", label: "Confirmed" },
+  { key: "processing", label: "Processing" },
+  { key: "courier", label: "Courier" },
+  { key: "in_transit", label: "In Transit" },
+  { key: "delivered", label: "Delivered" },
+  { key: "cancelled", label: "Cancelled" },
+  { key: "returned", label: "Returned" },
+];
+
+const COURIER_SENT = new Set(["pending", "pickup_requested", "pickup_completed"]);
+
+function matchesTab(o: AdminOrderRow, tab: TabKey) {
+  const p = o.parcel?.status;
+  switch (tab) {
+    case "all": return true;
+    case "courier": return !!p && COURIER_SENT.has(p);
+    case "in_transit": return p === "in_transit";
+    case "returned": return p === "returned" || p === "partial_delivered";
+    case "delivered": return o.status === "delivered" || p === "delivered";
+    case "cancelled": return o.status === "cancelled" || p === "cancelled";
+    default: return o.status === tab;
+  }
+}
+
 function OrdersPage() {
-  const list = useServerFn(listMyOrders);
+  const list = useServerFn(listAdminOrders);
   const update = useServerFn(updateOrderStatus);
   const qc = useQueryClient();
-  const { data: orders } = useQuery({ queryKey: ["admin", "orders"], queryFn: () => list() });
-  const [filter, setFilter] = useState<Status | "all">("all");
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const { data: orders, isFetching, refetch } = useQuery({
+    queryKey: ["admin", "orders", "rich"],
+    queryFn: () => list(),
+  });
+
+  const [tab, setTab] = useState<TabKey>("all");
+  const [q, setQ] = useState("");
+  const [payment, setPayment] = useState("all");
+  const [courier, setCourier] = useState("all");
+  const [range, setRange] = useState("all");
+  const [sort, setSort] = useState("new");
   const [fraudFor, setFraudFor] = useState<{ id: string; phone: string } | null>(null);
   const [detailsFor, setDetailsFor] = useState<string | null>(null);
   const { allowed: fraudAllowed } = useFeature("fraud_checker");
 
-  async function setStatus(id: string, status: Status) {
-    try {
-      const result = await update({ data: { id, status } });
-      qc.invalidateQueries({ queryKey: ["admin", "orders"] });
-      if (result.messenger?.failed) {
-        toast.warning(result.messenger.error || "Order updated, but Messenger status message could not be delivered yet.");
-      } else if (result.messenger?.sent) {
-        toast.success("Updated and Messenger notified");
-      } else {
-        toast.success("Updated");
+  const rows = useMemo(() => orders ?? [], [orders]);
+
+  const counts = useMemo(() => {
+    const c: Record<string, number> = {};
+    for (const t of TABS) c[t.key] = rows.filter((o) => matchesTab(o, t.key)).length;
+    return c;
+  }, [rows]);
+
+  const summary = useMemo(() => {
+    const today = new Date().toDateString();
+    const todays = rows.filter((o) => new Date(o.created_at).toDateString() === today);
+    return {
+      today: todays.length,
+      revenue: rows.filter((o) => o.status !== "cancelled").reduce((s, o) => s + o.total, 0),
+      pending: rows.filter((o) => o.status === "pending").length,
+      cod: rows.filter((o) => o.status !== "cancelled" && o.status !== "delivered").reduce((s, o) => s + o.cod_amount, 0),
+    };
+  }, [rows]);
+
+  const filtered = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    const cutoff =
+      range === "today" ? new Date(new Date().setHours(0, 0, 0, 0)).getTime()
+      : range === "7d" ? Date.now() - 7 * 864e5
+      : range === "30d" ? Date.now() - 30 * 864e5
+      : 0;
+    const out = rows.filter((o) => {
+      if (!matchesTab(o, tab)) return false;
+      if (cutoff && new Date(o.created_at).getTime() < cutoff) return false;
+      if (payment === "cod" && o.payment_method !== "cod") return false;
+      if (payment === "paid" && !(o.payment_method !== "cod" && o.payment_status === "paid")) return false;
+      if (payment === "unpaid" && o.payment_status === "paid") return false;
+      if (courier === "none" && o.courier_key) return false;
+      if (courier !== "all" && courier !== "none" && o.courier_key !== courier) return false;
+      if (term) {
+        const hay = `${o.customer_name} ${o.phone} ${o.invoice_no ?? ""} ${o.id} ${o.items.map((i) => i.name).join(" ")}`.toLowerCase();
+        if (!hay.includes(term)) return false;
       }
+      return true;
+    });
+    out.sort((a, b) =>
+      sort === "old" ? +new Date(a.created_at) - +new Date(b.created_at)
+      : sort === "high" ? b.total - a.total
+      : sort === "low" ? a.total - b.total
+      : +new Date(b.created_at) - +new Date(a.created_at),
+    );
+    return out;
+  }, [rows, tab, q, payment, courier, range, sort]);
+
+  const courierOptions = useMemo(
+    () => Array.from(new Set(rows.map((o) => o.courier_key).filter(Boolean))) as string[],
+    [rows],
+  );
+
+  async function setStatus(id: string, status: string) {
+    try {
+      const result: any = await update({ data: { id, status: status as any } });
+      qc.invalidateQueries({ queryKey: ["admin", "orders"] });
+      if (result?.messenger?.failed) toast.warning(result.messenger.error || "Order updated, Messenger message pending.");
+      else if (result?.messenger?.sent) toast.success("Updated and Messenger notified");
+      else toast.success("Updated");
     } catch (e) { toast.error((e as Error).message); }
   }
 
-  const filtered = (orders ?? []).filter((o) => filter === "all" || o.status === filter);
-
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Orders</h1>
-      <div className="flex flex-wrap gap-2">
-        {(["all", ...STATUSES] as const).map((s) => (
+    <div className="space-y-4">
+      {/* Header */}
+      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">Orders</h1>
+          <p className="text-xs text-muted-foreground">
+            {filtered.length} of {rows.length} orders
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => refetch()} className="shrink-0 gap-1.5">
+          <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} /> Refresh
+        </Button>
+      </header>
+
+      {/* Summary */}
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+        <Kpi icon={ShoppingBag} label="Today's orders" value={String(summary.today)} />
+        <Kpi icon={TrendingUp} label="Order value" value={money(summary.revenue)} />
+        <Kpi icon={Clock} label="Pending" value={String(summary.pending)} />
+        <Kpi icon={Wallet} label="COD to collect" value={money(summary.cod)} />
+      </div>
+
+      {/* Tabs */}
+      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+        {TABS.map((t) => (
           <button
-            key={s}
-            onClick={() => setFilter(s as any)}
-            className={`rounded-full border px-3 py-1 text-xs capitalize ${filter === s ? "bg-primary text-primary-foreground" : "bg-card"}`}
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors duration-150 ${
+              tab === t.key ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-muted"
+            }`}
           >
-            {s}
+            {t.label}
+            <span className={`rounded-full px-1.5 text-[10px] ${tab === t.key ? "bg-primary-foreground/20" : "bg-muted"}`}>
+              {counts[t.key] ?? 0}
+            </span>
           </button>
         ))}
       </div>
-      <div className="overflow-hidden rounded-xl border bg-card">
-        {filtered.length === 0 ? (
-          <div className="p-10 text-center text-sm text-muted-foreground">No orders.</div>
-        ) : (
-          <ul className="divide-y">
-            {filtered.map((o: any) => (
-              <li key={o.id}>
-                <div className="p-4">
-                  <button onClick={() => setExpanded(expanded === o.id ? null : o.id)} className="flex w-full items-start justify-between gap-3 text-left">
-                    <div className="flex items-start gap-2">
-                      {expanded === o.id ? <ChevronDown className="mt-0.5 h-4 w-4" /> : <ChevronRight className="mt-0.5 h-4 w-4" />}
-                      <div>
-                        <div className="font-mono text-xs text-muted-foreground">{o.invoice_no ?? `#${o.id.slice(0, 8).toUpperCase()}`}</div>
-                        <div className="text-sm font-medium">{o.customer_name}</div>
-                        <div className="text-xs text-muted-foreground">{o.phone} · {o.address}</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-base font-bold">৳{Number(o.subtotal).toFixed(0)}</div>
-                      <div className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleString()}</div>
-                    </div>
-                  </button>
-                  <ul className="ml-6 mt-2 text-xs text-muted-foreground">
-                    {o.order_items?.map((it: any, idx: number) => (
-                      <li key={idx}>{it.name_snapshot} × {it.qty} — ৳{(Number(it.price_snapshot) * it.qty).toFixed(0)}</li>
-                    ))}
-                  </ul>
-                  <div className="ml-6 mt-3 flex flex-wrap items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Status:</span>
-                    <select value={o.status} onChange={(e) => setStatus(o.id, e.target.value as Status)} className="h-8 rounded-md border bg-background px-2 text-xs capitalize">
-                      {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase">{o.payment_method}</span>
-                    <Link to="/admin/invoice/$orderId" params={{ orderId: o.id }} target="_blank" className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted">
-                      <Printer className="h-3 w-3" /> Invoice
-                    </Link>
-                    <button
-                      onClick={() => setDetailsFor(o.id)}
-                      className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted"
-                    >
-                      <Eye className="h-3 w-3" /> Details
-                    </button>
-                    <button
-                      onClick={() => fraudAllowed
-                        ? setFraudFor({ id: o.id, phone: o.phone })
-                        : toast.error("Upgrade your plan to use Fraud Checker")}
-                      className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${fraudAllowed ? "hover:bg-muted" : "opacity-60"}`}
-                      title={fraudAllowed ? "Check customer risk" : "আপগ্রেড প্রয়োজন"}
-                    >
-                      <ShieldCheck className="h-3 w-3" /> Fraud Check
-                    </button>
-                  </div>
-                </div>
-                {expanded === o.id && <OrderDetails orderId={o.id} />}
-              </li>
-            ))}
-          </ul>
-        )}
+
+      {/* Search + filters */}
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="relative min-w-0 flex-1">
+          <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search invoice, name, phone or product"
+            className="pl-8"
+          />
+        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="shrink-0 gap-1.5">
+              <SlidersHorizontal className="h-4 w-4" /> Filters
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-64 space-y-3">
+            <Field label="Payment">
+              <Select value={payment} onChange={setPayment} options={[
+                ["all", "All payments"], ["cod", "COD"], ["paid", "Online paid"], ["unpaid", "Unpaid"],
+              ]} />
+            </Field>
+            <Field label="Courier">
+              <Select value={courier} onChange={setCourier} options={[
+                ["all", "All couriers"], ["none", "Not sent"],
+                ...courierOptions.map((c) => [c, c.replace(/_/g, " ")] as [string, string]),
+              ]} />
+            </Field>
+            <Field label="Date range">
+              <Select value={range} onChange={setRange} options={[
+                ["all", "All time"], ["today", "Today"], ["7d", "Last 7 days"], ["30d", "Last 30 days"],
+              ]} />
+            </Field>
+            <Field label="Sort">
+              <Select value={sort} onChange={setSort} options={[
+                ["new", "Newest first"], ["old", "Oldest first"], ["high", "Highest value"], ["low", "Lowest value"],
+              ]} />
+            </Field>
+          </PopoverContent>
+        </Popover>
       </div>
+
+      {/* List */}
+      {filtered.length === 0 ? (
+        <div className="rounded-2xl border border-dashed bg-card/50 p-12 text-center">
+          <ShoppingBag className="mx-auto h-8 w-8 text-muted-foreground" />
+          <p className="mt-2 text-sm font-medium">No orders here</p>
+          <p className="text-xs text-muted-foreground">Try a different tab or clear your filters.</p>
+        </div>
+      ) : (
+        <div className="grid gap-2.5">
+          {filtered.map((o) => (
+            <OrderCard
+              key={o.id}
+              order={o}
+              onView={() => setDetailsFor(o.id)}
+              onStatus={(s) => setStatus(o.id, s)}
+              onFraud={() =>
+                fraudAllowed
+                  ? setFraudFor({ id: o.id, phone: o.phone })
+                  : toast.error("Upgrade your plan to use Fraud Checker")
+              }
+            />
+          ))}
+        </div>
+      )}
+
       {fraudFor && (
         <FraudCheckModal
           open={!!fraudFor}
@@ -138,71 +270,36 @@ function OrdersPage() {
   );
 }
 
-const STAGE_LABEL: Record<string, string> = {
-  placed: "Order Placed", confirmed: "Confirmed", packed: "Packed",
-  courier_assigned: "Courier Assigned", shipped: "Shipped",
-  delivered: "Delivered", returned: "Returned", cancelled: "Cancelled",
-};
-
-function OrderDetails({ orderId }: { orderId: string }) {
-  const fn = useServerFn(getOrderDetails);
-  const addNote = useServerFn(addInternalNote);
-  const delNote = useServerFn(deleteInternalNote);
-  const qc = useQueryClient();
-  const { data } = useQuery({ queryKey: ["order-details", orderId], queryFn: () => fn({ data: { orderId } }) });
-  const [note, setNote] = useState("");
-
-  if (!data) return <div className="border-t bg-muted/20 p-4 text-xs text-muted-foreground">Loading…</div>;
-
-  async function submitNote(e: React.FormEvent) {
-    e.preventDefault();
-    if (!note.trim()) return;
-    await addNote({ data: { order_id: orderId, body: note.trim() } });
-    setNote("");
-    qc.invalidateQueries({ queryKey: ["order-details", orderId] });
-  }
-  async function remove(id: string) {
-    await delNote({ data: { id } });
-    qc.invalidateQueries({ queryKey: ["order-details", orderId] });
-  }
-
+function Kpi({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
   return (
-    <div className="grid gap-4 border-t bg-muted/20 p-4 sm:grid-cols-2">
-      <div className="rounded-lg border bg-card p-3">
-        <div className="text-xs font-semibold uppercase text-muted-foreground">Timeline</div>
-        <ol className="mt-2 space-y-2">
-          {data.timeline.map((t: any) => (
-            <li key={t.id} className="flex items-start gap-2 text-sm">
-              <span className="mt-1.5 h-2 w-2 rounded-full bg-primary" />
-              <div>
-                <div className="font-medium">{STAGE_LABEL[t.stage] ?? t.stage}</div>
-                <div className="text-xs text-muted-foreground">{new Date(t.created_at).toLocaleString()}</div>
-              </div>
-            </li>
-          ))}
-          {data.timeline.length === 0 && <li className="text-xs text-muted-foreground">No timeline yet.</li>}
-        </ol>
+    <div className="rounded-2xl border bg-card p-3">
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <Icon className="h-3.5 w-3.5" /> <span className="truncate">{label}</span>
       </div>
-
-      <div className="rounded-lg border bg-card p-3">
-        <div className="text-xs font-semibold uppercase text-muted-foreground">Internal notes (owner-only)</div>
-        <ul className="mt-2 space-y-2">
-          {data.notes.map((n: any) => (
-            <li key={n.id} className="group flex items-start justify-between gap-2 rounded bg-muted/50 p-2 text-xs">
-              <div>
-                <div>{n.body}</div>
-                <div className="mt-0.5 text-[10px] text-muted-foreground">{new Date(n.created_at).toLocaleString()}</div>
-              </div>
-              <button onClick={() => remove(n.id)} className="opacity-0 group-hover:opacity-100"><Trash2 className="h-3 w-3 text-destructive" /></button>
-            </li>
-          ))}
-          {data.notes.length === 0 && <li className="text-xs text-muted-foreground">No notes yet.</li>}
-        </ul>
-        <form onSubmit={submitNote} className="mt-2 space-y-2">
-          <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add internal note…" className="text-xs" />
-          <Button type="submit" size="sm" variant="outline" disabled={!note.trim()}>Add note</Button>
-        </form>
-      </div>
+      <div className="mt-1 truncate text-lg font-bold">{value}</div>
     </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block space-y-1">
+      <span className="text-[11px] font-medium uppercase text-muted-foreground">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function Select({
+  value, onChange, options,
+}: { value: string; onChange: (v: string) => void; options: [string, string][] }) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="h-9 w-full rounded-md border bg-background px-2 text-xs capitalize"
+    >
+      {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+    </select>
   );
 }
