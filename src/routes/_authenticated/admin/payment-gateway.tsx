@@ -219,6 +219,8 @@ function PaymentGatewayPage() {
         />
       )}
 
+      <PaymentStatusRules />
+
       {storeId && <CustomGatewaySection storeId={storeId} />}
 
       <Sheet open={!!open} onOpenChange={(v) => !v && setOpenId(null)}>
