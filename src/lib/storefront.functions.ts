@@ -476,7 +476,8 @@ export const placeOrder = createServerFn({ method: "POST" })
         phone: z.string().trim().min(5).max(40),
         address: z.string().trim().min(3).max(500),
         area: z.string().trim().max(120).optional(),
-        paymentMethod: z.enum(["cod", "bkash", "nagad", "rocket", "bank"]),
+        // "cod" | "bkash" | "nagad" | "rocket" | "bank" | "builtin:<id>" | "custom:<uuid>"
+        paymentMethod: z.string().trim().min(2).max(120),
         txnId: z.string().trim().max(120).optional(),
         notes: z.string().trim().max(500).optional(),
         items: z.array(itemSchema).min(1).max(50),
