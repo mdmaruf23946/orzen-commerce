@@ -779,9 +779,18 @@ export async function dispatchParcel(
     throw new Error("Nothing to send");
   }
 
+  if ((input.weight != null || input.note) && parcel.status === "draft") {
+    const patch: Record<string, unknown> = {};
+    if (input.weight != null) patch.weight = input.weight;
+    if (input.note) patch.note = input.note;
+    await supabase.from("courier_parcels").update(patch as never).eq("id", parcel.id);
+    parcel = { ...parcel, ...patch };
+  }
+
   if (parcel.consignment_id && !["failed", "cancelled", "draft"].includes(parcel.status)) {
     return { ok: true, id: parcel.id, alreadySent: true, message: "Parcel already created" };
   }
+
 
   const key = parcel.courier_key;
   const { getAdapter } = await import("@/lib/couriers/registry.server");
