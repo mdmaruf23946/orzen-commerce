@@ -159,6 +159,9 @@ export const startOnlineCheckout = createServerFn({ method: "POST" })
     const successUrl = `${origin}/store/${slug}/order/${order.id}`;
     const cancelUrl = `${origin}/store/${slug}/checkout`;
     const amount = Number((order as any).subtotal ?? 0);
+    // Reference the webhook can always match on, even when the provider only
+    // returns a redirect URL and no transaction id of its own.
+    const fallbackRef = String((order as any).invoice_no ?? order.id);
     const [kind, ref] = data.gatewayKey.split(":");
 
     if (kind === "custom") {
