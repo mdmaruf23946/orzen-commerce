@@ -30,6 +30,8 @@ export const listParcels = createServerFn({ method: "POST" })
       .object({
         courierKey: z.enum(COURIER_KEYS).optional(),
         status: z.enum(PARCEL_STATUSES).optional(),
+        statuses: z.array(z.enum(PARCEL_STATUSES)).max(12).optional(),
+        excludeStatuses: z.array(z.enum(PARCEL_STATUSES)).max(12).optional(),
         search: z.string().trim().max(120).optional(),
         limit: z.number().int().min(1).max(100).optional(),
         offset: z.number().int().min(0).max(100000).optional(),
@@ -47,6 +49,9 @@ export const listParcels = createServerFn({ method: "POST" })
       .range(data.offset ?? 0, (data.offset ?? 0) + (data.limit ?? 25) - 1);
     if (data.courierKey) q = q.eq("courier_key", data.courierKey);
     if (data.status) q = q.eq("status", data.status);
+    if (data.statuses?.length) q = q.in("status", data.statuses);
+    if (data.excludeStatuses?.length)
+      q = q.not("status", "in", `(${data.excludeStatuses.join(",")})`);
     if (data.search) {
       const s = `%${data.search}%`;
       q = q.or(
