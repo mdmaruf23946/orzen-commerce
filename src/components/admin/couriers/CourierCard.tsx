@@ -212,14 +212,6 @@ function FullCourierCard({
               <Button size="sm" variant="outline" onClick={handleTest} disabled={testing}>
                 {testing ? "Testing…" : "Test connection"}
               </Button>
-              {cfg.enabled && status === "connected" && (
-                <Button size="sm" variant="secondary" asChild>
-                  <Link to="/admin/parcels" search={{ courier: meta.key }}>
-                    <Package className="mr-1 h-3.5 w-3.5" />
-                    Manage Parcels
-                  </Link>
-                </Button>
-              )}
               {cfg.diagnostics?.lastConnectedAt && (
                 <span className="ml-auto self-center text-xs text-muted-foreground">
                   Last: {new Date(cfg.diagnostics.lastConnectedAt).toLocaleString()}

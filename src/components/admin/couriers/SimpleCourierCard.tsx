@@ -392,14 +392,6 @@ export function SimpleCourierCard({
             {syncing ? "Syncing…" : "Sync courier info"}
           </Button>
         )}
-        {cfg.enabled && status === "connected" && (
-          <Button size="sm" variant="secondary" asChild>
-            <Link to="/admin/parcels" search={{ courier: meta.key }}>
-              <Package className="mr-1 h-3.5 w-3.5" />
-              Manage Parcels
-            </Link>
-          </Button>
-        )}
         {onDisconnect && (
           <Button size="sm" variant="ghost" className="text-destructive" onClick={handleDisconnect}>
             <Unplug className="mr-1 h-3.5 w-3.5" />
