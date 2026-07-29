@@ -22,6 +22,8 @@ export type CourierSupports = {
   autoLabel: boolean;
   autoSms: boolean;
   autoNotify: boolean;
+  /** Courier exposes a location/store listing endpoint we can sync. */
+  sync?: boolean;
 };
 
 export type CredentialFieldSpec = {
@@ -31,6 +33,7 @@ export type CredentialFieldSpec = {
   required?: boolean;
   placeholder?: string;
   help?: string;
+  defaultValue?: string;
   options?: { label: string; value: string }[];
 };
 
@@ -43,7 +46,16 @@ export type CourierMeta = {
   supports: CourierSupports;
   credentialFields?: CredentialFieldSpec[];
   supportsWebhook?: boolean;
+  /**
+   * "simple" renders the beginner-friendly official-spec form
+   * (credentials → pickup → shipping → actions → diagnostics).
+   * "full" keeps the legacy card with automation/webhook sections.
+   */
+  profile?: "simple" | "full";
+  /** Base URL used when Sandbox mode is on (simple profile only). */
+  sandboxBaseUrl?: string;
 };
+
 
 // Legacy default fields kept for backward compatibility with existing
 // SteadFast/Pathao/RedX/Paperfly configurations.
