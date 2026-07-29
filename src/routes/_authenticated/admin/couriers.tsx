@@ -65,6 +65,8 @@ function CouriersPage() {
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState<CourierKey | null>(null);
   const [testing, setTesting] = useState<CourierKey | null>(null);
+  const [syncing, setSyncing] = useState<CourierKey | null>(null);
+
 
   useEffect(() => {
     if (!store) return;
