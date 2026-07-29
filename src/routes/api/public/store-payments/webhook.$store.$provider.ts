@@ -119,13 +119,31 @@ export const Route = createFileRoute("/api/public/store-payments/webhook/$store/
                     .flatMap((r) => [`payment_ref.eq.${r}`, `invoice_no.eq.${r}`])
                     .join(",");
                   if (filter) {
-                    await supabaseAdmin
+                    const { data: matched } = await supabaseAdmin
                       .from("orders")
-                      .update({ payment_status: "paid", status: paidStatus } as any)
+                      .select("id,subtotal,delivery_amount,discount_amount")
                       .eq("store_id", storeId)
                       .or(filter);
+                    for (const ord of (matched ?? []) as any[]) {
+                      const due =
+                        Number(ord.subtotal ?? 0) +
+                        Number(ord.delivery_amount ?? 0) -
+                        Number(ord.discount_amount ?? 0);
+                      // Never confirm an underpayment — log it instead.
+                      if (amount != null && amount > 0 && amount + 0.5 < due) {
+                        errorMessage = `Reported amount ${amount} is below order total ${due}`;
+                        statusCode = 409;
+                        continue;
+                      }
+                      await supabaseAdmin
+                        .from("orders")
+                        .update({ payment_status: "paid", status: paidStatus } as any)
+                        .eq("id", ord.id)
+                        .neq("payment_status", "paid");
+                    }
                   }
                 }
+
               } catch (e: any) {
                 errorMessage = `verifyPayment failed: ${e?.message ?? e}`;
               }

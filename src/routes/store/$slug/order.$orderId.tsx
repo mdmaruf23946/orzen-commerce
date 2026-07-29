@@ -2,7 +2,9 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { CheckCircle2, Truck, Package, Clock } from "lucide-react";
-import { getOrder } from "@/lib/storefront.functions";
+import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getOrder, verifyOrderPayment } from "@/lib/storefront.functions";
 import { fbTrack, purchaseEventId } from "@/lib/fb-track";
 
 const orderQuery = (orderId: string) =>
@@ -40,6 +42,27 @@ const STAGE_ORDER = ["placed", "confirmed", "packed", "courier_assigned", "shipp
 function OrderConfirmation() {
   const { slug, orderId } = Route.useParams();
   const { data: order } = useSuspenseQuery(orderQuery(orderId));
+  const qc = useQueryClient();
+  const verifyPay = useServerFn(verifyOrderPayment);
+  // Safety net: if the gateway webhook never arrived, ask the provider
+  // directly when the shopper lands back on this page.
+  useEffect(() => {
+    if (!order) return;
+    if ((order as any).payment_method !== "online") return;
+    if ((order as any).payment_status === "paid") return;
+    let cancelledCheck = false;
+    (async () => {
+      try {
+        await verifyPay({ data: { orderId: (order as any).id } });
+        if (!cancelledCheck) qc.invalidateQueries({ queryKey: ["order", orderId] });
+      } catch {
+        /* non-fatal */
+      }
+    })();
+    return () => {
+      cancelledCheck = true;
+    };
+  }, [order?.id, (order as any)?.payment_status]);
   useEffect(() => {
     if (!order) return;
     const key = `fb:purchase:${order.id}`;
@@ -158,9 +181,33 @@ function OrderConfirmation() {
             </li>
           ))}
         </ul>
-        <div className="mt-3 flex items-center justify-between border-t pt-3">
-          <span className="text-sm">Total</span>
-          <span className="text-lg font-bold">৳{Number(order.subtotal).toFixed(0)}</span>
+        <div className="mt-3 space-y-1 border-t pt-3 text-sm">
+          <div className="flex justify-between text-muted-foreground">
+            <span>Subtotal</span>
+            <span>৳{Number(order.subtotal ?? 0).toFixed(0)}</span>
+          </div>
+          {Number((order as any).delivery_amount ?? 0) > 0 && (
+            <div className="flex justify-between text-muted-foreground">
+              <span>Delivery</span>
+              <span>৳{Number((order as any).delivery_amount).toFixed(0)}</span>
+            </div>
+          )}
+          {Number((order as any).discount_amount ?? 0) > 0 && (
+            <div className="flex justify-between text-muted-foreground">
+              <span>Discount</span>
+              <span>-৳{Number((order as any).discount_amount).toFixed(0)}</span>
+            </div>
+          )}
+          <div className="flex items-center justify-between pt-1">
+            <span>Total</span>
+            <span className="text-lg font-bold">
+              ৳{(
+                Number(order.subtotal ?? 0) +
+                Number((order as any).delivery_amount ?? 0) -
+                Number((order as any).discount_amount ?? 0)
+              ).toFixed(0)}
+            </span>
+          </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
           <div>Name</div>
@@ -171,6 +218,20 @@ function OrderConfirmation() {
           <div className="text-right text-foreground">{order.address}</div>
           <div>Payment</div>
           <div className="text-right text-foreground uppercase">{order.payment_method}</div>
+          <div>Payment status</div>
+          <div className="text-right">
+            <span
+              className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                (order as any).payment_status === "paid"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : (order as any).payment_status === "failed"
+                    ? "bg-red-100 text-red-700"
+                    : "bg-amber-100 text-amber-700"
+              }`}
+            >
+              {String((order as any).payment_status ?? "pending").toUpperCase()}
+            </span>
+          </div>
         </div>
       </div>
       <Link

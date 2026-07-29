@@ -78,6 +78,14 @@ export const listStoreOnlineGateways = createServerFn({ method: "GET" })
       sandbox: boolean;
     }[] = [];
 
+    // Never advertise gateways for a suspended/inactive store.
+    const { data: storeRow } = await supabaseAdmin
+      .from("stores")
+      .select("id,status")
+      .eq("id", data.storeId)
+      .maybeSingle();
+    if (!storeRow || (storeRow as any).status !== "active") return out;
+
     const [{ data: builtins }, { data: customs }] = await Promise.all([
       supabaseAdmin
         .from("store_payment_gateways")
@@ -92,6 +100,7 @@ export const listStoreOnlineGateways = createServerFn({ method: "GET" })
         .eq("is_active", true)
         .eq("status", "connected"),
     ]);
+
 
     if (builtins?.length) {
       const ids = builtins.map((b: any) => b.provider_id);
@@ -144,25 +153,49 @@ export const startOnlineCheckout = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order } = await supabaseAdmin
       .from("orders")
-      .select("id,store_id,customer_name,phone,address,subtotal,invoice_no")
+      .select(
+        "id,store_id,customer_name,phone,address,subtotal,delivery_amount,discount_amount,invoice_no,status,payment_status,payment_gateway_id,payment_method,created_at",
+      )
       .eq("id", data.orderId)
       .maybeSingle();
     if (!order) throw new Error("Order not found");
+    // Guards: never re-open payment for a settled, cancelled or stale order.
+    if ((order as any).payment_status === "paid") throw new Error("This order is already paid");
+    if ((order as any).status === "cancelled") throw new Error("This order was cancelled");
+    const ageMs = Date.now() - new Date((order as any).created_at ?? Date.now()).getTime();
+    if (ageMs > 24 * 60 * 60 * 1000) throw new Error("This order has expired. Please place a new order.");
+    if ((order as any).payment_method !== "online") throw new Error("This order is not an online payment order");
+
     const { data: store } = await supabaseAdmin
       .from("stores")
-      .select("slug,name")
+      .select("slug,name,status,currency")
       .eq("id", (order as any).store_id)
       .maybeSingle();
+    if (!store || (store as any).status !== "active") throw new Error("Store unavailable");
 
     const origin = publicOrigin();
     const slug = (store as any)?.slug ?? "";
     const successUrl = `${origin}/store/${slug}/order/${order.id}`;
     const cancelUrl = `${origin}/store/${slug}/checkout`;
-    const amount = Number((order as any).subtotal ?? 0);
+    // Charge the true payable total — subtotal alone omitted delivery and
+    // ignored coupon discounts.
+    const amount = Math.max(
+      0,
+      Number((order as any).subtotal ?? 0) +
+        Number((order as any).delivery_amount ?? 0) -
+        Number((order as any).discount_amount ?? 0),
+    );
+    const storeCurrency = String((store as any)?.currency ?? "BDT").toUpperCase() || "BDT";
     // Reference the webhook can always match on, even when the provider only
     // returns a redirect URL and no transaction id of its own.
     const fallbackRef = String((order as any).invoice_no ?? order.id);
     const [kind, ref] = data.gatewayKey.split(":");
+    // The gateway must be the one recorded when the order was placed.
+    const recorded = (order as any).payment_gateway_id as string | null;
+    if (recorded && kind === "custom" && recorded !== ref) {
+      throw new Error("Payment gateway mismatch for this order");
+    }
+
 
     if (kind === "custom") {
       const { data: gw } = await supabaseAdmin
@@ -193,7 +226,7 @@ export const startOnlineCheckout = createServerFn({ method: "POST" })
         {
           order_id: (order as any).invoice_no ?? order.id,
           amount,
-          currency: (gw as any).currency ?? "BDT",
+          currency: (gw as any).currency ?? storeCurrency,
           customer_name: (order as any).customer_name,
           customer_email: `noreply@${slug || "store"}.orzen.top`,
           customer_phone: (order as any).phone,
@@ -257,7 +290,8 @@ export const startOnlineCheckout = createServerFn({ method: "POST" })
           invoiceId: order.id,
           invoiceNo: (order as any).invoice_no ?? order.id,
           amount,
-          currency: "BDT",
+          currency: storeCurrency,
+
           customerName: (order as any).customer_name,
           customerEmail: `noreply@${slug || "store"}.orzen.top`,
           customerPhone: (order as any).phone,
@@ -276,6 +310,105 @@ export const startOnlineCheckout = createServerFn({ method: "POST" })
 
     throw new Error("Unsupported gateway");
   });
+
+/**
+ * Return-from-gateway safety net: if the provider's webhook never arrives (or
+ * the gateway has no webhook at all), the shopper's order would stay pending
+ * forever. The order page calls this on load for unpaid online orders; it asks
+ * the provider directly and applies the store's configured status rules.
+ */
+export const verifyOrderPayment = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ orderId: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: order } = await supabaseAdmin
+      .from("orders")
+      .select(
+        "id,store_id,invoice_no,subtotal,delivery_amount,discount_amount,payment_method,payment_status,payment_ref,payment_gateway_id,status,created_at",
+      )
+      .eq("id", data.orderId)
+      .maybeSingle();
+    if (!order) return { payment_status: null as string | null, checked: false };
+    const o = order as any;
+    if (o.payment_method !== "online") return { payment_status: o.payment_status ?? null, checked: false };
+    if (o.payment_status === "paid") return { payment_status: "paid", checked: false };
+
+    const txn = String(o.payment_ref ?? o.invoice_no ?? o.id);
+    let resolved: "paid" | "failed" | "pending" | null = null;
+
+    if (o.payment_gateway_id) {
+      const { data: gw } = await supabaseAdmin
+        .from("custom_payment_gateways")
+        .select("*")
+        .eq("id", o.payment_gateway_id)
+        .eq("store_id", o.store_id)
+        .maybeSingle();
+      if (gw) {
+        let creds: Record<string, string> = {};
+        if ((gw as any).credentials_ciphertext) {
+          try {
+            const { decryptJSON } = await import("@/lib/crypto/credentials.server");
+            creds = decryptJSON<Record<string, string>>((gw as any).credentials_ciphertext);
+          } catch {
+            creds = {};
+          }
+        }
+        const { executeVerification } = await import("@/lib/custom-gateway/engine.server");
+        const res = await executeVerification(
+          { ...(gw as any), config: (gw as any).config ?? {} } as any,
+          creds,
+          {
+            order_id: String(o.invoice_no ?? o.id),
+            amount: 0,
+            currency: (gw as any).currency ?? "BDT",
+            customer_name: "",
+            customer_email: "",
+            customer_phone: "",
+            product_name: "",
+            product_quantity: 1,
+            shipping_address: "",
+            success_url: "",
+            cancel_url: "",
+            fail_url: "",
+            callback_url: "",
+            webhook_url: "",
+            store_id: o.store_id,
+            transaction_id: txn,
+          } as any,
+        );
+        if (res.status === "paid") resolved = "paid";
+        else if (res.status === "failed" || res.status === "cancelled") resolved = "failed";
+      }
+    }
+
+    if (!resolved) return { payment_status: o.payment_status ?? "pending", checked: true };
+
+    if (resolved === "paid") {
+      const { data: st } = await supabaseAdmin
+        .from("stores")
+        .select("payments_config")
+        .eq("id", o.store_id)
+        .maybeSingle();
+      const rules: any = ((st as any)?.payments_config ?? {}).order_status ?? {};
+      const allowed = ["pending", "confirmed", "processing", "delivered", "cancelled"];
+      const paidStatus = allowed.includes(rules.online_paid) ? rules.online_paid : "confirmed";
+      await supabaseAdmin
+        .from("orders")
+        .update({ payment_status: "paid", status: paidStatus } as any)
+        .eq("id", o.id)
+        .neq("payment_status", "paid");
+      return { payment_status: "paid", checked: true };
+    }
+
+    await supabaseAdmin
+      .from("orders")
+      .update({ payment_status: "failed" } as any)
+      .eq("id", o.id)
+      .neq("payment_status", "paid");
+    return { payment_status: "failed", checked: true };
+  });
+
+
 
 
 export const listStoreBanners = createServerFn({ method: "GET" })

@@ -805,6 +805,13 @@ function ConfigureForm({
               <Switch id="sb" checked={sandbox} onCheckedChange={setSandbox} />
             </div>
           )}
+          {g.supportsSandbox && sandbox && enabled && (
+            <p className="rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
+              Sandbox is ON — shoppers will see a “Test mode” badge and no real money will be collected. Turn it off
+              before going live.
+            </p>
+          )}
+
           <div className="flex items-center justify-between">
             <div>
               <Label htmlFor="en" className="cursor-pointer">
