@@ -265,7 +265,7 @@ function CourierOrdersPage() {
         value={active.value}
         onValueChange={(v) => {
           setSelected([]);
-          navigate({ search: (prev) => ({ ...prev, tab: v }) });
+          navigate({ search: (prev: { tab?: string }) => ({ ...prev, tab: v }) });
         }}
       >
         <TabsList className="w-full justify-start overflow-x-auto">
@@ -462,7 +462,7 @@ function CourierOrdersPage() {
         onSent={() => {
           setSendOrder(null);
           invalidate();
-          navigate({ search: (prev) => ({ ...prev, tab: "sent" }) });
+          navigate({ search: (prev: { tab?: string }) => ({ ...prev, tab: "sent" }) });
         }}
       />
 
