@@ -130,6 +130,33 @@ function CouriersPage() {
     }
   }
 
+  async function sync(key: CourierKey) {
+    if (!form) return;
+    setSyncing(key);
+    try {
+      await saveFn({ data: form });
+      const res = await syncFn({ data: { key } });
+      if (res.ok) toast.success(`${key}: ${res.message}${res.summary ? ` · ${res.summary}` : ""}`);
+      else toast.error(`${key}: ${res.message}`);
+      qc.invalidateQueries({ queryKey: ["admin", "store"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSyncing(null);
+    }
+  }
+
+  async function disconnect(key: CourierKey) {
+    if (!form) return;
+    const next: FormState = {
+      ...form,
+      [key]: { ...emptyConfig, credentials: {}, shipping: { ...(form[key].shipping ?? {}) } },
+    };
+    setForm(next);
+    await saveFn({ data: next });
+    qc.invalidateQueries({ queryKey: ["admin", "store"] });
+  }
+
   const enabledCount = (Object.values(form) as CourierConfig[]).filter((c) => c.enabled).length;
 
   return (
@@ -151,13 +178,17 @@ function CouriersPage() {
             onChange={(next) => updateOne(meta.key, next)}
             onSave={() => save(meta.key)}
             onTest={() => test(meta.key)}
+            onSync={meta.supports.sync ? () => sync(meta.key) : undefined}
+            onDisconnect={meta.profile === "simple" ? () => disconnect(meta.key) : undefined}
             onSetDefault={() => setDefault(meta.key)}
             saving={saving === meta.key}
             testing={testing === meta.key}
+            syncing={syncing === meta.key}
             logoUrl={logoByCode[meta.key] ?? null}
             wordmarkUrl={wordmarkByCode[meta.key] ?? null}
           />
         ))}
+
       </div>
     </div>
   );
