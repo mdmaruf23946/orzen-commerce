@@ -38,8 +38,10 @@ function CouriersPage() {
   const fetchStore = useServerFn(getMyStore);
   const saveFn = useServerFn(updateCouriers);
   const testFn = useServerFn(testCourierConnection);
+  const syncFn = useServerFn(syncCourierInfo);
   const fetchProviders = useServerFn(listPublicCourierProviders);
   const qc = useQueryClient();
+
 
   const { data: store } = useQuery({
     queryKey: ["admin", "store"],
