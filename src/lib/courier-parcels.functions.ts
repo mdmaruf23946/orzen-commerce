@@ -713,7 +713,13 @@ async function writeLogs(
 export async function dispatchParcel(
   supabase: any,
   store: { id: string; couriers: any },
-  input: { parcelId?: string; orderId?: string; courierKey?: string },
+  input: {
+    parcelId?: string;
+    orderId?: string;
+    courierKey?: string;
+    weight?: number;
+    note?: string;
+  },
 ) {
   let parcel: any;
   if (input.parcelId) {
@@ -761,6 +767,8 @@ export async function dispatchParcel(
           delivery_charge: Number(order.delivery_amount ?? 0),
           item_count: Math.max(1, items.reduce((n: number, i: any) => n + (i.qty ?? 1), 0)),
           items,
+          weight: input.weight ?? null,
+          note: input.note ?? null,
         })
         .select("*")
         .single();
