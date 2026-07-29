@@ -272,12 +272,7 @@ function CheckoutPage() {
         </div>
 
         <h2 className="mt-6 text-sm font-semibold">Payment method</h2>
-        {activeGateway ? (
-          <div className="mt-2 rounded-md border border-emerald-200 bg-emerald-50 p-2 text-xs text-emerald-800">
-            Online payment available via <b>{(activeGateway as any).label}</b>
-            {(activeGateway as any).sandbox ? " (sandbox)" : ""}.
-          </div>
-        ) : (
+        {onlineGateways.length === 0 && (
           <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
             No online payment gateway is configured for this store. Please use one of the manual options below.
           </div>
