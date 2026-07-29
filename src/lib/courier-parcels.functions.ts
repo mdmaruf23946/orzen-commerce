@@ -351,7 +351,7 @@ export const updateParcelManual = createServerFn({ method: "POST" })
     if (data.note !== undefined) patch.note = data.note;
     const { error } = await supabase
       .from("courier_parcels")
-      .update(patch)
+      .update(patch as never)
       .eq("id", data.id)
       .eq("store_id", store.id);
     if (error) throw new Error(error.message);
