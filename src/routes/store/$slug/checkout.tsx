@@ -34,12 +34,13 @@ function CheckoutPage() {
   const { data: store } = useSuspenseQuery(storeQuery(slug));
   const place = useServerFn(placeOrder);
   const valCoupon = useServerFn(validateCoupon);
-  const getGw = useServerFn(getStoreActiveGateway);
+  const listGw = useServerFn(listStoreOnlineGateways);
+  const startPay = useServerFn(startOnlineCheckout);
   const getZones = useServerFn(getStoreDeliveryZones);
-  const { data: activeGateway } = useQuery({
+  const { data: onlineGateways = [] } = useQuery({
     enabled: !!store?.id,
-    queryKey: ["activeGateway", store?.id],
-    queryFn: () => getGw({ data: { storeId: store!.id } }),
+    queryKey: ["onlineGateways", store?.id],
+    queryFn: () => listGw({ data: { storeId: store!.id } }),
   });
   const { data: zones = [] } = useQuery({
     enabled: !!store?.id,
