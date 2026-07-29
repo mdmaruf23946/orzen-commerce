@@ -147,6 +147,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
               >
                 <Truck className="h-3 w-3" /> Send to Courier
               </Link>
+            </SheetTitle>
 
           </SheetHeader>
 
