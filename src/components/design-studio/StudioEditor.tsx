@@ -213,15 +213,18 @@ export function StudioEditor({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [zoom, setZoom] = useState(0.72);
   const [preview, setPreview] = useState(false);
-  const [grid, setGrid] = useState(false);
-  const [rulers, setRulers] = useState(false);
+  const [grid, setGrid] = useState(true);
+  const [rulers, setRulers] = useState(true);
   const [guides, setGuides] = useState<{ x?: number; y?: number }>({});
   const [past, setPast] = useState<InvoiceCanvas[]>([]);
   const [future, setFuture] = useState<InvoiceCanvas[]>([]);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState("design");
+  const [railTab, setRailTab] = useState("elements");
+  const [mobileTab, setMobileTab] = useState<null | "elements" | "layers" | "properties" | "templates">(null);
   const [showLeft, setShowLeft] = useState(true);
   const [showRight, setShowRight] = useState(true);
+
   const clipboard = useRef<InvoiceElement[]>([]);
   const viewportRef = useRef<HTMLDivElement>(null);
   const drag = useRef<any>(null);
