@@ -1,11 +1,12 @@
-// ORZEN Design Studio shell (Store Admin). Wraps the existing invoice
+// Origin Studio shell (Store Admin). Wraps the existing invoice
 // template CRUD — no API, route or data-shape changes.
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Menu } from "lucide-react";
+import { Bell, HelpCircle, Menu, Search, Settings, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   deleteInvoiceTemplate,
@@ -22,6 +23,7 @@ import { StudioDashboard } from "./StudioDashboard";
 import { MyDesigns } from "./MyDesigns";
 import { BrandKit } from "./BrandKit";
 import { StudioEditor } from "./StudioEditor";
+
 
 type Draft = {
   id?: string;
@@ -103,7 +105,12 @@ export function DesignStudio() {
   }
 
   const nav = (
-    <StudioSidebar view={view} onView={selectView} onComingSoon={(l) => { setNavOpen(false); setComingSoon(l); }} />
+    <StudioSidebar
+      view={view}
+      onView={selectView}
+      onComingSoon={(l) => { setNavOpen(false); setComingSoon(l); }}
+      onCreateNew={() => { setNavOpen(false); create("invoice"); }}
+    />
   );
 
   let body: React.ReactNode;
@@ -115,6 +122,8 @@ export function DesignStudio() {
         onSave={() => saveMut.mutate(draft)}
         onSaveAs={() => saveMut.mutate({ ...draft, id: undefined, name: `${draft.name} copy` })}
         onBack={() => { setDraft(null); setView("designs"); }}
+        onMenu={() => setNavOpen(true)}
+        onComingSoon={setComingSoon}
         saving={saveMut.isPending}
       />
     );
@@ -145,28 +154,68 @@ export function DesignStudio() {
   }
 
   return (
-    <div className="flex gap-4">
-      <aside className="sticky top-4 hidden h-[calc(100vh-6rem)] w-56 shrink-0 overflow-hidden rounded-2xl border bg-card shadow-sm lg:block">
-        {nav}
-      </aside>
-
-      <div className="min-w-0 flex-1 space-y-3">
-        <div className="lg:hidden">
+    <div className="space-y-3">
+      {/* Studio top bar */}
+      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border bg-card px-3 py-2.5 shadow-sm md:flex md:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
           <Sheet open={navOpen} onOpenChange={setNavOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Menu className="mr-1 h-4 w-4" /> Studio menu
+              <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Studio menu">
+                <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[80vw] max-w-xs p-0">
+            <SheetContent side="left" className="w-[84vw] max-w-xs p-0">
               <div className="h-full pt-6">{nav}</div>
             </SheetContent>
           </Sheet>
+
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground shadow-sm">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 leading-tight">
+              <div className="truncate text-base font-bold tracking-tight">Origin Studio</div>
+              <div className="hidden truncate text-[11px] text-muted-foreground sm:block">
+                Design anything, create everything
+              </div>
+            </div>
+          </div>
         </div>
-        {body}
+
+        <div className="hidden min-w-0 flex-1 justify-center px-6 lg:flex">
+          <div className="relative w-full max-w-md">
+            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search templates, projects…"
+              className="h-9 rounded-xl bg-muted/50 pl-9"
+              onFocus={() => setView("designs")}
+              readOnly
+            />
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1">
+          <Button variant="ghost" size="icon" className="relative" onClick={() => setComingSoon("Studio Notifications")}>
+            <Bell className="h-4.5 w-4.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="hidden sm:inline-flex" onClick={() => setComingSoon("Studio Help Center")}>
+            <HelpCircle className="h-4.5 w-4.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="hidden sm:inline-flex" onClick={() => setComingSoon("Studio Settings")}>
+            <Settings className="h-4.5 w-4.5" />
+          </Button>
+        </div>
+      </header>
+
+      <div className="flex gap-4">
+        <aside className="sticky top-4 hidden h-[calc(100vh-9rem)] w-60 shrink-0 overflow-hidden rounded-2xl border bg-card shadow-sm lg:block">
+          {nav}
+        </aside>
+        <div className="min-w-0 flex-1">{body}</div>
       </div>
 
       <ComingSoonDialog open={!!comingSoon} feature={comingSoon} onOpenChange={(v) => !v && setComingSoon(null)} />
     </div>
   );
 }
+

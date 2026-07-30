@@ -1,52 +1,55 @@
-## ORZEN Design Studio — Professional Redesign
+## Goal
 
-Scope: Store Admin only, at the existing route `/admin/invoice-design`. Owner panel (`/owner/invoice-templates`) keeps its current UI untouched. No route changes, no API signature changes, no changes to invoice generation or the saved-template shape.
+Rebrand the studio at `/admin/invoice-design` to **Origin Studio** and rework its desktop and mobile UI to match the two reference screenshots — without touching data, APIs, template CRUD, or the editing engine.
 
-### What stays exactly as-is
-- `src/lib/invoice-templates.functions.ts` (list/save/delete/duplicate/set-default) — untouched.
-- `src/components/invoice/InvoiceRenderer.tsx` and `Codes.tsx` — untouched, still the single renderer for printing and PDF.
-- `src/lib/invoice-template/types.ts` element model and `data.ts` variables — untouched (one additive optional field only, see Technical).
-- All existing editor behaviour (drag, resize, snap, undo/redo, lock, keyboard nudge, preview, save) is carried over, not rewritten.
+## 1. Rename to Origin Studio
 
-### 1. Studio shell
-New `DesignStudioShell` wrapping the page:
-- **Left rail** (collapsible, icon-only on tablet, drawer on mobile): Dashboard, My Designs, Brand Kit, then a "Design Studio" group — Invoice Builder, Logo Maker, Poster Designer, Banner Designer (all live) — then a "Coming Soon" group: Landing Page Builder, Social Media Designer, Business Card, Certificate, Packaging, Thumbnail, Presentation, Resume, Video Editor, Website Builder, AI Designer.
-- Coming Soon items open a polished modal (🚀 Coming Soon, description, "Notify Me" + "Close"). Notify Me shows a confirmation toast only — no navigation, no crash, nothing opens.
-- Studio navigation is internal view state, so the URL and route tree do not change.
+- Sidebar menu label in `src/routes/_authenticated/admin/route.tsx`: "Invoice Design" → "Origin Studio".
+- Studio header/brand block, dashboard hero badge, and the coming-soon copy: "ORZEN Design Studio" → "Origin Studio".
+- Route `head()` title/description updated to Origin Studio (route path itself unchanged, so no links break).
 
-### 2. Dashboard
-Recent designs (from the existing template list), quick-create tiles for the four live design types, counts, and a "continue editing" card. Reads only existing data.
+## 2. Desktop layout (screenshot 1)
 
-### 3. My Designs
-Grid/list of the store's templates with thumbnail preview (rendered from the existing renderer at small scale), search, type filter, and the existing actions: Edit, Duplicate, Set default, Delete, plus the "Ready-made presets" section (Use this) that exists today.
+Rebuild `DesignStudio` + `StudioEditor` shell into the reference's 4-column frame:
 
-### 4. Brand Kit (basic)
-Edits the existing `brand` tokens already on a template: primary / secondary / accent colours, font, radius, shadow, margin. Applies to the design being edited — same fields, nicer UI. No new storage.
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Top bar: logo + "Origin Studio" | tagline | search | actions │
+├──────────┬───────────────┬────────────────────┬──────────────┤
+│ Left nav │ Elements rail │  Canvas + toolbar  │ Properties   │
+│ Create   │ Elements /    │  rulers, grid,     │ Layers/Pages │
+│ New,     │ Templates /   │  snap guides       │ tabs + right │
+│ Dashboard│ Uploads tabs  │                    │ icon strip   │
+│ …        │ collapsible   │  bottom bar:       │              │
+│ Coming   │ groups        │  size, orientation,│              │
+│ Soon     │               │  zoom, grid, ruler │              │
+└──────────┴───────────────┴────────────────────┴──────────────┘
+```
 
-### 5. Editor redesign
-Same engine, new chrome:
-- **Top toolbar**: project name (inline edit), Undo, Redo, Preview, Save, Save As (uses existing duplicate/save), Download/Print, element search, zoom control, user avatar.
-- **Left elements panel**: categorized — Basic (Text, Image, Logo, Shape, Icons, QR, Barcode, Divider, Table), Invoice (Product Table, Customer Info, Store Info, Payment QR, Courier Block, Invoice Info, Totals, Terms — composed from existing element types + preset props), Design (Background, Gradient, Typography, Brand Colors). Future categories visible but disabled with a Coming Soon tag.
-- **Canvas**: workspace背景 with soft shadow page, portrait/landscape toggle, safe-print area outline, optional grid and rulers, existing snap/centre guides. Bottom bar: zoom, canvas size, grid toggle, ruler toggle, fit-to-screen.
-- **Right inspector**: collapsible cards — Position (X/Y), Size (W/H/rotation), Appearance (opacity, radius, shadow), Alignment, Layer order, Lock/Visibility/Duplicate/Delete, and type-specific sections (Color, Gradient, Typography, Spacing, Replace/Crop/Flip for images).
-- **Layers panel**: reorder, rename, lock, hide, bring front / send back / forward / backward.
-- Locked objects cannot move, resize, rotate, or be edited until unlocked (extends the existing `locked` flag).
-- Multi-select with shift-click and marquee, copy/paste/duplicate, and keyboard shortcuts (Cmd/Ctrl+Z/Shift+Z, C/V/D, Delete, arrow nudge).
+- **Left nav**: gradient "Create New" button, Dashboard / My Designs / Brand Kit, "Design Studio" group (Invoice with PRO chip, Logo, Social Media, Banner, Landing Page, Poster, Business Card, Certificate, More Tools), then Templates / Projects / Trash, and a bottom "Design Credits" progress card with an Upgrade button (Upgrade links to `/admin/billing`; locked items keep the existing Coming Soon dialog).
+- **Top bar**: breadcrumb (`Invoice Template Builder / <project name>` with inline rename pencil), undo/redo, Preview, Save split-button, Download.
+- **Elements rail**: search field + filter icon, collapsible sections Basic / E-commerce / Advanced (Soon chips) / Brand / Typography / Background / Illustrations / More, wired to the existing element factories.
+- **Canvas**: floating icon toolbar above the canvas (select, pan, shape, delete, duplicate, align, text styles, Animate), horizontal + vertical rulers, grid overlay, selection handles with rotate knob, and a bottom control bar (page-size select, orientation, zoom −/+, Fit to Screen, Grid and Ruler switches) plus the mini page thumbnail.
+- **Right panel**: Properties / Layers / Pages tabs; Properties shows Selected name with lock/eye, Position & Size (X, Y, W, H, rotation, align buttons), Style (opacity slider, border radius, shadow switch), Quick Actions grid (Replace, Crop, Flip, Duplicate, Bring Front, Send Back, destructive Delete), Color & Filters with tint + preset swatches. Vertical icon strip on the far right (Lock, Guide, Comments, History, Settings).
 
-### 6. Logo / Poster / Banner
-Same editor, different canvas presets (logo 1000×1000, poster A4/A3 portrait, banner 1200×628 and 1920×1080, plus custom). Invoice-specific element categories are hidden for non-invoice designs; everything else is shared.
+Only controls that map to existing element props mutate state; purely decorative reference controls (Comments, History, Animate, Crop/Flip) surface the existing Coming Soon dialog rather than faking behaviour.
 
-### 7. Zoom & responsiveness
-Zoom presets 25/50/75/100/150/200/300%, Fit Screen, Fit Width. Desktop = three-panel layout; tablet = collapsible side panels; mobile = canvas-first with a bottom toolbar, sheet-based element and property panels, and floating quick actions.
+## 3. Mobile layout (screenshot 2)
 
----
+Below `lg`, the editor becomes the phone layout from screenshot 2:
 
-### Technical notes
-- New files under `src/components/design-studio/`: `StudioShell.tsx`, `StudioSidebar.tsx`, `ComingSoonDialog.tsx`, `Dashboard.tsx`, `MyDesigns.tsx`, `BrandKit.tsx`, and editor parts (`Toolbar.tsx`, `ElementsPanel.tsx`, `Canvas.tsx`, `Inspector.tsx`, `LayersPanel.tsx`).
-- The current `TemplateBuilder.tsx` is refactored into these panels while keeping its state model, commit/undo stack and pointer logic identical. `InvoiceTemplatesManager.tsx` stays exported and continues to serve the owner route unchanged.
-- Design type + canvas orientation are stored inside the existing `canvas.page` object (additive optional keys `kind` and `preset`), so no database migration, no column rename, and old templates load with `kind` defaulting to `invoice`.
-- Only existing deps used: shadcn UI, lucide, Tailwind. No new heavy libraries.
-- Page `head()` metadata for `/admin/invoice-design` updated to Design Studio titles.
+- Compact header: hamburger (opens left nav sheet), logo + "Origin Studio", undo/redo, preview, Save, overflow menu.
+- Control row: page-size select, zoom stepper, grid toggle, lock, fullscreen.
+- Canvas fills the middle, pinch/scroll scrollable, selection handles preserved.
+- Floating horizontal element strip: `+` FAB then Text, Image, QR Code, Shape, Table, More.
+- Selected-object card: "SELECTED: <name>" with Lock / eye / delete, then a wrapped action grid (Edit, Replace, Crop, Flip, Bring Front, Send Back, Duplicate).
+- Bottom tab bar: Elements | Layers | Properties | Templates, each opening a bottom sheet with the corresponding panel.
 
-### Safety checklist verification at the end
-No feature removed, no API changed, no migration, saved templates load and render identically, invoice printing path untouched, routes unchanged.
+## 4. Styling
+
+New studio-specific tokens in `src/styles.css` (indigo/violet primary, soft surface greys, rounded-2xl cards, subtle shadows) so the look matches the screenshots while staying token-based and dark-mode safe. No hardcoded colour utilities.
+
+## Technical notes
+
+- Files touched: `src/components/design-studio/*` (shell, sidebar, editor, dashboard, my-designs, brand kit), `src/routes/_authenticated/admin/route.tsx`, `src/routes/_authenticated/admin/invoice-design.tsx`, `src/styles.css`. Editor split into smaller components (`StudioTopBar`, `ElementsRail`, `CanvasStage`, `InspectorPanel`, `MobileEditor`) since `StudioEditor.tsx` is already 921 lines.
+- No database migration, no change to `invoice-templates.functions.ts`, canvas JSON shape, or the undo/drag/resize logic — those are reused as-is.
