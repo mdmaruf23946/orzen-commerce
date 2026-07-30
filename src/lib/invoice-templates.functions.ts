@@ -3,7 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { enqueueEmail } from "@/lib/emails.server";
-import { trackingUrl } from "@/lib/couriers/status";
+import { buildTrackingUrl } from "@/lib/couriers/status";
 import type { InvoiceData } from "@/lib/invoice-template/data";
 
 const canvasSchema = z.object({
@@ -228,16 +228,16 @@ export const getInvoicePayload = createServerFn({ method: "GET" })
         courier_name: order.courier_name ?? null,
         tracking_id: order.courier_tracking_id ?? null,
         tracking_url:
-          order.courier_code && order.courier_tracking_id
-            ? trackingUrl(order.courier_code, order.courier_tracking_id)
-            : `${process.env.PUBLIC_SITE_URL ?? "https://orzen.top"}/store/${store?.slug ?? ""}/order/${order.id}`,
+          (order.courier_code
+            ? buildTrackingUrl(order.courier_code, order.courier_tracking_id, order.phone)
+            : null) ?? `https://orzen.top/store/${store?.slug ?? ""}/order/${order.id}`,
         payment_url: null,
         note: order.notes ?? null,
       },
       customer: {
         name: order.customer_name,
         phone: order.phone,
-        email: order.email ?? null,
+        email: (order as any).email ?? null,
         address: order.address,
         area: order.area ?? null,
       },
@@ -270,6 +270,6 @@ export const emailInvoiceLink = createServerFn({ method: "POST" })
     const html = `<p>Hi ${order.customer_name ?? "there"},</p>
 <p>Your invoice is ready. You can view or download it here:</p>
 <p><a href="${data.url}">${data.url}</a></p>`;
-    await enqueueEmail({ to: data.to, subject, html, kind: "invoice", storeId: sid } as any);
+    await enqueueEmail({ to: data.to, template: "invoice_link", subject, html, payload: { orderId: data.orderId, storeId: sid } });
     return { ok: true };
   });
