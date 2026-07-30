@@ -195,7 +195,18 @@ function Section({
   );
 }
 
-export function StudioEditor({ value, onChange, onSave, onSaveAs, onBack, saving, data = SAMPLE_INVOICE }: Props) {
+export function StudioEditor({
+  value,
+  onChange,
+  onSave,
+  onSaveAs,
+  onBack,
+  onMenu,
+  onComingSoon,
+  saving,
+  data = SAMPLE_INVOICE,
+}: Props) {
+
   const { canvas, brand } = value;
   const kind = canvasKind(canvas);
   const kindDef = KIND_MAP[kind];
