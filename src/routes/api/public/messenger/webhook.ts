@@ -907,7 +907,17 @@ async function handleBuyPostback(opts: {
   return true;
 }
 
+// Verify Facebook's X-Hub-Signature-256 (HMAC-SHA256 of the raw body with the app secret).
+async function verifyMessengerSignature(rawBody: string, header: string, appSecret: string) {
+  const provided = header.trim().toLowerCase().replace(/^sha256=/, "");
+  if (!/^[0-9a-f]{64}$/.test(provided)) return false;
+  const { createHmac } = await import("node:crypto");
+  const expected = createHmac("sha256", appSecret).update(rawBody, "utf8").digest("hex");
+  return expected === provided;
+}
+
 async function decryptToken(enc: string | null | undefined): Promise<string | null> {
+
   if (!enc) return null;
   const mod = await import("@/lib/crypto/credentials.server");
   try {
