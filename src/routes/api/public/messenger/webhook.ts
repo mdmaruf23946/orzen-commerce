@@ -907,7 +907,17 @@ async function handleBuyPostback(opts: {
   return true;
 }
 
+// Verify Facebook's X-Hub-Signature-256 (HMAC-SHA256 of the raw body with the app secret).
+async function verifyMessengerSignature(rawBody: string, header: string, appSecret: string) {
+  const provided = header.trim().toLowerCase().replace(/^sha256=/, "");
+  if (!/^[0-9a-f]{64}$/.test(provided)) return false;
+  const { createHmac } = await import("node:crypto");
+  const expected = createHmac("sha256", appSecret).update(rawBody, "utf8").digest("hex");
+  return expected === provided;
+}
+
 async function decryptToken(enc: string | null | undefined): Promise<string | null> {
+
   if (!enc) return null;
   const mod = await import("@/lib/crypto/credentials.server");
   try {
@@ -993,9 +1003,22 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
         return new Response("forbidden", { status: 403 });
       },
       POST: async ({ request }) => {
-        const body = await request.json().catch(() => null);
+        // Facebook signs every webhook delivery. Read the RAW body first so the
+        // HMAC is computed over the exact bytes Facebook signed.
+        const rawBody = await request.text();
+        const signatureHeader =
+          request.headers.get("x-hub-signature-256") || request.headers.get("X-Hub-Signature-256");
+        let body: any = null;
+        try {
+          body = JSON.parse(rawBody);
+        } catch {
+          body = null;
+        }
         if (!body || (body.object !== "page" && body.object !== "instagram")) {
           return new Response("ok");
+        }
+        if (!signatureHeader) {
+          return new Response("missing signature", { status: 401 });
         }
         const sb = admin();
         for (const entry of body.entry ?? []) {
@@ -1003,14 +1026,21 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
           const { data: integ } = await sb
             .from("messenger_integrations")
             .select(
-              "id,store_id,page_access_token,page_access_token_encrypted,ai_auto_reply,human_takeover,conversation_history,delivery_failures",
+              "id,store_id,page_access_token,page_access_token_encrypted,app_secret_encrypted,ai_auto_reply,human_takeover,conversation_history,delivery_failures",
             )
             .eq("page_id", pageId)
             .maybeSingle();
           if (!integ) continue;
+
+          // Reject anything that isn't signed with this page's app secret.
+          const appSecret = await decryptToken((integ as any).app_secret_encrypted);
+          if (!appSecret) continue;
+          if (!(await verifyMessengerSignature(rawBody, signatureHeader, appSecret))) continue;
+
           const token =
             (await decryptToken((integ as any).page_access_token_encrypted)) ||
             (integ as any).page_access_token;
+
 
           // Handle standby events (log only)
           for (const _st of entry.standby ?? []) {
