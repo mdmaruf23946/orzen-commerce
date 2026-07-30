@@ -69,7 +69,7 @@ const links: LinkDef[] = [
   { to: "/admin/subscription", label: "Subscription", icon: CreditCard },
   { to: "/admin/billing", label: "Billing & Plans", icon: Wallet },
   { to: "/admin/settings", label: "Store Settings", icon: Settings },
-  { to: "/admin/invoice-design", label: "Invoice Design", icon: Settings },
+  { to: "/admin/invoice-design", label: "Origin Studio", icon: Sparkles },
 ];
 
 

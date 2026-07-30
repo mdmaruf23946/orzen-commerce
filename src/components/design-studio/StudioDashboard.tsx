@@ -22,7 +22,7 @@ export function StudioDashboard({
   return (
     <div className="space-y-6">
       <div className="overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/12 via-card to-card p-5 sm:p-7">
-        <Badge variant="secondary" className="mb-2 text-[10px]">ORZEN Design Studio</Badge>
+        <Badge variant="secondary" className="mb-2 text-[10px]">Origin Studio</Badge>
         <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Design anything for your store</h1>
         <p className="mt-1 max-w-lg text-sm text-muted-foreground">
           Invoices, logos, posters and banners — all in one premium editor with your brand kit built in.
