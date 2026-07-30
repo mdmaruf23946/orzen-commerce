@@ -3,6 +3,35 @@
 // professional three-panel layout.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  AlignCenter,
+  AlignLeft,
+  Bold,
+  ChevronRight,
+  Crop,
+  FlipHorizontal,
+  Hand,
+  History,
+  LayoutTemplate,
+  Menu,
+  MessageSquare,
+  MoreHorizontal,
+  MoreVertical,
+  MousePointer2,
+  Pencil,
+  Plus,
+  Settings2,
+  SlidersHorizontal,
+  Wand2,
+} from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   AlignCenterHorizontal,
   AlignCenterVertical,
   ArrowDown,
