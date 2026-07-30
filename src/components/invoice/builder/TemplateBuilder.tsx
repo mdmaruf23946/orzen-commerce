@@ -383,7 +383,7 @@ export function TemplateBuilder({ value, onChange, onSave, saving, data = SAMPLE
   );
 }
 
-function BrandPanel({ brand, onChange }: { brand: Brand; onChange: (b: Brand) => void }) {
+export function BrandPanel({ brand, onChange }: { brand: Brand; onChange: (b: Brand) => void }) {
   const b = { ...DEFAULT_BRAND, ...brand };
   const set = (k: keyof Brand, v: any) => onChange({ ...b, [k]: v });
   return (
@@ -445,7 +445,7 @@ function VariablePicker({ onPick }: { onPick: (token: string) => void }) {
   );
 }
 
-function ElementProps({ el, onProps }: { el: InvoiceElement; onProps: (c: Record<string, any>) => void }) {
+export function ElementProps({ el, onProps }: { el: InvoiceElement; onProps: (c: Record<string, any>) => void }) {
   const p = el.props ?? {};
   const colorField = (key: string, label: string) => (
     <div>
