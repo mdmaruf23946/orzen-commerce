@@ -93,9 +93,12 @@ type Props = {
   onSave: () => void;
   onSaveAs?: () => void;
   onBack: () => void;
+  onMenu?: () => void;
+  onComingSoon?: (label: string) => void;
   saving?: boolean;
   data?: InvoiceData;
 };
+
 
 const BASIC: { type: ElementType; label: string; icon: any }[] = [
   { type: "text", label: "Text", icon: Type },
