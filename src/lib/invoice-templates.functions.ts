@@ -7,7 +7,13 @@ import { buildTrackingUrl } from "@/lib/couriers/status";
 import type { InvoiceData } from "@/lib/invoice-template/data";
 
 const canvasSchema = z.object({
-  page: z.object({ width: z.number(), height: z.number(), margin: z.number() }),
+  page: z.object({
+    width: z.number(),
+    height: z.number(),
+    margin: z.number(),
+    kind: z.string().optional(),
+    preset: z.string().optional(),
+  }),
   elements: z.array(
     z.object({
       id: z.string(),
