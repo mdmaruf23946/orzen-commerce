@@ -51,6 +51,7 @@ const groups: NavGroup[] = [
 
 
     { to: "/owner/store-template", label: "Store Template", icon: StoreIcon },
+    { to: "/owner/invoice-templates", label: "Invoice Templates", icon: FileText },
     { to: "/owner/features", label: "Feature Flags", icon: ToggleLeft },
     { to: "/owner/fraud", label: "Fraud Checker", icon: ShieldCheck },
     { to: "/owner/system", label: "System Settings", icon: Settings },
