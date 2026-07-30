@@ -1,11 +1,12 @@
-// ORZEN Design Studio shell (Store Admin). Wraps the existing invoice
+// Origin Studio shell (Store Admin). Wraps the existing invoice
 // template CRUD — no API, route or data-shape changes.
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Menu } from "lucide-react";
+import { Bell, HelpCircle, Menu, Search, Settings, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   deleteInvoiceTemplate,
@@ -22,6 +23,7 @@ import { StudioDashboard } from "./StudioDashboard";
 import { MyDesigns } from "./MyDesigns";
 import { BrandKit } from "./BrandKit";
 import { StudioEditor } from "./StudioEditor";
+
 
 type Draft = {
   id?: string;
