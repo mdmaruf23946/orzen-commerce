@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { InvoiceTemplatesManager } from "@/components/invoice/InvoiceTemplatesManager";
+import { DesignStudio } from "@/components/design-studio/DesignStudio";
 
 export const Route = createFileRoute("/_authenticated/admin/invoice-design")({
-  component: () => <InvoiceTemplatesManager scope="store" />,
+  component: DesignStudio,
   head: () => ({
     meta: [
-      { title: "Invoice Design — Store Admin" },
-      { name: "description", content: "Customise your store's invoice layout, branding and printed details." },
-      { property: "og:title", content: "Invoice Design — Store Admin" },
-      { property: "og:description", content: "Customise your store's invoice layout, branding and printed details." },
+      { title: "Design Studio — ORZEN Store Admin" },
+      { name: "description", content: "Design invoices, logos, posters and banners for your store in one premium editor." },
+      { property: "og:title", content: "Design Studio — ORZEN Store Admin" },
+      { property: "og:description", content: "Design invoices, logos, posters and banners for your store in one premium editor." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
