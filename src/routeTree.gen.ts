@@ -51,6 +51,7 @@ import { Route as AuthenticatedOwnerPackagesRouteImport } from './routes/_authen
 import { Route as AuthenticatedOwnerNotificationsRouteImport } from './routes/_authenticated/owner/notifications'
 import { Route as AuthenticatedOwnerMarketingRouteImport } from './routes/_authenticated/owner/marketing'
 import { Route as AuthenticatedOwnerLogsRouteImport } from './routes/_authenticated/owner/logs'
+import { Route as AuthenticatedOwnerInvoiceTemplatesRouteImport } from './routes/_authenticated/owner/invoice-templates'
 import { Route as AuthenticatedOwnerHealthRouteImport } from './routes/_authenticated/owner/health'
 import { Route as AuthenticatedOwnerFraudRouteImport } from './routes/_authenticated/owner/fraud'
 import { Route as AuthenticatedOwnerFeaturesRouteImport } from './routes/_authenticated/owner/features'
@@ -83,6 +84,7 @@ import { Route as AuthenticatedAdminMessengerRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminMarketingRouteImport } from './routes/_authenticated/admin/marketing'
 import { Route as AuthenticatedAdminLowStockRouteImport } from './routes/_authenticated/admin/low-stock'
 import { Route as AuthenticatedAdminLegalRouteImport } from './routes/_authenticated/admin/legal'
+import { Route as AuthenticatedAdminInvoiceDesignRouteImport } from './routes/_authenticated/admin/invoice-design'
 import { Route as AuthenticatedAdminInventoryRouteImport } from './routes/_authenticated/admin/inventory'
 import { Route as AuthenticatedAdminInboxRouteImport } from './routes/_authenticated/admin/inbox'
 import { Route as AuthenticatedAdminImportExportRouteImport } from './routes/_authenticated/admin/import-export'
@@ -369,6 +371,12 @@ const AuthenticatedOwnerLogsRoute = AuthenticatedOwnerLogsRouteImport.update({
   path: '/logs',
   getParentRoute: () => AuthenticatedOwnerRouteRoute,
 } as any)
+const AuthenticatedOwnerInvoiceTemplatesRoute =
+  AuthenticatedOwnerInvoiceTemplatesRouteImport.update({
+    id: '/invoice-templates',
+    path: '/invoice-templates',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
 const AuthenticatedOwnerHealthRoute =
   AuthenticatedOwnerHealthRouteImport.update({
     id: '/health',
@@ -553,6 +561,12 @@ const AuthenticatedAdminLegalRoute = AuthenticatedAdminLegalRouteImport.update({
   path: '/legal',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const AuthenticatedAdminInvoiceDesignRoute =
+  AuthenticatedAdminInvoiceDesignRouteImport.update({
+    id: '/invoice-design',
+    path: '/invoice-design',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminInventoryRoute =
   AuthenticatedAdminInventoryRouteImport.update({
     id: '/inventory',
@@ -943,6 +957,7 @@ export interface FileRoutesByFullPath {
   '/admin/import-export': typeof AuthenticatedAdminImportExportRoute
   '/admin/inbox': typeof AuthenticatedAdminInboxRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryRoute
+  '/admin/invoice-design': typeof AuthenticatedAdminInvoiceDesignRoute
   '/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
   '/admin/marketing': typeof AuthenticatedAdminMarketingRoute
@@ -975,6 +990,7 @@ export interface FileRoutesByFullPath {
   '/owner/features': typeof AuthenticatedOwnerFeaturesRoute
   '/owner/fraud': typeof AuthenticatedOwnerFraudRoute
   '/owner/health': typeof AuthenticatedOwnerHealthRoute
+  '/owner/invoice-templates': typeof AuthenticatedOwnerInvoiceTemplatesRoute
   '/owner/logs': typeof AuthenticatedOwnerLogsRoute
   '/owner/marketing': typeof AuthenticatedOwnerMarketingRoute
   '/owner/notifications': typeof AuthenticatedOwnerNotificationsRoute
@@ -1070,6 +1086,7 @@ export interface FileRoutesByTo {
   '/admin/import-export': typeof AuthenticatedAdminImportExportRoute
   '/admin/inbox': typeof AuthenticatedAdminInboxRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryRoute
+  '/admin/invoice-design': typeof AuthenticatedAdminInvoiceDesignRoute
   '/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
   '/admin/marketing': typeof AuthenticatedAdminMarketingRoute
@@ -1102,6 +1119,7 @@ export interface FileRoutesByTo {
   '/owner/features': typeof AuthenticatedOwnerFeaturesRoute
   '/owner/fraud': typeof AuthenticatedOwnerFraudRoute
   '/owner/health': typeof AuthenticatedOwnerHealthRoute
+  '/owner/invoice-templates': typeof AuthenticatedOwnerInvoiceTemplatesRoute
   '/owner/logs': typeof AuthenticatedOwnerLogsRoute
   '/owner/marketing': typeof AuthenticatedOwnerMarketingRoute
   '/owner/notifications': typeof AuthenticatedOwnerNotificationsRoute
@@ -1206,6 +1224,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/import-export': typeof AuthenticatedAdminImportExportRoute
   '/_authenticated/admin/inbox': typeof AuthenticatedAdminInboxRoute
   '/_authenticated/admin/inventory': typeof AuthenticatedAdminInventoryRoute
+  '/_authenticated/admin/invoice-design': typeof AuthenticatedAdminInvoiceDesignRoute
   '/_authenticated/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/_authenticated/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
   '/_authenticated/admin/marketing': typeof AuthenticatedAdminMarketingRoute
@@ -1238,6 +1257,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/features': typeof AuthenticatedOwnerFeaturesRoute
   '/_authenticated/owner/fraud': typeof AuthenticatedOwnerFraudRoute
   '/_authenticated/owner/health': typeof AuthenticatedOwnerHealthRoute
+  '/_authenticated/owner/invoice-templates': typeof AuthenticatedOwnerInvoiceTemplatesRoute
   '/_authenticated/owner/logs': typeof AuthenticatedOwnerLogsRoute
   '/_authenticated/owner/marketing': typeof AuthenticatedOwnerMarketingRoute
   '/_authenticated/owner/notifications': typeof AuthenticatedOwnerNotificationsRoute
@@ -1342,6 +1362,7 @@ export interface FileRouteTypes {
     | '/admin/import-export'
     | '/admin/inbox'
     | '/admin/inventory'
+    | '/admin/invoice-design'
     | '/admin/legal'
     | '/admin/low-stock'
     | '/admin/marketing'
@@ -1374,6 +1395,7 @@ export interface FileRouteTypes {
     | '/owner/features'
     | '/owner/fraud'
     | '/owner/health'
+    | '/owner/invoice-templates'
     | '/owner/logs'
     | '/owner/marketing'
     | '/owner/notifications'
@@ -1469,6 +1491,7 @@ export interface FileRouteTypes {
     | '/admin/import-export'
     | '/admin/inbox'
     | '/admin/inventory'
+    | '/admin/invoice-design'
     | '/admin/legal'
     | '/admin/low-stock'
     | '/admin/marketing'
@@ -1501,6 +1524,7 @@ export interface FileRouteTypes {
     | '/owner/features'
     | '/owner/fraud'
     | '/owner/health'
+    | '/owner/invoice-templates'
     | '/owner/logs'
     | '/owner/marketing'
     | '/owner/notifications'
@@ -1604,6 +1628,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/import-export'
     | '/_authenticated/admin/inbox'
     | '/_authenticated/admin/inventory'
+    | '/_authenticated/admin/invoice-design'
     | '/_authenticated/admin/legal'
     | '/_authenticated/admin/low-stock'
     | '/_authenticated/admin/marketing'
@@ -1636,6 +1661,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/features'
     | '/_authenticated/owner/fraud'
     | '/_authenticated/owner/health'
+    | '/_authenticated/owner/invoice-templates'
     | '/_authenticated/owner/logs'
     | '/_authenticated/owner/marketing'
     | '/_authenticated/owner/notifications'
@@ -2026,6 +2052,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerLogsRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
+    '/_authenticated/owner/invoice-templates': {
+      id: '/_authenticated/owner/invoice-templates'
+      path: '/invoice-templates'
+      fullPath: '/owner/invoice-templates'
+      preLoaderRoute: typeof AuthenticatedOwnerInvoiceTemplatesRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
     '/_authenticated/owner/health': {
       id: '/_authenticated/owner/health'
       path: '/health'
@@ -2248,6 +2281,13 @@ declare module '@tanstack/react-router' {
       path: '/legal'
       fullPath: '/admin/legal'
       preLoaderRoute: typeof AuthenticatedAdminLegalRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/invoice-design': {
+      id: '/_authenticated/admin/invoice-design'
+      path: '/invoice-design'
+      fullPath: '/admin/invoice-design'
+      preLoaderRoute: typeof AuthenticatedAdminInvoiceDesignRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/inventory': {
@@ -2706,6 +2746,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminImportExportRoute: typeof AuthenticatedAdminImportExportRoute
   AuthenticatedAdminInboxRoute: typeof AuthenticatedAdminInboxRoute
   AuthenticatedAdminInventoryRoute: typeof AuthenticatedAdminInventoryRoute
+  AuthenticatedAdminInvoiceDesignRoute: typeof AuthenticatedAdminInvoiceDesignRoute
   AuthenticatedAdminLegalRoute: typeof AuthenticatedAdminLegalRoute
   AuthenticatedAdminLowStockRoute: typeof AuthenticatedAdminLowStockRoute
   AuthenticatedAdminMarketingRoute: typeof AuthenticatedAdminMarketingRoute
@@ -2754,6 +2795,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminImportExportRoute: AuthenticatedAdminImportExportRoute,
     AuthenticatedAdminInboxRoute: AuthenticatedAdminInboxRoute,
     AuthenticatedAdminInventoryRoute: AuthenticatedAdminInventoryRoute,
+    AuthenticatedAdminInvoiceDesignRoute: AuthenticatedAdminInvoiceDesignRoute,
     AuthenticatedAdminLegalRoute: AuthenticatedAdminLegalRoute,
     AuthenticatedAdminLowStockRoute: AuthenticatedAdminLowStockRoute,
     AuthenticatedAdminMarketingRoute: AuthenticatedAdminMarketingRoute,
@@ -2891,6 +2933,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerFeaturesRoute: typeof AuthenticatedOwnerFeaturesRoute
   AuthenticatedOwnerFraudRoute: typeof AuthenticatedOwnerFraudRoute
   AuthenticatedOwnerHealthRoute: typeof AuthenticatedOwnerHealthRoute
+  AuthenticatedOwnerInvoiceTemplatesRoute: typeof AuthenticatedOwnerInvoiceTemplatesRoute
   AuthenticatedOwnerLogsRoute: typeof AuthenticatedOwnerLogsRoute
   AuthenticatedOwnerMarketingRoute: typeof AuthenticatedOwnerMarketingRoute
   AuthenticatedOwnerNotificationsRoute: typeof AuthenticatedOwnerNotificationsRoute
@@ -2936,6 +2979,8 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerFeaturesRoute: AuthenticatedOwnerFeaturesRoute,
     AuthenticatedOwnerFraudRoute: AuthenticatedOwnerFraudRoute,
     AuthenticatedOwnerHealthRoute: AuthenticatedOwnerHealthRoute,
+    AuthenticatedOwnerInvoiceTemplatesRoute:
+      AuthenticatedOwnerInvoiceTemplatesRoute,
     AuthenticatedOwnerLogsRoute: AuthenticatedOwnerLogsRoute,
     AuthenticatedOwnerMarketingRoute: AuthenticatedOwnerMarketingRoute,
     AuthenticatedOwnerNotificationsRoute: AuthenticatedOwnerNotificationsRoute,

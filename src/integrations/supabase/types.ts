@@ -1798,6 +1798,62 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_templates: {
+        Row: {
+          brand: Json
+          canvas: Json
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_default: boolean
+          name: string
+          scope: string
+          sort_order: number
+          source_template_id: string | null
+          store_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          brand?: Json
+          canvas?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          name: string
+          scope?: string
+          sort_order?: number
+          source_template_id?: string | null
+          store_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          brand?: Json
+          canvas?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          name?: string
+          scope?: string
+          sort_order?: number
+          source_template_id?: string | null
+          store_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_templates_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       landing_page_connections: {
         Row: {
           created_at: string
