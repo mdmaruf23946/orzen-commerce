@@ -60,7 +60,16 @@ export const listInvoiceTemplates = createServerFn({ method: "GET" })
       .order("created_at");
     if (error) throw new Error(error.message);
     const rows = (data ?? []).filter((t: any) => t.scope === "global" || t.store_id === sid);
-    return { templates: rows, storeId: sid, isOwner: await isOwner(context.supabase, context.userId) };
+    // usage = how many templates were derived from this one (presets adopted by stores)
+    const usage: Record<string, number> = {};
+    for (const t of data ?? []) {
+      if (t.source_template_id) usage[t.source_template_id] = (usage[t.source_template_id] ?? 0) + 1;
+    }
+    return {
+      templates: rows.map((t: any) => ({ ...t, usage_count: usage[t.id] ?? 0 })),
+      storeId: sid,
+      isOwner: await isOwner(context.supabase, context.userId),
+    };
   });
 
 export const saveInvoiceTemplate = createServerFn({ method: "POST" })
@@ -76,6 +85,9 @@ export const saveInvoiceTemplate = createServerFn({ method: "POST" })
         brand: brandSchema,
         is_default: z.boolean().optional(),
         sort_order: z.number().int().optional(),
+        category: z.string().trim().max(40).optional(),
+        is_hidden: z.boolean().optional(),
+        page_size: z.string().trim().max(20).optional(),
       })
       .parse(d),
   )
@@ -94,15 +106,95 @@ export const saveInvoiceTemplate = createServerFn({ method: "POST" })
       sort_order: data.sort_order ?? 0,
     };
     if (data.is_default !== undefined) row.is_default = data.is_default;
+    if (data.category !== undefined) row.category = data.category;
+    if (data.is_hidden !== undefined) row.is_hidden = data.is_hidden;
+    if (data.page_size !== undefined) row.page_size = data.page_size;
     if (data.id) {
+      // snapshot the previous state so it can be restored later
+      const { data: prev } = await sb
+        .from("invoice_templates")
+        .select("canvas,brand,name")
+        .eq("id", data.id)
+        .maybeSingle();
       const { error } = await sb.from("invoice_templates").update(row).eq("id", data.id);
       if (error) throw new Error(error.message);
+      if (prev) {
+        await sb.from("invoice_template_versions").insert({
+          template_id: data.id,
+          canvas: prev.canvas,
+          brand: prev.brand,
+          name: prev.name,
+          created_by: context.userId,
+        });
+      }
       return { id: data.id };
     }
     row.created_by = context.userId;
     const { data: created, error } = await sb.from("invoice_templates").insert(row).select("id").single();
     if (error) throw new Error(error.message);
     return { id: created.id as string };
+  });
+
+export const setInvoiceTemplateVisibility = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid(), hidden: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("invoice_templates")
+      .update({ is_hidden: data.hidden })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const listInvoiceTemplateVersions = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ templateId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase
+      .from("invoice_template_versions")
+      .select("id,name,label,created_at,canvas,brand")
+      .eq("template_id", data.templateId)
+      .order("created_at", { ascending: false })
+      .limit(30);
+    if (error) throw new Error(error.message);
+    return { versions: rows ?? [] };
+  });
+
+export const restoreInvoiceTemplateVersion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ templateId: z.string().uuid(), versionId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase;
+    const { data: v, error } = await sb
+      .from("invoice_template_versions")
+      .select("canvas,brand")
+      .eq("id", data.versionId)
+      .eq("template_id", data.templateId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!v) throw new Error("Version not found");
+    const { data: cur } = await sb
+      .from("invoice_templates")
+      .select("canvas,brand,name")
+      .eq("id", data.templateId)
+      .maybeSingle();
+    const { error: e2 } = await sb
+      .from("invoice_templates")
+      .update({ canvas: v.canvas, brand: v.brand })
+      .eq("id", data.templateId);
+    if (e2) throw new Error(e2.message);
+    if (cur) {
+      await sb.from("invoice_template_versions").insert({
+        template_id: data.templateId,
+        canvas: cur.canvas,
+        brand: cur.brand,
+        name: cur.name,
+        label: "before restore",
+        created_by: context.userId,
+      });
+    }
+    return { ok: true, canvas: v.canvas, brand: v.brand };
   });
 
 export const deleteInvoiceTemplate = createServerFn({ method: "POST" })

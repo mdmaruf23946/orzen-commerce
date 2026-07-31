@@ -3,8 +3,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlignCenterHorizontal,
   AlignCenterVertical,
+  AlignEndHorizontal,
+  AlignEndVertical,
+  AlignStartHorizontal,
+  AlignStartVertical,
   ArrowDownToLine,
   ArrowUpToLine,
+  ChevronDown,
+  ChevronUp,
+  EyeOff,
+  Group,
+  History as HistoryIcon,
+  Maximize2,
   Barcode,
   Copy,
   Eye,
@@ -63,7 +73,12 @@ const PALETTE: { type: ElementType; label: string; icon: any }[] = [
 ];
 
 const SNAP = 4;
-const snap = (n: number) => Math.round(n / SNAP) * SNAP;
+
+export const PAGE_PRESETS: Record<string, { label: string; width: number; height: number }> = {
+  a4: { label: "A4 (210×297mm)", width: 794, height: 1123 },
+  a5: { label: "A5 (148×210mm)", width: 559, height: 794 },
+  receipt: { label: "Receipt (80mm)", width: 302, height: 900 },
+};
 
 type Props = {
   value: { name: string; description?: string | null; canvas: InvoiceCanvas; brand: Brand };
@@ -71,18 +86,36 @@ type Props = {
   onSave: () => void;
   saving?: boolean;
   data?: InvoiceData;
+  onOpenVersions?: () => void;
+  pageSize?: string;
+  onPageSizeChange?: (v: string) => void;
 };
 
-export function TemplateBuilder({ value, onChange, onSave, saving, data = SAMPLE_INVOICE }: Props) {
+export function TemplateBuilder({
+  value,
+  onChange,
+  onSave,
+  saving,
+  data = SAMPLE_INVOICE,
+  onOpenVersions,
+  pageSize = "a4",
+  onPageSizeChange,
+}: Props) {
   const { canvas, brand } = value;
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const selected = selectedIds[0] ?? null;
+  const setSelected = useCallback((id: string | null) => setSelectedIds(id ? [id] : []), []);
   const [zoom, setZoom] = useState(0.72);
   const [preview, setPreview] = useState(false);
+  const [showGrid, setShowGrid] = useState(true);
+  const [showRulers, setShowRulers] = useState(true);
+  const [snapOn, setSnapOn] = useState(true);
   const [guides, setGuides] = useState<{ x?: number; y?: number }>({});
   const [past, setPast] = useState<InvoiceCanvas[]>([]);
   const [future, setFuture] = useState<InvoiceCanvas[]>([]);
   const stageRef = useRef<HTMLDivElement>(null);
   const drag = useRef<any>(null);
+  const snap = useCallback((n: number) => (snapOn ? Math.round(n / SNAP) * SNAP : Math.round(n)), [snapOn]);
 
   const el = useMemo(
     () => canvas.elements.find((e) => e.id === selected) ?? null,
@@ -144,16 +177,86 @@ export function TemplateBuilder({ value, onChange, onSave, saving, data = SAMPLE
   }
 
   function remove(id: string) {
-    commit({ ...canvas, elements: canvas.elements.filter((e) => e.id !== id) });
-    setSelected(null);
+    const ids = selectedIds.includes(id) ? selectedIds : [id];
+    commit({ ...canvas, elements: canvas.elements.filter((e) => !ids.includes(e.id)) });
+    setSelectedIds([]);
   }
 
   function duplicate(id: string) {
-    const src = canvas.elements.find((e) => e.id === id);
-    if (!src) return;
-    const copy = { ...src, id: `${src.type}-${Math.random().toString(36).slice(2, 8)}`, x: src.x + 16, y: src.y + 16 };
-    commit({ ...canvas, elements: [...canvas.elements, copy] });
-    setSelected(copy.id);
+    const ids = selectedIds.includes(id) ? selectedIds : [id];
+    const copies = canvas.elements
+      .filter((e) => ids.includes(e.id))
+      .map((src) => ({
+        ...src,
+        id: `${src.type}-${Math.random().toString(36).slice(2, 8)}`,
+        x: src.x + 16,
+        y: src.y + 16,
+      }));
+    commit({ ...canvas, elements: [...canvas.elements, ...copies] });
+    setSelectedIds(copies.map((c) => c.id));
+  }
+
+  /** Move an element one step forward/backward in the layer stack. */
+  function reorder(id: string, dir: -1 | 1) {
+    const sorted = [...canvas.elements].sort((a, b) => (a.z ?? 0) - (b.z ?? 0));
+    const i = sorted.findIndex((e) => e.id === id);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= sorted.length) return;
+    const swapped = [...sorted];
+    [swapped[i], swapped[j]] = [swapped[j], swapped[i]];
+    const zMap = new Map(swapped.map((e, idx) => [e.id, idx + 1]));
+    commit({ ...canvas, elements: canvas.elements.map((e) => ({ ...e, z: zMap.get(e.id) ?? e.z })) });
+  }
+
+  /** Align the current selection (or single element) inside the page. */
+  function align(kind: "left" | "hcenter" | "right" | "top" | "vcenter" | "bottom") {
+    const ids = selectedIds.length ? selectedIds : [];
+    if (!ids.length) return;
+    const W = canvas.page.width;
+    const H = canvas.page.height;
+    const m = canvas.page.margin ?? 0;
+    commit({
+      ...canvas,
+      elements: canvas.elements.map((e) => {
+        if (!ids.includes(e.id) || e.locked) return e;
+        switch (kind) {
+          case "left": return { ...e, x: m };
+          case "right": return { ...e, x: Math.max(m, W - m - e.w) };
+          case "hcenter": return { ...e, x: Math.round((W - e.w) / 2) };
+          case "top": return { ...e, y: m };
+          case "bottom": return { ...e, y: Math.max(m, H - m - e.h) };
+          case "vcenter": return { ...e, y: Math.round((H - e.h) / 2) };
+          default: return e;
+        }
+      }),
+    });
+  }
+
+  /** Group / ungroup selection using a shared group id kept in props. */
+  function toggleGroup() {
+    if (selectedIds.length < 2) return;
+    const items = canvas.elements.filter((e) => selectedIds.includes(e.id));
+    const already = items.every((e) => e.props?.groupId && e.props.groupId === items[0].props?.groupId);
+    const gid = already ? null : `g-${Math.random().toString(36).slice(2, 8)}`;
+    commit({
+      ...canvas,
+      elements: canvas.elements.map((e) =>
+        selectedIds.includes(e.id) ? { ...e, props: { ...e.props, groupId: gid } } : e,
+      ),
+    });
+  }
+
+  function expandGroup(id: string, additive: boolean) {
+    const target = canvas.elements.find((e) => e.id === id);
+    const gid = target?.props?.groupId;
+    const ids = gid ? canvas.elements.filter((e) => e.props?.groupId === gid).map((e) => e.id) : [id];
+    setSelectedIds((prev) => {
+      if (!additive) return ids;
+      const merged = new Set(prev);
+      ids.forEach((x) => (merged.has(x) ? merged.delete(x) : merged.add(x)));
+      return [...merged];
+    });
+    return ids;
   }
 
   // ---- pointer drag / resize ----
@@ -162,10 +265,19 @@ export function TemplateBuilder({ value, onChange, onSave, saving, data = SAMPLE
     if (!target || target.locked) return;
     e.stopPropagation();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    setSelected(id);
+    const additive = e.shiftKey || e.metaKey || e.ctrlKey;
+    const ids = mode === "resize" ? [id] : expandGroup(id, additive);
+    const moveIds = additive && mode === "move" ? Array.from(new Set([...selectedIds, ...ids])) : ids;
     setPast((p) => [...p.slice(-40), canvas]);
     setFuture([]);
-    drag.current = { id, mode, startX: e.clientX, startY: e.clientY, orig: { ...target } };
+    drag.current = {
+      id,
+      mode,
+      startX: e.clientX,
+      startY: e.clientY,
+      orig: { ...target },
+      origs: canvas.elements.filter((x) => moveIds.includes(x.id) && !x.locked).map((x) => ({ ...x })),
+    };
   }
 
   function onPointerMove(e: React.PointerEvent) {
@@ -174,20 +286,41 @@ export function TemplateBuilder({ value, onChange, onSave, saving, data = SAMPLE
     const dx = (e.clientX - d.startX) / zoom;
     const dy = (e.clientY - d.startY) / zoom;
     const o = d.orig as InvoiceElement;
-    let changes: Partial<InvoiceElement>;
     if (d.mode === "move") {
       const x = snap(Math.max(0, Math.min(canvas.page.width - o.w, o.x + dx)));
       const y = snap(Math.max(0, Math.min(canvas.page.height - o.h, o.y + dy)));
       const centerX = Math.abs(x + o.w / 2 - canvas.page.width / 2) < 6;
-      setGuides({ x: centerX ? canvas.page.width / 2 : undefined, y: undefined });
-      changes = { x: centerX ? Math.round((canvas.page.width - o.w) / 2) : x, y };
+      const centerY = Math.abs(y + o.h / 2 - canvas.page.height / 2) < 6;
+      setGuides({ x: centerX ? canvas.page.width / 2 : undefined, y: centerY ? canvas.page.height / 2 : undefined });
+      const finalX = centerX ? Math.round((canvas.page.width - o.w) / 2) : x;
+      const shiftX = finalX - o.x;
+      const shiftY = y - o.y;
+      const origs = (d.origs ?? [d.orig]) as InvoiceElement[];
+      commit(
+        {
+          ...canvas,
+          elements: canvas.elements.map((cur) => {
+            const src = origs.find((s) => s.id === cur.id);
+            if (!src) return cur;
+            return {
+              ...cur,
+              x: Math.max(0, Math.min(canvas.page.width - src.w, src.x + shiftX)),
+              y: Math.max(0, Math.min(canvas.page.height - src.h, src.y + shiftY)),
+            };
+          }),
+        },
+        false,
+      );
     } else {
-      changes = {
-        w: snap(Math.max(24, Math.min(canvas.page.width - o.x, o.w + dx))),
-        h: snap(Math.max(8, Math.min(canvas.page.height - o.y, o.h + dy))),
-      };
+      patch(
+        d.id,
+        {
+          w: snap(Math.max(24, Math.min(canvas.page.width - o.x, o.w + dx))),
+          h: snap(Math.max(8, Math.min(canvas.page.height - o.y, o.h + dy))),
+        },
+        false,
+      );
     }
-    patch(d.id, changes, false);
   }
 
   function onPointerUp() {
@@ -195,23 +328,32 @@ export function TemplateBuilder({ value, onChange, onSave, saving, data = SAMPLE
     setGuides({});
   }
 
-  // keyboard nudge / delete
+  // keyboard nudge / delete / shortcuts
   useEffect(() => {
     function onKey(ev: KeyboardEvent) {
-      if (!selected || preview) return;
+      if (preview) return;
       const tag = (ev.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || (ev.target as HTMLElement)?.isContentEditable) return;
+      const mod = ev.ctrlKey || ev.metaKey;
+      if (mod && ev.key.toLowerCase() === "z") { ev.preventDefault(); ev.shiftKey ? redo() : undo(); return; }
+      if (mod && ev.key.toLowerCase() === "y") { ev.preventDefault(); redo(); return; }
+      if (mod && ev.key.toLowerCase() === "a") {
+        ev.preventDefault();
+        setSelectedIds(canvas.elements.map((e) => e.id));
+        return;
+      }
+      if (!selected) return;
+      if (mod && ev.key.toLowerCase() === "d") { ev.preventDefault(); duplicate(selected); return; }
+      if (mod && ev.key.toLowerCase() === "g") { ev.preventDefault(); toggleGroup(); return; }
       const cur = canvas.elements.find((e) => e.id === selected);
       if (!cur || cur.locked) return;
       const step = ev.shiftKey ? 10 : 1;
-      if (ev.key === "Delete" || ev.key === "Backspace") {
-        ev.preventDefault();
-        remove(selected);
-      } else if (ev.key === "ArrowLeft") { ev.preventDefault(); patch(selected, { x: Math.max(0, cur.x - step) }); }
+      if (ev.key === "Delete" || ev.key === "Backspace") { ev.preventDefault(); remove(selected); }
+      else if (ev.key === "Escape") { setSelectedIds([]); }
+      else if (ev.key === "ArrowLeft") { ev.preventDefault(); patch(selected, { x: Math.max(0, cur.x - step) }); }
       else if (ev.key === "ArrowRight") { ev.preventDefault(); patch(selected, { x: cur.x + step }); }
       else if (ev.key === "ArrowUp") { ev.preventDefault(); patch(selected, { y: Math.max(0, cur.y - step) }); }
       else if (ev.key === "ArrowDown") { ev.preventDefault(); patch(selected, { y: cur.y + step }); }
-      else if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "z") { ev.preventDefault(); ev.shiftKey ? redo() : undo(); }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -237,23 +379,65 @@ export function TemplateBuilder({ value, onChange, onSave, saving, data = SAMPLE
             </button>
           ))}
         </div>
+
         <Separator className="my-3" />
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Layers</div>
-        <ScrollArea className="max-h-52">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Canvas</div>
+        <div className="space-y-2">
+          <Select
+            value={pageSize}
+            onValueChange={(v) => {
+              const p = PAGE_PRESETS[v];
+              onPageSizeChange?.(v);
+              if (p) commit({ ...canvas, page: { ...canvas.page, width: p.width, height: p.height } });
+            }}
+          >
+            <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {Object.entries(PAGE_PRESETS).map(([k, p]) => (
+                <SelectItem key={k} value={k}>{p.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex items-center justify-between"><Label className="text-[11px]">Grid</Label><Switch checked={showGrid} onCheckedChange={setShowGrid} /></div>
+          <div className="flex items-center justify-between"><Label className="text-[11px]">Rulers</Label><Switch checked={showRulers} onCheckedChange={setShowRulers} /></div>
+          <div className="flex items-center justify-between"><Label className="text-[11px]">Snap to grid</Label><Switch checked={snapOn} onCheckedChange={setSnapOn} /></div>
+        </div>
+
+        <Separator className="my-3" />
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Layers</span>
+          {selectedIds.length > 1 && (
+            <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={toggleGroup}>
+              <Group className="mr-1 h-3 w-3" /> Group
+            </Button>
+          )}
+        </div>
+        <ScrollArea className="max-h-60">
           <div className="space-y-1 pr-2">
-            {[...canvas.elements].reverse().map((e) => (
-              <button
+            {[...canvas.elements].sort((a, b) => (b.z ?? 0) - (a.z ?? 0)).map((e) => (
+              <div
                 key={e.id}
-                type="button"
-                onClick={() => setSelected(e.id)}
                 className={cn(
-                  "flex w-full items-center justify-between rounded-md px-2 py-1 text-left text-xs",
-                  selected === e.id ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                  "flex items-center gap-1 rounded-md px-1.5 py-1 text-xs",
+                  selectedIds.includes(e.id) ? "bg-primary text-primary-foreground" : "hover:bg-muted",
                 )}
               >
-                <span className="truncate">{e.type === "text" ? (e.props.content ?? "Text").slice(0, 18) : e.type}</span>
-                {e.locked && <Lock className="h-3 w-3 shrink-0" />}
-              </button>
+                <button
+                  type="button"
+                  className="min-w-0 flex-1 truncate text-left"
+                  onClick={(ev) => expandGroup(e.id, ev.shiftKey || ev.metaKey || ev.ctrlKey)}
+                >
+                  {e.type === "text" ? (e.props?.content ?? "Text").slice(0, 16) : e.type}
+                </button>
+                <button type="button" title="Bring forward" onClick={() => reorder(e.id, 1)}><ChevronUp className="h-3 w-3" /></button>
+                <button type="button" title="Send backward" onClick={() => reorder(e.id, -1)}><ChevronDown className="h-3 w-3" /></button>
+                <button type="button" title="Hide" onClick={() => patch(e.id, { hidden: !e.hidden })}>
+                  {e.hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                </button>
+                <button type="button" title="Lock" onClick={() => patch(e.id, { locked: !e.locked })}>
+                  {e.locked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3 opacity-50" />}
+                </button>
+              </div>
             ))}
           </div>
         </ScrollArea>
@@ -268,69 +452,122 @@ export function TemplateBuilder({ value, onChange, onSave, saving, data = SAMPLE
             className="h-8 w-44"
             placeholder="Template name"
           />
-          <Button size="sm" variant="outline" onClick={undo} disabled={!past.length}><Undo2 className="h-4 w-4" /></Button>
-          <Button size="sm" variant="outline" onClick={redo} disabled={!future.length}><Redo2 className="h-4 w-4" /></Button>
+          <Button size="sm" variant="outline" onClick={undo} disabled={!past.length} title="Undo (Ctrl+Z)"><Undo2 className="h-4 w-4" /></Button>
+          <Button size="sm" variant="outline" onClick={redo} disabled={!future.length} title="Redo (Ctrl+Shift+Z)"><Redo2 className="h-4 w-4" /></Button>
+          <div className="flex items-center gap-1 rounded-md border bg-background px-1">
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => align("left")} title="Align left"><AlignStartVertical className="h-4 w-4" /></Button>
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => align("hcenter")} title="Center horizontally"><AlignCenterVertical className="h-4 w-4" /></Button>
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => align("right")} title="Align right"><AlignEndVertical className="h-4 w-4" /></Button>
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => align("top")} title="Align top"><AlignStartHorizontal className="h-4 w-4" /></Button>
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => align("vcenter")} title="Center vertically"><AlignCenterHorizontal className="h-4 w-4" /></Button>
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => align("bottom")} title="Align bottom"><AlignEndHorizontal className="h-4 w-4" /></Button>
+          </div>
           <Button size="sm" variant="outline" onClick={() => setZoom((z) => Math.max(0.3, +(z - 0.1).toFixed(2)))}><ZoomOut className="h-4 w-4" /></Button>
           <span className="text-xs text-muted-foreground">{Math.round(zoom * 100)}%</span>
           <Button size="sm" variant="outline" onClick={() => setZoom((z) => Math.min(1.5, +(z + 0.1).toFixed(2)))}><ZoomIn className="h-4 w-4" /></Button>
+          <Button size="sm" variant="outline" onClick={() => setZoom(0.72)} title="Fit"><Maximize2 className="h-4 w-4" /></Button>
           <Button size="sm" variant={preview ? "default" : "outline"} onClick={() => setPreview((p) => !p)}>
             <Eye className="mr-1 h-4 w-4" /> Preview
           </Button>
+          {onOpenVersions && (
+            <Button size="sm" variant="outline" onClick={onOpenVersions} title="Version history">
+              <HistoryIcon className="h-4 w-4" />
+            </Button>
+          )}
           <Button size="sm" onClick={onSave} disabled={saving} className="ml-auto">
             <Save className="mr-1 h-4 w-4" /> {saving ? "Saving…" : "Save"}
           </Button>
         </div>
 
         <div className="overflow-auto rounded-lg bg-neutral-200/60 p-4 dark:bg-neutral-800/60">
-          <div
-            ref={stageRef}
-            className="relative mx-auto bg-white shadow-lg"
-            style={{ width: canvas.page.width * zoom, height: canvas.page.height * zoom }}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerLeave={onPointerUp}
-            onClick={() => setSelected(null)}
-          >
-            <InvoiceRenderer canvas={canvas} brand={brand} data={data} scale={zoom} />
-            {!preview && (
-              <div className="pointer-events-none absolute inset-0">
-                {guides.x !== undefined && (
-                  <div className="absolute top-0 h-full w-px bg-pink-500" style={{ left: guides.x * zoom }} />
-                )}
-                {canvas.elements.map((e) => (
-                  <div
-                    key={e.id}
-                    onPointerDown={(ev) => onPointerDown(ev, e.id, "move")}
-                    onClick={(ev) => { ev.stopPropagation(); setSelected(e.id); }}
-                    className={cn(
-                      "pointer-events-auto absolute",
-                      e.locked ? "cursor-not-allowed" : "cursor-move",
-                      selected === e.id ? "outline outline-2 outline-primary" : "hover:outline hover:outline-1 hover:outline-primary/40",
-                    )}
-                    style={{
-                      left: e.x * zoom,
-                      top: e.y * zoom,
-                      width: e.w * zoom,
-                      height: Math.max(e.h, 6) * zoom,
-                    }}
-                  >
-                    {selected === e.id && !e.locked && (
-                      <span
-                        onPointerDown={(ev) => onPointerDown(ev, e.id, "resize")}
-                        className="absolute -bottom-1.5 -right-1.5 h-3 w-3 cursor-se-resize rounded-sm border border-white bg-primary"
-                      />
-                    )}
+          <div className="mx-auto" style={{ width: canvas.page.width * zoom + (showRulers ? 16 : 0) }}>
+            {showRulers && (
+              <div className="ml-4 flex h-4 items-end overflow-hidden text-[8px] text-muted-foreground">
+                {Array.from({ length: Math.ceil(canvas.page.width / 50) }).map((_, i) => (
+                  <div key={i} className="shrink-0 border-l border-muted-foreground/40 pl-0.5" style={{ width: 50 * zoom }}>
+                    {i * 50}
                   </div>
                 ))}
               </div>
             )}
+            <div className="flex">
+              {showRulers && (
+                <div className="w-4 shrink-0 overflow-hidden text-[8px] text-muted-foreground">
+                  {Array.from({ length: Math.ceil(canvas.page.height / 50) }).map((_, i) => (
+                    <div key={i} className="border-t border-muted-foreground/40 pl-0.5" style={{ height: 50 * zoom }}>
+                      {i * 50}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div
+                ref={stageRef}
+                className="relative bg-white shadow-lg"
+                style={{ width: canvas.page.width * zoom, height: canvas.page.height * zoom }}
+                onPointerMove={onPointerMove}
+                onPointerUp={onPointerUp}
+                onPointerLeave={onPointerUp}
+                onClick={() => setSelectedIds([])}
+              >
+                <InvoiceRenderer canvas={canvas} brand={brand} data={data} scale={zoom} />
+                {!preview && showGrid && (
+                  <div
+                    className="pointer-events-none absolute inset-0 opacity-[0.14]"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(to right, #64748b 1px, transparent 1px), linear-gradient(to bottom, #64748b 1px, transparent 1px)",
+                      backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
+                    }}
+                  />
+                )}
+                {!preview && (
+                  <div className="pointer-events-none absolute inset-0">
+                    {guides.x !== undefined && (
+                      <div className="absolute top-0 h-full w-px bg-pink-500" style={{ left: guides.x * zoom }} />
+                    )}
+                    {guides.y !== undefined && (
+                      <div className="absolute left-0 w-full border-t border-pink-500" style={{ top: guides.y * zoom }} />
+                    )}
+                    {canvas.elements.map((e) => (
+                      <div
+                        key={e.id}
+                        onPointerDown={(ev) => onPointerDown(ev, e.id, "move")}
+                        onClick={(ev) => { ev.stopPropagation(); expandGroup(e.id, ev.shiftKey || ev.metaKey || ev.ctrlKey); }}
+                        className={cn(
+                          "pointer-events-auto absolute",
+                          e.locked ? "cursor-not-allowed" : "cursor-move",
+                          selectedIds.includes(e.id)
+                            ? "outline outline-2 outline-primary"
+                            : "hover:outline hover:outline-1 hover:outline-primary/40",
+                        )}
+                        style={{
+                          left: e.x * zoom,
+                          top: e.y * zoom,
+                          width: e.w * zoom,
+                          height: Math.max(e.h, 6) * zoom,
+                        }}
+                      >
+                        {selected === e.id && !e.locked && (
+                          <span
+                            onPointerDown={(ev) => onPointerDown(ev, e.id, "resize")}
+                            className="absolute -bottom-1.5 -right-1.5 h-3 w-3 cursor-se-resize rounded-sm border border-white bg-primary"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Properties */}
       <aside className="w-full shrink-0 rounded-xl border bg-card p-3 lg:w-72">
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Properties</div>
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Properties {selectedIds.length > 1 && <span className="normal-case">({selectedIds.length} selected)</span>}
+        </div>
         <ScrollArea className="h-[520px] pr-2">
           {!el ? (
             <BrandPanel brand={brand} onChange={(b) => onChange({ ...value, brand: b })} />
@@ -341,22 +578,10 @@ export function TemplateBuilder({ value, onChange, onSave, saving, data = SAMPLE
                   {el.locked ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => duplicate(el.id)}><Copy className="h-4 w-4" /></Button>
-                <Button size="sm" variant="outline" onClick={() => patch(el.id, { z: maxZ + 1 })}><ArrowUpToLine className="h-4 w-4" /></Button>
-                <Button size="sm" variant="outline" onClick={() => patch(el.id, { z: -1 })}><ArrowDownToLine className="h-4 w-4" /></Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => patch(el.id, { x: Math.round((canvas.page.width - el.w) / 2) })}
-                >
-                  <AlignCenterVertical className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => patch(el.id, { y: Math.round((canvas.page.height - el.h) / 2) })}
-                >
-                  <AlignCenterHorizontal className="h-4 w-4" />
-                </Button>
+                <Button size="sm" variant="outline" onClick={() => patch(el.id, { z: maxZ + 1 })} title="Bring to front"><ArrowUpToLine className="h-4 w-4" /></Button>
+                <Button size="sm" variant="outline" onClick={() => patch(el.id, { z: -1 })} title="Send to back"><ArrowDownToLine className="h-4 w-4" /></Button>
+                <Button size="sm" variant="outline" onClick={() => align("hcenter")}><AlignCenterVertical className="h-4 w-4" /></Button>
+                <Button size="sm" variant="outline" onClick={() => align("vcenter")}><AlignCenterHorizontal className="h-4 w-4" /></Button>
                 <Button size="sm" variant="destructive" onClick={() => remove(el.id)}><Trash2 className="h-4 w-4" /></Button>
               </div>
 

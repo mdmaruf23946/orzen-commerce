@@ -1798,16 +1798,60 @@ export type Database = {
         }
         Relationships: []
       }
-      invoice_templates: {
+      invoice_template_versions: {
         Row: {
           brand: Json
           canvas: Json
           created_at: string
           created_by: string | null
+          id: string
+          label: string | null
+          name: string | null
+          template_id: string
+        }
+        Insert: {
+          brand?: Json
+          canvas?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          name?: string | null
+          template_id: string
+        }
+        Update: {
+          brand?: Json
+          canvas?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          name?: string | null
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_template_versions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_templates: {
+        Row: {
+          brand: Json
+          canvas: Json
+          category: string
+          created_at: string
+          created_by: string | null
           description: string | null
           id: string
           is_default: boolean
+          is_hidden: boolean
           name: string
+          page_size: string
           scope: string
           sort_order: number
           source_template_id: string | null
@@ -1817,12 +1861,15 @@ export type Database = {
         Insert: {
           brand?: Json
           canvas?: Json
+          category?: string
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
           is_default?: boolean
+          is_hidden?: boolean
           name: string
+          page_size?: string
           scope?: string
           sort_order?: number
           source_template_id?: string | null
@@ -1832,12 +1879,15 @@ export type Database = {
         Update: {
           brand?: Json
           canvas?: Json
+          category?: string
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
           is_default?: boolean
+          is_hidden?: boolean
           name?: string
+          page_size?: string
           scope?: string
           sort_order?: number
           source_template_id?: string | null
