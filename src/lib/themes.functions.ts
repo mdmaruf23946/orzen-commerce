@@ -14,7 +14,7 @@ async function ownerOnly(supabase: any, userId: string) {
 async function myStore(supabase: any, userId: string) {
   const { data } = await supabase
     .from("stores")
-    .select("id, theme_id, theme_overrides, theme_draft")
+    .select("id, slug, theme_id, theme_overrides, theme_draft")
     .eq("owner_user_id", userId)
     .maybeSingle();
   if (!data) throw new Error("No store found for this account");
@@ -49,6 +49,7 @@ export const getMyThemeState = createServerFn({ method: "GET" })
     const store = await myStore(context.supabase, context.userId);
     return {
       store_id: store.id,
+      slug: store.slug as string,
       theme_id: store.theme_id ?? null,
       overrides: store.theme_overrides ?? {},
       draft: store.theme_draft ?? {},
