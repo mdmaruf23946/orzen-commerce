@@ -66,6 +66,7 @@ const links: LinkDef[] = [
   { to: "/admin/dns-check", label: "DNS Checker", icon: Radar },
   { to: "/admin/landing-pages", label: "Landing Pages", icon: ExternalLink, badgeKey: "landing_pages" },
   { to: "/admin/import-export", label: "Import / Export", icon: FileUp },
+  { to: "/admin/invoice-templates", label: "Invoice Templates", icon: FileText },
   { to: "/admin/subscription", label: "Subscription", icon: CreditCard },
   { to: "/admin/billing", label: "Billing & Plans", icon: Wallet },
   { to: "/admin/settings", label: "Store Settings", icon: Settings },
@@ -81,7 +82,7 @@ const groupDefs: { label: string; paths: string[] }[] = [
   { label: "Marketing", paths: ["/admin/marketing", "/admin/coupons", "/admin/seo", "/admin/banners", "/admin/notifications"] },
   { label: "Finance", paths: ["/admin/payment-gateway", "/admin/finance", "/admin/analytics"] },
   { label: "Operations", paths: ["/admin/delivery", "/admin/couriers", "/admin/landing-pages"] },
-  { label: "System", paths: ["/admin/theme", "/admin/legal", "/admin/domains", "/admin/dns-check", "/admin/import-export"] },
+  { label: "System", paths: ["/admin/theme", "/admin/legal", "/admin/invoice-templates", "/admin/domains", "/admin/dns-check", "/admin/import-export"] },
   { label: "Account", paths: ["/admin/subscription", "/admin/billing", "/admin/settings"] },
 ];
 
