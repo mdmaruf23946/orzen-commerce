@@ -3,7 +3,12 @@ import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query"
 import { useEffect, useMemo, useState } from "react";
 import { ShoppingCart, Phone, MessageCircle, Facebook, Menu, Mail, User } from "lucide-react";
 import { getStoreBySlug, listStoreCategories, listStoreProducts } from "@/lib/storefront.functions";
-import { mergeTheme, themeCssVars } from "@/lib/theme/definition";
+import { DEFAULT_THEME, mergeTheme, themeCssVars } from "@/lib/theme/definition";
+import {
+  StoreThemeProvider,
+  THEME_PREVIEW_PARAM,
+  useThemePreviewListener,
+} from "@/lib/theme/context";
 
 import { getStoreAgentPublic } from "@/lib/ai.functions";
 import { cartCount } from "@/lib/cart";
@@ -79,15 +84,17 @@ function StoreLayout() {
   const { data: store } = useSuspenseQuery(storeQuery(slug));
   const { data: agent } = useQuery(agentQuery(slug));
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const search = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
+  const isPreview = String(search?.[THEME_PREVIEW_PARAM] ?? "") === "1";
+  const previewTheme = useThemePreviewListener(isPreview);
   if (!store) return null;
   const s: any = store;
   const theme = s.theme ?? {};
   const radius = typeof theme.radius === "number" ? `${theme.radius}px` : "0.5rem";
 
   // Winner-Admin theme (definition) + store's safe customisations (overrides).
-  const resolved = s.theme_id
-    ? mergeTheme(s.theme_definition, s.theme_overrides)
-    : null;
+  const resolved =
+    previewTheme ?? (s.theme_id ? mergeTheme(s.theme_definition, s.theme_overrides) : null);
 
   const themeVars = (
     resolved
@@ -105,12 +112,14 @@ function StoreLayout() {
 
   const isAccount = pathname.includes("/account");
   const isCheckoutFlow = /\/(checkout|cart|order)/.test(pathname);
-  const showChrome = !isAccount;
+  const showChrome = !isAccount && !isPreview;
 
   return (
+    <StoreThemeProvider theme={resolved ?? DEFAULT_THEME}>
     <StoreUIProvider>
       <TrackingScripts marketing={s.marketing} slug={slug} />
       <div className="min-h-screen bg-background" style={themeVars}>
+
         <StoreHeader
           slug={slug}
           storeId={store.id}
@@ -118,7 +127,10 @@ function StoreLayout() {
           logoUrl={(store as any).icon_url || store.logo_url}
           showSearch={!isAccount && !isCheckoutFlow}
         />
-        <main className="mx-auto max-w-5xl px-4 pb-24 pt-4 sm:px-6 md:pb-12">
+        <main
+          className="mx-auto px-4 pb-24 pt-4 sm:px-6 md:pb-12"
+          style={{ maxWidth: resolved ? "var(--store-container)" : undefined }}
+        >
           <Outlet />
         </main>
         {showChrome && <StoreFooter store={store} />}
@@ -130,10 +142,12 @@ function StoreLayout() {
             messengerUrl={toMessengerUrl(store.facebook)}
           />
         )}
-        <BottomNav slug={slug} />
+        {!isPreview && <BottomNav slug={slug} />}
       </div>
     </StoreUIProvider>
+    </StoreThemeProvider>
   );
+
 }
 
 function toMessengerUrl(fb: string | null): string | null {
