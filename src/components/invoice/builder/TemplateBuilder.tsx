@@ -167,16 +167,86 @@ export function TemplateBuilder({
   }
 
   function remove(id: string) {
-    commit({ ...canvas, elements: canvas.elements.filter((e) => e.id !== id) });
-    setSelected(null);
+    const ids = selectedIds.includes(id) ? selectedIds : [id];
+    commit({ ...canvas, elements: canvas.elements.filter((e) => !ids.includes(e.id)) });
+    setSelectedIds([]);
   }
 
   function duplicate(id: string) {
-    const src = canvas.elements.find((e) => e.id === id);
-    if (!src) return;
-    const copy = { ...src, id: `${src.type}-${Math.random().toString(36).slice(2, 8)}`, x: src.x + 16, y: src.y + 16 };
-    commit({ ...canvas, elements: [...canvas.elements, copy] });
-    setSelected(copy.id);
+    const ids = selectedIds.includes(id) ? selectedIds : [id];
+    const copies = canvas.elements
+      .filter((e) => ids.includes(e.id))
+      .map((src) => ({
+        ...src,
+        id: `${src.type}-${Math.random().toString(36).slice(2, 8)}`,
+        x: src.x + 16,
+        y: src.y + 16,
+      }));
+    commit({ ...canvas, elements: [...canvas.elements, ...copies] });
+    setSelectedIds(copies.map((c) => c.id));
+  }
+
+  /** Move an element one step forward/backward in the layer stack. */
+  function reorder(id: string, dir: -1 | 1) {
+    const sorted = [...canvas.elements].sort((a, b) => (a.z ?? 0) - (b.z ?? 0));
+    const i = sorted.findIndex((e) => e.id === id);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= sorted.length) return;
+    const swapped = [...sorted];
+    [swapped[i], swapped[j]] = [swapped[j], swapped[i]];
+    const zMap = new Map(swapped.map((e, idx) => [e.id, idx + 1]));
+    commit({ ...canvas, elements: canvas.elements.map((e) => ({ ...e, z: zMap.get(e.id) ?? e.z })) });
+  }
+
+  /** Align the current selection (or single element) inside the page. */
+  function align(kind: "left" | "hcenter" | "right" | "top" | "vcenter" | "bottom") {
+    const ids = selectedIds.length ? selectedIds : [];
+    if (!ids.length) return;
+    const W = canvas.page.width;
+    const H = canvas.page.height;
+    const m = canvas.page.margin ?? 0;
+    commit({
+      ...canvas,
+      elements: canvas.elements.map((e) => {
+        if (!ids.includes(e.id) || e.locked) return e;
+        switch (kind) {
+          case "left": return { ...e, x: m };
+          case "right": return { ...e, x: Math.max(m, W - m - e.w) };
+          case "hcenter": return { ...e, x: Math.round((W - e.w) / 2) };
+          case "top": return { ...e, y: m };
+          case "bottom": return { ...e, y: Math.max(m, H - m - e.h) };
+          case "vcenter": return { ...e, y: Math.round((H - e.h) / 2) };
+          default: return e;
+        }
+      }),
+    });
+  }
+
+  /** Group / ungroup selection using a shared group id kept in props. */
+  function toggleGroup() {
+    if (selectedIds.length < 2) return;
+    const items = canvas.elements.filter((e) => selectedIds.includes(e.id));
+    const already = items.every((e) => e.props?.groupId && e.props.groupId === items[0].props?.groupId);
+    const gid = already ? null : `g-${Math.random().toString(36).slice(2, 8)}`;
+    commit({
+      ...canvas,
+      elements: canvas.elements.map((e) =>
+        selectedIds.includes(e.id) ? { ...e, props: { ...e.props, groupId: gid } } : e,
+      ),
+    });
+  }
+
+  function expandGroup(id: string, additive: boolean) {
+    const target = canvas.elements.find((e) => e.id === id);
+    const gid = target?.props?.groupId;
+    const ids = gid ? canvas.elements.filter((e) => e.props?.groupId === gid).map((e) => e.id) : [id];
+    setSelectedIds((prev) => {
+      if (!additive) return ids;
+      const merged = new Set(prev);
+      ids.forEach((x) => (merged.has(x) ? merged.delete(x) : merged.add(x)));
+      return [...merged];
+    });
+    return ids;
   }
 
   // ---- pointer drag / resize ----
@@ -185,10 +255,19 @@ export function TemplateBuilder({
     if (!target || target.locked) return;
     e.stopPropagation();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    setSelected(id);
+    const additive = e.shiftKey || e.metaKey || e.ctrlKey;
+    const ids = mode === "resize" ? [id] : expandGroup(id, additive);
+    const moveIds = additive && mode === "move" ? Array.from(new Set([...selectedIds, ...ids])) : ids;
     setPast((p) => [...p.slice(-40), canvas]);
     setFuture([]);
-    drag.current = { id, mode, startX: e.clientX, startY: e.clientY, orig: { ...target } };
+    drag.current = {
+      id,
+      mode,
+      startX: e.clientX,
+      startY: e.clientY,
+      orig: { ...target },
+      origs: canvas.elements.filter((x) => moveIds.includes(x.id) && !x.locked).map((x) => ({ ...x })),
+    };
   }
 
   function onPointerMove(e: React.PointerEvent) {
@@ -197,20 +276,41 @@ export function TemplateBuilder({
     const dx = (e.clientX - d.startX) / zoom;
     const dy = (e.clientY - d.startY) / zoom;
     const o = d.orig as InvoiceElement;
-    let changes: Partial<InvoiceElement>;
     if (d.mode === "move") {
       const x = snap(Math.max(0, Math.min(canvas.page.width - o.w, o.x + dx)));
       const y = snap(Math.max(0, Math.min(canvas.page.height - o.h, o.y + dy)));
       const centerX = Math.abs(x + o.w / 2 - canvas.page.width / 2) < 6;
-      setGuides({ x: centerX ? canvas.page.width / 2 : undefined, y: undefined });
-      changes = { x: centerX ? Math.round((canvas.page.width - o.w) / 2) : x, y };
+      const centerY = Math.abs(y + o.h / 2 - canvas.page.height / 2) < 6;
+      setGuides({ x: centerX ? canvas.page.width / 2 : undefined, y: centerY ? canvas.page.height / 2 : undefined });
+      const finalX = centerX ? Math.round((canvas.page.width - o.w) / 2) : x;
+      const shiftX = finalX - o.x;
+      const shiftY = y - o.y;
+      const origs = (d.origs ?? [d.orig]) as InvoiceElement[];
+      commit(
+        {
+          ...canvas,
+          elements: canvas.elements.map((cur) => {
+            const src = origs.find((s) => s.id === cur.id);
+            if (!src) return cur;
+            return {
+              ...cur,
+              x: Math.max(0, Math.min(canvas.page.width - src.w, src.x + shiftX)),
+              y: Math.max(0, Math.min(canvas.page.height - src.h, src.y + shiftY)),
+            };
+          }),
+        },
+        false,
+      );
     } else {
-      changes = {
-        w: snap(Math.max(24, Math.min(canvas.page.width - o.x, o.w + dx))),
-        h: snap(Math.max(8, Math.min(canvas.page.height - o.y, o.h + dy))),
-      };
+      patch(
+        d.id,
+        {
+          w: snap(Math.max(24, Math.min(canvas.page.width - o.x, o.w + dx))),
+          h: snap(Math.max(8, Math.min(canvas.page.height - o.y, o.h + dy))),
+        },
+        false,
+      );
     }
-    patch(d.id, changes, false);
   }
 
   function onPointerUp() {
@@ -218,23 +318,32 @@ export function TemplateBuilder({
     setGuides({});
   }
 
-  // keyboard nudge / delete
+  // keyboard nudge / delete / shortcuts
   useEffect(() => {
     function onKey(ev: KeyboardEvent) {
-      if (!selected || preview) return;
+      if (preview) return;
       const tag = (ev.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || (ev.target as HTMLElement)?.isContentEditable) return;
+      const mod = ev.ctrlKey || ev.metaKey;
+      if (mod && ev.key.toLowerCase() === "z") { ev.preventDefault(); ev.shiftKey ? redo() : undo(); return; }
+      if (mod && ev.key.toLowerCase() === "y") { ev.preventDefault(); redo(); return; }
+      if (mod && ev.key.toLowerCase() === "a") {
+        ev.preventDefault();
+        setSelectedIds(canvas.elements.map((e) => e.id));
+        return;
+      }
+      if (!selected) return;
+      if (mod && ev.key.toLowerCase() === "d") { ev.preventDefault(); duplicate(selected); return; }
+      if (mod && ev.key.toLowerCase() === "g") { ev.preventDefault(); toggleGroup(); return; }
       const cur = canvas.elements.find((e) => e.id === selected);
       if (!cur || cur.locked) return;
       const step = ev.shiftKey ? 10 : 1;
-      if (ev.key === "Delete" || ev.key === "Backspace") {
-        ev.preventDefault();
-        remove(selected);
-      } else if (ev.key === "ArrowLeft") { ev.preventDefault(); patch(selected, { x: Math.max(0, cur.x - step) }); }
+      if (ev.key === "Delete" || ev.key === "Backspace") { ev.preventDefault(); remove(selected); }
+      else if (ev.key === "Escape") { setSelectedIds([]); }
+      else if (ev.key === "ArrowLeft") { ev.preventDefault(); patch(selected, { x: Math.max(0, cur.x - step) }); }
       else if (ev.key === "ArrowRight") { ev.preventDefault(); patch(selected, { x: cur.x + step }); }
       else if (ev.key === "ArrowUp") { ev.preventDefault(); patch(selected, { y: Math.max(0, cur.y - step) }); }
       else if (ev.key === "ArrowDown") { ev.preventDefault(); patch(selected, { y: cur.y + step }); }
-      else if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "z") { ev.preventDefault(); ev.shiftKey ? redo() : undo(); }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
