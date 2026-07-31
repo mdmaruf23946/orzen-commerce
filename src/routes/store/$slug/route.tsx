@@ -275,11 +275,16 @@ function StoreHeader({
   return (
     <>
       <header
-        className="sticky top-0 z-30 border-b border-black/5 backdrop-blur-md"
-        style={{ backgroundColor: "var(--store-header-bg, rgba(255,255,255,0.9))" }}
+        className={`${theme.header.sticky ? "sticky top-0" : ""} z-30 border-b border-black/5 backdrop-blur-md`}
+        style={{
+          backgroundColor: theme.header.transparent
+            ? "transparent"
+            : "var(--store-header-bg, rgba(255,255,255,0.9))",
+        }}
       >
-        <div className="mx-auto max-w-5xl px-3 sm:px-6">
+        <div className="mx-auto px-3 sm:px-6" style={{ maxWidth: "var(--store-container, 64rem)" }}>
           {/* Mobile compact header */}
+
           <div className="flex h-12 items-center gap-2 md:hidden">
             <button
               type="button"
