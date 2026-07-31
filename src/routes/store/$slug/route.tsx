@@ -79,15 +79,17 @@ function StoreLayout() {
   const { data: store } = useSuspenseQuery(storeQuery(slug));
   const { data: agent } = useQuery(agentQuery(slug));
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const search = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
+  const isPreview = String(search?.[THEME_PREVIEW_PARAM] ?? "") === "1";
+  const previewTheme = useThemePreviewListener(isPreview);
   if (!store) return null;
   const s: any = store;
   const theme = s.theme ?? {};
   const radius = typeof theme.radius === "number" ? `${theme.radius}px` : "0.5rem";
 
   // Winner-Admin theme (definition) + store's safe customisations (overrides).
-  const resolved = s.theme_id
-    ? mergeTheme(s.theme_definition, s.theme_overrides)
-    : null;
+  const resolved =
+    previewTheme ?? (s.theme_id ? mergeTheme(s.theme_definition, s.theme_overrides) : null);
 
   const themeVars = (
     resolved
@@ -105,12 +107,14 @@ function StoreLayout() {
 
   const isAccount = pathname.includes("/account");
   const isCheckoutFlow = /\/(checkout|cart|order)/.test(pathname);
-  const showChrome = !isAccount;
+  const showChrome = !isAccount && !isPreview;
 
   return (
+    <StoreThemeProvider theme={resolved ?? DEFAULT_THEME}>
     <StoreUIProvider>
       <TrackingScripts marketing={s.marketing} slug={slug} />
       <div className="min-h-screen bg-background" style={themeVars}>
+
         <StoreHeader
           slug={slug}
           storeId={store.id}
