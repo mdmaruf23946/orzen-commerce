@@ -199,7 +199,7 @@ function StoreHome() {
   };
 
   return (
-    <div className="space-y-8" style={{ gap: "var(--store-section-gap)" }}>
+    <div className="theme-sections flex flex-col gap-8">
       {mainCategories.length > 0 && (
         <MainCategoryBar
           mains={mainCategories as any}

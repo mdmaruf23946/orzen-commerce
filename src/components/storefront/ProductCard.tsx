@@ -69,11 +69,11 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
   }
 
   return (
-    <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_16px_-6px_rgba(0,0,0,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_2px_4px_rgba(0,0,0,0.04),0_12px_28px_-8px_rgba(0,0,0,0.14)]">
+    <div className="theme-card group flex h-full flex-col overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_16px_-6px_rgba(0,0,0,0.08)] transition-all duration-200">
       <Link
         to="/store/$slug/product/$productId"
         params={{ slug, productId: p.id }}
-        className="relative block aspect-square overflow-hidden bg-neutral-100"
+        className="theme-card-media relative block aspect-square overflow-hidden bg-neutral-100"
       >
         {p.primary_image_url ? (
           <img
@@ -81,7 +81,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
             alt={p.name}
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="theme-card-img h-full w-full object-cover"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-xs text-neutral-400">
@@ -89,12 +89,12 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
           </div>
         )}
         {hasDiscount && (
-          <span className="absolute left-2 top-2 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+          <span className="theme-badge absolute left-2 top-2 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
             −{discountPct}%
           </span>
         )}
         {outOfStock && (
-          <span className="absolute right-2 top-2 rounded-full bg-neutral-900/85 px-2 py-0.5 text-[10px] font-bold text-white">
+          <span className="theme-badge absolute right-2 top-2 rounded-full bg-neutral-900/85 px-2 py-0.5 text-[10px] font-bold text-white">
             Sold out
           </span>
         )}
@@ -110,6 +110,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
           />
         </button>
       </Link>
+
 
       <div className="flex flex-1 flex-col gap-2 p-2.5 sm:p-3">
         <Link
@@ -140,7 +141,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
             type="button"
             onClick={handleAdd}
             disabled={outOfStock}
-            className="h-8 rounded-lg border border-neutral-200 bg-white text-[11px] font-semibold text-neutral-800 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="theme-btn h-8 rounded-lg border border-neutral-200 bg-white text-[11px] font-semibold text-neutral-800 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Add to Cart
           </button>
@@ -148,7 +149,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
             type="button"
             onClick={handleBuy}
             disabled={outOfStock}
-            className="h-9 rounded-lg text-[13px] font-semibold text-white shadow-sm transition-opacity active:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="theme-btn h-9 rounded-lg text-[13px] font-semibold text-white shadow-sm transition-opacity active:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             style={{ backgroundColor: "var(--store-btn-bg, #0f172a)" }}
           >
             Buy Now

@@ -41,8 +41,15 @@ export function useThemePreviewListener(enabled: boolean): ThemeDefinition | nul
       setPreview(mergeTheme(d.definition, d.overrides));
     };
     window.addEventListener("message", onMessage);
-    window.parent?.postMessage({ type: THEME_PREVIEW_READY }, window.location.origin);
-    return () => window.removeEventListener("message", onMessage);
+    // Re-announce a few times: the editor may attach its listener after we mount.
+    const announce = () =>
+      window.parent?.postMessage({ type: THEME_PREVIEW_READY }, window.location.origin);
+    announce();
+    const timers = [setTimeout(announce, 200), setTimeout(announce, 800), setTimeout(announce, 2000)];
+    return () => {
+      timers.forEach(clearTimeout);
+      window.removeEventListener("message", onMessage);
+    };
   }, [enabled]);
 
   return preview;

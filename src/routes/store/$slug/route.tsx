@@ -4,11 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { ShoppingCart, Phone, MessageCircle, Facebook, Menu, Mail, User } from "lucide-react";
 import { getStoreBySlug, listStoreCategories, listStoreProducts } from "@/lib/storefront.functions";
 import { DEFAULT_THEME, mergeTheme, themeCssVars } from "@/lib/theme/definition";
+import { ThemeStyle, THEME_SCOPE } from "@/lib/theme/ThemeStyle";
 import {
   StoreThemeProvider,
   THEME_PREVIEW_PARAM,
+  useStoreTheme,
   useThemePreviewListener,
 } from "@/lib/theme/context";
+
 
 import { getStoreAgentPublic } from "@/lib/ai.functions";
 import { cartCount } from "@/lib/cart";
@@ -112,13 +115,18 @@ function StoreLayout() {
 
   const isAccount = pathname.includes("/account");
   const isCheckoutFlow = /\/(checkout|cart|order)/.test(pathname);
-  const showChrome = !isAccount && !isPreview;
+  // The preview iframe must show the footer too — it is customisable.
+  const showChrome = !isAccount;
 
   return (
     <StoreThemeProvider theme={resolved ?? DEFAULT_THEME}>
     <StoreUIProvider>
-      <TrackingScripts marketing={s.marketing} slug={slug} />
-      <div className="min-h-screen bg-background" style={themeVars}>
+      {!isPreview && <TrackingScripts marketing={s.marketing} slug={slug} />}
+      {resolved && <ThemeStyle theme={resolved} />}
+      <div
+        className={`min-h-screen bg-background ${resolved ? THEME_SCOPE : ""}`}
+        style={themeVars}
+      >
 
         <StoreHeader
           slug={slug}
@@ -134,7 +142,7 @@ function StoreLayout() {
           <Outlet />
         </main>
         {showChrome && <StoreFooter store={store} />}
-        {showChrome && agent && (
+        {showChrome && !isPreview && agent && (
           <AIChatLauncher
             slug={slug}
             agentName={agent.agent_name}
@@ -144,6 +152,7 @@ function StoreLayout() {
         )}
         {!isPreview && <BottomNav slug={slug} />}
       </div>
+
     </StoreUIProvider>
     </StoreThemeProvider>
   );
@@ -225,6 +234,8 @@ function StoreHeader({
   const [count, setCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const { customer } = useCustomerSession(slug);
+  const theme = useStoreTheme();
+
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories", storeId],
@@ -264,11 +275,16 @@ function StoreHeader({
   return (
     <>
       <header
-        className="sticky top-0 z-30 border-b border-black/5 backdrop-blur-md"
-        style={{ backgroundColor: "var(--store-header-bg, rgba(255,255,255,0.9))" }}
+        className={`${theme.header.sticky ? "sticky top-0" : ""} z-30 border-b border-black/5 backdrop-blur-md`}
+        style={{
+          backgroundColor: theme.header.transparent
+            ? "transparent"
+            : "var(--store-header-bg, rgba(255,255,255,0.9))",
+        }}
       >
-        <div className="mx-auto max-w-5xl px-3 sm:px-6">
+        <div className="mx-auto px-3 sm:px-6" style={{ maxWidth: "var(--store-container, 64rem)" }}>
           {/* Mobile compact header */}
+
           <div className="flex h-12 items-center gap-2 md:hidden">
             <button
               type="button"
@@ -302,6 +318,7 @@ function StoreHeader({
               <span className="truncate text-sm font-semibold text-neutral-900">{name}</span>
             </Link>
 
+            {theme.header.cart && (
             <Link
               to="/store/$slug/cart"
               params={{ slug }}
@@ -318,7 +335,9 @@ function StoreHeader({
                 </span>
               )}
             </Link>
+            )}
 
+            {theme.header.account && (
             <Link
               to={customer ? "/store/$slug/account" : "/store/$slug/auth/login"}
               params={{ slug }}
@@ -327,11 +346,20 @@ function StoreHeader({
             >
               <User className="h-5 w-5 text-neutral-700" />
             </Link>
+            )}
+
           </div>
 
           {/* Desktop header */}
-          <div className="hidden h-14 items-center gap-4 md:flex">
-            <Link to="/store/$slug" params={{ slug }} className="flex min-w-0 items-center gap-2">
+          <div
+            className="hidden items-center gap-4 md:flex"
+            style={{ height: "var(--store-header-height, 3.5rem)" }}
+          >
+            <Link
+              to="/store/$slug"
+              params={{ slug }}
+              className={`flex min-w-0 items-center gap-2 ${theme.header.logo_align === "center" ? "mx-auto" : ""}`}
+            >
               {logoUrl ? (
                 <img src={logoUrl} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" loading="eager" />
               ) : (
@@ -345,14 +373,21 @@ function StoreHeader({
               <span className="truncate text-base font-semibold">{name}</span>
             </Link>
 
-            <div className="mx-auto w-full max-w-md">
-              <SearchBar />
-            </div>
+            {theme.header.search && theme.header.search_position !== "hidden" && (
+              <div
+                className={`w-full max-w-md ${theme.header.search_position === "center" ? "mx-auto" : "ml-auto"}`}
+              >
+                <SearchBar />
+              </div>
+            )}
 
+            {theme.header.cart && (
             <Link
               to="/store/$slug/cart"
               params={{ slug }}
-              className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-neutral-100"
+              className={`relative grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-neutral-100 ${
+                theme.header.cart_position === "left" ? "order-first" : ""
+              }`}
               aria-label="Cart"
             >
               <ShoppingCart className="h-5 w-5" />
@@ -365,8 +400,9 @@ function StoreHeader({
                 </span>
               )}
             </Link>
+            )}
 
-            {customer ? (
+            {theme.header.account && (customer ? (
               <Link
                 to="/store/$slug/account"
                 params={{ slug }}
@@ -383,17 +419,20 @@ function StoreHeader({
               >
                 <User className="h-4 w-4" /> Sign in
               </Link>
-            )}
+            ))}
           </div>
         </div>
       </header>
 
       {/* Mobile-only search band below header */}
-      {showSearch && (
-        <div className="sticky top-12 z-20 border-b border-black/5 bg-white/95 px-3 py-2 backdrop-blur md:hidden">
+      {showSearch && theme.header.search && theme.header.search_position !== "hidden" && (
+        <div
+          className={`${theme.header.sticky ? "sticky top-12" : ""} z-20 border-b border-black/5 bg-white/95 px-3 py-2 backdrop-blur md:hidden`}
+        >
           <SearchBar />
         </div>
       )}
+
 
       <MobileDrawer
         open={menuOpen}
@@ -429,23 +468,36 @@ function StoreFooter({
     seo?: any;
   };
 }) {
-  const email = store.email || (store.seo && (store.seo.contact_email || store.seo.email)) || null;
+  const theme = useStoreTheme();
+  const f = theme.footer;
+  const phone = f.phone || store.phone;
+  const address = f.address || store.address;
+  const email = f.email || store.email || (store.seo && (store.seo.contact_email || store.seo.email)) || null;
   const socials: { label: string; href: string; icon: any }[] = [];
-  if (store.facebook) socials.push({ label: "Facebook", href: store.facebook, icon: Facebook });
-  if (store.instagram) socials.push({ label: "Instagram", href: store.instagram, icon: MessageCircle });
-  if (store.youtube) socials.push({ label: "YouTube", href: store.youtube, icon: MessageCircle });
-  if (store.tiktok) socials.push({ label: "TikTok", href: store.tiktok, icon: MessageCircle });
-  if (store.linkedin) socials.push({ label: "LinkedIn", href: store.linkedin, icon: MessageCircle });
-  if (store.website) socials.push({ label: "Website", href: store.website, icon: MessageCircle });
+  if (f.social !== false) {
+    if (store.facebook) socials.push({ label: "Facebook", href: store.facebook, icon: Facebook });
+    if (store.instagram) socials.push({ label: "Instagram", href: store.instagram, icon: MessageCircle });
+    if (store.youtube) socials.push({ label: "YouTube", href: store.youtube, icon: MessageCircle });
+    if (store.tiktok) socials.push({ label: "TikTok", href: store.tiktok, icon: MessageCircle });
+    if (store.linkedin) socials.push({ label: "LinkedIn", href: store.linkedin, icon: MessageCircle });
+    if (store.website) socials.push({ label: "Website", href: store.website, icon: MessageCircle });
+  }
+  const compact = f.layout === "compact";
+  const centered = f.layout === "centered";
   return (
     <footer
       id="contact"
       className="mt-10 text-white/90"
       style={{ backgroundColor: "var(--store-footer-bg)" }}
     >
-      <div className="mx-auto grid max-w-5xl gap-8 px-4 py-10 sm:grid-cols-3 sm:px-6">
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
+      <div
+        className={`mx-auto grid gap-8 px-4 py-10 sm:px-6 ${
+          centered ? "text-center" : compact ? "sm:grid-cols-2" : "sm:grid-cols-3"
+        }`}
+        style={{ maxWidth: "var(--store-container, 64rem)" }}
+      >
+        <div className={`space-y-3 ${centered ? "mx-auto" : ""}`}>
+          <div className={`flex items-center gap-2 ${centered ? "justify-center" : ""}`}>
             {store.logo_url ? (
               <img src={store.logo_url} alt="" className="h-10 w-10 rounded-full object-cover" />
             ) : (
@@ -458,18 +510,18 @@ function StoreFooter({
           {store.description && (
             <p className="text-sm text-white/70 line-clamp-4">{store.description}</p>
           )}
-          {store.address && <p className="text-xs text-white/60">{store.address}</p>}
+          {address && <p className="text-xs text-white/60">{address}</p>}
         </div>
 
-        <div className="space-y-2 text-sm">
+        <div className={`space-y-2 text-sm ${centered ? "mx-auto" : ""}`}>
           <h3 className="text-sm font-semibold text-white">Contact</h3>
-          {store.phone && (
-            <a href={`tel:${store.phone}`} className="flex items-center gap-2 text-white/80 hover:text-white">
-              <Phone className="h-4 w-4" /> {store.phone}
+          {phone && (
+            <a href={`tel:${phone}`} className={`flex items-center gap-2 text-white/80 hover:text-white ${centered ? "justify-center" : ""}`}>
+              <Phone className="h-4 w-4" /> {phone}
             </a>
           )}
           {email && (
-            <a href={`mailto:${email}`} className="flex items-center gap-2 text-white/80 hover:text-white">
+            <a href={`mailto:${email}`} className={`flex items-center gap-2 text-white/80 hover:text-white ${centered ? "justify-center" : ""}`}>
               <Mail className="h-4 w-4" /> {email}
             </a>
           )}
@@ -478,7 +530,7 @@ function StoreFooter({
               href={`https://wa.me/${store.whatsapp.replace(/\D/g, "")}`}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2 text-white/80 hover:text-white"
+              className={`flex items-center gap-2 text-white/80 hover:text-white ${centered ? "justify-center" : ""}`}
             >
               <MessageCircle className="h-4 w-4" /> WhatsApp
             </a>
@@ -489,25 +541,33 @@ function StoreFooter({
               href={s.href}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2 text-white/80 hover:text-white"
+              className={`flex items-center gap-2 text-white/80 hover:text-white ${centered ? "justify-center" : ""}`}
             >
               <s.icon className="h-4 w-4" /> {s.label}
             </a>
           ))}
         </div>
 
-        <div id="policies" className="space-y-2 text-sm">
-          <h3 className="text-sm font-semibold text-white">Quick Links</h3>
-          <a href="/privacy-policy" className="block text-white/80 hover:text-white">Privacy Policy</a>
-          <a href="/terms" className="block text-white/80 hover:text-white">Terms &amp; Conditions</a>
-          <a href="/refund-policy" className="block text-white/80 hover:text-white">Return Policy</a>
+        {!compact && (
+          <div id="policies" className={`space-y-2 text-sm ${centered ? "mx-auto" : ""}`}>
+            <h3 className="text-sm font-semibold text-white">Quick Links</h3>
+            <a href="/privacy-policy" className="block text-white/80 hover:text-white">Privacy Policy</a>
+            <a href="/terms" className="block text-white/80 hover:text-white">Terms &amp; Conditions</a>
+            <a href="/refund-policy" className="block text-white/80 hover:text-white">Return Policy</a>
+          </div>
+        )}
+      </div>
+      {f.copyright !== false && (
+        <div className="border-t border-white/10">
+          <p
+            className="mx-auto px-4 py-4 text-center text-xs text-white/60 sm:px-6"
+            style={{ maxWidth: "var(--store-container, 64rem)" }}
+          >
+            © {new Date().getFullYear()} {store.name}. All rights reserved.
+          </p>
         </div>
-      </div>
-      <div className="border-t border-white/10">
-        <p className="mx-auto max-w-5xl px-4 py-4 text-center text-xs text-white/60 sm:px-6">
-          © {new Date().getFullYear()} {store.name}. All rights reserved.
-        </p>
-      </div>
+      )}
     </footer>
   );
 }
+
