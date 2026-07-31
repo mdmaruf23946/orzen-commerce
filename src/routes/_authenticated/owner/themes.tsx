@@ -98,6 +98,9 @@ function OwnerThemes() {
                   {t.category} · used by {t.used_by} store{t.used_by === 1 ? "" : "s"}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
+                  <Button size="sm" variant="outline" onClick={() => openEditor(t)}>
+                    <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+                  </Button>
                   <Button
                     size="sm" variant="outline"
                     onClick={() => setStatus.mutate({ id: t.id, status: t.status === "published" ? "hidden" : "published" })}
@@ -120,6 +123,9 @@ function OwnerThemes() {
           })}
         </div>
       )}
+
+      <ThemeEditorDrawer open={editorOpen} theme={editing} onOpenChange={setEditorOpen} />
     </div>
   );
+
 }
