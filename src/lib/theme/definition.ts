@@ -535,10 +535,11 @@ export function sanitizeOverrides(input: unknown, locks: ThemeLocks | null | und
   // section order
   if (Array.isArray(src.section_order) && !isLocked(locks, "section_order")) {
     const seen = new Set<string>();
-    const order = (src.section_order as unknown[]).filter(
-      (k): k is SectionKey =>
-        typeof k === "string" && SECTION_KEYS.includes(k as SectionKey) && !seen.has(k) && seen.add(k),
-    );
+    const order = (src.section_order as unknown[]).filter((k): k is SectionKey => {
+      if (typeof k !== "string" || !SECTION_KEYS.includes(k as SectionKey) || seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
     if (order.length) out.section_order = order;
   }
 
