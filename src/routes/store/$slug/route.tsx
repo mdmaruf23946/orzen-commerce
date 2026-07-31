@@ -82,14 +82,24 @@ function StoreLayout() {
   const theme = s.theme ?? {};
   const radius = typeof theme.radius === "number" ? `${theme.radius}px` : "0.5rem";
 
-  const themeVars = {
-    ["--primary" as string]: store.primary_color || "#0f172a",
-    ["--store-header-bg" as string]: store.header_color || "#ffffff",
-    ["--store-title-bar-bg" as string]: store.title_bar_color || store.primary_color || "#0f172a",
-    ["--store-footer-bg" as string]: store.footer_color || "#0f172a",
-    ["--store-btn-bg" as string]: store.button_color || store.primary_color || "#0f172a",
-    ["--radius" as string]: radius,
-  } as React.CSSProperties;
+  // Winner-Admin theme (definition) + store's safe customisations (overrides).
+  const resolved = s.theme_id
+    ? mergeTheme(s.theme_definition, s.theme_overrides)
+    : null;
+
+  const themeVars = (
+    resolved
+      ? themeCssVars(resolved)
+      : {
+          ["--primary" as string]: store.primary_color || "#0f172a",
+          ["--store-header-bg" as string]: store.header_color || "#ffffff",
+          ["--store-title-bar-bg" as string]: store.title_bar_color || store.primary_color || "#0f172a",
+          ["--store-footer-bg" as string]: store.footer_color || "#0f172a",
+          ["--store-btn-bg" as string]: store.button_color || store.primary_color || "#0f172a",
+          ["--radius" as string]: radius,
+        }
+  ) as React.CSSProperties;
+
 
   const isAccount = pathname.includes("/account");
   const isCheckoutFlow = /\/(checkout|cart|order)/.test(pathname);
