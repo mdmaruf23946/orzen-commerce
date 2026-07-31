@@ -63,7 +63,12 @@ const PALETTE: { type: ElementType; label: string; icon: any }[] = [
 ];
 
 const SNAP = 4;
-const snap = (n: number) => Math.round(n / SNAP) * SNAP;
+
+export const PAGE_PRESETS: Record<string, { label: string; width: number; height: number }> = {
+  a4: { label: "A4 (210×297mm)", width: 794, height: 1123 },
+  a5: { label: "A5 (148×210mm)", width: 559, height: 794 },
+  receipt: { label: "Receipt (80mm)", width: 302, height: 900 },
+};
 
 type Props = {
   value: { name: string; description?: string | null; canvas: InvoiceCanvas; brand: Brand };
@@ -71,18 +76,36 @@ type Props = {
   onSave: () => void;
   saving?: boolean;
   data?: InvoiceData;
+  onOpenVersions?: () => void;
+  pageSize?: string;
+  onPageSizeChange?: (v: string) => void;
 };
 
-export function TemplateBuilder({ value, onChange, onSave, saving, data = SAMPLE_INVOICE }: Props) {
+export function TemplateBuilder({
+  value,
+  onChange,
+  onSave,
+  saving,
+  data = SAMPLE_INVOICE,
+  onOpenVersions,
+  pageSize = "a4",
+  onPageSizeChange,
+}: Props) {
   const { canvas, brand } = value;
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const selected = selectedIds[0] ?? null;
+  const setSelected = useCallback((id: string | null) => setSelectedIds(id ? [id] : []), []);
   const [zoom, setZoom] = useState(0.72);
   const [preview, setPreview] = useState(false);
+  const [showGrid, setShowGrid] = useState(true);
+  const [showRulers, setShowRulers] = useState(true);
+  const [snapOn, setSnapOn] = useState(true);
   const [guides, setGuides] = useState<{ x?: number; y?: number }>({});
   const [past, setPast] = useState<InvoiceCanvas[]>([]);
   const [future, setFuture] = useState<InvoiceCanvas[]>([]);
   const stageRef = useRef<HTMLDivElement>(null);
   const drag = useRef<any>(null);
+  const snap = useCallback((n: number) => (snapOn ? Math.round(n / SNAP) * SNAP : Math.round(n)), [snapOn]);
 
   const el = useMemo(
     () => canvas.elements.find((e) => e.id === selected) ?? null,
