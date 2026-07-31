@@ -84,7 +84,6 @@ import { Route as AuthenticatedAdminMessengerRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminMarketingRouteImport } from './routes/_authenticated/admin/marketing'
 import { Route as AuthenticatedAdminLowStockRouteImport } from './routes/_authenticated/admin/low-stock'
 import { Route as AuthenticatedAdminLegalRouteImport } from './routes/_authenticated/admin/legal'
-import { Route as AuthenticatedAdminInvoiceDesignRouteImport } from './routes/_authenticated/admin/invoice-design'
 import { Route as AuthenticatedAdminInventoryRouteImport } from './routes/_authenticated/admin/inventory'
 import { Route as AuthenticatedAdminInboxRouteImport } from './routes/_authenticated/admin/inbox'
 import { Route as AuthenticatedAdminImportExportRouteImport } from './routes/_authenticated/admin/import-export'
@@ -561,12 +560,6 @@ const AuthenticatedAdminLegalRoute = AuthenticatedAdminLegalRouteImport.update({
   path: '/legal',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
-const AuthenticatedAdminInvoiceDesignRoute =
-  AuthenticatedAdminInvoiceDesignRouteImport.update({
-    id: '/invoice-design',
-    path: '/invoice-design',
-    getParentRoute: () => AuthenticatedAdminRouteRoute,
-  } as any)
 const AuthenticatedAdminInventoryRoute =
   AuthenticatedAdminInventoryRouteImport.update({
     id: '/inventory',
@@ -957,7 +950,6 @@ export interface FileRoutesByFullPath {
   '/admin/import-export': typeof AuthenticatedAdminImportExportRoute
   '/admin/inbox': typeof AuthenticatedAdminInboxRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryRoute
-  '/admin/invoice-design': typeof AuthenticatedAdminInvoiceDesignRoute
   '/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
   '/admin/marketing': typeof AuthenticatedAdminMarketingRoute
@@ -1086,7 +1078,6 @@ export interface FileRoutesByTo {
   '/admin/import-export': typeof AuthenticatedAdminImportExportRoute
   '/admin/inbox': typeof AuthenticatedAdminInboxRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryRoute
-  '/admin/invoice-design': typeof AuthenticatedAdminInvoiceDesignRoute
   '/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
   '/admin/marketing': typeof AuthenticatedAdminMarketingRoute
@@ -1224,7 +1215,6 @@ export interface FileRoutesById {
   '/_authenticated/admin/import-export': typeof AuthenticatedAdminImportExportRoute
   '/_authenticated/admin/inbox': typeof AuthenticatedAdminInboxRoute
   '/_authenticated/admin/inventory': typeof AuthenticatedAdminInventoryRoute
-  '/_authenticated/admin/invoice-design': typeof AuthenticatedAdminInvoiceDesignRoute
   '/_authenticated/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/_authenticated/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
   '/_authenticated/admin/marketing': typeof AuthenticatedAdminMarketingRoute
@@ -1362,7 +1352,6 @@ export interface FileRouteTypes {
     | '/admin/import-export'
     | '/admin/inbox'
     | '/admin/inventory'
-    | '/admin/invoice-design'
     | '/admin/legal'
     | '/admin/low-stock'
     | '/admin/marketing'
@@ -1491,7 +1480,6 @@ export interface FileRouteTypes {
     | '/admin/import-export'
     | '/admin/inbox'
     | '/admin/inventory'
-    | '/admin/invoice-design'
     | '/admin/legal'
     | '/admin/low-stock'
     | '/admin/marketing'
@@ -1628,7 +1616,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/import-export'
     | '/_authenticated/admin/inbox'
     | '/_authenticated/admin/inventory'
-    | '/_authenticated/admin/invoice-design'
     | '/_authenticated/admin/legal'
     | '/_authenticated/admin/low-stock'
     | '/_authenticated/admin/marketing'
@@ -2283,13 +2270,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminLegalRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
-    '/_authenticated/admin/invoice-design': {
-      id: '/_authenticated/admin/invoice-design'
-      path: '/invoice-design'
-      fullPath: '/admin/invoice-design'
-      preLoaderRoute: typeof AuthenticatedAdminInvoiceDesignRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
-    }
     '/_authenticated/admin/inventory': {
       id: '/_authenticated/admin/inventory'
       path: '/inventory'
@@ -2746,7 +2726,6 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminImportExportRoute: typeof AuthenticatedAdminImportExportRoute
   AuthenticatedAdminInboxRoute: typeof AuthenticatedAdminInboxRoute
   AuthenticatedAdminInventoryRoute: typeof AuthenticatedAdminInventoryRoute
-  AuthenticatedAdminInvoiceDesignRoute: typeof AuthenticatedAdminInvoiceDesignRoute
   AuthenticatedAdminLegalRoute: typeof AuthenticatedAdminLegalRoute
   AuthenticatedAdminLowStockRoute: typeof AuthenticatedAdminLowStockRoute
   AuthenticatedAdminMarketingRoute: typeof AuthenticatedAdminMarketingRoute
@@ -2795,7 +2774,6 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminImportExportRoute: AuthenticatedAdminImportExportRoute,
     AuthenticatedAdminInboxRoute: AuthenticatedAdminInboxRoute,
     AuthenticatedAdminInventoryRoute: AuthenticatedAdminInventoryRoute,
-    AuthenticatedAdminInvoiceDesignRoute: AuthenticatedAdminInvoiceDesignRoute,
     AuthenticatedAdminLegalRoute: AuthenticatedAdminLegalRoute,
     AuthenticatedAdminLowStockRoute: AuthenticatedAdminLowStockRoute,
     AuthenticatedAdminMarketingRoute: AuthenticatedAdminMarketingRoute,
