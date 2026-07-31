@@ -36,6 +36,7 @@ import { Route as ApiImgSplatRouteImport } from './routes/api/img.$'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
 import { Route as AuthenticatedOwnerWebhooksRouteImport } from './routes/_authenticated/owner/webhooks'
 import { Route as AuthenticatedOwnerUsersRouteImport } from './routes/_authenticated/owner/users'
+import { Route as AuthenticatedOwnerThemesRouteImport } from './routes/_authenticated/owner/themes'
 import { Route as AuthenticatedOwnerSystemRouteImport } from './routes/_authenticated/owner/system'
 import { Route as AuthenticatedOwnerSupportRouteImport } from './routes/_authenticated/owner/support'
 import { Route as AuthenticatedOwnerSubscriptionsRouteImport } from './routes/_authenticated/owner/subscriptions'
@@ -282,6 +283,12 @@ const AuthenticatedOwnerUsersRoute = AuthenticatedOwnerUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AuthenticatedOwnerRouteRoute,
 } as any)
+const AuthenticatedOwnerThemesRoute =
+  AuthenticatedOwnerThemesRouteImport.update({
+    id: '/themes',
+    path: '/themes',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
 const AuthenticatedOwnerSystemRoute =
   AuthenticatedOwnerSystemRouteImport.update({
     id: '/system',
@@ -1006,6 +1013,7 @@ export interface FileRoutesByFullPath {
   '/owner/subscriptions': typeof AuthenticatedOwnerSubscriptionsRoute
   '/owner/support': typeof AuthenticatedOwnerSupportRoute
   '/owner/system': typeof AuthenticatedOwnerSystemRoute
+  '/owner/themes': typeof AuthenticatedOwnerThemesRoute
   '/owner/users': typeof AuthenticatedOwnerUsersRoute
   '/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
@@ -1135,6 +1143,7 @@ export interface FileRoutesByTo {
   '/owner/subscriptions': typeof AuthenticatedOwnerSubscriptionsRoute
   '/owner/support': typeof AuthenticatedOwnerSupportRoute
   '/owner/system': typeof AuthenticatedOwnerSystemRoute
+  '/owner/themes': typeof AuthenticatedOwnerThemesRoute
   '/owner/users': typeof AuthenticatedOwnerUsersRoute
   '/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
@@ -1273,6 +1282,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/subscriptions': typeof AuthenticatedOwnerSubscriptionsRoute
   '/_authenticated/owner/support': typeof AuthenticatedOwnerSupportRoute
   '/_authenticated/owner/system': typeof AuthenticatedOwnerSystemRoute
+  '/_authenticated/owner/themes': typeof AuthenticatedOwnerThemesRoute
   '/_authenticated/owner/users': typeof AuthenticatedOwnerUsersRoute
   '/_authenticated/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
@@ -1411,6 +1421,7 @@ export interface FileRouteTypes {
     | '/owner/subscriptions'
     | '/owner/support'
     | '/owner/system'
+    | '/owner/themes'
     | '/owner/users'
     | '/owner/webhooks'
     | '/api/ai/chat'
@@ -1540,6 +1551,7 @@ export interface FileRouteTypes {
     | '/owner/subscriptions'
     | '/owner/support'
     | '/owner/system'
+    | '/owner/themes'
     | '/owner/users'
     | '/owner/webhooks'
     | '/api/ai/chat'
@@ -1677,6 +1689,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/subscriptions'
     | '/_authenticated/owner/support'
     | '/_authenticated/owner/system'
+    | '/_authenticated/owner/themes'
     | '/_authenticated/owner/users'
     | '/_authenticated/owner/webhooks'
     | '/api/ai/chat'
@@ -1945,6 +1958,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/owner/users'
       preLoaderRoute: typeof AuthenticatedOwnerUsersRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/themes': {
+      id: '/_authenticated/owner/themes'
+      path: '/themes'
+      fullPath: '/owner/themes'
+      preLoaderRoute: typeof AuthenticatedOwnerThemesRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/owner/system': {
@@ -2950,6 +2970,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerSubscriptionsRoute: typeof AuthenticatedOwnerSubscriptionsRoute
   AuthenticatedOwnerSupportRoute: typeof AuthenticatedOwnerSupportRoute
   AuthenticatedOwnerSystemRoute: typeof AuthenticatedOwnerSystemRoute
+  AuthenticatedOwnerThemesRoute: typeof AuthenticatedOwnerThemesRoute
   AuthenticatedOwnerUsersRoute: typeof AuthenticatedOwnerUsersRoute
   AuthenticatedOwnerWebhooksRoute: typeof AuthenticatedOwnerWebhooksRoute
   AuthenticatedOwnerIndexRoute: typeof AuthenticatedOwnerIndexRoute
@@ -3001,6 +3022,7 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerSubscriptionsRoute: AuthenticatedOwnerSubscriptionsRoute,
     AuthenticatedOwnerSupportRoute: AuthenticatedOwnerSupportRoute,
     AuthenticatedOwnerSystemRoute: AuthenticatedOwnerSystemRoute,
+    AuthenticatedOwnerThemesRoute: AuthenticatedOwnerThemesRoute,
     AuthenticatedOwnerUsersRoute: AuthenticatedOwnerUsersRoute,
     AuthenticatedOwnerWebhooksRoute: AuthenticatedOwnerWebhooksRoute,
     AuthenticatedOwnerIndexRoute: AuthenticatedOwnerIndexRoute,
