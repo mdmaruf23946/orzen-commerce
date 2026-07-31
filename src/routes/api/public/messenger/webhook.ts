@@ -1017,9 +1017,6 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
         if (!body || (body.object !== "page" && body.object !== "instagram")) {
           return new Response("ok");
         }
-        if (!signatureHeader) {
-          return new Response("missing signature", { status: 401 });
-        }
         const sb = admin();
         for (const entry of body.entry ?? []) {
           const pageId = String(entry.id);
@@ -1032,10 +1029,23 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
             .maybeSingle();
           if (!integ) continue;
 
-          // Reject anything that isn't signed with this page's app secret.
+          // Verify the HMAC only when the store configured an App Secret.
+          // App Secret is optional in the connect form, so pages without one
+          // must keep receiving events (otherwise the inbox goes silent).
           const appSecret = await decryptToken((integ as any).app_secret_encrypted);
-          if (!appSecret) continue;
-          if (!(await verifyMessengerSignature(rawBody, signatureHeader, appSecret))) continue;
+          if (appSecret) {
+            if (!signatureHeader) continue;
+            if (!(await verifyMessengerSignature(rawBody, signatureHeader, appSecret))) continue;
+          } else {
+            await sb
+              .from("messenger_integrations")
+              .update({
+                last_error:
+                  "App Secret সেট করা নেই — webhook signature যাচাই করা যাচ্ছে না। নিরাপত্তার জন্য App Secret যোগ করুন।",
+              })
+              .eq("id", (integ as any).id);
+          }
+
 
           const token =
             (await decryptToken((integ as any).page_access_token_encrypted)) ||
