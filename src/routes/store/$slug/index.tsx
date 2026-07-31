@@ -10,6 +10,7 @@ import {
   getStoreBySlug,
 } from "@/lib/storefront.functions";
 import { useStoreUI } from "@/lib/store-ui";
+import { useStoreTheme } from "@/lib/theme/context";
 import { ProductCard } from "@/components/storefront/ProductCard";
 
 const STALE = 5 * 60_000;
@@ -77,6 +78,7 @@ function StoreHome() {
   const { data: categories } = useSuspenseQuery(categoriesQuery(store.id));
   const { data: bestSelling } = useSuspenseQuery(bestSellingQuery(store.id));
   const { query, activeMainId, activeSubId, source, selectMain, selectSub } = useStoreUI();
+  const theme = useStoreTheme();
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
 
   const mainCategories = useMemo(
