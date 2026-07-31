@@ -369,23 +369,65 @@ export function TemplateBuilder({
             </button>
           ))}
         </div>
+
         <Separator className="my-3" />
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Layers</div>
-        <ScrollArea className="max-h-52">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Canvas</div>
+        <div className="space-y-2">
+          <Select
+            value={pageSize}
+            onValueChange={(v) => {
+              const p = PAGE_PRESETS[v];
+              onPageSizeChange?.(v);
+              if (p) commit({ ...canvas, page: { ...canvas.page, width: p.width, height: p.height } });
+            }}
+          >
+            <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {Object.entries(PAGE_PRESETS).map(([k, p]) => (
+                <SelectItem key={k} value={k}>{p.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex items-center justify-between"><Label className="text-[11px]">Grid</Label><Switch checked={showGrid} onCheckedChange={setShowGrid} /></div>
+          <div className="flex items-center justify-between"><Label className="text-[11px]">Rulers</Label><Switch checked={showRulers} onCheckedChange={setShowRulers} /></div>
+          <div className="flex items-center justify-between"><Label className="text-[11px]">Snap to grid</Label><Switch checked={snapOn} onCheckedChange={setSnapOn} /></div>
+        </div>
+
+        <Separator className="my-3" />
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Layers</span>
+          {selectedIds.length > 1 && (
+            <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={toggleGroup}>
+              <Group className="mr-1 h-3 w-3" /> Group
+            </Button>
+          )}
+        </div>
+        <ScrollArea className="max-h-60">
           <div className="space-y-1 pr-2">
-            {[...canvas.elements].reverse().map((e) => (
-              <button
+            {[...canvas.elements].sort((a, b) => (b.z ?? 0) - (a.z ?? 0)).map((e) => (
+              <div
                 key={e.id}
-                type="button"
-                onClick={() => setSelected(e.id)}
                 className={cn(
-                  "flex w-full items-center justify-between rounded-md px-2 py-1 text-left text-xs",
-                  selected === e.id ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                  "flex items-center gap-1 rounded-md px-1.5 py-1 text-xs",
+                  selectedIds.includes(e.id) ? "bg-primary text-primary-foreground" : "hover:bg-muted",
                 )}
               >
-                <span className="truncate">{e.type === "text" ? (e.props.content ?? "Text").slice(0, 18) : e.type}</span>
-                {e.locked && <Lock className="h-3 w-3 shrink-0" />}
-              </button>
+                <button
+                  type="button"
+                  className="min-w-0 flex-1 truncate text-left"
+                  onClick={(ev) => expandGroup(e.id, ev.shiftKey || ev.metaKey || ev.ctrlKey)}
+                >
+                  {e.type === "text" ? (e.props?.content ?? "Text").slice(0, 16) : e.type}
+                </button>
+                <button type="button" title="Bring forward" onClick={() => reorder(e.id, 1)}><ChevronUp className="h-3 w-3" /></button>
+                <button type="button" title="Send backward" onClick={() => reorder(e.id, -1)}><ChevronDown className="h-3 w-3" /></button>
+                <button type="button" title="Hide" onClick={() => patch(e.id, { hidden: !e.hidden })}>
+                  {e.hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                </button>
+                <button type="button" title="Lock" onClick={() => patch(e.id, { locked: !e.locked })}>
+                  {e.locked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3 opacity-50" />}
+                </button>
+              </div>
             ))}
           </div>
         </ScrollArea>
@@ -400,69 +442,122 @@ export function TemplateBuilder({
             className="h-8 w-44"
             placeholder="Template name"
           />
-          <Button size="sm" variant="outline" onClick={undo} disabled={!past.length}><Undo2 className="h-4 w-4" /></Button>
-          <Button size="sm" variant="outline" onClick={redo} disabled={!future.length}><Redo2 className="h-4 w-4" /></Button>
+          <Button size="sm" variant="outline" onClick={undo} disabled={!past.length} title="Undo (Ctrl+Z)"><Undo2 className="h-4 w-4" /></Button>
+          <Button size="sm" variant="outline" onClick={redo} disabled={!future.length} title="Redo (Ctrl+Shift+Z)"><Redo2 className="h-4 w-4" /></Button>
+          <div className="flex items-center gap-1 rounded-md border bg-background px-1">
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => align("left")} title="Align left"><AlignStartVertical className="h-4 w-4" /></Button>
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => align("hcenter")} title="Center horizontally"><AlignCenterVertical className="h-4 w-4" /></Button>
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => align("right")} title="Align right"><AlignEndVertical className="h-4 w-4" /></Button>
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => align("top")} title="Align top"><AlignStartHorizontal className="h-4 w-4" /></Button>
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => align("vcenter")} title="Center vertically"><AlignCenterHorizontal className="h-4 w-4" /></Button>
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => align("bottom")} title="Align bottom"><AlignEndHorizontal className="h-4 w-4" /></Button>
+          </div>
           <Button size="sm" variant="outline" onClick={() => setZoom((z) => Math.max(0.3, +(z - 0.1).toFixed(2)))}><ZoomOut className="h-4 w-4" /></Button>
           <span className="text-xs text-muted-foreground">{Math.round(zoom * 100)}%</span>
           <Button size="sm" variant="outline" onClick={() => setZoom((z) => Math.min(1.5, +(z + 0.1).toFixed(2)))}><ZoomIn className="h-4 w-4" /></Button>
+          <Button size="sm" variant="outline" onClick={() => setZoom(0.72)} title="Fit"><Maximize2 className="h-4 w-4" /></Button>
           <Button size="sm" variant={preview ? "default" : "outline"} onClick={() => setPreview((p) => !p)}>
             <Eye className="mr-1 h-4 w-4" /> Preview
           </Button>
+          {onOpenVersions && (
+            <Button size="sm" variant="outline" onClick={onOpenVersions} title="Version history">
+              <History className="h-4 w-4" />
+            </Button>
+          )}
           <Button size="sm" onClick={onSave} disabled={saving} className="ml-auto">
             <Save className="mr-1 h-4 w-4" /> {saving ? "Saving…" : "Save"}
           </Button>
         </div>
 
         <div className="overflow-auto rounded-lg bg-neutral-200/60 p-4 dark:bg-neutral-800/60">
-          <div
-            ref={stageRef}
-            className="relative mx-auto bg-white shadow-lg"
-            style={{ width: canvas.page.width * zoom, height: canvas.page.height * zoom }}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerLeave={onPointerUp}
-            onClick={() => setSelected(null)}
-          >
-            <InvoiceRenderer canvas={canvas} brand={brand} data={data} scale={zoom} />
-            {!preview && (
-              <div className="pointer-events-none absolute inset-0">
-                {guides.x !== undefined && (
-                  <div className="absolute top-0 h-full w-px bg-pink-500" style={{ left: guides.x * zoom }} />
-                )}
-                {canvas.elements.map((e) => (
-                  <div
-                    key={e.id}
-                    onPointerDown={(ev) => onPointerDown(ev, e.id, "move")}
-                    onClick={(ev) => { ev.stopPropagation(); setSelected(e.id); }}
-                    className={cn(
-                      "pointer-events-auto absolute",
-                      e.locked ? "cursor-not-allowed" : "cursor-move",
-                      selected === e.id ? "outline outline-2 outline-primary" : "hover:outline hover:outline-1 hover:outline-primary/40",
-                    )}
-                    style={{
-                      left: e.x * zoom,
-                      top: e.y * zoom,
-                      width: e.w * zoom,
-                      height: Math.max(e.h, 6) * zoom,
-                    }}
-                  >
-                    {selected === e.id && !e.locked && (
-                      <span
-                        onPointerDown={(ev) => onPointerDown(ev, e.id, "resize")}
-                        className="absolute -bottom-1.5 -right-1.5 h-3 w-3 cursor-se-resize rounded-sm border border-white bg-primary"
-                      />
-                    )}
+          <div className="mx-auto" style={{ width: canvas.page.width * zoom + (showRulers ? 16 : 0) }}>
+            {showRulers && (
+              <div className="ml-4 flex h-4 items-end overflow-hidden text-[8px] text-muted-foreground">
+                {Array.from({ length: Math.ceil(canvas.page.width / 50) }).map((_, i) => (
+                  <div key={i} className="shrink-0 border-l border-muted-foreground/40 pl-0.5" style={{ width: 50 * zoom }}>
+                    {i * 50}
                   </div>
                 ))}
               </div>
             )}
+            <div className="flex">
+              {showRulers && (
+                <div className="w-4 shrink-0 overflow-hidden text-[8px] text-muted-foreground">
+                  {Array.from({ length: Math.ceil(canvas.page.height / 50) }).map((_, i) => (
+                    <div key={i} className="border-t border-muted-foreground/40 pl-0.5" style={{ height: 50 * zoom }}>
+                      {i * 50}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div
+                ref={stageRef}
+                className="relative bg-white shadow-lg"
+                style={{ width: canvas.page.width * zoom, height: canvas.page.height * zoom }}
+                onPointerMove={onPointerMove}
+                onPointerUp={onPointerUp}
+                onPointerLeave={onPointerUp}
+                onClick={() => setSelectedIds([])}
+              >
+                <InvoiceRenderer canvas={canvas} brand={brand} data={data} scale={zoom} />
+                {!preview && showGrid && (
+                  <div
+                    className="pointer-events-none absolute inset-0 opacity-[0.14]"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(to right, #64748b 1px, transparent 1px), linear-gradient(to bottom, #64748b 1px, transparent 1px)",
+                      backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
+                    }}
+                  />
+                )}
+                {!preview && (
+                  <div className="pointer-events-none absolute inset-0">
+                    {guides.x !== undefined && (
+                      <div className="absolute top-0 h-full w-px bg-pink-500" style={{ left: guides.x * zoom }} />
+                    )}
+                    {guides.y !== undefined && (
+                      <div className="absolute left-0 w-full border-t border-pink-500" style={{ top: guides.y * zoom }} />
+                    )}
+                    {canvas.elements.map((e) => (
+                      <div
+                        key={e.id}
+                        onPointerDown={(ev) => onPointerDown(ev, e.id, "move")}
+                        onClick={(ev) => { ev.stopPropagation(); expandGroup(e.id, ev.shiftKey || ev.metaKey || ev.ctrlKey); }}
+                        className={cn(
+                          "pointer-events-auto absolute",
+                          e.locked ? "cursor-not-allowed" : "cursor-move",
+                          selectedIds.includes(e.id)
+                            ? "outline outline-2 outline-primary"
+                            : "hover:outline hover:outline-1 hover:outline-primary/40",
+                        )}
+                        style={{
+                          left: e.x * zoom,
+                          top: e.y * zoom,
+                          width: e.w * zoom,
+                          height: Math.max(e.h, 6) * zoom,
+                        }}
+                      >
+                        {selected === e.id && !e.locked && (
+                          <span
+                            onPointerDown={(ev) => onPointerDown(ev, e.id, "resize")}
+                            className="absolute -bottom-1.5 -right-1.5 h-3 w-3 cursor-se-resize rounded-sm border border-white bg-primary"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Properties */}
       <aside className="w-full shrink-0 rounded-xl border bg-card p-3 lg:w-72">
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Properties</div>
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Properties {selectedIds.length > 1 && <span className="normal-case">({selectedIds.length} selected)</span>}
+        </div>
         <ScrollArea className="h-[520px] pr-2">
           {!el ? (
             <BrandPanel brand={brand} onChange={(b) => onChange({ ...value, brand: b })} />
@@ -473,22 +568,10 @@ export function TemplateBuilder({
                   {el.locked ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => duplicate(el.id)}><Copy className="h-4 w-4" /></Button>
-                <Button size="sm" variant="outline" onClick={() => patch(el.id, { z: maxZ + 1 })}><ArrowUpToLine className="h-4 w-4" /></Button>
-                <Button size="sm" variant="outline" onClick={() => patch(el.id, { z: -1 })}><ArrowDownToLine className="h-4 w-4" /></Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => patch(el.id, { x: Math.round((canvas.page.width - el.w) / 2) })}
-                >
-                  <AlignCenterVertical className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => patch(el.id, { y: Math.round((canvas.page.height - el.h) / 2) })}
-                >
-                  <AlignCenterHorizontal className="h-4 w-4" />
-                </Button>
+                <Button size="sm" variant="outline" onClick={() => patch(el.id, { z: maxZ + 1 })} title="Bring to front"><ArrowUpToLine className="h-4 w-4" /></Button>
+                <Button size="sm" variant="outline" onClick={() => patch(el.id, { z: -1 })} title="Send to back"><ArrowDownToLine className="h-4 w-4" /></Button>
+                <Button size="sm" variant="outline" onClick={() => align("hcenter")}><AlignCenterVertical className="h-4 w-4" /></Button>
+                <Button size="sm" variant="outline" onClick={() => align("vcenter")}><AlignCenterHorizontal className="h-4 w-4" /></Button>
                 <Button size="sm" variant="destructive" onClick={() => remove(el.id)}><Trash2 className="h-4 w-4" /></Button>
               </div>
 
