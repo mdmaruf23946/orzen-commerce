@@ -122,7 +122,10 @@ function StoreLayout() {
           logoUrl={(store as any).icon_url || store.logo_url}
           showSearch={!isAccount && !isCheckoutFlow}
         />
-        <main className="mx-auto max-w-5xl px-4 pb-24 pt-4 sm:px-6 md:pb-12">
+        <main
+          className="mx-auto px-4 pb-24 pt-4 sm:px-6 md:pb-12"
+          style={{ maxWidth: resolved ? "var(--store-container)" : undefined }}
+        >
           <Outlet />
         </main>
         {showChrome && <StoreFooter store={store} />}
@@ -134,10 +137,12 @@ function StoreLayout() {
             messengerUrl={toMessengerUrl(store.facebook)}
           />
         )}
-        <BottomNav slug={slug} />
+        {!isPreview && <BottomNav slug={slug} />}
       </div>
     </StoreUIProvider>
+    </StoreThemeProvider>
   );
+
 }
 
 function toMessengerUrl(fb: string | null): string | null {
