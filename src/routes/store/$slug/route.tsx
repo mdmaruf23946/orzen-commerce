@@ -351,8 +351,15 @@ function StoreHeader({
           </div>
 
           {/* Desktop header */}
-          <div className="hidden h-14 items-center gap-4 md:flex">
-            <Link to="/store/$slug" params={{ slug }} className="flex min-w-0 items-center gap-2">
+          <div
+            className="hidden items-center gap-4 md:flex"
+            style={{ height: "var(--store-header-height, 3.5rem)" }}
+          >
+            <Link
+              to="/store/$slug"
+              params={{ slug }}
+              className={`flex min-w-0 items-center gap-2 ${theme.header.logo_align === "center" ? "mx-auto" : ""}`}
+            >
               {logoUrl ? (
                 <img src={logoUrl} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" loading="eager" />
               ) : (
@@ -366,14 +373,21 @@ function StoreHeader({
               <span className="truncate text-base font-semibold">{name}</span>
             </Link>
 
-            <div className="mx-auto w-full max-w-md">
-              <SearchBar />
-            </div>
+            {theme.header.search && theme.header.search_position !== "hidden" && (
+              <div
+                className={`w-full max-w-md ${theme.header.search_position === "center" ? "mx-auto" : "ml-auto"}`}
+              >
+                <SearchBar />
+              </div>
+            )}
 
+            {theme.header.cart && (
             <Link
               to="/store/$slug/cart"
               params={{ slug }}
-              className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-neutral-100"
+              className={`relative grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-neutral-100 ${
+                theme.header.cart_position === "left" ? "order-first" : ""
+              }`}
               aria-label="Cart"
             >
               <ShoppingCart className="h-5 w-5" />
@@ -386,8 +400,9 @@ function StoreHeader({
                 </span>
               )}
             </Link>
+            )}
 
-            {customer ? (
+            {theme.header.account && (customer ? (
               <Link
                 to="/store/$slug/account"
                 params={{ slug }}
@@ -404,17 +419,20 @@ function StoreHeader({
               >
                 <User className="h-4 w-4" /> Sign in
               </Link>
-            )}
+            ))}
           </div>
         </div>
       </header>
 
       {/* Mobile-only search band below header */}
-      {showSearch && (
-        <div className="sticky top-12 z-20 border-b border-black/5 bg-white/95 px-3 py-2 backdrop-blur md:hidden">
+      {showSearch && theme.header.search && theme.header.search_position !== "hidden" && (
+        <div
+          className={`${theme.header.sticky ? "sticky top-12" : ""} z-20 border-b border-black/5 bg-white/95 px-3 py-2 backdrop-blur md:hidden`}
+        >
           <SearchBar />
         </div>
       )}
+
 
       <MobileDrawer
         open={menuOpen}
