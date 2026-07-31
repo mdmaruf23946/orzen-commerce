@@ -4503,6 +4503,51 @@ export type Database = {
         }
         Relationships: []
       }
+      store_themes: {
+        Row: {
+          category: string
+          created_at: string
+          definition: Json
+          description: string | null
+          id: string
+          locked: Json
+          name: string
+          preview_url: string | null
+          slug: string
+          sort_order: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          definition?: Json
+          description?: string | null
+          id?: string
+          locked?: Json
+          name: string
+          preview_url?: string | null
+          slug: string
+          sort_order?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          definition?: Json
+          description?: string | null
+          id?: string
+          locked?: Json
+          name?: string
+          preview_url?: string | null
+          slug?: string
+          sort_order?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       stores: {
         Row: {
           address: string | null
@@ -4550,6 +4595,9 @@ export type Database = {
           tax_number: string | null
           template_version: string | null
           theme: Json
+          theme_draft: Json
+          theme_id: string | null
+          theme_overrides: Json
           tiktok: string | null
           timezone: string
           title_bar_color: string | null
@@ -4607,6 +4655,9 @@ export type Database = {
           tax_number?: string | null
           template_version?: string | null
           theme?: Json
+          theme_draft?: Json
+          theme_id?: string | null
+          theme_overrides?: Json
           tiktok?: string | null
           timezone?: string
           title_bar_color?: string | null
@@ -4664,6 +4715,9 @@ export type Database = {
           tax_number?: string | null
           template_version?: string | null
           theme?: Json
+          theme_draft?: Json
+          theme_id?: string | null
+          theme_overrides?: Json
           tiktok?: string | null
           timezone?: string
           title_bar_color?: string | null
@@ -4688,6 +4742,13 @@ export type Database = {
             columns: ["primary_domain_id"]
             isOneToOne: false
             referencedRelation: "store_domains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stores_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "store_themes"
             referencedColumns: ["id"]
           },
         ]
