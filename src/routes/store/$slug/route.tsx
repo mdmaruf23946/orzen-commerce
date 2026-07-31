@@ -3,7 +3,12 @@ import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query"
 import { useEffect, useMemo, useState } from "react";
 import { ShoppingCart, Phone, MessageCircle, Facebook, Menu, Mail, User } from "lucide-react";
 import { getStoreBySlug, listStoreCategories, listStoreProducts } from "@/lib/storefront.functions";
-import { mergeTheme, themeCssVars } from "@/lib/theme/definition";
+import { DEFAULT_THEME, mergeTheme, themeCssVars } from "@/lib/theme/definition";
+import {
+  StoreThemeProvider,
+  THEME_PREVIEW_PARAM,
+  useThemePreviewListener,
+} from "@/lib/theme/context";
 
 import { getStoreAgentPublic } from "@/lib/ai.functions";
 import { cartCount } from "@/lib/cart";
