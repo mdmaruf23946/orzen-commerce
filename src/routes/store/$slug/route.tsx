@@ -225,6 +225,8 @@ function StoreHeader({
   const [count, setCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const { customer } = useCustomerSession(slug);
+  const theme = useStoreTheme();
+
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories", storeId],
