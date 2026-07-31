@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Copy, Eye, EyeOff, Trash2 } from "lucide-react";
+import { Copy, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
 import {
   ownerListThemes,
   ownerSetThemeStatus,
@@ -11,6 +12,8 @@ import {
 } from "@/lib/themes.functions";
 import { mergeTheme } from "@/lib/theme/definition";
 import { Button } from "@/components/ui/button";
+import { ThemeEditorDrawer, type OwnerThemeRow } from "@/components/owner/ThemeEditorDrawer";
+
 
 export const Route = createFileRoute("/_authenticated/owner/themes")({
   component: OwnerThemes,
@@ -52,14 +55,24 @@ function OwnerThemes() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editing, setEditing] = useState<OwnerThemeRow | null>(null);
+  const openEditor = (t: OwnerThemeRow | null) => { setEditing(t); setEditorOpen(true); };
+
   return (
     <div className="min-w-0 space-y-5">
-      <header className="min-w-0">
-        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Store Themes</h1>
-        <p className="text-sm text-muted-foreground">
-          Themes published here appear in every store admin's Theme Customization page.
-        </p>
+      <header className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Store Themes</h1>
+          <p className="text-sm text-muted-foreground">
+            Themes published here appear in every store admin's Theme Customization page.
+          </p>
+        </div>
+        <Button size="sm" onClick={() => openEditor(null)}>
+          <Plus className="mr-1 h-4 w-4" /> New theme
+        </Button>
       </header>
+
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading themes…</p>
@@ -85,6 +98,9 @@ function OwnerThemes() {
                   {t.category} · used by {t.used_by} store{t.used_by === 1 ? "" : "s"}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
+                  <Button size="sm" variant="outline" onClick={() => openEditor(t)}>
+                    <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+                  </Button>
                   <Button
                     size="sm" variant="outline"
                     onClick={() => setStatus.mutate({ id: t.id, status: t.status === "published" ? "hidden" : "published" })}
@@ -107,6 +123,9 @@ function OwnerThemes() {
           })}
         </div>
       )}
+
+      <ThemeEditorDrawer open={editorOpen} theme={editing} onOpenChange={setEditorOpen} />
     </div>
   );
+
 }
