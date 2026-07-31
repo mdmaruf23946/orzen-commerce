@@ -318,6 +318,7 @@ function StoreHeader({
               <span className="truncate text-sm font-semibold text-neutral-900">{name}</span>
             </Link>
 
+            {theme.header.cart && (
             <Link
               to="/store/$slug/cart"
               params={{ slug }}
@@ -334,7 +335,9 @@ function StoreHeader({
                 </span>
               )}
             </Link>
+            )}
 
+            {theme.header.account && (
             <Link
               to={customer ? "/store/$slug/account" : "/store/$slug/auth/login"}
               params={{ slug }}
@@ -343,6 +346,8 @@ function StoreHeader({
             >
               <User className="h-5 w-5 text-neutral-700" />
             </Link>
+            )}
+
           </div>
 
           {/* Desktop header */}
