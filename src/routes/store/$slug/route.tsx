@@ -115,13 +115,18 @@ function StoreLayout() {
 
   const isAccount = pathname.includes("/account");
   const isCheckoutFlow = /\/(checkout|cart|order)/.test(pathname);
-  const showChrome = !isAccount && !isPreview;
+  // The preview iframe must show the footer too — it is customisable.
+  const showChrome = !isAccount;
 
   return (
     <StoreThemeProvider theme={resolved ?? DEFAULT_THEME}>
     <StoreUIProvider>
-      <TrackingScripts marketing={s.marketing} slug={slug} />
-      <div className="min-h-screen bg-background" style={themeVars}>
+      {!isPreview && <TrackingScripts marketing={s.marketing} slug={slug} />}
+      {resolved && <ThemeStyle theme={resolved} />}
+      <div
+        className={`min-h-screen bg-background ${resolved ? THEME_SCOPE : ""}`}
+        style={themeVars}
+      >
 
         <StoreHeader
           slug={slug}
@@ -137,7 +142,7 @@ function StoreLayout() {
           <Outlet />
         </main>
         {showChrome && <StoreFooter store={store} />}
-        {showChrome && agent && (
+        {showChrome && !isPreview && agent && (
           <AIChatLauncher
             slug={slug}
             agentName={agent.agent_name}
@@ -147,6 +152,7 @@ function StoreLayout() {
         )}
         {!isPreview && <BottomNav slug={slug} />}
       </div>
+
     </StoreUIProvider>
     </StoreThemeProvider>
   );
