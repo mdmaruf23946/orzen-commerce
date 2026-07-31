@@ -141,7 +141,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
             type="button"
             onClick={handleAdd}
             disabled={outOfStock}
-            className="h-8 rounded-lg border border-neutral-200 bg-white text-[11px] font-semibold text-neutral-800 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="theme-btn h-8 rounded-lg border border-neutral-200 bg-white text-[11px] font-semibold text-neutral-800 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Add to Cart
           </button>
@@ -149,7 +149,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
             type="button"
             onClick={handleBuy}
             disabled={outOfStock}
-            className="h-9 rounded-lg text-[13px] font-semibold text-white shadow-sm transition-opacity active:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="theme-btn h-9 rounded-lg text-[13px] font-semibold text-white shadow-sm transition-opacity active:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             style={{ backgroundColor: "var(--store-btn-bg, #0f172a)" }}
           >
             Buy Now
