@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Copy, Eye, EyeOff, Trash2 } from "lucide-react";
+import { Copy, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
 import {
   ownerListThemes,
   ownerSetThemeStatus,
@@ -11,6 +12,8 @@ import {
 } from "@/lib/themes.functions";
 import { mergeTheme } from "@/lib/theme/definition";
 import { Button } from "@/components/ui/button";
+import { ThemeEditorDrawer, type OwnerThemeRow } from "@/components/owner/ThemeEditorDrawer";
+
 
 export const Route = createFileRoute("/_authenticated/owner/themes")({
   component: OwnerThemes,
