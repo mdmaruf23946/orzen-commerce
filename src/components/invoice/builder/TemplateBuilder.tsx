@@ -471,7 +471,7 @@ export function TemplateBuilder({
           </Button>
           {onOpenVersions && (
             <Button size="sm" variant="outline" onClick={onOpenVersions} title="Version history">
-              <History className="h-4 w-4" />
+              <HistoryIcon className="h-4 w-4" />
             </Button>
           )}
           <Button size="sm" onClick={onSave} disabled={saving} className="ml-auto">
