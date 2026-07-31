@@ -1,61 +1,52 @@
-# ORZEN Theme System — Winner Admin controlled
+## Goal
 
-Store Admin never builds a theme. Winner Admin owns a catalog of themes; Store Admin picks one and edits only whitelisted options.
+Turn `/admin/theme` into a real theme builder: a true storefront preview (real products, banners, logo, footer) that updates instantly as settings change, plus a much deeper — but still locked-down — customization panel. No database, routing, API, or business-logic behaviour is removed; the existing theme columns and functions stay and keep working for stores already on a theme.
 
-## 1. Data
+## 1. Live preview = the real storefront in an iframe
 
-New table `public.store_themes` (Winner Admin owned):
-- identity: `name`, `slug`, `category` (modern/premium/luxury/fashion/electronics/grocery/minimal/dark/corporate/elegant)
-- `preview_url` (thumbnail), `status` (`draft` | `published` | `hidden`), `sort_order`
-- `definition` jsonb — the full theme: layout, header, footer, product card, buttons, colors, typography, banner style, animation defaults
-- `locked` jsonb — which keys Store Admin may NOT change (e.g. `{"colors":["header"],"layout":true}`)
-- timestamps. GRANTs + RLS: published themes readable by `anon`/`authenticated`; all writes restricted to platform owner.
+The preview panel embeds the store's actual storefront (`/store/{slug}?theme_preview=1`) inside a resizable iframe instead of a hand-drawn mock. This guarantees header, search, nav, hero banner, categories, product cards, flash sale, featured, collections, badges, countdown, cart/wishlist buttons and footer all render exactly as a customer sees them, using the store's real data. Placeholder products appear automatically only when the store has none.
 
-On `stores` (additive only, existing `theme` blob and colour columns untouched):
-- `theme_id uuid` — selected theme
-- `theme_overrides jsonb` — Store Admin's safe customisations (published)
-- `theme_draft jsonb` — unsaved/draft customisations
+Live updates use `postMessage`: the editor sends the merged theme object on every change (throttled with `requestAnimationFrame`), and the storefront layout — when in preview mode — applies the incoming tokens to its CSS-variable style object and section flags. No reload, no save required, no refetch of store data.
 
-Seeding: ship ~12 hand-built professional themes in the migration (Modern Blue, Premium Corporate, Luxury Gold, Fashion Store, Electronics Pro, Grocery Fresh, Minimal, Dark Pro, Elegant, Corporate Clean, Beauty Soft, Sports Bold). Winner Admin creates the remaining ones through the UI to reach 30–40 — hand-authoring 40 in one migration would be filler, not quality.
+Device switcher (Desktop / Tablet / Mobile) just resizes the iframe frame (1280 / 834 / 390 CSS px) with a CSS transform to fit the panel, so responsive rendering is genuine.
 
-## 2. Winner Admin — `/owner/themes`
+## 2. Theme = full design, not just colors
 
-- Grid of theme cards: preview thumbnail, name, category, status badge, "used by N stores".
-- Actions: Create, Edit, Duplicate, Delete, Publish, Hide.
-- Theme editor (form-driven, not a canvas): colours, typography, header config, footer config, product card config, button style, banner style, animation, homepage section defaults, plus a lock toggle beside each group ("Store Admin can change / locked").
-- Live preview pane using the same renderer as the storefront.
+The shared theme contract in `src/lib/theme/definition.ts` gains new optional groups, all defaulted so existing stored definitions/overrides keep working untouched:
 
-## 3. Store Admin — `/admin/theme` (rebuilt in place, same route)
+- `colors`: adds success, warning, error, background, surface, card, border, link
+- `typography`: adds font weight, letter spacing, line height
+- `header`: sticky, transparent, height, search/cart position, logo alignment
+- `nav`: menu style, category position, mega menu
+- `hero`: height, radius, overlay, text align, CTA style
+- `sections`: adds trending, collections, testimonials, brand logos, newsletter + an `order` array for drag-and-drop ordering
+- `product_card`: card style, shadow, radius, image ratio, hover effect, badge/button/rating/price style
+- `buttons`: border, shadow, hover animation, filled/outline
+- `footer`: layout, social icons, copyright, payment icons
+- `spacing`: container width, section gap, card gap, padding, margin
+- `global`: radius slider 0–30px, shadow level (low/medium/high/premium), animation level (none/minimal/modern/premium)
 
-Two-step layout matching the reference screenshot.
+`themeCssVars()` emits the full token set; the storefront components read those tokens so a theme switch changes layout density, card shape, shadows and typography — not only colors. The five identities (Modern / Luxury / Electronics / Fashion / Grocery, plus existing catalog entries) are expressed purely through these token values, updated via a data migration on `store_themes.definition` that merges new keys into existing rows without dropping anything.
 
-**Step 1 — Choose Theme:** horizontally scrollable cards of published themes with previews and a check on the active one.
+## 3. Store Admin editor UI
 
-**Step 2 — Customize Selected Theme:** collapsible accordion, only whitelisted controls:
-- Brand Identity — logo, store name, favicon (reuses existing store icon/favicon system)
-- Colors — primary, secondary, accent, button, header, footer (locked ones render disabled with a lock icon)
-- Typography — heading font, body font, button font, base size
-- Header — toggles for Search, Categories, Wishlist, Cart, Account
-- Homepage Sections — enable/disable Banner, Categories, Featured, Flash Sale, Best Sellers, New Arrival, Reviews, FAQ (no reorder, no add)
-- Product Card — toggles for Rating, Discount badge, Sold count, Wishlist, Quick view, Buy Now, Add to Cart
-- Buttons — border radius, style (solid/outline/soft), hover colour
-- Footer — phone, email, address, social links
-- Animation — None / Fade / Slide / Zoom
+Three-pane layout matching the reference: left theme catalog + accordion setting groups, center/right live preview, top bar with device switcher, undo/redo, Reset, Publish; bottom bar showing the current theme with Preview Store / Save Draft / Publish Changes.
 
-Right side: Live Preview with Desktop / Tablet / Mobile toggles, rendered in a scaled iframe of the real storefront using the draft theme.
+Setting groups: Brand, Colors, Typography, Header, Navigation, Hero Banner, Homepage Sections (with drag-and-drop ordering), Product Card, Buttons, Footer, Animations, Spacing, Radius, Shadow, plus one-click Style Presets (Flat / Soft / Glass / Premium / Modern / Luxury) that write a bundle of token values into the current overrides.
 
-Bottom bar: Save Draft, Publish Changes, Reset Theme, Restore Default Theme, Preview Store, plus undo/redo of unsaved edits.
+Undo/redo is an in-memory stack of override snapshots. Locked fields stay disabled with the lock icon exactly as today; the server still re-sanitizes every write, so store admins can never create a theme, edit theme structure, or inject code.
 
-## 4. Storefront
+## 4. Winner Admin
 
-`src/routes/store/$slug/route.tsx` and the storefront components resolve theme = `store_themes.definition` merged with `stores.theme_overrides`, emitted as CSS variables and config props. Existing `header_color` / `button_color` / `theme` columns keep being written so nothing already live breaks. A store with no `theme_id` falls back to today's behaviour exactly.
+`/owner/themes` gets an edit drawer exposing the same full token set (it currently only lists/publishes/duplicates/deletes), so official themes can be authored and pushed globally. Existing `ownerSaveTheme` server function already accepts an arbitrary definition — no signature change.
 
-## 5. Enforcement
+## 5. Performance
 
-- Server function `updateStoreTheme` validates overrides against a strict Zod whitelist and rejects any key the selected theme marks as locked — the UI gate cannot be bypassed via direct RPC.
-- No custom CSS/HTML/JS fields exist anywhere in the store-side schema or validators.
-- Theme create/edit/delete/publish server functions require platform-owner role.
+Preview messages are throttled per animation frame; the iframe mounts once and is never re-created on setting changes; catalog thumbnails render from tokens (no screenshots); product images keep `loading="lazy"`.
 
 ## Technical notes
 
-Files: new `src/lib/themes.functions.ts`, `src/lib/theme/definition.ts` (shared types + merge + whitelist), new `src/routes/_authenticated/owner/themes.tsx` (+ owner sidebar entry), rewritten `src/routes/_authenticated/admin/theme.tsx` with components under `src/components/admin/theme/`, storefront resolver updates in `src/routes/store/$slug/route.tsx` and `src/lib/store-ui.tsx`, plus one additive migration.
+- Files touched: `src/lib/theme/definition.ts` (extend + defaults, backward-compatible merge), `src/components/admin/theme/ThemeCustomizer.tsx` (rewrite into panel components under `src/components/admin/theme/`), `src/routes/store/$slug/route.tsx` and `src/routes/store/$slug/index.tsx` (consume new tokens + preview-message listener behind a `theme_preview` search param), `src/routes/_authenticated/owner/themes.tsx` (add editor drawer).
+- Server functions in `src/lib/themes.functions.ts` keep their current signatures; only `sanitizeOverrides` grows to whitelist the new keys.
+- One migration: additive JSON merge into `store_themes.definition` for the existing seeded themes. No column drops, no data loss.
+- The preview iframe is same-origin, so `postMessage` is restricted to `window.location.origin`.
