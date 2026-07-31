@@ -149,8 +149,55 @@ function StoreHome() {
 
   const isFiltering = !!activeMainId || !!activeSubId || query.trim().length > 0;
 
+  const on = theme.sections;
+  const blocks: Partial<Record<string, React.ReactNode>> = {
+    banner: on.banner && banners.length > 0 ? <BannerCarousel key="banner" banners={banners} /> : null,
+    categories:
+      on.categories && categories.length > 0 ? (
+        <CategoryStrip
+          key="categories"
+          categories={mainCategories as any}
+          active={activeMainId}
+          onSelect={(id) => selectMain(id, "icon")}
+        />
+      ) : null,
+    featured:
+      on.featured && !isFiltering && featured.length > 0 ? (
+        <Section
+          key="featured"
+          title="Featured Products"
+          icon={<Sparkles className="h-4 w-4 text-amber-500" />}
+          onViewAll={() => selectMain(null, null)}
+        >
+          <ProductGrid slug={slug} products={featured} />
+        </Section>
+      ) : null,
+    best_sellers:
+      on.best_sellers && !isFiltering && bestSelling.length > 0 ? (
+        <Section
+          key="best_sellers"
+          title="Best Selling"
+          icon={<Flame className="h-4 w-4 text-rose-500" />}
+          onViewAll={() => selectMain(null, null)}
+        >
+          <ProductGrid slug={slug} products={bestSelling} />
+        </Section>
+      ) : null,
+    new_arrival:
+      on.new_arrival && !isFiltering && newArrivals.length > 0 ? (
+        <Section
+          key="new_arrival"
+          title="New Arrivals"
+          icon={<Sparkles className="h-4 w-4 text-sky-500" />}
+          onViewAll={() => selectMain(null, null)}
+        >
+          <ProductGrid slug={slug} products={newArrivals} />
+        </Section>
+      ) : null,
+  };
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" style={{ gap: "var(--store-section-gap)" }}>
       {mainCategories.length > 0 && (
         <MainCategoryBar
           mains={mainCategories as any}
@@ -161,8 +208,6 @@ function StoreHome() {
         />
       )}
 
-      {banners.length > 0 && <BannerCarousel banners={banners} />}
-
       {!isFiltering && source === "header" && activeMainId && activeSubs.length > 0 && (
         <SubcategoryBar
           subs={activeSubs}
@@ -171,43 +216,8 @@ function StoreHome() {
         />
       )}
 
-      {categories.length > 0 && (
-        <CategoryStrip
-          categories={mainCategories as any}
-          active={activeMainId}
-          onSelect={(id) => selectMain(id, "icon")}
-        />
-      )}
+      {theme.section_order.map((k) => blocks[k] ?? null)}
 
-      {!isFiltering && featured.length > 0 && (
-        <Section
-          title="Featured Products"
-          icon={<Sparkles className="h-4 w-4 text-amber-500" />}
-          onViewAll={() => selectMain(null, null)}
-        >
-          <ProductGrid slug={slug} products={featured} />
-        </Section>
-      )}
-
-      {!isFiltering && bestSelling.length > 0 && (
-        <Section
-          title="Best Selling"
-          icon={<Flame className="h-4 w-4 text-rose-500" />}
-          onViewAll={() => selectMain(null, null)}
-        >
-          <ProductGrid slug={slug} products={bestSelling} />
-        </Section>
-      )}
-
-      {!isFiltering && newArrivals.length > 0 && (
-        <Section
-          title="New Arrivals"
-          icon={<Sparkles className="h-4 w-4 text-sky-500" />}
-          onViewAll={() => selectMain(null, null)}
-        >
-          <ProductGrid slug={slug} products={newArrivals} />
-        </Section>
-      )}
 
       <section id="all-products" className="scroll-mt-32 space-y-4">
         <div className="flex items-center gap-2">
