@@ -430,7 +430,11 @@ export function mergeTheme(definition: unknown, overrides: unknown): ThemeDefini
   // Section order always covers every known section exactly once.
   const seen = new Set<string>();
   const order = (out.section_order as string[]).filter(
-    (k) => SECTION_KEYS.includes(k as SectionKey) && !seen.has(k) && seen.add(k),
+    (k) => {
+      if (!SECTION_KEYS.includes(k as SectionKey) || seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    },
   );
   for (const k of SECTION_KEYS) if (!seen.has(k)) order.push(k);
   out.section_order = order;
