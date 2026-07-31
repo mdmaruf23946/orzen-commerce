@@ -55,14 +55,24 @@ function OwnerThemes() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editing, setEditing] = useState<OwnerThemeRow | null>(null);
+  const openEditor = (t: OwnerThemeRow | null) => { setEditing(t); setEditorOpen(true); };
+
   return (
     <div className="min-w-0 space-y-5">
-      <header className="min-w-0">
-        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Store Themes</h1>
-        <p className="text-sm text-muted-foreground">
-          Themes published here appear in every store admin's Theme Customization page.
-        </p>
+      <header className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Store Themes</h1>
+          <p className="text-sm text-muted-foreground">
+            Themes published here appear in every store admin's Theme Customization page.
+          </p>
+        </div>
+        <Button size="sm" onClick={() => openEditor(null)}>
+          <Plus className="mr-1 h-4 w-4" /> New theme
+        </Button>
       </header>
+
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading themes…</p>
