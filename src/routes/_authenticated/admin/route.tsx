@@ -38,6 +38,7 @@ const links: LinkDef[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag, badgeKey: "orders" },
   { to: "/admin/courier-orders", label: "Courier Orders", icon: Truck, badgeKey: "delivery" },
+  { to: "/admin/digital-dashboard", label: "Digital Dashboard", icon: Download },
   { to: "/admin/digital-orders", label: "Digital Orders", icon: Download },
   { to: "/admin/products", label: "Products", icon: Package },
   { to: "/admin/categories", label: "Categories", icon: Tags },
