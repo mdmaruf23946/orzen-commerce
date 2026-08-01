@@ -815,8 +815,10 @@ export function ProductDialog({
                 productId={editing?.id}
                 storeId={storeId}
                 digital={digitalCfg}
+                digitalCategory={(editing as any)?.digital_category ?? null}
                 onChange={setDigitalCfg}
               />
+
             ),
           },
         ]
