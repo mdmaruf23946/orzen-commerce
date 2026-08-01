@@ -527,41 +527,80 @@ export const listMyBanners = createServerFn({ method: "GET" })
       .from("banners")
       .select("*")
       .eq("store_id", store.id)
+      .order("sort_order", { ascending: true })
       .order("position", { ascending: true });
     if (error) throw new Error(error.message);
     return data ?? [];
   });
 
+const bannerFields = {
+  title: z.string().max(120).optional().nullable(),
+  image_url: z.string().min(1),
+  link: z.string().max(500).optional().nullable(),
+  product_type: z.enum(["physical", "digital", "service", "subscription"]).optional(),
+  display_position: z.enum(["hero", "secondary", "promotional", "category"]).optional(),
+  category_id: z.string().uuid().optional().nullable(),
+  sort_order: z.number().int().min(0).optional(),
+  is_active: z.boolean().optional(),
+  campaign_type: z.enum(["general", "physical", "digital"]).optional(),
+};
+
 export const addBanner = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
-    z
-      .object({
-        image_url: z.string().min(1),
-        link: z.string().max(500).optional().nullable(),
-        campaign_type: z.enum(["general", "physical", "digital"]).optional(),
-      })
-      .parse(d),
-  )
+  .inputValidator((d) => z.object(bannerFields).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
     if (!store) throw new Error("No store");
+    const type = data.product_type ?? "physical";
     const { count } = await supabase
       .from("banners")
       .select("*", { count: "exact", head: true })
-      .eq("store_id", store.id);
-    if ((count ?? 0) >= 3) throw new Error("Maximum 3 banners");
+      .eq("store_id", store.id)
+      .eq("product_type", type);
+    if ((count ?? 0) >= 3) throw new Error("Maximum 3 banners per product type");
     const { error } = await supabase.from("banners").insert({
       store_id: store.id,
+      title: data.title ?? "",
       image_url: data.image_url,
       link: data.link ?? null,
+      product_type: type,
+      display_position: data.display_position ?? "hero",
+      category_id: data.category_id ?? null,
+      sort_order: data.sort_order ?? (count ?? 0) + 1,
+      is_active: data.is_active ?? true,
       campaign_type: data.campaign_type ?? "general",
       position: (count ?? 0) + 1,
     });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const updateBanner = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid(), ...bannerFields }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    if (!store) throw new Error("No store");
+    const { id, campaign_type: _ct, product_type: _pt, ...rest } = data;
+    const { error } = await supabase
+      .from("banners")
+      .update({
+        title: rest.title ?? "",
+        image_url: rest.image_url,
+        link: rest.link ?? null,
+        display_position: rest.display_position ?? "hero",
+        category_id: rest.category_id ?? null,
+        sort_order: rest.sort_order ?? 0,
+        is_active: rest.is_active ?? true,
+      })
+      .eq("id", id)
+      .eq("store_id", store.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 
 export const deleteBanner = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
