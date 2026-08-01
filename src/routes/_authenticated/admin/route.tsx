@@ -8,7 +8,6 @@ import {
   Search as SearchIcon, PackageOpen, Wallet, Bell, ClipboardList, Bot,
   MessageSquare, Boxes, Ticket, RotateCcw, BarChart3, FileUp, Globe,
   Radar, ShieldCheck, FileText, Sparkles, AlertTriangle, UserCog,
-  Download,
   ChevronDown, ChevronsLeft, ChevronsRight, Moon, Sun, ExternalLink, X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,8 +22,6 @@ import { CountBadge } from "@/components/admin/CountBadge";
 import { useBadgeCounts, useMarkSeen } from "@/lib/use-badge-counts";
 import { getMyStore } from "@/lib/admin.functions";
 import { resolveStoreIcon } from "@/lib/store-icon";
-import { isPathVisibleInMode, storeMode, type StoreMode } from "@/lib/store-mode";
-import { DomainDisconnectedBanner } from "@/components/admin/DomainDisconnectedBanner";
 
 
 type BadgeKey =
@@ -38,8 +35,6 @@ const links: LinkDef[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag, badgeKey: "orders" },
   { to: "/admin/courier-orders", label: "Courier Orders", icon: Truck, badgeKey: "delivery" },
-  { to: "/admin/digital-dashboard", label: "Digital Dashboard", icon: Download },
-  { to: "/admin/digital-orders", label: "Digital Orders", icon: Download },
   { to: "/admin/products", label: "Products", icon: Package },
   { to: "/admin/categories", label: "Categories", icon: Tags },
   { to: "/admin/inventory", label: "Inventory", icon: Boxes },
@@ -80,7 +75,7 @@ const links: LinkDef[] = [
 
 const groupDefs: { label: string; paths: string[] }[] = [
   { label: "Main", paths: ["/admin"] },
-  { label: "Orders", paths: ["/admin/orders", "/admin/courier-orders", "/admin/digital-dashboard", "/admin/digital-orders", "/admin/returns"] },
+  { label: "Orders", paths: ["/admin/orders", "/admin/courier-orders", "/admin/returns"] },
   { label: "Products", paths: ["/admin/products", "/admin/categories", "/admin/inventory", "/admin/product-defaults"] },
   { label: "Customers", paths: ["/admin/customers", "/admin/customers-accounts", "/admin/duplicate-protection"] },
   { label: "AI & Automation", paths: ["/admin/ai-agent", "/admin/ai-recommendations", "/admin/handoff-queue", "/admin/low-stock", "/admin/messenger", "/admin/messenger-inbox"] },
@@ -91,10 +86,10 @@ const groupDefs: { label: string; paths: string[] }[] = [
   { label: "Account", paths: ["/admin/subscription", "/admin/billing", "/admin/settings"] },
 ];
 
-function buildGroups(query: string, mode: StoreMode) {
+function buildGroups(query: string) {
   const q = query.trim().toLowerCase();
   const used = new Set<string>();
-  const visible = links.filter((l) => isPathVisibleInMode(l.to, mode));
+  const visible = links;
   const byPath = new Map(visible.map((l) => [l.to, l]));
   const groups = groupDefs.map((g) => {
     const items: LinkDef[] = [];
@@ -169,9 +164,7 @@ function AdminLayout() {
     navigate({ to: "/auth", replace: true });
   }
 
-  const mode = storeMode((myStore as any)?.store_mode);
-  const groups = useMemo(() => buildGroups(search, mode), [search, mode]);
-  const hiddenHere = !isPathVisibleInMode(currentPath, mode);
+  const groups = useMemo(() => buildGroups(search), [search]);
 
   const asideWidth = collapsed ? "md:w-[72px]" : "md:w-64";
 
@@ -402,17 +395,6 @@ function AdminLayout() {
 
           <main className="flex-1 p-4 pb-[70px] md:p-6 md:pb-8 lg:p-8">
             <SubscriptionStatusBanner />
-            <DomainDisconnectedBanner />
-            {hiddenHere && (
-              <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200">
-                This module is hidden in your current Store Mode ({mode}). Your data is safe — switch
-                Store Mode in{" "}
-                <Link to="/admin/settings" className="underline">
-                  Store Settings
-                </Link>{" "}
-                to show it again.
-              </div>
-            )}
             <Outlet />
           </main>
         </div>
