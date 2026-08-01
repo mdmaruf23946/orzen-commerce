@@ -591,6 +591,25 @@ export function ProductDialog({
             <p className="mt-1 text-xs text-muted-foreground">Images auto-compress and convert to WebP. Recommended min 800px on the long edge.</p>
           </div>
 
+          {isDigital && (
+            <>
+              <div>
+                <Label>Preview images</Label>
+                <GalleryUploader storeId={storeId} folder={`${storeId}/previews`} value={digPreviewImages} onChange={setDigPreviewImages} max={8} />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Preview video URL">
+                  <Input value={digPreviewVideo} onChange={(e) => setDigPreviewVideo(e.target.value)} placeholder="https://…" />
+                </Field>
+                <Field label="Demo URL (optional)">
+                  <Input value={digDemoUrl} onChange={(e) => setDigDemoUrl(e.target.value)} placeholder="https://…" />
+                </Field>
+              </div>
+            </>
+          )}
+
+
+
           <div>
             <Label>Product video URLs (YouTube or Facebook)</Label>
             <div className="mt-2 flex gap-2">
