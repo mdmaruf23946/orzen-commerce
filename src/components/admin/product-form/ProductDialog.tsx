@@ -258,6 +258,8 @@ export function ProductDialog({
   const [saving, setSaving] = useState(false);
 
   // ---- derived ----
+  const isDigital = productType === "digital";
+
   const mainCategories = useMemo(() => categories.filter((c) => !c.parent_id), [categories]);
   const subCategories = useMemo(
     () => categories.filter((c) => c.parent_id && c.parent_id === categoryId),
