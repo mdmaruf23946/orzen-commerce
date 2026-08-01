@@ -8,6 +8,7 @@ import {
   Search as SearchIcon, PackageOpen, Wallet, Bell, ClipboardList, Bot,
   MessageSquare, Boxes, Ticket, RotateCcw, BarChart3, FileUp, Globe,
   Radar, ShieldCheck, FileText, Sparkles, AlertTriangle, UserCog,
+  Download,
   ChevronDown, ChevronsLeft, ChevronsRight, Moon, Sun, ExternalLink, X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
