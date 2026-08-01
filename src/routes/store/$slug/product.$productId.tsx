@@ -104,9 +104,11 @@ function ProductPage() {
 
   const price = Number(product!.price);
   const oldPrice = product!.old_price != null ? Number(product!.old_price) : null;
-  const inStock = product!.stock > 0 && product!.status !== "draft";
+  const isDigital = (product as any).product_type === "digital";
+  const inStock = isDigital || (product!.stock > 0 && product!.status !== "draft");
 
   const meta = (product!.meta ?? {}) as Record<string, any>;
+
   const highlights: string[] = Array.isArray(meta.highlights) ? meta.highlights.filter(Boolean) : [];
   const packageIncludes: string[] = Array.isArray(meta.package_includes)
     ? meta.package_includes.filter(Boolean)
