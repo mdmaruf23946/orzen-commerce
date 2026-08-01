@@ -429,19 +429,61 @@ export const listStoreBanners = createServerFn({ method: "GET" })
     return (banners ?? []).map((b) => ({ ...b, image_url: imgUrl(b.image_url)! }));
   });
 
+const PRODUCT_CARD_COLS =
+  "id,name,slug,price,old_price,stock,status,primary_image_url,category_id,is_featured,product_type,digital_category,digital,total_sold,rating,created_at,updated_at";
+
 export const listStoreProducts = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ storeId: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     const sb = publicClient();
     const { data: products, error } = await sb
       .from("products")
-      .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id,is_featured")
+      .select(PRODUCT_CARD_COLS)
       .eq("store_id", data.storeId)
       .neq("status", "draft")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return (products ?? []).map((p) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }));
   });
+
+/**
+ * Global digital category catalog (Winner Admin owned), with the store's own
+ * hide / rename overrides applied. Safe for anonymous storefront visitors.
+ */
+export const listDigitalCategories = createServerFn({ method: "GET" })
+  .inputValidator((d) => z.object({ storeId: z.string().uuid().optional() }).parse(d ?? {}))
+  .handler(async ({ data }) => {
+    const sb = publicClient();
+    const { data: cats, error } = await sb
+      .from("platform_digital_categories")
+      .select("key,name,icon,description,sort_order")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+    if (error) throw new Error(error.message);
+    let prefs: any[] = [];
+    if (data.storeId) {
+      const { data: rows } = await sb
+        .from("store_digital_category_prefs")
+        .select("category_key,hidden,custom_name,sort_order")
+        .eq("store_id", data.storeId);
+      prefs = rows ?? [];
+    }
+    const byKey = new Map(prefs.map((p: any) => [p.category_key, p]));
+    return (cats ?? [])
+      .filter((c: any) => !byKey.get(c.key)?.hidden)
+      .map((c: any) => {
+        const p = byKey.get(c.key);
+        return {
+          key: c.key as string,
+          name: (p?.custom_name || c.name) as string,
+          icon: (c.icon ?? null) as string | null,
+          description: (c.description ?? null) as string | null,
+          sort_order: (p?.sort_order ?? c.sort_order ?? 0) as number,
+        };
+      })
+      .sort((a, b) => a.sort_order - b.sort_order);
+  });
+
 
 export const listBestSellingProducts = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ storeId: z.string().uuid(), limit: z.number().int().min(1).max(24).optional() }).parse(d))
@@ -457,7 +499,8 @@ export const listBestSellingProducts = createServerFn({ method: "GET" })
     if (topIds.length === 0) return [];
     const { data: products, error: pErr } = await sb
       .from("products")
-      .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id,is_featured")
+      .select(PRODUCT_CARD_COLS)
+
       .in("id", topIds)
       .eq("store_id", data.storeId)
       .neq("status", "draft");
@@ -501,7 +544,7 @@ export const getProduct = createServerFn({ method: "GET" })
     const { data: p, error } = await sb
       .from("products")
       .select(
-        "id,name,slug,description,price,old_price,stock,status,primary_image_url,gallery,store_id,brand,sku,category_id,features,specifications,video_url,warranty,return_policy,meta",
+        "id,name,slug,description,short_description,price,old_price,stock,status,primary_image_url,gallery,store_id,brand,sku,category_id,features,specifications,video_url,warranty,return_policy,meta,product_type,digital,digital_category,total_sold,rating,created_at,updated_at",
       )
       .eq("id", data.productId)
       .eq("store_id", data.storeId)
@@ -509,12 +552,38 @@ export const getProduct = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     if (!p) return null;
     const gallery = Array.isArray(p.gallery) ? (p.gallery as string[]) : [];
+
+    // Digital products expose a safe file manifest (never storage paths).
+    let files: {
+      label: string;
+      version: string | null;
+      file_type: string | null;
+      file_size: number | null;
+    }[] = [];
+    if ((p as any).product_type === "digital") {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: rows } = await supabaseAdmin
+        .from("product_files")
+        .select("label,version,file_type,file_size,sort_order")
+        .eq("product_id", data.productId)
+        .eq("store_id", data.storeId)
+        .order("sort_order", { ascending: true });
+      files = (rows ?? []).map((f: any) => ({
+        label: f.label,
+        version: f.version ?? null,
+        file_type: f.file_type ?? null,
+        file_size: f.file_size ?? null,
+      }));
+    }
+
     return {
       ...p,
+      files,
       primary_image_url: imgUrl(p.primary_image_url),
       gallery: gallery.map((g) => imgUrl(g)!).filter(Boolean),
     };
   });
+
 
 export const listRelatedProducts = createServerFn({ method: "GET" })
   .inputValidator((d) =>
