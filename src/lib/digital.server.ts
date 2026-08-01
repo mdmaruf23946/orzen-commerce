@@ -14,7 +14,7 @@ export const DIGITAL_BUCKET = "digital-files";
 export async function createEntitlementsForOrder(orderId: string, sb: SB = supabaseAdmin) {
   const { data: order } = await sb
     .from("orders")
-    .select("id,store_id,customer_id,customer_email,phone")
+    .select("id,store_id,customer_id,phone")
     .eq("id", orderId)
     .maybeSingle();
   if (!order) return { created: 0, digital: false };
@@ -57,7 +57,6 @@ export async function createEntitlementsForOrder(orderId: string, sb: SB = supab
       order_id: orderId,
       store_id: (order as any).store_id,
       customer_id: (order as any).customer_id ?? null,
-      customer_email: (order as any).customer_email ?? null,
       product_id: p.id,
       product_name: p.name,
       status: "locked",
