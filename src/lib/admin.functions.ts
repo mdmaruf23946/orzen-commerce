@@ -214,6 +214,7 @@ export const updateMyStore = createServerFn({ method: "POST" })
         language: z.string().trim().min(2).max(8).optional(),
         timezone: z.string().trim().max(60).optional(),
         allow_guest_checkout: z.boolean().optional(),
+        store_mode: z.enum(["physical", "digital", "hybrid"]).optional(),
         icon_url: z.string().max(500).optional().nullable(),
         favicon_url: z.string().max(500).optional().nullable(),
         custom_favicon_url: z.string().max(500).optional().nullable(),
@@ -439,6 +440,16 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .eq("store_id", store.id);
     if (error) throw new Error(error.message);
+
+    // Digital orders: release the buyer's downloads once the order is confirmed
+    // or delivered by the merchant.
+    if (data.status === "confirmed" || data.status === "delivered") {
+      try {
+        const { fulfilDigitalOrder } = await import("@/lib/digital.server");
+        await fulfilDigitalOrder(data.id);
+      } catch { /* non-fatal */ }
+    }
+
     // Fire-and-observe: push Messenger status update to the customer if this order
     // originated from (or has) a Messenger conversation. Failures are swallowed —
     // they remain in the outbox for retry.
