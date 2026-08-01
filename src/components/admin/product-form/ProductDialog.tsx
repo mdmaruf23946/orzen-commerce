@@ -139,6 +139,8 @@ function toEmbed(url: string, provider: "youtube" | "facebook"): string {
 }
 
 const LABEL_OPTIONS = ["Featured", "Best Seller", "New Arrival", "Hot", "Sale", "Limited Stock"] as const;
+const PLATFORM_OPTIONS = ["Windows", "macOS", "Linux", "Android", "iOS", "Web"] as const;
+
 
 // -----------------------------------------------------------------------
 
