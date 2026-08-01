@@ -253,7 +253,7 @@ function ProductPage() {
               <BuyBox
                 price={price}
                 oldPrice={oldPrice}
-                stock={product!.stock}
+                stock={isDigital ? 9999 : product!.stock}
                 status={product!.status}
                 qty={qty}
                 setQty={setQty}
@@ -265,15 +265,25 @@ function ProductPage() {
         </div>
       </div>
 
+      {isDigital && (
+        <DigitalInfoPanel
+          files={((product as any).files ?? []) as any}
+          digital={(product as any).digital}
+          meta={meta}
+          updatedAt={(product as any).updated_at ?? null}
+        />
+      )}
+
       <InfoTabs
         description={product!.description ?? null}
         features={features}
         specifications={specifications}
         packageIncludes={packageIncludes}
-        deliveryInfo={deliveryInfo}
+        deliveryInfo={isDigital ? null : deliveryInfo}
         returnPolicy={(product as any).return_policy ?? null}
-        warranty={(product as any).warranty ?? null}
+        warranty={isDigital ? null : (product as any).warranty ?? null}
       />
+
 
       <ReviewsBlock rating={rating} />
 
