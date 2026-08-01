@@ -400,6 +400,17 @@ function AdminLayout() {
 
           <main className="flex-1 p-4 pb-[70px] md:p-6 md:pb-8 lg:p-8">
             <SubscriptionStatusBanner />
+            <DomainDisconnectedBanner />
+            {hiddenHere && (
+              <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200">
+                This module is hidden in your current Store Mode ({mode}). Your data is safe — switch
+                Store Mode in{" "}
+                <Link to="/admin/settings" className="underline">
+                  Store Settings
+                </Link>{" "}
+                to show it again.
+              </div>
+            )}
             <Outlet />
           </main>
         </div>
