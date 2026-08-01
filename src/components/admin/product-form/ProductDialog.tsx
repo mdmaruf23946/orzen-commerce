@@ -18,8 +18,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Progress } from "@/components/ui/progress";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { GalleryUploader } from "@/components/admin/GalleryUploader";
-import { DigitalTab } from "@/components/admin/product-form/DigitalTab";
-import { DEFAULT_DIGITAL, normalizeDigital, type DigitalConfig } from "@/lib/digital";
 
 const RichTextEditor = lazy(() => import("./RichTextEditor"));
 const CropDialog = lazy(() => import("./CropDialog"));
@@ -149,9 +147,6 @@ export function ProductDialog({
   const [brand, setBrand] = useState<string>((editing as any)?.brand ?? "");
   const [productCode, setProductCode] = useState<string>((editing as any)?.product_code ?? "");
   const [productType, setProductType] = useState<ProductMeta["product_type"]>(meta0.product_type ?? "physical");
-  const [digitalCfg, setDigitalCfg] = useState<DigitalConfig>(
-    normalizeDigital((editing as any)?.digital ?? DEFAULT_DIGITAL),
-  );
   const [categoryId, setCategoryId] = useState<string>(editing?.category_id ?? "");
   const [subcategoryId, setSubcategoryId] = useState<string>(meta0.subcategory_id ?? "");
 
@@ -364,7 +359,6 @@ export function ProductDialog({
         variants,
         related_product_ids: related.related ?? [],
         product_type: productType,
-        digital: productType === "digital" ? digitalCfg : {},
         meta,
       });
     } catch (err) {
@@ -805,24 +799,6 @@ export function ProductDialog({
         </div>
       ),
     },
-    ...(productType === "digital"
-      ? [
-          {
-            id: "digital",
-            label: "Digital",
-            content: (
-              <DigitalTab
-                productId={editing?.id}
-                storeId={storeId}
-                digital={digitalCfg}
-                digitalCategory={(editing as any)?.digital_category ?? null}
-                onChange={setDigitalCfg}
-              />
-
-            ),
-          },
-        ]
-      : []),
     {
       id: "ai",
       label: "AI (Coming Soon)",

@@ -33,7 +33,7 @@ export type AgentContext = {
 export async function loadAiContext(storeId: string) {
   const sb = admin();
   const [{ data: store }, { data: agent }, { data: settings }] = await Promise.all([
-    sb.from("stores").select("id,slug,name,description,address,phone,whatsapp,facebook,delivery,payments_config,store_mode").eq("id", storeId).maybeSingle(),
+    sb.from("stores").select("id,slug,name,description,address,phone,whatsapp,facebook,delivery,payments_config").eq("id", storeId).maybeSingle(),
     sb.from("store_ai_agents").select("*").eq("store_id", storeId).maybeSingle(),
     sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle(),
   ]);
@@ -142,22 +142,6 @@ export function buildSystemPrompt(
     ? `# Latest customer message — answer this first\n${latestUserText}\n\nRule: Your next reply must answer this exact latest message. Use older conversation only as background, never as a replacement for the latest message.`
     : "";
 
-  // Digital store knowledge — replaces shipping talk when the store sells files.
-  const mode = String((store as any).store_mode ?? "physical");
-  const digitalBlock =
-    mode === "physical"
-      ? ""
-      : [
-          `# Digital store mode (${mode})`,
-          mode === "digital"
-            ? `This store sells DIGITAL products only. There is no courier, no shipping address and no delivery charge — never ask for an address or quote a delivery fee.`
-            : `This store sells BOTH physical and digital products. Ask for a delivery address only when the customer is buying a physical item; digital items need no address and have no delivery charge.`,
-          `After payment is confirmed the buyer's files unlock instantly: a download email is sent and the files also appear on the order page and under "My downloads" in their account.`,
-          `Downloads can have a maximum download count and an expiry date. If a customer says the link expired or the limit is reached, apologise and call escalateToHuman so the seller can reset it.`,
-          `Some products come with a license key. It is shown on the order page, in the download email and in "My downloads". Never invent a license key.`,
-          `For "how do I install / where is my file / can I re-download" questions, point the customer to the order page or their account "My downloads" tab.`,
-          `Refunds for digital goods follow the store's stated refund policy — never promise a refund yourself.`,
-        ].join("\n");
 
   // Focus product block — server-resolved for THIS turn only. If set, it is the
   // ONLY product the assistant is allowed to describe/name/price/image in text.
@@ -228,7 +212,7 @@ If asked "where is my order" / "track my order", call trackOrder with orderId, i
 # Memory
 At the start of each conversation call getCustomerMemory to see previous orders and preferences. Personalise your greeting.
 
-${digitalBlock ? digitalBlock + "\n\n" : ""}${latestBlock ? latestBlock + "\n\n" : ""}${focusBlock ? focusBlock + "\n\n" : ""}${stateBlock ? stateBlock + "\n\n" : ""}# Store facts
+${latestBlock ? latestBlock + "\n\n" : ""}${focusBlock ? focusBlock + "\n\n" : ""}${stateBlock ? stateBlock + "\n\n" : ""}# Store facts
 Address: ${store.address || "n/a"}
 Phone: ${store.phone || "n/a"}
 Delivery: ${k.delivery_policy || JSON.stringify(store.delivery ?? {})}
