@@ -967,7 +967,120 @@ export function ProductDialog({
         </div>
       ),
     },
-  ] as const;
+  ];
+
+  const digitalTabs = [
+    {
+      id: "digital-files",
+      label: "Digital Files",
+      content: (
+        <div className="space-y-5 duration-200 animate-in fade-in-50">
+          <div className="space-y-2 rounded-xl border p-3">
+            <Label>Digital files</Label>
+            <DigitalFilesUploader storeId={storeId} value={digFiles} onChange={setDigFiles} />
+          </div>
+          <Field label="External download URL">
+            <Input
+              value={digExternalUrl}
+              onChange={(e) => setDigExternalUrl(e.target.value)}
+              placeholder="https://drive.google.com/…"
+            />
+          </Field>
+          <p className="text-xs text-muted-foreground">
+            Provide at least one uploaded file or an external download URL.
+          </p>
+        </div>
+      ),
+    },
+    {
+      id: "file-info",
+      label: "File Info",
+      content: (
+        <div className="space-y-4 duration-200 animate-in fade-in-50">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Version">
+              <Input value={digVersion} onChange={(e) => setDigVersion(e.target.value)} placeholder="1.0.0" />
+            </Field>
+            <Field label="Compatible platforms">
+              <div className="flex flex-wrap gap-1.5">
+                {PLATFORM_OPTIONS.map((p) => {
+                  const on = digPlatforms.includes(p);
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() =>
+                        setDigPlatforms(on ? digPlatforms.filter((x) => x !== p) : [...digPlatforms, p])
+                      }
+                      className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${on ? "border-primary bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
+              </div>
+            </Field>
+          </div>
+          <Field label="Changelog">
+            <Textarea
+              rows={5}
+              value={digChangelog}
+              onChange={(e) => setDigChangelog(e.target.value)}
+              placeholder="v1.0.0 — Initial release"
+            />
+          </Field>
+        </div>
+      ),
+    },
+    {
+      id: "download",
+      label: "Download",
+      content: (
+        <div className="space-y-4 duration-200 animate-in fade-in-50">
+          <Field label="Delivery mode">
+            <select value={digMode} onChange={(e) => setDigMode(e.target.value as any)} className={selectCls}>
+              <option value="instant">Instant download</option>
+              <option value="manual">Manual approval</option>
+            </select>
+          </Field>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Maximum download limit">
+              <Input
+                type="number"
+                min={0}
+                value={digMaxDownloads}
+                onChange={(e) => setDigMaxDownloads(e.target.value)}
+                placeholder="Unlimited"
+              />
+            </Field>
+            <Field label="Download expiry (days)">
+              <Input
+                type="number"
+                min={0}
+                value={digExpiryDays}
+                onChange={(e) => setDigExpiryDays(e.target.value)}
+                placeholder="Never"
+              />
+            </Field>
+          </div>
+          <label className="flex items-center justify-between gap-3 rounded-xl border bg-muted/30 p-3">
+            <span className="text-sm font-medium">Allow re-download</span>
+            <Switch checked={digAllowRedownload} onCheckedChange={setDigAllowRedownload} />
+          </label>
+        </div>
+      ),
+    },
+  ];
+
+  const DIGITAL_HIDDEN = ["inventory", "shipping", "purchase", "variants", "attributes", "related", "ai"];
+  const visibleTabs = isDigital
+    ? [
+        ...tabs.filter((t) => t.id === "general" || t.id === "media"),
+        ...digitalTabs,
+        ...tabs.filter((t) => t.id === "pricing" || t.id === "visibility" || t.id === "seo"),
+      ]
+    : tabs.filter((t) => !DIGITAL_HIDDEN.includes("__none__"));
+
 
   return (
     <>
