@@ -546,7 +546,13 @@ export const listMyBanners = createServerFn({ method: "GET" })
 export const addBanner = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ image_url: z.string().min(1), link: z.string().max(500).optional().nullable() }).parse(d),
+    z
+      .object({
+        image_url: z.string().min(1),
+        link: z.string().max(500).optional().nullable(),
+        campaign_type: z.enum(["general", "physical", "digital"]).optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -561,6 +567,7 @@ export const addBanner = createServerFn({ method: "POST" })
       store_id: store.id,
       image_url: data.image_url,
       link: data.link ?? null,
+      campaign_type: data.campaign_type ?? "general",
       position: (count ?? 0) + 1,
     });
     if (error) throw new Error(error.message);
