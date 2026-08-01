@@ -12,7 +12,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCustomerSession } from "@/lib/customer-session";
 import { computeFingerprint, getDeviceId } from "@/lib/fingerprint";
 import { fbTrack } from "@/lib/fb-track";
-import { storeMode } from "@/lib/digital";
 import { listProductsByIds } from "@/lib/storefront.functions";
 
 
@@ -90,14 +89,6 @@ function CheckoutPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customer]);
 
-  // Digital carts skip everything shipping-related.
-  const cartIds = items.map((i) => i.productId).slice(0, 24);
-  const { data: cartProducts = [] } = useQuery({
-    enabled: !!store?.id && cartIds.length > 0,
-    queryKey: ["cartProductTypes", store?.id, cartIds.join(",")],
-    queryFn: () => listProductsByIds({ data: { storeId: store!.id, ids: cartIds } }),
-  });
-
   // Auto-select default zone when zones load
   useEffect(() => {
     if (!zoneId && zones.length > 0) {
@@ -109,20 +100,13 @@ function CheckoutPage() {
 
   if (!store) return null;
   const s: any = store;
-  const mode = storeMode(s.store_mode);
-  const digitalOnly =
-    mode === "digital" ||
-    (mode === "hybrid" &&
-      cartIds.length > 0 &&
-      cartProducts.length === cartIds.length &&
-      cartProducts.every((p: any) => p.product_type === "digital"));
   const pc = s.payments_config ?? {};
   const delivery = s.delivery ?? {};
   const subtotal = items.reduce((a, i) => a + i.qty * i.price, 0);
   const freeMin = Number(delivery.free_min ?? 0);
   const selectedZone = zones.find((z: any) => z.id === zoneId) ?? null;
   const baseShip = selectedZone ? Number(selectedZone.charge) : 0;
-  let shipping = digitalOnly ? 0 : freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
+  let shipping = freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
   if (coupon?.freeShipping) shipping = 0;
   const discount = coupon?.discount ?? 0;
   const total = Math.max(0, subtotal + shipping - discount);
@@ -232,13 +216,13 @@ function CheckoutPage() {
           storeId: store!.id,
           customerName: name,
           phone,
-          address: digitalOnly ? address || "Digital delivery" : address,
+          address,
           area: area || undefined,
           paymentMethod: method,
           txnId: isManual ? txnId : undefined,
           items: items.map((i) => ({ productId: i.productId, qty: i.qty })),
           couponCode: coupon?.code,
-          deliveryZoneId: digitalOnly ? undefined : zoneId ?? undefined,
+          deliveryZoneId: zoneId ?? undefined,
           customerToken: customerToken ?? undefined,
           fingerprint: fingerprint || undefined,
           deviceId: deviceId || undefined,
@@ -286,13 +270,6 @@ function CheckoutPage() {
             <Label htmlFor="phone">Phone</Label>
             <Input id="phone" required value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
-          {digitalOnly ? (
-            <div className="rounded-lg border border-dashed bg-muted/40 p-3 text-sm text-muted-foreground">
-              This is a digital order — no shipping address needed. Your files unlock right after
-              the payment is confirmed.
-            </div>
-          ) : (
-            <>
           <div className="space-y-1.5">
             <Label htmlFor="address">Address</Label>
             <Textarea id="address" required value={address} onChange={(e) => setAddress(e.target.value)} />
@@ -329,8 +306,6 @@ function CheckoutPage() {
               </div>
             </div>
           ) : null}
-            </>
-          )}
         </div>
 
         <h2 className="mt-6 text-sm font-semibold">Payment method</h2>
@@ -408,9 +383,7 @@ function CheckoutPage() {
           </div>
           <div className="mt-3 space-y-1 border-t pt-3 text-sm">
             <div className="flex justify-between"><span>Subtotal</span><span>৳{subtotal.toFixed(0)}</span></div>
-            {!digitalOnly && (
-              <div className="flex justify-between"><span>Shipping</span><span>{shipping === 0 ? "Free" : `৳${shipping.toFixed(0)}`}</span></div>
-            )}
+            <div className="flex justify-between"><span>Shipping</span><span>{shipping === 0 ? "Free" : `৳${shipping.toFixed(0)}`}</span></div>
             {discount > 0 && (
               <div className="flex justify-between text-emerald-600"><span>Discount ({coupon!.code})</span><span>-৳{discount.toFixed(0)}</span></div>
             )}
