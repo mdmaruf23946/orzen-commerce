@@ -12,6 +12,9 @@ import {
 import { useStoreUI } from "@/lib/store-ui";
 import { useStoreTheme } from "@/lib/theme/context";
 import { ProductCard } from "@/components/storefront/ProductCard";
+import { DigitalHome } from "@/components/storefront/digital/DigitalHome";
+import { storeMode } from "@/lib/digital";
+
 
 const STALE = 5 * 60_000;
 
