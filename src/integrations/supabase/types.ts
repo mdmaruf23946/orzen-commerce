@@ -769,11 +769,17 @@ export type Database = {
       coupons: {
         Row: {
           active: boolean
+          category_ids: string[]
           code: string
           created_at: string
           expires_at: string | null
           id: string
+          max_discount: number | null
           min_order: number
+          name: string | null
+          per_customer_limit: number | null
+          product_ids: string[]
+          product_type: string
           starts_at: string | null
           store_id: string
           type: Database["public"]["Enums"]["coupon_type"]
@@ -784,11 +790,17 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          category_ids?: string[]
           code: string
           created_at?: string
           expires_at?: string | null
           id?: string
+          max_discount?: number | null
           min_order?: number
+          name?: string | null
+          per_customer_limit?: number | null
+          product_ids?: string[]
+          product_type?: string
           starts_at?: string | null
           store_id: string
           type: Database["public"]["Enums"]["coupon_type"]
@@ -799,11 +811,17 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          category_ids?: string[]
           code?: string
           created_at?: string
           expires_at?: string | null
           id?: string
+          max_discount?: number | null
           min_order?: number
+          name?: string | null
+          per_customer_limit?: number | null
+          product_ids?: string[]
+          product_type?: string
           starts_at?: string | null
           store_id?: string
           type?: Database["public"]["Enums"]["coupon_type"]
