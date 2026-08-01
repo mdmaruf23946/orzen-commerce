@@ -630,10 +630,25 @@ export function ProductDialog({
       label: "Pricing",
       content: (
         <div className="space-y-4">
+          {isDigital && (
+            <label className="flex items-center justify-between gap-3 rounded-xl border bg-muted/30 p-3">
+              <span className="text-sm font-medium">Free product</span>
+              <Switch checked={digFree} onCheckedChange={setDigFree} />
+            </label>
+          )}
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Regular price" required>
-              <Input type="number" min={0} step="0.01" required value={regularPrice} onChange={(e) => setRegularPrice(e.target.value)} />
+            <Field label="Regular price" required={!(isDigital && digFree)}>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                required={!(isDigital && digFree)}
+                disabled={isDigital && digFree}
+                value={regularPrice}
+                onChange={(e) => setRegularPrice(e.target.value)}
+              />
             </Field>
+
             <Field label="Discount type">
               <select value={discountType} onChange={(e) => setDiscountType(e.target.value as any)} className={selectCls}>
                 <option value="percent">Percent</option>
