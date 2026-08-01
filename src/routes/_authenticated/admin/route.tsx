@@ -167,7 +167,9 @@ function AdminLayout() {
     navigate({ to: "/auth", replace: true });
   }
 
-  const groups = useMemo(() => buildGroups(search), [search]);
+  const mode = storeMode((myStore as any)?.store_mode);
+  const groups = useMemo(() => buildGroups(search, mode), [search, mode]);
+  const hiddenHere = !isPathVisibleInMode(currentPath, mode);
 
   const asideWidth = collapsed ? "md:w-[72px]" : "md:w-64";
 
