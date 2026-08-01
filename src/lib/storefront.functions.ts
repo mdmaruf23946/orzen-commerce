@@ -513,7 +513,6 @@ export const getProduct = createServerFn({ method: "GET" })
 
     return {
       ...p,
-      files,
       primary_image_url: imgUrl(p.primary_image_url),
       gallery: gallery.map((g) => imgUrl(g)!).filter(Boolean),
     };
