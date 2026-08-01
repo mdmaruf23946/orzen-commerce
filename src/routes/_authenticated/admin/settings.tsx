@@ -14,6 +14,7 @@ import {
   Hash,
   Image as ImageIcon,
   Sparkles,
+  Download,
 } from "lucide-react";
 
 import {
@@ -28,6 +29,7 @@ import {
   updateInvoiceSettings,
   computeInvoicePreview,
 } from "@/lib/invoice-settings.functions";
+import { STORE_MODES, storeMode } from "@/lib/digital";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -276,6 +278,38 @@ function SettingsPage() {
               />
             </div>
           </Field>
+        </Section>
+
+        {/* 1a. Store Mode */}
+        <Section
+          icon={Download}
+          title="Store Mode"
+          description="Decide what kind of products this store sells. Checkout adapts automatically."
+        >
+          <div className="grid gap-3 sm:grid-cols-3">
+            {STORE_MODES.map((m) => {
+              const activeMode = storeMode(form.store_mode) === m.value;
+              return (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() => set("store_mode", m.value)}
+                  className={`rounded-xl border p-3 text-left transition ${
+                    activeMode
+                      ? "border-primary bg-primary/5 ring-1 ring-primary"
+                      : "hover:border-primary/40 hover:bg-muted/40"
+                  }`}
+                >
+                  <div className="text-sm font-semibold">{m.label}</div>
+                  <p className="mt-1 text-xs text-muted-foreground">{m.description}</p>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Digital stores hide delivery zones, courier fields and shipping addresses at checkout,
+            and unlock file downloads for the buyer once payment is confirmed.
+          </p>
         </Section>
 
         {/* 1b. Store Icon & Favicon */}
