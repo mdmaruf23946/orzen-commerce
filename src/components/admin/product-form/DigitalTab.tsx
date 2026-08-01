@@ -26,11 +26,13 @@ export function DigitalTab({
   productId,
   storeId,
   digital,
+  digitalCategory,
   onChange,
 }: {
   productId?: string;
   storeId: string;
   digital: any;
+  digitalCategory?: string | null;
   onChange: (d: DigitalConfig) => void;
 }) {
   const cfg = normalizeDigital(digital ?? DEFAULT_DIGITAL);
@@ -39,6 +41,10 @@ export function DigitalTab({
 
   return (
     <div className="space-y-5">
+      {productId && (
+        <CategoryPicker productId={productId} value={digitalCategory ?? null} />
+      )}
+
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label>Delivery</Label>
