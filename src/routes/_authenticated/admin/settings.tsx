@@ -29,9 +29,6 @@ import {
   updateInvoiceSettings,
   computeInvoicePreview,
 } from "@/lib/invoice-settings.functions";
-import { storeMode } from "@/lib/digital";
-import { listMyDomains } from "@/lib/domains.functions";
-import { StoreModeSwitcher } from "@/components/admin/StoreModeSwitcher";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -129,13 +126,8 @@ function SettingsPage() {
   const getReqLogin = useServerFn(adminGetRequireCustomerLogin);
   const setReqLogin = useServerFn(adminSetRequireCustomerLogin);
   const qc = useQueryClient();
-  const domainsFn = useServerFn(listMyDomains);
 
   const { data: store } = useQuery({ queryKey: ["admin", "store"], queryFn: () => fetchStore() });
-  const { data: domainData } = useQuery({ queryKey: ["admin", "domains"], queryFn: () => domainsFn() });
-  const hasCustomDomain = ((domainData as any)?.domains ?? []).some(
-    (d: any) => d.kind === "custom" && !d.disconnected_at,
-  );
   const { data: reqLogin } = useQuery({
     queryKey: ["admin", "require-customer-login"],
     queryFn: () => getReqLogin(),
@@ -195,7 +187,6 @@ function SettingsPage() {
           language: form.language || "en",
           timezone: form.timezone || "Asia/Dhaka",
           allow_guest_checkout: !!form.allow_guest_checkout,
-          // store_mode is switched through StoreModeSwitcher (guarded flow), not this form.
         },
 
       });
@@ -285,29 +276,6 @@ function SettingsPage() {
               />
             </div>
           </Field>
-        </Section>
-
-        {/* 1a. Store Mode */}
-        <Section
-          icon={Download}
-          title="Store Mode"
-          description="Decide what kind of products this store sells. Checkout adapts automatically."
-        >
-          <StoreModeSwitcher
-            value={form.store_mode}
-            hasCustomDomain={hasCustomDomain}
-            onSwitched={async () => {
-              const next = await qc.fetchQuery({
-                queryKey: ["admin", "store"],
-                queryFn: () => fetchStore(),
-              });
-              if (next) setForm({ ...(next as any) });
-            }}
-          />
-          <p className="text-[11px] text-muted-foreground">
-            Digital stores hide delivery zones, courier fields and shipping addresses at checkout,
-            and unlock file downloads for the buyer once payment is confirmed.
-          </p>
         </Section>
 
         {/* 1b. Store Icon & Favicon */}

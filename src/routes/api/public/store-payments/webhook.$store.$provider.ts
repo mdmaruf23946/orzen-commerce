@@ -140,10 +140,6 @@ export const Route = createFileRoute("/api/public/store-payments/webhook/$store/
                         .update({ payment_status: "paid", status: paidStatus } as any)
                         .eq("id", ord.id)
                         .neq("payment_status", "paid");
-                      try {
-                        const { fulfilDigitalOrder } = await import("@/lib/digital.server");
-                        await fulfilDigitalOrder(ord.id);
-                      } catch { /* non-fatal */ }
                     }
                   }
                 }

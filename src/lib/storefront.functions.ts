@@ -397,10 +397,6 @@ export const verifyOrderPayment = createServerFn({ method: "POST" })
         .update({ payment_status: "paid", status: paidStatus } as any)
         .eq("id", o.id)
         .neq("payment_status", "paid");
-      try {
-        const { fulfilDigitalOrder } = await import("@/lib/digital.server");
-        await fulfilDigitalOrder(o.id);
-      } catch { /* non-fatal */ }
       return { payment_status: "paid", checked: true };
     }
 
@@ -430,7 +426,7 @@ export const listStoreBanners = createServerFn({ method: "GET" })
   });
 
 const PRODUCT_CARD_COLS =
-  "id,name,slug,price,old_price,stock,status,primary_image_url,category_id,is_featured,product_type,digital_category,digital,total_sold,rating,created_at,updated_at";
+  "id,name,slug,price,old_price,stock,status,primary_image_url,category_id,is_featured,product_type,total_sold,rating,created_at,updated_at";
 
 export const listStoreProducts = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ storeId: z.string().uuid() }).parse(d))
@@ -444,44 +440,6 @@ export const listStoreProducts = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return (products ?? []).map((p) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }));
-  });
-
-/**
- * Global digital category catalog (Winner Admin owned), with the store's own
- * hide / rename overrides applied. Safe for anonymous storefront visitors.
- */
-export const listDigitalCategories = createServerFn({ method: "GET" })
-  .inputValidator((d) => z.object({ storeId: z.string().uuid().optional() }).parse(d ?? {}))
-  .handler(async ({ data }) => {
-    const sb = publicClient();
-    const { data: cats, error } = await sb
-      .from("platform_digital_categories")
-      .select("key,name,icon,description,sort_order")
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true });
-    if (error) throw new Error(error.message);
-    let prefs: any[] = [];
-    if (data.storeId) {
-      const { data: rows } = await sb
-        .from("store_digital_category_prefs")
-        .select("category_key,hidden,custom_name,sort_order")
-        .eq("store_id", data.storeId);
-      prefs = rows ?? [];
-    }
-    const byKey = new Map(prefs.map((p: any) => [p.category_key, p]));
-    return (cats ?? [])
-      .filter((c: any) => !byKey.get(c.key)?.hidden)
-      .map((c: any) => {
-        const p = byKey.get(c.key);
-        return {
-          key: c.key as string,
-          name: (p?.custom_name || c.name) as string,
-          icon: (c.icon ?? null) as string | null,
-          description: (c.description ?? null) as string | null,
-          sort_order: (p?.sort_order ?? c.sort_order ?? 0) as number,
-        };
-      })
-      .sort((a, b) => a.sort_order - b.sort_order);
   });
 
 
@@ -544,7 +502,7 @@ export const getProduct = createServerFn({ method: "GET" })
     const { data: p, error } = await sb
       .from("products")
       .select(
-        "id,name,slug,description,short_description,price,old_price,stock,status,primary_image_url,gallery,store_id,brand,sku,category_id,features,specifications,video_url,warranty,return_policy,meta,product_type,digital,digital_category,total_sold,rating,created_at,updated_at",
+        "id,name,slug,description,short_description,price,old_price,stock,status,primary_image_url,gallery,store_id,brand,sku,category_id,features,specifications,video_url,warranty,return_policy,meta,product_type,total_sold,rating,created_at,updated_at",
       )
       .eq("id", data.productId)
       .eq("store_id", data.storeId)
@@ -553,32 +511,8 @@ export const getProduct = createServerFn({ method: "GET" })
     if (!p) return null;
     const gallery = Array.isArray(p.gallery) ? (p.gallery as string[]) : [];
 
-    // Digital products expose a safe file manifest (never storage paths).
-    let files: {
-      label: string;
-      version: string | null;
-      file_type: string | null;
-      file_size: number | null;
-    }[] = [];
-    if ((p as any).product_type === "digital") {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: rows } = await supabaseAdmin
-        .from("product_files")
-        .select("label,version,file_type,file_size,sort_order")
-        .eq("product_id", data.productId)
-        .eq("store_id", data.storeId)
-        .order("sort_order", { ascending: true });
-      files = (rows ?? []).map((f: any) => ({
-        label: f.label,
-        version: f.version ?? null,
-        file_type: f.file_type ?? null,
-        file_size: f.file_size ?? null,
-      }));
-    }
-
     return {
       ...p,
-      files,
       primary_image_url: imgUrl(p.primary_image_url),
       gallery: gallery.map((g) => imgUrl(g)!).filter(Boolean),
     };
@@ -759,8 +693,7 @@ export const placeOrder = createServerFn({ method: "POST" })
     const itemRows = data.items.map((i) => {
       const p = byId.get(i.productId);
       if (!p || p.status === "draft") throw new Error("Product unavailable");
-      // Digital goods have no physical inventory to reserve.
-      if ((p as any).product_type !== "digital" && p.stock < i.qty) {
+      if (p.stock < i.qty) {
         throw new Error(`Not enough stock for ${p.name}`);
       }
       subtotal += Number(p.price) * i.qty;
@@ -772,10 +705,6 @@ export const placeOrder = createServerFn({ method: "POST" })
       };
     });
 
-    // Digital-only carts never carry a shipping charge.
-    const allDigital = data.items.every(
-      (i) => (byId.get(i.productId) as any)?.product_type === "digital",
-    );
 
     // Delivery — from zone if provided, else legacy fallback
     const d: any = store.delivery ?? {};
@@ -794,7 +723,7 @@ export const placeOrder = createServerFn({ method: "POST" })
       }
     }
     const freeMin = Number(d.free_min ?? 0);
-    let delivery_amount = allDigital ? 0 : freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
+    let delivery_amount = freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
 
 
     // Coupon
@@ -936,7 +865,6 @@ export const placeOrder = createServerFn({ method: "POST" })
         status: orderStatus,
         fingerprint: data.fingerprint ?? null,
         device_id: data.deviceId ?? null,
-        is_digital: allDigital,
       } as any)
       .select("id")
       .single();
@@ -947,18 +875,6 @@ export const placeOrder = createServerFn({ method: "POST" })
       .insert(itemRows.map((r) => ({ ...r, order_id: order.id })));
     if (iErr) throw new Error(iErr.message);
 
-    // Digital fulfilment: build the buyer's entitlements now; unlock them right
-    // away when the order already starts in a confirmed state (e.g. free items
-    // or a store that auto-confirms manual payments).
-    try {
-      const { createEntitlementsForOrder, unlockOrderDownloads } = await import("@/lib/digital.server");
-      const res = await createEntitlementsForOrder(order.id);
-      if (res.digital && (orderStatus === "confirmed" || subtotal + delivery_amount - discount_amount <= 0)) {
-        await unlockOrderDownloads(order.id);
-      }
-    } catch (e) {
-      console.error("[placeOrder] digital fulfilment:", (e as Error).message);
-    }
 
     if (coupon_id) {
       await sb.from("coupon_redemptions").insert({

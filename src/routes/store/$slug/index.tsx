@@ -12,8 +12,6 @@ import {
 import { useStoreUI } from "@/lib/store-ui";
 import { useStoreTheme } from "@/lib/theme/context";
 import { ProductCard } from "@/components/storefront/ProductCard";
-import { DigitalHome } from "@/components/storefront/digital/DigitalHome";
-import { storeMode } from "@/lib/digital";
 
 
 const STALE = 5 * 60_000;
@@ -83,25 +81,6 @@ function StoreHome() {
   const { query, activeMainId, activeSubId, source, selectMain, selectSub } = useStoreUI();
   const theme = useStoreTheme();
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
-
-  const mode = storeMode((store as any).store_mode);
-  const digitalProducts = useMemo(
-    () => (products as any[]).filter((p) => p.product_type === "digital"),
-    [products],
-  );
-
-  if (mode === "digital") {
-    return (
-      <DigitalHome
-        slug={slug}
-        storeId={store.id}
-        storeName={store.name}
-        products={digitalProducts as any}
-        bestSelling={(bestSelling as any[]).filter((p) => p.product_type === "digital") as any}
-        query={query}
-      />
-    );
-  }
 
 
   const mainCategories = useMemo(

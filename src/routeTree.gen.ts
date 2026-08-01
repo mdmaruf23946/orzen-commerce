@@ -57,7 +57,6 @@ import { Route as AuthenticatedOwnerHealthRouteImport } from './routes/_authenti
 import { Route as AuthenticatedOwnerFraudRouteImport } from './routes/_authenticated/owner/fraud'
 import { Route as AuthenticatedOwnerFeaturesRouteImport } from './routes/_authenticated/owner/features'
 import { Route as AuthenticatedOwnerDomainsRouteImport } from './routes/_authenticated/owner/domains'
-import { Route as AuthenticatedOwnerDigitalCategoriesRouteImport } from './routes/_authenticated/owner/digital-categories'
 import { Route as AuthenticatedOwnerDevLogsRouteImport } from './routes/_authenticated/owner/dev-logs'
 import { Route as AuthenticatedOwnerCustomersRouteImport } from './routes/_authenticated/owner/customers'
 import { Route as AuthenticatedOwnerCouriersRouteImport } from './routes/_authenticated/owner/couriers'
@@ -95,8 +94,6 @@ import { Route as AuthenticatedAdminFinanceRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminDuplicateProtectionRouteImport } from './routes/_authenticated/admin/duplicate-protection'
 import { Route as AuthenticatedAdminDomainsRouteImport } from './routes/_authenticated/admin/domains'
 import { Route as AuthenticatedAdminDnsCheckRouteImport } from './routes/_authenticated/admin/dns-check'
-import { Route as AuthenticatedAdminDigitalOrdersRouteImport } from './routes/_authenticated/admin/digital-orders'
-import { Route as AuthenticatedAdminDigitalDashboardRouteImport } from './routes/_authenticated/admin/digital-dashboard'
 import { Route as AuthenticatedAdminDeliveryRouteImport } from './routes/_authenticated/admin/delivery'
 import { Route as AuthenticatedAdminCustomersAccountsRouteImport } from './routes/_authenticated/admin/customers-accounts'
 import { Route as AuthenticatedAdminCustomersRouteImport } from './routes/_authenticated/admin/customers'
@@ -410,12 +407,6 @@ const AuthenticatedOwnerDomainsRoute =
     path: '/domains',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
-const AuthenticatedOwnerDigitalCategoriesRoute =
-  AuthenticatedOwnerDigitalCategoriesRouteImport.update({
-    id: '/digital-categories',
-    path: '/digital-categories',
-    getParentRoute: () => AuthenticatedOwnerRouteRoute,
-  } as any)
 const AuthenticatedOwnerDevLogsRoute =
   AuthenticatedOwnerDevLogsRouteImport.update({
     id: '/dev-logs',
@@ -628,18 +619,6 @@ const AuthenticatedAdminDnsCheckRoute =
   AuthenticatedAdminDnsCheckRouteImport.update({
     id: '/dns-check',
     path: '/dns-check',
-    getParentRoute: () => AuthenticatedAdminRouteRoute,
-  } as any)
-const AuthenticatedAdminDigitalOrdersRoute =
-  AuthenticatedAdminDigitalOrdersRouteImport.update({
-    id: '/digital-orders',
-    path: '/digital-orders',
-    getParentRoute: () => AuthenticatedAdminRouteRoute,
-  } as any)
-const AuthenticatedAdminDigitalDashboardRoute =
-  AuthenticatedAdminDigitalDashboardRouteImport.update({
-    id: '/digital-dashboard',
-    path: '/digital-dashboard',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminDeliveryRoute =
@@ -977,8 +956,6 @@ export interface FileRoutesByFullPath {
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/customers-accounts': typeof AuthenticatedAdminCustomersAccountsRoute
   '/admin/delivery': typeof AuthenticatedAdminDeliveryRoute
-  '/admin/digital-dashboard': typeof AuthenticatedAdminDigitalDashboardRoute
-  '/admin/digital-orders': typeof AuthenticatedAdminDigitalOrdersRoute
   '/admin/dns-check': typeof AuthenticatedAdminDnsCheckRoute
   '/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/admin/duplicate-protection': typeof AuthenticatedAdminDuplicateProtectionRoute
@@ -1016,7 +993,6 @@ export interface FileRoutesByFullPath {
   '/owner/couriers': typeof AuthenticatedOwnerCouriersRoute
   '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
-  '/owner/digital-categories': typeof AuthenticatedOwnerDigitalCategoriesRoute
   '/owner/domains': typeof AuthenticatedOwnerDomainsRoute
   '/owner/features': typeof AuthenticatedOwnerFeaturesRoute
   '/owner/fraud': typeof AuthenticatedOwnerFraudRoute
@@ -1110,8 +1086,6 @@ export interface FileRoutesByTo {
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/customers-accounts': typeof AuthenticatedAdminCustomersAccountsRoute
   '/admin/delivery': typeof AuthenticatedAdminDeliveryRoute
-  '/admin/digital-dashboard': typeof AuthenticatedAdminDigitalDashboardRoute
-  '/admin/digital-orders': typeof AuthenticatedAdminDigitalOrdersRoute
   '/admin/dns-check': typeof AuthenticatedAdminDnsCheckRoute
   '/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/admin/duplicate-protection': typeof AuthenticatedAdminDuplicateProtectionRoute
@@ -1149,7 +1123,6 @@ export interface FileRoutesByTo {
   '/owner/couriers': typeof AuthenticatedOwnerCouriersRoute
   '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
-  '/owner/digital-categories': typeof AuthenticatedOwnerDigitalCategoriesRoute
   '/owner/domains': typeof AuthenticatedOwnerDomainsRoute
   '/owner/features': typeof AuthenticatedOwnerFeaturesRoute
   '/owner/fraud': typeof AuthenticatedOwnerFraudRoute
@@ -1252,8 +1225,6 @@ export interface FileRoutesById {
   '/_authenticated/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/_authenticated/admin/customers-accounts': typeof AuthenticatedAdminCustomersAccountsRoute
   '/_authenticated/admin/delivery': typeof AuthenticatedAdminDeliveryRoute
-  '/_authenticated/admin/digital-dashboard': typeof AuthenticatedAdminDigitalDashboardRoute
-  '/_authenticated/admin/digital-orders': typeof AuthenticatedAdminDigitalOrdersRoute
   '/_authenticated/admin/dns-check': typeof AuthenticatedAdminDnsCheckRoute
   '/_authenticated/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/_authenticated/admin/duplicate-protection': typeof AuthenticatedAdminDuplicateProtectionRoute
@@ -1291,7 +1262,6 @@ export interface FileRoutesById {
   '/_authenticated/owner/couriers': typeof AuthenticatedOwnerCouriersRoute
   '/_authenticated/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/_authenticated/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
-  '/_authenticated/owner/digital-categories': typeof AuthenticatedOwnerDigitalCategoriesRoute
   '/_authenticated/owner/domains': typeof AuthenticatedOwnerDomainsRoute
   '/_authenticated/owner/features': typeof AuthenticatedOwnerFeaturesRoute
   '/_authenticated/owner/fraud': typeof AuthenticatedOwnerFraudRoute
@@ -1394,8 +1364,6 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/customers-accounts'
     | '/admin/delivery'
-    | '/admin/digital-dashboard'
-    | '/admin/digital-orders'
     | '/admin/dns-check'
     | '/admin/domains'
     | '/admin/duplicate-protection'
@@ -1433,7 +1401,6 @@ export interface FileRouteTypes {
     | '/owner/couriers'
     | '/owner/customers'
     | '/owner/dev-logs'
-    | '/owner/digital-categories'
     | '/owner/domains'
     | '/owner/features'
     | '/owner/fraud'
@@ -1527,8 +1494,6 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/customers-accounts'
     | '/admin/delivery'
-    | '/admin/digital-dashboard'
-    | '/admin/digital-orders'
     | '/admin/dns-check'
     | '/admin/domains'
     | '/admin/duplicate-protection'
@@ -1566,7 +1531,6 @@ export interface FileRouteTypes {
     | '/owner/couriers'
     | '/owner/customers'
     | '/owner/dev-logs'
-    | '/owner/digital-categories'
     | '/owner/domains'
     | '/owner/features'
     | '/owner/fraud'
@@ -1668,8 +1632,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/customers'
     | '/_authenticated/admin/customers-accounts'
     | '/_authenticated/admin/delivery'
-    | '/_authenticated/admin/digital-dashboard'
-    | '/_authenticated/admin/digital-orders'
     | '/_authenticated/admin/dns-check'
     | '/_authenticated/admin/domains'
     | '/_authenticated/admin/duplicate-protection'
@@ -1707,7 +1669,6 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/couriers'
     | '/_authenticated/owner/customers'
     | '/_authenticated/owner/dev-logs'
-    | '/_authenticated/owner/digital-categories'
     | '/_authenticated/owner/domains'
     | '/_authenticated/owner/features'
     | '/_authenticated/owner/fraud'
@@ -2146,13 +2107,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerDomainsRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
-    '/_authenticated/owner/digital-categories': {
-      id: '/_authenticated/owner/digital-categories'
-      path: '/digital-categories'
-      fullPath: '/owner/digital-categories'
-      preLoaderRoute: typeof AuthenticatedOwnerDigitalCategoriesRouteImport
-      parentRoute: typeof AuthenticatedOwnerRouteRoute
-    }
     '/_authenticated/owner/dev-logs': {
       id: '/_authenticated/owner/dev-logs'
       path: '/dev-logs'
@@ -2410,20 +2364,6 @@ declare module '@tanstack/react-router' {
       path: '/dns-check'
       fullPath: '/admin/dns-check'
       preLoaderRoute: typeof AuthenticatedAdminDnsCheckRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
-    }
-    '/_authenticated/admin/digital-orders': {
-      id: '/_authenticated/admin/digital-orders'
-      path: '/digital-orders'
-      fullPath: '/admin/digital-orders'
-      preLoaderRoute: typeof AuthenticatedAdminDigitalOrdersRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
-    }
-    '/_authenticated/admin/digital-dashboard': {
-      id: '/_authenticated/admin/digital-dashboard'
-      path: '/digital-dashboard'
-      fullPath: '/admin/digital-dashboard'
-      preLoaderRoute: typeof AuthenticatedAdminDigitalDashboardRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/delivery': {
@@ -2818,8 +2758,6 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminCustomersRoute: typeof AuthenticatedAdminCustomersRoute
   AuthenticatedAdminCustomersAccountsRoute: typeof AuthenticatedAdminCustomersAccountsRoute
   AuthenticatedAdminDeliveryRoute: typeof AuthenticatedAdminDeliveryRoute
-  AuthenticatedAdminDigitalDashboardRoute: typeof AuthenticatedAdminDigitalDashboardRoute
-  AuthenticatedAdminDigitalOrdersRoute: typeof AuthenticatedAdminDigitalOrdersRoute
   AuthenticatedAdminDnsCheckRoute: typeof AuthenticatedAdminDnsCheckRoute
   AuthenticatedAdminDomainsRoute: typeof AuthenticatedAdminDomainsRoute
   AuthenticatedAdminDuplicateProtectionRoute: typeof AuthenticatedAdminDuplicateProtectionRoute
@@ -2868,9 +2806,6 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminCustomersAccountsRoute:
       AuthenticatedAdminCustomersAccountsRoute,
     AuthenticatedAdminDeliveryRoute: AuthenticatedAdminDeliveryRoute,
-    AuthenticatedAdminDigitalDashboardRoute:
-      AuthenticatedAdminDigitalDashboardRoute,
-    AuthenticatedAdminDigitalOrdersRoute: AuthenticatedAdminDigitalOrdersRoute,
     AuthenticatedAdminDnsCheckRoute: AuthenticatedAdminDnsCheckRoute,
     AuthenticatedAdminDomainsRoute: AuthenticatedAdminDomainsRoute,
     AuthenticatedAdminDuplicateProtectionRoute:
@@ -3015,7 +2950,6 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerCouriersRoute: typeof AuthenticatedOwnerCouriersRoute
   AuthenticatedOwnerCustomersRoute: typeof AuthenticatedOwnerCustomersRoute
   AuthenticatedOwnerDevLogsRoute: typeof AuthenticatedOwnerDevLogsRoute
-  AuthenticatedOwnerDigitalCategoriesRoute: typeof AuthenticatedOwnerDigitalCategoriesRoute
   AuthenticatedOwnerDomainsRoute: typeof AuthenticatedOwnerDomainsRoute
   AuthenticatedOwnerFeaturesRoute: typeof AuthenticatedOwnerFeaturesRoute
   AuthenticatedOwnerFraudRoute: typeof AuthenticatedOwnerFraudRoute
@@ -3063,8 +2997,6 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerCouriersRoute: AuthenticatedOwnerCouriersRoute,
     AuthenticatedOwnerCustomersRoute: AuthenticatedOwnerCustomersRoute,
     AuthenticatedOwnerDevLogsRoute: AuthenticatedOwnerDevLogsRoute,
-    AuthenticatedOwnerDigitalCategoriesRoute:
-      AuthenticatedOwnerDigitalCategoriesRoute,
     AuthenticatedOwnerDomainsRoute: AuthenticatedOwnerDomainsRoute,
     AuthenticatedOwnerFeaturesRoute: AuthenticatedOwnerFeaturesRoute,
     AuthenticatedOwnerFraudRoute: AuthenticatedOwnerFraudRoute,
