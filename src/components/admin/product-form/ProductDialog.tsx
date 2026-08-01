@@ -481,8 +481,9 @@ export function ProductDialog({
               <select value={productType} onChange={(e) => setProductType(e.target.value as any)} className={selectCls}>
                 <option value="physical">Physical</option>
                 <option value="digital">Digital</option>
-                <option value="service">Service</option>
-                <option value="subscription">Subscription</option>
+                <option value="subscription" disabled>Subscription (Coming Soon)</option>
+                <option value="service" disabled>Service (Coming Soon)</option>
+
               </select>
             </Field>
             <Field label="Brand">
