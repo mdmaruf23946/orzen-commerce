@@ -12,7 +12,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCustomerSession } from "@/lib/customer-session";
 import { computeFingerprint, getDeviceId } from "@/lib/fingerprint";
 import { fbTrack } from "@/lib/fb-track";
-import { listProductsByIds } from "@/lib/storefront.functions";
 
 
 const storeQuery = (slug: string) =>
