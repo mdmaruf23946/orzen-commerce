@@ -4,7 +4,7 @@
 // Winner Admin publishes assets.
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   getPlatformBranding,
   type BrandingAsset,
@@ -131,12 +131,16 @@ export function BrandMark({
   isDark?: boolean;
 }) {
   const { data } = usePlatformBranding();
+  // Branding is fetched client-side, so the first client render must match the
+  // SSR output (fallback text) — swap in the assets only after hydration.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
   const resolved = useMemo(
     () => resolvePlacement(data ?? null, placement, !!isDark),
     [data, placement, isDark],
   );
 
-  if (!resolved || !resolved.visible) {
+  if (!hydrated || !resolved || !resolved.visible) {
     return fallbackText ? <span className={className}>{fallbackText}</span> : null;
   }
 

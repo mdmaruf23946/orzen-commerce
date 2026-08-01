@@ -30,10 +30,14 @@ import {
   Mail,
   Phone,
   BadgeCheck,
+  CloudDownload,
 } from "lucide-react";
 import { AccountShell } from "@/components/storefront/AccountShell";
+import { MyDownloads } from "@/components/storefront/MyDownloads";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { storeQuery } from "@/routes/store/$slug/route";
 
-const TABS = ["overview", "profile", "orders", "addresses", "wishlist", "password"] as const;
+const TABS = ["overview", "profile", "orders", "downloads", "addresses", "wishlist", "password"] as const;
 type Tab = (typeof TABS)[number];
 
 export const Route = createFileRoute("/store/$slug/account")({
@@ -83,6 +87,7 @@ function AccountPage() {
     overview: "My account",
     profile: "Personal information",
     orders: "Order history",
+    downloads: "My downloads",
     addresses: "Saved addresses",
     wishlist: "Wishlist",
     password: "Change password",
@@ -111,6 +116,7 @@ function AccountPage() {
               <ProfileTab slug={slug} token={token} customer={customer} onSaved={refresh} />
             )}
             {tab === "orders" && <OrdersTab slug={slug} token={token} />}
+            {tab === "downloads" && <DownloadsTab slug={slug} token={token} />}
             {tab === "addresses" && <AddressesTab slug={slug} token={token} />}
             {tab === "wishlist" && <WishlistTab slug={slug} />}
             {tab === "password" && <PasswordTab slug={slug} token={token} />}
@@ -119,6 +125,12 @@ function AccountPage() {
       )}
     </AccountShell>
   );
+}
+
+function DownloadsTab({ slug, token }: { slug: string; token: string }) {
+  const { data: store } = useSuspenseQuery(storeQuery(slug));
+  if (!store) return null;
+  return <MyDownloads storeId={(store as any).id} token={token} />;
 }
 
 function Overview({
@@ -141,6 +153,7 @@ function Overview({
 
   const actions: { id: Tab; label: string; icon: any; hint: string; tone: string }[] = [
     { id: "orders", label: "Orders", icon: Package, hint: "Track & history", tone: "text-indigo-600 bg-indigo-50" },
+    { id: "downloads", label: "Downloads", icon: CloudDownload, hint: "Digital purchases", tone: "text-sky-600 bg-sky-50" },
     { id: "wishlist", label: "Wishlist", icon: Heart, hint: "Saved items", tone: "text-rose-600 bg-rose-50" },
     { id: "addresses", label: "Addresses", icon: MapPin, hint: "Delivery info", tone: "text-emerald-600 bg-emerald-50" },
     { id: "profile", label: "Settings", icon: User, hint: "Personal info", tone: "text-amber-600 bg-amber-50" },

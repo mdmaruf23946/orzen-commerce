@@ -353,3 +353,96 @@ export const requestDownload = createServerFn({ method: "POST" })
 
     return { url };
   });
+
+// ------------------------------------------------- admin download management
+
+/** Reset the download counter of one entitlement back to zero. */
+export const resetDownloadLimit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: uuid }).parse(d))
+  .handler(async ({ data, context }) => {
+    const store = await ownerStore(context);
+    const { error } = await context.supabase
+      .from("order_downloads")
+      .update({ download_count: 0, status: "active" } as any)
+      .eq("id", data.id)
+      .eq("store_id", store.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Revoke (or restore) access to a single entitlement. */
+export const setDownloadAccess = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: uuid, status: z.enum(["active", "revoked"]) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const store = await ownerStore(context);
+    const { error } = await context.supabase
+      .from("order_downloads")
+      .update({ status: data.status } as any)
+      .eq("id", data.id)
+      .eq("store_id", store.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Re-send the download email for an order. */
+export const resendDownloadEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ orderId: uuid }).parse(d))
+  .handler(async ({ data, context }) => {
+    const store = await ownerStore(context);
+    const { data: order } = await context.supabase
+      .from("orders")
+      .select("id")
+      .eq("id", data.orderId)
+      .eq("store_id", store.id)
+      .maybeSingle();
+    if (!order) throw new Error("Order not found");
+    const { sendDownloadEmail } = await import("@/lib/digital.server");
+    const sent = await sendDownloadEmail(data.orderId);
+    if (!sent) throw new Error("No email address on this order");
+    return { ok: true };
+  });
+
+/** Digital orders grouped for the admin dashboard. */
+export const listDigitalOrders = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const store = await ownerStore(context);
+    const { data: rows, error } = await context.supabase
+      .from("order_downloads")
+      .select(
+        "id,order_id,product_id,product_name,file_label,version,status,download_count,max_downloads,expires_at,last_downloaded_at,created_at",
+      )
+      .eq("store_id", store.id)
+      .order("created_at", { ascending: false })
+      .limit(400);
+    if (error) throw new Error(error.message);
+    const list = rows ?? [];
+    const orderIds = Array.from(new Set(list.map((r: any) => r.order_id)));
+    if (orderIds.length === 0) return { orders: [], storeMode: store.store_mode };
+
+    const { data: orders } = await context.supabase
+      .from("orders")
+      .select("id,invoice_no,customer_name,phone,payment_status,status,subtotal,created_at")
+      .in("id", orderIds as string[]);
+    const byId = new Map((orders ?? []).map((o: any) => [o.id, o]));
+
+    const grouped = orderIds.map((oid) => {
+      const o: any = byId.get(oid as string) ?? {};
+      const files = list.filter((r: any) => r.order_id === oid);
+      return {
+        order_id: oid as string,
+        invoice_no: o.invoice_no ?? null,
+        customer_name: o.customer_name ?? "—",
+        phone: o.phone ?? null,
+        payment_status: o.payment_status ?? "pending",
+        status: o.status ?? "placed",
+        subtotal: Number(o.subtotal ?? 0),
+        created_at: o.created_at ?? files[0]?.created_at,
+        files,
+      };
+    });
+    return { orders: grouped, storeMode: store.store_mode };
+  });
