@@ -1,60 +1,57 @@
+# ORZEN Digital Store
 
-# Store Mode Switching System (Physical ↔ Digital ↔ Hybrid)
+A complete digital-marketplace experience that activates on the **same URLs** when a store's mode is Digital (or a digital cart in Hybrid). The Physical store keeps its current code paths, routes and APIs untouched — every digital surface is a new component tree chosen at render time.
 
-Today the store already has a `store_mode` column (physical/digital/hybrid) and it only affects checkout, the AI agent context and a few product fields. The admin panel itself does not change: navigation, categories, banners and the product form look the same in every mode, and switching is a silent field save with no confirmation, no loading transition and no domain handling.
+Existing groundwork already in place: `store_mode` on stores, `product_type` on products, `product_files`, `order_downloads`, `license_keys`, the private `digital-files` bucket, entitlement/unlock/email engine, a basic `MyDownloads` and a Digital Orders admin page. This plan builds the real marketplace on top of it.
 
-This upgrades it into a full, reversible workflow. Nothing is deleted at any point — modes only show or hide.
+Shipped in 5 phases; each phase is usable on its own.
 
-## 1. Switching flow (Store Settings → Store Mode)
+---
 
-- Mode cards stay, but selecting a different mode no longer saves silently. It opens a **confirmation dialog** listing, for the target mode:
-  - what becomes visible (e.g. File Management, License Settings, Download Analytics)
-  - what becomes hidden (e.g. Courier, Shipping, Weight/Dimensions, COD)
-  - a reassurance block: products, categories, banners, orders, customers, analytics, coupons, reviews, payment/AI/email/notification settings, subscription, billing and invoice history are all kept and reappear if you switch back
-  - the domain warning when a custom domain is connected
-- On confirm, a **transition overlay** runs through the four steps: Updating Store Configuration… → Preparing Store Modules… → Refreshing Dashboard… → Almost Done… Each step is tied to real work (save → domain handling → cache invalidation → nav rebuild), not a fake timer.
-- Afterwards only the mode-dependent React Query caches are invalidated (store, products, categories, banners, badge counts, domains). No page reload, no sign-out, no route change.
+## Phase 1 — Digital theme + homepage
 
-## 2. Mode-aware navigation
+- New **Digital** theme in the theme catalog (Winner-Admin owned, same locking rules): tech-forward, minimal, dark/light ready, download-focused cards, smooth reveal animations. Visually distinct from the physical themes — no shared card component.
+- New storefront homepage rendered when store mode is Digital: premium hero, Featured, Best Selling, New Releases, Trending, Recently Updated, Free Resources, Bundle Deals, Collections, Popular Categories, Reviews, FAQ, Newsletter, digital footer. Every section toggleable in the existing theme customizer.
+- Store header/nav switches to a marketplace layout (search-first, categories mega-list, My Downloads entry).
+- Physical homepage file untouched; mode picks the component.
 
-`src/routes/_authenticated/admin/route.tsx` gains a `modes` tag per link:
+## Phase 2 — Digital categories + product model
 
-- Physical-only: Courier Orders, Couriers, Delivery, Inventory, Low Stock Alerts
-- Digital-only: Digital Orders, plus new Digital pages (File Management, Download Settings, License Settings, Download Analytics)
-- Hybrid: both sets, kept inside their existing groups so nothing duplicates
-- Everything else (Orders, Customers, Finance, Marketing, Theme, Billing…) is always visible
+- Global digital category catalog owned by Winner Admin (eBooks, Courses, Templates, Source Code, Website Templates, UI Kits, Graphics, Fonts, Icons, Plugins, Software, Mobile Apps, Audio, Video, Photography, Documents, Business Resources) — auto-applied to every digital store, extendable globally, hideable per store.
+- Digital product types: Downloadable File, External Link, License Key, Online Course, Subscription, Software, Bundle.
+- Digital product form (new tabbed form, physical form untouched): Basic (name, short + full description, category, tags) · Media (thumbnail, gallery, preview video, demo URL) · Files (multi-upload + external links) · Info (size, format, version, last updated, compatible devices/software) · Pricing (regular, sale, free, limited-time offer window) · Downloads (limit, expiry, max devices, instant vs manual) · License (keys/serials/activation codes, pooled).
+- Bundles reference child products.
 
-Hidden pages remain routable — a bookmarked hidden URL still works and shows a small "this module is hidden in your current Store Mode" notice instead of a 404.
+## Phase 3 — Product page, cart, checkout
 
-## 3. Products
+- Digital PDP: large preview, screenshots gallery, preview video, description, features, included files, version + changelog, compatibility, requirements, reviews, related. No shipping/stock/courier blocks anywhere.
+- Digital cart: products, coupons, discounts, total, instant checkout. No weight, shipping, courier or delivery charge.
+- Digital checkout: name, email, optional phone, payment method only. Delivery forced to zero server-side, courier auto-draft skipped.
+- After payment: order created → entitlements unlocked → download email sent → download page shown → invoice generated.
 
-- Physical mode: product dialog opens as a physical product; the Digital tab and the type selector are hidden.
-- Digital mode: opens as a digital product; stock, weight, dimensions and COD-related fields are hidden.
-- Hybrid mode: an explicit Physical / Digital type selector at the top of the dialog drives which tabs show.
-- The product list gains a type filter and a type badge in hybrid mode.
-- Existing products of the "other" type are never deleted, just filtered out of the default list view in single-type modes (with a "show all types" toggle so nothing is lost from sight permanently).
+## Phase 4 — Customer downloads + admin
 
-## 4. Categories
+- Customer dashboard **My Downloads**: thumbnail, name, purchase date, current version, download button, remaining downloads, download history, license key.
+- Digital admin dashboard: total digital products, total downloads, digital sales, most downloaded, recently updated, active licenses, free downloads.
+- Digital Orders table upgraded: order no, customer, product, payment status, download status, download count; actions View / Resend download / Reset limit / Generate new license / Cancel access.
+- Search & filter across storefront: category, price, Free, Premium, Latest, Best Selling, Recently Updated, product type, file format.
 
-Categories gain a **product type** (physical / digital / both, default `both` so existing rows keep working everywhere). The categories page shows a type selector on create/edit, and filters the list to categories usable in the current mode. Storefront category listings respect the same filter.
+## Phase 5 — AI agent + notifications
 
-## 5. Banners
+- AI Sales Agent context switches fully to digital knowledge in Digital mode (downloads, licenses, versions, compatibility, installation, updates, refunds, file access) and ignores physical shipping knowledge.
+- Notification templates: purchase confirmation, download ready, product update, new version released, license activated — delivered over the current email/in-app system, with the channel structure left open for SMS/WhatsApp/Messenger.
 
-Banners gain a **campaign type** (physical / digital / general, default `general`). The banners page shows the type on create and filters by mode; hybrid shows all three with a filter chip. Storefront picks banners matching the active mode plus general ones.
-
-## 6. AI Sales Agent knowledge base
-
-The agent's store context already switches wording by mode. It will additionally scope the product knowledge it loads: physical mode feeds physical products only, digital mode digital products only, hybrid feeds both with the type labelled per item. No manual reconfiguration by the merchant, no separate settings.
-
-## 7. Domain handling
-
-- On a mode change, any connected **custom** domain (not the free subdomain) is automatically disconnected: its row is marked disconnected and archived with the previous state, primary flag cleared. Nothing is deleted.
-- A persistent warning banner appears in the admin: "Your custom domain has been disconnected because the Store Mode changed. Please reconnect your domain for the new Store Mode."
-- Store Settings → Domains shows the archived domain with a one-click **Reconnect** action that restores the record and re-runs verification.
+---
 
 ## Technical notes
 
-- Migration: `categories.product_type` (text, default `both`), `banners.campaign_type` (text, default `general`), `store_domains.disconnected_at` + `previous_state` jsonb, and `stores.store_mode_changed_at`. All additive with defaults, so existing rows and current queries are unaffected; GRANTs mirror the existing ones on those tables.
-- New server function `switchStoreMode` (authenticated) does the mode write plus domain archiving in one call and returns the domain-disconnect result for the UI warning.
-- New shared helper module extends `src/lib/digital.ts` with mode→module visibility maps, used by nav, product dialog, categories and banners so the rules live in one place.
-- No existing route paths, API signatures or query keys change; all new behaviour is additive and defaults to today's behaviour for physical stores.
+- **Routing:** `/store/$slug/*` stays. Each route picks a Physical or Digital view component from store mode; Hybrid decides per product/cart. No route renamed, no API signature changed.
+- **New tables:** `platform_digital_categories` (global catalog, Winner-Admin managed) and `store_digital_category_prefs` (per-store hide/rename), plus `product_bundle_items`. Extra product columns for version/changelog/compatibility/demo URL/limited-offer window go into the existing `digital` jsonb where possible; only promote to real columns where they are filtered on. Every new table ships with GRANTs, RLS scoped by store owner + anon read where public, and updated_at triggers.
+- **Downloads** keep the existing signed-URL server function: entitlement verified, counter decremented, hit logged, files never public. Max-devices enforced by recording device fingerprints per entitlement.
+- **Pricing and totals** stay server-calculated; digital lines force delivery zero server-side, not just in UI.
+- **Performance:** digital homepage sections load through one batched server function; images lazy-loaded; mobile-first layout throughout.
+- Physical store files are not edited beyond the mode branch at the route entry points.
+
+## Out of scope
+
+SMS/WhatsApp/Messenger delivery of download links (structure prepared only), multi-vendor/affiliate selling, and course video hosting/player (courses ship as downloadable + external-link products in this pass).

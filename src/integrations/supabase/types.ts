@@ -1444,6 +1444,78 @@ export type Database = {
           },
         ]
       }
+      download_events: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          device_hash: string | null
+          download_id: string | null
+          id: string
+          order_id: string | null
+          product_id: string | null
+          store_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          device_hash?: string | null
+          download_id?: string | null
+          id?: string
+          order_id?: string | null
+          product_id?: string | null
+          store_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          device_hash?: string | null
+          download_id?: string | null
+          id?: string
+          order_id?: string | null
+          product_id?: string | null
+          store_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "download_events_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "store_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "download_events_download_id_fkey"
+            columns: ["download_id"]
+            isOneToOne: false
+            referencedRelation: "order_downloads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "download_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "download_events_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "download_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_logs: {
         Row: {
           attempts: number
@@ -3340,6 +3412,42 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_digital_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          key: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_digital_settings: {
         Row: {
           created_at: string
@@ -3520,6 +3628,58 @@ export type Database = {
         }
         Relationships: []
       }
+      product_bundle_items: {
+        Row: {
+          bundle_product_id: string
+          child_product_id: string
+          created_at: string
+          id: string
+          sort_order: number
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          bundle_product_id: string
+          child_product_id: string
+          created_at?: string
+          id?: string
+          sort_order?: number
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          bundle_product_id?: string
+          child_product_id?: string
+          created_at?: string
+          id?: string
+          sort_order?: number
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_bundle_items_bundle_product_id_fkey"
+            columns: ["bundle_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_bundle_items_child_product_id_fkey"
+            columns: ["child_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_bundle_items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_files: {
         Row: {
           created_at: string
@@ -3646,6 +3806,7 @@ export type Database = {
           delivery_time_days: string | null
           description: string | null
           digital: Json
+          digital_category: string | null
           features: Json
           gallery: Json
           id: string
@@ -3684,6 +3845,7 @@ export type Database = {
           delivery_time_days?: string | null
           description?: string | null
           digital?: Json
+          digital_category?: string | null
           features?: Json
           gallery?: Json
           id?: string
@@ -3722,6 +3884,7 @@ export type Database = {
           delivery_time_days?: string | null
           description?: string | null
           digital?: Json
+          digital_category?: string | null
           features?: Json
           gallery?: Json
           id?: string
@@ -4221,6 +4384,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "store_customers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_digital_category_prefs: {
+        Row: {
+          category_key: string
+          created_at: string
+          custom_name: string | null
+          hidden: boolean
+          id: string
+          sort_order: number | null
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          category_key: string
+          created_at?: string
+          custom_name?: string | null
+          hidden?: boolean
+          id?: string
+          sort_order?: number | null
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          category_key?: string
+          created_at?: string
+          custom_name?: string | null
+          hidden?: boolean
+          id?: string
+          sort_order?: number | null
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_digital_category_prefs_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"

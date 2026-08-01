@@ -57,6 +57,7 @@ import { Route as AuthenticatedOwnerHealthRouteImport } from './routes/_authenti
 import { Route as AuthenticatedOwnerFraudRouteImport } from './routes/_authenticated/owner/fraud'
 import { Route as AuthenticatedOwnerFeaturesRouteImport } from './routes/_authenticated/owner/features'
 import { Route as AuthenticatedOwnerDomainsRouteImport } from './routes/_authenticated/owner/domains'
+import { Route as AuthenticatedOwnerDigitalCategoriesRouteImport } from './routes/_authenticated/owner/digital-categories'
 import { Route as AuthenticatedOwnerDevLogsRouteImport } from './routes/_authenticated/owner/dev-logs'
 import { Route as AuthenticatedOwnerCustomersRouteImport } from './routes/_authenticated/owner/customers'
 import { Route as AuthenticatedOwnerCouriersRouteImport } from './routes/_authenticated/owner/couriers'
@@ -406,6 +407,12 @@ const AuthenticatedOwnerDomainsRoute =
   AuthenticatedOwnerDomainsRouteImport.update({
     id: '/domains',
     path: '/domains',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerDigitalCategoriesRoute =
+  AuthenticatedOwnerDigitalCategoriesRouteImport.update({
+    id: '/digital-categories',
+    path: '/digital-categories',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
 const AuthenticatedOwnerDevLogsRoute =
@@ -1001,6 +1008,7 @@ export interface FileRoutesByFullPath {
   '/owner/couriers': typeof AuthenticatedOwnerCouriersRoute
   '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
+  '/owner/digital-categories': typeof AuthenticatedOwnerDigitalCategoriesRoute
   '/owner/domains': typeof AuthenticatedOwnerDomainsRoute
   '/owner/features': typeof AuthenticatedOwnerFeaturesRoute
   '/owner/fraud': typeof AuthenticatedOwnerFraudRoute
@@ -1132,6 +1140,7 @@ export interface FileRoutesByTo {
   '/owner/couriers': typeof AuthenticatedOwnerCouriersRoute
   '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
+  '/owner/digital-categories': typeof AuthenticatedOwnerDigitalCategoriesRoute
   '/owner/domains': typeof AuthenticatedOwnerDomainsRoute
   '/owner/features': typeof AuthenticatedOwnerFeaturesRoute
   '/owner/fraud': typeof AuthenticatedOwnerFraudRoute
@@ -1272,6 +1281,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/couriers': typeof AuthenticatedOwnerCouriersRoute
   '/_authenticated/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/_authenticated/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
+  '/_authenticated/owner/digital-categories': typeof AuthenticatedOwnerDigitalCategoriesRoute
   '/_authenticated/owner/domains': typeof AuthenticatedOwnerDomainsRoute
   '/_authenticated/owner/features': typeof AuthenticatedOwnerFeaturesRoute
   '/_authenticated/owner/fraud': typeof AuthenticatedOwnerFraudRoute
@@ -1412,6 +1422,7 @@ export interface FileRouteTypes {
     | '/owner/couriers'
     | '/owner/customers'
     | '/owner/dev-logs'
+    | '/owner/digital-categories'
     | '/owner/domains'
     | '/owner/features'
     | '/owner/fraud'
@@ -1543,6 +1554,7 @@ export interface FileRouteTypes {
     | '/owner/couriers'
     | '/owner/customers'
     | '/owner/dev-logs'
+    | '/owner/digital-categories'
     | '/owner/domains'
     | '/owner/features'
     | '/owner/fraud'
@@ -1682,6 +1694,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/couriers'
     | '/_authenticated/owner/customers'
     | '/_authenticated/owner/dev-logs'
+    | '/_authenticated/owner/digital-categories'
     | '/_authenticated/owner/domains'
     | '/_authenticated/owner/features'
     | '/_authenticated/owner/fraud'
@@ -2118,6 +2131,13 @@ declare module '@tanstack/react-router' {
       path: '/domains'
       fullPath: '/owner/domains'
       preLoaderRoute: typeof AuthenticatedOwnerDomainsRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/digital-categories': {
+      id: '/_authenticated/owner/digital-categories'
+      path: '/digital-categories'
+      fullPath: '/owner/digital-categories'
+      preLoaderRoute: typeof AuthenticatedOwnerDigitalCategoriesRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/owner/dev-logs': {
@@ -2972,6 +2992,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerCouriersRoute: typeof AuthenticatedOwnerCouriersRoute
   AuthenticatedOwnerCustomersRoute: typeof AuthenticatedOwnerCustomersRoute
   AuthenticatedOwnerDevLogsRoute: typeof AuthenticatedOwnerDevLogsRoute
+  AuthenticatedOwnerDigitalCategoriesRoute: typeof AuthenticatedOwnerDigitalCategoriesRoute
   AuthenticatedOwnerDomainsRoute: typeof AuthenticatedOwnerDomainsRoute
   AuthenticatedOwnerFeaturesRoute: typeof AuthenticatedOwnerFeaturesRoute
   AuthenticatedOwnerFraudRoute: typeof AuthenticatedOwnerFraudRoute
@@ -3019,6 +3040,8 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerCouriersRoute: AuthenticatedOwnerCouriersRoute,
     AuthenticatedOwnerCustomersRoute: AuthenticatedOwnerCustomersRoute,
     AuthenticatedOwnerDevLogsRoute: AuthenticatedOwnerDevLogsRoute,
+    AuthenticatedOwnerDigitalCategoriesRoute:
+      AuthenticatedOwnerDigitalCategoriesRoute,
     AuthenticatedOwnerDomainsRoute: AuthenticatedOwnerDomainsRoute,
     AuthenticatedOwnerFeaturesRoute: AuthenticatedOwnerFeaturesRoute,
     AuthenticatedOwnerFraudRoute: AuthenticatedOwnerFraudRoute,

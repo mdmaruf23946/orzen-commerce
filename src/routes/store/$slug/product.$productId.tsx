@@ -22,6 +22,8 @@ import { ShareBar } from "@/components/storefront/pdp/ShareBar";
 import { TrustBadges } from "@/components/storefront/pdp/TrustBadges";
 import { StoreCard } from "@/components/storefront/pdp/StoreCard";
 import { StickyMobileBar } from "@/components/storefront/pdp/StickyMobileBar";
+import { DigitalInfoPanel } from "@/components/storefront/digital/DigitalInfoPanel";
+
 
 const storeQuery = (slug: string) =>
   queryOptions({ queryKey: ["store", slug], queryFn: () => getStoreBySlug({ data: { slug } }) });
@@ -102,9 +104,11 @@ function ProductPage() {
 
   const price = Number(product!.price);
   const oldPrice = product!.old_price != null ? Number(product!.old_price) : null;
-  const inStock = product!.stock > 0 && product!.status !== "draft";
+  const isDigital = (product as any).product_type === "digital";
+  const inStock = isDigital || (product!.stock > 0 && product!.status !== "draft");
 
   const meta = (product!.meta ?? {}) as Record<string, any>;
+
   const highlights: string[] = Array.isArray(meta.highlights) ? meta.highlights.filter(Boolean) : [];
   const packageIncludes: string[] = Array.isArray(meta.package_includes)
     ? meta.package_includes.filter(Boolean)
@@ -249,7 +253,7 @@ function ProductPage() {
               <BuyBox
                 price={price}
                 oldPrice={oldPrice}
-                stock={product!.stock}
+                stock={isDigital ? 9999 : product!.stock}
                 status={product!.status}
                 qty={qty}
                 setQty={setQty}
@@ -261,15 +265,25 @@ function ProductPage() {
         </div>
       </div>
 
+      {isDigital && (
+        <DigitalInfoPanel
+          files={((product as any).files ?? []) as any}
+          digital={(product as any).digital}
+          meta={meta}
+          updatedAt={(product as any).updated_at ?? null}
+        />
+      )}
+
       <InfoTabs
         description={product!.description ?? null}
         features={features}
         specifications={specifications}
         packageIncludes={packageIncludes}
-        deliveryInfo={deliveryInfo}
+        deliveryInfo={isDigital ? null : deliveryInfo}
         returnPolicy={(product as any).return_policy ?? null}
-        warranty={(product as any).warranty ?? null}
+        warranty={isDigital ? null : (product as any).warranty ?? null}
       />
+
 
       <ReviewsBlock rating={rating} />
 
@@ -294,7 +308,7 @@ function ProductPage() {
       )}
 
       <StoreCard slug={slug} name={store!.name} logoUrl={store!.logo_url} />
-      <TrustBadges codEnabled={codEnabled} />
+      {!isDigital && <TrustBadges codEnabled={codEnabled} />}
       <ShareBar url={shareUrl} title={product!.name} />
 
       <div className="mt-8">
