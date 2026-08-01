@@ -1211,11 +1211,13 @@ function WizardForm({
   onCancel: () => void;
   footerInfo: React.ReactNode;
 }) {
-  const [step, setStep] = useState(0);
+  const [rawStep, setStep] = useState(0);
   const total = tabs.length;
+  const step = Math.min(rawStep, total - 1);
   const current = tabs[step];
   const isLast = step === total - 1;
   const progress = Math.round(((step + 1) / total) * 100);
+
 
   function goNext(e: React.MouseEvent) {
     e.preventDefault();
