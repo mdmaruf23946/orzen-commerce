@@ -94,6 +94,7 @@ import { Route as AuthenticatedAdminFinanceRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminDuplicateProtectionRouteImport } from './routes/_authenticated/admin/duplicate-protection'
 import { Route as AuthenticatedAdminDomainsRouteImport } from './routes/_authenticated/admin/domains'
 import { Route as AuthenticatedAdminDnsCheckRouteImport } from './routes/_authenticated/admin/dns-check'
+import { Route as AuthenticatedAdminDigitalOrdersRouteImport } from './routes/_authenticated/admin/digital-orders'
 import { Route as AuthenticatedAdminDeliveryRouteImport } from './routes/_authenticated/admin/delivery'
 import { Route as AuthenticatedAdminCustomersAccountsRouteImport } from './routes/_authenticated/admin/customers-accounts'
 import { Route as AuthenticatedAdminCustomersRouteImport } from './routes/_authenticated/admin/customers'
@@ -621,6 +622,12 @@ const AuthenticatedAdminDnsCheckRoute =
     path: '/dns-check',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminDigitalOrdersRoute =
+  AuthenticatedAdminDigitalOrdersRouteImport.update({
+    id: '/digital-orders',
+    path: '/digital-orders',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminDeliveryRoute =
   AuthenticatedAdminDeliveryRouteImport.update({
     id: '/delivery',
@@ -956,6 +963,7 @@ export interface FileRoutesByFullPath {
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/customers-accounts': typeof AuthenticatedAdminCustomersAccountsRoute
   '/admin/delivery': typeof AuthenticatedAdminDeliveryRoute
+  '/admin/digital-orders': typeof AuthenticatedAdminDigitalOrdersRoute
   '/admin/dns-check': typeof AuthenticatedAdminDnsCheckRoute
   '/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/admin/duplicate-protection': typeof AuthenticatedAdminDuplicateProtectionRoute
@@ -1086,6 +1094,7 @@ export interface FileRoutesByTo {
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/customers-accounts': typeof AuthenticatedAdminCustomersAccountsRoute
   '/admin/delivery': typeof AuthenticatedAdminDeliveryRoute
+  '/admin/digital-orders': typeof AuthenticatedAdminDigitalOrdersRoute
   '/admin/dns-check': typeof AuthenticatedAdminDnsCheckRoute
   '/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/admin/duplicate-protection': typeof AuthenticatedAdminDuplicateProtectionRoute
@@ -1225,6 +1234,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/_authenticated/admin/customers-accounts': typeof AuthenticatedAdminCustomersAccountsRoute
   '/_authenticated/admin/delivery': typeof AuthenticatedAdminDeliveryRoute
+  '/_authenticated/admin/digital-orders': typeof AuthenticatedAdminDigitalOrdersRoute
   '/_authenticated/admin/dns-check': typeof AuthenticatedAdminDnsCheckRoute
   '/_authenticated/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/_authenticated/admin/duplicate-protection': typeof AuthenticatedAdminDuplicateProtectionRoute
@@ -1364,6 +1374,7 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/customers-accounts'
     | '/admin/delivery'
+    | '/admin/digital-orders'
     | '/admin/dns-check'
     | '/admin/domains'
     | '/admin/duplicate-protection'
@@ -1494,6 +1505,7 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/customers-accounts'
     | '/admin/delivery'
+    | '/admin/digital-orders'
     | '/admin/dns-check'
     | '/admin/domains'
     | '/admin/duplicate-protection'
@@ -1632,6 +1644,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/customers'
     | '/_authenticated/admin/customers-accounts'
     | '/_authenticated/admin/delivery'
+    | '/_authenticated/admin/digital-orders'
     | '/_authenticated/admin/dns-check'
     | '/_authenticated/admin/domains'
     | '/_authenticated/admin/duplicate-protection'
@@ -2366,6 +2379,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminDnsCheckRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/digital-orders': {
+      id: '/_authenticated/admin/digital-orders'
+      path: '/digital-orders'
+      fullPath: '/admin/digital-orders'
+      preLoaderRoute: typeof AuthenticatedAdminDigitalOrdersRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/delivery': {
       id: '/_authenticated/admin/delivery'
       path: '/delivery'
@@ -2758,6 +2778,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminCustomersRoute: typeof AuthenticatedAdminCustomersRoute
   AuthenticatedAdminCustomersAccountsRoute: typeof AuthenticatedAdminCustomersAccountsRoute
   AuthenticatedAdminDeliveryRoute: typeof AuthenticatedAdminDeliveryRoute
+  AuthenticatedAdminDigitalOrdersRoute: typeof AuthenticatedAdminDigitalOrdersRoute
   AuthenticatedAdminDnsCheckRoute: typeof AuthenticatedAdminDnsCheckRoute
   AuthenticatedAdminDomainsRoute: typeof AuthenticatedAdminDomainsRoute
   AuthenticatedAdminDuplicateProtectionRoute: typeof AuthenticatedAdminDuplicateProtectionRoute
@@ -2806,6 +2827,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminCustomersAccountsRoute:
       AuthenticatedAdminCustomersAccountsRoute,
     AuthenticatedAdminDeliveryRoute: AuthenticatedAdminDeliveryRoute,
+    AuthenticatedAdminDigitalOrdersRoute: AuthenticatedAdminDigitalOrdersRoute,
     AuthenticatedAdminDnsCheckRoute: AuthenticatedAdminDnsCheckRoute,
     AuthenticatedAdminDomainsRoute: AuthenticatedAdminDomainsRoute,
     AuthenticatedAdminDuplicateProtectionRoute:
