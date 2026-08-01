@@ -188,7 +188,7 @@ function SettingsPage() {
           language: form.language || "en",
           timezone: form.timezone || "Asia/Dhaka",
           allow_guest_checkout: !!form.allow_guest_checkout,
-          store_mode: storeMode(form.store_mode),
+          // store_mode is switched through StoreModeSwitcher (guarded flow), not this form.
         },
 
       });
