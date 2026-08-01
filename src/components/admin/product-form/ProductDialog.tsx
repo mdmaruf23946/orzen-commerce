@@ -18,6 +18,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Progress } from "@/components/ui/progress";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { GalleryUploader } from "@/components/admin/GalleryUploader";
+import { DigitalFilesUploader, type DigitalFile } from "./DigitalFilesUploader";
+
 
 const RichTextEditor = lazy(() => import("./RichTextEditor"));
 const CropDialog = lazy(() => import("./CropDialog"));
