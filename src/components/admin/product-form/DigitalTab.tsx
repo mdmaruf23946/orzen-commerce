@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -12,7 +12,6 @@ import {
   listProductFiles,
   saveProductFile,
   signOwnerFile,
-  updateProductDigital,
 } from "@/lib/digital.functions";
 import { DEFAULT_DIGITAL, DIGITAL_ACCEPT, normalizeDigital, prettySize, type DigitalConfig } from "@/lib/digital";
 import { Button } from "@/components/ui/button";
@@ -101,12 +100,6 @@ export function DigitalTab({
       )}
     </div>
   );
-}
-
-/** Persist the digital config + product type for an existing product. */
-export function useSaveDigital() {
-  const fn = useServerFn(updateProductDigital);
-  return fn;
 }
 
 function FilesManager({ productId, storeId }: { productId: string; storeId: string }) {
