@@ -81,6 +81,26 @@ function StoreHome() {
   const theme = useStoreTheme();
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
 
+  const mode = storeMode((store as any).store_mode);
+  const digitalProducts = useMemo(
+    () => (products as any[]).filter((p) => p.product_type === "digital"),
+    [products],
+  );
+
+  if (mode === "digital") {
+    return (
+      <DigitalHome
+        slug={slug}
+        storeId={store.id}
+        storeName={store.name}
+        products={digitalProducts as any}
+        bestSelling={(bestSelling as any[]).filter((p) => p.product_type === "digital") as any}
+        query={query}
+      />
+    );
+  }
+
+
   const mainCategories = useMemo(
     () => categories.filter((c: any) => !c.parent_id),
     [categories],
