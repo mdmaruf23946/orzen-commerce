@@ -161,6 +161,50 @@ export function tplPaymentRejected(c: RejectedCtx) {
   return { subject: "Subscription Verification Failed", html };
 }
 
+// ---------- Digital delivery ----------
+
+export type DownloadReadyCtx = {
+  storeName: string;
+  customerName?: string | null;
+  orderRef: string;
+  downloadUrl: string;
+  items: { name: string; label?: string | null; version?: string | null }[];
+  licenses?: string[];
+  instructions?: string[];
+};
+
+export function tplDigitalDownloadReady(c: DownloadReadyCtx) {
+  const list = c.items
+    .map(
+      (i) =>
+        `<li style="margin:0 0 6px;"><b>${escapeHtml(i.name)}</b>${
+          i.label ? ` — ${escapeHtml(i.label)}` : ""
+        }${i.version ? ` <span style="color:#6b7280">(v${escapeHtml(i.version)})</span>` : ""}</li>`,
+    )
+    .join("");
+  const licenseBlock = c.licenses?.length
+    ? `<div style="background:#f8fafc;border:1px solid ${BRAND.border};border-radius:12px;padding:12px 14px;margin:0 0 20px;">
+         <div style="font-weight:600;margin-bottom:6px;">Your license key${c.licenses.length > 1 ? "s" : ""}</div>
+         ${c.licenses.map((k) => `<div style="font-family:monospace;font-size:14px;">${escapeHtml(k)}</div>`).join("")}
+       </div>`
+    : "";
+  const instructionBlock = c.instructions?.length
+    ? `<div style="margin:0 0 20px;color:#374151;font-size:14px;">${c.instructions
+        .map((t) => `<p style="margin:0 0 6px;">${escapeHtml(t)}</p>`)
+        .join("")}</div>`
+    : "";
+  const html = shell(
+    `<h2 style="margin:0 0 12px;font-size:20px;">Your download is ready 🎉</h2>
+     <p style="margin:0 0 12px;">Hi${c.customerName ? " " + escapeHtml(c.customerName) : ""}, thanks for your purchase from <b>${escapeHtml(c.storeName)}</b>. Order <b>${escapeHtml(c.orderRef)}</b> is confirmed and your files are unlocked.</p>
+     <ul style="margin:0 0 20px;padding-left:18px;font-size:14px;">${list}</ul>
+     ${licenseBlock}
+     ${instructionBlock}
+     <div>${button(c.downloadUrl, "Download now")}</div>`,
+    `Your files from ${c.storeName} are ready`,
+  );
+  return { subject: `Your download is ready — ${c.storeName}`, html };
+}
+
 // ---------- Queue + send ----------
 
 type EnqueueArgs = {
