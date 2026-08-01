@@ -142,7 +142,39 @@ export const updateProductDigital = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Assign the product to one of the global digital categories. */
+export const setProductDigitalCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({ productId: uuid, key: z.string().trim().max(64).nullable() })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const store = await ownerStore(context);
+    const { error } = await context.supabase
+      .from("products")
+      .update({ digital_category: data.key || null } as any)
+      .eq("id", data.productId)
+      .eq("store_id", store.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Global digital category catalog, for admin pickers. */
+export const listDigitalCatalog = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("platform_digital_categories")
+      .select("key,name,sort_order,is_active,icon,description,id")
+      .order("sort_order", { ascending: true });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
 export const listLicenseKeys = createServerFn({ method: "GET" })
+
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ productId: uuid }).parse(d))
   .handler(async ({ data, context }) => {
