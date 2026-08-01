@@ -23,6 +23,8 @@ import { CountBadge } from "@/components/admin/CountBadge";
 import { useBadgeCounts, useMarkSeen } from "@/lib/use-badge-counts";
 import { getMyStore } from "@/lib/admin.functions";
 import { resolveStoreIcon } from "@/lib/store-icon";
+import { isPathVisibleInMode, storeMode, type StoreMode } from "@/lib/store-mode";
+import { DomainDisconnectedBanner } from "@/components/admin/DomainDisconnectedBanner";
 
 
 type BadgeKey =
@@ -88,10 +90,11 @@ const groupDefs: { label: string; paths: string[] }[] = [
   { label: "Account", paths: ["/admin/subscription", "/admin/billing", "/admin/settings"] },
 ];
 
-function buildGroups(query: string) {
+function buildGroups(query: string, mode: StoreMode) {
   const q = query.trim().toLowerCase();
   const used = new Set<string>();
-  const byPath = new Map(links.map((l) => [l.to, l]));
+  const visible = links.filter((l) => isPathVisibleInMode(l.to, mode));
+  const byPath = new Map(visible.map((l) => [l.to, l]));
   const groups = groupDefs.map((g) => {
     const items: LinkDef[] = [];
     for (const p of g.paths) {
@@ -100,9 +103,9 @@ function buildGroups(query: string) {
     }
     return { label: g.label, items };
   });
-  const leftover = links.filter((l) => !used.has(l.to));
+  const leftover = visible.filter((l) => !used.has(l.to));
   if (leftover.length) groups.push({ label: "More", items: leftover });
-  if (!q) return groups;
+  if (!q) return groups.filter((g) => g.items.length > 0);
   return groups
     .map((g) => ({ ...g, items: g.items.filter((i) => i.label.toLowerCase().includes(q)) }))
     .filter((g) => g.items.length > 0);
@@ -165,7 +168,9 @@ function AdminLayout() {
     navigate({ to: "/auth", replace: true });
   }
 
-  const groups = useMemo(() => buildGroups(search), [search]);
+  const mode = storeMode((myStore as any)?.store_mode);
+  const groups = useMemo(() => buildGroups(search, mode), [search, mode]);
+  const hiddenHere = !isPathVisibleInMode(currentPath, mode);
 
   const asideWidth = collapsed ? "md:w-[72px]" : "md:w-64";
 
@@ -396,6 +401,17 @@ function AdminLayout() {
 
           <main className="flex-1 p-4 pb-[70px] md:p-6 md:pb-8 lg:p-8">
             <SubscriptionStatusBanner />
+            <DomainDisconnectedBanner />
+            {hiddenHere && (
+              <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200">
+                This module is hidden in your current Store Mode ({mode}). Your data is safe — switch
+                Store Mode in{" "}
+                <Link to="/admin/settings" className="underline">
+                  Store Settings
+                </Link>{" "}
+                to show it again.
+              </div>
+            )}
             <Outlet />
           </main>
         </div>

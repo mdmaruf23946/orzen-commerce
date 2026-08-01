@@ -29,7 +29,9 @@ import {
   updateInvoiceSettings,
   computeInvoicePreview,
 } from "@/lib/invoice-settings.functions";
-import { STORE_MODES, storeMode } from "@/lib/digital";
+import { storeMode } from "@/lib/digital";
+import { listMyDomains } from "@/lib/domains.functions";
+import { StoreModeSwitcher } from "@/components/admin/StoreModeSwitcher";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -127,8 +129,13 @@ function SettingsPage() {
   const getReqLogin = useServerFn(adminGetRequireCustomerLogin);
   const setReqLogin = useServerFn(adminSetRequireCustomerLogin);
   const qc = useQueryClient();
+  const domainsFn = useServerFn(listMyDomains);
 
   const { data: store } = useQuery({ queryKey: ["admin", "store"], queryFn: () => fetchStore() });
+  const { data: domainData } = useQuery({ queryKey: ["admin", "domains"], queryFn: () => domainsFn() });
+  const hasCustomDomain = ((domainData as any)?.domains ?? []).some(
+    (d: any) => d.kind === "custom" && !d.disconnected_at,
+  );
   const { data: reqLogin } = useQuery({
     queryKey: ["admin", "require-customer-login"],
     queryFn: () => getReqLogin(),
@@ -188,7 +195,7 @@ function SettingsPage() {
           language: form.language || "en",
           timezone: form.timezone || "Asia/Dhaka",
           allow_guest_checkout: !!form.allow_guest_checkout,
-          store_mode: storeMode(form.store_mode),
+          // store_mode is switched through StoreModeSwitcher (guarded flow), not this form.
         },
 
       });
@@ -286,26 +293,17 @@ function SettingsPage() {
           title="Store Mode"
           description="Decide what kind of products this store sells. Checkout adapts automatically."
         >
-          <div className="grid gap-3 sm:grid-cols-3">
-            {STORE_MODES.map((m) => {
-              const activeMode = storeMode(form.store_mode) === m.value;
-              return (
-                <button
-                  key={m.value}
-                  type="button"
-                  onClick={() => set("store_mode", m.value)}
-                  className={`rounded-xl border p-3 text-left transition ${
-                    activeMode
-                      ? "border-primary bg-primary/5 ring-1 ring-primary"
-                      : "hover:border-primary/40 hover:bg-muted/40"
-                  }`}
-                >
-                  <div className="text-sm font-semibold">{m.label}</div>
-                  <p className="mt-1 text-xs text-muted-foreground">{m.description}</p>
-                </button>
-              );
-            })}
-          </div>
+          <StoreModeSwitcher
+            value={form.store_mode}
+            hasCustomDomain={hasCustomDomain}
+            onSwitched={async () => {
+              const next = await qc.fetchQuery({
+                queryKey: ["admin", "store"],
+                queryFn: () => fetchStore(),
+              });
+              if (next) setForm({ ...(next as any) });
+            }}
+          />
           <p className="text-[11px] text-muted-foreground">
             Digital stores hide delivery zones, courier fields and shipping addresses at checkout,
             and unlock file downloads for the buyer once payment is confirmed.

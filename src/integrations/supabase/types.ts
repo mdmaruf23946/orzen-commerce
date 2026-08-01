@@ -573,6 +573,7 @@ export type Database = {
       }
       banners: {
         Row: {
+          campaign_type: string
           created_at: string
           id: string
           image_url: string
@@ -581,6 +582,7 @@ export type Database = {
           store_id: string
         }
         Insert: {
+          campaign_type?: string
           created_at?: string
           id?: string
           image_url: string
@@ -589,6 +591,7 @@ export type Database = {
           store_id: string
         }
         Update: {
+          campaign_type?: string
           created_at?: string
           id?: string
           image_url?: string
@@ -615,6 +618,7 @@ export type Database = {
           is_active: boolean
           name: string
           parent_id: string | null
+          product_type: string
           sort_order: number
           store_id: string
         }
@@ -626,6 +630,7 @@ export type Database = {
           is_active?: boolean
           name: string
           parent_id?: string | null
+          product_type?: string
           sort_order?: number
           store_id: string
         }
@@ -637,6 +642,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           parent_id?: string | null
+          product_type?: string
           sort_order?: number
           store_id?: string
         }
@@ -4230,12 +4236,15 @@ export type Database = {
           cf_ssl_validation: Json | null
           cf_status: string | null
           created_at: string
+          disconnect_reason: string | null
+          disconnected_at: string | null
           dns_target: string | null
           hostname: string
           id: string
           is_primary: boolean
           kind: string
           last_checked_at: string | null
+          previous_state: Json | null
           ssl_status: string
           status: string
           store_id: string
@@ -4250,12 +4259,15 @@ export type Database = {
           cf_ssl_validation?: Json | null
           cf_status?: string | null
           created_at?: string
+          disconnect_reason?: string | null
+          disconnected_at?: string | null
           dns_target?: string | null
           hostname: string
           id?: string
           is_primary?: boolean
           kind?: string
           last_checked_at?: string | null
+          previous_state?: Json | null
           ssl_status?: string
           status?: string
           store_id: string
@@ -4270,12 +4282,15 @@ export type Database = {
           cf_ssl_validation?: Json | null
           cf_status?: string | null
           created_at?: string
+          disconnect_reason?: string | null
+          disconnected_at?: string | null
           dns_target?: string | null
           hostname?: string
           id?: string
           is_primary?: boolean
           kind?: string
           last_checked_at?: string | null
+          previous_state?: Json | null
           ssl_status?: string
           status?: string
           store_id?: string
@@ -4855,6 +4870,7 @@ export type Database = {
           slug: string
           status: Database["public"]["Enums"]["store_status"]
           store_mode: string
+          store_mode_changed_at: string | null
           subscription_status: string
           tax_number: string | null
           template_version: string | null
@@ -4916,6 +4932,7 @@ export type Database = {
           slug: string
           status?: Database["public"]["Enums"]["store_status"]
           store_mode?: string
+          store_mode_changed_at?: string | null
           subscription_status?: string
           tax_number?: string | null
           template_version?: string | null
@@ -4977,6 +4994,7 @@ export type Database = {
           slug?: string
           status?: Database["public"]["Enums"]["store_status"]
           store_mode?: string
+          store_mode_changed_at?: string | null
           subscription_status?: string
           tax_number?: string | null
           template_version?: string | null

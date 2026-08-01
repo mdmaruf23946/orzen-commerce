@@ -546,7 +546,13 @@ export const listMyBanners = createServerFn({ method: "GET" })
 export const addBanner = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ image_url: z.string().min(1), link: z.string().max(500).optional().nullable() }).parse(d),
+    z
+      .object({
+        image_url: z.string().min(1),
+        link: z.string().max(500).optional().nullable(),
+        campaign_type: z.enum(["general", "physical", "digital"]).optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -561,6 +567,7 @@ export const addBanner = createServerFn({ method: "POST" })
       store_id: store.id,
       image_url: data.image_url,
       link: data.link ?? null,
+      campaign_type: data.campaign_type ?? "general",
       position: (count ?? 0) + 1,
     });
     if (error) throw new Error(error.message);
@@ -675,6 +682,7 @@ export const upsertCategory = createServerFn({ method: "POST" })
         sort_order: z.number().int().min(0).max(9999).optional(),
         is_active: z.boolean().optional(),
         parent_id: z.string().uuid().nullable().optional(),
+        product_type: z.enum(["both", "physical", "digital"]).optional(),
       })
       .parse(d),
   )
@@ -689,6 +697,7 @@ export const upsertCategory = createServerFn({ method: "POST" })
       ...(data.sort_order !== undefined ? { sort_order: data.sort_order } : {}),
       ...(data.is_active !== undefined ? { is_active: data.is_active } : {}),
       ...(data.parent_id !== undefined ? { parent_id: data.parent_id } : {}),
+      ...(data.product_type !== undefined ? { product_type: data.product_type } : {}),
     };
     if (data.id) {
       const { error } = await supabase
