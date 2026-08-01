@@ -22,6 +22,8 @@ import { ShareBar } from "@/components/storefront/pdp/ShareBar";
 import { TrustBadges } from "@/components/storefront/pdp/TrustBadges";
 import { StoreCard } from "@/components/storefront/pdp/StoreCard";
 import { StickyMobileBar } from "@/components/storefront/pdp/StickyMobileBar";
+import { DigitalInfoPanel } from "@/components/storefront/digital/DigitalInfoPanel";
+
 
 const storeQuery = (slug: string) =>
   queryOptions({ queryKey: ["store", slug], queryFn: () => getStoreBySlug({ data: { slug } }) });
