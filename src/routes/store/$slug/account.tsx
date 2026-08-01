@@ -32,8 +32,6 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import { AccountShell } from "@/components/storefront/AccountShell";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { storeQuery } from "@/routes/store/$slug/route";
 
 const TABS = ["overview", "profile", "orders", "addresses", "wishlist", "password"] as const;
 type Tab = (typeof TABS)[number];
