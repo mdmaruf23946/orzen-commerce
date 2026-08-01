@@ -1100,7 +1100,7 @@ export function ProductDialog({
           </DialogHeader>
 
           <WizardForm
-            tabs={tabs as any}
+            tabs={visibleTabs as any}
             saving={saving}
             editing={!!editing}
             onSubmit={submit}
