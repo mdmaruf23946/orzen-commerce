@@ -8,11 +8,14 @@ import {
   addLicenseKeys,
   deleteLicenseKey,
   deleteProductFile,
+  listDigitalCatalog,
   listLicenseKeys,
   listProductFiles,
   saveProductFile,
+  setProductDigitalCategory,
   signOwnerFile,
 } from "@/lib/digital.functions";
+
 import { DEFAULT_DIGITAL, DIGITAL_ACCEPT, normalizeDigital, prettySize, type DigitalConfig } from "@/lib/digital";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
