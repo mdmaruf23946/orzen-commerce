@@ -44,7 +44,27 @@ type ProductMeta = {
   videos?: { url: string; provider: "youtube" | "facebook"; primary?: boolean }[];
   visibility?: { scheduled_at?: string | null };
   ai_ready?: { description?: boolean; enhance?: boolean; bg_removal?: boolean; seo?: boolean };
+  digital?: DigitalMeta;
 };
+
+type DigitalMeta = {
+  files?: DigitalFile[];
+  external_url?: string | null;
+  version?: string | null;
+  changelog?: string | null;
+  platforms?: string[];
+  tags?: string[];
+  preview?: { images?: string[]; video_url?: string | null; demo_url?: string | null };
+  download?: {
+    mode?: "instant" | "manual";
+    max_downloads?: number | null;
+    expiry_days?: number | null;
+    allow_redownload?: boolean;
+  };
+  free?: boolean;
+  sale_window?: { start?: string | null; end?: string | null };
+};
+
 
 type VariantsV2 = {
   options: { name: string; values: string[] }[];
