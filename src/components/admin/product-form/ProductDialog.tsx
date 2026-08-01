@@ -1072,14 +1072,13 @@ export function ProductDialog({
     },
   ];
 
-  const DIGITAL_HIDDEN = ["inventory", "shipping", "purchase", "variants", "attributes", "related", "ai"];
   const visibleTabs = isDigital
     ? [
         ...tabs.filter((t) => t.id === "general" || t.id === "media"),
         ...digitalTabs,
         ...tabs.filter((t) => t.id === "pricing" || t.id === "visibility" || t.id === "seo"),
       ]
-    : tabs.filter((t) => !DIGITAL_HIDDEN.includes("__none__"));
+    : tabs;
 
 
   return (
@@ -1221,11 +1220,11 @@ function WizardForm({
 
   function goNext(e: React.MouseEvent) {
     e.preventDefault();
-    if (!isLast) setStep((s) => Math.min(total - 1, s + 1));
+    if (!isLast) setStep(Math.min(total - 1, step + 1));
   }
   function goBack(e: React.MouseEvent) {
     e.preventDefault();
-    setStep((s) => Math.max(0, s - 1));
+    setStep(Math.max(0, step - 1));
   }
 
   return (
