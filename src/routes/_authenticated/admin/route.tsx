@@ -88,10 +88,11 @@ const groupDefs: { label: string; paths: string[] }[] = [
   { label: "Account", paths: ["/admin/subscription", "/admin/billing", "/admin/settings"] },
 ];
 
-function buildGroups(query: string) {
+function buildGroups(query: string, mode: StoreMode) {
   const q = query.trim().toLowerCase();
   const used = new Set<string>();
-  const byPath = new Map(links.map((l) => [l.to, l]));
+  const visible = links.filter((l) => isPathVisibleInMode(l.to, mode));
+  const byPath = new Map(visible.map((l) => [l.to, l]));
   const groups = groupDefs.map((g) => {
     const items: LinkDef[] = [];
     for (const p of g.paths) {
@@ -100,9 +101,9 @@ function buildGroups(query: string) {
     }
     return { label: g.label, items };
   });
-  const leftover = links.filter((l) => !used.has(l.to));
+  const leftover = visible.filter((l) => !used.has(l.to));
   if (leftover.length) groups.push({ label: "More", items: leftover });
-  if (!q) return groups;
+  if (!q) return groups.filter((g) => g.items.length > 0);
   return groups
     .map((g) => ({ ...g, items: g.items.filter((i) => i.label.toLowerCase().includes(q)) }))
     .filter((g) => g.items.length > 0);
