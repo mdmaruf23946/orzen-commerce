@@ -24,6 +24,7 @@ import { useBadgeCounts, useMarkSeen } from "@/lib/use-badge-counts";
 import { getMyStore } from "@/lib/admin.functions";
 import { resolveStoreIcon } from "@/lib/store-icon";
 import { isPathVisibleInMode, storeMode, type StoreMode } from "@/lib/store-mode";
+import { DomainDisconnectedBanner } from "@/components/admin/DomainDisconnectedBanner";
 
 
 type BadgeKey =
