@@ -137,8 +137,8 @@ export const upsertCoupon = createServerFn({ method: "POST" })
       category_ids: data.category_ids ?? [],
       product_ids: data.product_ids ?? [],
       active: data.active,
+      ...(data.product_type ? { product_type: data.product_type } : {}),
     };
-    if (data.product_type) row.product_type = data.product_type;
     if (data.id) {
       const { error } = await context.supabase.from("coupons").update(row).eq("id", data.id).eq("store_id", sid);
       if (error) throw new Error(error.message);
