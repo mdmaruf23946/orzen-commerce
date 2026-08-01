@@ -490,6 +490,12 @@ export function ProductDialog({
               <Input value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Optional" />
             </Field>
           </div>
+          {isDigital && (
+            <Field label="Tags">
+              <Input value={digTags} onChange={(e) => setDigTags(e.target.value)} placeholder="ebook, template, ui kit" />
+            </Field>
+          )}
+
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Main category">
               <select
