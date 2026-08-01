@@ -1,57 +1,57 @@
-# ORZEN Digital Store
+# Remove Digital & Hybrid Store Modes — Physical Only
 
-A complete digital-marketplace experience that activates on the **same URLs** when a store's mode is Digital (or a digital cart in Hybrid). The Physical store keeps its current code paths, routes and APIs untouched — every digital surface is a new component tree chosen at render time.
+The admin panel currently supports three store modes (Physical, Digital, Hybrid) with a switcher, a separate digital storefront design, digital admin pages and a customer downloads area. This changes the product to a single mode: **Physical store only**. Everything digital-specific is deleted.
 
-Existing groundwork already in place: `store_mode` on stores, `product_type` on products, `product_files`, `order_downloads`, `license_keys`, the private `digital-files` bucket, entitlement/unlock/email engine, a basic `MyDownloads` and a Digital Orders admin page. This plan builds the real marketplace on top of it.
+The product form keeps its product type selector (Physical / Digital / Service / Subscription) as a plain label field — it no longer changes any behaviour, storefront layout, checkout flow or admin navigation.
 
-Shipped in 5 phases; each phase is usable on its own.
+## What gets removed
 
----
+### Store Admin panel
+- Store Mode switcher card in Store Settings and the mode selector field
+- "Digital Dashboard" page and its sidebar entry
+- "Digital Orders" page and its sidebar entry
+- Mode-based sidebar filtering (couriers, delivery zones, shipping stay always visible)
+- Digital tab inside the product add/edit dialog (file uploads, license keys, download limits, expiry, delivery mode, digital category)
 
-## Phase 1 — Digital theme + homepage
+### Winner Admin
+- "Digital Categories" page (global digital catalog) and its nav entry
+- Global digital settings (license system toggle, max file size)
 
-- New **Digital** theme in the theme catalog (Winner-Admin owned, same locking rules): tech-forward, minimal, dark/light ready, download-focused cards, smooth reveal animations. Visually distinct from the physical themes — no shared card component.
-- New storefront homepage rendered when store mode is Digital: premium hero, Featured, Best Selling, New Releases, Trending, Recently Updated, Free Resources, Bundle Deals, Collections, Popular Categories, Reviews, FAQ, Newsletter, digital footer. Every section toggleable in the existing theme customizer.
-- Store header/nav switches to a marketplace layout (search-first, categories mega-list, My Downloads entry).
-- Physical homepage file untouched; mode picks the component.
+### Storefront
+- Digital marketplace homepage and digital product cards — every store uses the standard physical homepage
+- Digital info panel on the product page (version, files, formats, changelog, download info); shipping, warranty and trust badges always show
+- "Downloads" tab in the customer account and the My Downloads / Downloads panel
+- Digital-only checkout path — checkout always collects address, delivery zone and shipping charge
 
-## Phase 2 — Digital categories + product model
+### Backend logic
+- Digital fulfilment on order confirmation and on order placement (entitlements, unlocking, download emails)
+- Signed download URLs, download counters and download event logging
+- Digital knowledge context in the AI Sales Agent — it goes back to physical store context only
+- Digital purchase / download email templates and digital wording in legal templates
 
-- Global digital category catalog owned by Winner Admin (eBooks, Courses, Templates, Source Code, Website Templates, UI Kits, Graphics, Fonts, Icons, Plugins, Software, Mobile Apps, Audio, Video, Photography, Documents, Business Resources) — auto-applied to every digital store, extendable globally, hideable per store.
-- Digital product types: Downloadable File, External Link, License Key, Online Course, Subscription, Software, Bundle.
-- Digital product form (new tabbed form, physical form untouched): Basic (name, short + full description, category, tags) · Media (thumbnail, gallery, preview video, demo URL) · Files (multi-upload + external links) · Info (size, format, version, last updated, compatible devices/software) · Pricing (regular, sale, free, limited-time offer window) · Downloads (limit, expiry, max devices, instant vs manual) · License (keys/serials/activation codes, pooled).
-- Bundles reference child products.
+## Database changes (all dropped)
 
-## Phase 3 — Product page, cart, checkout
+Tables removed: `product_files`, `order_downloads`, `download_events`, `license_keys`, `product_bundle_items`, `platform_digital_categories`, `platform_digital_settings`, `store_digital_category_prefs`.
 
-- Digital PDP: large preview, screenshots gallery, preview video, description, features, included files, version + changelog, compatibility, requirements, reviews, related. No shipping/stock/courier blocks anywhere.
-- Digital cart: products, coupons, discounts, total, instant checkout. No weight, shipping, courier or delivery charge.
-- Digital checkout: name, email, optional phone, payment method only. Delivery forced to zero server-side, courier auto-draft skipped.
-- After payment: order created → entitlements unlocked → download email sent → download page shown → invoice generated.
+Columns removed: `stores.store_mode`, `products.digital`, `products.digital_category`, `orders.is_digital` (verified before dropping).
 
-## Phase 4 — Customer downloads + admin
+Function removed: `get_digital_public_settings()`.
 
-- Customer dashboard **My Downloads**: thumbnail, name, purchase date, current version, download button, remaining downloads, download history, license key.
-- Digital admin dashboard: total digital products, total downloads, digital sales, most downloaded, recently updated, active licenses, free downloads.
-- Digital Orders table upgraded: order no, customer, product, payment status, download status, download count; actions View / Resend download / Reset limit / Generate new license / Cancel access.
-- Search & filter across storefront: category, price, Free, Premium, Latest, Best Selling, Recently Updated, product type, file format.
+Kept: `products.product_type` — the selector stays in the product form, so the column stays as a simple label.
 
-## Phase 5 — AI agent + notifications
-
-- AI Sales Agent context switches fully to digital knowledge in Digital mode (downloads, licenses, versions, compatibility, installation, updates, refunds, file access) and ignores physical shipping knowledge.
-- Notification templates: purchase confirmation, download ready, product update, new version released, license activated — delivered over the current email/in-app system, with the channel structure left open for SMS/WhatsApp/Messenger.
-
----
+The private `digital-files` storage bucket is emptied and removed.
 
 ## Technical notes
 
-- **Routing:** `/store/$slug/*` stays. Each route picks a Physical or Digital view component from store mode; Hybrid decides per product/cart. No route renamed, no API signature changed.
-- **New tables:** `platform_digital_categories` (global catalog, Winner-Admin managed) and `store_digital_category_prefs` (per-store hide/rename), plus `product_bundle_items`. Extra product columns for version/changelog/compatibility/demo URL/limited-offer window go into the existing `digital` jsonb where possible; only promote to real columns where they are filtered on. Every new table ships with GRANTs, RLS scoped by store owner + anon read where public, and updated_at triggers.
-- **Downloads** keep the existing signed-URL server function: entitlement verified, counter decremented, hit logged, files never public. Max-devices enforced by recording device fingerprints per entitlement.
-- **Pricing and totals** stay server-calculated; digital lines force delivery zero server-side, not just in UI.
-- **Performance:** digital homepage sections load through one batched server function; images lazy-loaded; mobile-first layout throughout.
-- Physical store files are not edited beyond the mode branch at the route entry points.
+- Files deleted: `src/lib/digital.ts`, `src/lib/digital.functions.ts`, `src/lib/digital.server.ts`, `src/lib/store-mode.ts`, `src/lib/store-mode.functions.ts`, `src/components/admin/StoreModeSwitcher.tsx`, `src/components/admin/product-form/DigitalTab.tsx`, `src/components/storefront/digital/*`, `src/components/storefront/MyDownloads.tsx`, `src/components/storefront/DownloadsPanel.tsx`, `src/routes/_authenticated/admin/digital-dashboard.tsx`, `src/routes/_authenticated/admin/digital-orders.tsx`, `src/routes/_authenticated/owner/digital-categories.tsx`.
+- Files edited to drop digital branches: admin `route.tsx` and `settings.tsx`, `ProductDialog.tsx` (keep the type selector, remove the Digital tab), store `index.tsx`, `checkout.tsx`, `product.$productId.tsx`, `account.tsx`, `storefront.functions.ts` (remove digital columns from selects, digital-only shipping bypass, digital category RPCs), `admin.functions.ts`, `ai-agent.server.ts`, `emails.server.ts`, `legal-templates.server.ts`.
+- Order pricing keeps its server-side calculation; the `allDigital` zero-shipping branch is removed so delivery is always charged by zone.
+- Order flow: courier/parcel drafting on confirm no longer has a digital skip path.
+- Migration order: drop dependent tables first (`download_events`, `order_downloads`, `license_keys`, `product_bundle_items`, `product_files`, `store_digital_category_prefs`), then the platform tables, then columns and the function.
+- Storefront types are regenerated after the migration, then the code cleanup lands so the build stays green.
 
-## Out of scope
+## Order of work
 
-SMS/WhatsApp/Messenger delivery of download links (structure prepared only), multi-vendor/affiliate selling, and course video hosting/player (courses ship as downloadable + external-link products in this pass).
+1. Migration: drop digital tables, columns, function; remove the storage bucket.
+2. Delete digital routes, components and libraries; strip digital branches from the shared files.
+3. Verify: storefront homepage, product page, checkout, account, admin sidebar, product dialog and Winner Admin all render with no digital remnants.
