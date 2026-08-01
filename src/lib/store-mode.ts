@@ -18,7 +18,7 @@ export const PHYSICAL_ONLY_PATHS = [
 ];
 
 /** Admin paths that only make sense for a store selling downloadable goods. */
-export const DIGITAL_ONLY_PATHS = ["/admin/digital-orders"];
+export const DIGITAL_ONLY_PATHS = ["/admin/digital-orders", "/admin/digital-dashboard"];
 
 export function isPathVisibleInMode(path: string, mode: StoreMode): boolean {
   if (mode === "hybrid") return true;
