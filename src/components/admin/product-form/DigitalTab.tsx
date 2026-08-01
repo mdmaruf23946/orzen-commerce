@@ -108,7 +108,46 @@ export function DigitalTab({
   );
 }
 
+function CategoryPicker({ productId, value }: { productId: string; value: string | null }) {
+  const listCatalog = useServerFn(listDigitalCatalog);
+  const save = useServerFn(setProductDigitalCategory);
+  const [key, setKey] = useState<string>(value ?? "");
+  const catsQ = useQuery({ queryKey: ["digital-catalog"], queryFn: () => listCatalog({}) });
+  const cats = ((catsQ.data ?? []) as any[]).filter((c) => c.is_active);
+
+  return (
+    <div className="space-y-1.5">
+      <Label>Digital category</Label>
+      <select
+        value={key}
+        onChange={async (e) => {
+          const v = e.target.value;
+          setKey(v);
+          try {
+            await save({ data: { productId, key: v || null } });
+            toast.success("Category updated");
+          } catch (err) {
+            toast.error((err as Error).message);
+          }
+        }}
+        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+      >
+        <option value="">Uncategorised</option>
+        {cats.map((c) => (
+          <option key={c.key} value={c.key}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+      <p className="text-[11px] text-muted-foreground">
+        Used by the digital storefront filters and category grid.
+      </p>
+    </div>
+  );
+}
+
 function FilesManager({ productId, storeId }: { productId: string; storeId: string }) {
+
   const qc = useQueryClient();
   const list = useServerFn(listProductFiles);
   const saveFile = useServerFn(saveProductFile);
