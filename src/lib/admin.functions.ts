@@ -323,6 +323,8 @@ const productSchema = z.object({
   total_sold: z.number().int().min(0).optional().nullable(),
   related_product_ids: z.array(z.string().uuid()).max(50).optional().default([]),
   meta: z.record(z.string(), z.any()).optional().nullable(),
+  product_type: z.enum(["physical", "digital", "service", "subscription"]).optional(),
+  digital: z.record(z.string(), z.any()).optional().nullable(),
 });
 
 
@@ -369,6 +371,8 @@ export const upsertProduct = createServerFn({ method: "POST" })
       total_sold: data.total_sold ?? 0,
       related_product_ids: data.related_product_ids ?? [],
       meta: data.meta ?? {},
+      product_type: data.product_type ?? "physical",
+      digital: data.digital ?? {},
     } as any;
 
 
