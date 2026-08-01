@@ -230,6 +230,30 @@ export function ProductDialog({
   const [shippingInfo, setShippingInfo] = useState<string>((editing as any)?.shipping_info ?? (editing ? "" : productDefaults?.shipping_info ?? ""));
 
   const [newCatName, setNewCatName] = useState("");
+
+  // ---- digital product state (stored in meta.digital) ----
+  const dig0 = (meta0.digital ?? {}) as DigitalMeta;
+  const [digFiles, setDigFiles] = useState<DigitalFile[]>(dig0.files ?? []);
+  const [digExternalUrl, setDigExternalUrl] = useState<string>(dig0.external_url ?? "");
+  const [digVersion, setDigVersion] = useState<string>(dig0.version ?? "");
+  const [digChangelog, setDigChangelog] = useState<string>(dig0.changelog ?? "");
+  const [digPlatforms, setDigPlatforms] = useState<string[]>(dig0.platforms ?? []);
+  const [digTags, setDigTags] = useState<string>((dig0.tags ?? []).join(", "));
+  const [digPreviewImages, setDigPreviewImages] = useState<string[]>(dig0.preview?.images ?? []);
+  const [digPreviewVideo, setDigPreviewVideo] = useState<string>(dig0.preview?.video_url ?? "");
+  const [digDemoUrl, setDigDemoUrl] = useState<string>(dig0.preview?.demo_url ?? "");
+  const [digMode, setDigMode] = useState<"instant" | "manual">(dig0.download?.mode ?? "instant");
+  const [digMaxDownloads, setDigMaxDownloads] = useState<string>(
+    dig0.download?.max_downloads != null ? String(dig0.download.max_downloads) : "",
+  );
+  const [digExpiryDays, setDigExpiryDays] = useState<string>(
+    dig0.download?.expiry_days != null ? String(dig0.download.expiry_days) : "",
+  );
+  const [digAllowRedownload, setDigAllowRedownload] = useState<boolean>(dig0.download?.allow_redownload ?? true);
+  const [digFree, setDigFree] = useState<boolean>(dig0.free ?? false);
+  const [digSaleStart, setDigSaleStart] = useState<string>(dig0.sale_window?.start ?? "");
+  const [digSaleEnd, setDigSaleEnd] = useState<string>(dig0.sale_window?.end ?? "");
+
   const [addingCat, setAddingCat] = useState(false);
   const [saving, setSaving] = useState(false);
 
