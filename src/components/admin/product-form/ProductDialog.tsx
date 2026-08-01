@@ -18,6 +18,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Progress } from "@/components/ui/progress";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { GalleryUploader } from "@/components/admin/GalleryUploader";
+import { DigitalFilesUploader, type DigitalFile } from "./DigitalFilesUploader";
+
 
 const RichTextEditor = lazy(() => import("./RichTextEditor"));
 const CropDialog = lazy(() => import("./CropDialog"));
@@ -42,7 +44,27 @@ type ProductMeta = {
   videos?: { url: string; provider: "youtube" | "facebook"; primary?: boolean }[];
   visibility?: { scheduled_at?: string | null };
   ai_ready?: { description?: boolean; enhance?: boolean; bg_removal?: boolean; seo?: boolean };
+  digital?: DigitalMeta;
 };
+
+type DigitalMeta = {
+  files?: DigitalFile[];
+  external_url?: string | null;
+  version?: string | null;
+  changelog?: string | null;
+  platforms?: string[];
+  tags?: string[];
+  preview?: { images?: string[]; video_url?: string | null; demo_url?: string | null };
+  download?: {
+    mode?: "instant" | "manual";
+    max_downloads?: number | null;
+    expiry_days?: number | null;
+    allow_redownload?: boolean;
+  };
+  free?: boolean;
+  sale_window?: { start?: string | null; end?: string | null };
+};
+
 
 type VariantsV2 = {
   options: { name: string; values: string[] }[];
@@ -117,6 +139,8 @@ function toEmbed(url: string, provider: "youtube" | "facebook"): string {
 }
 
 const LABEL_OPTIONS = ["Featured", "Best Seller", "New Arrival", "Hot", "Sale", "Limited Stock"] as const;
+const PLATFORM_OPTIONS = ["Windows", "macOS", "Linux", "Android", "iOS", "Web"] as const;
+
 
 // -----------------------------------------------------------------------
 
@@ -206,10 +230,36 @@ export function ProductDialog({
   const [shippingInfo, setShippingInfo] = useState<string>((editing as any)?.shipping_info ?? (editing ? "" : productDefaults?.shipping_info ?? ""));
 
   const [newCatName, setNewCatName] = useState("");
+
+  // ---- digital product state (stored in meta.digital) ----
+  const dig0 = (meta0.digital ?? {}) as DigitalMeta;
+  const [digFiles, setDigFiles] = useState<DigitalFile[]>(dig0.files ?? []);
+  const [digExternalUrl, setDigExternalUrl] = useState<string>(dig0.external_url ?? "");
+  const [digVersion, setDigVersion] = useState<string>(dig0.version ?? "");
+  const [digChangelog, setDigChangelog] = useState<string>(dig0.changelog ?? "");
+  const [digPlatforms, setDigPlatforms] = useState<string[]>(dig0.platforms ?? []);
+  const [digTags, setDigTags] = useState<string>((dig0.tags ?? []).join(", "));
+  const [digPreviewImages, setDigPreviewImages] = useState<string[]>(dig0.preview?.images ?? []);
+  const [digPreviewVideo, setDigPreviewVideo] = useState<string>(dig0.preview?.video_url ?? "");
+  const [digDemoUrl, setDigDemoUrl] = useState<string>(dig0.preview?.demo_url ?? "");
+  const [digMode, setDigMode] = useState<"instant" | "manual">(dig0.download?.mode ?? "instant");
+  const [digMaxDownloads, setDigMaxDownloads] = useState<string>(
+    dig0.download?.max_downloads != null ? String(dig0.download.max_downloads) : "",
+  );
+  const [digExpiryDays, setDigExpiryDays] = useState<string>(
+    dig0.download?.expiry_days != null ? String(dig0.download.expiry_days) : "",
+  );
+  const [digAllowRedownload, setDigAllowRedownload] = useState<boolean>(dig0.download?.allow_redownload ?? true);
+  const [digFree, setDigFree] = useState<boolean>(dig0.free ?? false);
+  const [digSaleStart, setDigSaleStart] = useState<string>(dig0.sale_window?.start ?? "");
+  const [digSaleEnd, setDigSaleEnd] = useState<string>(dig0.sale_window?.end ?? "");
+
   const [addingCat, setAddingCat] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // ---- derived ----
+  const isDigital = productType === "digital";
+
   const mainCategories = useMemo(() => categories.filter((c) => !c.parent_id), [categories]);
   const subCategories = useMemo(
     () => categories.filter((c) => c.parent_id && c.parent_id === categoryId),
@@ -305,7 +355,28 @@ export function ProductDialog({
   // ---- submit ----
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!regularPrice || reg <= 0) {
+    if (isDigital) {
+      if (!name.trim()) {
+        toast.error("Enter a product name");
+        return;
+      }
+      if (!categoryId) {
+        toast.error("Select a category");
+        return;
+      }
+      if (!image) {
+        toast.error("Upload a product thumbnail");
+        return;
+      }
+      if (!digFiles.length && !digExternalUrl.trim()) {
+        toast.error("Add at least one digital file or an external download URL");
+        return;
+      }
+      if (!digFree && (!regularPrice || reg <= 0)) {
+        toast.error("Enter a price or enable Free product");
+        return;
+      }
+    } else if (!regularPrice || reg <= 0) {
       toast.error("Enter a regular price");
       return;
     }
@@ -315,6 +386,30 @@ export function ProductDialog({
     }
     setSaving(true);
     try {
+      const digital: DigitalMeta | undefined = isDigital
+        ? {
+            files: digFiles,
+            external_url: digExternalUrl.trim() || null,
+            version: digVersion.trim() || null,
+            changelog: digChangelog.trim() || null,
+            platforms: digPlatforms,
+            tags: digTags.split(",").map((t) => t.trim()).filter(Boolean),
+            preview: {
+              images: digPreviewImages,
+              video_url: digPreviewVideo.trim() || null,
+              demo_url: digDemoUrl.trim() || null,
+            },
+            download: {
+              mode: digMode,
+              max_downloads: digMaxDownloads === "" ? null : Number(digMaxDownloads),
+              expiry_days: digExpiryDays === "" ? null : Number(digExpiryDays),
+              allow_redownload: digAllowRedownload,
+            },
+            free: digFree,
+            sale_window: { start: digSaleStart || null, end: digSaleEnd || null },
+          }
+        : meta0.digital;
+
       const meta: ProductMeta = {
         product_type: productType,
         subcategory_id: subcategoryId || null,
@@ -322,7 +417,7 @@ export function ProductDialog({
         tax: taxRate ? { rate: Number(taxRate), inclusive: taxInclusive } : null,
         barcode: barcode || null,
         inventory_status: inventoryStatus,
-        stock_managed: stockManaged,
+        stock_managed: isDigital ? false : stockManaged,
         shipping,
         purchase,
         labels,
@@ -331,8 +426,10 @@ export function ProductDialog({
         videos,
         visibility: { scheduled_at: scheduledAt || null },
         ai_ready: { description: false, enhance: false, bg_removal: false, seo: false },
+        ...(digital ? { digital } : {}),
       };
       const primaryVideoUrl = videos.find((v) => v.primary)?.url ?? videos[0]?.url ?? null;
+      const digitalPrice = digFree ? 0 : finalPrice;
       await onSave({
         id: editing?.id,
         name,
@@ -340,12 +437,12 @@ export function ProductDialog({
         description: description || null,
         brand: brand || null,
         product_code: productCode || null,
-        price: finalPrice,
-        old_price: hasDiscount ? reg : null,
+        price: isDigital ? digitalPrice : finalPrice,
+        old_price: hasDiscount && !(isDigital && digFree) ? reg : null,
         cost_price: costPrice === "" ? 0 : Number(costPrice),
         sku: sku || null,
         low_stock_threshold: Number(lowThreshold),
-        stock: Number(stock),
+        stock: isDigital ? 0 : Number(stock),
         status,
         primary_image_url: image,
         gallery,
@@ -361,6 +458,7 @@ export function ProductDialog({
         product_type: productType,
         meta,
       });
+
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -383,14 +481,21 @@ export function ProductDialog({
               <select value={productType} onChange={(e) => setProductType(e.target.value as any)} className={selectCls}>
                 <option value="physical">Physical</option>
                 <option value="digital">Digital</option>
-                <option value="service">Service</option>
-                <option value="subscription">Subscription</option>
+                <option value="subscription" disabled>Subscription (Coming Soon)</option>
+                <option value="service" disabled>Service (Coming Soon)</option>
+
               </select>
             </Field>
             <Field label="Brand">
               <Input value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Optional" />
             </Field>
           </div>
+          {isDigital && (
+            <Field label="Tags">
+              <Input value={digTags} onChange={(e) => setDigTags(e.target.value)} placeholder="ebook, template, ui kit" />
+            </Field>
+          )}
+
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Main category">
               <select
@@ -492,6 +597,25 @@ export function ProductDialog({
             <p className="mt-1 text-xs text-muted-foreground">Images auto-compress and convert to WebP. Recommended min 800px on the long edge.</p>
           </div>
 
+          {isDigital && (
+            <>
+              <div>
+                <Label>Preview images</Label>
+                <GalleryUploader storeId={storeId} folder={`${storeId}/previews`} value={digPreviewImages} onChange={setDigPreviewImages} max={8} />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Preview video URL">
+                  <Input value={digPreviewVideo} onChange={(e) => setDigPreviewVideo(e.target.value)} placeholder="https://…" />
+                </Field>
+                <Field label="Demo URL (optional)">
+                  <Input value={digDemoUrl} onChange={(e) => setDigDemoUrl(e.target.value)} placeholder="https://…" />
+                </Field>
+              </div>
+            </>
+          )}
+
+
+
           <div>
             <Label>Product video URLs (YouTube or Facebook)</Label>
             <div className="mt-2 flex gap-2">
@@ -531,10 +655,25 @@ export function ProductDialog({
       label: "Pricing",
       content: (
         <div className="space-y-4">
+          {isDigital && (
+            <label className="flex items-center justify-between gap-3 rounded-xl border bg-muted/30 p-3">
+              <span className="text-sm font-medium">Free product</span>
+              <Switch checked={digFree} onCheckedChange={setDigFree} />
+            </label>
+          )}
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Regular price" required>
-              <Input type="number" min={0} step="0.01" required value={regularPrice} onChange={(e) => setRegularPrice(e.target.value)} />
+            <Field label="Regular price" required={!(isDigital && digFree)}>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                required={!(isDigital && digFree)}
+                disabled={isDigital && digFree}
+                value={regularPrice}
+                onChange={(e) => setRegularPrice(e.target.value)}
+              />
             </Field>
+
             <Field label="Discount type">
               <select value={discountType} onChange={(e) => setDiscountType(e.target.value as any)} className={selectCls}>
                 <option value="percent">Percent</option>
@@ -569,7 +708,21 @@ export function ProductDialog({
               <span className="text-sm">Tax inclusive in price</span>
             </label>
           </div>
+          {isDigital && (
+            <div className="space-y-3 rounded-xl border p-3">
+              <Label>Limited time discount</Label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Starts">
+                  <Input type="datetime-local" value={digSaleStart} onChange={(e) => setDigSaleStart(e.target.value)} />
+                </Field>
+                <Field label="Ends">
+                  <Input type="datetime-local" value={digSaleEnd} onChange={(e) => setDigSaleEnd(e.target.value)} />
+                </Field>
+              </div>
+            </div>
+          )}
         </div>
+
       ),
     },
     {
@@ -814,7 +967,119 @@ export function ProductDialog({
         </div>
       ),
     },
-  ] as const;
+  ];
+
+  const digitalTabs = [
+    {
+      id: "digital-files",
+      label: "Digital Files",
+      content: (
+        <div className="space-y-5 duration-200 animate-in fade-in-50">
+          <div className="space-y-2 rounded-xl border p-3">
+            <Label>Digital files</Label>
+            <DigitalFilesUploader storeId={storeId} value={digFiles} onChange={setDigFiles} />
+          </div>
+          <Field label="External download URL">
+            <Input
+              value={digExternalUrl}
+              onChange={(e) => setDigExternalUrl(e.target.value)}
+              placeholder="https://drive.google.com/…"
+            />
+          </Field>
+          <p className="text-xs text-muted-foreground">
+            Provide at least one uploaded file or an external download URL.
+          </p>
+        </div>
+      ),
+    },
+    {
+      id: "file-info",
+      label: "File Info",
+      content: (
+        <div className="space-y-4 duration-200 animate-in fade-in-50">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Version">
+              <Input value={digVersion} onChange={(e) => setDigVersion(e.target.value)} placeholder="1.0.0" />
+            </Field>
+            <Field label="Compatible platforms">
+              <div className="flex flex-wrap gap-1.5">
+                {PLATFORM_OPTIONS.map((p) => {
+                  const on = digPlatforms.includes(p);
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() =>
+                        setDigPlatforms(on ? digPlatforms.filter((x) => x !== p) : [...digPlatforms, p])
+                      }
+                      className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${on ? "border-primary bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
+              </div>
+            </Field>
+          </div>
+          <Field label="Changelog">
+            <Textarea
+              rows={5}
+              value={digChangelog}
+              onChange={(e) => setDigChangelog(e.target.value)}
+              placeholder="v1.0.0 — Initial release"
+            />
+          </Field>
+        </div>
+      ),
+    },
+    {
+      id: "download",
+      label: "Download",
+      content: (
+        <div className="space-y-4 duration-200 animate-in fade-in-50">
+          <Field label="Delivery mode">
+            <select value={digMode} onChange={(e) => setDigMode(e.target.value as any)} className={selectCls}>
+              <option value="instant">Instant download</option>
+              <option value="manual">Manual approval</option>
+            </select>
+          </Field>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Maximum download limit">
+              <Input
+                type="number"
+                min={0}
+                value={digMaxDownloads}
+                onChange={(e) => setDigMaxDownloads(e.target.value)}
+                placeholder="Unlimited"
+              />
+            </Field>
+            <Field label="Download expiry (days)">
+              <Input
+                type="number"
+                min={0}
+                value={digExpiryDays}
+                onChange={(e) => setDigExpiryDays(e.target.value)}
+                placeholder="Never"
+              />
+            </Field>
+          </div>
+          <label className="flex items-center justify-between gap-3 rounded-xl border bg-muted/30 p-3">
+            <span className="text-sm font-medium">Allow re-download</span>
+            <Switch checked={digAllowRedownload} onCheckedChange={setDigAllowRedownload} />
+          </label>
+        </div>
+      ),
+    },
+  ];
+
+  const visibleTabs = isDigital
+    ? [
+        ...tabs.filter((t) => t.id === "general" || t.id === "media"),
+        ...digitalTabs,
+        ...tabs.filter((t) => t.id === "pricing" || t.id === "visibility" || t.id === "seo"),
+      ]
+    : tabs;
+
 
   return (
     <>
@@ -834,7 +1099,7 @@ export function ProductDialog({
           </DialogHeader>
 
           <WizardForm
-            tabs={tabs as any}
+            tabs={visibleTabs as any}
             saving={saving}
             editing={!!editing}
             onSubmit={submit}
@@ -945,19 +1210,21 @@ function WizardForm({
   onCancel: () => void;
   footerInfo: React.ReactNode;
 }) {
-  const [step, setStep] = useState(0);
+  const [rawStep, setStep] = useState(0);
   const total = tabs.length;
+  const step = Math.min(rawStep, total - 1);
   const current = tabs[step];
   const isLast = step === total - 1;
   const progress = Math.round(((step + 1) / total) * 100);
 
+
   function goNext(e: React.MouseEvent) {
     e.preventDefault();
-    if (!isLast) setStep((s) => Math.min(total - 1, s + 1));
+    if (!isLast) setStep(Math.min(total - 1, step + 1));
   }
   function goBack(e: React.MouseEvent) {
     e.preventDefault();
-    setStep((s) => Math.max(0, s - 1));
+    setStep(Math.max(0, step - 1));
   }
 
   return (
