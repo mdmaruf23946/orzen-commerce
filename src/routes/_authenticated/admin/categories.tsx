@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, GripVertical, ImageIcon, Eye, EyeOff } from "lucide-react";
+import { Plus, Pencil, Trash2, GripVertical, ImageIcon, Eye, EyeOff, Search } from "lucide-react";
 import {
   listMyCategories,
+  listMyProducts,
   upsertCategory,
   deleteCategory,
   reorderCategories,
@@ -17,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ImageUploader } from "@/components/admin/ImageUploader";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/categories")({
   component: CategoriesPage,
@@ -24,23 +26,71 @@ export const Route = createFileRoute("/_authenticated/admin/categories")({
 
 type Category = Awaited<ReturnType<typeof listMyCategories>>[number];
 
+const TABS = [
+  { key: "all", label: "All" },
+  { key: "physical", label: "Physical" },
+  { key: "digital", label: "Digital" },
+  { key: "service", label: "Service" },
+  { key: "subscription", label: "Subscription" },
+] as const;
+
+type TabKey = (typeof TABS)[number]["key"];
+
+function typeOf(c: Category): string {
+  const t = ((c as any).product_type ?? "").toString().trim().toLowerCase();
+  // Legacy rows stored "both" or nothing — treat them as physical.
+  if (!t || t === "both") return "physical";
+  return t;
+}
+
+function matchesTab(c: Category, tab: TabKey) {
+  if (tab === "all") return true;
+  return typeOf(c) === tab;
+}
+
 function CategoriesPage() {
   const list = useServerFn(listMyCategories);
+  const productsFn = useServerFn(listMyProducts);
   const save = useServerFn(upsertCategory);
   const del = useServerFn(deleteCategory);
   const reorder = useServerFn(reorderCategories);
   const storeFn = useServerFn(getMyStore);
   const qc = useQueryClient();
   const { data: categories } = useQuery({ queryKey: ["admin", "categories"], queryFn: () => list() });
+  const { data: products } = useQuery({ queryKey: ["admin", "products"], queryFn: () => productsFn() });
   const { data: store } = useQuery({ queryKey: ["admin", "store"], queryFn: () => storeFn() });
   const [editing, setEditing] = useState<Category | null>(null);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Category[]>([]);
   const [dragId, setDragId] = useState<string | null>(null);
+  const [tab, setTab] = useState<TabKey>("physical");
+  const [q, setQ] = useState("");
 
   useEffect(() => {
     if (categories) setItems(categories);
   }, [categories]);
+
+  const counts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of products ?? []) {
+      const cid = (p as any).category_id as string | null;
+      if (!cid) continue;
+      m.set(cid, (m.get(cid) ?? 0) + 1);
+    }
+    return m;
+  }, [products]);
+
+  const visible = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return items.filter((c) => {
+      if (!matchesTab(c, tab)) return false;
+      if (!needle) return true;
+      return (
+        c.name.toLowerCase().includes(needle) ||
+        (c.description ?? "").toLowerCase().includes(needle)
+      );
+    });
+  }, [items, tab, q]);
 
   function startNew() {
     setEditing(null);
@@ -88,6 +138,8 @@ function CategoriesPage() {
     }
   }
 
+  const activeType: string = tab === "all" ? "physical" : tab;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
@@ -101,22 +153,60 @@ function CategoriesPage() {
         </Button>
       </div>
 
-      <div className="overflow-hidden rounded-xl border bg-card">
-        {items.length === 0 ? (
-          <div className="p-10 text-center text-sm text-muted-foreground">No categories yet.</div>
+      <div className="space-y-3">
+        <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
+          {TABS.map((t) => {
+            const active = t.key === tab;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setTab(t.key)}
+                className={cn(
+                  "shrink-0 rounded-full border px-3.5 py-1.5 text-sm transition-colors",
+                  active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "bg-background text-muted-foreground hover:bg-muted",
+                )}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search categories…"
+            className="pl-9"
+          />
+        </div>
+      </div>
+
+      <div key={tab} className="animate-in fade-in-0 slide-in-from-bottom-1 overflow-hidden rounded-xl border bg-card duration-200">
+        {visible.length === 0 ? (
+          <div className="space-y-3 p-10 text-center">
+            <p className="text-sm text-muted-foreground">No categories found.</p>
+            <Button onClick={startNew} size="sm">
+              <Plus className="mr-1 h-4 w-4" />
+              Add category
+            </Button>
+          </div>
         ) : (
           <ul className="divide-y">
             {(() => {
-              const mains = items.filter((c) => !(c as any).parent_id);
+              const mains = visible.filter((c) => !(c as any).parent_id);
               const subsByParent = new Map<string, Category[]>();
-              for (const c of items) {
+              for (const c of visible) {
                 const pid = (c as any).parent_id as string | null;
                 if (pid) {
                   if (!subsByParent.has(pid)) subsByParent.set(pid, []);
                   subsByParent.get(pid)!.push(c);
                 }
               }
-              const orphans = items.filter(
+              const orphans = visible.filter(
                 (c) =>
                   (c as any).parent_id &&
                   !mains.some((m) => m.id === (c as any).parent_id),
@@ -135,6 +225,7 @@ function CategoriesPage() {
                     ? c.image_url
                     : `/api/img/${c.image_url}`
                   : null;
+                const parent = items.find((x) => x.id === (c as any).parent_id);
                 return (
                   <li
                     key={c.id}
@@ -153,13 +244,19 @@ function CategoriesPage() {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="line-clamp-1 text-sm font-medium">
-                        {indent && <span className="text-muted-foreground">↳ </span>}
-                        {c.name}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="line-clamp-1 text-sm font-medium">
+                          {indent && <span className="text-muted-foreground">↳ </span>}
+                          {c.name}
+                        </p>
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                          {counts.get(c.id) ?? 0} products
+                        </span>
+                      </div>
+                      <p className="line-clamp-1 text-xs text-muted-foreground">
+                        {parent ? `In ${parent.name}` : "Main category"}
+                        {c.description ? ` · ${c.description}` : ""}
                       </p>
-                      {c.description && (
-                        <p className="line-clamp-1 text-xs text-muted-foreground">{c.description}</p>
-                      )}
                     </div>
                     <button
                       onClick={() => toggleActive(c)}
@@ -201,7 +298,8 @@ function CategoriesPage() {
           storeId={store.id}
           editing={editing}
           nextOrder={items.length}
-          allCategories={items}
+          allCategories={items.filter((c) => typeOf(c) === (editing ? typeOf(editing) : activeType))}
+          productType={editing ? typeOf(editing) : activeType}
           onClose={() => setOpen(false)}
           onSave={async (data) => {
             await save({ data });
@@ -220,6 +318,7 @@ function CategoryDialog({
   editing,
   nextOrder,
   allCategories,
+  productType,
   onClose,
   onSave,
 }: {
@@ -227,6 +326,7 @@ function CategoryDialog({
   editing: Category | null;
   nextOrder: number;
   allCategories: Category[];
+  productType: string;
   onClose: () => void;
   onSave: (data: any) => Promise<void>;
 }) {
@@ -241,6 +341,8 @@ function CategoryDialog({
   const parentOptions = allCategories.filter(
     (c) => !(c as any).parent_id && (!editing || c.id !== editing.id),
   );
+
+  const typeLabel = TABS.find((t) => t.key === productType)?.label ?? "Physical";
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -258,6 +360,7 @@ function CategoryDialog({
         sort_order: Number(sortOrder) || 0,
         is_active: isActive,
         parent_id: parentId,
+        ...(editing ? {} : { product_type: productType }),
       });
     } catch (err) {
       toast.error((err as Error).message);
@@ -272,6 +375,7 @@ function CategoryDialog({
         <DialogHeader>
           <DialogTitle>{editing ? "Edit category" : "New category"}</DialogTitle>
         </DialogHeader>
+        <p className="-mt-2 text-xs text-muted-foreground">Product type: {typeLabel}</p>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
             <Label>Category image</Label>
@@ -350,4 +454,3 @@ function CategoryDialog({
     </Dialog>
   );
 }
-
