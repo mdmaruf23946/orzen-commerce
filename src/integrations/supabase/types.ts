@@ -2161,6 +2161,77 @@ export type Database = {
           },
         ]
       }
+      license_keys: {
+        Row: {
+          assigned_at: string | null
+          created_at: string
+          customer_id: string | null
+          id: string
+          key_value: string
+          kind: string
+          order_id: string | null
+          product_id: string | null
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          key_value: string
+          kind?: string
+          order_id?: string | null
+          product_id?: string | null
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string | null
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          key_value?: string
+          kind?: string
+          order_id?: string | null
+          product_id?: string | null
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "license_keys_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "store_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_keys_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_keys_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_keys_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       low_stock_alerts: {
         Row: {
           created_at: string
@@ -2579,6 +2650,105 @@ export type Database = {
         }
         Relationships: []
       }
+      order_downloads: {
+        Row: {
+          created_at: string
+          customer_email: string | null
+          customer_id: string | null
+          download_count: number
+          expires_at: string | null
+          file_label: string | null
+          id: string
+          last_downloaded_at: string | null
+          max_downloads: number | null
+          order_id: string
+          product_file_id: string | null
+          product_id: string | null
+          product_name: string
+          status: string
+          store_id: string
+          token: string
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_email?: string | null
+          customer_id?: string | null
+          download_count?: number
+          expires_at?: string | null
+          file_label?: string | null
+          id?: string
+          last_downloaded_at?: string | null
+          max_downloads?: number | null
+          order_id: string
+          product_file_id?: string | null
+          product_id?: string | null
+          product_name: string
+          status?: string
+          store_id: string
+          token?: string
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string | null
+          customer_id?: string | null
+          download_count?: number
+          expires_at?: string | null
+          file_label?: string | null
+          id?: string
+          last_downloaded_at?: string | null
+          max_downloads?: number | null
+          order_id?: string
+          product_file_id?: string | null
+          product_id?: string | null
+          product_name?: string
+          status?: string
+          store_id?: string
+          token?: string
+          updated_at?: string
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_downloads_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "store_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_downloads_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_downloads_product_file_id_fkey"
+            columns: ["product_file_id"]
+            isOneToOne: false
+            referencedRelation: "product_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_downloads_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_downloads_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_internal_notes: {
         Row: {
           body: string
@@ -2781,6 +2951,7 @@ export type Database = {
           fingerprint: string | null
           id: string
           invoice_no: string | null
+          is_digital: boolean
           is_test: boolean
           landing_page_connection_id: string | null
           landing_page_url: string | null
@@ -2820,6 +2991,7 @@ export type Database = {
           fingerprint?: string | null
           id?: string
           invoice_no?: string | null
+          is_digital?: boolean
           is_test?: boolean
           landing_page_connection_id?: string | null
           landing_page_url?: string | null
@@ -2859,6 +3031,7 @@ export type Database = {
           fingerprint?: string | null
           id?: string
           invoice_no?: string | null
+          is_digital?: boolean
           is_test?: boolean
           landing_page_connection_id?: string | null
           landing_page_url?: string | null
@@ -3161,6 +3334,30 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_digital_settings: {
+        Row: {
+          created_at: string
+          id: string
+          license_system_enabled: boolean
+          max_file_mb: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          license_system_enabled?: boolean
+          max_file_mb?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          license_system_enabled?: boolean
+          max_file_mb?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_feature_flags: {
         Row: {
           category: string | null
@@ -3317,6 +3514,66 @@ export type Database = {
         }
         Relationships: []
       }
+      product_files: {
+        Row: {
+          created_at: string
+          external_url: string | null
+          file_size: number | null
+          file_type: string | null
+          id: string
+          label: string
+          product_id: string
+          sort_order: number
+          storage_path: string | null
+          store_id: string
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          created_at?: string
+          external_url?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          label: string
+          product_id: string
+          sort_order?: number
+          storage_path?: string | null
+          store_id: string
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          created_at?: string
+          external_url?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          label?: string
+          product_id?: string
+          sort_order?: number
+          storage_path?: string | null
+          store_id?: string
+          updated_at?: string
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_files_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_files_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_import_export_history: {
         Row: {
           created_at: string
@@ -3382,6 +3639,7 @@ export type Database = {
           delivery_charge: number | null
           delivery_time_days: string | null
           description: string | null
+          digital: Json
           features: Json
           gallery: Json
           id: string
@@ -3393,6 +3651,7 @@ export type Database = {
           price: number
           primary_image_url: string | null
           product_code: string | null
+          product_type: string
           rating: number | null
           related_product_ids: string[]
           return_policy: string | null
@@ -3418,6 +3677,7 @@ export type Database = {
           delivery_charge?: number | null
           delivery_time_days?: string | null
           description?: string | null
+          digital?: Json
           features?: Json
           gallery?: Json
           id?: string
@@ -3429,6 +3689,7 @@ export type Database = {
           price?: number
           primary_image_url?: string | null
           product_code?: string | null
+          product_type?: string
           rating?: number | null
           related_product_ids?: string[]
           return_policy?: string | null
@@ -3454,6 +3715,7 @@ export type Database = {
           delivery_charge?: number | null
           delivery_time_days?: string | null
           description?: string | null
+          digital?: Json
           features?: Json
           gallery?: Json
           id?: string
@@ -3465,6 +3727,7 @@ export type Database = {
           price?: number
           primary_image_url?: string | null
           product_code?: string | null
+          product_type?: string
           rating?: number | null
           related_product_ids?: string[]
           return_policy?: string | null
@@ -4591,6 +4854,7 @@ export type Database = {
           seo: Json
           slug: string
           status: Database["public"]["Enums"]["store_status"]
+          store_mode: string
           subscription_status: string
           tax_number: string | null
           template_version: string | null
@@ -4651,6 +4915,7 @@ export type Database = {
           seo?: Json
           slug: string
           status?: Database["public"]["Enums"]["store_status"]
+          store_mode?: string
           subscription_status?: string
           tax_number?: string | null
           template_version?: string | null
@@ -4711,6 +4976,7 @@ export type Database = {
           seo?: Json
           slug?: string
           status?: Database["public"]["Enums"]["store_status"]
+          store_mode?: string
           subscription_status?: string
           tax_number?: string | null
           template_version?: string | null
@@ -5371,6 +5637,7 @@ export type Database = {
       }
       get_billing_discounts: { Args: never; Returns: Json }
       get_custom_gateway_public: { Args: { _id: string }; Returns: Json }
+      get_digital_public_settings: { Args: never; Returns: Json }
       get_fraud_public_status: { Args: never; Returns: Json }
       get_messenger_daily_stats: { Args: { _store_id: string }; Returns: Json }
       get_my_active_ads: { Args: never; Returns: Json }

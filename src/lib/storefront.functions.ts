@@ -397,6 +397,10 @@ export const verifyOrderPayment = createServerFn({ method: "POST" })
         .update({ payment_status: "paid", status: paidStatus } as any)
         .eq("id", o.id)
         .neq("payment_status", "paid");
+      try {
+        const { fulfilDigitalOrder } = await import("@/lib/digital.server");
+        await fulfilDigitalOrder(o.id);
+      } catch { /* non-fatal */ }
       return { payment_status: "paid", checked: true };
     }
 
@@ -530,7 +534,7 @@ export const listRelatedProducts = createServerFn({ method: "GET" })
     if (data.categoryId) {
       const { data: cat } = await sb
         .from("products")
-        .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id")
+        .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id,product_type")
         .eq("store_id", data.storeId)
         .eq("category_id", data.categoryId)
         .neq("id", data.excludeId)
@@ -676,7 +680,7 @@ export const placeOrder = createServerFn({ method: "POST" })
     const ids = data.items.map((i) => i.productId);
     const { data: products, error: pErr } = await sb
       .from("products")
-      .select("id,name,price,stock,status")
+      .select("id,name,price,stock,status,product_type")
       .in("id", ids)
       .eq("store_id", data.storeId);
     if (pErr) throw new Error(pErr.message);
@@ -686,7 +690,10 @@ export const placeOrder = createServerFn({ method: "POST" })
     const itemRows = data.items.map((i) => {
       const p = byId.get(i.productId);
       if (!p || p.status === "draft") throw new Error("Product unavailable");
-      if (p.stock < i.qty) throw new Error(`Not enough stock for ${p.name}`);
+      // Digital goods have no physical inventory to reserve.
+      if ((p as any).product_type !== "digital" && p.stock < i.qty) {
+        throw new Error(`Not enough stock for ${p.name}`);
+      }
       subtotal += Number(p.price) * i.qty;
       return {
         product_id: p.id,
@@ -695,6 +702,11 @@ export const placeOrder = createServerFn({ method: "POST" })
         qty: i.qty,
       };
     });
+
+    // Digital-only carts never carry a shipping charge.
+    const allDigital = data.items.every(
+      (i) => (byId.get(i.productId) as any)?.product_type === "digital",
+    );
 
     // Delivery — from zone if provided, else legacy fallback
     const d: any = store.delivery ?? {};
@@ -713,7 +725,7 @@ export const placeOrder = createServerFn({ method: "POST" })
       }
     }
     const freeMin = Number(d.free_min ?? 0);
-    let delivery_amount = freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
+    let delivery_amount = allDigital ? 0 : freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
 
 
     // Coupon
@@ -855,6 +867,7 @@ export const placeOrder = createServerFn({ method: "POST" })
         status: orderStatus,
         fingerprint: data.fingerprint ?? null,
         device_id: data.deviceId ?? null,
+        is_digital: allDigital,
       } as any)
       .select("id")
       .single();
@@ -864,6 +877,19 @@ export const placeOrder = createServerFn({ method: "POST" })
       .from("order_items")
       .insert(itemRows.map((r) => ({ ...r, order_id: order.id })));
     if (iErr) throw new Error(iErr.message);
+
+    // Digital fulfilment: build the buyer's entitlements now; unlock them right
+    // away when the order already starts in a confirmed state (e.g. free items
+    // or a store that auto-confirms manual payments).
+    try {
+      const { createEntitlementsForOrder, unlockOrderDownloads } = await import("@/lib/digital.server");
+      const res = await createEntitlementsForOrder(order.id);
+      if (res.digital && (orderStatus === "confirmed" || subtotal + delivery_amount - discount_amount <= 0)) {
+        await unlockOrderDownloads(order.id);
+      }
+    } catch (e) {
+      console.error("[placeOrder] digital fulfilment:", (e as Error).message);
+    }
 
     if (coupon_id) {
       await sb.from("coupon_redemptions").insert({
