@@ -122,7 +122,7 @@ export const upsertCoupon = createServerFn({ method: "POST" })
     await assertPlan(context.supabase, context.userId, "coupons");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
-    const row: Record<string, unknown> = {
+    const row = {
       store_id: sid,
       code: data.code.toUpperCase(),
       name: data.name?.trim() || null,
