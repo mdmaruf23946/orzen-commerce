@@ -355,7 +355,28 @@ export function ProductDialog({
   // ---- submit ----
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!regularPrice || reg <= 0) {
+    if (isDigital) {
+      if (!name.trim()) {
+        toast.error("Enter a product name");
+        return;
+      }
+      if (!categoryId) {
+        toast.error("Select a category");
+        return;
+      }
+      if (!image) {
+        toast.error("Upload a product thumbnail");
+        return;
+      }
+      if (!digFiles.length && !digExternalUrl.trim()) {
+        toast.error("Add at least one digital file or an external download URL");
+        return;
+      }
+      if (!digFree && (!regularPrice || reg <= 0)) {
+        toast.error("Enter a price or enable Free product");
+        return;
+      }
+    } else if (!regularPrice || reg <= 0) {
       toast.error("Enter a regular price");
       return;
     }
@@ -365,6 +386,30 @@ export function ProductDialog({
     }
     setSaving(true);
     try {
+      const digital: DigitalMeta | undefined = isDigital
+        ? {
+            files: digFiles,
+            external_url: digExternalUrl.trim() || null,
+            version: digVersion.trim() || null,
+            changelog: digChangelog.trim() || null,
+            platforms: digPlatforms,
+            tags: digTags.split(",").map((t) => t.trim()).filter(Boolean),
+            preview: {
+              images: digPreviewImages,
+              video_url: digPreviewVideo.trim() || null,
+              demo_url: digDemoUrl.trim() || null,
+            },
+            download: {
+              mode: digMode,
+              max_downloads: digMaxDownloads === "" ? null : Number(digMaxDownloads),
+              expiry_days: digExpiryDays === "" ? null : Number(digExpiryDays),
+              allow_redownload: digAllowRedownload,
+            },
+            free: digFree,
+            sale_window: { start: digSaleStart || null, end: digSaleEnd || null },
+          }
+        : meta0.digital;
+
       const meta: ProductMeta = {
         product_type: productType,
         subcategory_id: subcategoryId || null,
@@ -372,7 +417,7 @@ export function ProductDialog({
         tax: taxRate ? { rate: Number(taxRate), inclusive: taxInclusive } : null,
         barcode: barcode || null,
         inventory_status: inventoryStatus,
-        stock_managed: stockManaged,
+        stock_managed: isDigital ? false : stockManaged,
         shipping,
         purchase,
         labels,
@@ -381,8 +426,10 @@ export function ProductDialog({
         videos,
         visibility: { scheduled_at: scheduledAt || null },
         ai_ready: { description: false, enhance: false, bg_removal: false, seo: false },
+        ...(digital ? { digital } : {}),
       };
       const primaryVideoUrl = videos.find((v) => v.primary)?.url ?? videos[0]?.url ?? null;
+      const digitalPrice = digFree ? 0 : finalPrice;
       await onSave({
         id: editing?.id,
         name,
@@ -390,12 +437,12 @@ export function ProductDialog({
         description: description || null,
         brand: brand || null,
         product_code: productCode || null,
-        price: finalPrice,
-        old_price: hasDiscount ? reg : null,
+        price: isDigital ? digitalPrice : finalPrice,
+        old_price: hasDiscount && !(isDigital && digFree) ? reg : null,
         cost_price: costPrice === "" ? 0 : Number(costPrice),
         sku: sku || null,
         low_stock_threshold: Number(lowThreshold),
-        stock: Number(stock),
+        stock: isDigital ? 0 : Number(stock),
         status,
         primary_image_url: image,
         gallery,
@@ -411,6 +458,7 @@ export function ProductDialog({
         product_type: productType,
         meta,
       });
+
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
