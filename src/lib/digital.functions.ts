@@ -533,3 +533,76 @@ export const ownerDeleteDigitalCategory = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/** KPI snapshot for the Digital dashboard (owner only). */
+export const digitalDashboard = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const store = await ownerStore(context);
+    const sb = context.supabase;
+
+    const [{ data: products }, { data: downloads }, { data: licenses }, { data: orders }] =
+      await Promise.all([
+        sb
+          .from("products")
+          .select("id,name,price,status,updated_at,primary_image_url")
+          .eq("store_id", store.id)
+          .eq("product_type", "digital"),
+        sb
+          .from("order_downloads")
+          .select("product_id,product_name,status,download_count,created_at")
+          .eq("store_id", store.id),
+        sb.from("license_keys").select("status").eq("store_id", store.id),
+        sb
+          .from("orders")
+          .select("total,payment_status,is_digital,created_at")
+          .eq("store_id", store.id)
+          .eq("is_digital", true),
+      ]);
+
+    const prods = (products ?? []) as any[];
+    const dls = (downloads ?? []) as any[];
+    const lics = (licenses ?? []) as any[];
+    const ords = (orders ?? []) as any[];
+
+    const freeIds = new Set(prods.filter((p) => Number(p.price) === 0).map((p) => p.id));
+    const byProduct = new Map<string, { name: string; count: number }>();
+    for (const d of dls) {
+      if (!d.product_id) continue;
+      const cur = byProduct.get(d.product_id) ?? { name: d.product_name, count: 0 };
+      cur.count += d.download_count ?? 0;
+      byProduct.set(d.product_id, cur);
+    }
+
+    const paid = ords.filter((o) => o.payment_status === "paid");
+    return {
+      totals: {
+        products: prods.length,
+        published: prods.filter((p) => p.status === "active" || p.status === "published").length,
+        downloads: dls.reduce((a, d) => a + (d.download_count ?? 0), 0),
+        freeDownloads: dls
+          .filter((d) => freeIds.has(d.product_id))
+          .reduce((a, d) => a + (d.download_count ?? 0), 0),
+        orders: ords.length,
+        revenue: paid.reduce((a, o) => a + Number(o.total ?? 0), 0),
+        activeLicenses: lics.filter((l) => l.status === "assigned").length,
+        availableLicenses: lics.filter((l) => l.status === "available").length,
+        lockedFiles: dls.filter((d) => d.status === "locked").length,
+      },
+      mostDownloaded: Array.from(byProduct.entries())
+        .map(([id, v]) => ({ id, ...v }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 6),
+      recentlyUpdated: prods
+        .slice()
+        .sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)))
+        .slice(0, 6)
+        .map((p) => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          updated_at: p.updated_at,
+          image: p.primary_image_url,
+        })),
+    };
+  });
