@@ -186,8 +186,9 @@ function SettingsPage() {
           language: form.language || "en",
           timezone: form.timezone || "Asia/Dhaka",
           allow_guest_checkout: !!form.allow_guest_checkout,
-          
+          store_mode: storeMode(form.store_mode),
         },
+
       });
       await qc.invalidateQueries({ queryKey: ["admin", "store"] });
       const next = await qc.fetchQuery({ queryKey: ["admin", "store"], queryFn: () => fetchStore() });
