@@ -397,6 +397,10 @@ export const verifyOrderPayment = createServerFn({ method: "POST" })
         .update({ payment_status: "paid", status: paidStatus } as any)
         .eq("id", o.id)
         .neq("payment_status", "paid");
+      try {
+        const { fulfilDigitalOrder } = await import("@/lib/digital.server");
+        await fulfilDigitalOrder(o.id);
+      } catch { /* non-fatal */ }
       return { payment_status: "paid", checked: true };
     }
 
