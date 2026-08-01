@@ -29,7 +29,9 @@ import {
   updateInvoiceSettings,
   computeInvoicePreview,
 } from "@/lib/invoice-settings.functions";
-import { STORE_MODES, storeMode } from "@/lib/digital";
+import { storeMode } from "@/lib/digital";
+import { listMyDomains } from "@/lib/domains.functions";
+import { StoreModeSwitcher } from "@/components/admin/StoreModeSwitcher";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
