@@ -158,14 +158,97 @@ export async function unlockOrderDownloads(orderId: string, sb: SB = supabaseAdm
   return { unlocked, licenses };
 }
 
+/** Public origin used for links inside delivery emails. */
+function publicOrigin() {
+  return (
+    process.env["PUBLIC_APP_URL"] ||
+    process.env["VITE_APP_URL"] ||
+    "https://orzen-commerce.lovable.app"
+  ).replace(/\/$/, "");
+}
+
+/**
+ * Send the "your download is ready" email for an order. Safe to call again
+ * (admin "resend" action). Returns false when there is no recipient address.
+ */
+export async function sendDownloadEmail(orderId: string, sb: SB = supabaseAdmin) {
+  const { data: order } = await sb
+    .from("orders")
+    .select("id,store_id,customer_id,customer_name,invoice_no")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (!order) return false;
+  const o = order as any;
+
+  const { data: rows } = await sb
+    .from("order_downloads")
+    .select("product_id,product_name,file_label,version,status")
+    .eq("order_id", orderId);
+  const active = (rows ?? []).filter((r: any) => r.status === "active");
+  if (active.length === 0) return false;
+
+  let email: string | null = null;
+  let name: string | null = o.customer_name ?? null;
+  if (o.customer_id) {
+    const { data: c } = await sb
+      .from("store_customers")
+      .select("email,full_name")
+      .eq("id", o.customer_id)
+      .maybeSingle();
+    email = (c as any)?.email ?? null;
+    name = (c as any)?.full_name ?? name;
+  }
+  if (!email) return false;
+
+  const [{ data: store }, { data: keys }, { data: products }] = await Promise.all([
+    sb.from("stores").select("name,slug").eq("id", o.store_id).maybeSingle(),
+    sb.from("license_keys").select("key_value").eq("order_id", orderId),
+    sb
+      .from("products")
+      .select("id,digital")
+      .in("id", Array.from(new Set(active.map((r: any) => r.product_id).filter(Boolean))) as string[]),
+  ]);
+
+  const instructions = (products ?? [])
+    .map((p: any) => (p.digital?.instructions ? String(p.digital.instructions) : null))
+    .filter(Boolean) as string[];
+
+  const { tplDigitalDownloadReady, enqueueEmail } = await import("@/lib/emails.server");
+  const tpl = tplDigitalDownloadReady({
+    storeName: (store as any)?.name ?? "Store",
+    customerName: name,
+    orderRef: o.invoice_no || String(o.id).slice(0, 8).toUpperCase(),
+    downloadUrl: `${publicOrigin()}/store/${(store as any)?.slug ?? ""}/order/${orderId}`,
+    items: active.map((r: any) => ({
+      name: r.product_name,
+      label: r.file_label,
+      version: r.version,
+    })),
+    licenses: (keys ?? []).map((k: any) => k.key_value),
+    instructions,
+  });
+  await enqueueEmail({
+    to: email,
+    template: "digital_download_ready",
+    subject: tpl.subject,
+    html: tpl.html,
+    payload: { order_id: orderId },
+  });
+  return true;
+}
+
 /**
  * Called from every place that flips an order to paid / fulfilled. Creates the
- * entitlements if missing, then unlocks them. Never throws.
+ * entitlements if missing, then unlocks them and emails the buyer. Never throws.
  */
 export async function fulfilDigitalOrder(orderId: string) {
   try {
     await createEntitlementsForOrder(orderId);
-    return await unlockOrderDownloads(orderId);
+    const res = await unlockOrderDownloads(orderId);
+    if (res.unlocked > 0) {
+      await sendDownloadEmail(orderId).catch(() => false);
+    }
+    return res;
   } catch (e) {
     console.error("[digital] fulfilment failed:", (e as Error).message);
     return { unlocked: 0, licenses: 0 };
