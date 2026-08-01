@@ -1,39 +1,38 @@
 ## Goal
 
-Upgrade the existing Banner Management page (`/admin/banners`) with Product Type tabs, matching the Category page style. No page redesign, no new pages.
+Upgrade the existing Coupon & Promo Code page (`/admin/coupons`) with Product Type tabs and a slightly richer form, matching the Category and Banner pages. No redesign, no new pages.
 
 ## Verified current state
 
-- The `banners` table today has only: `id`, `store_id`, `image_url`, `link`, `position`, `campaign_type`, `created_at`. It has no title, product type, display position, category link, status, or updated timestamp.
-- The page currently has no search box, no filter, no sort control and no Edit — banners can only be added and deleted.
-- `addBanner` enforces a hard "Maximum 3 banners" per store; there is no update function.
-- The storefront reads banners from the same table and will keep showing all of them (unchanged, as agreed).
+- The `coupons` table has only: `code`, `type` (percent/fixed/free_shipping), `value`, `min_order`, `usage_limit`, `used_count`, `starts_at`, `expires_at`, `active`. There is no name, product type, max discount, per-customer limit, or category/product targeting.
+- The page today has no tabs, no search box and no sort control. It already has a table list with Edit and Delete and a single "New coupon" button.
+- `listCoupons` / `upsertCoupon` / `deleteCoupon` exist; `upsertCoupon` validates a fixed field set, so new fields must be added to its schema.
 
 ## Plan
 
 ### 1. Database
-Add to `banners`: `title`, `product_type` (default `physical`), `display_position` (default `hero`), `category_id` (optional, links to a category), `sort_order`, `is_active` (default true), `updated_at` (auto-maintained). Existing rows get sensible defaults so nothing breaks; the storefront query keeps working as-is.
+Add to `coupons`: `name`, `product_type` (default `physical`), `max_discount`, `per_customer_limit`, `category_ids`, `product_ids`. Existing rows default to Physical so nothing breaks; checkout's `validate_coupon` keeps working unchanged.
 
 ### 2. Tabs
-Add the same tab row as the Category page: All / Physical / Digital / Service / Subscription, default Physical, client-side only, with a soft fade/slide transition. Legacy rows with no type count as Physical.
+Same tab row as Categories/Banners: All / Physical / Digital / Service / Subscription, default Physical, client-side only with a soft fade transition. Legacy rows with no type count as Physical.
 
 ### 3. Search + sort
-Same search bar style as Categories, filtering title/link within the active tab only. A small dropdown next to it: Newest, Oldest, Active, Inactive.
+Search box in the same style, filtering name/code within the active tab only. A dropdown next to it: Newest, Oldest, Active, Expired.
 
-### 4. Add / Edit
-- One "Add banner" button in the same position. The new banner automatically takes the active tab's type (Physical when the All tab is active). No manual type picker.
-- Form fields: Title, Image, Link (optional), Display Position (Hero / Secondary / Promotional / Category Banner), Related Category (optional — lists categories of the same product type), Sort Order, Status.
-- Editing opens the same dialog pre-filled and keeps the banner's existing product type.
+### 4. Create / Edit
+- Keep the single "New coupon" button in its current spot. A new coupon automatically takes the active tab's type (Physical when All is active) — no manual type picker.
+- Form fields: Coupon Name, Code, Discount Type, Discount Value, Minimum Order (optional), Maximum Discount (optional), Usage Limit, Usage Limit Per Customer, Start Date, Expiry Date, Applicable Categories (optional), Applicable Products (optional), Status.
+- Edit opens the same dialog pre-filled and keeps the coupon's existing product type.
 
-### 5. Card list
-Keep the current card grid; each card shows preview image, title, display position, related category, status, sort order, last updated, plus Edit and Delete.
+### 5. List
+Keep the current table (cards on mobile). Each row shows name, code, discount, product type badge, usage count, expiry, status, Edit, Delete.
 
-### 6. Limits and empty state
-Cap becomes 3 banners per product type (so up to 3 Physical, 3 Digital, etc.). The Add button disables with a note when the active type is full. When a tab has no matches: "No banners found." plus an Add banner button.
+### 6. Empty state
+When a tab has no matches: "No coupons found." with a Create coupon button below it.
 
 ## Technical notes
 
-- Files touched: one migration, `src/lib/admin.functions.ts` (widen `addBanner` input, add `updateBanner`, count scoped per product type, return new columns), and `src/routes/_authenticated/admin/banners.tsx` (tabs, search, sort, dialog, card layout).
-- No existing API is removed and no response shape is narrowed; `listMyBanners` and `deleteBanner` keep their signatures.
-- Storefront, theme customization, products and categories are untouched.
-- Mobile: tabs scroll horizontally, search and sort stack full-width, cards go one per row.
+- Files touched: one migration, `src/lib/business.functions.ts` (widen `couponSchema`, return new columns — no signature or response narrowing), and `src/routes/_authenticated/admin/coupons.tsx` (tabs, search, sort, dialog fields, badges, empty state).
+- Category/product pickers read from existing product and category list functions; nothing on those pages changes.
+- Checkout, orders, products, categories and banners are untouched; the coupon validation RPC is left as-is for backward compatibility.
+- Mobile: tabs scroll horizontally, search and sort stack full-width, the table becomes stacked cards.
