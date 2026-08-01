@@ -671,7 +671,7 @@ export const upsertCategory = createServerFn({ method: "POST" })
         sort_order: z.number().int().min(0).max(9999).optional(),
         is_active: z.boolean().optional(),
         parent_id: z.string().uuid().nullable().optional(),
-        product_type: z.enum(["both", "physical", "digital"]).optional(),
+        product_type: z.enum(["both", "physical", "digital", "service", "subscription"]).optional(),
       })
       .parse(d),
   )
