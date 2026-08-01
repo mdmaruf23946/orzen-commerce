@@ -7,7 +7,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { getOrder, verifyOrderPayment } from "@/lib/storefront.functions";
 import { fbTrack, purchaseEventId } from "@/lib/fb-track";
 import { PaymentTimeline } from "@/components/storefront/PaymentTimeline";
-import { DownloadsPanel } from "@/components/storefront/DownloadsPanel";
 
 const orderQuery = (orderId: string) =>
   queryOptions({
@@ -166,8 +165,6 @@ function OrderConfirmation() {
           </div>
         ) : null}
       </div>
-
-      <DownloadsPanel orderId={order.id} />
 
       <PaymentTimeline orderId={order.id} refreshKey={String((order as any).payment_status ?? "")} />
 
