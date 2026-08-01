@@ -286,26 +286,17 @@ function SettingsPage() {
           title="Store Mode"
           description="Decide what kind of products this store sells. Checkout adapts automatically."
         >
-          <div className="grid gap-3 sm:grid-cols-3">
-            {STORE_MODES.map((m) => {
-              const activeMode = storeMode(form.store_mode) === m.value;
-              return (
-                <button
-                  key={m.value}
-                  type="button"
-                  onClick={() => set("store_mode", m.value)}
-                  className={`rounded-xl border p-3 text-left transition ${
-                    activeMode
-                      ? "border-primary bg-primary/5 ring-1 ring-primary"
-                      : "hover:border-primary/40 hover:bg-muted/40"
-                  }`}
-                >
-                  <div className="text-sm font-semibold">{m.label}</div>
-                  <p className="mt-1 text-xs text-muted-foreground">{m.description}</p>
-                </button>
-              );
-            })}
-          </div>
+          <StoreModeSwitcher
+            value={form.store_mode}
+            hasCustomDomain={hasCustomDomain}
+            onSwitched={async () => {
+              const next = await qc.fetchQuery({
+                queryKey: ["admin", "store"],
+                queryFn: () => fetchStore(),
+              });
+              if (next) setForm({ ...(next as any) });
+            }}
+          />
           <p className="text-[11px] text-muted-foreground">
             Digital stores hide delivery zones, courier fields and shipping addresses at checkout,
             and unlock file downloads for the buyer once payment is confirmed.
