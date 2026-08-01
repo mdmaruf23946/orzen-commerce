@@ -639,7 +639,7 @@ export const listProductsByIds = createServerFn({ method: "GET" })
     const sb = publicClient();
     const { data: rows, error } = await sb
       .from("products")
-      .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id")
+      .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id,product_type")
       .eq("store_id", data.storeId)
       .in("id", data.ids)
       .neq("status", "draft");
