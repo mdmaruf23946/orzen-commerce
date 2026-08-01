@@ -702,7 +702,21 @@ export function ProductDialog({
               <span className="text-sm">Tax inclusive in price</span>
             </label>
           </div>
+          {isDigital && (
+            <div className="space-y-3 rounded-xl border p-3">
+              <Label>Limited time discount</Label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Starts">
+                  <Input type="datetime-local" value={digSaleStart} onChange={(e) => setDigSaleStart(e.target.value)} />
+                </Field>
+                <Field label="Ends">
+                  <Input type="datetime-local" value={digSaleEnd} onChange={(e) => setDigSaleEnd(e.target.value)} />
+                </Field>
+              </div>
+            </div>
+          )}
         </div>
+
       ),
     },
     {
