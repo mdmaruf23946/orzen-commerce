@@ -574,32 +574,60 @@ export type Database = {
       banners: {
         Row: {
           campaign_type: string
+          category_id: string | null
           created_at: string
+          display_position: string
           id: string
           image_url: string
+          is_active: boolean
           link: string | null
           position: number
+          product_type: string
+          sort_order: number
           store_id: string
+          title: string
+          updated_at: string
         }
         Insert: {
           campaign_type?: string
+          category_id?: string | null
           created_at?: string
+          display_position?: string
           id?: string
           image_url: string
+          is_active?: boolean
           link?: string | null
           position?: number
+          product_type?: string
+          sort_order?: number
           store_id: string
+          title?: string
+          updated_at?: string
         }
         Update: {
           campaign_type?: string
+          category_id?: string | null
           created_at?: string
+          display_position?: string
           id?: string
           image_url?: string
+          is_active?: boolean
           link?: string | null
           position?: number
+          product_type?: string
+          sort_order?: number
           store_id?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "banners_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "banners_store_id_fkey"
             columns: ["store_id"]
