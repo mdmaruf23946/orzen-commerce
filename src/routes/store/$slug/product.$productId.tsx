@@ -308,7 +308,7 @@ function ProductPage() {
       )}
 
       <StoreCard slug={slug} name={store!.name} logoUrl={store!.logo_url} />
-      <TrustBadges codEnabled={codEnabled} />
+      {!isDigital && <TrustBadges codEnabled={codEnabled} />}
       <ShareBar url={shareUrl} title={product!.name} />
 
       <div className="mt-8">
