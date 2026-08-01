@@ -129,8 +129,13 @@ function SettingsPage() {
   const getReqLogin = useServerFn(adminGetRequireCustomerLogin);
   const setReqLogin = useServerFn(adminSetRequireCustomerLogin);
   const qc = useQueryClient();
+  const domainsFn = useServerFn(listMyDomains);
 
   const { data: store } = useQuery({ queryKey: ["admin", "store"], queryFn: () => fetchStore() });
+  const { data: domainData } = useQuery({ queryKey: ["admin", "domains"], queryFn: () => domainsFn() });
+  const hasCustomDomain = ((domainData as any)?.domains ?? []).some(
+    (d: any) => d.kind === "custom" && !d.disconnected_at,
+  );
   const { data: reqLogin } = useQuery({
     queryKey: ["admin", "require-customer-login"],
     queryFn: () => getReqLogin(),
