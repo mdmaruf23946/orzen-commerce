@@ -1,0 +1,1 @@
+GRANT SELECT (sku, meta) ON public.products TO anon;
