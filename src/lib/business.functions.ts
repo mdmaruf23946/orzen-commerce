@@ -87,11 +87,18 @@ export const adjustStock = createServerFn({ method: "POST" })
 // ---------- COUPONS ----------
 const couponSchema = z.object({
   code: z.string().trim().min(1).max(40).regex(/^[A-Z0-9_-]+$/i, "Letters, numbers, dash, underscore"),
+  name: z.string().trim().max(120).optional().nullable(),
+  product_type: z.enum(["physical", "digital", "service", "subscription"]).optional(),
   type: z.enum(["percent", "fixed", "free_shipping"]),
   value: z.number().nonnegative(),
   min_order: z.number().nonnegative().default(0),
+  max_discount: z.number().nonnegative().optional().nullable(),
   usage_limit: z.number().int().min(0).optional().nullable(),
+  per_customer_limit: z.number().int().min(0).optional().nullable(),
+  starts_at: z.string().optional().nullable(),
   expires_at: z.string().optional().nullable(),
+  category_ids: z.array(z.string().uuid()).optional(),
+  product_ids: z.array(z.string().uuid()).optional(),
   active: z.boolean().default(true),
 });
 
@@ -118,12 +125,19 @@ export const upsertCoupon = createServerFn({ method: "POST" })
     const row = {
       store_id: sid,
       code: data.code.toUpperCase(),
+      name: data.name?.trim() || null,
       type: data.type,
       value: data.value,
       min_order: data.min_order ?? 0,
+      max_discount: data.max_discount ?? null,
       usage_limit: data.usage_limit ?? null,
+      per_customer_limit: data.per_customer_limit ?? null,
+      starts_at: data.starts_at || null,
       expires_at: data.expires_at || null,
+      category_ids: data.category_ids ?? [],
+      product_ids: data.product_ids ?? [],
       active: data.active,
+      ...(data.product_type ? { product_type: data.product_type } : {}),
     };
     if (data.id) {
       const { error } = await context.supabase.from("coupons").update(row).eq("id", data.id).eq("store_id", sid);
