@@ -113,7 +113,8 @@ function CheckoutPage() {
   const digitalOnly =
     mode === "digital" ||
     (mode === "hybrid" &&
-      cartProducts.length > 0 &&
+      cartIds.length > 0 &&
+      cartProducts.length === cartIds.length &&
       cartProducts.every((p: any) => p.product_type === "digital"));
   const pc = s.payments_config ?? {};
   const delivery = s.delivery ?? {};
