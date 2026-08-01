@@ -478,3 +478,58 @@ export const listDigitalOrders = createServerFn({ method: "GET" })
     });
     return { orders: grouped, storeMode: store.store_mode };
   });
+
+// -------------------------------------------------- Winner Admin: catalog CRUD
+
+export const ownerUpsertDigitalCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        id: uuid.optional(),
+        key: z.string().trim().min(2).max(64).regex(/^[a-z0-9-]+$/),
+        name: z.string().trim().min(1).max(80),
+        icon: z.string().trim().max(60).nullable().optional(),
+        description: z.string().trim().max(300).nullable().optional(),
+        sort_order: z.number().int().min(0).max(9999).optional(),
+        is_active: z.boolean().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const row = {
+      key: data.key,
+      name: data.name,
+      icon: data.icon ?? null,
+      description: data.description ?? null,
+      sort_order: data.sort_order ?? 0,
+      is_active: data.is_active ?? true,
+    };
+    if (data.id) {
+      const { error } = await context.supabase
+        .from("platform_digital_categories")
+        .update(row as any)
+        .eq("id", data.id);
+      if (error) throw new Error(error.message);
+      return { id: data.id };
+    }
+    const { data: created, error } = await context.supabase
+      .from("platform_digital_categories")
+      .insert(row as any)
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return created;
+  });
+
+export const ownerDeleteDigitalCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: uuid }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("platform_digital_categories")
+      .delete()
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
