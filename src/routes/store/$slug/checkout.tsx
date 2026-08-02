@@ -59,6 +59,7 @@ function CheckoutPage() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [area, setArea] = useState("");
   const [zoneId, setZoneId] = useState<string | null>(null);
