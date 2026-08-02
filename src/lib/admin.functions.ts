@@ -420,6 +420,21 @@ export const upsertProduct = createServerFn({ method: "POST" })
       product_type: data.product_type ?? "physical",
     } as any;
 
+    // Cross-type guard: a product may only reference a category of its own type.
+    if (data.category_id) {
+      const { data: cat } = await supabase
+        .from("categories")
+        .select("id, product_type")
+        .eq("id", data.category_id)
+        .eq("store_id", store.id)
+        .maybeSingle();
+      if (!cat) throw new Error("Category not found");
+      if ((cat as any).product_type && (cat as any).product_type !== (data.product_type ?? "physical")) {
+        throw new Error("Category belongs to a different product type");
+      }
+    }
+
+
 
 
     if (data.id) {
