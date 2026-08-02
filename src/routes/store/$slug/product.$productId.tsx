@@ -16,6 +16,7 @@ import { pushRecent, readRecent } from "@/lib/recently-viewed";
 import { ProductGallery } from "@/components/storefront/pdp/ProductGallery";
 import { BuyBox } from "@/components/storefront/pdp/BuyBox";
 import { InfoTabs } from "@/components/storefront/pdp/InfoTabs";
+import { ServiceInfoSections } from "@/components/storefront/pdp/ServiceInfoSections";
 import { ReviewsBlock } from "@/components/storefront/pdp/ReviewsBlock";
 import { RelatedRail } from "@/components/storefront/pdp/RelatedRail";
 import { ShareBar } from "@/components/storefront/pdp/ShareBar";
