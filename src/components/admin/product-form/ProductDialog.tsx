@@ -1126,7 +1126,10 @@ export function ProductDialog({
         ...digitalTabs,
         ...tabs.filter((t) => t.id === "pricing" || t.id === "visibility" || t.id === "seo"),
       ]
-    : tabs;
+    : isService || isSubscription
+      ? tabs.filter((t) => t.id !== "inventory" && t.id !== "shipping" && t.id !== "variants")
+      : tabs;
+
 
 
   return (
