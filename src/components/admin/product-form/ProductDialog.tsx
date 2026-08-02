@@ -464,7 +464,7 @@ export function ProductDialog({
         cost_price: costPrice === "" ? 0 : Number(costPrice),
         sku: sku || null,
         low_stock_threshold: Number(lowThreshold),
-        stock: isDigital ? 0 : Number(stock),
+        stock: isStockless ? 0 : Number(stock),
         status,
         primary_image_url: image,
         gallery,
