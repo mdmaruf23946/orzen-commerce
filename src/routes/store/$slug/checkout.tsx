@@ -107,6 +107,7 @@ function CheckoutPage() {
     if (customer) {
       if (!name && customer.full_name) setName(customer.full_name);
       if (!phone && customer.phone) setPhone(customer.phone);
+      if (!email && (customer as any).email) setEmail((customer as any).email);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customer]);
