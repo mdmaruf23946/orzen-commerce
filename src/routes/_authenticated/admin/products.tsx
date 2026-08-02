@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ProductDialog } from "@/components/admin/product-form/ProductDialog";
+import { ServiceProductDialog } from "@/components/admin/product-form/service/ServiceProductDialog";
 import { AIProductBuilderDialog } from "@/components/admin/product-form/AIProductBuilderDialog";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
