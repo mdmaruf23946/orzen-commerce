@@ -282,6 +282,11 @@ function ProductPage() {
         warranty={(product as any).warranty ?? null}
       />
 
+      {(product as any)?.product_type === "service" && (
+        <ServiceInfoSections service={((product as any)?.meta ?? {}).service} />
+      )}
+
+
 
       <ReviewsBlock rating={rating} />
 
