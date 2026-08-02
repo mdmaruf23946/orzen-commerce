@@ -949,8 +949,12 @@ export const placeOrder = createServerFn({ method: "POST" })
         customer_id: customerId,
         customer_name: data.customerName,
         phone: data.phone,
-        address: data.address,
+        address: (data.address ?? "").trim() || "Digital delivery — no shipment",
         area: data.area ?? null,
+        email: data.email ?? null,
+        company: data.company ?? null,
+        country: data.country ?? null,
+
         payment_method: dbMethod,
         payment_gateway_id: gatewayId,
         payment_gateway_name: gatewayName,
