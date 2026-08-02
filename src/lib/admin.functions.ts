@@ -732,14 +732,18 @@ export const mySubscription = createServerFn({ method: "GET" })
 // ---------- CATEGORIES ----------
 export const listMyCategories = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d: unknown) =>
+    z
+      .object({ product_type: z.enum(["physical", "digital", "service", "subscription"]).optional() })
+      .parse(d ?? {}),
+  )
+  .handler(async ({ data: input, context }) => {
     const { supabase, userId } = context;
     const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
     if (!store) return [];
-    const { data, error } = await supabase
-      .from("categories")
-      .select("*")
-      .eq("store_id", store.id)
+    let q = supabase.from("categories").select("*").eq("store_id", store.id);
+    if (input?.product_type) q = q.eq("product_type", input.product_type);
+    const { data, error } = await q
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true });
     if (error) throw new Error(error.message);
