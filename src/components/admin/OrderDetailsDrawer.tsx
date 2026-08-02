@@ -116,6 +116,10 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
   const timeline: any[] = data?.timeline ?? [];
   const notes: any[] = data?.notes ?? [];
 
+  const kind: string = order?.order_type ?? "physical";
+  const isPhysical = kind === "physical";
+  const fulfil: any = order?.fulfillment_meta ?? {};
+
   const subtotal = Number(order?.subtotal ?? 0);
   const discount = Number(order?.discount_amount ?? 0);
   const delivery = Number(order?.delivery_amount ?? 0);
@@ -141,13 +145,15 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                   <Printer className="h-3 w-3" /> Invoice
                 </Link>
               )}
-              <Link
-                to="/admin/courier-orders"
-                search={{ tab: "ready" }}
-                className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-normal hover:bg-muted"
-              >
-                <Truck className="h-3 w-3" /> Send to Courier
-              </Link>
+              {isPhysical && (
+                <Link
+                  to="/admin/courier-orders"
+                  search={{ tab: "ready" }}
+                  className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-normal hover:bg-muted"
+                >
+                  <Truck className="h-3 w-3" /> Send to Courier
+                </Link>
+              )}
             </SheetTitle>
 
           </SheetHeader>
@@ -192,17 +198,22 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                   <a href={`tel:${order.phone}`} className="flex items-center gap-1.5 text-xs text-primary">
                     <Phone className="h-3 w-3" /> {order.phone}
                   </a>
-                  <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                    <MapPin className="mt-0.5 h-3 w-3 shrink-0" /> {order.address}
-                  </div>
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${order.address} ${order.area ?? ""}`)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                  >
-                    <MapPin className="h-3 w-3" /> Open in Google Maps
-                  </a>
+                  {order.email && <div className="text-xs text-muted-foreground">{order.email}</div>}
+                  {isPhysical && (
+                    <>
+                      <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                        <MapPin className="mt-0.5 h-3 w-3 shrink-0" /> {order.address}
+                      </div>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${order.address} ${order.area ?? ""}`)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                      >
+                        <MapPin className="h-3 w-3" /> Open in Google Maps
+                      </a>
+                    </>
+                  )}
                 </div>
                 <CustomerStats phone={order.phone} enabled={open} />
               </Section>
@@ -220,7 +231,22 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                   {order.txn_id && <><dt className="text-muted-foreground">Txn ID</dt><dd className="text-right font-mono">{order.txn_id}</dd></>}
                   <dt className="text-muted-foreground">Status</dt>
                   <dd className="text-right capitalize">{order.status}</dd>
+                  <dt className="text-muted-foreground">Type</dt>
+                  <dd className="text-right capitalize">{kind}</dd>
+                  {!isPhysical && (
+                    <>
+                      <dt className="text-muted-foreground">Confirmation</dt>
+                      <dd className="text-right capitalize">{order.confirmation_status ?? "pending"}</dd>
+                      {order.confirmed_at && (
+                        <>
+                          <dt className="text-muted-foreground">Confirmed at</dt>
+                          <dd className="text-right">{new Date(order.confirmed_at).toLocaleString()}</dd>
+                        </>
+                      )}
+                    </>
+                  )}
                 </dl>
+                {isPhysical && (
                 <label className="mt-3 flex items-start gap-2 rounded-md border bg-muted/30 p-2 text-xs">
                   <input
                     type="checkbox"
@@ -248,9 +274,53 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                     </span>
                   </span>
                 </label>
+                )}
               </Section>
 
+              {/* Type-specific fulfilment */}
+              {kind === "digital" && (
+                <Section icon={ScrollText} title="Digital delivery">
+                  <dl className="grid grid-cols-2 gap-y-1 text-xs">
+                    <dt className="text-muted-foreground">Access</dt>
+                    <dd className="text-right capitalize">
+                      {order.confirmation_status === "confirmed" ? "Granted" : "Locked"}
+                    </dd>
+                    <dt className="text-muted-foreground">Delivery email</dt>
+                    <dd className="text-right">{order.email ?? "—"}</dd>
+                  </dl>
+                </Section>
+              )}
+              {kind === "service" && (
+                <Section icon={ScrollText} title="Service booking">
+                  <dl className="grid grid-cols-2 gap-y-1 text-xs">
+                    <dt className="text-muted-foreground">State</dt>
+                    <dd className="text-right capitalize">{fulfil.service_state ?? "requested"}</dd>
+                    <dt className="text-muted-foreground">Date</dt>
+                    <dd className="text-right">{fulfil.booking_date ?? "—"}</dd>
+                    <dt className="text-muted-foreground">Time</dt>
+                    <dd className="text-right">{fulfil.booking_time ?? "—"}</dd>
+                    <dt className="text-muted-foreground">Staff</dt>
+                    <dd className="text-right">{fulfil.staff ?? "—"}</dd>
+                  </dl>
+                </Section>
+              )}
+              {kind === "subscription" && (
+                <Section icon={ScrollText} title="Subscription">
+                  <dl className="grid grid-cols-2 gap-y-1 text-xs">
+                    <dt className="text-muted-foreground">State</dt>
+                    <dd className="text-right capitalize">{fulfil.subscription_state ?? "pending"}</dd>
+                    <dt className="text-muted-foreground">Cycle</dt>
+                    <dd className="text-right capitalize">{(fulfil.billing_cycle ?? "monthly").replace(/_/g, " ")}</dd>
+                    <dt className="text-muted-foreground">Renews</dt>
+                    <dd className="text-right">
+                      {fulfil.renewal_at ? new Date(fulfil.renewal_at).toLocaleDateString() : "—"}
+                    </dd>
+                  </dl>
+                </Section>
+              )}
+
               {/* Courier + fraud */}
+              {isPhysical && (
               <Section icon={Truck} title="Courier & Risk">
                 <div className="flex items-center justify-between gap-2">
                   {cachedFraud ? <RiskBadge risk={(cachedFraud as any).risk} /> : <span className="text-xs text-muted-foreground">Checking…</span>}
@@ -290,6 +360,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                   </>
                 )}
               </Section>
+              )}
 
               {/* Timeline */}
               <Section icon={ScrollText} title="Timeline">
@@ -308,6 +379,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
               </Section>
 
               {/* Courier tracking editor */}
+              {isPhysical && (
               <Section icon={Truck} title="Courier tracking">
                 {(order.courier_name || order.courier_tracking_id || order.courier_status) && (
                   <div className="mb-2 rounded-md bg-muted/40 p-2 text-xs">
