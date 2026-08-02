@@ -39,6 +39,7 @@ function CheckoutPage() {
   const listGw = useServerFn(listStoreOnlineGateways);
   const startPay = useServerFn(startOnlineCheckout);
   const getZones = useServerFn(getStoreDeliveryZones);
+  const listByIds = useServerFn(listProductsByIds);
   const { data: onlineGateways = [] } = useQuery({
     enabled: !!store?.id,
     queryKey: ["onlineGateways", store?.id],
@@ -49,6 +50,7 @@ function CheckoutPage() {
     queryKey: ["deliveryZones", store?.id],
     queryFn: () => getZones({ data: { storeId: store!.id } }),
   });
+
 
   const { customer, token: customerToken } = useCustomerSession(slug);
   const requireLogin = !!(store as any)?.require_customer_login;
