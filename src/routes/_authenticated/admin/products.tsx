@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Sparkles, ChevronDown, PenLine } from "lucide-react";
+import { Plus, Sparkles, ChevronDown, PenLine, Package, Download, CalendarClock, Repeat } from "lucide-react";
 import {
   listMyProducts,
   upsertProduct,
@@ -18,17 +18,40 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ProductDialog } from "@/components/admin/product-form/ProductDialog";
 import { AIProductBuilderDialog } from "@/components/admin/product-form/AIProductBuilderDialog";
+import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
+import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
+import { AdminToolbar } from "@/components/admin/page/AdminToolbar";
+import { ProductRow, productTypeOf, type ProductType } from "@/components/admin/products/ProductRow";
 
 export const Route = createFileRoute("/_authenticated/admin/products")({
   component: ProductsPage,
+  head: () => ({
+    meta: [
+      { title: "Products · Store Admin" },
+      { name: "description", content: "Manage physical, digital, service and subscription products in one place." },
+    ],
+  }),
 });
 
 type Product = Awaited<ReturnType<typeof listMyProducts>>[number];
+type TabKey = "all" | ProductType;
 
+const TYPES: ProductType[] = ["physical", "digital", "service", "subscription"];
+const TYPE_LABEL: Record<ProductType, string> = {
+  physical: "Physical",
+  digital: "Digital",
+  service: "Service",
+  subscription: "Subscription",
+};
+
+const selectCls =
+  "h-10 rounded-md border border-input bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 function ProductsPage() {
   const list = useServerFn(listMyProducts);
@@ -42,18 +65,105 @@ function ProductsPage() {
   const { data: products } = useQuery({ queryKey: ["admin", "products"], queryFn: () => list() });
   const { data: store } = useQuery({ queryKey: ["admin", "store"], queryFn: () => storeFn() });
   const { data: categories } = useQuery({ queryKey: ["admin", "categories"], queryFn: () => catsFn() });
+
+  const [tab, setTab] = useState<TabKey>("all");
+  const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [sort, setSort] = useState<"newest" | "name" | "price_asc" | "price_desc">("newest");
   const [editing, setEditing] = useState<Product | null>(null);
   const [open, setOpen] = useState(false);
+  const [newType, setNewType] = useState<ProductType>("physical");
   const [aiOpen, setAiOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState<"" | "delete" | "category" | "price" | "stock" | "status">("");
   const [bulkValue, setBulkValue] = useState<any>("");
 
-  function startNew() { setEditing(null); setOpen(true); }
-  function startEdit(p: Product) { setEditing(p); setOpen(true); }
+  const all = (products ?? []) as any[];
+  const catName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of categories ?? []) m.set(c.id, c.name);
+    return m;
+  }, [categories]);
+
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: all.length, physical: 0, digital: 0, service: 0, subscription: 0 };
+    for (const p of all) c[productTypeOf(p)] = (c[productTypeOf(p)] ?? 0) + 1;
+    return c;
+  }, [all]);
+
+  const tabs = useMemo(
+    () => [
+      { key: "all" as TabKey, label: `All (${counts.all})` },
+      ...TYPES.map((t) => ({ key: t as TabKey, label: `${TYPE_LABEL[t]} (${counts[t] ?? 0})` })),
+    ],
+    [counts],
+  );
+
+  const filtered = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    let rows = all.filter((p) => (tab === "all" ? true : productTypeOf(p) === tab));
+    if (term) {
+      rows = rows.filter((p) => {
+        const cat = p.category_id ? (catName.get(p.category_id) ?? "") : "";
+        return [p.name, p.sku, cat, productTypeOf(p)]
+          .filter(Boolean)
+          .some((v: string) => String(v).toLowerCase().includes(term));
+      });
+    }
+    if (statusFilter) rows = rows.filter((p) => p.status === statusFilter);
+    if (categoryFilter) rows = rows.filter((p) => p.category_id === categoryFilter);
+    const sorted = [...rows];
+    if (sort === "name") sorted.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    if (sort === "price_asc") sorted.sort((a, b) => Number(a.price) - Number(b.price));
+    if (sort === "price_desc") sorted.sort((a, b) => Number(b.price) - Number(a.price));
+    return sorted;
+  }, [all, tab, q, statusFilter, categoryFilter, sort, catName]);
+
+  const stats = useMemo(() => {
+    const rows = tab === "all" ? all : all.filter((p) => productTypeOf(p) === tab);
+    const active = rows.filter((p) => p.status === "active").length;
+    const base = [
+      { label: "Total", value: rows.length, icon: Package },
+      { label: "Active", value: active, icon: Package },
+    ];
+    if (tab === "digital")
+      return [
+        ...base,
+        { label: "Downloads", value: rows.reduce((s, p) => s + (p.download_count ?? 0), 0), icon: Download },
+      ];
+    if (tab === "subscription")
+      return [
+        ...base,
+        { label: "Subscribers", value: rows.reduce((s, p) => s + (p.active_subscribers ?? 0), 0), icon: Repeat },
+      ];
+    if (tab === "service")
+      return [
+        ...base,
+        {
+          label: "Scheduled",
+          value: rows.filter((p) => (p.meta?.service?.booking_type ?? "scheduled") === "scheduled").length,
+          icon: CalendarClock,
+        },
+      ];
+    return [
+      ...base,
+      { label: "Out of stock", value: rows.filter((p) => Number(p.stock ?? 0) <= 0).length, icon: Package },
+    ];
+  }, [all, tab]);
+
+  function startNew(type: ProductType) {
+    setEditing(null);
+    setNewType(type);
+    setOpen(true);
+  }
+  function startEdit(p: Product) {
+    setEditing(p);
+    setOpen(true);
+  }
   function toggleAll() {
-    const all = (products ?? []).map((p) => p.id);
-    setSelected(selected.size === all.length ? new Set() : new Set(all));
+    const ids = filtered.map((p) => p.id);
+    setSelected(selected.size === ids.length ? new Set() : new Set(ids));
   }
   function toggleOne(id: string) {
     const s = new Set(selected);
@@ -66,66 +176,141 @@ function ProductsPage() {
     qc.invalidateQueries({ queryKey: ["admin", "products"] });
     toast.success("Deleted");
   }
-  async function applyBulk() {
+  async function applyBulk(action?: typeof bulkAction, value?: any) {
+    const act = action ?? bulkAction;
+    const val = value ?? bulkValue;
     const ids = Array.from(selected);
-    if (!ids.length || !bulkAction) return;
+    if (!ids.length || !act) return;
     try {
-      if (bulkAction === "delete") {
+      if (act === "delete") {
         if (!confirm(`Delete ${ids.length} products?`)) return;
         await bulkDel({ data: { ids } });
       } else {
         const patch: any = {};
-        if (bulkAction === "category") patch.category_id = bulkValue || null;
-        if (bulkAction === "price") patch.price = Number(bulkValue);
-        if (bulkAction === "stock") patch.stock = Number(bulkValue);
-        if (bulkAction === "status") patch.status = bulkValue;
+        if (act === "category") patch.category_id = val || null;
+        if (act === "price") patch.price = Number(val);
+        if (act === "stock") patch.stock = Number(val);
+        if (act === "status") patch.status = val;
         await bulkUpd({ data: { ids, patch } });
       }
       qc.invalidateQueries({ queryKey: ["admin", "products"] });
-      setSelected(new Set()); setBulkAction(""); setBulkValue("");
+      setSelected(new Set());
+      setBulkAction("");
+      setBulkValue("");
       toast.success(`Updated ${ids.length} products`);
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   }
 
-  const allChecked = (products ?? []).length > 0 && selected.size === (products ?? []).length;
+  const allChecked = filtered.length > 0 && selected.size === filtered.length;
+
+  const addButton = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button className="gap-1.5">
+          <Plus className="h-4 w-4" />
+          Add Product
+          <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-60">
+        <DropdownMenuLabel className="text-xs">Choose product type</DropdownMenuLabel>
+        {TYPES.map((t) => (
+          <DropdownMenuItem key={t} onClick={() => startNew(t)} className="gap-2">
+            <PenLine className="h-4 w-4" />
+            <span className="text-sm font-medium">{TYPE_LABEL[t]}</span>
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => setAiOpen(true)} className="gap-2">
+          <Sparkles className="h-4 w-4 text-amber-500" />
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">AI Assistant</span>
+            <span className="text-xs text-muted-foreground">Generate from photos & description</span>
+          </div>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Products</h1>
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="gap-1.5">
-                <Plus className="h-4 w-4" />
-                Add Product
-                <ChevronDown className="h-3.5 w-3.5 opacity-70" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onClick={startNew} className="gap-2">
-                <PenLine className="h-4 w-4" />
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">Manual</span>
-                  <span className="text-xs text-muted-foreground">Fill in the form yourself</span>
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setAiOpen(true)} className="gap-2">
-                <Sparkles className="h-4 w-4 text-amber-500" />
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">AI Assistant</span>
-                  <span className="text-xs text-muted-foreground">Generate from photos & description</span>
-                </div>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+    <div className="space-y-4">
+      <AdminPageHeader
+        title="Products"
+        description="Manage physical, digital, service and subscription products."
+        action={addButton}
+      />
+
+      <TypeFilterTabs
+        tabs={tabs}
+        value={tab}
+        onChange={(k) => {
+          setTab(k);
+          setSelected(new Set());
+        }}
+      />
+
+      <AdminToolbar
+        value={q}
+        onChange={setQ}
+        placeholder="Search by name, SKU, category or type…"
+        action={addButton}
+        trailing={
+          <div className="flex gap-2 overflow-x-auto">
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={selectCls}>
+              <option value="">All status</option>
+              <option value="active">Active</option>
+              <option value="draft">Draft</option>
+              <option value="out_of_stock">Out of stock</option>
+            </select>
+            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className={selectCls}>
+              <option value="">All categories</option>
+              {(categories ?? []).map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <select value={sort} onChange={(e) => setSort(e.target.value as any)} className={selectCls}>
+              <option value="newest">Newest</option>
+              <option value="name">Name A–Z</option>
+              <option value="price_asc">Price low → high</option>
+              <option value="price_desc">Price high → low</option>
+            </select>
+          </div>
+        }
+      />
+
+      <div className="grid grid-cols-3 gap-2">
+        {stats.map((s) => (
+          <div key={s.label} className="rounded-xl border bg-card p-3">
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <s.icon className="h-3.5 w-3.5" />
+              {s.label}
+            </div>
+            <p className="mt-1 text-lg font-semibold">{s.value}</p>
+          </div>
+        ))}
       </div>
 
       {selected.size > 0 && (
         <div className="sticky top-14 z-20 flex flex-wrap items-center gap-2 rounded-xl border bg-card p-3 shadow-sm md:top-0">
           <span className="text-sm font-medium">{selected.size} selected</span>
-          <select value={bulkAction} onChange={(e) => { setBulkAction(e.target.value as any); setBulkValue(""); }} className="h-8 rounded-md border bg-background px-2 text-xs">
+          <Button size="sm" variant="outline" onClick={() => applyBulk("status", "active")}>
+            Enable
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => applyBulk("status", "draft")}>
+            Disable
+          </Button>
+          <select
+            value={bulkAction}
+            onChange={(e) => {
+              setBulkAction(e.target.value as any);
+              setBulkValue("");
+            }}
+            className="h-8 rounded-md border bg-background px-2 text-xs"
+          >
             <option value="">Action…</option>
             <option value="delete">Delete</option>
             <option value="category">Change category</option>
@@ -134,62 +319,90 @@ function ProductsPage() {
             <option value="status">Change status</option>
           </select>
           {bulkAction === "category" && (
-            <select value={bulkValue} onChange={(e) => setBulkValue(e.target.value)} className="h-8 rounded-md border bg-background px-2 text-xs">
+            <select
+              value={bulkValue}
+              onChange={(e) => setBulkValue(e.target.value)}
+              className="h-8 rounded-md border bg-background px-2 text-xs"
+            >
               <option value="">— No category —</option>
-              {(categories ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {(categories ?? []).map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
             </select>
           )}
           {(bulkAction === "price" || bulkAction === "stock") && (
-            <Input type="number" min={0} className="h-8 w-28 text-xs" value={bulkValue} onChange={(e) => setBulkValue(e.target.value)} />
+            <Input
+              type="number"
+              min={0}
+              className="h-8 w-28 text-xs"
+              value={bulkValue}
+              onChange={(e) => setBulkValue(e.target.value)}
+            />
           )}
           {bulkAction === "status" && (
-            <select value={bulkValue} onChange={(e) => setBulkValue(e.target.value)} className="h-8 rounded-md border bg-background px-2 text-xs">
+            <select
+              value={bulkValue}
+              onChange={(e) => setBulkValue(e.target.value)}
+              className="h-8 rounded-md border bg-background px-2 text-xs"
+            >
               <option value="">Select…</option>
               <option value="active">Active</option>
               <option value="draft">Draft</option>
               <option value="out_of_stock">Out of stock</option>
             </select>
           )}
-          <Button size="sm" onClick={applyBulk} disabled={!bulkAction || (bulkAction !== "delete" && bulkValue === "")}>Apply</Button>
-          <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>Clear</Button>
+          <Button
+            size="sm"
+            onClick={() => applyBulk()}
+            disabled={!bulkAction || (bulkAction !== "delete" && bulkValue === "")}
+          >
+            Apply
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
+            Clear
+          </Button>
         </div>
       )}
 
       <div className="overflow-hidden rounded-xl border bg-card">
-        {(products ?? []).length === 0 ? (
-          <div className="p-10 text-center text-sm text-muted-foreground">No products yet.</div>
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 p-10 text-center">
+            <p className="text-sm text-muted-foreground">
+              {q || statusFilter || categoryFilter
+                ? "No products match your search."
+                : tab === "all"
+                  ? "No products yet."
+                  : `No ${TYPE_LABEL[tab as ProductType].toLowerCase()} products yet.`}
+            </p>
+            <Button size="sm" onClick={() => startNew(tab === "all" ? "physical" : (tab as ProductType))}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Add {tab === "all" ? "product" : TYPE_LABEL[tab as ProductType].toLowerCase()}
+            </Button>
+          </div>
         ) : (
           <>
             <div className="flex items-center gap-3 border-b bg-muted/30 p-3 text-xs text-muted-foreground">
-              <input type="checkbox" checked={allChecked} onChange={toggleAll} />
-              <span>Select all</span>
+              <input type="checkbox" checked={allChecked} onChange={toggleAll} className="h-4 w-4" />
+              <span>Select all ({filtered.length})</span>
             </div>
             <ul className="divide-y">
-              {(products ?? []).map((p) => (
-                <li key={p.id} className="flex items-center gap-3 p-3">
-                  <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleOne(p.id)} />
-                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted">
-                    {p.primary_image_url && (
-                      <img src={p.primary_image_url.startsWith("http") ? p.primary_image_url : `/api/img/${p.primary_image_url}`} alt="" className="h-full w-full object-cover" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="line-clamp-1 text-sm font-medium">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      ৳{Number(p.price).toFixed(0)}
-                      {p.old_price && Number(p.old_price) > Number(p.price) && <span className="ml-1 line-through">৳{Number(p.old_price).toFixed(0)}</span>}
-                      {" · "}Stock {p.stock} · {p.status}
-                    </p>
-                  </div>
-                  <button onClick={() => startEdit(p)} className="rounded p-2 hover:bg-muted" aria-label="Edit"><Pencil className="h-4 w-4" /></button>
-                  <button onClick={() => remove(p.id)} className="rounded p-2 text-destructive hover:bg-destructive/10" aria-label="Delete"><Trash2 className="h-4 w-4" /></button>
-                </li>
+              {filtered.map((p) => (
+                <ProductRow
+                  key={p.id}
+                  product={p}
+                  selected={selected.has(p.id)}
+                  showTypeBadge={tab === "all"}
+                  onToggle={() => toggleOne(p.id)}
+                  onEdit={() => startEdit(p)}
+                  onDelete={() => remove(p.id)}
+                />
               ))}
             </ul>
           </>
         )}
       </div>
-
 
       {open && store && (
         <ProductDialog
@@ -197,6 +410,7 @@ function ProductsPage() {
           editing={editing}
           categories={categories ?? []}
           productDefaults={(store as any).product_defaults ?? null}
+          initialType={newType}
           onClose={() => setOpen(false)}
           onSave={async (data) => {
             await save({ data });
@@ -224,4 +438,3 @@ function ProductsPage() {
     </div>
   );
 }
-
