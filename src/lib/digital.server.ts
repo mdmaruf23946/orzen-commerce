@@ -130,10 +130,19 @@ export async function activateDigitalAccess(sb: Sb, orderId: string) {
       .from("digital_entitlements")
       .update({ status: "active", expires_at: expires })
       .eq("id", r.id);
-    if (!error) activated++;
+    if (!error && r.status !== "active") activated++;
+  }
+  // Deliver the download email once, when access first becomes available.
+  if (activated > 0) {
+    try {
+      await sendDigitalDeliveryEmail(sb, orderId);
+    } catch {
+      /* non-fatal */
+    }
   }
   return { activated };
 }
+
 
 /** Issues a short-lived signed URL for one file of an unlocked entitlement. */
 export async function issueDownloadUrl(
