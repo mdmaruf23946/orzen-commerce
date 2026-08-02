@@ -27,6 +27,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { compressImage } from "@/lib/compress-image";
 import { generateProductDraft, type ProductDraft } from "@/lib/ai-product-builder.functions";
 import { ProductDialog } from "./ProductDialog";
+import { SubscriptionProductDialog } from "./subscription/SubscriptionProductDialog";
+
 import { useFeature } from "@/components/admin/FeatureGate";
 
 const MAX_IMAGES = 8;
