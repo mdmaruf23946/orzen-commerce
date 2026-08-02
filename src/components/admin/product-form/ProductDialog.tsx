@@ -499,14 +499,6 @@ export function ProductDialog({
             <Input required value={name} onChange={(e) => setName(e.target.value)} />
           </Field>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Product type">
-              <select value={productType} onChange={(e) => setProductType(e.target.value as any)} className={selectCls}>
-                <option value="physical">Physical</option>
-                <option value="digital">Digital</option>
-                <option value="service">Service</option>
-                <option value="subscription">Subscription</option>
-              </select>
-            </Field>
             <Field label="Brand">
               <Input value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Optional" />
             </Field>
