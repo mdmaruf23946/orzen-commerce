@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { cn } from "@/lib/utils";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
+import { useProductTypeScope } from "@/lib/product-type-scope";
 import { AdminToolbar } from "@/components/admin/page/AdminToolbar";
 
 export const Route = createFileRoute("/_authenticated/admin/coupons")({
@@ -66,16 +67,26 @@ function CouponsPage() {
   const catsFn = useServerFn(listMyCategories);
   const prodsFn = useServerFn(listMyProducts);
   const qc = useQueryClient();
-  const { data: coupons } = useQuery({ queryKey: ["coupons"], queryFn: () => list() });
-  const { data: categories } = useQuery({ queryKey: ["admin", "categories"], queryFn: () => catsFn() });
-  const { data: products } = useQuery({ queryKey: ["admin", "products"], queryFn: () => prodsFn() });
+  const { scope, setScope, filter, activeType: scopeType } = useProductTypeScope();
+  const { data: coupons } = useQuery({
+    queryKey: ["coupons", filter ?? "all"],
+    queryFn: () => list({ data: { product_type: filter } } as any),
+  });
+  const { data: categories } = useQuery({
+    queryKey: ["admin", "categories", filter ?? "all"],
+    queryFn: () => catsFn({ data: { product_type: filter } } as any),
+  });
+  const { data: products } = useQuery({
+    queryKey: ["admin", "products", filter ?? "all"],
+    queryFn: () => prodsFn({ data: { product_type: filter } } as any),
+  });
   const [edit, setEdit] = useState<any>(null);
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<TabKey>("physical");
+  const tab = scope as TabKey;
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<SortKey>("newest");
 
-  const activeType: string = tab === "all" ? "physical" : tab;
+  const activeType: string = scopeType;
 
   const visible = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -124,7 +135,7 @@ function CouponsPage() {
         action={addBtn}
       />
 
-      <TypeFilterTabs tabs={TABS} value={tab} onChange={setTab} />
+      <TypeFilterTabs tabs={TABS} value={tab} onChange={(k) => setScope(k)} />
 
       <AdminToolbar
         value={q}
