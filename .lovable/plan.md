@@ -1,38 +1,22 @@
 ## Goal
+Give Categories, Banners and Coupons the same page skeleton: header (title + description + primary action) → sticky filter pills → search/sort row → content. UI only; no API, data, or logic changes.
 
-Upgrade the existing Coupon & Promo Code page (`/admin/coupons`) with Product Type tabs and a slightly richer form, matching the Category and Banner pages. No redesign, no new pages.
+## New shared components (`src/components/admin/page/`)
+1. `AdminPageHeader.tsx` — title, description, right-aligned action slot. Stacks on mobile (action full-width below header).
+2. `TypeFilterTabs.tsx` — horizontally scrollable rounded pills (All / Physical / Digital / Service / Subscription), active = brand `bg-primary text-primary-foreground`, inactive = `bg-background border` with hover. Wrapper is `sticky top-0 z-20` with a background + subtle bottom border so it stays under the admin header while scrolling. Edge fade + `snap-x` on mobile, `scrollbar-none`.
+3. `AdminToolbar.tsx` — search input (with icon) plus optional right-side sort `select`; stacks vertically on mobile.
 
-## Verified current state
+All three take the tab list and active key as props, so each page keeps its own `TABS`, state and filtering code exactly as it is today.
 
-- The `coupons` table has only: `code`, `type` (percent/fixed/free_shipping), `value`, `min_order`, `usage_limit`, `used_count`, `starts_at`, `expires_at`, `active`. There is no name, product type, max discount, per-customer limit, or category/product targeting.
-- The page today has no tabs, no search box and no sort control. It already has a table list with Edit and Delete and a single "New coupon" button.
-- `listCoupons` / `upsertCoupon` / `deleteCoupon` exist; `upsertCoupon` validates a fixed field set, so new fields must be added to its schema.
+## Per-page changes
+- **categories.tsx** — replace the inline header/tabs/search block (roughly lines 130–190) with the three shared components in the new order. Keep drag & drop, visibility toggle, edit/delete, product counts, and the existing `visible` memo untouched.
+- **banners.tsx** — same swap; keep the "3 banners per type" limit text and disabled Add button, card grid, status pills, edit/delete.
+- **coupons.tsx** — same swap; keep sort select (Newest/Oldest/Active/Expired), desktop table + mobile cards, badges, edit/delete.
 
-## Plan
+## Visual polish (all three)
+- Consistent section spacing (`space-y-4 sm:space-y-5`), consistent card radius (`rounded-xl`) and soft shadow (`shadow-sm hover:shadow-md transition-shadow`).
+- Keep the existing `key={tab}` fade/slide animation on the content area.
+- Touch targets ≥ 40px on mobile for pills, buttons and row actions.
 
-### 1. Database
-Add to `coupons`: `name`, `product_type` (default `physical`), `max_discount`, `per_customer_limit`, `category_ids`, `product_ids`. Existing rows default to Physical so nothing breaks; checkout's `validate_coupon` keeps working unchanged.
-
-### 2. Tabs
-Same tab row as Categories/Banners: All / Physical / Digital / Service / Subscription, default Physical, client-side only with a soft fade transition. Legacy rows with no type count as Physical.
-
-### 3. Search + sort
-Search box in the same style, filtering name/code within the active tab only. A dropdown next to it: Newest, Oldest, Active, Expired.
-
-### 4. Create / Edit
-- Keep the single "New coupon" button in its current spot. A new coupon automatically takes the active tab's type (Physical when All is active) — no manual type picker.
-- Form fields: Coupon Name, Code, Discount Type, Discount Value, Minimum Order (optional), Maximum Discount (optional), Usage Limit, Usage Limit Per Customer, Start Date, Expiry Date, Applicable Categories (optional), Applicable Products (optional), Status.
-- Edit opens the same dialog pre-filled and keeps the coupon's existing product type.
-
-### 5. List
-Keep the current table (cards on mobile). Each row shows name, code, discount, product type badge, usage count, expiry, status, Edit, Delete.
-
-### 6. Empty state
-When a tab has no matches: "No coupons found." with a Create coupon button below it.
-
-## Technical notes
-
-- Files touched: one migration, `src/lib/business.functions.ts` (widen `couponSchema`, return new columns — no signature or response narrowing), and `src/routes/_authenticated/admin/coupons.tsx` (tabs, search, sort, dialog fields, badges, empty state).
-- Category/product pickers read from existing product and category list functions; nothing on those pages changes.
-- Checkout, orders, products, categories and banners are untouched; the coupon validation RPC is left as-is for backward compatibility.
-- Mobile: tabs scroll horizontally, search and sort stack full-width, the table becomes stacked cards.
+## Out of scope
+No migrations, no server function edits, no route or permission changes; filtering behaviour and defaults (Physical active by default) stay as-is.
