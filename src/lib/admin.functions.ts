@@ -269,8 +269,53 @@ export const listMyProducts = createServerFn({ method: "GET" })
       .eq("store_id", store.id)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return data ?? [];
+    const rows = data ?? [];
+
+    // ---- live metrics: digital downloads + active subscribers ----
+    const downloads = new Map<string, number>();
+    const subscribers = new Map<string, number>();
+
+    const hasDigital = rows.some((p: any) => p.product_type === "digital");
+    const hasSubscription = rows.some((p: any) => p.product_type === "subscription");
+
+    if (hasDigital) {
+      const { data: ents } = await supabase
+        .from("digital_entitlements")
+        .select("product_id, download_count")
+        .eq("store_id", store.id);
+      for (const e of ents ?? []) {
+        downloads.set(e.product_id, (downloads.get(e.product_id) ?? 0) + (e.download_count ?? 0));
+      }
+    }
+
+    if (hasSubscription) {
+      const { data: subOrders } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("store_id", store.id)
+        .eq("order_type", "subscription")
+        .eq("confirmation_status", "confirmed")
+        .not("status", "in", "(cancelled)");
+      const ids = (subOrders ?? []).map((o: any) => o.id);
+      if (ids.length) {
+        const { data: items } = await supabase
+          .from("order_items")
+          .select("product_id")
+          .in("order_id", ids);
+        for (const it of items ?? []) {
+          if (!it.product_id) continue;
+          subscribers.set(it.product_id, (subscribers.get(it.product_id) ?? 0) + 1);
+        }
+      }
+    }
+
+    return rows.map((p: any) => ({
+      ...p,
+      download_count: downloads.get(p.id) ?? 0,
+      active_subscribers: subscribers.get(p.id) ?? 0,
+    }));
   });
+
 
 const productSchema = z.object({
   name: z.string().trim().min(1).max(160),
