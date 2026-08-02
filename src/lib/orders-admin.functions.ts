@@ -23,11 +23,14 @@ export type AdminOrderItem = {
   cost: number | null;
 };
 
+export type OrderKind = "physical" | "digital" | "service" | "subscription";
+
 export type AdminOrderRow = {
   id: string;
   invoice_no: string | null;
   customer_name: string;
   phone: string;
+  email: string | null;
   address: string;
   area: string | null;
   status: string;
@@ -47,6 +50,18 @@ export type AdminOrderRow = {
   items: AdminOrderItem[];
   image: string | null;
   qty: number;
+  order_type: OrderKind;
+  confirmation_status: "pending" | "confirmed";
+  confirmed_at: string | null;
+  fulfillment: Record<string, any>;
+  access: {
+    total: number;
+    active: number;
+    downloads: number;
+    status: "none" | "locked" | "active" | "revoked";
+    licenseKey: string | null;
+    entitlementId: string | null;
+  } | null;
   parcel: {
     id: string;
     courier: string | null;
@@ -59,6 +74,7 @@ export type AdminOrderRow = {
   tracking: string | null;
   tags: string[];
 };
+
 
 /** Everything an order card needs, in one payload. */
 export const listAdminOrders = createServerFn({ method: "GET" })
