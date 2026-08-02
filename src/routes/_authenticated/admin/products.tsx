@@ -205,29 +205,30 @@ function ProductsPage() {
 
   const allChecked = filtered.length > 0 && selected.size === filtered.length;
 
+  const activeType: ProductType = tab === "all" ? "physical" : (tab as ProductType);
+  const typeNoun =
+    activeType === "subscription" ? "Subscription Plan" : activeType === "service" ? "Service" : `${TYPE_LABEL[activeType]} Product`;
+
   const addButton = (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button className="gap-1.5">
           <Plus className="h-4 w-4" />
-          Add Product
+          Add {typeNoun}
           <ChevronDown className="h-3.5 w-3.5 opacity-70" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-60">
-        <DropdownMenuLabel className="text-xs">Choose product type</DropdownMenuLabel>
-        {TYPES.map((t) => (
-          <DropdownMenuItem key={t} onClick={() => startNew(t)} className="gap-2">
-            <PenLine className="h-4 w-4" />
-            <span className="text-sm font-medium">{TYPE_LABEL[t]}</span>
-          </DropdownMenuItem>
-        ))}
+      <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuItem onClick={() => startNew(activeType)} className="gap-2">
+          <PenLine className="h-4 w-4" />
+          <span className="text-sm font-medium">Add {typeNoun}</span>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => setAiOpen(true)} className="gap-2">
           <Sparkles className="h-4 w-4 text-amber-500" />
           <div className="flex flex-col">
             <span className="text-sm font-medium">AI Assistant</span>
-            <span className="text-xs text-muted-foreground">Generate from photos & description</span>
+            <span className="text-xs text-muted-foreground">Generate {typeNoun}</span>
           </div>
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -238,9 +239,10 @@ function ProductsPage() {
     <div className="space-y-4">
       <AdminPageHeader
         title="Products"
-        description="Manage physical, digital, service and subscription products."
+        description={`Current type: ${TYPE_LABEL[activeType]}${tab === "all" ? " (showing all products)" : ""}`}
         action={addButton}
       />
+
 
       <TypeFilterTabs
         tabs={tabs}
