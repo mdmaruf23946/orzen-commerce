@@ -59,6 +59,7 @@ function CheckoutPage() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [area, setArea] = useState("");
   const [zoneId, setZoneId] = useState<string | null>(null);
@@ -106,6 +107,7 @@ function CheckoutPage() {
     if (customer) {
       if (!name && customer.full_name) setName(customer.full_name);
       if (!phone && customer.phone) setPhone(customer.phone);
+      if (!email && (customer as any).email) setEmail((customer as any).email);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customer]);
@@ -246,6 +248,7 @@ function CheckoutPage() {
           storeId: store!.id,
           customerName: name,
           phone,
+          email: email.trim() || undefined,
           address,
           area: area || undefined,
           paymentMethod: method,
@@ -299,6 +302,22 @@ function CheckoutPage() {
           <div className="space-y-1.5">
             <Label htmlFor="phone">Phone</Label>
             <Input id="phone" required value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email {hasDigital ? "" : "(optional)"}</Label>
+            <Input
+              id="email"
+              type="email"
+              required={hasDigital}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+            />
+            {hasDigital ? (
+              <p className="text-xs text-muted-foreground">
+                Your cart contains a digital item — download links are sent to this email.
+              </p>
+            ) : null}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="address">Address</Label>
