@@ -104,14 +104,17 @@ const couponSchema = z.object({
 
 export const listCoupons = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d: unknown) =>
+    z
+      .object({ product_type: z.enum(["physical", "digital", "service", "subscription"]).optional() })
+      .parse(d ?? {}),
+  )
+  .handler(async ({ data: input, context }) => {
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) return [];
-    const { data } = await context.supabase
-      .from("coupons")
-      .select("*")
-      .eq("store_id", sid)
-      .order("created_at", { ascending: false });
+    let q = context.supabase.from("coupons").select("*").eq("store_id", sid);
+    if (input?.product_type) q = q.eq("product_type", input.product_type);
+    const { data } = await q.order("created_at", { ascending: false });
     return data ?? [];
   });
 
