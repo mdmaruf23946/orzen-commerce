@@ -18,7 +18,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -428,6 +427,7 @@ function ProductsPage() {
           storeId={store.id}
           categories={categories ?? []}
           productDefaults={(store as any).product_defaults ?? null}
+          productType={activeType}
           onClose={() => setAiOpen(false)}
           onSave={async (data) => {
             await save({ data });
