@@ -1490,6 +1490,217 @@ export type Database = {
           },
         ]
       }
+      digital_downloads: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          entitlement_id: string
+          file_path: string | null
+          id: string
+          ip: string | null
+          store_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          entitlement_id: string
+          file_path?: string | null
+          id?: string
+          ip?: string | null
+          store_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          entitlement_id?: string
+          file_path?: string | null
+          id?: string
+          ip?: string | null
+          store_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_downloads_entitlement_id_fkey"
+            columns: ["entitlement_id"]
+            isOneToOne: false
+            referencedRelation: "digital_entitlements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digital_downloads_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      digital_entitlements: {
+        Row: {
+          access_token: string
+          created_at: string
+          customer_email: string | null
+          customer_id: string | null
+          customer_phone: string | null
+          download_count: number
+          expires_at: string | null
+          id: string
+          license_id: string | null
+          max_devices: number | null
+          max_downloads: number | null
+          max_ips: number | null
+          order_id: string
+          product_id: string
+          status: string
+          store_id: string
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          access_token?: string
+          created_at?: string
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_phone?: string | null
+          download_count?: number
+          expires_at?: string | null
+          id?: string
+          license_id?: string | null
+          max_devices?: number | null
+          max_downloads?: number | null
+          max_ips?: number | null
+          order_id: string
+          product_id: string
+          status?: string
+          store_id: string
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_phone?: string | null
+          download_count?: number
+          expires_at?: string | null
+          id?: string
+          license_id?: string | null
+          max_devices?: number | null
+          max_downloads?: number | null
+          max_ips?: number | null
+          order_id?: string
+          product_id?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_entitlements_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "store_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digital_entitlements_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "digital_licenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digital_entitlements_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digital_entitlements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digital_entitlements_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      digital_licenses: {
+        Row: {
+          activation_count: number
+          created_at: string
+          id: string
+          license_key: string
+          license_type: string
+          max_activations: number | null
+          order_id: string | null
+          product_id: string
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          activation_count?: number
+          created_at?: string
+          id?: string
+          license_key: string
+          license_type?: string
+          max_activations?: number | null
+          order_id?: string | null
+          product_id: string
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          activation_count?: number
+          created_at?: string
+          id?: string
+          license_key?: string
+          license_type?: string
+          max_activations?: number | null
+          order_id?: string | null
+          product_id?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_licenses_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digital_licenses_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digital_licenses_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_logs: {
         Row: {
           attempts: number

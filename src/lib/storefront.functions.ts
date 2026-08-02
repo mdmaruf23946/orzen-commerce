@@ -397,7 +397,12 @@ export const verifyOrderPayment = createServerFn({ method: "POST" })
         .update({ payment_status: "paid", status: paidStatus } as any)
         .eq("id", o.id)
         .neq("payment_status", "paid");
+      try {
+        const { activateDigitalAccess } = await import("@/lib/digital.server");
+        await activateDigitalAccess(supabaseAdmin as any, o.id);
+      } catch { /* non-fatal */ }
       return { payment_status: "paid", checked: true };
+
     }
 
     await supabaseAdmin
@@ -511,12 +516,65 @@ export const getProduct = createServerFn({ method: "GET" })
     if (!p) return null;
     const gallery = Array.isArray(p.gallery) ? (p.gallery as string[]) : [];
 
+    // Digital config is stored in meta.digital. File paths and any other
+    // fulfilment-only data must never reach the browser — only presentation
+    // fields are projected here.
+    const meta = (p.meta ?? {}) as Record<string, any>;
+    const dg = (meta.digital ?? {}) as Record<string, any>;
+    const files: any[] = Array.isArray(dg.files) ? dg.files : [];
+    const digital =
+      p.product_type === "digital"
+        ? {
+            version: dg.version ?? null,
+            changelog: dg.changelog ?? null,
+            platforms: Array.isArray(dg.platforms) ? dg.platforms : [],
+            tags: Array.isArray(dg.tags) ? dg.tags : [],
+            license_type: dg.license_type ?? "personal",
+            license_note: dg.license_note ?? null,
+            included: Array.isArray(dg.included) ? dg.included : [],
+            requirements: dg.requirements ?? {},
+            faq: Array.isArray(dg.faq) ? dg.faq : [],
+            free: !!dg.free,
+            file_count: files.length,
+            total_size: files.reduce((a, f) => a + (Number(f?.size) || 0), 0),
+            file_types: Array.from(
+              new Set(
+                files
+                  .map((f) => String(f?.name ?? "").split(".").pop()?.toLowerCase())
+                  .filter(Boolean),
+              ),
+            ),
+            has_external: !!dg.external_url,
+            preview: {
+              type: dg.preview?.type ?? null,
+              images: Array.isArray(dg.preview?.images)
+                ? dg.preview.images.map((i: string) => imgUrl(i)).filter(Boolean)
+                : [],
+              video_url: dg.preview?.video_url ?? null,
+              demo_url: dg.preview?.demo_url ?? null,
+              pdf_url: dg.preview?.pdf_url ?? null,
+              audio_url: dg.preview?.audio_url ?? null,
+            },
+            download: {
+              mode: dg.download?.mode ?? "instant",
+              max_downloads: dg.download?.max_downloads ?? null,
+              expiry_days: dg.download?.expiry_days ?? null,
+            },
+          }
+        : null;
+
+    // Strip the raw digital block (contains storage paths) from the payload.
+    const { digital: _omit, ...safeMeta } = meta;
+
     return {
       ...p,
+      meta: safeMeta,
+      digital,
       primary_image_url: imgUrl(p.primary_image_url),
       gallery: gallery.map((g) => imgUrl(g)!).filter(Boolean),
     };
   });
+
 
 
 export const listRelatedProducts = createServerFn({ method: "GET" })
@@ -683,17 +741,27 @@ export const placeOrder = createServerFn({ method: "POST" })
     const ids = data.items.map((i) => i.productId);
     const { data: products, error: pErr } = await sb
       .from("products")
-      .select("id,name,price,stock,status,product_type")
+      .select("id,name,price,stock,status,product_type,meta")
       .in("id", ids)
       .eq("store_id", data.storeId);
     if (pErr) throw new Error(pErr.message);
     const byId = new Map(products?.map((p) => [p.id, p]) ?? []);
 
+    const isDigitalProduct = (p: any) => p?.product_type === "digital";
+    const hasDigital = data.items.some((i) => isDigitalProduct(byId.get(i.productId)));
+    const allDigital = data.items.every((i) => isDigitalProduct(byId.get(i.productId)));
+
+    // Digital goods are never shipped and never paid on delivery.
+    if (hasDigital && data.paymentMethod === "cod") {
+      throw new Error("Cash on Delivery is not available for digital products");
+    }
+
     let subtotal = 0;
     const itemRows = data.items.map((i) => {
       const p = byId.get(i.productId);
       if (!p || p.status === "draft") throw new Error("Product unavailable");
-      if (p.stock < i.qty) {
+      // Digital products have unlimited stock.
+      if (!isDigitalProduct(p) && p.stock < i.qty) {
         throw new Error(`Not enough stock for ${p.name}`);
       }
       subtotal += Number(p.price) * i.qty;
@@ -710,7 +778,7 @@ export const placeOrder = createServerFn({ method: "POST" })
     const d: any = store.delivery ?? {};
     let baseShip = 0;
     let zoneId: string | null = null;
-    if (data.deliveryZoneId) {
+    if (!allDigital && data.deliveryZoneId) {
       const { data: zone } = await sb
         .from("delivery_zones")
         .select("id,charge,is_active")
@@ -723,7 +791,9 @@ export const placeOrder = createServerFn({ method: "POST" })
       }
     }
     const freeMin = Number(d.free_min ?? 0);
-    let delivery_amount = freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
+    let delivery_amount = allDigital ? 0 : freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
+
+
 
 
     // Coupon
@@ -874,6 +944,19 @@ export const placeOrder = createServerFn({ method: "POST" })
       .from("order_items")
       .insert(itemRows.map((r) => ({ ...r, order_id: order.id })));
     if (iErr) throw new Error(iErr.message);
+
+    // Digital fulfilment: create the entitlements now (locked), and unlock
+    // straight away when there is nothing to pay.
+    if (hasDigital) {
+      try {
+        const { grantDigitalAccess, activateDigitalAccess } = await import("@/lib/digital.server");
+        const orderTotal = subtotal + delivery_amount - discount_amount;
+        if (orderTotal <= 0) await activateDigitalAccess(sb as any, order.id);
+        else await grantDigitalAccess(sb as any, order.id);
+      } catch { /* non-fatal */ }
+    }
+
+
 
 
     if (coupon_id) {

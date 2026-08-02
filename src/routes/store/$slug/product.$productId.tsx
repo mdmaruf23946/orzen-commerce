@@ -22,6 +22,8 @@ import { ShareBar } from "@/components/storefront/pdp/ShareBar";
 import { TrustBadges } from "@/components/storefront/pdp/TrustBadges";
 import { StoreCard } from "@/components/storefront/pdp/StoreCard";
 import { StickyMobileBar } from "@/components/storefront/pdp/StickyMobileBar";
+import { DigitalProductPage } from "@/components/storefront/pdp/digital/DigitalProductPage";
+
 
 
 const storeQuery = (slug: string) =>
@@ -88,6 +90,8 @@ function ProductPage() {
   const { data: product } = useSuspenseQuery(productQuery(store!.id, productId));
   const [qty, setQty] = useState(1);
   const buyBoxRef = useRef<HTMLDivElement | null>(null);
+  const isDigital = (product as any)?.product_type === "digital";
+
 
   useEffect(() => {
     if (!product) return;
@@ -199,6 +203,11 @@ function ProductPage() {
 
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
   const codEnabled = ((store as any)?.payment_methods ?? []).includes?.("cod") ?? true;
+
+  if (isDigital) {
+    return <DigitalProductPage slug={slug} store={store} product={product} />;
+  }
+
 
   return (
     <div className="pb-24 lg:pb-6">
