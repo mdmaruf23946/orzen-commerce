@@ -12,6 +12,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
+import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
+import { AdminToolbar } from "@/components/admin/page/AdminToolbar";
 
 export const Route = createFileRoute("/_authenticated/admin/coupons")({
   component: () => <FeatureGate feature="coupons"><CouponsPage /></FeatureGate>,

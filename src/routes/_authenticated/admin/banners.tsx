@@ -18,6 +18,9 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { cn } from "@/lib/utils";
+import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
+import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
+import { AdminToolbar } from "@/components/admin/page/AdminToolbar";
 
 export const Route = createFileRoute("/_authenticated/admin/banners")({
   component: BannersPage,
