@@ -17,6 +17,8 @@ import {
   DigitalOrderCard, ServiceOrderCard, SubscriptionOrderCard,
 } from "@/components/admin/orders/TypeOrderCards";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
+import { useProductTypeScope } from "@/lib/product-type-scope";
+import { typeScopeCounts } from "@/lib/admin.functions";
 import type { OrderKind } from "@/lib/orders-admin.functions";
 import { confirmOrder, scheduleService, completeService, extendSubscription, cancelSubscription } from "@/lib/orders-types.functions";
 import { setDigitalAccess, resendDigitalEmail } from "@/lib/digital-admin.functions";
@@ -121,12 +123,18 @@ function OrdersPage() {
   const list = useServerFn(listAdminOrders);
   const update = useServerFn(updateOrderStatus);
   const qc = useQueryClient();
+  const { scope, setScope, filter } = useProductTypeScope();
+  const countsFn = useServerFn(typeScopeCounts);
   const { data: orders, isFetching, refetch } = useQuery({
-    queryKey: ["admin", "orders", "rich"],
-    queryFn: () => list(),
+    queryKey: ["admin", "orders", "rich", filter ?? "all"],
+    queryFn: () => list({ data: { product_type: filter } } as any),
+  });
+  const { data: orderTypeCounts } = useQuery({
+    queryKey: ["admin", "counts", "orders"],
+    queryFn: () => countsFn({ data: { entity: "orders" } }),
   });
 
-  const [type, setType] = useState<TypeKey>("all");
+  const type = scope as TypeKey;
   const [tab, setTab] = useState<TabKey>("all");
   const [typeTab, setTypeTab] = useState("all");
   const [q, setQ] = useState("");
@@ -153,14 +161,7 @@ function OrdersPage() {
   );
   const physicalView = type === "all" || type === "physical";
 
-  const typeCounts = useMemo(() => {
-    const c: Record<string, number> = { all: all.length };
-    for (const o of all) {
-      const k = o.order_type ?? "physical";
-      c[k] = (c[k] ?? 0) + 1;
-    }
-    return c;
-  }, [all]);
+  const typeCounts: Record<string, number> = orderTypeCounts ?? { all: all.length };
 
   async function run(fn: () => Promise<any>, msg: string) {
     try {
@@ -268,7 +269,7 @@ function OrdersPage() {
           label: `${t.label} (${typeCounts[t.key] ?? 0})`,
         }))}
         value={type}
-        onChange={(k) => { setType(k as TypeKey); setTab("all"); setTypeTab("all"); }}
+        onChange={(k) => { setScope(k as any); setTab("all"); setTypeTab("all"); }}
       />
 
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
