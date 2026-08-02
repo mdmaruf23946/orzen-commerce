@@ -664,6 +664,7 @@ function buildEditingLike(
     stock?: number; low_stock_threshold?: number;
     sku?: string; brand?: string; weight_g?: number;
   } = {},
+  productType: "physical" | "digital" | "service" | "subscription" = "physical",
 ) {
   const pick = <T,>(user: T | undefined, ai: T): T => (user !== undefined && user !== null && !(typeof user === "number" && Number.isNaN(user)) ? user : ai);
   const { draft, matchedCategoryId, matchedSubcategoryId, imagePaths } = res;
