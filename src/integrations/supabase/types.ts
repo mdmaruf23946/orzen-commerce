@@ -3061,6 +3061,8 @@ export type Database = {
           allow_duplicate: boolean
           area: string | null
           company: string | null
+          confirmation_status: string
+          confirmed_at: string | null
           country: string | null
           coupon_id: string | null
           courier_code: string | null
@@ -3078,12 +3080,14 @@ export type Database = {
           email: string | null
           external_order_id: string | null
           fingerprint: string | null
+          fulfillment_meta: Json
           id: string
           invoice_no: string | null
           is_test: boolean
           landing_page_connection_id: string | null
           landing_page_url: string | null
           notes: string | null
+          order_type: string
           payment_gateway_id: string | null
           payment_gateway_name: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
@@ -3103,6 +3107,8 @@ export type Database = {
           allow_duplicate?: boolean
           area?: string | null
           company?: string | null
+          confirmation_status?: string
+          confirmed_at?: string | null
           country?: string | null
           coupon_id?: string | null
           courier_code?: string | null
@@ -3120,12 +3126,14 @@ export type Database = {
           email?: string | null
           external_order_id?: string | null
           fingerprint?: string | null
+          fulfillment_meta?: Json
           id?: string
           invoice_no?: string | null
           is_test?: boolean
           landing_page_connection_id?: string | null
           landing_page_url?: string | null
           notes?: string | null
+          order_type?: string
           payment_gateway_id?: string | null
           payment_gateway_name?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
@@ -3145,6 +3153,8 @@ export type Database = {
           allow_duplicate?: boolean
           area?: string | null
           company?: string | null
+          confirmation_status?: string
+          confirmed_at?: string | null
           country?: string | null
           coupon_id?: string | null
           courier_code?: string | null
@@ -3162,12 +3172,14 @@ export type Database = {
           email?: string | null
           external_order_id?: string | null
           fingerprint?: string | null
+          fulfillment_meta?: Json
           id?: string
           invoice_no?: string | null
           is_test?: boolean
           landing_page_connection_id?: string | null
           landing_page_url?: string | null
           notes?: string | null
+          order_type?: string
           payment_gateway_id?: string | null
           payment_gateway_name?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
@@ -4763,6 +4775,7 @@ export type Database = {
           header_color: string | null
           id: string
           marketing: Json
+          order_confirmation: Json
           pages: Json
           payments_config: Json
           primary_color: string | null
@@ -4785,6 +4798,7 @@ export type Database = {
           header_color?: string | null
           id: string
           marketing?: Json
+          order_confirmation?: Json
           pages?: Json
           payments_config?: Json
           primary_color?: string | null
@@ -4807,6 +4821,7 @@ export type Database = {
           header_color?: string | null
           id?: string
           marketing?: Json
+          order_confirmation?: Json
           pages?: Json
           payments_config?: Json
           primary_color?: string | null
@@ -4896,6 +4911,7 @@ export type Database = {
           nagad_number: string | null
           name: string
           notifications: Json
+          order_confirmation: Json
           owner_name: string | null
           owner_user_id: string
           package_id: string | null
@@ -4957,6 +4973,7 @@ export type Database = {
           nagad_number?: string | null
           name: string
           notifications?: Json
+          order_confirmation?: Json
           owner_name?: string | null
           owner_user_id: string
           package_id?: string | null
@@ -5018,6 +5035,7 @@ export type Database = {
           nagad_number?: string | null
           name?: string
           notifications?: Json
+          order_confirmation?: Json
           owner_name?: string | null
           owner_user_id?: string
           package_id?: string | null

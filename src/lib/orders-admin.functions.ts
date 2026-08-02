@@ -23,11 +23,14 @@ export type AdminOrderItem = {
   cost: number | null;
 };
 
+export type OrderKind = "physical" | "digital" | "service" | "subscription";
+
 export type AdminOrderRow = {
   id: string;
   invoice_no: string | null;
   customer_name: string;
   phone: string;
+  email: string | null;
   address: string;
   area: string | null;
   status: string;
@@ -47,6 +50,18 @@ export type AdminOrderRow = {
   items: AdminOrderItem[];
   image: string | null;
   qty: number;
+  order_type: OrderKind;
+  confirmation_status: "pending" | "confirmed";
+  confirmed_at: string | null;
+  fulfillment: Record<string, any>;
+  access: {
+    total: number;
+    active: number;
+    downloads: number;
+    status: "none" | "locked" | "active" | "revoked";
+    licenseKey: string | null;
+    entitlementId: string | null;
+  } | null;
   parcel: {
     id: string;
     courier: string | null;
@@ -60,6 +75,7 @@ export type AdminOrderRow = {
   tags: string[];
 };
 
+
 /** Everything an order card needs, in one payload. */
 export const listAdminOrders = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -71,7 +87,7 @@ export const listAdminOrders = createServerFn({ method: "GET" })
     const { data: orders, error } = await supabase
       .from("orders")
       .select(
-        "id,invoice_no,customer_name,phone,address,area,status,payment_method,payment_status,payment_gateway_name,source,notes,created_at,allow_duplicate,subtotal,delivery_amount,discount_amount,courier_name,courier_code,courier_status,courier_tracking_id",
+        "id,invoice_no,customer_name,phone,email,address,area,status,payment_method,payment_status,payment_gateway_name,source,notes,created_at,allow_duplicate,subtotal,delivery_amount,discount_amount,courier_name,courier_code,courier_status,courier_tracking_id,order_type,confirmation_status,confirmed_at,fulfillment_meta",
       )
       .eq("store_id", sid)
       .order("created_at", { ascending: false })
@@ -107,6 +123,31 @@ export const listAdminOrders = createServerFn({ method: "GET" })
       });
     }
 
+    // Digital entitlement summary (only for orders that actually have one).
+    const { data: ents } = await supabase
+      .from("digital_entitlements")
+      .select("id,order_id,status,download_count,digital_licenses(license_key)")
+      .eq("store_id", sid)
+      .in("order_id", ids);
+    const accessByOrder: Record<string, AdminOrderRow["access"]> = {};
+    for (const raw of ents ?? []) {
+      const e = raw as any;
+      const cur =
+        accessByOrder[e.order_id] ??
+        (accessByOrder[e.order_id] = {
+          total: 0, active: 0, downloads: 0, status: "locked",
+          licenseKey: null, entitlementId: null,
+        });
+      cur!.total += 1;
+      cur!.downloads += Number(e.download_count ?? 0);
+      if (e.status === "active") cur!.active += 1;
+      if (!cur!.entitlementId) cur!.entitlementId = e.id;
+      const key = e.digital_licenses?.license_key ?? null;
+      if (key && !cur!.licenseKey) cur!.licenseKey = key;
+      cur!.status =
+        cur!.active > 0 ? "active" : e.status === "revoked" ? "revoked" : "locked";
+    }
+
     const parcelByOrder: Record<string, any> = {};
     for (const p of parcels ?? []) {
       const row = p as any;
@@ -140,6 +181,7 @@ export const listAdminOrders = createServerFn({ method: "GET" })
         invoice_no: raw.invoice_no,
         customer_name: raw.customer_name,
         phone: raw.phone,
+        email: raw.email ?? null,
         address: raw.address,
         area: raw.area,
         status: raw.status,
@@ -159,6 +201,11 @@ export const listAdminOrders = createServerFn({ method: "GET" })
         items: its,
         image: its.find((i) => i.image)?.image ?? null,
         qty: its.reduce((s, i) => s + i.qty, 0),
+        order_type: (raw.order_type ?? "physical") as OrderKind,
+        confirmation_status: (raw.confirmation_status ?? "pending") as "pending" | "confirmed",
+        confirmed_at: raw.confirmed_at ?? null,
+        fulfillment: (raw.fulfillment_meta ?? {}) as Record<string, any>,
+        access: accessByOrder[raw.id] ?? null,
         parcel: parcel
           ? {
               id: parcel.id,

@@ -141,8 +141,8 @@ export const Route = createFileRoute("/api/public/store-payments/webhook/$store/
                         .eq("id", ord.id)
                         .neq("payment_status", "paid");
                       try {
-                        const { activateDigitalAccess } = await import("@/lib/digital.server");
-                        await activateDigitalAccess(supabaseAdmin as any, ord.id);
+                        const { handlePaymentConfirmed } = await import("@/lib/orders-confirm.server");
+                        await handlePaymentConfirmed(supabaseAdmin as any, ord.id);
                       } catch { /* non-fatal */ }
 
                     }

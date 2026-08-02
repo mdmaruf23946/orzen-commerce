@@ -1,3 +1,4 @@
+import { OrderConfirmationSection } from "@/components/admin/settings/OrderConfirmationSection";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -493,6 +494,9 @@ function SettingsPage() {
 
         {/* 6b. Invoice Numbering */}
         <InvoiceNumberingSection />
+
+        {/* 6c. Order Confirmation (digital / service / subscription) */}
+        <OrderConfirmationSection />
 
         {/* 7. Danger Zone */}
         <section className="rounded-2xl border border-destructive/40 bg-destructive/5 p-4 sm:p-6">
