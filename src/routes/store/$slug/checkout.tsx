@@ -227,7 +227,13 @@ function CheckoutPage() {
     );
   }
 
+  // Digital-only cart → dedicated digital checkout (no address / courier / COD).
+  if (allDigital) {
+    return <DigitalCheckout slug={slug} store={store} items={items} info={digitalInfo} />;
+  }
+
   const isOnlineMethod = method.startsWith("custom:") || method.startsWith("builtin:");
+
   const isManual = !isOnlineMethod && method !== "cod";
 
   async function submit(e: React.FormEvent) {
