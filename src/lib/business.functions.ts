@@ -694,14 +694,27 @@ export const listExportFacets = createServerFn({ method: "GET" })
 // ---------- ANALYTICS ----------
 export const businessAnalytics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d: unknown) =>
+    z
+      .object({ product_type: z.enum(["physical", "digital", "service", "subscription"]).optional() })
+      .parse(d ?? {}),
+  )
+  .handler(async ({ data: input, context }) => {
     await assertPlan(context.supabase, context.userId, "analytics");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) return null;
-    const [{ data: orders }, { data: items }] = await Promise.all([
-      context.supabase.from("orders").select("id,phone,subtotal,discount_amount,status,created_at").eq("store_id", sid),
-      context.supabase.from("order_items").select("product_id,qty,name_snapshot,orders!inner(store_id,status)").eq("orders.store_id", sid),
-    ]);
+    const type = input?.product_type;
+    let ordersQ = context.supabase
+      .from("orders")
+      .select("id,phone,subtotal,discount_amount,status,created_at")
+      .eq("store_id", sid);
+    if (type) ordersQ = ordersQ.eq("order_type", type);
+    let itemsQ = context.supabase
+      .from("order_items")
+      .select("product_id,qty,name_snapshot,orders!inner(store_id,status,order_type)")
+      .eq("orders.store_id", sid);
+    if (type) itemsQ = itemsQ.eq("orders.order_type", type);
+    const [{ data: orders }, { data: items }] = await Promise.all([ordersQ, itemsQ]);
     const live = (orders ?? []).filter((o) => o.status !== "cancelled");
     const totalSales = live.reduce((a, o) => a + Number(o.subtotal), 0);
     const totalOrders = live.length;
