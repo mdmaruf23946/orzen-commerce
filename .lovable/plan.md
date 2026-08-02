@@ -1,61 +1,79 @@
-# ORZEN Digital Product Experience
+# Digital Product Checkout Flow — Complete Upgrade
 
-## Current state (verified)
+Digital-only behaviour is added on top of the existing engine. Every physical path (checkout fields, shipping, COD, courier, order stages) stays byte-for-byte as it is today; digital branches only activate when the cart contains digital products.
 
-- Digital products already exist **only in the admin product form**: type + files + preview + download rules are saved into `products.meta.digital` (`ProductDialog.tsx`, `DigitalFilesUploader.tsx`).
-- The storefront returns `meta` and `product_type`, but the product page (`store/$slug/product/$productId`) renders one physical layout for everything.
-- Checkout always offers Cash on Delivery and the shipping/delivery block; there is no digital branch.
-- There are **no** digital tables (no entitlements, downloads, licenses) — the earlier digital tables were dropped. Storage buckets `store-assets` and `digital-files` exist and are both private, so signed URLs are already the only way to serve files.
+Already in place from the previous turn: `digital_entitlements`, `digital_licenses`, `digital_downloads` tables, `grantDigitalAccess` / `activateDigitalAccess` / `issueDownloadUrl`, digital PDP, and COD blocking + zero shipping for digital-only carts inside `placeOrder`.
 
-So this is mostly new build, not repair. It ships in 5 phases; each phase is usable on its own and the physical flow stays untouched.
+## 1. Digital checkout page
 
-## Phase 1 — Digital Product Details Page
+Checkout detects cart composition (all-digital / mixed / all-physical) from product types already returned by `listProductsByIds`.
 
-New route-level branch: if `product_type === 'digital'`, render `DigitalProductPage` instead of the physical PDP. Same ORZEN design language, digital-specific components under `src/components/storefront/pdp/digital/`.
+All-digital cart:
+- Fields: Full Name*, Email*, Phone*, plus optional Country, Company, Order Note.
+- Hidden: address, district/area, delivery zone, shipping method, courier, COD.
+- Product summary per line: thumbnail, name, version, license type, category, quantity, and badges (Instant Download, Digital Product, Secure Purchase).
+- Pricing: price, discount, coupon (instant validation, unchanged endpoint), optional tax, total. No delivery row.
+- Payment: online gateways only, from the store's enabled gateway list (Rupantor Pay, SSLCommerz, Stripe, PayPal, bKash, Nagad, Rocket as configured). COD is not rendered and is rejected server-side.
+- Two required checkboxes: digital-product acknowledgement and Terms & Conditions. Button label "Complete Purchase".
 
-Sections, in order:
+Mixed cart keeps the physical form (shipping needed) but still hides COD and shows digital badges on digital lines.
 
-1. **Hero** — cover + gallery on the left; title, category, rating, review count, creator/brand, version, last updated, file size, license type as a meta strip. Right rail: price, old price, discount badge, Add to Cart, Buy Now, and Secure Payment / Instant Access / Lifetime Access badges.
-2. **Preview** — driven by seller config: image slider, YouTube/Vimeo embed, PDF embed, audio player, live demo / external demo link.
-3. **Description** — existing sanitized rich text (images, video, tables, lists) reused.
-4. **What's Included** — icon list (ZIP, PDF, source code, PSD, Figma, Canva, video, audio, templates, fonts, license, docs, bonus).
-5. **System Requirements** — optional table (OS, software version, browser, RAM, storage, dependencies).
-6. **License Information** — Personal / Commercial / Extended / Custom.
-7. **FAQ** — unlimited, accordion.
-8. **Reviews** — verified purchases only, stars, images, seller replies, sorting.
-9. **Related Products** — same category, existing rail.
+## 2. Payment processing
 
-Product cards stay exactly as they are: thumbnail, title, rating, category, price, sale price, stock status (Unlimited / Limited), wishlist, Add to Cart, Buy Now — no download/access buttons anywhere before payment.
+- Submit shows a secure-payment overlay (creating order → redirecting to gateway → verifying).
+- Duplicate submit guarded by an idempotency key per cart snapshot plus the existing duplicate-order protection.
+- On return, the order page verification retries a few times with backoff before showing "verification pending".
 
-## Phase 2 — Admin fields behind the new page
+## 3. Payment success page
 
-Extend the digital tabs in the product form so a seller can actually fill everything above: preview type + sources, What's Included picker, system requirements, license type, FAQ repeater, version + changelog, SEO, visibility, and the download rules (unlimited/limited, expiry date, link expiration, max devices, max IP, max activations, require login, auto email/invoice/delivery). Stored as an extended `meta.digital` shape, backward compatible with what is already saved.
+For digital orders the order page renders a dedicated success layout: large success icon, "Payment Successful", order number, payment ID, purchase date, customer email, product name(s), amount paid, payment method; buttons Download Now, View My Downloads, View Invoice, Continue Shopping.
 
-## Phase 3 — Digital checkout
+## 4. Automatic access
 
-- Cart is scanned by product type. Any digital line ⇒ COD is removed from the payment list; an all-digital cart also hides shipping address, district, courier and delivery charge, and forces delivery cost to zero **server-side** as well as in the UI.
-- Mixed cart keeps the full physical form but still hides COD.
-- Remaining methods: Stripe, SSLCommerz, bKash, Nagad, Rocket, card, PayPal — whatever the store has enabled.
+On paid webhook / verification (already wired), `activateDigitalAccess` unlocks entitlements, generates license keys, stamps expiry — then queues the confirmation email. No manual approval.
 
-## Phase 4 — Delivery, entitlements, downloads
+## 5. Download page + My Downloads
 
-New tables (grants + RLS + `updated_at` triggers): `digital_entitlements` (order, customer, product, expiry, max downloads, counter, status), `digital_downloads` (per-hit log with IP, device, timestamp), `digital_licenses` (key, type, activation count, max activations).
+- New route `store/$slug/downloads/$entitlementId`: thumbnail, name, version, license, file size, format, release date; buttons Download (signed URL), Copy License, View Documentation, Watch Tutorial, Report Problem, Support; shows downloads remaining, expiry, latest version.
+- New account tab `downloads` (`/store/$slug/account?tab=downloads`): each purchase card with image, name, version, purchase date, download button, license key, expiry, download count, status; filters Active / Expired / Updated. Backed by the existing `listMyDigitalPurchases`.
 
-On successful payment: order created → invoice generated → entitlements + license granted → delivery email sent → success screen with instant access.
+## 6. Email automation
 
-Downloads are served by a server function that verifies the entitlement, enforces limits/expiry/devices/IPs, logs the hit and returns a short-lived signed URL. Original paths are never exposed to the client; no direct-link access.
+New digital-delivery template queued through the existing `enqueueEmail` pipeline: product name, download button, invoice link, license key, support link, order number.
 
-## Phase 5 — Customer surfaces
+## 7. Digital order statuses
 
-- Order page: purchased products, order ID, purchase date, payment status, license, download count, latest version, download button, invoice.
-- Account: new tabs for Downloads, Licenses, Invoices, Updates — alongside existing orders, wishlist, reviews.
+Digital orders use their own ladder: `pending_payment → paid → processing_access → ready_to_download → completed`, plus `refunded` and `expired`. Physical stages (processing, packed, shipped, out for delivery, delivered) are not shown or selectable for digital orders. Implemented as a presentation + allowed-transition map keyed on order type, so the shared `orders.status` column is untouched for physical orders.
+
+## 8. Store Admin digital order view
+
+Order drawer gains a Digital section when the order has entitlements: customer name/email/phone, payment status, gateway, download count, remaining downloads, license key, access expiry, product version. Quick actions: Resend Download Email, Regenerate License, Disable Access, Enable Access, Refund (existing), View Logs (download log rows).
+
+## 9. Fraud protection and download rules
+
+Already partly implemented and completed here: short-lived signed URLs, per-entitlement download counter, device/IP logging, max devices / max IPs / max activations enforcement, and owner-configurable rules in the product form (unlimited, limited count, expiry days, lifetime).
+
+## 10. Invoice
+
+Digital orders reuse the invoice template engine; a digital variant omits shipping and adds license and product version rows.
+
+## 11. Activity timeline
+
+Digital order timeline: Order Created → Payment Completed → Access Granted → Download Completed → License Activated, built from order rows, entitlement rows and `digital_downloads` log. Shown on both the storefront order page and the admin drawer.
+
+## 12. Future-ready
+
+Digital behaviour is driven by `products.meta.digital` plus a product-type registry, so courses, ebooks, software, templates, music, video and membership files are new metadata presets rather than new code paths.
 
 ## Technical notes
 
-- Digital files move to the private `digital-files` bucket; access only through the signed-URL server function.
-- Public product reads never expose file paths or license keys — the storefront product payload strips `meta.digital.files` and returns only presentation data.
-- No existing route is renamed; digital behaviour is additive and gated on `product_type`.
+- New files: `src/components/storefront/checkout/DigitalCheckout.tsx`, `DigitalOrderSuccess.tsx`, `DigitalTimeline.tsx`, `src/routes/store/$slug/downloads.$entitlementId.tsx`, `src/components/storefront/account/MyDownloads.tsx`, `src/components/admin/orders/DigitalOrderPanel.tsx`, `src/lib/digital-status.ts`.
+- Edited: `checkout.tsx` (branching only), `order.$orderId.tsx`, `account.tsx` (new tab), `orders-admin.functions.ts`, `OrderDetailsDrawer.tsx`, `digital.functions.ts` (admin actions + email resend), `digital.server.ts` (license regeneration, enable/disable).
+- Migration: add `email` and optional `company` / `country` capture on orders if not present, and an admin-side entitlement action audit trail. Grants + RLS follow the existing store-scoped pattern.
+- Server functions for admin actions run under `requireSupabaseAuth` with a store-ownership check before touching entitlements.
 
-## Out of scope for now
+## Assumptions
 
-Watermarking of delivered files, and Subscription / Service product types (they stay "Coming Soon").
+- Email on checkout becomes required for digital carts; physical checkout keeps phone-only.
+- Tax stays optional and is displayed only when the store has a tax rate configured.
+- "Watch Tutorial" / "View Documentation" read optional URLs from product digital metadata and hide when unset.
