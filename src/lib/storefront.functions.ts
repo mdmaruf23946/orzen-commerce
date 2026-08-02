@@ -511,12 +511,65 @@ export const getProduct = createServerFn({ method: "GET" })
     if (!p) return null;
     const gallery = Array.isArray(p.gallery) ? (p.gallery as string[]) : [];
 
+    // Digital config is stored in meta.digital. File paths and any other
+    // fulfilment-only data must never reach the browser — only presentation
+    // fields are projected here.
+    const meta = (p.meta ?? {}) as Record<string, any>;
+    const dg = (meta.digital ?? {}) as Record<string, any>;
+    const files: any[] = Array.isArray(dg.files) ? dg.files : [];
+    const digital =
+      p.product_type === "digital"
+        ? {
+            version: dg.version ?? null,
+            changelog: dg.changelog ?? null,
+            platforms: Array.isArray(dg.platforms) ? dg.platforms : [],
+            tags: Array.isArray(dg.tags) ? dg.tags : [],
+            license_type: dg.license_type ?? "personal",
+            license_note: dg.license_note ?? null,
+            included: Array.isArray(dg.included) ? dg.included : [],
+            requirements: dg.requirements ?? {},
+            faq: Array.isArray(dg.faq) ? dg.faq : [],
+            free: !!dg.free,
+            file_count: files.length,
+            total_size: files.reduce((a, f) => a + (Number(f?.size) || 0), 0),
+            file_types: Array.from(
+              new Set(
+                files
+                  .map((f) => String(f?.name ?? "").split(".").pop()?.toLowerCase())
+                  .filter(Boolean),
+              ),
+            ),
+            has_external: !!dg.external_url,
+            preview: {
+              type: dg.preview?.type ?? null,
+              images: Array.isArray(dg.preview?.images)
+                ? dg.preview.images.map((i: string) => imgUrl(i)).filter(Boolean)
+                : [],
+              video_url: dg.preview?.video_url ?? null,
+              demo_url: dg.preview?.demo_url ?? null,
+              pdf_url: dg.preview?.pdf_url ?? null,
+              audio_url: dg.preview?.audio_url ?? null,
+            },
+            download: {
+              mode: dg.download?.mode ?? "instant",
+              max_downloads: dg.download?.max_downloads ?? null,
+              expiry_days: dg.download?.expiry_days ?? null,
+            },
+          }
+        : null;
+
+    // Strip the raw digital block (contains storage paths) from the payload.
+    const { digital: _omit, ...safeMeta } = meta;
+
     return {
       ...p,
+      meta: safeMeta,
+      digital,
       primary_image_url: imgUrl(p.primary_image_url),
       gallery: gallery.map((g) => imgUrl(g)!).filter(Boolean),
     };
   });
+
 
 
 export const listRelatedProducts = createServerFn({ method: "GET" })
