@@ -88,6 +88,8 @@ function ProductPage() {
   const { data: product } = useSuspenseQuery(productQuery(store!.id, productId));
   const [qty, setQty] = useState(1);
   const buyBoxRef = useRef<HTMLDivElement | null>(null);
+  const isDigital = (product as any)?.product_type === "digital";
+
 
   useEffect(() => {
     if (!product) return;
