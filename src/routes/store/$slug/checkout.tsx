@@ -3,7 +3,7 @@ import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getStoreBySlug, listStoreOnlineGateways, startOnlineCheckout, placeOrder, validateCoupon, getStoreDeliveryZones } from "@/lib/storefront.functions";
+import { getStoreBySlug, listStoreOnlineGateways, startOnlineCheckout, placeOrder, validateCoupon, getStoreDeliveryZones, listProductsByIds } from "@/lib/storefront.functions";
 import { readCart, clearCart, type CartItem } from "@/lib/cart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCustomerSession } from "@/lib/customer-session";
 import { computeFingerprint, getDeviceId } from "@/lib/fingerprint";
 import { fbTrack } from "@/lib/fb-track";
+import { DigitalCheckout, type DigitalCartInfo } from "@/components/storefront/checkout/DigitalCheckout";
+
 
 
 const storeQuery = (slug: string) =>
