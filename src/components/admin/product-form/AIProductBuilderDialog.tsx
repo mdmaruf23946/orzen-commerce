@@ -61,11 +61,19 @@ type Props = {
   storeId: string;
   categories: any[];
   productDefaults: any;
+  productType?: "physical" | "digital" | "service" | "subscription";
   onClose: () => void;
   onSave: (data: any) => Promise<void>;
 };
 
-export function AIProductBuilderDialog({ storeId, categories, productDefaults, onClose, onSave }: Props) {
+export function AIProductBuilderDialog({
+  storeId,
+  categories,
+  productDefaults,
+  productType = "physical",
+  onClose,
+  onSave,
+}: Props) {
   const { allowed, loading: gateLoading } = useFeature("ai_product_builder");
   const gen = useServerFn(generateProductDraft);
 
@@ -184,7 +192,7 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
       setStage((s) => (s < STAGES.length - 2 ? s + 1 : s));
     }, 2200);
     try {
-      const res = await gen({ data: { imagePaths: images, description } });
+      const res = await gen({ data: { imagePaths: images, description, productType } });
       setStage(STAGES.length - 1);
       setDraftResult(res as any);
     } catch (e) {
@@ -210,13 +218,14 @@ export function AIProductBuilderDialog({ storeId, categories, productDefaults, o
       brand: essBrand.trim() || undefined,
       weight_g: essWeight ? Number(essWeight) : undefined,
     };
-    const editingLike = buildEditingLike(draftResult, { youtubeUrl, facebookUrl }, essentials);
+    const editingLike = buildEditingLike(draftResult, { youtubeUrl, facebookUrl }, essentials, productType);
     return (
       <ProductDialog
         storeId={storeId}
         editing={editingLike}
         categories={categories}
         productDefaults={productDefaults}
+        initialType={productType}
         onClose={onClose}
         onSave={onSave}
       />
@@ -671,7 +680,7 @@ function buildEditingLike(
   const primaryVideoUrl = videos[0]?.url ?? null;
 
   const meta: Record<string, any> = {
-    product_type: "physical",
+    product_type: productType,
     subcategory_id: matchedSubcategoryId ?? null,
     videos,
     labels: draft.labels ?? [],
