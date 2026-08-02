@@ -13,6 +13,13 @@ import { FraudCheckModal } from "@/components/admin/FraudCheckModal";
 import { OrderDetailsDrawer } from "@/components/admin/OrderDetailsDrawer";
 import { useFeature } from "@/components/admin/FeatureGate";
 import { OrderCard, money } from "@/components/admin/orders/OrderCard";
+import {
+  DigitalOrderCard, ServiceOrderCard, SubscriptionOrderCard,
+} from "@/components/admin/orders/TypeOrderCards";
+import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
+import type { OrderKind } from "@/lib/orders-admin.functions";
+import { confirmOrder, scheduleService, completeService, extendSubscription, cancelSubscription } from "@/lib/orders-types.functions";
+import { setDigitalAccess, resendDigitalEmail } from "@/lib/digital-admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/orders")({
   head: () => ({
@@ -44,6 +51,57 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "returned", label: "Returned" },
 ];
 
+const TYPE_TABS = [
+  { key: "all", label: "All" },
+  { key: "physical", label: "Physical" },
+  { key: "digital", label: "Digital" },
+  { key: "service", label: "Service" },
+  { key: "subscription", label: "Subscription" },
+] as const;
+type TypeKey = (typeof TYPE_TABS)[number]["key"];
+
+/** Status pills per product type. Physical keeps its original set. */
+const TYPE_STATUS_TABS: Record<Exclude<TypeKey, "all" | "physical">, { key: string; label: string }[]> = {
+  digital: [
+    { key: "all", label: "All" },
+    { key: "pending", label: "Pending" },
+    { key: "confirmed", label: "Confirmed" },
+    { key: "delivered", label: "Access Granted" },
+    { key: "cancelled", label: "Refunded" },
+  ],
+  service: [
+    { key: "all", label: "All" },
+    { key: "pending", label: "Pending" },
+    { key: "confirmed", label: "Confirmed" },
+    { key: "scheduled", label: "Scheduled" },
+    { key: "completed", label: "Completed" },
+    { key: "cancelled", label: "Cancelled" },
+  ],
+  subscription: [
+    { key: "all", label: "All" },
+    { key: "pending", label: "Pending" },
+    { key: "confirmed", label: "Confirmed" },
+    { key: "active", label: "Active" },
+    { key: "expired", label: "Expired" },
+    { key: "cancelled", label: "Cancelled" },
+  ],
+};
+
+function matchesTypeTab(o: AdminOrderRow, type: Exclude<TypeKey, "all" | "physical">, key: string) {
+  const f = o.fulfillment ?? {};
+  if (key === "all") return true;
+  if (key === "pending") return o.confirmation_status !== "confirmed" && o.status !== "cancelled";
+  if (key === "confirmed") return o.confirmation_status === "confirmed";
+  if (key === "cancelled") return o.status === "cancelled" || f.subscription_state === "cancelled";
+  if (type === "digital") return key === "delivered" ? o.access?.status === "active" : true;
+  if (type === "service") return f.service_state === key;
+  if (type === "subscription") {
+    if (key === "active") return f.subscription_state === "active" && (!f.renewal_at || new Date(f.renewal_at) > new Date());
+    if (key === "expired") return !!f.renewal_at && new Date(f.renewal_at) <= new Date();
+  }
+  return true;
+}
+
 const COURIER_SENT = new Set(["pending", "pickup_requested", "pickup_completed"]);
 
 function matchesTab(o: AdminOrderRow, tab: TabKey) {
@@ -68,7 +126,9 @@ function OrdersPage() {
     queryFn: () => list(),
   });
 
+  const [type, setType] = useState<TypeKey>("all");
   const [tab, setTab] = useState<TabKey>("all");
+  const [typeTab, setTypeTab] = useState("all");
   const [q, setQ] = useState("");
   const [payment, setPayment] = useState("all");
   const [courier, setCourier] = useState("all");
@@ -78,7 +138,39 @@ function OrdersPage() {
   const [detailsFor, setDetailsFor] = useState<string | null>(null);
   const { allowed: fraudAllowed } = useFeature("fraud_checker");
 
-  const rows = useMemo(() => orders ?? [], [orders]);
+  const confirm = useServerFn(confirmOrder);
+  const schedule = useServerFn(scheduleService);
+  const complete = useServerFn(completeService);
+  const extend = useServerFn(extendSubscription);
+  const cancelSub = useServerFn(cancelSubscription);
+  const grantAccess = useServerFn(setDigitalAccess);
+  const resendMail = useServerFn(resendDigitalEmail);
+
+  const all = useMemo(() => orders ?? [], [orders]);
+  const rows = useMemo(
+    () => (type === "all" ? all : all.filter((o) => (o.order_type ?? "physical") === type)),
+    [all, type],
+  );
+  const physicalView = type === "all" || type === "physical";
+
+  const typeCounts = useMemo(() => {
+    const c: Record<string, number> = { all: all.length };
+    for (const o of all) {
+      const k = o.order_type ?? "physical";
+      c[k] = (c[k] ?? 0) + 1;
+    }
+    return c;
+  }, [all]);
+
+  async function run(fn: () => Promise<any>, msg: string) {
+    try {
+      await fn();
+      qc.invalidateQueries({ queryKey: ["admin", "orders"] });
+      toast.success(msg);
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  }
 
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
@@ -89,13 +181,25 @@ function OrdersPage() {
   const summary = useMemo(() => {
     const today = new Date().toDateString();
     const todays = rows.filter((o) => new Date(o.created_at).toDateString() === today);
+    const revenue = rows.filter((o) => o.status !== "cancelled").reduce((s, o) => s + o.total, 0);
     return {
       today: todays.length,
-      revenue: rows.filter((o) => o.status !== "cancelled").reduce((s, o) => s + o.total, 0),
-      pending: rows.filter((o) => o.status === "pending").length,
+      revenue,
+      pending: rows.filter((o) =>
+        physicalView ? o.status === "pending" : o.confirmation_status !== "confirmed",
+      ).length,
       cod: rows.filter((o) => o.status !== "cancelled" && o.status !== "delivered").reduce((s, o) => s + o.cod_amount, 0),
+      accessGranted: rows.filter((o) => o.access?.status === "active").length,
+      downloads: rows.reduce((s, o) => s + (o.access?.downloads ?? 0), 0),
+      scheduled: rows.filter((o) => o.fulfillment?.service_state === "scheduled").length,
+      completed: rows.filter((o) => o.fulfillment?.service_state === "completed").length,
+      activeSubs: rows.filter((o) => o.fulfillment?.subscription_state === "active").length,
+      dueSoon: rows.filter((o) => {
+        const r = o.fulfillment?.renewal_at;
+        return !!r && new Date(r).getTime() - Date.now() < 7 * 864e5 && new Date(r) > new Date();
+      }).length,
     };
-  }, [rows]);
+  }, [rows, physicalView]);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -105,7 +209,7 @@ function OrdersPage() {
       : range === "30d" ? Date.now() - 30 * 864e5
       : 0;
     const out = rows.filter((o) => {
-      if (!matchesTab(o, tab)) return false;
+      if (physicalView ? !matchesTab(o, tab) : !matchesTypeTab(o, type as any, typeTab)) return false;
       if (cutoff && new Date(o.created_at).getTime() < cutoff) return false;
       if (payment === "cod" && o.payment_method !== "cod") return false;
       if (payment === "paid" && !(o.payment_method !== "cod" && o.payment_status === "paid")) return false;
@@ -125,7 +229,7 @@ function OrdersPage() {
       : +new Date(b.created_at) - +new Date(a.created_at),
     );
     return out;
-  }, [rows, tab, q, payment, courier, range, sort]);
+  }, [rows, tab, typeTab, type, physicalView, q, payment, courier, range, sort]);
 
   const courierOptions = useMemo(
     () => Array.from(new Set(rows.map((o) => o.courier_key).filter(Boolean))) as string[],
@@ -158,14 +262,49 @@ function OrdersPage() {
       </header>
 
       {/* Summary */}
+      <TypeFilterTabs
+        tabs={TYPE_TABS.map((t) => ({
+          key: t.key,
+          label: `${t.label} (${typeCounts[t.key] ?? 0})`,
+        }))}
+        value={type}
+        onChange={(k) => { setType(k as TypeKey); setTab("all"); setTypeTab("all"); }}
+      />
+
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         <Kpi icon={ShoppingBag} label="Today's orders" value={String(summary.today)} />
         <Kpi icon={TrendingUp} label="Order value" value={money(summary.revenue)} />
         <Kpi icon={Clock} label="Pending" value={String(summary.pending)} />
-        <Kpi icon={Wallet} label="COD to collect" value={money(summary.cod)} />
+        {type === "digital" ? (
+          <Kpi icon={Wallet} label="Downloads" value={String(summary.downloads)} />
+        ) : type === "service" ? (
+          <Kpi icon={Wallet} label="Completed" value={String(summary.completed)} />
+        ) : type === "subscription" ? (
+          <Kpi icon={Wallet} label="Active subs" value={String(summary.activeSubs)} />
+        ) : (
+          <Kpi icon={Wallet} label="COD to collect" value={money(summary.cod)} />
+        )}
       </div>
 
-      {/* Tabs */}
+      {/* Status tabs */}
+      {!physicalView ? (
+        <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+          {TYPE_STATUS_TABS[type as Exclude<TypeKey, "all" | "physical">].map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTypeTab(t.key)}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors duration-150 ${
+                typeTab === t.key ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-muted"
+              }`}
+            >
+              {t.label}
+              <span className={`rounded-full px-1.5 text-[10px] ${typeTab === t.key ? "bg-primary-foreground/20" : "bg-muted"}`}>
+                {rows.filter((o) => matchesTypeTab(o, type as any, t.key)).length}
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : (
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
         {TABS.map((t) => (
           <button
@@ -182,6 +321,7 @@ function OrdersPage() {
           </button>
         ))}
       </div>
+      )}
 
       {/* Search + filters */}
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -206,12 +346,14 @@ function OrdersPage() {
                 ["all", "All payments"], ["cod", "COD"], ["paid", "Online paid"], ["unpaid", "Unpaid"],
               ]} />
             </Field>
+            {physicalView && (
             <Field label="Courier">
               <Select value={courier} onChange={setCourier} options={[
                 ["all", "All couriers"], ["none", "Not sent"],
                 ...courierOptions.map((c) => [c, c.replace(/_/g, " ")] as [string, string]),
               ]} />
             </Field>
+            )}
             <Field label="Date range">
               <Select value={range} onChange={setRange} options={[
                 ["all", "All time"], ["today", "Today"], ["7d", "Last 7 days"], ["30d", "Last 30 days"],
@@ -235,19 +377,51 @@ function OrdersPage() {
         </div>
       ) : (
         <div className="grid gap-2.5">
-          {filtered.map((o) => (
-            <OrderCard
-              key={o.id}
-              order={o}
-              onView={() => setDetailsFor(o.id)}
-              onStatus={(s) => setStatus(o.id, s)}
-              onFraud={() =>
-                fraudAllowed
-                  ? setFraudFor({ id: o.id, phone: o.phone })
-                  : toast.error("Upgrade your plan to use Fraud Checker")
-              }
-            />
-          ))}
+          {filtered.map((o) => {
+            const kind: OrderKind = o.order_type ?? "physical";
+            const actions = {
+              onView: () => setDetailsFor(o.id),
+              onConfirm: () => run(() => confirm({ data: { orderId: o.id } }), "Order confirmed"),
+              onGrantAccess: () =>
+                o.access?.entitlementId
+                  ? run(
+                      () => grantAccess({ data: { entitlementId: o.access!.entitlementId!, enabled: true } }),
+                      "Access granted",
+                    )
+                  : run(() => confirm({ data: { orderId: o.id } }), "Access granted"),
+              onResendEmail: () => run(() => resendMail({ data: { orderId: o.id } }), "Email sent"),
+              onRefund: () => setStatus(o.id, "cancelled"),
+              onSchedule: () => {
+                const date = window.prompt("Booking date (YYYY-MM-DD)", o.fulfillment?.booking_date ?? "");
+                if (date === null) return;
+                const time = window.prompt("Booking time (e.g. 15:30)", o.fulfillment?.booking_time ?? "") ?? "";
+                run(() => schedule({ data: { orderId: o.id, booking_date: date, booking_time: time } }), "Service scheduled");
+              },
+              onComplete: () => run(() => complete({ data: { orderId: o.id } }), "Service completed"),
+              onExtend: () => {
+                const days = Number(window.prompt("Extend by how many days?", "30"));
+                if (!days || days < 1) return;
+                run(() => extend({ data: { orderId: o.id, days } }), "Subscription extended");
+              },
+              onCancel: () => run(() => cancelSub({ data: { orderId: o.id } }), "Subscription cancelled"),
+            };
+            if (kind === "digital") return <DigitalOrderCard key={o.id} order={o} a={actions} />;
+            if (kind === "service") return <ServiceOrderCard key={o.id} order={o} a={actions} />;
+            if (kind === "subscription") return <SubscriptionOrderCard key={o.id} order={o} a={actions} />;
+            return (
+              <OrderCard
+                key={o.id}
+                order={o}
+                onView={() => setDetailsFor(o.id)}
+                onStatus={(s) => setStatus(o.id, s)}
+                onFraud={() =>
+                  fraudAllowed
+                    ? setFraudFor({ id: o.id, phone: o.phone })
+                    : toast.error("Upgrade your plan to use Fraud Checker")
+                }
+              />
+            );
+          })}
         </div>
       )}
 
