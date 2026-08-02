@@ -716,8 +716,13 @@ export const placeOrder = createServerFn({ method: "POST" })
         storeId: z.string().uuid(),
         customerName: z.string().trim().min(1).max(120),
         phone: z.string().trim().min(5).max(40),
-        address: z.string().trim().min(3).max(500),
+        // Digital-only carts have nothing to ship, so the address is optional.
+        address: z.string().trim().max(500).optional(),
         area: z.string().trim().max(120).optional(),
+        email: z.string().trim().email().max(160).optional(),
+        company: z.string().trim().max(160).optional(),
+        country: z.string().trim().max(80).optional(),
+
         // "cod" | "bkash" | "nagad" | "rocket" | "bank" | "builtin:<id>" | "custom:<uuid>"
         paymentMethod: z.string().trim().min(2).max(120),
         txnId: z.string().trim().max(120).optional(),
