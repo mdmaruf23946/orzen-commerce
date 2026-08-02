@@ -436,7 +436,7 @@ export function ProductDialog({
         tax: taxRate ? { rate: Number(taxRate), inclusive: taxInclusive } : null,
         barcode: barcode || null,
         inventory_status: inventoryStatus,
-        stock_managed: isDigital ? false : stockManaged,
+        stock_managed: isStockless ? false : stockManaged,
         shipping,
         purchase,
         labels,
@@ -446,6 +446,9 @@ export function ProductDialog({
         visibility: { scheduled_at: scheduledAt || null },
         ai_ready: { description: false, enhance: false, bg_removal: false, seo: false },
         ...(digital ? { digital } : {}),
+        ...(isService ? { service: { booking_type: svcBookingType, delivery_time: svcDeliveryTime || null } } : {}),
+        ...(isSubscription ? { subscription: { billing_cycle: subCycle } } : {}),
+
       };
       const primaryVideoUrl = videos.find((v) => v.primary)?.url ?? videos[0]?.url ?? null;
       const digitalPrice = digFree ? 0 : finalPrice;
