@@ -147,6 +147,13 @@ const PLATFORM_OPTIONS = ["Windows", "macOS", "Linux", "Android", "iOS", "Web"] 
 
 // -----------------------------------------------------------------------
 
+const TYPE_NOUN: Record<string, string> = {
+  physical: "physical product",
+  digital: "digital product",
+  service: "service",
+  subscription: "subscription plan",
+};
+
 export function ProductDialog({
   storeId,
   editing,
@@ -175,7 +182,7 @@ export function ProductDialog({
   const [description, setDescription] = useState(editing?.description ?? "");
   const [brand, setBrand] = useState<string>((editing as any)?.brand ?? "");
   const [productCode, setProductCode] = useState<string>((editing as any)?.product_code ?? "");
-  const [productType, setProductType] = useState<ProductMeta["product_type"]>(
+  const [productType] = useState<ProductMeta["product_type"]>(
     (editing as any)?.product_type ?? meta0.product_type ?? initialType ?? "physical",
   );
   const [svcBookingType, setSvcBookingType] = useState<"instant" | "scheduled" | "request">(
@@ -1130,7 +1137,7 @@ export function ProductDialog({
         <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-full flex-col overflow-hidden rounded-none p-0 sm:h-auto sm:max-h-[92vh] sm:w-full sm:max-w-4xl sm:rounded-lg">
           <DialogHeader className="shrink-0 border-b p-3 pr-10 sm:p-4 sm:pr-12">
             <DialogTitle className="truncate text-sm font-semibold sm:text-base">
-              {editing ? "Edit product" : "New product"}
+              {`${editing ? "Edit" : "New"} ${TYPE_NOUN[productType ?? "physical"]}`}
             </DialogTitle>
             {labels.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
