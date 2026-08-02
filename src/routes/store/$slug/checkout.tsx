@@ -163,7 +163,10 @@ function CheckoutPage() {
       sandbox: !!g.sandbox,
     });
   }
-  if (pc.cod?.enabled !== false) methods.push({ id: "cod", label: "Cash on Delivery", desc: "Pay when you receive" });
+  // Digital goods can never be paid for on delivery.
+  if (pc.cod?.enabled !== false && !hasDigital)
+    methods.push({ id: "cod", label: "Cash on Delivery", desc: "Pay when you receive" });
+
   // Manual numbers come only from payments_config so removing a number in the
   // admin panel immediately hides it at checkout.
   const bk = pc.bkash?.number;
