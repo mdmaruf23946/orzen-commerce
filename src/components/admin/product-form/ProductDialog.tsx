@@ -152,6 +152,7 @@ export function ProductDialog({
   editing,
   categories,
   productDefaults,
+  initialType,
   onClose,
   onSave,
 }: {
@@ -159,6 +160,7 @@ export function ProductDialog({
   editing: Product | null;
   categories: Category[];
   productDefaults: { warranty?: string; return_policy?: string; shipping_info?: string } | null;
+  initialType?: "physical" | "digital" | "service" | "subscription";
   onClose: () => void;
   onSave: (data: any) => Promise<void>;
 }) {
@@ -173,7 +175,17 @@ export function ProductDialog({
   const [description, setDescription] = useState(editing?.description ?? "");
   const [brand, setBrand] = useState<string>((editing as any)?.brand ?? "");
   const [productCode, setProductCode] = useState<string>((editing as any)?.product_code ?? "");
-  const [productType, setProductType] = useState<ProductMeta["product_type"]>(meta0.product_type ?? "physical");
+  const [productType, setProductType] = useState<ProductMeta["product_type"]>(
+    (editing as any)?.product_type ?? meta0.product_type ?? initialType ?? "physical",
+  );
+  const [svcBookingType, setSvcBookingType] = useState<"instant" | "scheduled" | "request">(
+    meta0.service?.booking_type ?? "scheduled",
+  );
+  const [svcDeliveryTime, setSvcDeliveryTime] = useState<string>(meta0.service?.delivery_time ?? "");
+  const [subCycle, setSubCycle] = useState<"monthly" | "quarterly" | "yearly" | "lifetime">(
+    meta0.subscription?.billing_cycle ?? "monthly",
+  );
+
   const [categoryId, setCategoryId] = useState<string>(editing?.category_id ?? "");
   const [subcategoryId, setSubcategoryId] = useState<string>(meta0.subcategory_id ?? "");
 
