@@ -45,7 +45,10 @@ type ProductMeta = {
   visibility?: { scheduled_at?: string | null };
   ai_ready?: { description?: boolean; enhance?: boolean; bg_removal?: boolean; seo?: boolean };
   digital?: DigitalMeta;
+  service?: { booking_type?: "instant" | "scheduled" | "request"; delivery_time?: string | null };
+  subscription?: { billing_cycle?: "monthly" | "quarterly" | "yearly" | "lifetime" };
 };
+
 
 type DigitalMeta = {
   files?: DigitalFile[];
@@ -149,6 +152,7 @@ export function ProductDialog({
   editing,
   categories,
   productDefaults,
+  initialType,
   onClose,
   onSave,
 }: {
@@ -156,6 +160,7 @@ export function ProductDialog({
   editing: Product | null;
   categories: Category[];
   productDefaults: { warranty?: string; return_policy?: string; shipping_info?: string } | null;
+  initialType?: "physical" | "digital" | "service" | "subscription";
   onClose: () => void;
   onSave: (data: any) => Promise<void>;
 }) {
@@ -170,7 +175,17 @@ export function ProductDialog({
   const [description, setDescription] = useState(editing?.description ?? "");
   const [brand, setBrand] = useState<string>((editing as any)?.brand ?? "");
   const [productCode, setProductCode] = useState<string>((editing as any)?.product_code ?? "");
-  const [productType, setProductType] = useState<ProductMeta["product_type"]>(meta0.product_type ?? "physical");
+  const [productType, setProductType] = useState<ProductMeta["product_type"]>(
+    (editing as any)?.product_type ?? meta0.product_type ?? initialType ?? "physical",
+  );
+  const [svcBookingType, setSvcBookingType] = useState<"instant" | "scheduled" | "request">(
+    meta0.service?.booking_type ?? "scheduled",
+  );
+  const [svcDeliveryTime, setSvcDeliveryTime] = useState<string>(meta0.service?.delivery_time ?? "");
+  const [subCycle, setSubCycle] = useState<"monthly" | "quarterly" | "yearly" | "lifetime">(
+    meta0.subscription?.billing_cycle ?? "monthly",
+  );
+
   const [categoryId, setCategoryId] = useState<string>(editing?.category_id ?? "");
   const [subcategoryId, setSubcategoryId] = useState<string>(meta0.subcategory_id ?? "");
 
@@ -259,6 +274,10 @@ export function ProductDialog({
 
   // ---- derived ----
   const isDigital = productType === "digital";
+  const isService = productType === "service";
+  const isSubscription = productType === "subscription";
+  const isStockless = isDigital || isService || isSubscription;
+
 
   const mainCategories = useMemo(() => categories.filter((c) => !c.parent_id), [categories]);
   const subCategories = useMemo(
@@ -417,7 +436,7 @@ export function ProductDialog({
         tax: taxRate ? { rate: Number(taxRate), inclusive: taxInclusive } : null,
         barcode: barcode || null,
         inventory_status: inventoryStatus,
-        stock_managed: isDigital ? false : stockManaged,
+        stock_managed: isStockless ? false : stockManaged,
         shipping,
         purchase,
         labels,
@@ -427,6 +446,9 @@ export function ProductDialog({
         visibility: { scheduled_at: scheduledAt || null },
         ai_ready: { description: false, enhance: false, bg_removal: false, seo: false },
         ...(digital ? { digital } : {}),
+        ...(isService ? { service: { booking_type: svcBookingType, delivery_time: svcDeliveryTime || null } } : {}),
+        ...(isSubscription ? { subscription: { billing_cycle: subCycle } } : {}),
+
       };
       const primaryVideoUrl = videos.find((v) => v.primary)?.url ?? videos[0]?.url ?? null;
       const digitalPrice = digFree ? 0 : finalPrice;
@@ -442,7 +464,7 @@ export function ProductDialog({
         cost_price: costPrice === "" ? 0 : Number(costPrice),
         sku: sku || null,
         low_stock_threshold: Number(lowThreshold),
-        stock: isDigital ? 0 : Number(stock),
+        stock: isStockless ? 0 : Number(stock),
         status,
         primary_image_url: image,
         gallery,
@@ -481,9 +503,8 @@ export function ProductDialog({
               <select value={productType} onChange={(e) => setProductType(e.target.value as any)} className={selectCls}>
                 <option value="physical">Physical</option>
                 <option value="digital">Digital</option>
-                <option value="subscription" disabled>Subscription (Coming Soon)</option>
-                <option value="service" disabled>Service (Coming Soon)</option>
-
+                <option value="service">Service</option>
+                <option value="subscription">Subscription</option>
               </select>
             </Field>
             <Field label="Brand">
@@ -495,6 +516,33 @@ export function ProductDialog({
               <Input value={digTags} onChange={(e) => setDigTags(e.target.value)} placeholder="ebook, template, ui kit" />
             </Field>
           )}
+          {isService && (
+            <div className="grid gap-3 rounded-xl border p-3 sm:grid-cols-2">
+              <Field label="Booking type">
+                <select value={svcBookingType} onChange={(e) => setSvcBookingType(e.target.value as any)} className={selectCls}>
+                  <option value="instant">Instant</option>
+                  <option value="scheduled">Scheduled</option>
+                  <option value="request">On request</option>
+                </select>
+              </Field>
+              <Field label="Estimated delivery time">
+                <Input value={svcDeliveryTime} onChange={(e) => setSvcDeliveryTime(e.target.value)} placeholder="e.g. 2-3 days" />
+              </Field>
+            </div>
+          )}
+          {isSubscription && (
+            <div className="rounded-xl border p-3">
+              <Field label="Billing cycle">
+                <select value={subCycle} onChange={(e) => setSubCycle(e.target.value as any)} className={selectCls}>
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="yearly">Yearly</option>
+                  <option value="lifetime">Lifetime</option>
+                </select>
+              </Field>
+            </div>
+          )}
+
 
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Main category">
@@ -1078,7 +1126,10 @@ export function ProductDialog({
         ...digitalTabs,
         ...tabs.filter((t) => t.id === "pricing" || t.id === "visibility" || t.id === "seo"),
       ]
-    : tabs;
+    : isService || isSubscription
+      ? tabs.filter((t) => t.id !== "inventory" && t.id !== "shipping" && t.id !== "variants")
+      : tabs;
+
 
 
   return (
