@@ -274,6 +274,10 @@ export function ProductDialog({
 
   // ---- derived ----
   const isDigital = productType === "digital";
+  const isService = productType === "service";
+  const isSubscription = productType === "subscription";
+  const isStockless = isDigital || isService || isSubscription;
+
 
   const mainCategories = useMemo(() => categories.filter((c) => !c.parent_id), [categories]);
   const subCategories = useMemo(
