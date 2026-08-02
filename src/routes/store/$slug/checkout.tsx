@@ -248,6 +248,7 @@ function CheckoutPage() {
           storeId: store!.id,
           customerName: name,
           phone,
+          email: email.trim() || undefined,
           address,
           area: area || undefined,
           paymentMethod: method,
