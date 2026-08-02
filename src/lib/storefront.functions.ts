@@ -778,6 +778,13 @@ export const placeOrder = createServerFn({ method: "POST" })
     if (hasDigital && data.paymentMethod === "cod") {
       throw new Error("Cash on Delivery is not available for digital products");
     }
+    if (!allDigital && (data.address ?? "").trim().length < 3) {
+      throw new Error("Delivery address is required");
+    }
+    if (hasDigital && !data.email) {
+      throw new Error("Email address is required for digital products");
+    }
+
 
     let subtotal = 0;
     const itemRows = data.items.map((i) => {
