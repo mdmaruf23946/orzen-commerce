@@ -397,7 +397,12 @@ export const verifyOrderPayment = createServerFn({ method: "POST" })
         .update({ payment_status: "paid", status: paidStatus } as any)
         .eq("id", o.id)
         .neq("payment_status", "paid");
+      try {
+        const { activateDigitalAccess } = await import("@/lib/digital.server");
+        await activateDigitalAccess(supabaseAdmin as any, o.id);
+      } catch { /* non-fatal */ }
       return { payment_status: "paid", checked: true };
+
     }
 
     await supabaseAdmin
