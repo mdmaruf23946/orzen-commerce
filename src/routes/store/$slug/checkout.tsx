@@ -69,6 +69,24 @@ function CheckoutPage() {
   const [coupon, setCoupon] = useState<{ code: string; discount: number; freeShipping: boolean } | null>(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
 
+  // Product types decide which checkout the shopper gets.
+  const cartIds = items.map((i) => i.productId);
+  const { data: cartProducts = [] } = useQuery({
+    enabled: !!store?.id && cartIds.length > 0,
+    queryKey: ["cartProducts", store?.id, cartIds.join(",")],
+    queryFn: () => listByIds({ data: { storeId: store!.id, ids: cartIds } }),
+  });
+  const digitalIds = new Set(
+    (cartProducts as any[]).filter((p) => p.product_type === "digital").map((p) => p.id),
+  );
+  const hasDigital = cartIds.some((id) => digitalIds.has(id));
+  const allDigital = cartIds.length > 0 && cartIds.every((id) => digitalIds.has(id));
+  const digitalInfo: DigitalCartInfo = Object.fromEntries(
+    (cartProducts as any[]).map((p) => [p.id, p.digital ?? null]),
+  );
+
+
+
   useEffect(() => {
     const c = readCart(slug);
     setItems(c);
