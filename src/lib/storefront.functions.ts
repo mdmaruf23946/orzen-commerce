@@ -631,13 +631,31 @@ export const listProductsByIds = createServerFn({ method: "GET" })
     const sb = publicClient();
     const { data: rows, error } = await sb
       .from("products")
-      .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id,product_type")
+      .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id,product_type,meta")
       .eq("store_id", data.storeId)
       .in("id", data.ids)
       .neq("status", "draft");
     if (error) throw new Error(error.message);
-    return (rows ?? []).map((p) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }));
+    return (rows ?? []).map((p) => {
+      const dg = ((p.meta ?? {}) as any)?.digital ?? {};
+      const files: any[] = Array.isArray(dg.files) ? dg.files : [];
+      const { meta: _meta, ...rest } = p as any;
+      return {
+        ...rest,
+        primary_image_url: imgUrl(p.primary_image_url),
+        digital:
+          p.product_type === "digital"
+            ? {
+                version: dg.version ?? null,
+                license_type: dg.license_type ?? "personal",
+                file_count: files.length,
+                total_size: files.reduce((a, f) => a + (Number(f?.size) || 0), 0),
+              }
+            : null,
+      };
+    });
   });
+
 
 
 
