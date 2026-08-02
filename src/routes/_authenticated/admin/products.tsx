@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ProductDialog } from "@/components/admin/product-form/ProductDialog";
+import { ServiceProductDialog } from "@/components/admin/product-form/service/ServiceProductDialog";
 import { AIProductBuilderDialog } from "@/components/admin/product-form/AIProductBuilderDialog";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
@@ -410,7 +411,23 @@ function ProductsPage() {
         )}
       </div>
 
-      {open && store && (
+      {open && store && (editing ? productTypeOf(editing) === "service" : newType === "service") && (
+        <ServiceProductDialog
+          storeId={store.id}
+          editing={editing}
+          categories={categories ?? []}
+          productDefaults={(store as any).product_defaults ?? null}
+          onClose={() => setOpen(false)}
+          onSave={async (data) => {
+            await save({ data });
+            qc.invalidateQueries({ queryKey: ["admin", "products"] });
+            toast.success("Saved");
+            setOpen(false);
+          }}
+        />
+      )}
+
+      {open && store && !(editing ? productTypeOf(editing) === "service" : newType === "service") && (
         <ProductDialog
           storeId={store.id}
           editing={editing}
@@ -426,6 +443,7 @@ function ProductsPage() {
           }}
         />
       )}
+
 
       {aiOpen && store && (
         <AIProductBuilderDialog

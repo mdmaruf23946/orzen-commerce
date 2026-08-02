@@ -132,7 +132,7 @@ export const generateProductDraft = createServerFn({ method: "POST" })
         data.productType === "digital"
           ? "It is a downloadable digital item: no shipping, weight or dimensions; describe file formats, what is included and licence terms."
           : data.productType === "service"
-            ? "It is a service booking: no shipping, weight or dimensions; describe scope, duration and what the customer receives."
+            ? "It is a bookable service (e.g. web development, design, cleaning, consultation): never mention shipping, weight, dimensions, stock or variants, and return variant_options as []. Describe the scope of work, the pricing approach (fixed, hourly or custom quote), the delivery timeline, what is included, what the customer must provide, and the concrete deliverables. Put included items in `includes`, customer requirements and deliverables in `features`, and use `specifications` for service facts such as Delivery time, Revisions, Support."
             : data.productType === "subscription"
               ? "It is a recurring subscription plan: no shipping, weight or dimensions; describe the billing cycle, plan benefits and renewal."
               : "It is a shippable physical product."
