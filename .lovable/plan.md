@@ -1,63 +1,72 @@
 ## Goal
 
-Turn the Store Admin Orders page into one unified screen for Physical, Digital, Service and Subscription orders — same layout everywhere, only stats / filters / cards / actions / details change per tab. The existing Physical workflow (courier, COD, tracking, invoice, statuses) is not touched at all.
+Turn the Products page into a unified multi-type manager (All / Physical / Digital / Service / Subscription) using the same layout language as Categories, Banners, Coupons and Orders — without changing the existing physical product workflow.
 
-## What exists today
+## Verified current state
 
-- `src/routes/_authenticated/admin/orders.tsx` — header, 4 KPIs, status tabs (All/Pending/…/Returned), search + filter popover, `OrderCard` list.
-- `src/components/admin/orders/OrderCard.tsx` — card with courier/parcel/payment badges and quick actions.
-- `src/lib/orders-admin.functions.ts` — single `listAdminOrders` payload builder.
-- `src/components/admin/OrderDetailsDrawer.tsx` — order details.
-- Products already carry `product_type` = physical | digital | service | subscription.
-- Digital admin operations already exist in `src/lib/digital-admin.functions.ts` (access on/off, resend email, regenerate license, audit events).
-- The `orders` table has no order-type or confirmation columns yet; `stores` has per-area jsonb settings columns (marketing, delivery, notifications…), so confirmation preferences fit that same pattern.
+- `products.product_type` already exists as a real column and `upsertProduct` already writes it (`physical | digital | service | subscription`), so no migration is needed for filtering.
+- The product form already fully supports Digital (files, license, download rules); Service and Subscription are present but disabled ("Coming Soon").
+- The Products page today has no header component, no tabs, no search, no filters — just a title, an Add Product dropdown (Manual / AI) and a flat list. Bulk actions already exist (delete, category, price, stock, status).
+- Shared layout pieces already exist: `AdminPageHeader`, `TypeFilterTabs`, `AdminToolbar`.
 
 ## Plan
 
-### 1. Data (one migration)
+### 1. Page shell (matches Categories/Banners/Coupons/Orders)
 
-- `orders.order_type` (text, default `physical`) — set on order creation from the cart's product types (mixed cart → `physical`), plus a one-time backfill from existing `order_items → products.product_type`.
-- `orders.confirmation_status` (text, default `pending`) and `orders.confirmed_at` — used only by digital/service/subscription.
-- `orders.fulfillment_meta` (jsonb) — booking date/time + assigned staff for service, plan / billing cycle / renewal date / subscription state for subscription. No new tables, so the model stays open for future types.
-- `stores.order_confirmation` (jsonb) — `{ digital: "auto"|"manual", service: …, subscription: … }`, default auto for digital, manual for service and subscription.
-- Grants + RLS follow the existing orders policies (store-owner scoped).
+- `AdminPageHeader` with title, description and the Add Product action.
+- Sticky `TypeFilterTabs`: All | Physical | Digital | Service | Subscription, each with a live count. Default tab: **Physical**.
+- `AdminToolbar` search below the tabs, then filters, then the list. Tab switching only re-filters the already-loaded list — no page reload, no refetch.
 
-### 2. Confirmation engine
+### 2. Search and filters
 
-- A shared server helper decides, after a successful payment, whether to auto-confirm: reads the store's `order_confirmation` preference for that order type.
-  - Auto → mark confirmed and run the type action (digital: grant access via the existing activation path; service: booking confirmed; subscription: activated).
-  - Manual → stays pending until the admin presses **Confirm**, which runs the same action.
-- Wired into the existing payment webhook / activation path only for non-physical orders; the physical branch keeps its current behaviour.
-- New server fns in a `orders-types.functions.ts` module: `confirmOrder`, `scheduleService`, `completeService`, `extendSubscription`, `cancelSubscription`.
+- One search box for all types, matching name, SKU, category name and product type.
+- Filter row: Status (active / draft / out of stock), Category, Price range, and sort by Newest / Oldest. Filters apply within the active tab.
 
-### 3. Orders page shell
+### 3. Add Product dropdown
 
-- Add a product-type nav directly under the header, reusing the existing `TypeFilterTabs` pill component used on Categories/Banners/Coupons: `All | Physical | Digital | Service | Subscription`, default **All**, with counts.
-- Everything below is driven by a per-type config object (stats, filters, card renderer, actions, details panel) so a future type is one config entry, not a redesign.
-- **All** tab shows every order together; each card shows a small type badge.
+Replace the current Manual / AI dropdown with:
 
-### 4. Per-type behaviour
+- Physical Product, Digital Product, Service, Subscription — each opens the product form pre-set to that type (type locked to the chosen value on create).
+- AI Assistant stays as a separate entry at the bottom (physical/digital only).
 
-- **Physical** — current KPIs, current status tabs, current filters, current `OrderCard`. Unchanged code path.
-- **Digital** — KPIs: Today's sales, Revenue, Pending, Confirmed, Downloaded. Filters: payment status, confirmation status, access status, purchase date. Card hides address/courier/tracking/COD, shows email, product, payment + confirmation + access status. Actions: View, Invoice, Grant Access, Resend Download Email, Copy Download Link, Refund, More.
-- **Service** — KPIs: New requests, Pending, Confirmed, Completed. Filters: booking date, confirmation status, assigned staff. Card: customer, service name, booking date/time, payment + confirmation. Actions: View, Schedule, Confirm, Complete, Invoice.
-- **Subscription** — KPIs: Active, Pending, Confirmed, Expiring soon. Filters: active / pending / expired / renewal. Card: customer, plan, billing cycle, renewal date, payment + confirmation + subscription status. Actions: View, Extend, Cancel, Invoice.
+### 4. Product cards
 
-### 5. Order details + timeline
+One shared card shell; only the meta line changes per type. Every card keeps thumbnail, name, a type badge, status, Edit and Delete, plus the bulk-select checkbox.
 
-- `OrderDetailsDrawer` gains a type-aware section:
-  - Digital: gateway, transaction id, confirmation + access status, download count / remaining, license key, invoice (reuses `getOrderDigitalAdmin`).
-  - Service: service details, appointment, confirmation, payment.
-  - Subscription: plan, billing cycle, renewal date, status, payment history.
-- A shared vertical timeline component renders the per-type step ladder (created → paid → pending/confirmed → access/appointment/activated → completed).
+- Physical — exactly the current line (price, stock, status). Untouched.
+- Digital — price, access type, download count. No stock.
+- Service — starting price, booking type, estimated delivery time. No stock.
+- Subscription — billing cycle, active subscribers. No stock.
 
-### 6. Store Settings
+### 5. Live metrics
 
-- New "Order Confirmation Settings" section in Store Settings with Auto / Manual radios for Digital, Service and Subscription, saved to `stores.order_confirmation` through the existing `SettingsPage` wrapper pattern.
+`listMyProducts` returns two extra maps in one round trip:
+
+- Download count per digital product from `digital_downloads`.
+- Active subscriber count per subscription product from confirmed subscription orders (`orders.order_type = 'subscription'` joined through `order_items`).
+
+### 6. Service & Subscription minimal fields
+
+Enable both options in the product form and add a small type-specific card in the form, stored in `products.meta` (no migration):
+
+- Service: booking type (instant / scheduled / request), estimated delivery time (free text, e.g. "2-3 days").
+- Subscription: billing cycle (monthly / quarterly / yearly / lifetime).
+- Both hide the physical-only sections (stock, shipping) the same way Digital already does.
+
+### 7. Bulk actions
+
+Keep the existing bar and add Enable / Disable (status active / draft) alongside Select All, Delete and Change Category. Select All applies to the visible (filtered) list only.
+
+### 8. Empty states
+
+Per-type empty state, e.g. "No Digital Products Found" with a button that opens the form for that type directly.
+
+### 9. Mobile
+
+Horizontally scrollable tabs, sticky search, full-width touch targets (min 40px), stacked card meta.
 
 ## Technical notes
 
-- One migration; all new columns nullable/defaulted so existing rows and the physical flow keep working untouched.
-- Orders list payload extended in `orders-admin.functions.ts` with `order_type`, `confirmation_status`, digital access summary, and service/subscription meta — one round trip, no per-card fetching.
-- Type-specific card bodies live in `src/components/admin/orders/` next to the untouched `OrderCard`, selected by a registry map.
-- Service and Subscription have no product-side booking/plan UI yet; the orders page reads whatever the checkout stores in `fulfillment_meta`, and admins can set booking/renewal values from the Schedule/Extend actions.
+- Files touched: `src/routes/_authenticated/admin/products.tsx` (rewritten around the shared shell), `src/components/admin/product-form/ProductDialog.tsx` (enable service/subscription, add the two small field cards, accept an initial type), `src/lib/admin.functions.ts` (metrics in `listMyProducts`), plus a new `src/components/admin/products/ProductRow.tsx` for the per-type card body.
+- No database migration: `product_type` exists, service/subscription extras live in `meta`.
+- Physical rendering, saving, variants, import/export and AI builder paths stay byte-identical in behaviour.
