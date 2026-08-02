@@ -253,6 +253,8 @@ function OrderConfirmation() {
           </div>
         ) : null}
       </div>
+      )}
+
 
       <PaymentTimeline orderId={order.id} refreshKey={String((order as any).payment_status ?? "")} />
 
