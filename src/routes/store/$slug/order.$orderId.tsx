@@ -48,6 +48,14 @@ function OrderConfirmation() {
   const { data: order } = useSuspenseQuery(orderQuery(orderId));
   const qc = useQueryClient();
   const verifyPay = useServerFn(verifyOrderPayment);
+  const listDigital = useServerFn(getOrderDigitalAccess);
+  const { data: digitalItems = [] } = useQuery({
+    queryKey: ["digitalAccess", orderId],
+    queryFn: () => listDigital({ data: { orderId } }),
+    refetchInterval: (q) =>
+      ((q.state.data as any[]) ?? []).some((d) => d.status !== "active") ? 10_000 : false,
+  });
+
   // Safety net: if the gateway webhook never arrived, ask the provider
   // directly when the shopper lands back on this page.
   useEffect(() => {
