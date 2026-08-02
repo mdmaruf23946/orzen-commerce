@@ -106,51 +106,42 @@ function CouponsPage() {
     toast.success("Deleted");
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Coupons</h1>
-        <Button onClick={startNew}><Plus className="mr-1 h-4 w-4" />New coupon</Button>
-      </div>
+  const addBtn = (
+    <Button onClick={startNew}>
+      <Plus className="mr-1 h-4 w-4" />
+      New coupon
+    </Button>
+  );
 
-      <div className="space-y-3">
-        <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
-          {TABS.map((t) => {
-            const active = t.key === tab;
-            return (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() => setTab(t.key)}
-                className={cn(
-                  "shrink-0 rounded-full border px-3.5 py-1.5 text-sm transition-colors",
-                  active
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "bg-background text-muted-foreground hover:bg-muted",
-                )}
-              >
-                {t.label}
-              </button>
-            );
-          })}
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search coupons…" className="pl-9" />
-          </div>
+  return (
+    <div className="space-y-4 sm:space-y-5">
+      <AdminPageHeader
+        title="Coupons"
+        description="Discount and promo codes for your store."
+        action={addBtn}
+      />
+
+      <TypeFilterTabs tabs={TABS} value={tab} onChange={setTab} />
+
+      <AdminToolbar
+        value={q}
+        onChange={setQ}
+        placeholder="Search coupons…"
+        action={addBtn}
+        trailing={
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as SortKey)}
-            className="h-9 w-full rounded-md border bg-background px-3 text-sm sm:w-40"
+            className="h-10 w-full rounded-md border bg-background px-3 text-sm sm:w-40"
             aria-label="Sort coupons"
           >
             {SORTS.map((s) => (
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
-        </div>
-      </div>
+        }
+      />
+
 
       <div key={tab} className="animate-in fade-in-0 slide-in-from-bottom-1 duration-200">
         {visible.length === 0 ? (
