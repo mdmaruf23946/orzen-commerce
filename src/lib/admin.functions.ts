@@ -1748,3 +1748,26 @@ export const listPublicCourierProviders = createServerFn({ method: "GET" })
     return (data ?? []) as Array<{ code: string; name: string; logo_url: string | null; wordmark_url: string | null; is_active: boolean }>;
   });
 
+
+// ---------- PRODUCT TYPE SCOPE COUNTS ----------
+export const typeScopeCounts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ entity: z.enum(["products", "categories", "coupons", "banners", "orders"]) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    const empty = { all: 0, physical: 0, digital: 0, service: 0, subscription: 0 } as Record<string, number>;
+    if (!store) return empty;
+    const col = data.entity === "orders" ? "order_type" : "product_type";
+    const { data: rows, error } = await supabase.from(data.entity as any).select(col).eq("store_id", store.id);
+    if (error) throw new Error(error.message);
+    const counts = { ...empty };
+    for (const r of (rows ?? []) as any[]) {
+      const t = (r[col] ?? "physical") as string;
+      counts.all += 1;
+      if (t in counts) counts[t] += 1;
+    }
+    return counts;
+  });
