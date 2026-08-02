@@ -940,6 +940,19 @@ export const placeOrder = createServerFn({ method: "POST" })
       .insert(itemRows.map((r) => ({ ...r, order_id: order.id })));
     if (iErr) throw new Error(iErr.message);
 
+    // Digital fulfilment: create the entitlements now (locked), and unlock
+    // straight away when there is nothing to pay.
+    if (hasDigital) {
+      try {
+        const { grantDigitalAccess, activateDigitalAccess } = await import("@/lib/digital.server");
+        const orderTotal = subtotal + delivery_amount - discount_amount;
+        if (orderTotal <= 0) await activateDigitalAccess(sb as any, order.id);
+        else await grantDigitalAccess(sb as any, order.id);
+      } catch { /* non-fatal */ }
+    }
+
+
+
 
     if (coupon_id) {
       await sb.from("coupon_redemptions").insert({
