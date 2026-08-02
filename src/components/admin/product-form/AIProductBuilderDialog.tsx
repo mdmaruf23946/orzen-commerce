@@ -759,6 +759,7 @@ function buildEditingLike(
     specifications: draft.specifications ?? [],
     variants,
     related_product_ids: [],
+    product_type: productType,
     meta,
   } as any;
 }
