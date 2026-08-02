@@ -19,6 +19,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { cn } from "@/lib/utils";
+import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
+import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
+import { AdminToolbar } from "@/components/admin/page/AdminToolbar";
 
 export const Route = createFileRoute("/_authenticated/admin/categories")({
   component: CategoriesPage,
@@ -140,50 +143,30 @@ function CategoriesPage() {
 
   const activeType: string = tab === "all" ? "physical" : tab;
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Categories</h1>
-          <p className="text-xs text-muted-foreground">Drag to reorder. Toggle visibility with the eye icon.</p>
-        </div>
-        <Button onClick={startNew}>
-          <Plus className="mr-1 h-4 w-4" />
-          Add category
-        </Button>
-      </div>
+  const addBtn = (
+    <Button onClick={startNew}>
+      <Plus className="mr-1 h-4 w-4" />
+      Add category
+    </Button>
+  );
 
-      <div className="space-y-3">
-        <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
-          {TABS.map((t) => {
-            const active = t.key === tab;
-            return (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() => setTab(t.key)}
-                className={cn(
-                  "shrink-0 rounded-full border px-3.5 py-1.5 text-sm transition-colors",
-                  active
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "bg-background text-muted-foreground hover:bg-muted",
-                )}
-              >
-                {t.label}
-              </button>
-            );
-          })}
-        </div>
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search categories…"
-            className="pl-9"
-          />
-        </div>
-      </div>
+  return (
+    <div className="space-y-4 sm:space-y-5">
+      <AdminPageHeader
+        title="Categories"
+        description="Drag to reorder. Toggle visibility with the eye icon."
+        action={addBtn}
+      />
+
+      <TypeFilterTabs tabs={TABS} value={tab} onChange={setTab} />
+
+      <AdminToolbar
+        value={q}
+        onChange={setQ}
+        placeholder="Search categories…"
+        action={addBtn}
+      />
+
 
       <div key={tab} className="animate-in fade-in-0 slide-in-from-bottom-1 overflow-hidden rounded-xl border bg-card duration-200">
         {visible.length === 0 ? (
