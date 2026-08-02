@@ -219,6 +219,18 @@ export function AIProductBuilderDialog({
       weight_g: essWeight ? Number(essWeight) : undefined,
     };
     const editingLike = buildEditingLike(draftResult, { youtubeUrl, facebookUrl }, essentials, productType);
+    if (productType === "subscription") {
+      return (
+        <SubscriptionProductDialog
+          storeId={storeId}
+          editing={editingLike}
+          categories={categories}
+          productDefaults={productDefaults}
+          onClose={onClose}
+          onSave={onSave}
+        />
+      );
+    }
     return (
       <ProductDialog
         storeId={storeId}
@@ -231,6 +243,7 @@ export function AIProductBuilderDialog({
       />
     );
   }
+
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -713,6 +726,52 @@ function buildEditingLike(
       includes: draft.includes,
     },
   };
+
+  // Subscription drafts prefill the dedicated subscription form's metadata.
+  if (productType === "subscription") {
+    const specs = draft.specifications ?? [];
+    const specVal = (needle: string) =>
+      specs.find((s) => s.key?.toLowerCase().includes(needle))?.value?.toLowerCase() ?? "";
+    const cycleRaw = specVal("billing") || specVal("cycle");
+    const cycle =
+      (["weekly", "quarterly", "yearly", "lifetime"] as const).find((c) => cycleRaw.includes(c)) ??
+      (cycleRaw.includes("half") ? "half_yearly" : cycleRaw.includes("annual") ? "yearly" : "monthly");
+    const planRaw = specVal("plan type");
+    const planType =
+      (["business", "enterprise"] as const).find((p) => planRaw.includes(p)) ?? "individual";
+    meta.subscription = {
+      billing_cycle: cycle,
+      custom_cycle: { number: null, unit: "months" },
+      plan_type: planType,
+      badge: null,
+      setup_fee: null,
+      tax_included: false,
+      renewal_price_mode: "same",
+      renewal_price: null,
+      trial: { enabled: false, duration: 7, unit: "days" },
+      activation: { type: "automatic", delay_hours: null },
+      access_items: (draft.includes ?? []).map((label) => ({ label })),
+      usage_limits: [],
+      benefits: (draft.features ?? []).map((title) => ({ title })),
+      renewal: {
+        mode: "automatic",
+        allow_upgrade: true,
+        allow_downgrade: false,
+        upgrade_rules: "",
+        grace_period_days: 3,
+        renewal_reminder_days: 7,
+        expiry_reminder_days: 3,
+        renewal_discount: null,
+        upgrade_discount: null,
+      },
+      customer_fields: [],
+      media: { preview_images: [], promo_video: null, documents: [] },
+      flags: {},
+      publish_at: null,
+      policies: {},
+    };
+  }
+
 
   // Build the variants object if the AI proposed options.
   const options = (draft.variant_options ?? []).filter((v) => v.name && v.values.length > 0);

@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ProductDialog } from "@/components/admin/product-form/ProductDialog";
 import { ServiceProductDialog } from "@/components/admin/product-form/service/ServiceProductDialog";
+import { SubscriptionProductDialog } from "@/components/admin/product-form/subscription/SubscriptionProductDialog";
+
 import { AIProductBuilderDialog } from "@/components/admin/product-form/AIProductBuilderDialog";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
@@ -427,13 +429,12 @@ function ProductsPage() {
         />
       )}
 
-      {open && store && !(editing ? productTypeOf(editing) === "service" : newType === "service") && (
-        <ProductDialog
+      {open && store && (editing ? productTypeOf(editing) === "subscription" : newType === "subscription") && (
+        <SubscriptionProductDialog
           storeId={store.id}
           editing={editing}
           categories={categories ?? []}
           productDefaults={(store as any).product_defaults ?? null}
-          initialType={newType}
           onClose={() => setOpen(false)}
           onSave={async (data) => {
             await save({ data });
@@ -443,6 +444,26 @@ function ProductsPage() {
           }}
         />
       )}
+
+      {open &&
+        store &&
+        !["service", "subscription"].includes(editing ? productTypeOf(editing) : newType) && (
+          <ProductDialog
+            storeId={store.id}
+            editing={editing}
+            categories={categories ?? []}
+            productDefaults={(store as any).product_defaults ?? null}
+            initialType={newType}
+            onClose={() => setOpen(false)}
+            onSave={async (data) => {
+              await save({ data });
+              qc.invalidateQueries({ queryKey: ["admin", "products"] });
+              toast.success("Saved");
+              setOpen(false);
+            }}
+          />
+        )}
+
 
 
       {aiOpen && store && (

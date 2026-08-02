@@ -134,7 +134,8 @@ export const generateProductDraft = createServerFn({ method: "POST" })
           : data.productType === "service"
             ? "It is a bookable service (e.g. web development, design, cleaning, consultation): never mention shipping, weight, dimensions, stock or variants, and return variant_options as []. Describe the scope of work, the pricing approach (fixed, hourly or custom quote), the delivery timeline, what is included, what the customer must provide, and the concrete deliverables. Put included items in `includes`, customer requirements and deliverables in `features`, and use `specifications` for service facts such as Delivery time, Revisions, Support."
             : data.productType === "subscription"
-              ? "It is a recurring subscription plan: no shipping, weight or dimensions; describe the billing cycle, plan benefits and renewal."
+              ? "It is a recurring subscription plan (SaaS, membership, premium content, course access, hosting, support, VIP community, cloud storage, product box, newsletter, etc.). Never mention shipping, weight, dimensions, stock or variants, and return variant_options as []. Describe the billing cycle, who the plan is for, what the subscriber unlocks, and renewal terms. Put membership benefits in `features`, unlocked access items in `includes`, and use `specifications` for plan facts such as Billing cycle, Plan type, Free trial, Usage limits, Renewal. Suggested prices are the recurring price per billing cycle."
+
               : "It is a shippable physical product."
       }`,
     ].join("\n");
