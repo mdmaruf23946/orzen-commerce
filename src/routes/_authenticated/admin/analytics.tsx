@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { businessAnalytics } from "@/lib/business.functions";
 import { AdSlot } from "@/components/admin/AdSlot";
+import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
+import { useProductTypeScope, scopeTabs } from "@/lib/product-type-scope";
 
 export const Route = createFileRoute("/_authenticated/admin/analytics")({
   component: () => <FeatureGate feature="analytics"><AnalyticsPage /></FeatureGate>,
@@ -24,9 +26,20 @@ function Sparkline({ data }: { data: number[] }) {
 
 function AnalyticsPage() {
   const a = useServerFn(businessAnalytics);
-  const { data } = useQuery({ queryKey: ["analytics"], queryFn: () => a() });
+  const { scope, setScope, filter } = useProductTypeScope();
+  const { data } = useQuery({
+    queryKey: ["analytics", filter ?? "all"],
+    queryFn: () => a({ data: { product_type: filter } } as any),
+  });
+  const tabs = scopeTabs({});
 
-  if (!data) return <div className="text-sm text-muted-foreground">Loading…</div>;
+  if (!data)
+    return (
+      <div className="space-y-4">
+        <TypeFilterTabs tabs={tabs.map((t) => ({ key: t.key, label: t.label.replace(/ \(0\)$/, "") }))} value={scope} onChange={(k) => setScope(k as any)} />
+        <div className="text-sm text-muted-foreground">Loading…</div>
+      </div>
+    );
 
   const totalCustomers = data.newCustomers + data.returningCustomers;
   const returningPct = totalCustomers ? ((data.returningCustomers / totalCustomers) * 100).toFixed(0) : "0";
@@ -34,6 +47,11 @@ function AnalyticsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Business Analytics</h1>
+      <TypeFilterTabs
+        tabs={tabs.map((t) => ({ key: t.key, label: t.label.replace(/ \(0\)$/, "") }))}
+        value={scope}
+        onChange={(k) => setScope(k as any)}
+      />
 
       <section>
         <h2 className="mb-2 text-sm font-semibold uppercase text-muted-foreground">Sales</h2>
