@@ -396,6 +396,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                   <Button type="submit" size="sm" variant="outline" disabled={savingCourier}>{savingCourier ? "Saving…" : "Update courier"}</Button>
                 </form>
               </Section>
+              )}
 
               {/* Notes */}
               <Section icon={ScrollText} title="Internal Notes">
