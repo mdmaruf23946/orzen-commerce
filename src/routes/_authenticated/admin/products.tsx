@@ -27,6 +27,8 @@ import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
 import { AdminToolbar } from "@/components/admin/page/AdminToolbar";
 import { ProductRow, productTypeOf, type ProductType } from "@/components/admin/products/ProductRow";
+import { typeScopeCounts } from "@/lib/admin.functions";
+import { useProductTypeScope, scopeTabs, type ProductTypeScope } from "@/lib/product-type-scope";
 
 export const Route = createFileRoute("/_authenticated/admin/products")({
   component: ProductsPage,
@@ -39,7 +41,7 @@ export const Route = createFileRoute("/_authenticated/admin/products")({
 });
 
 type Product = Awaited<ReturnType<typeof listMyProducts>>[number];
-type TabKey = "all" | ProductType;
+type TabKey = ProductTypeScope;
 
 const TYPES: ProductType[] = ["physical", "digital", "service", "subscription"];
 const TYPE_LABEL: Record<ProductType, string> = {
@@ -60,12 +62,24 @@ function ProductsPage() {
   const bulkDel = useServerFn(bulkDeleteProducts);
   const storeFn = useServerFn(getMyStore);
   const catsFn = useServerFn(listMyCategories);
+  const countsFn = useServerFn(typeScopeCounts);
   const qc = useQueryClient();
-  const { data: products } = useQuery({ queryKey: ["admin", "products"], queryFn: () => list() });
+  const { scope, setScope, filter, activeType: scopeType } = useProductTypeScope();
+  const tab = scope;
+  const { data: products } = useQuery({
+    queryKey: ["admin", "products", filter ?? "all"],
+    queryFn: () => list({ data: { product_type: filter } } as any),
+  });
   const { data: store } = useQuery({ queryKey: ["admin", "store"], queryFn: () => storeFn() });
-  const { data: categories } = useQuery({ queryKey: ["admin", "categories"], queryFn: () => catsFn() });
+  const { data: categories } = useQuery({
+    queryKey: ["admin", "categories", filter ?? "all"],
+    queryFn: () => catsFn({ data: { product_type: filter } } as any),
+  });
+  const { data: typeCounts } = useQuery({
+    queryKey: ["admin", "counts", "products"],
+    queryFn: () => countsFn({ data: { entity: "products" } }),
+  });
 
-  const [tab, setTab] = useState<TabKey>("all");
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -85,19 +99,9 @@ function ProductsPage() {
     return m;
   }, [categories]);
 
-  const counts = useMemo(() => {
-    const c: Record<string, number> = { all: all.length, physical: 0, digital: 0, service: 0, subscription: 0 };
-    for (const p of all) c[productTypeOf(p)] = (c[productTypeOf(p)] ?? 0) + 1;
-    return c;
-  }, [all]);
+  const counts = typeCounts ?? { all: all.length, physical: 0, digital: 0, service: 0, subscription: 0 };
 
-  const tabs = useMemo(
-    () => [
-      { key: "all" as TabKey, label: `All (${counts.all})` },
-      ...TYPES.map((t) => ({ key: t as TabKey, label: `${TYPE_LABEL[t]} (${counts[t] ?? 0})` })),
-    ],
-    [counts],
-  );
+  const tabs = useMemo(() => scopeTabs(counts as Record<string, number>), [counts]);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -120,7 +124,7 @@ function ProductsPage() {
   }, [all, tab, q, statusFilter, categoryFilter, sort, catName]);
 
   const stats = useMemo(() => {
-    const rows = tab === "all" ? all : all.filter((p) => productTypeOf(p) === tab);
+    const rows = all;
     const active = rows.filter((p) => p.status === "active").length;
     const base = [
       { label: "Total", value: rows.length, icon: Package },
@@ -204,7 +208,7 @@ function ProductsPage() {
 
   const allChecked = filtered.length > 0 && selected.size === filtered.length;
 
-  const activeType: ProductType = tab === "all" ? "physical" : (tab as ProductType);
+  const activeType: ProductType = scopeType;
   const typeNoun =
     activeType === "subscription" ? "Subscription Plan" : activeType === "service" ? "Service" : `${TYPE_LABEL[activeType]} Product`;
 
@@ -247,7 +251,8 @@ function ProductsPage() {
         tabs={tabs}
         value={tab}
         onChange={(k) => {
-          setTab(k);
+          setScope(k);
+          setCategoryFilter("");
           setSelected(new Set());
         }}
       />
