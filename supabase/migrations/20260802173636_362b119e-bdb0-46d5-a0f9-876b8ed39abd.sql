@@ -1,0 +1,1 @@
+UPDATE public.categories SET product_type = 'physical' WHERE product_type IS NULL OR product_type::text = 'both';
