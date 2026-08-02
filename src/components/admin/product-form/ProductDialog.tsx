@@ -45,7 +45,10 @@ type ProductMeta = {
   visibility?: { scheduled_at?: string | null };
   ai_ready?: { description?: boolean; enhance?: boolean; bg_removal?: boolean; seo?: boolean };
   digital?: DigitalMeta;
+  service?: { booking_type?: "instant" | "scheduled" | "request"; delivery_time?: string | null };
+  subscription?: { billing_cycle?: "monthly" | "quarterly" | "yearly" | "lifetime" };
 };
+
 
 type DigitalMeta = {
   files?: DigitalFile[];
