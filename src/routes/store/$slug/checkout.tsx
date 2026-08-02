@@ -304,6 +304,22 @@ function CheckoutPage() {
             <Input id="phone" required value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
           <div className="space-y-1.5">
+            <Label htmlFor="email">Email {hasDigital ? "" : "(optional)"}</Label>
+            <Input
+              id="email"
+              type="email"
+              required={hasDigital}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+            />
+            {hasDigital ? (
+              <p className="text-xs text-muted-foreground">
+                Your cart contains a digital item — download links are sent to this email.
+              </p>
+            ) : null}
+          </div>
+          <div className="space-y-1.5">
             <Label htmlFor="address">Address</Label>
             <Textarea id="address" required value={address} onChange={(e) => setAddress(e.target.value)} />
           </div>
