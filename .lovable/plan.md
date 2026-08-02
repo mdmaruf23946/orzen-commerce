@@ -1,46 +1,59 @@
-# Service Product Creation Form
+# Subscription Product Creation Form (15-step wizard)
 
-Today a service is created through the shared `ProductDialog`, which just hides inventory/shipping/variants tabs and offers two service fields (booking type, delivery time) stored in `meta.service`. The upgrade is a dedicated Service form with its own 12 steps, rendered instead of the shared form whenever the product type is `service`.
+Build a dedicated Subscription form that mirrors the proven Service form architecture (`src/components/admin/product-form/service/`), fully isolated from Physical, Digital and Service fields. All subscription-specific data is stored under `products.meta.subscription`, so no schema migration is required.
 
-## 1. Dedicated form
+## What gets built
 
-New `src/components/admin/product-form/service/ServiceProductDialog.tsx`, rendered by `products.tsx` (and edit actions) when the active type is `service`; the shared `ProductDialog` keeps handling physical/digital/subscription untouched.
+**1. `src/components/admin/product-form/subscription/subscription-meta.ts`**
+Type definitions + label maps for the whole subscription model:
+- `billing_cycle`: weekly | monthly | quarterly | half_yearly | yearly | lifetime | custom, plus `custom_cycle { number, unit: days|weeks|months|years }`
+- `plan_type`: individual | business | enterprise | custom; `badge` (Most Popular, Best Value, Recommended, Limited Offer, custom text)
+- pricing: `setup_fee`, `tax_included`, `renewal_price_mode` (same | different) + `renewal_price`
+- trial: `enabled`, `duration`, `unit`; activation: `automatic | manual | scheduled` + `activation_delay`
+- `access_items[]` (label + optional note) — unlimited access rules
+- `usage_limits[]` (metric, unlimited flag, limit value, reset period daily|weekly|monthly|never)
+- `benefits[]` (title + description)
+- renewal/upgrade: `renewal_mode`, `allow_upgrade`, `allow_downgrade`, `upgrade_rules`, `grace_period_days`, `renewal_reminder_days`, `expiry_reminder_days`, `renewal_discount`, `upgrade_discount`
+- `customer_fields[]` (label, type text|email|url, required)
+- `media` (preview images, promo video, documentation file URLs)
+- `seo` (meta title, description, slug, keywords)
+- `flags` (featured, popular, recommended, new, limited_offer) + `publish_at`
+- `policies` (refund, cancellation, renewal, terms, warranty)
+- `notifications` (welcome, payment_success, trial_ending, renewal_reminder, expiration_reminder, activated, cancelled — each boolean)
 
-It reuses the existing wizard shell, `Field`, `ImageUploader`, `GalleryUploader`, `RichTextEditor`, sonner toasts and the same `onSave` contract, so validation, saving and the ORZEN mobile-first look stay identical.
+Backwards compatible with the existing `meta.subscription.billing_cycle` value written by the current inline form.
 
-Repeatable-list UI (included items, requirements, deliverables, add-ons, FAQ) comes from one small shared `RepeatableList` component in the same folder.
+**2. `src/components/admin/product-form/subscription/SubscriptionProductDialog.tsx`**
+A 15-step wizard reusing the existing shared primitives from `service/ui.tsx` (`Field`, `StepCard`, `RepeatableList`, wizard shell with progress + prev/next, `selectCls`) and existing `ImageUploader`, `GalleryUploader`, `RichTextEditor`, shadcn `Switch`/`Badge`/`Dialog`.
 
-## 2. Steps
+Steps: General → Subscription Plan → Pricing → Trial & Activation → Access Control → Usage Limits → Benefits → Upgrade & Renewal → Customer Information → Media → SEO → Visibility → Policies → Notifications → Review & Publish.
 
-1. **General** — name*, category*, subcategory, brand/provider, short + full description, thumbnail, gallery, intro video URL, status (draft/active)
-2. **Pricing** — regular price, sale price, pricing type (fixed / starting from / hourly / daily / weekly / monthly / custom quote), enable discount, tax included, featured
-3. **Delivery** — estimated delivery time + unit (hours/days/weeks), express delivery toggle + fee, availability (available / busy / fully booked / temporarily closed), max orders + period
-4. **Service details** — Included services, Customer requirements, Deliverables (all unlimited repeatable)
-5. **Booking & workflow** — booking type (instant / request first / appointment / manual approval); when appointment: working days, working hours, slot duration, buffer time
-6. **Media** — featured image, gallery, portfolio images, before/after pairs, demo video
-7. **Add-ons** — unlimited { name, price, description }
-8. **FAQ** — unlimited { question, answer }
-9. **SEO** — meta title, meta description, slug, keywords
-10. **Visibility** — featured / best seller / recommended / new service switches, publish now or schedule
-11. **Policies** — refund, cancellation, service terms, warranty
-12. **Review** — read-only summary of every step, footer actions Save Draft / Preview / Publish Service
+- Categories come from the already type-scoped `listMyCategories` (subscription only), with a subcategory select derived from `parent_id`.
+- Footer actions on the final step: **Save Draft**, **Preview** (opens the storefront PDP in a new tab for saved products), **Publish Subscription**.
+- No stock, shipping, variants, weight, digital files or service booking fields anywhere.
+- Mobile-first: single-column stacked fields, horizontally scrollable step rail, sticky action bar.
 
-Custom-quote pricing hides price inputs and marks the product as quote-only. No physical, digital or subscription field appears anywhere in this form.
+**3. Shared wizard rename (light refactor)**
+`service/ui.tsx` exports `ServiceWizard`; re-export it as a neutral `FormWizard` so both forms share it without duplicating code. The Service form keeps working unchanged.
 
-## 3. Data model
+**4. `src/routes/_authenticated/admin/products.tsx`**
+Route to `SubscriptionProductDialog` when the active type (tab-driven) is `subscription`, exactly as `ServiceProductDialog` is routed today; `ProductDialog` keeps handling physical/digital.
 
-No migration. Everything lands in the existing `products` row: `name`, `description`, `short_description`, `price`, `old_price`, `category_id`, `image_url`, `gallery`, `status`, `product_type = 'service'`, plus a richer `meta.service` object holding pricing_type, delivery, availability, booking, included/requirements/deliverables, addons, faq, media, policies and visibility flags. `meta.seo` keeps using the existing shape so current SEO handling still works.
+**5. AI compatibility — `src/lib/ai-product-builder.functions.ts` + `AIProductBuilderDialog.tsx`**
+Add a subscription branch to the prompt/validator so the AI returns billing cycle, plan type, pricing (incl. renewal price), trial, benefits, access items and usage limits under `meta.subscription`, and never emits physical/digital/service fields. The dialog already inherits the active product type from the scope.
 
-Stock/shipping/variant columns are never written for services.
+**6. Storefront rendering — `src/components/storefront/pdp/SubscriptionInfoSections.tsx`**
+Mirrors `ServiceInfoSections.tsx`: billing cycle + renewal summary, benefits grid, what's included/access list, usage limits table and FAQ-style policies. Wired into `src/routes/store/$slug/product.$productId.tsx` when `product_type === "subscription"`.
 
-## 4. Isolation and integration
+## Integration with the rest of the system
 
-- Category and subcategory dropdowns already receive only same-type categories via the global Product Type Scope; the form inherits that scope and stamps `product_type: "service"`.
-- Because the row is a normal `products` row of type `service`, Service Orders, Coupons, Categories, Analytics and Search — all already scoped by `product_type` — pick it up with no extra work.
-- The storefront PDP and AI assistant read the new `meta.service` keys; the AI Product Builder prompt/validator gains service-only output (name, descriptions, pricing type, included items, requirements, deliverables, FAQ, SEO) and is blocked from emitting physical/digital/subscription fields.
+Subscription products already flow through the existing product-type isolation layer (`src/lib/product-type-scope.tsx` + scoped server fns), so Orders, Categories, Coupons, Analytics, dashboard counts and search are automatically subscription-only when the tab is active. This plan adds no cross-type leakage and changes no other product type's form.
+
+Note on scope: this delivers the form, its data model, AI support and storefront display. Runtime *behaviour* of renewals, upgrade/downgrade billing runs, entitlement enforcement and the automated notification emails are separate engines — the form stores their configuration and is ready for them, but wiring those background systems is not part of this task.
 
 ## Technical notes
 
-- New files: `service/ServiceProductDialog.tsx`, `service/RepeatableList.tsx`, `service/steps/*.tsx` (one file per step group to keep files small).
-- Edited: `src/routes/_authenticated/admin/products.tsx` (branch on type for create/edit), `src/lib/ai-product-builder.functions.ts` and `AIProductBuilderDialog.tsx` (service schema branch), `src/components/storefront` PDP service rendering for the new fields.
-- `ProductDialog.tsx` loses only its now-dead service branch; physical/digital/subscription behaviour is unchanged.
+- Storage: `products.meta.subscription` (jsonb) — no migration needed.
+- Price mapping follows the existing convention: sale price in `price`, regular price in `old_price` when a sale price is set.
+- Publish scheduling stored as `meta.subscription.publish_at` with status `draft` until then.
+- All new files stay under 500 lines by splitting steps into two co-located step-group components if needed.

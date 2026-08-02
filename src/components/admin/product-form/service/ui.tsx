@@ -98,6 +98,8 @@ export function ServiceWizard({
   onCancel,
   onSaveDraft,
   footerInfo,
+  entityLabel = "service",
+
 }: {
   tabs: ReadonlyArray<{ id: string; label: string; content: React.ReactNode }>;
   saving: boolean;
@@ -106,6 +108,9 @@ export function ServiceWizard({
   onCancel: () => void;
   onSaveDraft: () => void;
   footerInfo: React.ReactNode;
+  /** Noun used in the save/publish buttons — defaults to "service". */
+  entityLabel?: string;
+
 }) {
   const [rawStep, setStep] = useState(0);
   const total = tabs.length;
@@ -182,7 +187,7 @@ export function ServiceWizard({
                 Save draft
               </Button>
               <Button type="submit" size="sm" disabled={saving} className="flex-1 sm:flex-none sm:size-default">
-                {saving ? "Saving…" : editing ? "Save service" : "Publish service"}
+                {saving ? "Saving…" : editing ? `Save ${entityLabel}` : `Publish ${entityLabel}`}
               </Button>
             </>
           ) : (
@@ -200,3 +205,6 @@ export function ServiceWizard({
     </form>
   );
 }
+
+/** Neutral alias — shared by the Service and Subscription forms. */
+export const FormWizard = ServiceWizard;
