@@ -21,6 +21,7 @@ import { ImageUploader } from "@/components/admin/ImageUploader";
 import { cn } from "@/lib/utils";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
+import { useProductTypeScope } from "@/lib/product-type-scope";
 import { AdminToolbar } from "@/components/admin/page/AdminToolbar";
 
 export const Route = createFileRoute("/_authenticated/admin/categories")({
@@ -59,14 +60,21 @@ function CategoriesPage() {
   const reorder = useServerFn(reorderCategories);
   const storeFn = useServerFn(getMyStore);
   const qc = useQueryClient();
-  const { data: categories } = useQuery({ queryKey: ["admin", "categories"], queryFn: () => list() });
-  const { data: products } = useQuery({ queryKey: ["admin", "products"], queryFn: () => productsFn() });
+  const { scope, setScope, filter, activeType: scopeType } = useProductTypeScope();
+  const { data: categories } = useQuery({
+    queryKey: ["admin", "categories", filter ?? "all"],
+    queryFn: () => list({ data: { product_type: filter } } as any),
+  });
+  const { data: products } = useQuery({
+    queryKey: ["admin", "products", filter ?? "all"],
+    queryFn: () => productsFn({ data: { product_type: filter } } as any),
+  });
   const { data: store } = useQuery({ queryKey: ["admin", "store"], queryFn: () => storeFn() });
   const [editing, setEditing] = useState<Category | null>(null);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Category[]>([]);
   const [dragId, setDragId] = useState<string | null>(null);
-  const [tab, setTab] = useState<TabKey>("physical");
+  const tab = scope as TabKey;
   const [q, setQ] = useState("");
 
   useEffect(() => {
@@ -141,7 +149,7 @@ function CategoriesPage() {
     }
   }
 
-  const activeType: string = tab === "all" ? "physical" : tab;
+  const activeType: string = scopeType;
 
   const addBtn = (
     <Button onClick={startNew}>
@@ -158,7 +166,7 @@ function CategoriesPage() {
         action={addBtn}
       />
 
-      <TypeFilterTabs tabs={TABS} value={tab} onChange={setTab} />
+      <TypeFilterTabs tabs={TABS} value={tab} onChange={(k) => setScope(k)} />
 
       <AdminToolbar
         value={q}

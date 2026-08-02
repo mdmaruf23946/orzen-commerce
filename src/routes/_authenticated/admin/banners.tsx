@@ -20,6 +20,7 @@ import { ImageUploader } from "@/components/admin/ImageUploader";
 import { cn } from "@/lib/utils";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
+import { useProductTypeScope } from "@/lib/product-type-scope";
 import { AdminToolbar } from "@/components/admin/page/AdminToolbar";
 
 export const Route = createFileRoute("/_authenticated/admin/banners")({
@@ -80,17 +81,24 @@ function BannersPage() {
   const del = useServerFn(deleteBanner);
   const storeFn = useServerFn(getMyStore);
   const qc = useQueryClient();
-  const { data: banners } = useQuery({ queryKey: ["admin", "banners"], queryFn: () => list() });
-  const { data: categories } = useQuery({ queryKey: ["admin", "categories"], queryFn: () => cats() });
+  const { scope, setScope, filter, activeType: scopeType } = useProductTypeScope();
+  const { data: banners } = useQuery({
+    queryKey: ["admin", "banners", filter ?? "all"],
+    queryFn: () => list({ data: { product_type: filter } } as any),
+  });
+  const { data: categories } = useQuery({
+    queryKey: ["admin", "categories", filter ?? "all"],
+    queryFn: () => cats({ data: { product_type: filter } } as any),
+  });
   const { data: store } = useQuery({ queryKey: ["admin", "store"], queryFn: () => storeFn() });
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Banner | null>(null);
-  const [tab, setTab] = useState<TabKey>("physical");
+  const tab = scope as TabKey;
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<SortKey>("newest");
 
-  const activeType: string = tab === "all" ? "physical" : tab;
+  const activeType: string = scopeType;
 
   const typeCount = useMemo(
     () => (banners ?? []).filter((b) => typeOf(b) === activeType).length,
@@ -149,7 +157,7 @@ function BannersPage() {
         action={addBtn}
       />
 
-      <TypeFilterTabs tabs={TABS} value={tab} onChange={setTab} />
+      <TypeFilterTabs tabs={TABS} value={tab} onChange={(k) => setScope(k)} />
 
       <AdminToolbar
         value={q}

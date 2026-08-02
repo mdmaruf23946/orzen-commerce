@@ -79,17 +79,29 @@ export type AdminOrderRow = {
 /** Everything an order card needs, in one payload. */
 export const listAdminOrders = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<AdminOrderRow[]> => {
+  .inputValidator((d: unknown) =>
+    z
+      .object({ product_type: z.enum(["physical", "digital", "service", "subscription"]).optional() })
+      .parse(d ?? {}),
+  )
+  .handler(async ({ data: input, context }): Promise<AdminOrderRow[]> => {
     const { supabase, userId } = context;
     const sid = await myStoreId(supabase, userId);
     if (!sid) return [];
 
-    const { data: orders, error } = await supabase
+    let ordersQ = supabase
       .from("orders")
       .select(
         "id,invoice_no,customer_name,phone,email,address,area,status,payment_method,payment_status,payment_gateway_name,source,notes,created_at,allow_duplicate,subtotal,delivery_amount,discount_amount,courier_name,courier_code,courier_status,courier_tracking_id,order_type,confirmation_status,confirmed_at,fulfillment_meta",
       )
-      .eq("store_id", sid)
+      .eq("store_id", sid);
+    if (input?.product_type) {
+      ordersQ =
+        input.product_type === "physical"
+          ? ordersQ.or("order_type.is.null,order_type.eq.physical")
+          : ordersQ.eq("order_type", input.product_type);
+    }
+    const { data: orders, error } = await ordersQ
       .order("created_at", { ascending: false })
       .limit(500);
     if (error) throw new Error(error.message);

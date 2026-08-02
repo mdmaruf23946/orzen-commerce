@@ -259,15 +259,18 @@ export const updateMyStore = createServerFn({ method: "POST" })
 // ---------- PRODUCTS ----------
 export const listMyProducts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d: unknown) =>
+    z
+      .object({ product_type: z.enum(["physical", "digital", "service", "subscription"]).optional() })
+      .parse(d ?? {}),
+  )
+  .handler(async ({ data: input, context }) => {
     const { supabase, userId } = context;
     const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
     if (!store) return [];
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .eq("store_id", store.id)
-      .order("created_at", { ascending: false });
+    let q = supabase.from("products").select("*").eq("store_id", store.id);
+    if (input?.product_type) q = q.eq("product_type", input.product_type);
+    const { data, error } = await q.order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     const rows = data ?? [];
 
@@ -417,6 +420,21 @@ export const upsertProduct = createServerFn({ method: "POST" })
       product_type: data.product_type ?? "physical",
     } as any;
 
+    // Cross-type guard: a product may only reference a category of its own type.
+    if (data.category_id) {
+      const { data: cat } = await supabase
+        .from("categories")
+        .select("id, product_type")
+        .eq("id", data.category_id)
+        .eq("store_id", store.id)
+        .maybeSingle();
+      if (!cat) throw new Error("Category not found");
+      if ((cat as any).product_type && (cat as any).product_type !== (data.product_type ?? "physical")) {
+        throw new Error("Category belongs to a different product type");
+      }
+    }
+
+
 
 
     if (data.id) {
@@ -564,14 +582,18 @@ export const setOrderAllowDuplicate = createServerFn({ method: "POST" })
 // ---------- BANNERS ----------
 export const listMyBanners = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d: unknown) =>
+    z
+      .object({ product_type: z.enum(["physical", "digital", "service", "subscription"]).optional() })
+      .parse(d ?? {}),
+  )
+  .handler(async ({ data: input, context }) => {
     const { supabase, userId } = context;
     const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
     if (!store) return [];
-    const { data, error } = await supabase
-      .from("banners")
-      .select("*")
-      .eq("store_id", store.id)
+    let q = supabase.from("banners").select("*").eq("store_id", store.id);
+    if (input?.product_type) q = q.eq("product_type", input.product_type);
+    const { data, error } = await q
       .order("sort_order", { ascending: true })
       .order("position", { ascending: true });
     if (error) throw new Error(error.message);
@@ -729,14 +751,18 @@ export const mySubscription = createServerFn({ method: "GET" })
 // ---------- CATEGORIES ----------
 export const listMyCategories = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d: unknown) =>
+    z
+      .object({ product_type: z.enum(["physical", "digital", "service", "subscription"]).optional() })
+      .parse(d ?? {}),
+  )
+  .handler(async ({ data: input, context }) => {
     const { supabase, userId } = context;
     const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
     if (!store) return [];
-    const { data, error } = await supabase
-      .from("categories")
-      .select("*")
-      .eq("store_id", store.id)
+    let q = supabase.from("categories").select("*").eq("store_id", store.id);
+    if (input?.product_type) q = q.eq("product_type", input.product_type);
+    const { data, error } = await q
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true });
     if (error) throw new Error(error.message);
@@ -1722,3 +1748,26 @@ export const listPublicCourierProviders = createServerFn({ method: "GET" })
     return (data ?? []) as Array<{ code: string; name: string; logo_url: string | null; wordmark_url: string | null; is_active: boolean }>;
   });
 
+
+// ---------- PRODUCT TYPE SCOPE COUNTS ----------
+export const typeScopeCounts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ entity: z.enum(["products", "categories", "coupons", "banners", "orders"]) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    const empty = { all: 0, physical: 0, digital: 0, service: 0, subscription: 0 } as Record<string, number>;
+    if (!store) return empty;
+    const col = data.entity === "orders" ? "order_type" : "product_type";
+    const { data: rows, error } = await supabase.from(data.entity as any).select(col).eq("store_id", store.id);
+    if (error) throw new Error(error.message);
+    const counts = { ...empty };
+    for (const r of (rows ?? []) as any[]) {
+      const t = (r[col] ?? "physical") as string;
+      counts.all += 1;
+      if (t in counts) counts[t] += 1;
+    }
+    return counts;
+  });
