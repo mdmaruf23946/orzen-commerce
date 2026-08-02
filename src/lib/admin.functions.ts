@@ -761,7 +761,12 @@ export const listMyCategories = createServerFn({ method: "GET" })
     const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
     if (!store) return [];
     let q = supabase.from("categories").select("*").eq("store_id", store.id);
-    if (input?.product_type) q = q.eq("product_type", input.product_type);
+    if (input?.product_type === "physical") {
+      // Legacy rows stored "both" or NULL — they belong to Physical.
+      q = q.or("product_type.eq.physical,product_type.eq.both,product_type.is.null");
+    } else if (input?.product_type) {
+      q = q.eq("product_type", input.product_type);
+    }
     const { data, error } = await q
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true });
