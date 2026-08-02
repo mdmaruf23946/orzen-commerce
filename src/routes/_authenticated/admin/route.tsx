@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { SubscriptionStatusBanner } from "@/components/admin/SubscriptionStatusBanner";
 import { StickyMobileAdBar } from "@/components/admin/StickyMobileAdBar";
 import { UpgradeProvider } from "@/components/admin/UpgradeModal";
+import { ProductTypeScopeProvider } from "@/lib/product-type-scope";
 import { StoreBrandMark } from "@/components/admin/StoreBrandMark";
 import { CountBadge } from "@/components/admin/CountBadge";
 import { useBadgeCounts, useMarkSeen } from "@/lib/use-badge-counts";
@@ -170,6 +171,7 @@ function AdminLayout() {
 
   return (
     <UpgradeProvider>
+    <ProductTypeScopeProvider>
     <div className="min-h-screen bg-muted/40">
       {/* Mobile top bar */}
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur md:hidden">
@@ -401,6 +403,7 @@ function AdminLayout() {
       </div>
       <StickyMobileAdBar />
     </div>
+    </ProductTypeScopeProvider>
     </UpgradeProvider>
   );
 }
