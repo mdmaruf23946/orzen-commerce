@@ -1490,6 +1490,39 @@ export type Database = {
           },
         ]
       }
+      digital_access_events: {
+        Row: {
+          action: string
+          actor: string | null
+          created_at: string
+          detail: Json
+          entitlement_id: string | null
+          id: string
+          order_id: string | null
+          store_id: string
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          created_at?: string
+          detail?: Json
+          entitlement_id?: string | null
+          id?: string
+          order_id?: string | null
+          store_id: string
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          created_at?: string
+          detail?: Json
+          entitlement_id?: string | null
+          id?: string
+          order_id?: string | null
+          store_id?: string
+        }
+        Relationships: []
+      }
       digital_downloads: {
         Row: {
           created_at: string
@@ -3027,6 +3060,8 @@ export type Database = {
           address: string
           allow_duplicate: boolean
           area: string | null
+          company: string | null
+          country: string | null
           coupon_id: string | null
           courier_code: string | null
           courier_last_synced_at: string | null
@@ -3040,6 +3075,7 @@ export type Database = {
           delivery_zone_id: string | null
           device_id: string | null
           discount_amount: number | null
+          email: string | null
           external_order_id: string | null
           fingerprint: string | null
           id: string
@@ -3066,6 +3102,8 @@ export type Database = {
           address: string
           allow_duplicate?: boolean
           area?: string | null
+          company?: string | null
+          country?: string | null
           coupon_id?: string | null
           courier_code?: string | null
           courier_last_synced_at?: string | null
@@ -3079,6 +3117,7 @@ export type Database = {
           delivery_zone_id?: string | null
           device_id?: string | null
           discount_amount?: number | null
+          email?: string | null
           external_order_id?: string | null
           fingerprint?: string | null
           id?: string
@@ -3105,6 +3144,8 @@ export type Database = {
           address?: string
           allow_duplicate?: boolean
           area?: string | null
+          company?: string | null
+          country?: string | null
           coupon_id?: string | null
           courier_code?: string | null
           courier_last_synced_at?: string | null
@@ -3118,6 +3159,7 @@ export type Database = {
           delivery_zone_id?: string | null
           device_id?: string | null
           discount_amount?: number | null
+          email?: string | null
           external_order_id?: string | null
           fingerprint?: string | null
           id?: string

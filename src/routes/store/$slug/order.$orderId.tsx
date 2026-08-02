@@ -1,12 +1,15 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { CheckCircle2, Truck, Package, Clock } from "lucide-react";
+import { CheckCircle2, Truck, Package, Clock, Download, ReceiptText, ShoppingBag } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getOrder, verifyOrderPayment } from "@/lib/storefront.functions";
+import { getOrderDigitalAccess } from "@/lib/digital.functions";
+import { DigitalOrderAccess } from "@/components/storefront/digital/DigitalOrderAccess";
 import { fbTrack, purchaseEventId } from "@/lib/fb-track";
 import { PaymentTimeline } from "@/components/storefront/PaymentTimeline";
+
 
 const orderQuery = (orderId: string) =>
   queryOptions({
@@ -45,6 +48,14 @@ function OrderConfirmation() {
   const { data: order } = useSuspenseQuery(orderQuery(orderId));
   const qc = useQueryClient();
   const verifyPay = useServerFn(verifyOrderPayment);
+  const listDigital = useServerFn(getOrderDigitalAccess);
+  const { data: digitalItems = [] } = useQuery({
+    queryKey: ["digitalAccess", orderId],
+    queryFn: () => listDigital({ data: { orderId } }),
+    refetchInterval: (q) =>
+      ((q.state.data as any[]) ?? []).some((d) => d.status !== "active") ? 10_000 : false,
+  });
+
   // Safety net: if the gateway webhook never arrived, ask the provider
   // directly when the shopper lands back on this page.
   useEffect(() => {
@@ -91,16 +102,93 @@ function OrderConfirmation() {
   const reachedStages = new Set(timeline.map((t) => t.stage));
   const cancelled = order.status === "cancelled" || reachedStages.has("cancelled");
 
+  // A digital order has an entitlement for every line it contains.
+  const orderItems: any[] = (order.items as any[]) ?? [];
+  const dItems = digitalItems as any[];
+  const isDigitalOrder = dItems.length > 0 && dItems.length >= orderItems.length;
+  const paid = (order as any).payment_status === "paid";
+  const accessReady = dItems.some((d) => d.status === "active");
+  const digitalStages = [
+    { id: "pending", label: "Pending payment", done: true },
+    { id: "paid", label: "Paid", done: paid },
+    { id: "processing", label: "Processing access", done: paid || dItems.length > 0 },
+    { id: "ready", label: "Ready to download", done: accessReady },
+    { id: "completed", label: "Completed", done: dItems.some((d) => d.downloadCount > 0) },
+  ];
+
   return (
     <div className="mx-auto max-w-lg py-8">
       <div className="text-center">
-        <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500" />
-        <h1 className="mt-3 text-2xl font-semibold">Order placed</h1>
-        <p className="mt-1 text-sm text-muted-foreground">We'll contact you shortly to confirm.</p>
+        <CheckCircle2 className="mx-auto h-14 w-14 text-emerald-500" />
+        <h1 className="mt-3 text-2xl font-semibold">
+          {isDigitalOrder ? (paid ? "Payment successful" : "Order placed") : "Order placed"}
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {isDigitalOrder
+            ? paid
+              ? "Thank you for your purchase — your files are ready below."
+              : "We'll unlock your downloads as soon as the payment is confirmed."
+            : "We'll contact you shortly to confirm."}
+        </p>
       </div>
 
-      {/* Tracking Stepper */}
+      {isDigitalOrder ? (
+        <>
+          <div className="mt-6 rounded-xl border bg-card p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Purchase status</h2>
+              <span className="text-xs uppercase text-muted-foreground">
+                {accessReady ? "ready" : (order as any).payment_status}
+              </span>
+            </div>
+            <ol className="space-y-3">
+              {digitalStages.map((s) => (
+                <li key={s.id} className="flex items-start gap-3">
+                  <span
+                    className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${
+                      s.done ? "border-emerald-500 bg-emerald-500 text-white" : "border-muted-foreground/30"
+                    }`}
+                  >
+                    {s.done && <CheckCircle2 className="h-3 w-3" strokeWidth={3} />}
+                  </span>
+                  <p className={`text-sm ${s.done ? "font-semibold" : "text-muted-foreground"}`}>
+                    {s.label}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <DigitalOrderAccess orderId={order.id} />
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <Link
+              to="/store/$slug/account"
+              params={{ slug }}
+              search={{ tab: "downloads" as any }}
+              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border text-sm font-medium"
+            >
+              <Download className="h-4 w-4" /> My downloads
+            </Link>
+            <a
+              href={`/api/invoice/${order.id}`}
+              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border text-sm font-medium"
+            >
+              <ReceiptText className="h-4 w-4" /> View invoice
+            </a>
+            <Link
+              to="/store/$slug"
+              params={{ slug }}
+              className="col-span-2 inline-flex h-10 items-center justify-center gap-1.5 rounded-md border text-sm font-medium"
+            >
+              <ShoppingBag className="h-4 w-4" /> Continue shopping
+            </Link>
+          </div>
+        </>
+      ) : (
+      /* Tracking Stepper */
       <div className="mt-6 rounded-xl border bg-card p-4">
+
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold">Order tracking</h2>
           <span className="text-xs uppercase text-muted-foreground">{order.status}</span>
@@ -165,6 +253,8 @@ function OrderConfirmation() {
           </div>
         ) : null}
       </div>
+      )}
+
 
       <PaymentTimeline orderId={order.id} refreshKey={String((order as any).payment_status ?? "")} />
 

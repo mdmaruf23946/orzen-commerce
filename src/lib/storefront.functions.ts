@@ -631,13 +631,31 @@ export const listProductsByIds = createServerFn({ method: "GET" })
     const sb = publicClient();
     const { data: rows, error } = await sb
       .from("products")
-      .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id,product_type")
+      .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id,product_type,meta")
       .eq("store_id", data.storeId)
       .in("id", data.ids)
       .neq("status", "draft");
     if (error) throw new Error(error.message);
-    return (rows ?? []).map((p) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }));
+    return (rows ?? []).map((p) => {
+      const dg = ((p.meta ?? {}) as any)?.digital ?? {};
+      const files: any[] = Array.isArray(dg.files) ? dg.files : [];
+      const { meta: _meta, ...rest } = p as any;
+      return {
+        ...rest,
+        primary_image_url: imgUrl(p.primary_image_url),
+        digital:
+          p.product_type === "digital"
+            ? {
+                version: dg.version ?? null,
+                license_type: dg.license_type ?? "personal",
+                file_count: files.length,
+                total_size: files.reduce((a, f) => a + (Number(f?.size) || 0), 0),
+              }
+            : null,
+      };
+    });
   });
+
 
 
 
@@ -698,8 +716,13 @@ export const placeOrder = createServerFn({ method: "POST" })
         storeId: z.string().uuid(),
         customerName: z.string().trim().min(1).max(120),
         phone: z.string().trim().min(5).max(40),
-        address: z.string().trim().min(3).max(500),
+        // Digital-only carts have nothing to ship, so the address is optional.
+        address: z.string().trim().max(500).optional(),
         area: z.string().trim().max(120).optional(),
+        email: z.string().trim().email().max(160).optional(),
+        company: z.string().trim().max(160).optional(),
+        country: z.string().trim().max(80).optional(),
+
         // "cod" | "bkash" | "nagad" | "rocket" | "bank" | "builtin:<id>" | "custom:<uuid>"
         paymentMethod: z.string().trim().min(2).max(120),
         txnId: z.string().trim().max(120).optional(),
@@ -755,6 +778,13 @@ export const placeOrder = createServerFn({ method: "POST" })
     if (hasDigital && data.paymentMethod === "cod") {
       throw new Error("Cash on Delivery is not available for digital products");
     }
+    if (!allDigital && (data.address ?? "").trim().length < 3) {
+      throw new Error("Delivery address is required");
+    }
+    if (hasDigital && !data.email) {
+      throw new Error("Email address is required for digital products");
+    }
+
 
     let subtotal = 0;
     const itemRows = data.items.map((i) => {
@@ -919,8 +949,12 @@ export const placeOrder = createServerFn({ method: "POST" })
         customer_id: customerId,
         customer_name: data.customerName,
         phone: data.phone,
-        address: data.address,
+        address: (data.address ?? "").trim() || "Digital delivery — no shipment",
         area: data.area ?? null,
+        email: data.email ?? null,
+        company: data.company ?? null,
+        country: data.country ?? null,
+
         payment_method: dbMethod,
         payment_gateway_id: gatewayId,
         payment_gateway_name: gatewayName,

@@ -130,10 +130,19 @@ export async function activateDigitalAccess(sb: Sb, orderId: string) {
       .from("digital_entitlements")
       .update({ status: "active", expires_at: expires })
       .eq("id", r.id);
-    if (!error) activated++;
+    if (!error && r.status !== "active") activated++;
+  }
+  // Deliver the download email once, when access first becomes available.
+  if (activated > 0) {
+    try {
+      await sendDigitalDeliveryEmail(sb, orderId);
+    } catch {
+      /* non-fatal */
+    }
   }
   return { activated };
 }
+
 
 /** Issues a short-lived signed URL for one file of an unlocked entitlement. */
 export async function issueDownloadUrl(
@@ -215,4 +224,139 @@ export async function issueDownloadUrl(
     .eq("id", ent.id);
 
   return { url, name: files[opts.fileIndex]?.name ?? product?.name ?? "download" };
+}
+
+// ---------------------------------------------------------------------------
+// Delivery email + admin operations
+// ---------------------------------------------------------------------------
+
+const BASE_URL = "https://orzen.top";
+
+export async function logDigitalEvent(
+  sb: Sb,
+  e: {
+    storeId: string;
+    orderId?: string | null;
+    entitlementId?: string | null;
+    actor?: string | null;
+    action: string;
+    detail?: Record<string, unknown>;
+  },
+) {
+  await sb.from("digital_access_events").insert({
+    store_id: e.storeId,
+    order_id: e.orderId ?? null,
+    entitlement_id: e.entitlementId ?? null,
+    actor: e.actor ?? null,
+    action: e.action,
+    detail: e.detail ?? {},
+  });
+}
+
+/** Builds and queues the "your download is ready" email for a digital order. */
+export async function sendDigitalDeliveryEmail(sb: Sb, orderId: string) {
+  const { data: order } = await sb
+    .from("orders")
+    .select("id,store_id,customer_name,email,phone,subtotal,invoice_no,created_at")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (!order?.email) return { sent: false };
+
+  const { data: store } = await sb
+    .from("stores")
+    .select("name,slug")
+    .eq("id", order.store_id)
+    .maybeSingle();
+
+  const { data: ents } = await sb
+    .from("digital_entitlements")
+    .select("id,product_id,status,license_id")
+    .eq("order_id", orderId);
+  if (!ents?.length) return { sent: false };
+
+  const { data: products } = await sb
+    .from("products")
+    .select("id,name,meta")
+    .in("id", ents.map((e: any) => e.product_id));
+  const pById = new Map((products ?? []).map((p: any) => [p.id, p]));
+
+  const licenseIds = ents.map((e: any) => e.license_id).filter(Boolean);
+  const { data: licenses } = licenseIds.length
+    ? await sb.from("digital_licenses").select("id,license_key,license_type").in("id", licenseIds)
+    : { data: [] as any[] };
+  const lById = new Map((licenses ?? []).map((l: any) => [l.id, l]));
+
+  const orderUrl = `${BASE_URL}/store/${(store as any)?.slug ?? ""}/order/${orderId}`;
+  const rows = ents
+    .map((e: any) => {
+      const p = pById.get(e.product_id);
+      const lic = e.license_id ? lById.get(e.license_id) : null;
+      const version = (p?.meta as any)?.digital?.version;
+      return `<tr><td style="padding:10px 0;border-bottom:1px solid #eee">
+        <strong>${p?.name ?? "Product"}</strong>${version ? ` <span style="color:#888">v${version}</span>` : ""}
+        ${lic ? `<div style="font-family:monospace;font-size:12px;color:#444">License: ${lic.license_key} (${lic.license_type})</div>` : ""}
+      </td></tr>`;
+    })
+    .join("");
+
+  const html = `<div style="font-family:system-ui,sans-serif;max-width:560px;margin:auto">
+    <h2>Your download is ready</h2>
+    <p>Hi ${order.customer_name ?? "there"}, thank you for your purchase from ${(store as any)?.name ?? "our store"}.</p>
+    <table style="width:100%;border-collapse:collapse">${rows}</table>
+    <p style="margin:24px 0"><a href="${orderUrl}" style="background:#111;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none">Download now</a></p>
+    <p style="font-size:12px;color:#666">Order ${String(order.invoice_no ?? order.id).slice(0, 12).toUpperCase()} · ${new Date(order.created_at as string).toLocaleString()}</p>
+    <p style="font-size:12px;color:#666">Need help? Reply to this email and our support team will get back to you.</p>
+  </div>`;
+
+  const { enqueueEmail } = await import("@/lib/emails.server");
+  await enqueueEmail({
+    to: order.email as string,
+    template: "digital_delivery",
+    subject: "Your download is ready",
+    html,
+    payload: { orderId },
+  });
+  await logDigitalEvent(sb, {
+    storeId: order.store_id as string,
+    orderId,
+    action: "delivery_email_sent",
+    detail: { to: order.email },
+  });
+  return { sent: true };
+}
+
+/** Issues a fresh license key for one entitlement. */
+export async function regenerateLicenseFor(sb: Sb, entitlementId: string) {
+  const { data: ent } = await sb
+    .from("digital_entitlements")
+    .select("id,store_id,order_id,product_id,license_id")
+    .eq("id", entitlementId)
+    .maybeSingle();
+  if (!ent) throw new Error("Entitlement not found");
+  const key = randomKey();
+  if (ent.license_id) {
+    await sb
+      .from("digital_licenses")
+      .update({ license_key: key, activation_count: 0, status: "active" })
+      .eq("id", ent.license_id);
+  } else {
+    const { data: lic } = await sb
+      .from("digital_licenses")
+      .insert({
+        store_id: ent.store_id,
+        product_id: ent.product_id,
+        order_id: ent.order_id,
+        license_key: key,
+      })
+      .select("id")
+      .single();
+    await sb.from("digital_entitlements").update({ license_id: lic?.id ?? null }).eq("id", ent.id);
+  }
+  await logDigitalEvent(sb, {
+    storeId: ent.store_id as string,
+    orderId: ent.order_id as string,
+    entitlementId: ent.id as string,
+    action: "license_regenerated",
+  });
+  return { license_key: key };
 }

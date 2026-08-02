@@ -32,8 +32,13 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import { AccountShell } from "@/components/storefront/AccountShell";
+import { MyDownloads } from "@/components/storefront/digital/MyDownloads";
 
-const TABS = ["overview", "profile", "orders", "addresses", "wishlist", "password"] as const;
+function DownloadsTab({ slug, token }: { slug: string; token: string }) {
+  return <MyDownloads slug={slug} token={token} />;
+}
+
+const TABS = ["overview", "profile", "orders", "downloads", "addresses", "wishlist", "password"] as const;
 type Tab = (typeof TABS)[number];
 
 export const Route = createFileRoute("/store/$slug/account")({
@@ -83,6 +88,7 @@ function AccountPage() {
     overview: "My account",
     profile: "Personal information",
     orders: "Order history",
+    downloads: "My downloads",
     addresses: "Saved addresses",
     wishlist: "Wishlist",
     password: "Change password",
@@ -111,6 +117,7 @@ function AccountPage() {
               <ProfileTab slug={slug} token={token} customer={customer} onSaved={refresh} />
             )}
             {tab === "orders" && <OrdersTab slug={slug} token={token} />}
+            {tab === "downloads" && <DownloadsTab slug={slug} token={token} />}
             {tab === "addresses" && <AddressesTab slug={slug} token={token} />}
             {tab === "wishlist" && <WishlistTab slug={slug} />}
             {tab === "password" && <PasswordTab slug={slug} token={token} />}

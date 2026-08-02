@@ -3,7 +3,7 @@ import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getStoreBySlug, listStoreOnlineGateways, startOnlineCheckout, placeOrder, validateCoupon, getStoreDeliveryZones } from "@/lib/storefront.functions";
+import { getStoreBySlug, listStoreOnlineGateways, startOnlineCheckout, placeOrder, validateCoupon, getStoreDeliveryZones, listProductsByIds } from "@/lib/storefront.functions";
 import { readCart, clearCart, type CartItem } from "@/lib/cart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCustomerSession } from "@/lib/customer-session";
 import { computeFingerprint, getDeviceId } from "@/lib/fingerprint";
 import { fbTrack } from "@/lib/fb-track";
+import { DigitalCheckout, type DigitalCartInfo } from "@/components/storefront/checkout/DigitalCheckout";
+
 
 
 const storeQuery = (slug: string) =>
@@ -37,6 +39,7 @@ function CheckoutPage() {
   const listGw = useServerFn(listStoreOnlineGateways);
   const startPay = useServerFn(startOnlineCheckout);
   const getZones = useServerFn(getStoreDeliveryZones);
+  const listByIds = useServerFn(listProductsByIds);
   const { data: onlineGateways = [] } = useQuery({
     enabled: !!store?.id,
     queryKey: ["onlineGateways", store?.id],
@@ -47,6 +50,7 @@ function CheckoutPage() {
     queryKey: ["deliveryZones", store?.id],
     queryFn: () => getZones({ data: { storeId: store!.id } }),
   });
+
 
   const { customer, token: customerToken } = useCustomerSession(slug);
   const requireLogin = !!(store as any)?.require_customer_login;
@@ -64,6 +68,24 @@ function CheckoutPage() {
   const [couponCode, setCouponCode] = useState("");
   const [coupon, setCoupon] = useState<{ code: string; discount: number; freeShipping: boolean } | null>(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
+
+  // Product types decide which checkout the shopper gets.
+  const cartIds = items.map((i) => i.productId);
+  const { data: cartProducts = [] } = useQuery({
+    enabled: !!store?.id && cartIds.length > 0,
+    queryKey: ["cartProducts", store?.id, cartIds.join(",")],
+    queryFn: () => listByIds({ data: { storeId: store!.id, ids: cartIds } }),
+  });
+  const digitalIds = new Set(
+    (cartProducts as any[]).filter((p) => p.product_type === "digital").map((p) => p.id),
+  );
+  const hasDigital = cartIds.some((id) => digitalIds.has(id));
+  const allDigital = cartIds.length > 0 && cartIds.every((id) => digitalIds.has(id));
+  const digitalInfo: DigitalCartInfo = Object.fromEntries(
+    (cartProducts as any[]).map((p) => [p.id, p.digital ?? null]),
+  );
+
+
 
   useEffect(() => {
     const c = readCart(slug);
@@ -141,7 +163,10 @@ function CheckoutPage() {
       sandbox: !!g.sandbox,
     });
   }
-  if (pc.cod?.enabled !== false) methods.push({ id: "cod", label: "Cash on Delivery", desc: "Pay when you receive" });
+  // Digital goods can never be paid for on delivery.
+  if (pc.cod?.enabled !== false && !hasDigital)
+    methods.push({ id: "cod", label: "Cash on Delivery", desc: "Pay when you receive" });
+
   // Manual numbers come only from payments_config so removing a number in the
   // admin panel immediately hides it at checkout.
   const bk = pc.bkash?.number;
@@ -202,7 +227,13 @@ function CheckoutPage() {
     );
   }
 
+  // Digital-only cart → dedicated digital checkout (no address / courier / COD).
+  if (allDigital) {
+    return <DigitalCheckout slug={slug} store={store} items={items} info={digitalInfo} />;
+  }
+
   const isOnlineMethod = method.startsWith("custom:") || method.startsWith("builtin:");
+
   const isManual = !isOnlineMethod && method !== "cod";
 
   async function submit(e: React.FormEvent) {
