@@ -736,17 +736,27 @@ export const placeOrder = createServerFn({ method: "POST" })
     const ids = data.items.map((i) => i.productId);
     const { data: products, error: pErr } = await sb
       .from("products")
-      .select("id,name,price,stock,status,product_type")
+      .select("id,name,price,stock,status,product_type,meta")
       .in("id", ids)
       .eq("store_id", data.storeId);
     if (pErr) throw new Error(pErr.message);
     const byId = new Map(products?.map((p) => [p.id, p]) ?? []);
 
+    const isDigitalProduct = (p: any) => p?.product_type === "digital";
+    const hasDigital = data.items.some((i) => isDigitalProduct(byId.get(i.productId)));
+    const allDigital = data.items.every((i) => isDigitalProduct(byId.get(i.productId)));
+
+    // Digital goods are never shipped and never paid on delivery.
+    if (hasDigital && data.paymentMethod === "cod") {
+      throw new Error("Cash on Delivery is not available for digital products");
+    }
+
     let subtotal = 0;
     const itemRows = data.items.map((i) => {
       const p = byId.get(i.productId);
       if (!p || p.status === "draft") throw new Error("Product unavailable");
-      if (p.stock < i.qty) {
+      // Digital products have unlimited stock.
+      if (!isDigitalProduct(p) && p.stock < i.qty) {
         throw new Error(`Not enough stock for ${p.name}`);
       }
       subtotal += Number(p.price) * i.qty;
@@ -763,7 +773,7 @@ export const placeOrder = createServerFn({ method: "POST" })
     const d: any = store.delivery ?? {};
     let baseShip = 0;
     let zoneId: string | null = null;
-    if (data.deliveryZoneId) {
+    if (!allDigital && data.deliveryZoneId) {
       const { data: zone } = await sb
         .from("delivery_zones")
         .select("id,charge,is_active")
@@ -776,7 +786,9 @@ export const placeOrder = createServerFn({ method: "POST" })
       }
     }
     const freeMin = Number(d.free_min ?? 0);
-    let delivery_amount = freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
+    let delivery_amount = allDigital ? 0 : freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
+
+
 
 
     // Coupon
