@@ -202,6 +202,11 @@ function ProductPage() {
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
   const codEnabled = ((store as any)?.payment_methods ?? []).includes?.("cod") ?? true;
 
+  if (isDigital) {
+    return <DigitalProductPage slug={slug} store={store} product={product} />;
+  }
+
+
   return (
     <div className="pb-24 lg:pb-6">
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
