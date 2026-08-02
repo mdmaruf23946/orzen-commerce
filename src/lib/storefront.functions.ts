@@ -398,8 +398,8 @@ export const verifyOrderPayment = createServerFn({ method: "POST" })
         .eq("id", o.id)
         .neq("payment_status", "paid");
       try {
-        const { activateDigitalAccess } = await import("@/lib/digital.server");
-        await activateDigitalAccess(supabaseAdmin as any, o.id);
+        const { handlePaymentConfirmed } = await import("@/lib/orders-confirm.server");
+        await handlePaymentConfirmed(supabaseAdmin as any, o.id);
       } catch { /* non-fatal */ }
       return { payment_status: "paid", checked: true };
 
@@ -773,6 +773,15 @@ export const placeOrder = createServerFn({ method: "POST" })
     const isDigitalProduct = (p: any) => p?.product_type === "digital";
     const hasDigital = data.items.some((i) => isDigitalProduct(byId.get(i.productId)));
     const allDigital = data.items.every((i) => isDigitalProduct(byId.get(i.productId)));
+    // One order = one product type. Mixed carts stay physical so the existing
+    // physical workflow keeps handling them exactly as before.
+    const kinds = Array.from(
+      new Set(data.items.map((i) => (byId.get(i.productId) as any)?.product_type ?? "physical")),
+    );
+    const orderType =
+      kinds.length === 1 && ["digital", "service", "subscription"].includes(kinds[0] as string)
+        ? (kinds[0] as string)
+        : "physical";
 
     // Digital goods are never shipped and never paid on delivery.
     if (hasDigital && data.paymentMethod === "cod") {
@@ -969,6 +978,7 @@ export const placeOrder = createServerFn({ method: "POST" })
         status: orderStatus,
         fingerprint: data.fingerprint ?? null,
         device_id: data.deviceId ?? null,
+        order_type: orderType,
       } as any)
       .select("id")
       .single();
@@ -983,10 +993,11 @@ export const placeOrder = createServerFn({ method: "POST" })
     // straight away when there is nothing to pay.
     if (hasDigital) {
       try {
-        const { grantDigitalAccess, activateDigitalAccess } = await import("@/lib/digital.server");
+        const { grantDigitalAccess } = await import("@/lib/digital.server");
+        const { handlePaymentConfirmed } = await import("@/lib/orders-confirm.server");
         const orderTotal = subtotal + delivery_amount - discount_amount;
-        if (orderTotal <= 0) await activateDigitalAccess(sb as any, order.id);
-        else await grantDigitalAccess(sb as any, order.id);
+        await grantDigitalAccess(sb as any, order.id);
+        if (orderTotal <= 0) await handlePaymentConfirmed(sb as any, order.id);
       } catch { /* non-fatal */ }
     }
 
