@@ -259,15 +259,18 @@ export const updateMyStore = createServerFn({ method: "POST" })
 // ---------- PRODUCTS ----------
 export const listMyProducts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d: unknown) =>
+    z
+      .object({ product_type: z.enum(["physical", "digital", "service", "subscription"]).optional() })
+      .parse(d ?? {}),
+  )
+  .handler(async ({ data: input, context }) => {
     const { supabase, userId } = context;
     const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
     if (!store) return [];
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .eq("store_id", store.id)
-      .order("created_at", { ascending: false });
+    let q = supabase.from("products").select("*").eq("store_id", store.id);
+    if (input?.product_type) q = q.eq("product_type", input.product_type);
+    const { data, error } = await q.order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     const rows = data ?? [];
 
