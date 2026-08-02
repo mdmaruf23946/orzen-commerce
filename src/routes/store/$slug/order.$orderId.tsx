@@ -1,12 +1,15 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { CheckCircle2, Truck, Package, Clock } from "lucide-react";
+import { CheckCircle2, Truck, Package, Clock, Download, ReceiptText, ShoppingBag } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getOrder, verifyOrderPayment } from "@/lib/storefront.functions";
+import { getOrderDigitalAccess } from "@/lib/digital.functions";
+import { DigitalOrderAccess } from "@/components/storefront/digital/DigitalOrderAccess";
 import { fbTrack, purchaseEventId } from "@/lib/fb-track";
 import { PaymentTimeline } from "@/components/storefront/PaymentTimeline";
+
 
 const orderQuery = (orderId: string) =>
   queryOptions({
