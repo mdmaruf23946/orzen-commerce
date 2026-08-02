@@ -503,9 +503,8 @@ export function ProductDialog({
               <select value={productType} onChange={(e) => setProductType(e.target.value as any)} className={selectCls}>
                 <option value="physical">Physical</option>
                 <option value="digital">Digital</option>
-                <option value="subscription" disabled>Subscription (Coming Soon)</option>
-                <option value="service" disabled>Service (Coming Soon)</option>
-
+                <option value="service">Service</option>
+                <option value="subscription">Subscription</option>
               </select>
             </Field>
             <Field label="Brand">
@@ -517,6 +516,33 @@ export function ProductDialog({
               <Input value={digTags} onChange={(e) => setDigTags(e.target.value)} placeholder="ebook, template, ui kit" />
             </Field>
           )}
+          {isService && (
+            <div className="grid gap-3 rounded-xl border p-3 sm:grid-cols-2">
+              <Field label="Booking type">
+                <select value={svcBookingType} onChange={(e) => setSvcBookingType(e.target.value as any)} className={selectCls}>
+                  <option value="instant">Instant</option>
+                  <option value="scheduled">Scheduled</option>
+                  <option value="request">On request</option>
+                </select>
+              </Field>
+              <Field label="Estimated delivery time">
+                <Input value={svcDeliveryTime} onChange={(e) => setSvcDeliveryTime(e.target.value)} placeholder="e.g. 2-3 days" />
+              </Field>
+            </div>
+          )}
+          {isSubscription && (
+            <div className="rounded-xl border p-3">
+              <Field label="Billing cycle">
+                <select value={subCycle} onChange={(e) => setSubCycle(e.target.value as any)} className={selectCls}>
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="yearly">Yearly</option>
+                  <option value="lifetime">Lifetime</option>
+                </select>
+              </Field>
+            </div>
+          )}
+
 
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Main category">
