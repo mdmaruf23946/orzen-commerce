@@ -34,6 +34,15 @@ import {
 import { AccountShell } from "@/components/storefront/AccountShell";
 import { MyDownloads } from "@/components/storefront/digital/MyDownloads";
 import { MySubscriptions } from "@/components/storefront/subscription/MySubscriptions";
+import { OrdersPanel } from "@/components/storefront/account/OrdersPanel";
+import {
+  ActiveServicesPanel,
+  NotificationsPanel,
+  PaymentMethodsPanel,
+  PrivacyPanel,
+  SupportPanel,
+} from "@/components/storefront/account/Panels";
+
 
 function DownloadsTab({ slug, token }: { slug: string; token: string }) {
   return <MyDownloads slug={slug} token={token} />;
