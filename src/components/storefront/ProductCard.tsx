@@ -136,7 +136,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
           )}
         </div>
 
-        {!outOfStock && p.stock <= 5 && (
+        {!outOfStock && !stockless && p.stock <= 5 && (
           <span className="text-[10px] font-medium text-amber-600">Only {p.stock} left</span>
         )}
 
