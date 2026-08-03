@@ -643,6 +643,7 @@ export const listProductsByIds = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return (rows ?? []).map((p) => {
       const dg = ((p.meta ?? {}) as any)?.digital ?? {};
+      const sv = ((p.meta ?? {}) as any)?.service ?? {};
       const files: any[] = Array.isArray(dg.files) ? dg.files : [];
       const { meta: _meta, ...rest } = p as any;
       return {
@@ -655,6 +656,18 @@ export const listProductsByIds = createServerFn({ method: "GET" })
                 license_type: dg.license_type ?? "personal",
                 file_count: files.length,
                 total_size: files.reduce((a, f) => a + (Number(f?.size) || 0), 0),
+              }
+            : null,
+        // Service checkout needs packages, add-ons and delivery info up front.
+        service:
+          p.product_type === "service"
+            ? {
+                packages: Array.isArray(sv.packages) ? sv.packages : [],
+                addons: Array.isArray(sv.addons) ? sv.addons : [],
+                delivery: sv.delivery ?? null,
+                pricing_type: sv.pricing_type ?? "fixed",
+                availability: sv.availability ?? "available",
+                allow_quantity: sv.allow_quantity === true,
               }
             : null,
       };
