@@ -12,6 +12,7 @@ import {
   changeCustomerPassword,
 } from "@/lib/customer-auth.functions";
 import { useCustomerSession } from "@/lib/customer-session";
+import { getMyAccountSummary } from "@/lib/customer-account.functions";
 import { readWishlist } from "@/lib/wishlist";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,13 @@ import {
   Mail,
   Phone,
   BadgeCheck,
+  Wrench,
+  RefreshCw,
+  Download,
+  Bell,
+  CreditCard,
+  ShieldCheck,
+  LifeBuoy,
 } from "lucide-react";
 import { AccountShell } from "@/components/storefront/AccountShell";
 import { MyDownloads } from "@/components/storefront/digital/MyDownloads";
@@ -131,6 +139,7 @@ function AccountPage() {
       {tab === "overview" ? (
         <Overview
           slug={slug}
+          token={token}
           customer={customer}
           onNavigate={setTab}
           onSignOut={signOut}
@@ -171,11 +180,13 @@ function AccountPage() {
 
 function Overview({
   slug,
+  token,
   customer,
   onNavigate,
   onSignOut,
 }: {
   slug: string;
+  token: string;
   customer: { full_name: string; email: string | null; phone: string | null };
   onNavigate: (t: Tab) => void;
   onSignOut: () => void;
@@ -194,7 +205,7 @@ function Overview({
   });
   const counts = (summary as any)?.counts ?? {};
 
-  const actions: { id: Tab; label: string; icon: any; hint: string; tone: string; show: boolean }[] = [
+  const actions = [
     { id: "orders", label: "Orders", icon: Package, hint: "Track & history", tone: "text-indigo-600 bg-indigo-50", show: true },
     { id: "wishlist", label: "Wishlist", icon: Heart, hint: "Saved items", tone: "text-rose-600 bg-rose-50", show: true },
     { id: "addresses", label: "Addresses", icon: MapPin, hint: "Delivery info", tone: "text-emerald-600 bg-emerald-50", show: true },
@@ -202,7 +213,7 @@ function Overview({
     { id: "subscriptions", label: "Subscriptions", icon: RefreshCw, hint: "Plans & renewals", tone: "text-teal-600 bg-teal-50", show: (counts.subscriptions ?? 0) > 0 },
     { id: "downloads", label: "Downloads", icon: Download, hint: "Digital files", tone: "text-violet-600 bg-violet-50", show: (counts.downloads ?? 0) > 0 },
     { id: "profile", label: "Settings", icon: User, hint: "Personal info", tone: "text-amber-600 bg-amber-50", show: true },
-  ].filter((a) => a.show);
+  ].filter((a) => a.show) as { id: Tab; label: string; icon: any; hint: string; tone: string; show: boolean }[];
 
 
   return (
@@ -283,6 +294,10 @@ function Overview({
           onClick={() => onNavigate("password")}
         />
         <SettingsRow icon={MapPin} label="Saved addresses" onClick={() => onNavigate("addresses")} />
+        <SettingsRow icon={CreditCard} label="Payment methods" onClick={() => onNavigate("payments")} />
+        <SettingsRow icon={Bell} label="Notifications" onClick={() => onNavigate("notifications")} />
+        <SettingsRow icon={ShieldCheck} label="Privacy & security" onClick={() => onNavigate("privacy")} />
+        <SettingsRow icon={LifeBuoy} label="Help & support" onClick={() => onNavigate("support")} />
         <Link
           to="/store/$slug/cart"
           params={{ slug }}
