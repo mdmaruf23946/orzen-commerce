@@ -110,7 +110,10 @@ function ProductPage() {
 
   const price = Number(product!.price);
   const oldPrice = product!.old_price != null ? Number(product!.old_price) : null;
-  const inStock = product!.stock > 0 && product!.status !== "draft";
+  const inStock =
+    product!.status !== "draft" &&
+    (isStockless((product as any)!.product_type) || product!.stock > 0);
+
 
   const meta = (product!.meta ?? {}) as Record<string, any>;
 
