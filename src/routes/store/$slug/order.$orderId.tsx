@@ -9,6 +9,8 @@ import { getOrderDigitalAccess } from "@/lib/digital.functions";
 import { DigitalOrderAccess } from "@/components/storefront/digital/DigitalOrderAccess";
 import { fbTrack, purchaseEventId } from "@/lib/fb-track";
 import { PaymentTimeline } from "@/components/storefront/PaymentTimeline";
+import { ServiceOrderView } from "@/components/storefront/order/ServiceOrderView";
+import { SubscriptionOrderView } from "@/components/storefront/order/SubscriptionOrderView";
 
 
 const orderQuery = (orderId: string) =>
@@ -97,6 +99,11 @@ function OrderConfirmation() {
     );
   }, [order?.id]);
   if (!order) return null;
+
+  // Type-aware order details: each product type shows only its own workflow.
+  const orderType = (order as any).order_type ?? "physical";
+  if (orderType === "service") return <ServiceOrderView order={order} slug={slug} />;
+  if (orderType === "subscription") return <SubscriptionOrderView order={order} slug={slug} />;
 
   const timeline: any[] = Array.isArray((order as any).timeline) ? (order as any).timeline : [];
   const reachedStages = new Set(timeline.map((t) => t.stage));

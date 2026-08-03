@@ -1,45 +1,80 @@
-## Goal
+# Service Order Experience — Full Build
 
-Give Service products their own checkout, completely separate from Physical, Digital and Subscription. No address, no delivery zone, no courier, no shipping math, no COD. Instead: package selection, admin-defined project requirement fields, file uploads, communication preferences, advance/full payment, terms acceptance, and a service-specific thank-you page.
+Goal: the order details page becomes type-aware. Service orders get their own workflow (progress, meetings, communication, updates, deliverables, revisions, review) and never show any courier/shipping element. Subscription orders get their own view too. Physical and digital stay as they are.
 
-Today `src/routes/store/$slug/checkout.tsx` branches to `DigitalCheckout` for digital-only carts and falls back to the physical form for everything else — so service carts currently get the physical layout (address, zones, COD). That branch is the entry point for this work.
+## 1. Database
 
-## Phase 1 — Data layer
+New tables (all store-scoped, owner-managed, read by shoppers only through a security-definer function keyed by order id):
 
-- Migration adding:
-  - `service_checkout_settings` (per store): required/optional field toggles, allowed payment methods + default, payment mode (`full` | `advance` | `advance_required`) and minimum advance %, terms visibility + policy links, upload limits (max size, max files, allowed extensions), auto vs manual confirmation, auto invoice, notification channels (email/SMS/WhatsApp), thank-you message, internal staff notes template, order tags.
-  - `service_intake_fields` (per store, ordered): label, key, type (`short_text`, `long_text`, `dropdown`, `radio`, `checkbox`, `date`, `url`, `number`, `file`, `files`), options, placeholder/help, required flag, visible flag, sort order.
-  - `service_order_files`: order id, store id, storage path, filename, mime, size.
-  - Storage bucket `service-uploads` (private) with per-store path policies.
-  - GRANTs + RLS on every new table (store owner full access, anon read only for the public settings/fields needed at checkout).
-- Package + add-on data already lives in the service product's `meta.service` (`addons`, delivery time, pricing type). Extend `service-meta.ts` with an optional `packages` array (Starter / Standard / Premium: name, price, delivery time, revisions, summary, features) and surface it in the existing 12-step Service product form (new "Packages" step) so multi-package services are possible; single-price services keep working unchanged.
+- `service_workflow_settings` — per store: which stages are enabled (`request_submitted`, `pending_review`, `confirmed`, `consultation_scheduled`, `in_progress`, `waiting_for_client`, `revision`, `completed`, `closed`), default revision count, whether client cancel is allowed, response-time promise, support channels (whatsapp / messenger / email / phone / live chat).
+- `service_order_progress` — order_id, stage, note, created_at (the service timeline; replaces courier stages).
+- `service_order_meetings` — date/time, timezone, platform (meet/zoom/teams/office), link, address, password, notes.
+- `service_order_assignments` — assignee name, role (staff/freelancer/agent), avatar, contact channels, last_reply_at.
+- `service_order_updates` — admin-published updates: status label + note + timestamp.
+- `service_order_deliverables` — file path in a new private `service-deliverables` bucket, kind (source/zip/invoice/license/warranty/credential/key), secret value for credentials/keys, expiry, download limit, download count.
+- `service_order_revisions` — request text, status (requested/in_progress/delivered/rejected), deadline, admin response.
+- `service_order_reviews` — rating, review text, screenshot path, recommend flag.
 
-## Phase 2 — Store Admin settings
+Also add a `service_order_state` column-set to `orders.fulfillment_meta` (stage, remaining revisions) — no new orders columns needed; advance/balance already stored there.
 
-- New admin page **Service Checkout** (under the Service scope of the admin panel) with sections: Customer fields, Project requirement builder (drag to reorder, add/edit/hide/require), File upload rules, Payment methods & advance rules, Terms & policies, Confirmation/invoice/notification behaviour, Thank-you message, Tags & staff notes.
-- Server functions in a new `src/lib/service-checkout.functions.ts` for reading/writing settings and intake fields (owner-authenticated), plus a public read used by the storefront.
+Access: owner policies via `is_store_owner(store_id)`; shopper access exclusively through new definer RPCs (`get_public_service_order`, `get_public_subscription_order`) that take the order id, plus signed URLs for deliverable downloads issued by a server function.
 
-## Phase 3 — Storefront Service Checkout
+`get_public_order` will be extended to also return `order_type`, `email`, `company`, `country`, and `fulfillment_meta` so the page can branch by type.
 
-- New `src/components/storefront/checkout/ServiceCheckout.tsx`, mounted from `checkout.tsx` when every cart item is a service (mirroring the existing digital branch).
-- Sections, in order: Service summary (image, name, package selector when packages exist, price, delivery time, revisions, summary) → Customer info (name, mobile, email required; company, website, business name, country, preferred language optional per settings) → Project requirements (rendered from the admin-defined fields with validation) → File upload (validated against admin limits, uploaded to the private bucket) → Communication preferences (channel + preferred time) → Coupon → Payment method (only admin-enabled methods; full vs advance amount shown) → Terms checkboxes → "Continue to Payment".
-- Quantity selector hidden unless the service explicitly allows quantity.
-- Mobile-first layout consistent with the digital checkout styling.
+## 2. Server functions
 
-## Phase 4 — Order processing
+- `src/lib/service-order.functions.ts` — shopper reads (progress, meeting, assignment, updates, deliverables, revisions, review status, payment summary), request revision, submit review, request cancel, issue signed download URL (enforcing expiry + limit).
+- `src/lib/service-order-admin.functions.ts` — owner writes: set stage, add timeline note, publish update, schedule/edit meeting, assign staff, upload deliverables, respond to revisions, toggle enabled stages.
+- `src/lib/subscription-order.functions.ts` — shopper read for subscription orders: status, plan, billing cycle, start date, renewal/next payment date, amount, trial info, usage/limits from product meta, cancel/manage request.
 
-- Extend `placeOrder` in `src/lib/storefront.functions.ts` for `orderType === "service"`: skip address/zone/shipping entirely, accept `service` payload (package, intake answers, uploaded file refs, communication prefs, advance amount), persist it in `orders.fulfillment_meta.service`, compute total from trusted product/package/add-on prices server-side (never client prices), and set order status from the store's confirmation rule (auto or manual).
-- Reject COD for service orders; support partial advance by charging the advance amount through the gateway and recording the outstanding balance on the order.
-- On success: create the service order, generate the invoice via the existing invoice pipeline, write the payment record, link/create the customer account, and fire owner + customer notifications through the existing notification service.
+## 3. Storefront page
 
-## Phase 5 — Thank-you page & admin visibility
+`src/routes/store/$slug/order.$orderId.tsx` becomes a thin dispatcher on `order_type`:
 
-- Service-specific success view on `src/routes/store/$slug/order.$orderId.tsx` (or a dedicated component) showing payment status, order ID, invoice number, service, package, delivery time, assigned status; buttons for View Order, Download Invoice, Dashboard, Contact Support, Continue Shopping.
-- Service order cards in the admin Orders page (already type-aware via `TypeOrderCards.tsx`) gain the intake answers, uploaded files (signed download links), communication preferences and advance/balance figures.
+- `physical` → existing courier tracking (unchanged)
+- `digital` → existing digital view (unchanged)
+- `service` → new `ServiceOrderView`
+- `subscription` → new `SubscriptionOrderView`
+
+New components under `src/components/storefront/order/service/`:
+
+1. `SuccessHeader` — animated check, "Service Request Submitted Successfully", service ID, order date/time, payment status badge.
+2. `ServiceProgress` — stepper built from the store's enabled stages, current stage highlighted.
+3. `ServiceTimeline` — status + time + admin note entries.
+4. `MeetingCard` — date/time/timezone, platform badge, link or office address, password, notes, live countdown, Join Meeting button. Hidden when no meeting.
+5. `CommunicationCard` — assignee name/role/avatar, response time, last reply, buttons for WhatsApp / Messenger / Live chat / Email / Call (only channels the store enabled).
+6. `PaymentCard` — status, paid, remaining, method, transaction id, invoice download, payment history (reuses `PaymentTimeline`), plus Complete Payment / Retry / Upload proof when unpaid or balance due.
+7. `ServiceDetailsCard` — service name, package, plan, estimated delivery, delivery type, included features, selected add-ons, custom requirements.
+8. `ClientInfoCard` — name, phone, email, business name, website, intake answers, uploaded files, notes.
+9. `AdminUpdatesFeed` — published updates with date/time/status/note.
+10. `DeliverablesCard` — secure download list with expiry/limit, credentials/keys revealed on demand.
+11. `RevisionsCard` — remaining count, request form, history, deadline, admin response.
+12. `ReviewCard` — star rating, review text, screenshot upload, recommend toggle (after completion).
+13. `ActionBar` — status-driven buttons: Contact Support, Chat with Admin, Download Invoice, View Files, Join Meeting, Complete Payment, Request Revision, Place New Order, Cancel Request.
+
+Nothing courier-related is imported into this view: no courier block, tracking id, delivery address, delivery zone, parcel status, or shipping timeline. The order summary in the service view drops the Address row and shows service line items only.
+
+`SubscriptionOrderView` shows subscription status, plan/package, billing cycle, start date, renewal date, next payment amount, usage/limits, invoice list, and manage/cancel actions.
+
+## 4. Admin side
+
+New "Service workflow" panel inside the existing order details drawer (only for `order_type = 'service'`):
+- Stage selector using the store's enabled stages, with note
+- Publish update
+- Schedule/edit meeting
+- Assign staff/freelancer/agent
+- Upload deliverables (with expiry + download limit), add credentials/keys
+- Review and respond to revision requests
+- Read client intake answers and uploaded files
+
+Plus a "Service workflow" section in Service Checkout settings to enable/disable stages, set default revision count, response time, support channels, and allow-cancel.
+
+## 5. Notifications
+
+Reuse the existing order notification outbox so stage changes and published updates trigger the store's configured email/SMS/WhatsApp notification settings.
 
 ## Technical notes
 
-- Isolation is enforced by branching on cart product type before any shared form renders, and by keeping all service logic in service-only modules and an `orders.fulfillment_meta.service` namespace — the physical, digital and subscription paths are untouched.
-- All pricing, advance calculation and coupon application are recomputed server-side inside `placeOrder`; client values are display-only.
-- Uploads go to a private bucket; admin access is via short-lived signed URLs.
-- SMS/WhatsApp notifications hook into the existing communication settings; if a channel has no provider configured, it is skipped silently and shown as unavailable in admin settings.
+- All new tables follow the project's grant → RLS → policy order; shopper access is definer-RPC only, so no anon grants on the new tables.
+- Deliverable downloads use short-lived signed URLs from a private bucket, with server-side expiry and limit checks before signing.
+- Files uploaded by clients keep using the existing `service-uploads` bucket and `service_order_files`.
