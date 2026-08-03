@@ -1,80 +1,72 @@
-# Service Order Experience — Full Build
+# Subscription Checkout & Billing System (Professional)
 
-Goal: the order details page becomes type-aware. Service orders get their own workflow (progress, meetings, communication, updates, deliverables, revisions, review) and never show any courier/shipping element. Subscription orders get their own view too. Physical and digital stay as they are.
+A fully isolated subscription experience — its own checkout, data model, activation, renewal, success page, customer dashboard, admin management and settings. Nothing is shared with Physical, Digital or Service checkout.
 
-## 1. Database
+Renewal model (confirmed): **reminder + manual renew link**. On each cycle the system creates a renewal invoice and emails a secure pay link; no card is stored. "Auto renewal" means automatic invoice + reminder, not silent charging.
 
-New tables (all store-scoped, owner-managed, read by shoppers only through a security-definer function keyed by order id):
+---
 
-- `service_workflow_settings` — per store: which stages are enabled (`request_submitted`, `pending_review`, `confirmed`, `consultation_scheduled`, `in_progress`, `waiting_for_client`, `revision`, `completed`, `closed`), default revision count, whether client cancel is allowed, response-time promise, support channels (whatsapp / messenger / email / phone / live chat).
-- `service_order_progress` — order_id, stage, note, created_at (the service timeline; replaces courier stages).
-- `service_order_meetings` — date/time, timezone, platform (meet/zoom/teams/office), link, address, password, notes.
-- `service_order_assignments` — assignee name, role (staff/freelancer/agent), avatar, contact channels, last_reply_at.
-- `service_order_updates` — admin-published updates: status label + note + timestamp.
-- `service_order_deliverables` — file path in a new private `service-deliverables` bucket, kind (source/zip/invoice/license/warranty/credential/key), secret value for credentials/keys, expiry, download limit, download count.
-- `service_order_revisions` — request text, status (requested/in_progress/delivered/rejected), deadline, admin response.
-- `service_order_reviews` — rating, review text, screenshot path, recommend flag.
+## 1. Data model (new tables)
 
-Also add a `service_order_state` column-set to `orders.fulfillment_meta` (stage, remaining revisions) — no new orders columns needed; advance/balance already stored there.
+- `store_subscription_settings` — per store: auto-renewal default, default billing cycle, free trial on/off + duration, grace period, renewal reminder days, failed-payment retry, cancellation policy, refund policy, setup fee, tax %, invoice prefix, invoice template, success redirect URL, allowed payment methods, COD-enabled flag (off by default).
+- `store_subscriptions` — the subscription record: human-readable subscription ID, store, customer, product/plan, plan snapshot (name, features, limits), billing cycle, status (`pending`, `trialing`, `active`, `past_due`, `grace`, `suspended`, `cancelled`, `expired`), price, renewal price, currency, started_at, current_period_start/end, next_billing_date, trial_ends_at, auto_renew, reminders_opt_in, cancel_at_period_end, user/device/license limits.
+- `store_subscription_invoices` — one row per billing period: invoice no, amount breakdown (plan, setup fee, tax, discount), due date, status (`draft`, `open`, `paid`, `failed`, `void`), paid_at, payment method, order reference, secure pay token.
+- `store_subscription_events` — audit + timeline: created, activated, renewed, upgraded, downgraded, suspended, cancelled, payment failed, reminder sent.
+- `store_subscription_notifications` — outbox rows for the 7 notification types, consumed by the existing email queue.
 
-Access: owner policies via `is_store_owner(store_id)`; shopper access exclusively through new definer RPCs (`get_public_service_order`, `get_public_subscription_order`) that take the order id, plus signed URLs for deliverable downloads issued by a server function.
+All tables: GRANTs, RLS with store-owner policies; storefront customer access goes through SECURITY DEFINER RPCs validated by the customer session token (same pattern as service orders).
 
-`get_public_order` will be extended to also return `order_type`, `email`, `company`, `country`, and `fulfillment_meta` so the page can branch by type.
+## 2. Subscription checkout (storefront)
 
-## 2. Server functions
+New `src/components/storefront/checkout/SubscriptionCheckout.tsx`, dispatched from `checkout.tsx` when the cart is subscription-only (mirrors the existing digital/service branches). Physical/digital/service branches untouched.
 
-- `src/lib/service-order.functions.ts` — shopper reads (progress, meeting, assignment, updates, deliverables, revisions, review status, payment summary), request revision, submit review, request cancel, issue signed download URL (enforcing expiry + limit).
-- `src/lib/service-order-admin.functions.ts` — owner writes: set stage, add timeline note, publish update, schedule/edit meeting, assign staff, upload deliverables, respond to revisions, toggle enabled stages.
-- `src/lib/subscription-order.functions.ts` — shopper read for subscription orders: status, plan, billing cycle, start date, renewal/next payment date, amount, trial info, usage/limits from product meta, cancel/manage request.
+- **Customer info** — required: full name, phone, email, country/region. Optional: company, VAT/tax number, notes. No address, area, zone, courier fields at all.
+- **Subscription details card** — plan name, selected plan/variant, billing cycle, plan price, included features, trial info, user limit, device limit, license quantity, access start, auto-renewal status. All read from `products.meta.subscription`.
+- **Billing summary** (replaces shipping summary) — subscription price, coupon discount, setup fee, tax, today's payment, renewal amount, renewal date, total due today. No shipping line anywhere.
+- **Payment methods** — online only by default: Rupantor Pay, SSLCommerz, Stripe, PayPal, bKash, Nagad, Rocket, Bank Transfer, filtered by what the store has configured. COD hidden unless the admin explicitly enables it in Subscription Settings.
+- **Agreement block** — required: agree to Subscription Terms, understand billing cycle. Optional: enable auto renewal, receive renewal reminders. Submit disabled until required boxes are ticked.
+- **CTA** — "Subscribe Now" (or "Continue to Payment" for redirect gateways).
 
-## 3. Storefront page
+## 3. Activation flow
 
-`src/routes/store/$slug/order.$orderId.tsx` becomes a thin dispatcher on `order_type`:
+New `subscription-checkout.functions.ts` + `.server.ts` (isolated from `placeOrder`):
+- Creates the order with `order_type = subscription`, subscription record (status `pending`, or `trialing` when a trial applies), first invoice, billing record, subscription ID, and links it to the customer account.
+- On payment success (gateway webhook or manual approval): activate plan, compute `next_billing_date` from the cycle, generate the PDF invoice, mark the invoice paid, write timeline events, send confirmation email (SMS hook optional/off by default).
+- Redirect to the Subscription Success page (or the admin's custom success URL when set).
 
-- `physical` → existing courier tracking (unchanged)
-- `digital` → existing digital view (unchanged)
-- `service` → new `ServiceOrderView`
-- `subscription` → new `SubscriptionOrderView`
+## 4. Subscription success page
 
-New components under `src/components/storefront/order/service/`:
+Dedicated route/view: success animation, "Subscription Activated", subscription ID, plan name, current status, activation date, next billing date, renewal amount, payment method, plus Invoice Download / Manage Subscription / Go to Dashboard buttons. Replaces the current generic `SubscriptionOrderView` for the post-checkout path.
 
-1. `SuccessHeader` — animated check, "Service Request Submitted Successfully", service ID, order date/time, payment status badge.
-2. `ServiceProgress` — stepper built from the store's enabled stages, current stage highlighted.
-3. `ServiceTimeline` — status + time + admin note entries.
-4. `MeetingCard` — date/time/timezone, platform badge, link or office address, password, notes, live countdown, Join Meeting button. Hidden when no meeting.
-5. `CommunicationCard` — assignee name/role/avatar, response time, last reply, buttons for WhatsApp / Messenger / Live chat / Email / Call (only channels the store enabled).
-6. `PaymentCard` — status, paid, remaining, method, transaction id, invoice download, payment history (reuses `PaymentTimeline`), plus Complete Payment / Retry / Upload proof when unpaid or balance due.
-7. `ServiceDetailsCard` — service name, package, plan, estimated delivery, delivery type, included features, selected add-ons, custom requirements.
-8. `ClientInfoCard` — name, phone, email, business name, website, intake answers, uploaded files, notes.
-9. `AdminUpdatesFeed` — published updates with date/time/status/note.
-10. `DeliverablesCard` — secure download list with expiry/limit, credentials/keys revealed on demand.
-11. `RevisionsCard` — remaining count, request form, history, deadline, admin response.
-12. `ReviewCard` — star rating, review text, screenshot upload, recommend toggle (after completion).
-13. `ActionBar` — status-driven buttons: Contact Support, Chat with Admin, Download Invoice, View Files, Join Meeting, Complete Payment, Request Revision, Place New Order, Cancel Request.
+## 5. Customer dashboard
 
-Nothing courier-related is imported into this view: no courier block, tracking id, delivery address, delivery zone, parcel status, or shipping timeline. The order summary in the service view drops the Address row and shows service line items only.
+New "Subscriptions" tab in the storefront account area: current plan, status, renewal date, payment history, invoice downloads, cancel, upgrade, downgrade, renew now (pay link), enable/disable auto renewal. Backed by token-validated RPCs.
 
-`SubscriptionOrderView` shows subscription status, plan/package, billing cycle, start date, renewal date, next payment amount, usage/limits, invoice list, and manage/cancel actions.
+## 6. Store Admin — Subscription Management
 
-## 4. Admin side
+New admin page `Subscriptions`: subscriber list with search/filters and KPI strip (active, trialing, past due, MRR). Per-subscriber drawer with activate, suspend, cancel, renew, change billing cycle, upgrade/downgrade plan, apply discount, extend/change expiry date, send notification, generate invoice, and full payment history + event timeline.
 
-New "Service workflow" panel inside the existing order details drawer (only for `order_type = 'service'`):
-- Stage selector using the store's enabled stages, with note
-- Publish update
-- Schedule/edit meeting
-- Assign staff/freelancer/agent
-- Upload deliverables (with expiry + download limit), add credentials/keys
-- Review and respond to revision requests
-- Read client intake answers and uploaded files
+## 7. Subscription Settings (admin)
 
-Plus a "Service workflow" section in Service Checkout settings to enable/disable stages, set default revision count, response time, support channels, and allow-cancel.
+New settings section covering every control in the spec: auto renewal, default cycle, free trial + duration, grace period, renewal reminder, failed-payment retry, cancellation & refund policy, setup fee, tax, invoice prefix, invoice template, success redirect URL, and the COD override.
 
-## 5. Notifications
+## 8. Renewal engine
 
-Reuse the existing order notification outbox so stage changes and published updates trigger the store's configured email/SMS/WhatsApp notification settings.
+Cycle support: monthly, quarterly, semi-annual, yearly, lifetime (never renews), weekly and custom. A public cron route (`/api/public/cron/subscription-renewals`) runs daily to: advance periods, open renewal invoices, send reminders ahead of renewal, apply grace period, mark `past_due` then `expired`, and honour `cancel_at_period_end`.
+
+## 9. Notifications
+
+Seven automated events — activated, payment received, upcoming renewal, expiring, renewed, payment failed, cancelled — dispatched through the existing email queue, with SMS/WhatsApp channels wired as optional toggles.
+
+## 10. Guardrails
+
+Subscription checkout never renders shipping, delivery, courier, parcel tracking, delivery address, delivery zone, or COD (unless manually enabled). Each product type keeps its own checkout component, validation, server functions and success page, sharing only the ORZEN design language.
+
+---
 
 ## Technical notes
 
-- All new tables follow the project's grant → RLS → policy order; shopper access is definer-RPC only, so no anon grants on the new tables.
-- Deliverable downloads use short-lived signed URLs from a private bucket, with server-side expiry and limit checks before signing.
-- Files uploaded by clients keep using the existing `service-uploads` bucket and `service_order_files`.
+- New files: `src/lib/subscriptions.ts` (shared types/cycle math), `subscriptions.functions.ts` (customer), `subscriptions-admin.functions.ts` (admin), `subscriptions.server.ts` (activation/renewal engine), `SubscriptionCheckout.tsx`, `SubscriptionSuccess.tsx`, `SubscriptionsTab.tsx`, admin `subscriptions.tsx` route + settings section, cron route.
+- Storefront reads use SECURITY DEFINER RPCs with the customer token; admin reads use `requireSupabaseAuth` scoped by store ownership.
+- Billing cycle maths and next-date calculation live in one shared module so checkout, admin and cron agree.
+- Migrations are applied first; code that depends on the new schema follows.
