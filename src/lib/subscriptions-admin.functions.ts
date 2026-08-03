@@ -133,7 +133,10 @@ export const adminSubscriptionAction = createServerFn({ method: "POST" })
         await sb.from("store_subscriptions").update({ status: "suspended" }).eq("id", s.id);
         break;
       case "resume":
-        await sb.from("store_subscriptions").update({ status: "active" }).eq("id", s.id);
+        await sb
+          .from("store_subscriptions")
+          .update({ status: "active", cancel_at_period_end: false, cancelled_at: null })
+          .eq("id", s.id);
         break;
       case "cancel":
         await engine.cancelSubscription(sb as any, s.id, { actor: "owner", reason: data.note });
