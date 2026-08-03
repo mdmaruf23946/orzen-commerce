@@ -90,7 +90,10 @@ export function SubscriptionProductDialog({
   const [regularPrice, setRegularPrice] = useState<string>(
     editing?.old_price != null ? String(editing.old_price) : editing ? String(editing.price) : "",
   );
-  const [salePrice, setSalePrice] = useState<string>(editing?.old_price != null ? String(editing.price) : "");
+  // Only treat as a sale when the old price is genuinely higher than the price.
+  const [salePrice, setSalePrice] = useState<string>(
+    editing?.old_price != null && Number(editing.old_price) > Number(editing.price) ? String(editing.price) : "",
+  );
   const [setupFee, setSetupFee] = useState<string>(s0.setup_fee != null ? String(s0.setup_fee) : "");
   const [taxIncluded, setTaxIncluded] = useState<boolean>(s0.tax_included ?? false);
   const [renewalMode2, setRenewalMode2] = useState<"same" | "different">(s0.renewal_price_mode ?? "same");
