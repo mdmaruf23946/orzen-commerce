@@ -16,6 +16,17 @@ export type ServiceAddon = { name: string; price: number | null; description?: s
 export type ServiceFaq = { question: string; answer: string };
 export type BeforeAfter = { before: string | null; after: string | null; label?: string };
 
+/** Optional tiered packages (Starter / Standard / Premium …). */
+export type ServicePackage = {
+  key: string;
+  name: string;
+  price: number | null;
+  delivery_time?: string | null;
+  revisions?: string | null;
+  summary?: string;
+  features?: string[];
+};
+
 export type ServiceMeta = {
   pricing_type?: ServicePricingType;
   tax_included?: boolean;
