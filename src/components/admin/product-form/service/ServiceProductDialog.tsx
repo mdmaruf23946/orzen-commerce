@@ -65,7 +65,9 @@ export function ServiceProductDialog({
   const [regularPrice, setRegularPrice] = useState<string>(
     editing?.old_price != null ? String(editing.old_price) : editing ? String(editing.price) : "",
   );
-  const [salePrice, setSalePrice] = useState<string>(editing?.old_price != null ? String(editing.price) : "");
+  const [salePrice, setSalePrice] = useState<string>(
+    editing?.old_price != null && Number(editing.old_price) > Number(editing.price) ? String(editing.price) : "",
+  );
   const [taxIncluded, setTaxIncluded] = useState<boolean>(svc0.tax_included ?? false);
   const [isFeatured, setIsFeatured] = useState<boolean>(!!editing?.is_featured);
 
