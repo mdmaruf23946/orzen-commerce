@@ -270,6 +270,8 @@ function ProductPage() {
                 oldPrice={oldPrice}
                 stock={product!.stock}
                 status={product!.status}
+                productType={(product as any)!.product_type}
+
                 qty={qty}
                 setQty={setQty}
                 onAdd={add}
