@@ -871,7 +871,7 @@ export const placeOrder = createServerFn({ method: "POST" })
     const d: any = store.delivery ?? {};
     let baseShip = 0;
     let zoneId: string | null = null;
-    if (!allDigital && data.deliveryZoneId) {
+    if (!allDigital && !allService && data.deliveryZoneId) {
       const { data: zone } = await sb
         .from("delivery_zones")
         .select("id,charge,is_active")
@@ -884,7 +884,8 @@ export const placeOrder = createServerFn({ method: "POST" })
       }
     }
     const freeMin = Number(d.free_min ?? 0);
-    let delivery_amount = allDigital ? 0 : freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
+    let delivery_amount =
+      allDigital || allService ? 0 : freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
 
 
 
