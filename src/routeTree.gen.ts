@@ -125,6 +125,7 @@ import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/e
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
 import { Route as ApiPublicFbCapiTrackRouteImport } from './routes/api/public/fb-capi/track'
 import { Route as ApiPublicCronSyncParcelsRouteImport } from './routes/api/public/cron/sync-parcels'
+import { Route as ApiPublicCronSubscriptionRenewalsRouteImport } from './routes/api/public/cron/subscription-renewals'
 import { Route as ApiPublicCronNotifyOrdersRouteImport } from './routes/api/public/cron/notify-orders'
 import { Route as AuthenticatedOwnerSubscriptionPayProvidersRouteImport } from './routes/_authenticated/owner/subscription-pay.providers'
 import { Route as AuthenticatedOwnerNotificationCenterTemplatesRouteImport } from './routes/_authenticated/owner/notification-center.templates'
@@ -801,6 +802,12 @@ const ApiPublicCronSyncParcelsRoute =
     path: '/api/public/cron/sync-parcels',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicCronSubscriptionRenewalsRoute =
+  ApiPublicCronSubscriptionRenewalsRouteImport.update({
+    id: '/api/public/cron/subscription-renewals',
+    path: '/api/public/cron/subscription-renewals',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicCronNotifyOrdersRoute =
   ApiPublicCronNotifyOrdersRouteImport.update({
     id: '/api/public/cron/notify-orders',
@@ -1036,6 +1043,7 @@ export interface FileRoutesByFullPath {
   '/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
+  '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
@@ -1166,6 +1174,7 @@ export interface FileRoutesByTo {
   '/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
+  '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
@@ -1305,6 +1314,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/_authenticated/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
+  '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
@@ -1444,6 +1454,7 @@ export interface FileRouteTypes {
     | '/owner/notification-center/templates'
     | '/owner/subscription-pay/providers'
     | '/api/public/cron/notify-orders'
+    | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
     | '/api/public/fb-capi/track'
     | '/api/public/messenger/webhook'
@@ -1574,6 +1585,7 @@ export interface FileRouteTypes {
     | '/owner/notification-center/templates'
     | '/owner/subscription-pay/providers'
     | '/api/public/cron/notify-orders'
+    | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
     | '/api/public/fb-capi/track'
     | '/api/public/messenger/webhook'
@@ -1712,6 +1724,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/notification-center/templates'
     | '/_authenticated/owner/subscription-pay/providers'
     | '/api/public/cron/notify-orders'
+    | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
     | '/api/public/fb-capi/track'
     | '/api/public/messenger/webhook'
@@ -1757,6 +1770,7 @@ export interface RootRouteChildren {
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiImgSplatRoute: typeof ApiImgSplatRoute
   ApiPublicCronNotifyOrdersRoute: typeof ApiPublicCronNotifyOrdersRoute
+  ApiPublicCronSubscriptionRenewalsRoute: typeof ApiPublicCronSubscriptionRenewalsRoute
   ApiPublicCronSyncParcelsRoute: typeof ApiPublicCronSyncParcelsRoute
   ApiPublicFbCapiTrackRoute: typeof ApiPublicFbCapiTrackRoute
   ApiPublicMessengerWebhookRoute: typeof ApiPublicMessengerWebhookRoute
@@ -2583,6 +2597,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronSyncParcelsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cron/subscription-renewals': {
+      id: '/api/public/cron/subscription-renewals'
+      path: '/api/public/cron/subscription-renewals'
+      fullPath: '/api/public/cron/subscription-renewals'
+      preLoaderRoute: typeof ApiPublicCronSubscriptionRenewalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/cron/notify-orders': {
       id: '/api/public/cron/notify-orders'
       path: '/api/public/cron/notify-orders'
@@ -3096,6 +3117,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiChatRoute: ApiAiChatRoute,
   ApiImgSplatRoute: ApiImgSplatRoute,
   ApiPublicCronNotifyOrdersRoute: ApiPublicCronNotifyOrdersRoute,
+  ApiPublicCronSubscriptionRenewalsRoute:
+    ApiPublicCronSubscriptionRenewalsRoute,
   ApiPublicCronSyncParcelsRoute: ApiPublicCronSyncParcelsRoute,
   ApiPublicFbCapiTrackRoute: ApiPublicFbCapiTrackRoute,
   ApiPublicMessengerWebhookRoute: ApiPublicMessengerWebhookRoute,

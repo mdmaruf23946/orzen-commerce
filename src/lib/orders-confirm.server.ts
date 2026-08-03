@@ -75,7 +75,15 @@ export async function runConfirmationActions(sb: Sb, order: any) {
         },
       })
       .eq("id", order.id);
+    // Recurring billing record: create it if missing, then activate it.
+    try {
+      const { activateSubscriptionForOrder } = await import("@/lib/subscriptions.server");
+      await activateSubscriptionForOrder(sb, order.id);
+    } catch {
+      /* non-fatal */
+    }
   }
+
 }
 
 /** Marks an order confirmed and executes its fulfilment actions. Idempotent. */

@@ -644,8 +644,10 @@ export const listProductsByIds = createServerFn({ method: "GET" })
     return (rows ?? []).map((p) => {
       const dg = ((p.meta ?? {}) as any)?.digital ?? {};
       const sv = ((p.meta ?? {}) as any)?.service ?? {};
+      const sub = ((p.meta ?? {}) as any)?.subscription ?? {};
       const files: any[] = Array.isArray(dg.files) ? dg.files : [];
       const { meta: _meta, ...rest } = p as any;
+
       return {
         ...rest,
         primary_image_url: imgUrl(p.primary_image_url),
@@ -670,9 +672,28 @@ export const listProductsByIds = createServerFn({ method: "GET" })
                 allow_quantity: sv.allow_quantity === true,
               }
             : null,
+        // Subscription checkout needs cycle, trial, fees and plan perks.
+        subscription:
+          p.product_type === "subscription"
+            ? {
+                billing_cycle: sub.billing_cycle ?? "monthly",
+                custom_cycle: sub.custom_cycle ?? null,
+                plan_type: sub.plan_type ?? null,
+                badge: sub.badge ?? null,
+                setup_fee: sub.setup_fee ?? null,
+                renewal_price_mode: sub.renewal_price_mode ?? "same",
+                renewal_price: sub.renewal_price ?? null,
+                trial: sub.trial ?? null,
+                access_items: Array.isArray(sub.access_items) ? sub.access_items : [],
+                benefits: Array.isArray(sub.benefits) ? sub.benefits : [],
+                usage_limits: Array.isArray(sub.usage_limits) ? sub.usage_limits : [],
+                policies: sub.policies ?? null,
+              }
+            : null,
       };
     });
   });
+
 
 
 
@@ -767,7 +788,18 @@ export const placeOrder = createServerFn({ method: "POST" })
             paymentPlan: z.enum(["full", "advance"]).optional(),
           })
           .optional(),
+        // Subscription-only payload. Ignored by every other checkout path.
+        subscription: z
+          .object({
+            billingCycle: z.string().trim().max(30).optional(),
+            autoRenew: z.boolean().optional(),
+            remindersOptIn: z.boolean().optional(),
+            vat: z.string().trim().max(60).optional(),
+            acceptedTerms: z.boolean().optional(),
+          })
+          .optional(),
       })
+
       .parse(d),
   )
   .handler(async ({ data }) => {
@@ -818,6 +850,17 @@ export const placeOrder = createServerFn({ method: "POST" })
         : "physical";
     // Services are booked, never shipped: no address, no zone, no courier, no COD.
     const allService = orderType === "service";
+    // Subscriptions are billed recurrently: no shipment, no courier, no zone.
+    const allSubscription = orderType === "subscription";
+    const subSettingsRow = allSubscription
+      ? (
+          await sb
+            .from("store_subscription_settings")
+            .select("*")
+            .eq("store_id", data.storeId)
+            .maybeSingle()
+        ).data
+      : null;
 
     // Digital goods are never shipped and never paid on delivery.
     if (hasDigital && data.paymentMethod === "cod") {
@@ -826,12 +869,16 @@ export const placeOrder = createServerFn({ method: "POST" })
     if (allService && data.paymentMethod === "cod") {
       throw new Error("Cash on Delivery is not available for services");
     }
-    if (!allDigital && !allService && (data.address ?? "").trim().length < 3) {
+    if (allSubscription && data.paymentMethod === "cod" && !(subSettingsRow as any)?.cod_enabled) {
+      throw new Error("Cash on Delivery is not available for subscriptions");
+    }
+    if (!allDigital && !allService && !allSubscription && (data.address ?? "").trim().length < 3) {
       throw new Error("Delivery address is required");
     }
-    if ((hasDigital || allService) && !data.email) {
+    if ((hasDigital || allService || allSubscription) && !data.email) {
       throw new Error("Email address is required");
     }
+
 
 
     let subtotal = 0;
@@ -889,7 +936,7 @@ export const placeOrder = createServerFn({ method: "POST" })
     const d: any = store.delivery ?? {};
     let baseShip = 0;
     let zoneId: string | null = null;
-    if (!allDigital && !allService && data.deliveryZoneId) {
+    if (!allDigital && !allService && !allSubscription && data.deliveryZoneId) {
       const { data: zone } = await sb
         .from("delivery_zones")
         .select("id,charge,is_active")
@@ -903,7 +950,34 @@ export const placeOrder = createServerFn({ method: "POST" })
     }
     const freeMin = Number(d.free_min ?? 0);
     let delivery_amount =
-      allDigital || allService ? 0 : freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
+      allDigital || allService || allSubscription
+        ? 0
+        : freeMin > 0 && subtotal >= freeMin
+          ? 0
+          : baseShip;
+
+    // Subscription pricing: plan setup fee + tax are added server-side from
+    // trusted product metadata and the store's subscription settings.
+    let subscriptionFulfillment: any = null;
+    if (allSubscription) {
+      const firstProduct = byId.get(data.items[0].productId) as any;
+      const smeta = ((firstProduct?.meta ?? {}) as any).subscription ?? {};
+      const st: any = subSettingsRow ?? {};
+      const setupFee = Number(smeta.setup_fee ?? st.setup_fee ?? 0);
+      const taxPercent = Number(st.tax_percent ?? 0);
+      const tax = Math.round(((subtotal + setupFee) * taxPercent) / 100);
+      subtotal = subtotal + setupFee + tax;
+      subscriptionFulfillment = {
+        billing_cycle: data.subscription?.billingCycle ?? smeta.billing_cycle ?? st.default_billing_cycle ?? "monthly",
+        auto_renew: data.subscription?.autoRenew ?? st.auto_renew_default ?? true,
+        reminders_opt_in: data.subscription?.remindersOptIn ?? true,
+        vat: data.subscription?.vat ?? null,
+        setup_fee: setupFee,
+        tax_amount: tax,
+        accepted_terms: !!data.subscription?.acceptedTerms,
+      };
+    }
+
 
 
 
@@ -1079,7 +1153,12 @@ export const placeOrder = createServerFn({ method: "POST" })
         phone: data.phone,
         address:
           (data.address ?? "").trim() ||
-          (allService ? "Service booking — no shipment" : "Digital delivery — no shipment"),
+          (allService
+            ? "Service booking — no shipment"
+            : allSubscription
+              ? "Subscription — no shipment"
+              : "Digital delivery — no shipment"),
+
         area: data.area ?? null,
         email: data.email ?? null,
         company: data.company ?? null,
@@ -1101,6 +1180,10 @@ export const placeOrder = createServerFn({ method: "POST" })
         device_id: data.deviceId ?? null,
         order_type: orderType,
         ...(serviceFulfillment ? { fulfillment_meta: { service: serviceFulfillment } } : {}),
+        ...(subscriptionFulfillment
+          ? { fulfillment_meta: { subscription: subscriptionFulfillment } }
+          : {}),
+
       } as any)
       .select("id")
       .single();
@@ -1142,6 +1225,30 @@ export const placeOrder = createServerFn({ method: "POST" })
         if (orderTotal <= 0) await handlePaymentConfirmed(sb as any, order.id);
       } catch { /* non-fatal */ }
     }
+
+    // Subscription billing: create the subscription record (pending) plus its
+    // first invoice. Free plans / trials activate immediately.
+    if (allSubscription) {
+      try {
+        const { createSubscriptionForOrder, activateSubscriptionForOrder } = await import(
+          "@/lib/subscriptions.server"
+        );
+        const { handlePaymentConfirmed } = await import("@/lib/orders-confirm.server");
+        await createSubscriptionForOrder(sb as any, order.id);
+        const orderTotal = subtotal + delivery_amount - discount_amount;
+        if (orderTotal <= 0) {
+          await sb
+            .from("orders")
+            .update({ payment_status: "paid", status: "confirmed" } as any)
+            .eq("id", order.id);
+          await activateSubscriptionForOrder(sb as any, order.id);
+          await handlePaymentConfirmed(sb as any, order.id);
+        }
+      } catch {
+        /* non-fatal */
+      }
+    }
+
 
 
 
