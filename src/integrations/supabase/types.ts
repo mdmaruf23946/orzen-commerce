@@ -3944,6 +3944,193 @@ export type Database = {
           },
         ]
       }
+      service_checkout_settings: {
+        Row: {
+          auto_confirm: boolean
+          auto_invoice: boolean
+          communication_enabled: boolean
+          created_at: string
+          customer_fields: Json
+          default_payment_method: string | null
+          min_advance_percent: number
+          notify_email: boolean
+          notify_sms: boolean
+          notify_whatsapp: boolean
+          order_tags: string[]
+          payment_methods: Json
+          payment_mode: string
+          staff_notes: string | null
+          store_id: string
+          terms: Json
+          thank_you_message: string | null
+          updated_at: string
+          upload_allowed_types: string[]
+          upload_max_files: number
+          upload_max_mb: number
+        }
+        Insert: {
+          auto_confirm?: boolean
+          auto_invoice?: boolean
+          communication_enabled?: boolean
+          created_at?: string
+          customer_fields?: Json
+          default_payment_method?: string | null
+          min_advance_percent?: number
+          notify_email?: boolean
+          notify_sms?: boolean
+          notify_whatsapp?: boolean
+          order_tags?: string[]
+          payment_methods?: Json
+          payment_mode?: string
+          staff_notes?: string | null
+          store_id: string
+          terms?: Json
+          thank_you_message?: string | null
+          updated_at?: string
+          upload_allowed_types?: string[]
+          upload_max_files?: number
+          upload_max_mb?: number
+        }
+        Update: {
+          auto_confirm?: boolean
+          auto_invoice?: boolean
+          communication_enabled?: boolean
+          created_at?: string
+          customer_fields?: Json
+          default_payment_method?: string | null
+          min_advance_percent?: number
+          notify_email?: boolean
+          notify_sms?: boolean
+          notify_whatsapp?: boolean
+          order_tags?: string[]
+          payment_methods?: Json
+          payment_mode?: string
+          staff_notes?: string | null
+          store_id?: string
+          terms?: Json
+          thank_you_message?: string | null
+          updated_at?: string
+          upload_allowed_types?: string[]
+          upload_max_files?: number
+          upload_max_mb?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_checkout_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_intake_fields: {
+        Row: {
+          created_at: string
+          field_key: string
+          field_type: string
+          help_text: string | null
+          id: string
+          is_required: boolean
+          is_visible: boolean
+          label: string
+          options: string[]
+          placeholder: string | null
+          sort_order: number
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          field_key: string
+          field_type?: string
+          help_text?: string | null
+          id?: string
+          is_required?: boolean
+          is_visible?: boolean
+          label: string
+          options?: string[]
+          placeholder?: string | null
+          sort_order?: number
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          field_key?: string
+          field_type?: string
+          help_text?: string | null
+          id?: string
+          is_required?: boolean
+          is_visible?: boolean
+          label?: string
+          options?: string[]
+          placeholder?: string | null
+          sort_order?: number
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_intake_fields_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_order_files: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          mime_type: string | null
+          order_id: string | null
+          path: string
+          size_bytes: number
+          store_id: string
+          upload_token: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          id?: string
+          mime_type?: string | null
+          order_id?: string | null
+          path: string
+          size_bytes?: number
+          store_id: string
+          upload_token?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          mime_type?: string | null
+          order_id?: string | null
+          path?: string
+          size_bytes?: number
+          store_id?: string
+          upload_token?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_order_files_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_order_files_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_movements: {
         Row: {
           created_at: string
