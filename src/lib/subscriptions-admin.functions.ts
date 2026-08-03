@@ -154,6 +154,12 @@ export const adminSubscriptionAction = createServerFn({ method: "POST" })
           .eq("id", s.id);
         break;
       }
+      case "auto_renew_on":
+        await sb.from("store_subscriptions").update({ auto_renew: true }).eq("id", s.id);
+        break;
+      case "auto_renew_off":
+        await sb.from("store_subscriptions").update({ auto_renew: false }).eq("id", s.id);
+        break;
       case "note":
         await sb.from("store_subscriptions").update({ admin_note: data.note ?? null }).eq("id", s.id);
         break;
