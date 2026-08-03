@@ -1,4 +1,5 @@
 import { OrderConfirmationSection } from "@/components/admin/settings/OrderConfirmationSection";
+import { ServiceWorkflowSection } from "@/components/admin/settings/ServiceWorkflowSection";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
