@@ -217,7 +217,7 @@ export function ServiceProductDialog({
       toast.error("Enter a regular price, or choose Custom quote pricing");
       return;
     }
-    if (sale != null && !isQuote && sale >= reg) {
+    if (sale != null && !isQuote && sale > reg) {
       toast.error("Sale price must be less than the regular price");
       return;
     }
