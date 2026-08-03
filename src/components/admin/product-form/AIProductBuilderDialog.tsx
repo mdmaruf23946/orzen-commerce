@@ -235,7 +235,20 @@ export function AIProductBuilderDialog({
         />
       );
     }
+    if (productType === "service") {
+      return (
+        <ServiceProductDialog
+          storeId={storeId}
+          editing={editingLike}
+          categories={categories}
+          productDefaults={productDefaults}
+          onClose={onClose}
+          onSave={onSave}
+        />
+      );
+    }
     return (
+
       <ProductDialog
         storeId={storeId}
         editing={editingLike}
