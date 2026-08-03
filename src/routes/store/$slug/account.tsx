@@ -39,8 +39,23 @@ function DownloadsTab({ slug, token }: { slug: string; token: string }) {
   return <MyDownloads slug={slug} token={token} />;
 }
 
-const TABS = ["overview", "profile", "orders", "downloads", "subscriptions", "addresses", "wishlist", "password"] as const;
+const TABS = [
+  "overview",
+  "profile",
+  "orders",
+  "downloads",
+  "services",
+  "subscriptions",
+  "addresses",
+  "wishlist",
+  "password",
+  "payments",
+  "notifications",
+  "privacy",
+  "support",
+] as const;
 type Tab = (typeof TABS)[number];
+
 
 
 export const Route = createFileRoute("/store/$slug/account")({
