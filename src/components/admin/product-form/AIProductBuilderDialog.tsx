@@ -744,6 +744,89 @@ function buildEditingLike(
     },
   };
 
+  const specs = draft.specifications ?? [];
+  const specValue = (needle: string) =>
+    specs.find((s) => s.key?.toLowerCase().includes(needle))?.value ?? "";
+
+  // Digital drafts prefill the digital tabs of the standard product form.
+  if (productType === "digital") {
+    const includedIds = INCLUDED_ITEMS.filter((item) =>
+      (draft.includes ?? []).some(
+        (inc) =>
+          inc.toLowerCase().includes(item.label.toLowerCase()) ||
+          inc.toLowerCase().includes(item.id),
+      ),
+    ).map((item) => item.id as string);
+    const licRaw = (specValue("licen") || "").toLowerCase();
+    const licenseType =
+      (["personal", "commercial", "extended", "custom"] as const).find((l) => licRaw.includes(l)) ??
+      "personal";
+    meta.digital = {
+      files: [],
+      external_url: null,
+      version: specValue("version") || null,
+      changelog: null,
+      platforms: [],
+      tags: draft.tags ?? [],
+      preview: { images: [], video_url: null, demo_url: null },
+      download: { mode: "instant", allow_redownload: true },
+      free: false,
+      license_type: licenseType,
+      license_note: specValue("licen") || null,
+      included: includedIds,
+      requirements: {
+        os: specValue("os") || specValue("operating") || undefined,
+        software: specValue("software") || undefined,
+        browser: specValue("browser") || undefined,
+        storage: specValue("storage") || undefined,
+      },
+      faq: [],
+    };
+  }
+
+  // Service drafts prefill the dedicated service form's metadata.
+  if (productType === "service") {
+    const delRaw = specValue("delivery") || specValue("turnaround");
+    const delNum = Number((delRaw.match(/\d+/) ?? [])[0]);
+    const delUnit = /hour/i.test(delRaw) ? "hours" : /week/i.test(delRaw) ? "weeks" : "days";
+    const priceRaw = (specValue("pricing") || "").toLowerCase();
+    const pricingType =
+      (["hourly", "daily", "weekly", "monthly", "quote", "starting"] as const).find((p) =>
+        priceRaw.includes(p),
+      ) ?? "fixed";
+    meta.service = {
+      pricing_type: pricingType,
+      tax_included: false,
+      delivery: {
+        time: Number.isFinite(delNum) && delNum > 0 ? delNum : null,
+        unit: delUnit,
+        express: false,
+        express_fee: null,
+        express_time: null,
+      },
+      availability: "available",
+      max_orders: null,
+      max_orders_period: "day",
+      included: draft.includes ?? [],
+      requirements: draft.features ?? [],
+      deliverables: draft.features ?? [],
+      booking: {
+        type: "request",
+        working_days: [],
+        working_hours: { start: "09:00", end: "18:00" },
+        slot_minutes: 60,
+        buffer_minutes: 0,
+      },
+      media: { portfolio: [], before_after: [], demo_video: null },
+      addons: [],
+      faq: [],
+      policies: {},
+      flags: {},
+    };
+  }
+
+
+
   // Subscription drafts prefill the dedicated subscription form's metadata.
   if (productType === "subscription") {
     const specs = draft.specifications ?? [];
