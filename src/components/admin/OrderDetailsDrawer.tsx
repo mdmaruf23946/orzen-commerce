@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FraudCheckModal, RiskBadge } from "@/components/admin/FraudCheckModal";
+import { ServiceWorkflowPanel } from "@/components/admin/service/ServiceWorkflowPanel";
 import { toast } from "sonner";
 
 function resolveProductImageUrl(url: string | null | undefined): string | null {
@@ -291,17 +292,8 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                 </Section>
               )}
               {kind === "service" && (
-                <Section icon={ScrollText} title="Service booking">
-                  <dl className="grid grid-cols-2 gap-y-1 text-xs">
-                    <dt className="text-muted-foreground">State</dt>
-                    <dd className="text-right capitalize">{fulfil.service_state ?? "requested"}</dd>
-                    <dt className="text-muted-foreground">Date</dt>
-                    <dd className="text-right">{fulfil.booking_date ?? "—"}</dd>
-                    <dt className="text-muted-foreground">Time</dt>
-                    <dd className="text-right">{fulfil.booking_time ?? "—"}</dd>
-                    <dt className="text-muted-foreground">Staff</dt>
-                    <dd className="text-right">{fulfil.staff ?? "—"}</dd>
-                  </dl>
+                <Section icon={ScrollText} title="Service workflow">
+                  <ServiceWorkflowPanel orderId={order.id} open={true} />
                 </Section>
               )}
               {kind === "subscription" && (
