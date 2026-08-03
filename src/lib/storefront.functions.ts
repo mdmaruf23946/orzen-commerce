@@ -154,7 +154,7 @@ export const startOnlineCheckout = createServerFn({ method: "POST" })
     const { data: order } = await supabaseAdmin
       .from("orders")
       .select(
-        "id,store_id,customer_name,phone,address,subtotal,delivery_amount,discount_amount,invoice_no,status,payment_status,payment_gateway_id,payment_method,created_at",
+        "id,store_id,customer_name,phone,address,subtotal,delivery_amount,discount_amount,invoice_no,status,payment_status,payment_gateway_id,payment_method,fulfillment_meta,created_at",
       )
       .eq("id", data.orderId)
       .maybeSingle();
