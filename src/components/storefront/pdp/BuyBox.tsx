@@ -1,19 +1,22 @@
 import { Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { isStockless } from "@/lib/product-stock";
 
 type Props = {
   price: number;
   oldPrice: number | null;
   stock: number;
   status: string;
+  productType?: string | null;
   qty: number;
   setQty: (n: number) => void;
   onAdd: () => void;
   onBuy: () => void;
 };
 
-export function BuyBox({ price, oldPrice, stock, status, qty, setQty, onAdd, onBuy }: Props) {
-  const inStock = stock > 0 && status !== "draft";
+export function BuyBox({ price, oldPrice, stock, status, productType, qty, setQty, onAdd, onBuy }: Props) {
+  const stockless = isStockless(productType);
+  const inStock = status !== "draft" && (stockless || stock > 0);
   const discountPct = oldPrice && oldPrice > price ? Math.round(((oldPrice - price) / oldPrice) * 100) : 0;
 
   return (
@@ -34,11 +37,12 @@ export function BuyBox({ price, oldPrice, stock, status, qty, setQty, onAdd, onB
 
       <p className="mt-1 text-sm">
         {inStock ? (
-          <span className="text-emerald-600">In stock ({stock})</span>
+          <span className="text-emerald-600">{stockless ? "Available" : `In stock (${stock})`}</span>
         ) : (
           <span className="text-destructive">Out of stock</span>
         )}
       </p>
+
 
       <div className="mt-4 flex items-center gap-3">
         <span className="text-sm text-muted-foreground">Qty</span>
@@ -55,7 +59,7 @@ export function BuyBox({ price, oldPrice, stock, status, qty, setQty, onAdd, onB
           <button
             type="button"
             className="grid h-10 w-10 place-items-center"
-            onClick={() => setQty(Math.min(stock || 1, qty + 1))}
+            onClick={() => setQty(stockless ? qty + 1 : Math.min(stock || 1, qty + 1))}
             aria-label="Increase"
           >
             <Plus className="h-4 w-4" />

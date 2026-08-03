@@ -2,6 +2,8 @@ import { createFileRoute, useNavigate, notFound, Link } from "@tanstack/react-ro
 import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fbTrack } from "@/lib/fb-track";
+import { isStockless } from "@/lib/product-stock";
+
 import { toast } from "sonner";
 import {
   getProduct,
@@ -110,7 +112,10 @@ function ProductPage() {
 
   const price = Number(product!.price);
   const oldPrice = product!.old_price != null ? Number(product!.old_price) : null;
-  const inStock = product!.stock > 0 && product!.status !== "draft";
+  const inStock =
+    product!.status !== "draft" &&
+    (isStockless((product as any)!.product_type) || product!.stock > 0);
+
 
   const meta = (product!.meta ?? {}) as Record<string, any>;
 
@@ -265,6 +270,8 @@ function ProductPage() {
                 oldPrice={oldPrice}
                 stock={product!.stock}
                 status={product!.status}
+                productType={(product as any)!.product_type}
+
                 qty={qty}
                 setQty={setQty}
                 onAdd={add}
