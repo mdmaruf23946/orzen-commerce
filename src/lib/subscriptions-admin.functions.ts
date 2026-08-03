@@ -85,7 +85,18 @@ export const getAdminSubscription = createServerFn({ method: "GET" })
     return { subscription: sub as any, invoices: (invoices ?? []) as any[], events: (events ?? []) as any[] };
   });
 
-const ACTIONS = ["activate", "suspend", "resume", "cancel", "cancel_now", "renew", "extend", "note"] as const;
+const ACTIONS = [
+  "activate",
+  "suspend",
+  "resume",
+  "cancel",
+  "cancel_now",
+  "renew",
+  "extend",
+  "note",
+  "auto_renew_on",
+  "auto_renew_off",
+] as const;
 
 export const adminSubscriptionAction = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -122,7 +133,10 @@ export const adminSubscriptionAction = createServerFn({ method: "POST" })
         await sb.from("store_subscriptions").update({ status: "suspended" }).eq("id", s.id);
         break;
       case "resume":
-        await sb.from("store_subscriptions").update({ status: "active" }).eq("id", s.id);
+        await sb
+          .from("store_subscriptions")
+          .update({ status: "active", cancel_at_period_end: false, cancelled_at: null })
+          .eq("id", s.id);
         break;
       case "cancel":
         await engine.cancelSubscription(sb as any, s.id, { actor: "owner", reason: data.note });
@@ -143,6 +157,12 @@ export const adminSubscriptionAction = createServerFn({ method: "POST" })
           .eq("id", s.id);
         break;
       }
+      case "auto_renew_on":
+        await sb.from("store_subscriptions").update({ auto_renew: true }).eq("id", s.id);
+        break;
+      case "auto_renew_off":
+        await sb.from("store_subscriptions").update({ auto_renew: false }).eq("id", s.id);
+        break;
       case "note":
         await sb.from("store_subscriptions").update({ admin_note: data.note ?? null }).eq("id", s.id);
         break;

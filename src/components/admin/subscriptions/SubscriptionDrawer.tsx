@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const money = (n: any) => `৳${Number(n ?? 0).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
@@ -32,6 +34,7 @@ export function SubscriptionDrawer({
   const [busy, setBusy] = useState(false);
   const [days, setDays] = useState(30);
   const [note, setNote] = useState("");
+  const [openInvoice, setOpenInvoice] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "subscription-detail", id],
@@ -138,6 +141,17 @@ export function SubscriptionDrawer({
                 <Button size="sm" variant="outline" disabled={busy} onClick={() => act("cancel")}>Cancel at period end</Button>
                 <Button size="sm" variant="destructive" disabled={busy} onClick={() => act("cancel_now")}>Cancel now</Button>
               </div>
+              <div className="mt-3 flex items-center justify-between rounded-lg border p-3">
+                <div className="text-xs">
+                  <div className="font-medium">Auto renew</div>
+                  <div className="text-muted-foreground">{sub.auto_renew ? "Currently on" : "Currently off"}</div>
+                </div>
+                <Switch
+                  checked={!!sub.auto_renew}
+                  disabled={busy}
+                  onCheckedChange={(v) => act(v ? "auto_renew_on" : "auto_renew_off")}
+                />
+              </div>
               <div className="mt-3 flex items-end gap-2">
                 <div className="w-28">
                   <Label className="text-xs">Extend (days)</Label>
@@ -161,21 +175,49 @@ export function SubscriptionDrawer({
                   <div className="p-4 text-center text-xs text-muted-foreground">No invoices yet.</div>
                 ) : (
                   (data?.invoices ?? []).map((inv: any) => (
-                    <div key={inv.id} className="flex items-center justify-between gap-2 border-b p-3 text-xs last:border-0">
-                      <div className="min-w-0">
-                        <div className="truncate font-medium">{inv.invoice_no ?? inv.id.slice(0, 8)}</div>
-                        <div className="text-muted-foreground">
-                          {date(inv.created_at)} · due {date(inv.due_date)} · {inv.status}
+                    <div key={inv.id} className="border-b p-3 text-xs last:border-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setOpenInvoice(openInvoice === inv.id ? null : inv.id)}
+                          className="min-w-0 flex-1 text-left"
+                        >
+                          <div className="truncate font-medium">{inv.invoice_no ?? inv.id.slice(0, 8)}</div>
+                          <div className="text-muted-foreground">
+                            {date(inv.created_at)} · due {date(inv.due_date)} · {inv.status}
+                          </div>
+                        </button>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <span className="font-semibold">{money(inv.total)}</span>
+                          {inv.status !== "paid" && (
+                            <Button size="sm" variant="outline" disabled={busy} onClick={() => markPaid(inv.id)}>
+                              Mark paid
+                            </Button>
+                          )}
+                          <ChevronDown
+                            className={cn(
+                              "h-4 w-4 text-muted-foreground transition-transform",
+                              openInvoice === inv.id && "rotate-180",
+                            )}
+                          />
                         </div>
                       </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <span className="font-semibold">{money(inv.total)}</span>
-                        {inv.status !== "paid" && (
-                          <Button size="sm" variant="outline" disabled={busy} onClick={() => markPaid(inv.id)}>
-                            Mark paid
-                          </Button>
-                        )}
-                      </div>
+                      {openInvoice === inv.id && (
+                        <dl className="mt-3 grid grid-cols-2 gap-2 rounded-lg bg-muted/40 p-3">
+                          <Field label="Invoice no" value={inv.invoice_no ?? "—"} />
+                          <Field label="Type" value={inv.is_renewal ? "Renewal" : "Initial"} />
+                          <Field label="Subtotal" value={money(inv.subtotal ?? inv.amount)} />
+                          <Field label="Tax" value={money(inv.tax ?? inv.tax_amount ?? 0)} />
+                          <Field label="Setup fee" value={money(inv.setup_fee ?? 0)} />
+                          <Field label="Discount" value={money(inv.discount ?? 0)} />
+                          <Field label="Total" value={money(inv.total)} />
+                          <Field label="Status" value={String(inv.status ?? "—")} />
+                          <Field label="Issued" value={date(inv.created_at)} />
+                          <Field label="Due" value={date(inv.due_date)} />
+                          <Field label="Paid at" value={date(inv.paid_at)} />
+                          <Field label="Period" value={`${date(inv.period_start)} → ${date(inv.period_end)}`} />
+                        </dl>
+                      )}
                     </div>
                   ))
                 )}
