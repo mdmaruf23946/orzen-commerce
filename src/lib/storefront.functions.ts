@@ -1006,6 +1006,52 @@ export const placeOrder = createServerFn({ method: "POST" })
       }
     }
 
+    // ---- Service order extras (isolated from every other checkout type) ----
+    let serviceFulfillment: any = null;
+    let serviceAutoConfirm = false;
+    if (allService) {
+      const { normalizeSettings } = await import("@/lib/service-checkout.server");
+      const { advanceAmount } = await import("@/lib/service-checkout");
+      const { data: srow } = await sb
+        .from("service_checkout_settings")
+        .select("*")
+        .eq("store_id", data.storeId)
+        .maybeSingle();
+      const settings = normalizeSettings(data.storeId, srow);
+      const grandTotal = Math.max(0, subtotal + delivery_amount - discount_amount);
+      const wantsAdvance =
+        settings.payment_mode === "advance_required" ||
+        (settings.payment_mode === "advance" && data.service?.paymentPlan === "advance");
+      const payNow = wantsAdvance ? advanceAmount(grandTotal, settings) : grandTotal;
+      serviceAutoConfirm = settings.auto_confirm;
+      const firstProduct = byId.get(data.items[0].productId) as any;
+      const smeta = ((firstProduct?.meta ?? {}) as any).service ?? {};
+      serviceFulfillment = {
+        package: servicePackage,
+        addons: serviceAddons,
+        answers: data.service?.answers ?? {},
+        website: data.service?.website ?? null,
+        business_name: data.service?.businessName ?? null,
+        language: data.service?.language ?? null,
+        contact_channel: data.service?.contactChannel ?? null,
+        contact_time: data.service?.contactTime ?? null,
+        delivery_time: servicePackage
+          ? (smeta.packages ?? []).find((p: any) => (p.key ?? p.name) === servicePackage!.key)?.delivery_time ??
+            smeta.delivery?.time ??
+            null
+          : (smeta.delivery?.time ?? null),
+        revisions: smeta.revisions ?? null,
+        total: grandTotal,
+        payment_plan: wantsAdvance ? "advance" : "full",
+        advance_amount: wantsAdvance ? payNow : null,
+        balance_due: wantsAdvance ? Math.max(0, grandTotal - payNow) : 0,
+        tags: settings.order_tags,
+        staff_notes: settings.staff_notes ?? null,
+        auto_invoice: settings.auto_invoice,
+        assigned_status: "unassigned",
+      };
+    }
+
     const { data: order, error: oErr } = await sb
       .from("orders")
       .insert({
@@ -1013,7 +1059,9 @@ export const placeOrder = createServerFn({ method: "POST" })
         customer_id: customerId,
         customer_name: data.customerName,
         phone: data.phone,
-        address: (data.address ?? "").trim() || "Digital delivery — no shipment",
+        address:
+          (data.address ?? "").trim() ||
+          (allService ? "Service booking — no shipment" : "Digital delivery — no shipment"),
         area: data.area ?? null,
         email: data.email ?? null,
         company: data.company ?? null,
@@ -1034,10 +1082,31 @@ export const placeOrder = createServerFn({ method: "POST" })
         fingerprint: data.fingerprint ?? null,
         device_id: data.deviceId ?? null,
         order_type: orderType,
+        ...(serviceFulfillment ? { fulfillment_meta: { service: serviceFulfillment } } : {}),
       } as any)
       .select("id")
       .single();
     if (oErr || !order) throw new Error(oErr?.message ?? "Order failed");
+
+    // Attach the files the shopper uploaded before the order existed and
+    // auto-confirm when the store owner configured it.
+    if (allService) {
+      try {
+        if (data.service?.uploadToken) {
+          await sb
+            .from("service_order_files")
+            .update({ order_id: order.id } as any)
+            .eq("upload_token", data.service.uploadToken)
+            .eq("store_id", data.storeId);
+        }
+        if (serviceAutoConfirm) {
+          await sb.from("orders").update({ status: "confirmed" } as any).eq("id", order.id);
+        }
+      } catch {
+        /* non-fatal */
+      }
+    }
+
 
     const { error: iErr } = await sb
       .from("order_items")
