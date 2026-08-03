@@ -187,12 +187,23 @@ function Overview({
     .join("")
     .toUpperCase();
 
-  const actions: { id: Tab; label: string; icon: any; hint: string; tone: string }[] = [
-    { id: "orders", label: "Orders", icon: Package, hint: "Track & history", tone: "text-indigo-600 bg-indigo-50" },
-    { id: "wishlist", label: "Wishlist", icon: Heart, hint: "Saved items", tone: "text-rose-600 bg-rose-50" },
-    { id: "addresses", label: "Addresses", icon: MapPin, hint: "Delivery info", tone: "text-emerald-600 bg-emerald-50" },
-    { id: "profile", label: "Settings", icon: User, hint: "Personal info", tone: "text-amber-600 bg-amber-50" },
-  ];
+  const summaryFn = useServerFn(getMyAccountSummary);
+  const { data: summary } = useQuery({
+    queryKey: ["my-account-summary", slug],
+    queryFn: () => summaryFn({ data: { storeSlug: slug, token } }),
+  });
+  const counts = (summary as any)?.counts ?? {};
+
+  const actions: { id: Tab; label: string; icon: any; hint: string; tone: string; show: boolean }[] = [
+    { id: "orders", label: "Orders", icon: Package, hint: "Track & history", tone: "text-indigo-600 bg-indigo-50", show: true },
+    { id: "wishlist", label: "Wishlist", icon: Heart, hint: "Saved items", tone: "text-rose-600 bg-rose-50", show: true },
+    { id: "addresses", label: "Addresses", icon: MapPin, hint: "Delivery info", tone: "text-emerald-600 bg-emerald-50", show: true },
+    { id: "services", label: "Active services", icon: Wrench, hint: "In progress", tone: "text-orange-600 bg-orange-50", show: (counts.services ?? 0) > 0 },
+    { id: "subscriptions", label: "Subscriptions", icon: RefreshCw, hint: "Plans & renewals", tone: "text-teal-600 bg-teal-50", show: (counts.subscriptions ?? 0) > 0 },
+    { id: "downloads", label: "Downloads", icon: Download, hint: "Digital files", tone: "text-violet-600 bg-violet-50", show: (counts.downloads ?? 0) > 0 },
+    { id: "profile", label: "Settings", icon: User, hint: "Personal info", tone: "text-amber-600 bg-amber-50", show: true },
+  ].filter((a) => a.show);
+
 
   return (
     <div className="space-y-4">
