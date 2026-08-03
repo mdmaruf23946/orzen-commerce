@@ -33,13 +33,15 @@ import {
 } from "lucide-react";
 import { AccountShell } from "@/components/storefront/AccountShell";
 import { MyDownloads } from "@/components/storefront/digital/MyDownloads";
+import { MySubscriptions } from "@/components/storefront/subscription/MySubscriptions";
 
 function DownloadsTab({ slug, token }: { slug: string; token: string }) {
   return <MyDownloads slug={slug} token={token} />;
 }
 
-const TABS = ["overview", "profile", "orders", "downloads", "addresses", "wishlist", "password"] as const;
+const TABS = ["overview", "profile", "orders", "downloads", "subscriptions", "addresses", "wishlist", "password"] as const;
 type Tab = (typeof TABS)[number];
+
 
 export const Route = createFileRoute("/store/$slug/account")({
   head: () => ({ meta: [{ title: "My account" }] }),
@@ -89,6 +91,8 @@ function AccountPage() {
     profile: "Personal information",
     orders: "Order history",
     downloads: "My downloads",
+    subscriptions: "My subscriptions",
+
     addresses: "Saved addresses",
     wishlist: "Wishlist",
     password: "Change password",

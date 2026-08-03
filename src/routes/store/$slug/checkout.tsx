@@ -14,6 +14,8 @@ import { computeFingerprint, getDeviceId } from "@/lib/fingerprint";
 import { fbTrack } from "@/lib/fb-track";
 import { DigitalCheckout, type DigitalCartInfo } from "@/components/storefront/checkout/DigitalCheckout";
 import { ServiceCheckout, type ServiceCartInfo } from "@/components/storefront/checkout/ServiceCheckout";
+import { SubscriptionCheckout, type SubscriptionCartInfo } from "@/components/storefront/checkout/SubscriptionCheckout";
+
 
 
 
@@ -84,15 +86,23 @@ function CheckoutPage() {
   const serviceIds = new Set(
     (cartProducts as any[]).filter((p) => p.product_type === "service").map((p) => p.id),
   );
+  const subscriptionIds = new Set(
+    (cartProducts as any[]).filter((p) => p.product_type === "subscription").map((p) => p.id),
+  );
   const hasDigital = cartIds.some((id) => digitalIds.has(id));
   const allDigital = cartIds.length > 0 && cartIds.every((id) => digitalIds.has(id));
   const allService = cartIds.length > 0 && cartIds.every((id) => serviceIds.has(id));
+  const allSubscription = cartIds.length > 0 && cartIds.every((id) => subscriptionIds.has(id));
   const digitalInfo: DigitalCartInfo = Object.fromEntries(
     (cartProducts as any[]).map((p) => [p.id, p.digital ?? null]),
   );
   const serviceInfo: ServiceCartInfo = Object.fromEntries(
     (cartProducts as any[]).map((p) => [p.id, p.service ?? null]),
   );
+  const subscriptionInfo: SubscriptionCartInfo = Object.fromEntries(
+    (cartProducts as any[]).map((p) => [p.id, p.subscription ?? null]),
+  );
+
   const cartImages: Record<string, string | null> = Object.fromEntries(
     (cartProducts as any[]).map((p) => [p.id, p.primary_image_url ?? null]),
   );
@@ -258,6 +268,14 @@ function CheckoutPage() {
       />
     );
   }
+
+  // Subscription-only cart → recurring billing checkout.
+  if (allSubscription) {
+    return (
+      <SubscriptionCheckout slug={slug} store={store} items={items} info={subscriptionInfo} />
+    );
+  }
+
 
   const isOnlineMethod = method.startsWith("custom:") || method.startsWith("builtin:");
 
