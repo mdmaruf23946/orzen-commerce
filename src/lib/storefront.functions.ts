@@ -179,12 +179,17 @@ export const startOnlineCheckout = createServerFn({ method: "POST" })
     const cancelUrl = `${origin}/store/${slug}/checkout`;
     // Charge the true payable total — subtotal alone omitted delivery and
     // ignored coupon discounts.
-    const amount = Math.max(
+    const fullTotal = Math.max(
       0,
       Number((order as any).subtotal ?? 0) +
         Number((order as any).delivery_amount ?? 0) -
         Number((order as any).discount_amount ?? 0),
     );
+    // Service orders may be booked with a partial advance — charge that only.
+    const svcAdvance = Number(
+      (((order as any).fulfillment_meta ?? {}) as any)?.service?.advance_amount ?? 0,
+    );
+    const amount = svcAdvance > 0 ? svcAdvance : fullTotal;
     const storeCurrency = String((store as any)?.currency ?? "BDT").toUpperCase() || "BDT";
     // Reference the webhook can always match on, even when the provider only
     // returns a redirect URL and no transaction id of its own.
