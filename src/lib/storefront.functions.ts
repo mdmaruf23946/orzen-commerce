@@ -733,6 +733,22 @@ export const placeOrder = createServerFn({ method: "POST" })
         customerToken: z.string().min(16).max(128).optional(),
         fingerprint: z.string().trim().max(128).optional(),
         deviceId: z.string().trim().max(128).optional(),
+        // Service-only intake payload. Never used by physical / digital /
+        // subscription checkout — those paths ignore it entirely.
+        service: z
+          .object({
+            packageKey: z.string().trim().max(60).optional(),
+            addons: z.array(z.string().trim().max(80)).max(20).optional(),
+            answers: z.record(z.string(), z.any()).optional(),
+            website: z.string().trim().max(200).optional(),
+            businessName: z.string().trim().max(160).optional(),
+            language: z.string().trim().max(60).optional(),
+            contactChannel: z.string().trim().max(40).optional(),
+            contactTime: z.string().trim().max(40).optional(),
+            uploadToken: z.string().trim().max(64).optional(),
+            paymentPlan: z.enum(["full", "advance"]).optional(),
+          })
+          .optional(),
       })
       .parse(d),
   )
