@@ -13,6 +13,7 @@ import { useCustomerSession } from "@/lib/customer-session";
 import { computeFingerprint, getDeviceId } from "@/lib/fingerprint";
 import { fbTrack } from "@/lib/fb-track";
 import { DigitalCheckout, type DigitalCartInfo } from "@/components/storefront/checkout/DigitalCheckout";
+import { ServiceCheckout, type ServiceCartInfo } from "@/components/storefront/checkout/ServiceCheckout";
 
 
 
