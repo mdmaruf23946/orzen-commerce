@@ -122,6 +122,8 @@ function AccountPage() {
             )}
             {tab === "orders" && <OrdersTab slug={slug} token={token} />}
             {tab === "downloads" && <DownloadsTab slug={slug} token={token} />}
+            {tab === "subscriptions" && <MySubscriptions slug={slug} token={token} />}
+
             {tab === "addresses" && <AddressesTab slug={slug} token={token} />}
             {tab === "wishlist" && <WishlistTab slug={slug} />}
             {tab === "password" && <PasswordTab slug={slug} token={token} />}
