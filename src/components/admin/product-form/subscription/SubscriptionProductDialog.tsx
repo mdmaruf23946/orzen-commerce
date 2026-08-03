@@ -90,7 +90,10 @@ export function SubscriptionProductDialog({
   const [regularPrice, setRegularPrice] = useState<string>(
     editing?.old_price != null ? String(editing.old_price) : editing ? String(editing.price) : "",
   );
-  const [salePrice, setSalePrice] = useState<string>(editing?.old_price != null ? String(editing.price) : "");
+  // Only treat as a sale when the old price is genuinely higher than the price.
+  const [salePrice, setSalePrice] = useState<string>(
+    editing?.old_price != null && Number(editing.old_price) > Number(editing.price) ? String(editing.price) : "",
+  );
   const [setupFee, setSetupFee] = useState<string>(s0.setup_fee != null ? String(s0.setup_fee) : "");
   const [taxIncluded, setTaxIncluded] = useState<boolean>(s0.tax_included ?? false);
   const [renewalMode2, setRenewalMode2] = useState<"same" | "different">(s0.renewal_price_mode ?? "same");
@@ -247,7 +250,8 @@ export function SubscriptionProductDialog({
     if (!name.trim()) return toast.error("Enter a subscription name");
     if (!categoryId) return toast.error("Select a subscription category");
     if (!regularPrice || reg <= 0) return toast.error("Enter a regular price");
-    if (sale != null && sale >= reg) return toast.error("Sale price must be less than the regular price");
+    // Equal prices simply mean "no discount", only a higher sale price is an error.
+    if (sale != null && sale > reg) return toast.error("Sale price must be less than the regular price");
     if (cycle === "custom" && !cycleNumber) return toast.error("Enter the custom billing cycle length");
 
     setSaving(true);

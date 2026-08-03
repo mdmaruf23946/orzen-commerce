@@ -65,7 +65,9 @@ export function ServiceProductDialog({
   const [regularPrice, setRegularPrice] = useState<string>(
     editing?.old_price != null ? String(editing.old_price) : editing ? String(editing.price) : "",
   );
-  const [salePrice, setSalePrice] = useState<string>(editing?.old_price != null ? String(editing.price) : "");
+  const [salePrice, setSalePrice] = useState<string>(
+    editing?.old_price != null && Number(editing.old_price) > Number(editing.price) ? String(editing.price) : "",
+  );
   const [taxIncluded, setTaxIncluded] = useState<boolean>(svc0.tax_included ?? false);
   const [isFeatured, setIsFeatured] = useState<boolean>(!!editing?.is_featured);
 
@@ -217,7 +219,7 @@ export function ServiceProductDialog({
       toast.error("Enter a regular price, or choose Custom quote pricing");
       return;
     }
-    if (sale != null && !isQuote && sale >= reg) {
+    if (sale != null && !isQuote && sale > reg) {
       toast.error("Sale price must be less than the regular price");
       return;
     }
