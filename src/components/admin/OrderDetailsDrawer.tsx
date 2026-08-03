@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FraudCheckModal, RiskBadge } from "@/components/admin/FraudCheckModal";
+import { ServiceWorkflowPanel } from "@/components/admin/service/ServiceWorkflowPanel";
 import { toast } from "sonner";
 
 function resolveProductImageUrl(url: string | null | undefined): string | null {
