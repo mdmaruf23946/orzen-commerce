@@ -2,6 +2,8 @@ import { createFileRoute, useNavigate, notFound, Link } from "@tanstack/react-ro
 import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fbTrack } from "@/lib/fb-track";
+import { isStockless } from "@/lib/product-stock";
+
 import { toast } from "sonner";
 import {
   getProduct,
