@@ -9,6 +9,8 @@ import { getOrderDigitalAccess } from "@/lib/digital.functions";
 import { DigitalOrderAccess } from "@/components/storefront/digital/DigitalOrderAccess";
 import { fbTrack, purchaseEventId } from "@/lib/fb-track";
 import { PaymentTimeline } from "@/components/storefront/PaymentTimeline";
+import { ServiceOrderView } from "@/components/storefront/order/ServiceOrderView";
+import { SubscriptionOrderView } from "@/components/storefront/order/SubscriptionOrderView";
 
 
 const orderQuery = (orderId: string) =>
