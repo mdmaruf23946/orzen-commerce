@@ -106,11 +106,15 @@ function AccountPage() {
     profile: "Personal information",
     orders: "Order history",
     downloads: "My downloads",
+    services: "Active services",
     subscriptions: "My subscriptions",
-
     addresses: "Saved addresses",
     wishlist: "Wishlist",
     password: "Change password",
+    payments: "Payment methods",
+    notifications: "Notifications",
+    privacy: "Privacy & security",
+    support: "Help & support",
   };
 
   return (
@@ -135,16 +139,23 @@ function AccountPage() {
             {tab === "profile" && (
               <ProfileTab slug={slug} token={token} customer={customer} onSaved={refresh} />
             )}
-            {tab === "orders" && <OrdersTab slug={slug} token={token} />}
+            {tab === "orders" && <OrdersPanel slug={slug} token={token} />}
             {tab === "downloads" && <DownloadsTab slug={slug} token={token} />}
+            {tab === "services" && <ActiveServicesPanel slug={slug} token={token} />}
             {tab === "subscriptions" && <MySubscriptions slug={slug} token={token} />}
-
             {tab === "addresses" && <AddressesTab slug={slug} token={token} />}
             {tab === "wishlist" && <WishlistTab slug={slug} />}
             {tab === "password" && <PasswordTab slug={slug} token={token} />}
+            {tab === "payments" && <PaymentMethodsPanel slug={slug} token={token} />}
+            {tab === "notifications" && <NotificationsPanel slug={slug} token={token} />}
+            {tab === "privacy" && (
+              <PrivacyPanel slug={slug} onChangePassword={() => setTab("password")} />
+            )}
+            {tab === "support" && <SupportPanel slug={slug} token={token} />}
           </div>
         </div>
       )}
+
     </AccountShell>
   );
 }
