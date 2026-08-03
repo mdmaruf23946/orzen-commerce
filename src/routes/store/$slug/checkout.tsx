@@ -81,11 +81,22 @@ function CheckoutPage() {
   const digitalIds = new Set(
     (cartProducts as any[]).filter((p) => p.product_type === "digital").map((p) => p.id),
   );
+  const serviceIds = new Set(
+    (cartProducts as any[]).filter((p) => p.product_type === "service").map((p) => p.id),
+  );
   const hasDigital = cartIds.some((id) => digitalIds.has(id));
   const allDigital = cartIds.length > 0 && cartIds.every((id) => digitalIds.has(id));
+  const allService = cartIds.length > 0 && cartIds.every((id) => serviceIds.has(id));
   const digitalInfo: DigitalCartInfo = Object.fromEntries(
     (cartProducts as any[]).map((p) => [p.id, p.digital ?? null]),
   );
+  const serviceInfo: ServiceCartInfo = Object.fromEntries(
+    (cartProducts as any[]).map((p) => [p.id, p.service ?? null]),
+  );
+  const cartImages: Record<string, string | null> = Object.fromEntries(
+    (cartProducts as any[]).map((p) => [p.id, p.primary_image_url ?? null]),
+  );
+
 
 
 
