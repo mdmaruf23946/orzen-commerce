@@ -609,7 +609,7 @@ export const listRelatedProducts = createServerFn({ method: "GET" })
       const have = new Set(rows.map((r) => r.id));
       const { data: extra } = await sb
         .from("products")
-        .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id")
+        .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id,product_type")
         .eq("store_id", data.storeId)
         .neq("id", data.excludeId)
         .neq("status", "draft")
