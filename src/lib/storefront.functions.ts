@@ -154,7 +154,7 @@ export const startOnlineCheckout = createServerFn({ method: "POST" })
     const { data: order } = await supabaseAdmin
       .from("orders")
       .select(
-        "id,store_id,customer_name,phone,address,subtotal,delivery_amount,discount_amount,invoice_no,status,payment_status,payment_gateway_id,payment_method,created_at",
+        "id,store_id,customer_name,phone,address,subtotal,delivery_amount,discount_amount,invoice_no,status,payment_status,payment_gateway_id,payment_method,fulfillment_meta,created_at",
       )
       .eq("id", data.orderId)
       .maybeSingle();
@@ -179,12 +179,17 @@ export const startOnlineCheckout = createServerFn({ method: "POST" })
     const cancelUrl = `${origin}/store/${slug}/checkout`;
     // Charge the true payable total — subtotal alone omitted delivery and
     // ignored coupon discounts.
-    const amount = Math.max(
+    const fullTotal = Math.max(
       0,
       Number((order as any).subtotal ?? 0) +
         Number((order as any).delivery_amount ?? 0) -
         Number((order as any).discount_amount ?? 0),
     );
+    // Service orders may be booked with a partial advance — charge that only.
+    const svcAdvance = Number(
+      (((order as any).fulfillment_meta ?? {}) as any)?.service?.advance_amount ?? 0,
+    );
+    const amount = svcAdvance > 0 ? svcAdvance : fullTotal;
     const storeCurrency = String((store as any)?.currency ?? "BDT").toUpperCase() || "BDT";
     // Reference the webhook can always match on, even when the provider only
     // returns a redirect URL and no transaction id of its own.
@@ -638,6 +643,7 @@ export const listProductsByIds = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return (rows ?? []).map((p) => {
       const dg = ((p.meta ?? {}) as any)?.digital ?? {};
+      const sv = ((p.meta ?? {}) as any)?.service ?? {};
       const files: any[] = Array.isArray(dg.files) ? dg.files : [];
       const { meta: _meta, ...rest } = p as any;
       return {
@@ -650,6 +656,18 @@ export const listProductsByIds = createServerFn({ method: "GET" })
                 license_type: dg.license_type ?? "personal",
                 file_count: files.length,
                 total_size: files.reduce((a, f) => a + (Number(f?.size) || 0), 0),
+              }
+            : null,
+        // Service checkout needs packages, add-ons and delivery info up front.
+        service:
+          p.product_type === "service"
+            ? {
+                packages: Array.isArray(sv.packages) ? sv.packages : [],
+                addons: Array.isArray(sv.addons) ? sv.addons : [],
+                delivery: sv.delivery ?? null,
+                pricing_type: sv.pricing_type ?? "fixed",
+                availability: sv.availability ?? "available",
+                allow_quantity: sv.allow_quantity === true,
               }
             : null,
       };
@@ -733,6 +751,22 @@ export const placeOrder = createServerFn({ method: "POST" })
         customerToken: z.string().min(16).max(128).optional(),
         fingerprint: z.string().trim().max(128).optional(),
         deviceId: z.string().trim().max(128).optional(),
+        // Service-only intake payload. Never used by physical / digital /
+        // subscription checkout — those paths ignore it entirely.
+        service: z
+          .object({
+            packageKey: z.string().trim().max(60).optional(),
+            addons: z.array(z.string().trim().max(80)).max(20).optional(),
+            answers: z.record(z.string(), z.any()).optional(),
+            website: z.string().trim().max(200).optional(),
+            businessName: z.string().trim().max(160).optional(),
+            language: z.string().trim().max(60).optional(),
+            contactChannel: z.string().trim().max(40).optional(),
+            contactTime: z.string().trim().max(40).optional(),
+            uploadToken: z.string().trim().max(64).optional(),
+            paymentPlan: z.enum(["full", "advance"]).optional(),
+          })
+          .optional(),
       })
       .parse(d),
   )
@@ -782,16 +816,21 @@ export const placeOrder = createServerFn({ method: "POST" })
       kinds.length === 1 && ["digital", "service", "subscription"].includes(kinds[0] as string)
         ? (kinds[0] as string)
         : "physical";
+    // Services are booked, never shipped: no address, no zone, no courier, no COD.
+    const allService = orderType === "service";
 
     // Digital goods are never shipped and never paid on delivery.
     if (hasDigital && data.paymentMethod === "cod") {
       throw new Error("Cash on Delivery is not available for digital products");
     }
-    if (!allDigital && (data.address ?? "").trim().length < 3) {
+    if (allService && data.paymentMethod === "cod") {
+      throw new Error("Cash on Delivery is not available for services");
+    }
+    if (!allDigital && !allService && (data.address ?? "").trim().length < 3) {
       throw new Error("Delivery address is required");
     }
-    if (hasDigital && !data.email) {
-      throw new Error("Email address is required for digital products");
+    if ((hasDigital || allService) && !data.email) {
+      throw new Error("Email address is required");
     }
 
 
@@ -816,12 +855,41 @@ export const placeOrder = createServerFn({ method: "POST" })
       };
     });
 
+    // Service pricing is recomputed from trusted product metadata: the chosen
+    // package replaces the base price and add-ons are priced server-side.
+    let servicePackage: { key: string; name: string; price: number } | null = null;
+    const serviceAddons: { name: string; price: number }[] = [];
+    if (allService) {
+      const first = byId.get(data.items[0].productId) as any;
+      const meta = ((first?.meta ?? {}) as any).service ?? {};
+      const packages: any[] = Array.isArray(meta.packages) ? meta.packages : [];
+      const wantedKey = data.service?.packageKey;
+      const pkg =
+        (wantedKey && packages.find((p) => (p.key ?? p.name) === wantedKey)) ||
+        (packages.length ? packages[0] : null);
+      if (pkg && pkg.price != null) {
+        servicePackage = { key: pkg.key ?? pkg.name, name: pkg.name, price: Number(pkg.price) };
+        subtotal = subtotal - Number(first.price) * data.items[0].qty + servicePackage.price * data.items[0].qty;
+        itemRows[0].price_snapshot = servicePackage.price as any;
+        itemRows[0].name_snapshot = `${first.name} — ${servicePackage.name}`;
+      }
+      const available: any[] = Array.isArray(meta.addons) ? meta.addons : [];
+      for (const wanted of data.service?.addons ?? []) {
+        const a = available.find((x) => x.name === wanted);
+        if (a && a.price != null) {
+          serviceAddons.push({ name: a.name, price: Number(a.price) });
+          subtotal += Number(a.price);
+        }
+      }
+    }
+
+
 
     // Delivery — from zone if provided, else legacy fallback
     const d: any = store.delivery ?? {};
     let baseShip = 0;
     let zoneId: string | null = null;
-    if (!allDigital && data.deliveryZoneId) {
+    if (!allDigital && !allService && data.deliveryZoneId) {
       const { data: zone } = await sb
         .from("delivery_zones")
         .select("id,charge,is_active")
@@ -834,7 +902,8 @@ export const placeOrder = createServerFn({ method: "POST" })
       }
     }
     const freeMin = Number(d.free_min ?? 0);
-    let delivery_amount = allDigital ? 0 : freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
+    let delivery_amount =
+      allDigital || allService ? 0 : freeMin > 0 && subtotal >= freeMin ? 0 : baseShip;
 
 
 
@@ -955,6 +1024,52 @@ export const placeOrder = createServerFn({ method: "POST" })
       }
     }
 
+    // ---- Service order extras (isolated from every other checkout type) ----
+    let serviceFulfillment: any = null;
+    let serviceAutoConfirm = false;
+    if (allService) {
+      const { normalizeSettings } = await import("@/lib/service-checkout.server");
+      const { advanceAmount } = await import("@/lib/service-checkout");
+      const { data: srow } = await sb
+        .from("service_checkout_settings")
+        .select("*")
+        .eq("store_id", data.storeId)
+        .maybeSingle();
+      const settings = normalizeSettings(data.storeId, srow);
+      const grandTotal = Math.max(0, subtotal + delivery_amount - discount_amount);
+      const wantsAdvance =
+        settings.payment_mode === "advance_required" ||
+        (settings.payment_mode === "advance" && data.service?.paymentPlan === "advance");
+      const payNow = wantsAdvance ? advanceAmount(grandTotal, settings) : grandTotal;
+      serviceAutoConfirm = settings.auto_confirm;
+      const firstProduct = byId.get(data.items[0].productId) as any;
+      const smeta = ((firstProduct?.meta ?? {}) as any).service ?? {};
+      serviceFulfillment = {
+        package: servicePackage,
+        addons: serviceAddons,
+        answers: data.service?.answers ?? {},
+        website: data.service?.website ?? null,
+        business_name: data.service?.businessName ?? null,
+        language: data.service?.language ?? null,
+        contact_channel: data.service?.contactChannel ?? null,
+        contact_time: data.service?.contactTime ?? null,
+        delivery_time: servicePackage
+          ? (smeta.packages ?? []).find((p: any) => (p.key ?? p.name) === servicePackage!.key)?.delivery_time ??
+            smeta.delivery?.time ??
+            null
+          : (smeta.delivery?.time ?? null),
+        revisions: smeta.revisions ?? null,
+        total: grandTotal,
+        payment_plan: wantsAdvance ? "advance" : "full",
+        advance_amount: wantsAdvance ? payNow : null,
+        balance_due: wantsAdvance ? Math.max(0, grandTotal - payNow) : 0,
+        tags: settings.order_tags,
+        staff_notes: settings.staff_notes ?? null,
+        auto_invoice: settings.auto_invoice,
+        assigned_status: "unassigned",
+      };
+    }
+
     const { data: order, error: oErr } = await sb
       .from("orders")
       .insert({
@@ -962,7 +1077,9 @@ export const placeOrder = createServerFn({ method: "POST" })
         customer_id: customerId,
         customer_name: data.customerName,
         phone: data.phone,
-        address: (data.address ?? "").trim() || "Digital delivery — no shipment",
+        address:
+          (data.address ?? "").trim() ||
+          (allService ? "Service booking — no shipment" : "Digital delivery — no shipment"),
         area: data.area ?? null,
         email: data.email ?? null,
         company: data.company ?? null,
@@ -983,10 +1100,31 @@ export const placeOrder = createServerFn({ method: "POST" })
         fingerprint: data.fingerprint ?? null,
         device_id: data.deviceId ?? null,
         order_type: orderType,
+        ...(serviceFulfillment ? { fulfillment_meta: { service: serviceFulfillment } } : {}),
       } as any)
       .select("id")
       .single();
     if (oErr || !order) throw new Error(oErr?.message ?? "Order failed");
+
+    // Attach the files the shopper uploaded before the order existed and
+    // auto-confirm when the store owner configured it.
+    if (allService) {
+      try {
+        if (data.service?.uploadToken) {
+          await sb
+            .from("service_order_files")
+            .update({ order_id: order.id } as any)
+            .eq("upload_token", data.service.uploadToken)
+            .eq("store_id", data.storeId);
+        }
+        if (serviceAutoConfirm) {
+          await sb.from("orders").update({ status: "confirmed" } as any).eq("id", order.id);
+        }
+      } catch {
+        /* non-fatal */
+      }
+    }
+
 
     const { error: iErr } = await sb
       .from("order_items")

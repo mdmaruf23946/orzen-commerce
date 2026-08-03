@@ -13,6 +13,7 @@ import { useCustomerSession } from "@/lib/customer-session";
 import { computeFingerprint, getDeviceId } from "@/lib/fingerprint";
 import { fbTrack } from "@/lib/fb-track";
 import { DigitalCheckout, type DigitalCartInfo } from "@/components/storefront/checkout/DigitalCheckout";
+import { ServiceCheckout, type ServiceCartInfo } from "@/components/storefront/checkout/ServiceCheckout";
 
 
 
@@ -80,11 +81,22 @@ function CheckoutPage() {
   const digitalIds = new Set(
     (cartProducts as any[]).filter((p) => p.product_type === "digital").map((p) => p.id),
   );
+  const serviceIds = new Set(
+    (cartProducts as any[]).filter((p) => p.product_type === "service").map((p) => p.id),
+  );
   const hasDigital = cartIds.some((id) => digitalIds.has(id));
   const allDigital = cartIds.length > 0 && cartIds.every((id) => digitalIds.has(id));
+  const allService = cartIds.length > 0 && cartIds.every((id) => serviceIds.has(id));
   const digitalInfo: DigitalCartInfo = Object.fromEntries(
     (cartProducts as any[]).map((p) => [p.id, p.digital ?? null]),
   );
+  const serviceInfo: ServiceCartInfo = Object.fromEntries(
+    (cartProducts as any[]).map((p) => [p.id, p.service ?? null]),
+  );
+  const cartImages: Record<string, string | null> = Object.fromEntries(
+    (cartProducts as any[]).map((p) => [p.id, p.primary_image_url ?? null]),
+  );
+
 
 
 
@@ -232,6 +244,19 @@ function CheckoutPage() {
   // Digital-only cart → dedicated digital checkout (no address / courier / COD).
   if (allDigital) {
     return <DigitalCheckout slug={slug} store={store} items={items} info={digitalInfo} />;
+  }
+
+  // Service-only cart → dedicated service booking checkout.
+  if (allService) {
+    return (
+      <ServiceCheckout
+        slug={slug}
+        store={store}
+        items={items}
+        info={serviceInfo}
+        images={cartImages}
+      />
+    );
   }
 
   const isOnlineMethod = method.startsWith("custom:") || method.startsWith("builtin:");
