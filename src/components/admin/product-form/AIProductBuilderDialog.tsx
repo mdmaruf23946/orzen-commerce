@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { compressImage } from "@/lib/compress-image";
+import { INCLUDED_ITEMS } from "@/lib/digital";
 import { generateProductDraft, type ProductDraft } from "@/lib/ai-product-builder.functions";
 import { ProductDialog } from "./ProductDialog";
 import { ServiceProductDialog } from "./service/ServiceProductDialog";
