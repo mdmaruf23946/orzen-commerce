@@ -5396,6 +5396,458 @@ export type Database = {
           },
         ]
       }
+      store_subscription_events: {
+        Row: {
+          actor: string
+          created_at: string
+          event_type: string
+          id: string
+          message: string | null
+          meta: Json
+          store_id: string
+          subscription_id: string
+        }
+        Insert: {
+          actor?: string
+          created_at?: string
+          event_type: string
+          id?: string
+          message?: string | null
+          meta?: Json
+          store_id: string
+          subscription_id: string
+        }
+        Update: {
+          actor?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          message?: string | null
+          meta?: Json
+          store_id?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_subscription_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_subscription_events_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "store_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_subscription_invoices: {
+        Row: {
+          attempts: number
+          created_at: string
+          currency: string
+          discount_amount: number
+          due_at: string | null
+          id: string
+          invoice_no: string
+          is_renewal: boolean
+          order_id: string | null
+          paid_at: string | null
+          pay_token: string
+          payment_method: string | null
+          period_end: string | null
+          period_start: string | null
+          plan_amount: number
+          setup_fee: number
+          status: string
+          store_id: string
+          subscription_id: string
+          tax_amount: number
+          total: number
+          txn_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          currency?: string
+          discount_amount?: number
+          due_at?: string | null
+          id?: string
+          invoice_no: string
+          is_renewal?: boolean
+          order_id?: string | null
+          paid_at?: string | null
+          pay_token?: string
+          payment_method?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          plan_amount?: number
+          setup_fee?: number
+          status?: string
+          store_id: string
+          subscription_id: string
+          tax_amount?: number
+          total?: number
+          txn_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          currency?: string
+          discount_amount?: number
+          due_at?: string | null
+          id?: string
+          invoice_no?: string
+          is_renewal?: boolean
+          order_id?: string | null
+          paid_at?: string | null
+          pay_token?: string
+          payment_method?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          plan_amount?: number
+          setup_fee?: number
+          status?: string
+          store_id?: string
+          subscription_id?: string
+          tax_amount?: number
+          total?: number
+          txn_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_subscription_invoices_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_subscription_invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_subscription_invoices_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "store_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_subscription_notifications: {
+        Row: {
+          channel: string
+          created_at: string
+          error: string | null
+          id: string
+          kind: string
+          payload: Json
+          recipient: string | null
+          sent_at: string | null
+          store_id: string
+          subscription_id: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind: string
+          payload?: Json
+          recipient?: string | null
+          sent_at?: string | null
+          store_id: string
+          subscription_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          payload?: Json
+          recipient?: string | null
+          sent_at?: string | null
+          store_id?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_subscription_notifications_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_subscription_notifications_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "store_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_subscription_settings: {
+        Row: {
+          allow_free_trial: boolean
+          auto_renew_default: boolean
+          cancellation_policy: string | null
+          cod_enabled: boolean
+          created_at: string
+          default_billing_cycle: string
+          failed_payment_retry: number
+          grace_period_days: number
+          invoice_prefix: string
+          invoice_template_id: string | null
+          notify_email: boolean
+          notify_sms: boolean
+          notify_whatsapp: boolean
+          payment_methods: string[]
+          refund_policy: string | null
+          renewal_reminder_days: number
+          setup_fee: number
+          store_id: string
+          subscription_terms: string | null
+          success_redirect_url: string | null
+          tax_percent: number
+          trial_days: number
+          updated_at: string
+        }
+        Insert: {
+          allow_free_trial?: boolean
+          auto_renew_default?: boolean
+          cancellation_policy?: string | null
+          cod_enabled?: boolean
+          created_at?: string
+          default_billing_cycle?: string
+          failed_payment_retry?: number
+          grace_period_days?: number
+          invoice_prefix?: string
+          invoice_template_id?: string | null
+          notify_email?: boolean
+          notify_sms?: boolean
+          notify_whatsapp?: boolean
+          payment_methods?: string[]
+          refund_policy?: string | null
+          renewal_reminder_days?: number
+          setup_fee?: number
+          store_id: string
+          subscription_terms?: string | null
+          success_redirect_url?: string | null
+          tax_percent?: number
+          trial_days?: number
+          updated_at?: string
+        }
+        Update: {
+          allow_free_trial?: boolean
+          auto_renew_default?: boolean
+          cancellation_policy?: string | null
+          cod_enabled?: boolean
+          created_at?: string
+          default_billing_cycle?: string
+          failed_payment_retry?: number
+          grace_period_days?: number
+          invoice_prefix?: string
+          invoice_template_id?: string | null
+          notify_email?: boolean
+          notify_sms?: boolean
+          notify_whatsapp?: boolean
+          payment_methods?: string[]
+          refund_policy?: string | null
+          renewal_reminder_days?: number
+          setup_fee?: number
+          store_id?: string
+          subscription_terms?: string | null
+          success_redirect_url?: string | null
+          tax_percent?: number
+          trial_days?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_subscription_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_subscriptions: {
+        Row: {
+          activated_at: string | null
+          admin_note: string | null
+          auto_renew: boolean
+          billing_cycle: string
+          cancel_at_period_end: boolean
+          cancelled_at: string | null
+          created_at: string
+          currency: string
+          current_period_end: string | null
+          current_period_start: string | null
+          custom_cycle_days: number | null
+          customer_company: string | null
+          customer_country: string | null
+          customer_email: string | null
+          customer_id: string | null
+          customer_name: string | null
+          customer_notes: string | null
+          customer_phone: string | null
+          customer_vat: string | null
+          device_limit: number | null
+          discount_amount: number
+          expires_at: string | null
+          id: string
+          license_qty: number | null
+          next_billing_date: string | null
+          order_id: string | null
+          payment_method: string | null
+          plan_name: string
+          plan_snapshot: Json
+          price: number
+          product_id: string | null
+          reminders_opt_in: boolean
+          renewal_price: number
+          setup_fee: number
+          started_at: string | null
+          status: string
+          store_id: string
+          subscription_no: string
+          tax_amount: number
+          trial_ends_at: string | null
+          updated_at: string
+          user_limit: number | null
+        }
+        Insert: {
+          activated_at?: string | null
+          admin_note?: string | null
+          auto_renew?: boolean
+          billing_cycle?: string
+          cancel_at_period_end?: boolean
+          cancelled_at?: string | null
+          created_at?: string
+          currency?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          custom_cycle_days?: number | null
+          customer_company?: string | null
+          customer_country?: string | null
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_notes?: string | null
+          customer_phone?: string | null
+          customer_vat?: string | null
+          device_limit?: number | null
+          discount_amount?: number
+          expires_at?: string | null
+          id?: string
+          license_qty?: number | null
+          next_billing_date?: string | null
+          order_id?: string | null
+          payment_method?: string | null
+          plan_name: string
+          plan_snapshot?: Json
+          price?: number
+          product_id?: string | null
+          reminders_opt_in?: boolean
+          renewal_price?: number
+          setup_fee?: number
+          started_at?: string | null
+          status?: string
+          store_id: string
+          subscription_no: string
+          tax_amount?: number
+          trial_ends_at?: string | null
+          updated_at?: string
+          user_limit?: number | null
+        }
+        Update: {
+          activated_at?: string | null
+          admin_note?: string | null
+          auto_renew?: boolean
+          billing_cycle?: string
+          cancel_at_period_end?: boolean
+          cancelled_at?: string | null
+          created_at?: string
+          currency?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          custom_cycle_days?: number | null
+          customer_company?: string | null
+          customer_country?: string | null
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_notes?: string | null
+          customer_phone?: string | null
+          customer_vat?: string | null
+          device_limit?: number | null
+          discount_amount?: number
+          expires_at?: string | null
+          id?: string
+          license_qty?: number | null
+          next_billing_date?: string | null
+          order_id?: string | null
+          payment_method?: string | null
+          plan_name?: string
+          plan_snapshot?: Json
+          price?: number
+          product_id?: string | null
+          reminders_opt_in?: boolean
+          renewal_price?: number
+          setup_fee?: number
+          started_at?: string | null
+          status?: string
+          store_id?: string
+          subscription_no?: string
+          tax_amount?: number
+          trial_ends_at?: string | null
+          updated_at?: string
+          user_limit?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_subscriptions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "store_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_subscriptions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_subscriptions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_subscriptions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_template: {
         Row: {
           banners: Json
@@ -6342,6 +6794,10 @@ export type Database = {
       }
       get_billing_discounts: { Args: never; Returns: Json }
       get_custom_gateway_public: { Args: { _id: string }; Returns: Json }
+      get_customer_subscriptions: {
+        Args: { _store_id: string; _token: string }
+        Returns: Json
+      }
       get_fraud_public_status: { Args: never; Returns: Json }
       get_messenger_daily_stats: { Args: { _store_id: string }; Returns: Json }
       get_my_active_ads: { Args: never; Returns: Json }
@@ -6394,6 +6850,10 @@ export type Database = {
       }
       get_public_service_order: { Args: { _order_id: string }; Returns: Json }
       get_public_store_by_slug: { Args: { _slug: string }; Returns: Json }
+      get_public_subscription_order: {
+        Args: { _order_id: string }
+        Returns: Json
+      }
       get_store_bestsellers: {
         Args: { _limit?: number; _store_id: string }
         Returns: {
@@ -6403,6 +6863,10 @@ export type Database = {
       }
       get_store_legal_page: {
         Args: { _page: string; _slug: string }
+        Returns: Json
+      }
+      get_store_subscription_public_settings: {
+        Args: { _store_id: string }
         Returns: Json
       }
       get_store_template_for_seed: { Args: never; Returns: Json }
@@ -6425,6 +6889,7 @@ export type Database = {
         }
         Returns: number
       }
+      next_subscription_no: { Args: { _store_id: string }; Returns: string }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
