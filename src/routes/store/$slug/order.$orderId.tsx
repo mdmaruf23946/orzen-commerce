@@ -100,6 +100,11 @@ function OrderConfirmation() {
   }, [order?.id]);
   if (!order) return null;
 
+  // Type-aware order details: each product type shows only its own workflow.
+  const orderType = (order as any).order_type ?? "physical";
+  if (orderType === "service") return <ServiceOrderView order={order} slug={slug} />;
+  if (orderType === "subscription") return <SubscriptionOrderView order={order} slug={slug} />;
+
   const timeline: any[] = Array.isArray((order as any).timeline) ? (order as any).timeline : [];
   const reachedStages = new Set(timeline.map((t) => t.stage));
   const cancelled = order.status === "cancelled" || reachedStages.has("cancelled");
