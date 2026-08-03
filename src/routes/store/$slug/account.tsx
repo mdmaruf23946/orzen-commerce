@@ -12,6 +12,7 @@ import {
   changeCustomerPassword,
 } from "@/lib/customer-auth.functions";
 import { useCustomerSession } from "@/lib/customer-session";
+import { getMyAccountSummary } from "@/lib/customer-account.functions";
 import { readWishlist } from "@/lib/wishlist";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,17 +31,48 @@ import {
   Mail,
   Phone,
   BadgeCheck,
+  Wrench,
+  RefreshCw,
+  Download,
+  Bell,
+  CreditCard,
+  ShieldCheck,
+  LifeBuoy,
 } from "lucide-react";
 import { AccountShell } from "@/components/storefront/AccountShell";
 import { MyDownloads } from "@/components/storefront/digital/MyDownloads";
 import { MySubscriptions } from "@/components/storefront/subscription/MySubscriptions";
+import { OrdersPanel } from "@/components/storefront/account/OrdersPanel";
+import {
+  ActiveServicesPanel,
+  NotificationsPanel,
+  PaymentMethodsPanel,
+  PrivacyPanel,
+  SupportPanel,
+} from "@/components/storefront/account/Panels";
+
 
 function DownloadsTab({ slug, token }: { slug: string; token: string }) {
   return <MyDownloads slug={slug} token={token} />;
 }
 
-const TABS = ["overview", "profile", "orders", "downloads", "subscriptions", "addresses", "wishlist", "password"] as const;
+const TABS = [
+  "overview",
+  "profile",
+  "orders",
+  "downloads",
+  "services",
+  "subscriptions",
+  "addresses",
+  "wishlist",
+  "password",
+  "payments",
+  "notifications",
+  "privacy",
+  "support",
+] as const;
 type Tab = (typeof TABS)[number];
+
 
 
 export const Route = createFileRoute("/store/$slug/account")({
@@ -91,11 +123,15 @@ function AccountPage() {
     profile: "Personal information",
     orders: "Order history",
     downloads: "My downloads",
+    services: "Active services",
     subscriptions: "My subscriptions",
-
     addresses: "Saved addresses",
     wishlist: "Wishlist",
     password: "Change password",
+    payments: "Payment methods",
+    notifications: "Notifications",
+    privacy: "Privacy & security",
+    support: "Help & support",
   };
 
   return (
@@ -103,6 +139,7 @@ function AccountPage() {
       {tab === "overview" ? (
         <Overview
           slug={slug}
+          token={token}
           customer={customer}
           onNavigate={setTab}
           onSignOut={signOut}
@@ -120,27 +157,36 @@ function AccountPage() {
             {tab === "profile" && (
               <ProfileTab slug={slug} token={token} customer={customer} onSaved={refresh} />
             )}
-            {tab === "orders" && <OrdersTab slug={slug} token={token} />}
+            {tab === "orders" && <OrdersPanel slug={slug} token={token} />}
             {tab === "downloads" && <DownloadsTab slug={slug} token={token} />}
+            {tab === "services" && <ActiveServicesPanel slug={slug} token={token} />}
             {tab === "subscriptions" && <MySubscriptions slug={slug} token={token} />}
-
             {tab === "addresses" && <AddressesTab slug={slug} token={token} />}
             {tab === "wishlist" && <WishlistTab slug={slug} />}
             {tab === "password" && <PasswordTab slug={slug} token={token} />}
+            {tab === "payments" && <PaymentMethodsPanel slug={slug} token={token} />}
+            {tab === "notifications" && <NotificationsPanel slug={slug} token={token} />}
+            {tab === "privacy" && (
+              <PrivacyPanel slug={slug} onChangePassword={() => setTab("password")} />
+            )}
+            {tab === "support" && <SupportPanel slug={slug} token={token} />}
           </div>
         </div>
       )}
+
     </AccountShell>
   );
 }
 
 function Overview({
   slug,
+  token,
   customer,
   onNavigate,
   onSignOut,
 }: {
   slug: string;
+  token: string;
   customer: { full_name: string; email: string | null; phone: string | null };
   onNavigate: (t: Tab) => void;
   onSignOut: () => void;
@@ -152,12 +198,23 @@ function Overview({
     .join("")
     .toUpperCase();
 
-  const actions: { id: Tab; label: string; icon: any; hint: string; tone: string }[] = [
-    { id: "orders", label: "Orders", icon: Package, hint: "Track & history", tone: "text-indigo-600 bg-indigo-50" },
-    { id: "wishlist", label: "Wishlist", icon: Heart, hint: "Saved items", tone: "text-rose-600 bg-rose-50" },
-    { id: "addresses", label: "Addresses", icon: MapPin, hint: "Delivery info", tone: "text-emerald-600 bg-emerald-50" },
-    { id: "profile", label: "Settings", icon: User, hint: "Personal info", tone: "text-amber-600 bg-amber-50" },
-  ];
+  const summaryFn = useServerFn(getMyAccountSummary);
+  const { data: summary } = useQuery({
+    queryKey: ["my-account-summary", slug],
+    queryFn: () => summaryFn({ data: { storeSlug: slug, token } }),
+  });
+  const counts = (summary as any)?.counts ?? {};
+
+  const actions = [
+    { id: "orders", label: "Orders", icon: Package, hint: "Track & history", tone: "text-indigo-600 bg-indigo-50", show: true },
+    { id: "wishlist", label: "Wishlist", icon: Heart, hint: "Saved items", tone: "text-rose-600 bg-rose-50", show: true },
+    { id: "addresses", label: "Addresses", icon: MapPin, hint: "Delivery info", tone: "text-emerald-600 bg-emerald-50", show: true },
+    { id: "services", label: "Active services", icon: Wrench, hint: "In progress", tone: "text-orange-600 bg-orange-50", show: (counts.services ?? 0) > 0 },
+    { id: "subscriptions", label: "Subscriptions", icon: RefreshCw, hint: "Plans & renewals", tone: "text-teal-600 bg-teal-50", show: (counts.subscriptions ?? 0) > 0 },
+    { id: "downloads", label: "Downloads", icon: Download, hint: "Digital files", tone: "text-violet-600 bg-violet-50", show: (counts.downloads ?? 0) > 0 },
+    { id: "profile", label: "Settings", icon: User, hint: "Personal info", tone: "text-amber-600 bg-amber-50", show: true },
+  ].filter((a) => a.show) as { id: Tab; label: string; icon: any; hint: string; tone: string; show: boolean }[];
+
 
   return (
     <div className="space-y-4">
@@ -237,6 +294,10 @@ function Overview({
           onClick={() => onNavigate("password")}
         />
         <SettingsRow icon={MapPin} label="Saved addresses" onClick={() => onNavigate("addresses")} />
+        <SettingsRow icon={CreditCard} label="Payment methods" onClick={() => onNavigate("payments")} />
+        <SettingsRow icon={Bell} label="Notifications" onClick={() => onNavigate("notifications")} />
+        <SettingsRow icon={ShieldCheck} label="Privacy & security" onClick={() => onNavigate("privacy")} />
+        <SettingsRow icon={LifeBuoy} label="Help & support" onClick={() => onNavigate("support")} />
         <Link
           to="/store/$slug/cart"
           params={{ slug }}
