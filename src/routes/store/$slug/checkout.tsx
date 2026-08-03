@@ -246,6 +246,19 @@ function CheckoutPage() {
     return <DigitalCheckout slug={slug} store={store} items={items} info={digitalInfo} />;
   }
 
+  // Service-only cart → dedicated service booking checkout.
+  if (allService) {
+    return (
+      <ServiceCheckout
+        slug={slug}
+        store={store}
+        items={items}
+        info={serviceInfo}
+        images={cartImages}
+      />
+    );
+  }
+
   const isOnlineMethod = method.startsWith("custom:") || method.startsWith("builtin:");
 
   const isManual = !isOnlineMethod && method !== "cod";
