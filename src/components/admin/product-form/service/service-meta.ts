@@ -56,6 +56,9 @@ export type ServiceMeta = {
     demo_video?: string | null;
   };
   addons?: ServiceAddon[];
+  packages?: ServicePackage[];
+  revisions?: string | null;
+  allow_quantity?: boolean;
   faq?: ServiceFaq[];
   policies?: {
     refund?: string;
