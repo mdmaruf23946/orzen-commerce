@@ -799,10 +799,14 @@ export const placeOrder = createServerFn({ method: "POST" })
     const itemRows = data.items.map((i) => {
       const p = byId.get(i.productId);
       if (!p || p.status === "draft") throw new Error("Product unavailable");
-      // Digital products have unlimited stock.
-      if (!isDigitalProduct(p) && p.stock < i.qty) {
+      // Digital, service and subscription products are not inventory-based.
+      const stockless = ["digital", "service", "subscription"].includes(
+        (p as any).product_type ?? "physical",
+      );
+      if (!stockless && p.stock < i.qty) {
         throw new Error(`Not enough stock for ${p.name}`);
       }
+
       subtotal += Number(p.price) * i.qty;
       return {
         product_id: p.id,
