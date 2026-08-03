@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Heart } from "lucide-react";
 import { addToCart } from "@/lib/cart";
 import { isInWishlist, toggleWishlist } from "@/lib/wishlist";
+import { isStockless } from "@/lib/product-stock";
 
 type Product = {
   id: string;
@@ -11,6 +12,7 @@ type Product = {
   old_price: number | string | null;
   stock: number;
   primary_image_url: string | null;
+  product_type?: string | null;
 };
 
 export function ProductCard({ slug, p }: { slug: string; p: Product }) {
@@ -20,7 +22,9 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
   const oldPrice = p.old_price != null ? Number(p.old_price) : null;
   const hasDiscount = oldPrice != null && oldPrice > price;
   const discountPct = hasDiscount ? Math.round(((oldPrice! - price) / oldPrice!) * 100) : 0;
-  const outOfStock = p.stock <= 0;
+  const stockless = isStockless(p.product_type);
+  const outOfStock = !stockless && p.stock <= 0;
+
 
   useEffect(() => {
     setWished(isInWishlist(slug, p.id));
