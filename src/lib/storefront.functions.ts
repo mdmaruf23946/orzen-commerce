@@ -798,16 +798,21 @@ export const placeOrder = createServerFn({ method: "POST" })
       kinds.length === 1 && ["digital", "service", "subscription"].includes(kinds[0] as string)
         ? (kinds[0] as string)
         : "physical";
+    // Services are booked, never shipped: no address, no zone, no courier, no COD.
+    const allService = orderType === "service";
 
     // Digital goods are never shipped and never paid on delivery.
     if (hasDigital && data.paymentMethod === "cod") {
       throw new Error("Cash on Delivery is not available for digital products");
     }
-    if (!allDigital && (data.address ?? "").trim().length < 3) {
+    if (allService && data.paymentMethod === "cod") {
+      throw new Error("Cash on Delivery is not available for services");
+    }
+    if (!allDigital && !allService && (data.address ?? "").trim().length < 3) {
       throw new Error("Delivery address is required");
     }
-    if (hasDigital && !data.email) {
-      throw new Error("Email address is required for digital products");
+    if ((hasDigital || allService) && !data.email) {
+      throw new Error("Email address is required");
     }
 
 
@@ -831,6 +836,35 @@ export const placeOrder = createServerFn({ method: "POST" })
         qty: i.qty,
       };
     });
+
+    // Service pricing is recomputed from trusted product metadata: the chosen
+    // package replaces the base price and add-ons are priced server-side.
+    let servicePackage: { key: string; name: string; price: number } | null = null;
+    const serviceAddons: { name: string; price: number }[] = [];
+    if (allService) {
+      const first = byId.get(data.items[0].productId) as any;
+      const meta = ((first?.meta ?? {}) as any).service ?? {};
+      const packages: any[] = Array.isArray(meta.packages) ? meta.packages : [];
+      const wantedKey = data.service?.packageKey;
+      const pkg =
+        (wantedKey && packages.find((p) => (p.key ?? p.name) === wantedKey)) ||
+        (packages.length ? packages[0] : null);
+      if (pkg && pkg.price != null) {
+        servicePackage = { key: pkg.key ?? pkg.name, name: pkg.name, price: Number(pkg.price) };
+        subtotal = subtotal - Number(first.price) * data.items[0].qty + servicePackage.price * data.items[0].qty;
+        itemRows[0].price_snapshot = servicePackage.price as any;
+        itemRows[0].name_snapshot = `${first.name} — ${servicePackage.name}`;
+      }
+      const available: any[] = Array.isArray(meta.addons) ? meta.addons : [];
+      for (const wanted of data.service?.addons ?? []) {
+        const a = available.find((x) => x.name === wanted);
+        if (a && a.price != null) {
+          serviceAddons.push({ name: a.name, price: Number(a.price) });
+          subtotal += Number(a.price);
+        }
+      }
+    }
+
 
 
     // Delivery — from zone if provided, else legacy fallback
