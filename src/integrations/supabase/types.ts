@@ -4080,6 +4080,141 @@ export type Database = {
           },
         ]
       }
+      service_order_assignments: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          last_reply_at: string | null
+          messenger: string | null
+          name: string
+          order_id: string
+          phone: string | null
+          response_time: string | null
+          role: string
+          store_id: string
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          last_reply_at?: string | null
+          messenger?: string | null
+          name: string
+          order_id: string
+          phone?: string | null
+          response_time?: string | null
+          role?: string
+          store_id: string
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          last_reply_at?: string | null
+          messenger?: string | null
+          name?: string
+          order_id?: string
+          phone?: string | null
+          response_time?: string | null
+          role?: string
+          store_id?: string
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_order_assignments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_order_assignments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_order_deliverables: {
+        Row: {
+          created_at: string
+          download_count: number
+          download_limit: number | null
+          expires_at: string | null
+          external_url: string | null
+          file_name: string | null
+          id: string
+          kind: string
+          mime_type: string | null
+          order_id: string
+          path: string | null
+          secret_value: string | null
+          size_bytes: number | null
+          store_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          download_count?: number
+          download_limit?: number | null
+          expires_at?: string | null
+          external_url?: string | null
+          file_name?: string | null
+          id?: string
+          kind?: string
+          mime_type?: string | null
+          order_id: string
+          path?: string | null
+          secret_value?: string | null
+          size_bytes?: number | null
+          store_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          download_count?: number
+          download_limit?: number | null
+          expires_at?: string | null
+          external_url?: string | null
+          file_name?: string | null
+          id?: string
+          kind?: string
+          mime_type?: string | null
+          order_id?: string
+          path?: string | null
+          secret_value?: string | null
+          size_bytes?: number | null
+          store_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_order_deliverables_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_order_deliverables_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_order_files: {
         Row: {
           created_at: string
@@ -4126,6 +4261,317 @@ export type Database = {
             foreignKeyName: "service_order_files_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_order_meetings: {
+        Row: {
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          meeting_link: string | null
+          notes: string | null
+          office_address: string | null
+          order_id: string
+          passcode: string | null
+          platform: string
+          starts_at: string
+          status: string
+          store_id: string
+          timezone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          meeting_link?: string | null
+          notes?: string | null
+          office_address?: string | null
+          order_id: string
+          passcode?: string | null
+          platform?: string
+          starts_at: string
+          status?: string
+          store_id: string
+          timezone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          meeting_link?: string | null
+          notes?: string | null
+          office_address?: string | null
+          order_id?: string
+          passcode?: string | null
+          platform?: string
+          starts_at?: string
+          status?: string
+          store_id?: string
+          timezone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_order_meetings_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_order_meetings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_order_progress: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          order_id: string
+          stage: string
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          order_id: string
+          stage: string
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          order_id?: string
+          stage?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_order_progress_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_order_progress_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_order_reviews: {
+        Row: {
+          created_at: string
+          order_id: string
+          rating: number
+          recommend: boolean
+          review_text: string | null
+          screenshot_path: string | null
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          order_id: string
+          rating: number
+          recommend?: boolean
+          review_text?: string | null
+          screenshot_path?: string | null
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          order_id?: string
+          rating?: number
+          recommend?: boolean
+          review_text?: string | null
+          screenshot_path?: string | null
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_order_reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_order_reviews_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_order_revisions: {
+        Row: {
+          admin_response: string | null
+          created_at: string
+          deadline_at: string | null
+          id: string
+          order_id: string
+          request_text: string
+          responded_at: string | null
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          admin_response?: string | null
+          created_at?: string
+          deadline_at?: string | null
+          id?: string
+          order_id: string
+          request_text: string
+          responded_at?: string | null
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          admin_response?: string | null
+          created_at?: string
+          deadline_at?: string | null
+          id?: string
+          order_id?: string
+          request_text?: string
+          responded_at?: string | null
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_order_revisions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_order_revisions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_order_updates: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          order_id: string
+          status_label: string
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          order_id: string
+          status_label: string
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          order_id?: string
+          status_label?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_order_updates_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_order_updates_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_workflow_settings: {
+        Row: {
+          allow_cancel: boolean
+          allow_reviews: boolean
+          cancel_window_hours: number
+          created_at: string
+          default_revisions: number
+          enabled_stages: string[]
+          response_time: string | null
+          store_id: string
+          support_channels: Json
+          support_email: string | null
+          support_messenger: string | null
+          support_phone: string | null
+          support_whatsapp: string | null
+          updated_at: string
+        }
+        Insert: {
+          allow_cancel?: boolean
+          allow_reviews?: boolean
+          cancel_window_hours?: number
+          created_at?: string
+          default_revisions?: number
+          enabled_stages?: string[]
+          response_time?: string | null
+          store_id: string
+          support_channels?: Json
+          support_email?: string | null
+          support_messenger?: string | null
+          support_phone?: string | null
+          support_whatsapp?: string | null
+          updated_at?: string
+        }
+        Update: {
+          allow_cancel?: boolean
+          allow_reviews?: boolean
+          cancel_window_hours?: number
+          created_at?: string
+          default_revisions?: number
+          enabled_stages?: string[]
+          response_time?: string | null
+          store_id?: string
+          support_channels?: Json
+          support_email?: string | null
+          support_messenger?: string | null
+          support_phone?: string | null
+          support_whatsapp?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_workflow_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
@@ -5946,6 +6392,7 @@ export type Database = {
           sort_order: number
         }[]
       }
+      get_public_service_order: { Args: { _order_id: string }; Returns: Json }
       get_public_store_by_slug: { Args: { _slug: string }; Returns: Json }
       get_store_bestsellers: {
         Args: { _limit?: number; _store_id: string }
