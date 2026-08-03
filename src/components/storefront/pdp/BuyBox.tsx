@@ -59,7 +59,7 @@ export function BuyBox({ price, oldPrice, stock, status, productType, qty, setQt
           <button
             type="button"
             className="grid h-10 w-10 place-items-center"
-            onClick={() => setQty(Math.min(stock || 1, qty + 1))}
+            onClick={() => setQty(stockless ? qty + 1 : Math.min(stock || 1, qty + 1))}
             aria-label="Increase"
           >
             <Plus className="h-4 w-4" />
