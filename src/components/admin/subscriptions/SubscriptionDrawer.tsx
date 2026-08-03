@@ -34,6 +34,7 @@ export function SubscriptionDrawer({
   const [busy, setBusy] = useState(false);
   const [days, setDays] = useState(30);
   const [note, setNote] = useState("");
+  const [openInvoice, setOpenInvoice] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "subscription-detail", id],
