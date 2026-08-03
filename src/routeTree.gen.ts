@@ -70,6 +70,7 @@ import { Route as AuthenticatedOwnerAiUsageRouteImport } from './routes/_authent
 import { Route as AuthenticatedOwnerAiRouteImport } from './routes/_authenticated/owner/ai'
 import { Route as AuthenticatedOwnerAdsRouteImport } from './routes/_authenticated/owner/ads'
 import { Route as AuthenticatedAdminThemeRouteImport } from './routes/_authenticated/admin/theme'
+import { Route as AuthenticatedAdminSubscriptionsRouteImport } from './routes/_authenticated/admin/subscriptions'
 import { Route as AuthenticatedAdminSubscriptionRouteImport } from './routes/_authenticated/admin/subscription'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin/settings'
 import { Route as AuthenticatedAdminSeoRouteImport } from './routes/_authenticated/admin/seo'
@@ -481,6 +482,12 @@ const AuthenticatedAdminThemeRoute = AuthenticatedAdminThemeRouteImport.update({
   path: '/theme',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const AuthenticatedAdminSubscriptionsRoute =
+  AuthenticatedAdminSubscriptionsRouteImport.update({
+    id: '/subscriptions',
+    path: '/subscriptions',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminSubscriptionRoute =
   AuthenticatedAdminSubscriptionRouteImport.update({
     id: '/subscription',
@@ -987,6 +994,7 @@ export interface FileRoutesByFullPath {
   '/admin/seo': typeof AuthenticatedAdminSeoRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
+  '/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
   '/owner/ads': typeof AuthenticatedOwnerAdsRoute
   '/owner/ai': typeof AuthenticatedOwnerAiRoute
@@ -1118,6 +1126,7 @@ export interface FileRoutesByTo {
   '/admin/seo': typeof AuthenticatedAdminSeoRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
+  '/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
   '/owner/ads': typeof AuthenticatedOwnerAdsRoute
   '/owner/ai': typeof AuthenticatedOwnerAiRoute
@@ -1258,6 +1267,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/seo': typeof AuthenticatedAdminSeoRoute
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/_authenticated/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
+  '/_authenticated/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
   '/_authenticated/admin/theme': typeof AuthenticatedAdminThemeRoute
   '/_authenticated/owner/ads': typeof AuthenticatedOwnerAdsRoute
   '/_authenticated/owner/ai': typeof AuthenticatedOwnerAiRoute
@@ -1398,6 +1408,7 @@ export interface FileRouteTypes {
     | '/admin/seo'
     | '/admin/settings'
     | '/admin/subscription'
+    | '/admin/subscriptions'
     | '/admin/theme'
     | '/owner/ads'
     | '/owner/ai'
@@ -1529,6 +1540,7 @@ export interface FileRouteTypes {
     | '/admin/seo'
     | '/admin/settings'
     | '/admin/subscription'
+    | '/admin/subscriptions'
     | '/admin/theme'
     | '/owner/ads'
     | '/owner/ai'
@@ -1668,6 +1680,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/seo'
     | '/_authenticated/admin/settings'
     | '/_authenticated/admin/subscription'
+    | '/_authenticated/admin/subscriptions'
     | '/_authenticated/admin/theme'
     | '/_authenticated/owner/ads'
     | '/_authenticated/owner/ai'
@@ -2210,6 +2223,13 @@ declare module '@tanstack/react-router' {
       path: '/theme'
       fullPath: '/admin/theme'
       preLoaderRoute: typeof AuthenticatedAdminThemeRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/subscriptions': {
+      id: '/_authenticated/admin/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/admin/subscriptions'
+      preLoaderRoute: typeof AuthenticatedAdminSubscriptionsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/subscription': {
@@ -2803,6 +2823,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminSeoRoute: typeof AuthenticatedAdminSeoRoute
   AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
   AuthenticatedAdminSubscriptionRoute: typeof AuthenticatedAdminSubscriptionRoute
+  AuthenticatedAdminSubscriptionsRoute: typeof AuthenticatedAdminSubscriptionsRoute
   AuthenticatedAdminThemeRoute: typeof AuthenticatedAdminThemeRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminInvoiceOrderIdRoute: typeof AuthenticatedAdminInvoiceOrderIdRoute
@@ -2856,6 +2877,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminSeoRoute: AuthenticatedAdminSeoRoute,
     AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
     AuthenticatedAdminSubscriptionRoute: AuthenticatedAdminSubscriptionRoute,
+    AuthenticatedAdminSubscriptionsRoute: AuthenticatedAdminSubscriptionsRoute,
     AuthenticatedAdminThemeRoute: AuthenticatedAdminThemeRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
     AuthenticatedAdminInvoiceOrderIdRoute:
