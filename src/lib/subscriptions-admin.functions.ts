@@ -85,7 +85,18 @@ export const getAdminSubscription = createServerFn({ method: "GET" })
     return { subscription: sub as any, invoices: (invoices ?? []) as any[], events: (events ?? []) as any[] };
   });
 
-const ACTIONS = ["activate", "suspend", "resume", "cancel", "cancel_now", "renew", "extend", "note"] as const;
+const ACTIONS = [
+  "activate",
+  "suspend",
+  "resume",
+  "cancel",
+  "cancel_now",
+  "renew",
+  "extend",
+  "note",
+  "auto_renew_on",
+  "auto_renew_off",
+] as const;
 
 export const adminSubscriptionAction = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
