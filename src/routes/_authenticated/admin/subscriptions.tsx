@@ -31,22 +31,55 @@ function AdminSubscriptionsPage() {
   const { data, isLoading } = useQuery({ queryKey: ["admin", "subscriptions"], queryFn: () => fetchList() });
   const [tab, setTab] = useState<"subscribers" | "settings">("subscribers");
   const [status, setStatus] = useState<string>("all");
+  const [plan, setPlan] = useState<string>("all");
+  const [customer, setCustomer] = useState<string>("all");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [q, setQ] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
 
+  const all = (data?.rows ?? []) as any[];
+
+  const planOptions = useMemo(
+    () => Array.from(new Set(all.map((s) => s.plan_snapshot?.name).filter(Boolean))).sort(),
+    [all],
+  );
+  const customerOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(all.map((s) => s.customer_email || s.customer_phone || s.customer_name).filter(Boolean)),
+      ).sort(),
+    [all],
+  );
+
   const rows = useMemo(() => {
-    const list = (data?.rows ?? []) as any[];
     const term = q.trim().toLowerCase();
-    return list.filter((s) => {
+    const fromTs = from ? new Date(from).getTime() : null;
+    const toTs = to ? new Date(to).getTime() + 86399999 : null;
+    return all.filter((s) => {
       if (status !== "all" && s.status !== status) return false;
+      if (plan !== "all" && (s.plan_snapshot?.name ?? "") !== plan) return false;
+      if (
+        customer !== "all" &&
+        (s.customer_email || s.customer_phone || s.customer_name || "") !== customer
+      )
+        return false;
+      if (fromTs || toTs) {
+        const t = s.next_billing_date ? new Date(s.next_billing_date).getTime() : null;
+        if (t === null) return false;
+        if (fromTs && t < fromTs) return false;
+        if (toTs && t > toTs) return false;
+      }
       if (!term) return true;
       return [s.subscription_no, s.customer_name, s.customer_email, s.customer_phone, s.plan_snapshot?.name]
         .filter(Boolean)
         .some((v: string) => String(v).toLowerCase().includes(term));
     });
-  }, [data, status, q]);
+  }, [all, status, plan, customer, from, to, q]);
 
   const kpis = data?.kpis;
+
+  const hasFilters = status !== "all" || plan !== "all" || customer !== "all" || !!from || !!to || !!q;
 
   return (
     <div className="space-y-4">
@@ -82,8 +115,8 @@ function AdminSubscriptionsPage() {
             <Kpi label="MRR" value={money(kpis?.mrr)} />
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <div className="relative flex-1">
+          <div className="space-y-2 rounded-xl border bg-card p-3">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={q}
@@ -92,6 +125,54 @@ function AdminSubscriptionsPage() {
                 className="pl-9"
               />
             </div>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              <select
+                value={plan}
+                onChange={(e) => setPlan(e.target.value)}
+                className="h-10 rounded-md border bg-background px-3 text-sm"
+              >
+                <option value="all">All plans</option>
+                {planOptions.map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+              <select
+                value={customer}
+                onChange={(e) => setCustomer(e.target.value)}
+                className="h-10 rounded-md border bg-background px-3 text-sm"
+              >
+                <option value="all">All customers</option>
+                {customerOptions.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="shrink-0">Renews from</span>
+                <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-10" />
+              </label>
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="shrink-0">to</span>
+                <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-10" />
+              </label>
+            </div>
+            {hasFilters && (
+              <div className="flex items-center justify-between pt-1 text-xs text-muted-foreground">
+                <span>{rows.length} of {all.length} subscriptions</span>
+                <button
+                  className="rounded-md border px-2 py-1 hover:bg-muted"
+                  onClick={() => {
+                    setStatus("all");
+                    setPlan("all");
+                    setCustomer("all");
+                    setFrom("");
+                    setTo("");
+                    setQ("");
+                  }}
+                >
+                  Clear filters
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="-mx-3 flex gap-1 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0">
