@@ -263,3 +263,33 @@ export const saveSubscriptionSettings = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/** Detail lookup keyed by the order id (Orders → Subscription tab controller). */
+export const getAdminSubscriptionByOrder = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ orderId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const storeId = await storeIdOf(context.supabase, context.userId);
+    if (!storeId) return null;
+    const { data: sub } = await context.supabase
+      .from("store_subscriptions")
+      .select("*")
+      .eq("order_id", data.orderId)
+      .eq("store_id", storeId)
+      .maybeSingle();
+    if (!sub) return null;
+    const [{ data: invoices }, { data: events }] = await Promise.all([
+      context.supabase
+        .from("store_subscription_invoices")
+        .select("*")
+        .eq("subscription_id", (sub as any).id)
+        .order("created_at", { ascending: false }),
+      context.supabase
+        .from("store_subscription_events")
+        .select("*")
+        .eq("subscription_id", (sub as any).id)
+        .order("created_at", { ascending: false })
+        .limit(50),
+    ]);
+    return { subscription: sub as any, invoices: (invoices ?? []) as any[], events: (events ?? []) as any[] };
+  });
