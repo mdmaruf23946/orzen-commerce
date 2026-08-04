@@ -170,8 +170,8 @@ export const adminSubscriptionAction = createServerFn({ method: "POST" })
         break;
       case "change_cycle": {
         if (data.cycle) {
-          const { nextPeriodEnd } = await import("@/lib/subscriptions");
-          const end = nextPeriodEnd(new Date(), data.cycle as any, Number((s as any).custom_cycle_days ?? 30));
+          const { nextBillingDate } = await import("@/lib/subscriptions");
+          const end = nextBillingDate(new Date(), data.cycle as any, Number((s as any).custom_cycle_days ?? 30));
           await sb
             .from("store_subscriptions")
             .update({
@@ -182,6 +182,7 @@ export const adminSubscriptionAction = createServerFn({ method: "POST" })
             })
             .eq("id", s.id);
         }
+
         break;
       }
       case "auto_renew_on":
