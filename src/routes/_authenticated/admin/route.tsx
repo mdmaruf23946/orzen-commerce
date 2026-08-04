@@ -30,7 +30,14 @@ type BadgeKey =
   | "low_stock" | "notifications" | "payments" | "payment_gateway"
   | "delivery" | "landing_pages" | "duplicate_protection" | "ai_recommendations";
 
-type LinkDef = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean; badgeKey?: BadgeKey };
+type LinkDef = {
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  exact?: boolean;
+  badgeKey?: BadgeKey;
+  children?: { to: string; label: string }[];
+};
 
 const links: LinkDef[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
