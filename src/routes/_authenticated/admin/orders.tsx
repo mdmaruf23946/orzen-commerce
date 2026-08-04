@@ -119,7 +119,13 @@ function matchesTab(o: AdminOrderRow, tab: TabKey) {
   }
 }
 
+/** Plan label for a subscription order (used by the Subscription tab filters). */
+function subPlanName(o: AdminOrderRow): string {
+  return (o.fulfillment as any)?.plan_name ?? o.items?.[0]?.name ?? "";
+}
+
 function OrdersPage() {
+
   const list = useServerFn(listAdminOrders);
   const update = useServerFn(updateOrderStatus);
   const qc = useQueryClient();
