@@ -315,14 +315,14 @@ function CheckoutPage() {
         // cart, so a failed session leaves them able to retry.
         const pay = await startPay({ data: { orderId: res.orderId, gatewayKey: method } });
         if (pay?.redirect_url) {
-          clearCart(slug);
+          removeSelected(slug, items.map((i) => i.productId));
           window.location.href = pay.redirect_url;
           return;
         }
         throw new Error("Payment could not be started. Please try another payment method.");
       }
 
-      clearCart(slug);
+      removeSelected(slug, items.map((i) => i.productId));
       navigate({ to: "/store/$slug/order/$orderId", params: { slug, orderId: res.orderId } });
     } catch (err) {
       const msg = (err as Error).message;
