@@ -115,6 +115,7 @@ import { Route as AuthenticatedAdminBillingRouteRouteImport } from './routes/_au
 import { Route as AuthenticatedOwnerSubscriptionPayIndexRouteImport } from './routes/_authenticated/owner/subscription-pay.index'
 import { Route as AuthenticatedOwnerNotificationCenterIndexRouteImport } from './routes/_authenticated/owner/notification-center.index'
 import { Route as AuthenticatedOwnerCommunicationIndexRouteImport } from './routes/_authenticated/owner/communication.index'
+import { Route as AuthenticatedAdminSettingsIndexRouteImport } from './routes/_authenticated/admin/settings.index'
 import { Route as AuthenticatedAdminLandingPagesIndexRouteImport } from './routes/_authenticated/admin/landing-pages.index'
 import { Route as AuthenticatedAdminBillingIndexRouteImport } from './routes/_authenticated/admin/billing.index'
 import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
@@ -748,6 +749,12 @@ const AuthenticatedOwnerCommunicationIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedOwnerCommunicationRouteRoute,
   } as any)
+const AuthenticatedAdminSettingsIndexRoute =
+  AuthenticatedAdminSettingsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAdminSettingsRoute,
+  } as any)
 const AuthenticatedAdminLandingPagesIndexRoute =
   AuthenticatedAdminLandingPagesIndexRouteImport.update({
     id: '/landing-pages/',
@@ -992,7 +999,7 @@ export interface FileRoutesByFullPath {
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/returns': typeof AuthenticatedAdminReturnsRoute
   '/admin/seo': typeof AuthenticatedAdminSeoRoute
-  '/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/admin/settings': typeof AuthenticatedAdminSettingsRouteWithChildren
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
@@ -1063,6 +1070,7 @@ export interface FileRoutesByFullPath {
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
   '/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
+  '/admin/settings/': typeof AuthenticatedAdminSettingsIndexRoute
   '/owner/communication/': typeof AuthenticatedOwnerCommunicationIndexRoute
   '/owner/notification-center/': typeof AuthenticatedOwnerNotificationCenterIndexRoute
   '/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
@@ -1124,7 +1132,6 @@ export interface FileRoutesByTo {
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/returns': typeof AuthenticatedAdminReturnsRoute
   '/admin/seo': typeof AuthenticatedAdminSeoRoute
-  '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
@@ -1195,6 +1202,7 @@ export interface FileRoutesByTo {
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing': typeof AuthenticatedAdminBillingIndexRoute
   '/admin/landing-pages': typeof AuthenticatedAdminLandingPagesIndexRoute
+  '/admin/settings': typeof AuthenticatedAdminSettingsIndexRoute
   '/owner/communication': typeof AuthenticatedOwnerCommunicationIndexRoute
   '/owner/notification-center': typeof AuthenticatedOwnerNotificationCenterIndexRoute
   '/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
@@ -1265,7 +1273,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/products': typeof AuthenticatedAdminProductsRoute
   '/_authenticated/admin/returns': typeof AuthenticatedAdminReturnsRoute
   '/_authenticated/admin/seo': typeof AuthenticatedAdminSeoRoute
-  '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRouteWithChildren
   '/_authenticated/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/_authenticated/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
   '/_authenticated/admin/theme': typeof AuthenticatedAdminThemeRoute
@@ -1336,6 +1344,7 @@ export interface FileRoutesById {
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/_authenticated/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
   '/_authenticated/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
+  '/_authenticated/admin/settings/': typeof AuthenticatedAdminSettingsIndexRoute
   '/_authenticated/owner/communication/': typeof AuthenticatedOwnerCommunicationIndexRoute
   '/_authenticated/owner/notification-center/': typeof AuthenticatedOwnerNotificationCenterIndexRoute
   '/_authenticated/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
@@ -1477,6 +1486,7 @@ export interface FileRouteTypes {
     | '/store/$slug/product/$productId'
     | '/admin/billing/'
     | '/admin/landing-pages/'
+    | '/admin/settings/'
     | '/owner/communication/'
     | '/owner/notification-center/'
     | '/owner/subscription-pay/'
@@ -1538,7 +1548,6 @@ export interface FileRouteTypes {
     | '/admin/products'
     | '/admin/returns'
     | '/admin/seo'
-    | '/admin/settings'
     | '/admin/subscription'
     | '/admin/subscriptions'
     | '/admin/theme'
@@ -1609,6 +1618,7 @@ export interface FileRouteTypes {
     | '/store/$slug/product/$productId'
     | '/admin/billing'
     | '/admin/landing-pages'
+    | '/admin/settings'
     | '/owner/communication'
     | '/owner/notification-center'
     | '/owner/subscription-pay'
@@ -1749,6 +1759,7 @@ export interface FileRouteTypes {
     | '/store/$slug/product/$productId'
     | '/_authenticated/admin/billing/'
     | '/_authenticated/admin/landing-pages/'
+    | '/_authenticated/admin/settings/'
     | '/_authenticated/owner/communication/'
     | '/_authenticated/owner/notification-center/'
     | '/_authenticated/owner/subscription-pay/'
@@ -2540,6 +2551,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerCommunicationIndexRouteImport
       parentRoute: typeof AuthenticatedOwnerCommunicationRouteRoute
     }
+    '/_authenticated/admin/settings/': {
+      id: '/_authenticated/admin/settings/'
+      path: '/'
+      fullPath: '/admin/settings/'
+      preLoaderRoute: typeof AuthenticatedAdminSettingsIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminSettingsRoute
+    }
     '/_authenticated/admin/landing-pages/': {
       id: '/_authenticated/admin/landing-pages/'
       path: '/landing-pages'
@@ -2786,6 +2804,20 @@ const AuthenticatedAdminBillingRouteRouteWithChildren =
     AuthenticatedAdminBillingRouteRouteChildren,
   )
 
+interface AuthenticatedAdminSettingsRouteChildren {
+  AuthenticatedAdminSettingsIndexRoute: typeof AuthenticatedAdminSettingsIndexRoute
+}
+
+const AuthenticatedAdminSettingsRouteChildren: AuthenticatedAdminSettingsRouteChildren =
+  {
+    AuthenticatedAdminSettingsIndexRoute: AuthenticatedAdminSettingsIndexRoute,
+  }
+
+const AuthenticatedAdminSettingsRouteWithChildren =
+  AuthenticatedAdminSettingsRoute._addFileChildren(
+    AuthenticatedAdminSettingsRouteChildren,
+  )
+
 interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminBillingRouteRoute: typeof AuthenticatedAdminBillingRouteRouteWithChildren
   AuthenticatedAdminAiAgentRoute: typeof AuthenticatedAdminAiAgentRoute
@@ -2821,7 +2853,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminProductsRoute: typeof AuthenticatedAdminProductsRoute
   AuthenticatedAdminReturnsRoute: typeof AuthenticatedAdminReturnsRoute
   AuthenticatedAdminSeoRoute: typeof AuthenticatedAdminSeoRoute
-  AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
+  AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRouteWithChildren
   AuthenticatedAdminSubscriptionRoute: typeof AuthenticatedAdminSubscriptionRoute
   AuthenticatedAdminSubscriptionsRoute: typeof AuthenticatedAdminSubscriptionsRoute
   AuthenticatedAdminThemeRoute: typeof AuthenticatedAdminThemeRoute
@@ -2875,7 +2907,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminProductsRoute: AuthenticatedAdminProductsRoute,
     AuthenticatedAdminReturnsRoute: AuthenticatedAdminReturnsRoute,
     AuthenticatedAdminSeoRoute: AuthenticatedAdminSeoRoute,
-    AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
+    AuthenticatedAdminSettingsRoute:
+      AuthenticatedAdminSettingsRouteWithChildren,
     AuthenticatedAdminSubscriptionRoute: AuthenticatedAdminSubscriptionRoute,
     AuthenticatedAdminSubscriptionsRoute: AuthenticatedAdminSubscriptionsRoute,
     AuthenticatedAdminThemeRoute: AuthenticatedAdminThemeRoute,
