@@ -138,6 +138,7 @@ import { Route as AuthenticatedOwnerCommunicationHistoryRouteImport } from './ro
 import { Route as AuthenticatedOwnerCommunicationGmailRouteImport } from './routes/_authenticated/owner/communication.gmail'
 import { Route as AuthenticatedOwnerCommunicationComposeRouteImport } from './routes/_authenticated/owner/communication.compose'
 import { Route as AuthenticatedAdminSettingsWorkflowRouteImport } from './routes/_authenticated/admin/settings.workflow'
+import { Route as AuthenticatedAdminSettingsSubscriptionRouteImport } from './routes/_authenticated/admin/settings.subscription'
 import { Route as AuthenticatedAdminSettingsInformationRouteImport } from './routes/_authenticated/admin/settings.information'
 import { Route as AuthenticatedAdminSettingsConfigurationRouteImport } from './routes/_authenticated/admin/settings.configuration'
 import { Route as AuthenticatedAdminLandingPagesIdRouteImport } from './routes/_authenticated/admin/landing-pages.$id'
@@ -885,6 +886,12 @@ const AuthenticatedAdminSettingsWorkflowRoute =
     path: '/workflow',
     getParentRoute: () => AuthenticatedAdminSettingsRoute,
   } as any)
+const AuthenticatedAdminSettingsSubscriptionRoute =
+  AuthenticatedAdminSettingsSubscriptionRouteImport.update({
+    id: '/subscription',
+    path: '/subscription',
+    getParentRoute: () => AuthenticatedAdminSettingsRoute,
+  } as any)
 const AuthenticatedAdminSettingsInformationRoute =
   AuthenticatedAdminSettingsInformationRouteImport.update({
     id: '/information',
@@ -1072,6 +1079,7 @@ export interface FileRoutesByFullPath {
   '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
   '/admin/settings/configuration': typeof AuthenticatedAdminSettingsConfigurationRoute
   '/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
+  '/admin/settings/subscription': typeof AuthenticatedAdminSettingsSubscriptionRoute
   '/admin/settings/workflow': typeof AuthenticatedAdminSettingsWorkflowRoute
   '/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
   '/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
@@ -1207,6 +1215,7 @@ export interface FileRoutesByTo {
   '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
   '/admin/settings/configuration': typeof AuthenticatedAdminSettingsConfigurationRoute
   '/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
+  '/admin/settings/subscription': typeof AuthenticatedAdminSettingsSubscriptionRoute
   '/admin/settings/workflow': typeof AuthenticatedAdminSettingsWorkflowRoute
   '/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
   '/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
@@ -1352,6 +1361,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
   '/_authenticated/admin/settings/configuration': typeof AuthenticatedAdminSettingsConfigurationRoute
   '/_authenticated/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
+  '/_authenticated/admin/settings/subscription': typeof AuthenticatedAdminSettingsSubscriptionRoute
   '/_authenticated/admin/settings/workflow': typeof AuthenticatedAdminSettingsWorkflowRoute
   '/_authenticated/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
   '/_authenticated/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
@@ -1497,6 +1507,7 @@ export interface FileRouteTypes {
     | '/admin/landing-pages/$id'
     | '/admin/settings/configuration'
     | '/admin/settings/information'
+    | '/admin/settings/subscription'
     | '/admin/settings/workflow'
     | '/owner/communication/compose'
     | '/owner/communication/gmail'
@@ -1632,6 +1643,7 @@ export interface FileRouteTypes {
     | '/admin/landing-pages/$id'
     | '/admin/settings/configuration'
     | '/admin/settings/information'
+    | '/admin/settings/subscription'
     | '/admin/settings/workflow'
     | '/owner/communication/compose'
     | '/owner/communication/gmail'
@@ -1776,6 +1788,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/landing-pages/$id'
     | '/_authenticated/admin/settings/configuration'
     | '/_authenticated/admin/settings/information'
+    | '/_authenticated/admin/settings/subscription'
     | '/_authenticated/admin/settings/workflow'
     | '/_authenticated/owner/communication/compose'
     | '/_authenticated/owner/communication/gmail'
@@ -2751,6 +2764,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminSettingsWorkflowRouteImport
       parentRoute: typeof AuthenticatedAdminSettingsRoute
     }
+    '/_authenticated/admin/settings/subscription': {
+      id: '/_authenticated/admin/settings/subscription'
+      path: '/subscription'
+      fullPath: '/admin/settings/subscription'
+      preLoaderRoute: typeof AuthenticatedAdminSettingsSubscriptionRouteImport
+      parentRoute: typeof AuthenticatedAdminSettingsRoute
+    }
     '/_authenticated/admin/settings/information': {
       id: '/_authenticated/admin/settings/information'
       path: '/information'
@@ -2867,6 +2887,7 @@ const AuthenticatedAdminBillingRouteRouteWithChildren =
 interface AuthenticatedAdminSettingsRouteChildren {
   AuthenticatedAdminSettingsConfigurationRoute: typeof AuthenticatedAdminSettingsConfigurationRoute
   AuthenticatedAdminSettingsInformationRoute: typeof AuthenticatedAdminSettingsInformationRoute
+  AuthenticatedAdminSettingsSubscriptionRoute: typeof AuthenticatedAdminSettingsSubscriptionRoute
   AuthenticatedAdminSettingsWorkflowRoute: typeof AuthenticatedAdminSettingsWorkflowRoute
   AuthenticatedAdminSettingsIndexRoute: typeof AuthenticatedAdminSettingsIndexRoute
 }
@@ -2877,6 +2898,8 @@ const AuthenticatedAdminSettingsRouteChildren: AuthenticatedAdminSettingsRouteCh
       AuthenticatedAdminSettingsConfigurationRoute,
     AuthenticatedAdminSettingsInformationRoute:
       AuthenticatedAdminSettingsInformationRoute,
+    AuthenticatedAdminSettingsSubscriptionRoute:
+      AuthenticatedAdminSettingsSubscriptionRoute,
     AuthenticatedAdminSettingsWorkflowRoute:
       AuthenticatedAdminSettingsWorkflowRoute,
     AuthenticatedAdminSettingsIndexRoute: AuthenticatedAdminSettingsIndexRoute,
