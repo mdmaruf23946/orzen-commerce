@@ -121,7 +121,14 @@ function AdminLayout() {
   const [search, setSearch] = useState("");
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const ownerCheck = useServerFn(amIOwner);
-  const { data: ownerData } = useQuery({ queryKey: ["amIOwner"], queryFn: () => ownerCheck() });
+  const { data: ownerData } = useQuery({
+    queryKey: ["amIOwner"],
+    queryFn: () => ownerCheck(),
+    retry: 2,
+    staleTime: 60_000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  });
   const fetchStore = useServerFn(getMyStore);
   const { data: myStore } = useQuery({ queryKey: ["admin", "store"], queryFn: () => fetchStore() });
   const storeIcon = resolveStoreIcon(myStore as any);
