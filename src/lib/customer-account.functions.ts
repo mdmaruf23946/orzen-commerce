@@ -81,7 +81,13 @@ export const listMyOrders = createServerFn({ method: "POST" })
         .from("products")
         .select("id,primary_image_url")
         .in("id", productIds as string[]);
-      for (const p of (prods ?? []) as any[]) imageById.set(p.id, p.primary_image_url ?? null);
+      for (const p of (prods ?? []) as any[]) {
+        const raw = p.primary_image_url as string | null;
+        imageById.set(
+          p.id,
+          raw ? (raw.startsWith("http") || raw.startsWith("/") ? raw : `/api/img/${raw}`) : null,
+        );
+      }
     }
 
     const byOrder = new Map<string, any[]>();
