@@ -360,11 +360,44 @@ function OrdersPage() {
                 ["all", "All time"], ["today", "Today"], ["7d", "Last 7 days"], ["30d", "Last 30 days"],
               ]} />
             </Field>
+            {type === "subscription" && (
+              <>
+                <Field label="Plan">
+                  <Select value={subPlan} onChange={setSubPlan} options={[
+                    ["all", "All plans"],
+                    ...planOptions.map((p) => [p, p] as [string, string]),
+                  ]} />
+                </Field>
+                <Field label="Customer">
+                  <Select value={subCustomer} onChange={setSubCustomer} options={[
+                    ["all", "All customers"],
+                    ...customerOptions.map((c) => [c, c] as [string, string]),
+                  ]} />
+                </Field>
+                <Field label="Renews from">
+                  <input
+                    type="date"
+                    value={renewFrom}
+                    onChange={(e) => setRenewFrom(e.target.value)}
+                    className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                  />
+                </Field>
+                <Field label="Renews to">
+                  <input
+                    type="date"
+                    value={renewTo}
+                    onChange={(e) => setRenewTo(e.target.value)}
+                    className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                  />
+                </Field>
+              </>
+            )}
             <Field label="Sort">
               <Select value={sort} onChange={setSort} options={[
                 ["new", "Newest first"], ["old", "Oldest first"], ["high", "Highest value"], ["low", "Lowest value"],
               ]} />
             </Field>
+
           </PopoverContent>
         </Popover>
       </div>
