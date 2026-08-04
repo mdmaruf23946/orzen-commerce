@@ -321,12 +321,18 @@ function AdminLayout() {
               );
             })}
 
-            {ownerData?.isOwner && !collapsed && (
+            {ownerData?.isOwner && (
               <Link
                 to="/owner"
-                className="mt-1 flex items-center gap-3 rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10"
+                onClick={() => setOpen(false)}
+                title={collapsed ? "Owner Panel" : undefined}
+                className={cn(
+                  "mt-1 flex items-center gap-3 rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10",
+                  collapsed && !open && "md:justify-center md:px-2",
+                )}
               >
-                <Sparkles className="h-4 w-4" /> Owner Panel
+                <Sparkles className="h-4 w-4 shrink-0" />
+                {(!collapsed || open) && <span>Owner Panel</span>}
               </Link>
             )}
 
