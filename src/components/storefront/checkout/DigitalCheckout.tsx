@@ -9,7 +9,7 @@ import {
   startOnlineCheckout,
   validateCoupon,
 } from "@/lib/storefront.functions";
-import { clearCart, type CartItem } from "@/lib/cart";
+import { removeSelected, type CartItem } from "@/lib/cart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -148,14 +148,14 @@ export function DigitalCheckout({ slug, store, items, info }: Props) {
           }
         }
         if (pay?.redirect_url) {
-          clearCart(slug);
+          removeSelected(slug, items.map((i) => i.productId));
           window.location.href = pay.redirect_url;
           return;
         }
         throw new Error("Payment could not be started. Please try another payment method.");
       }
 
-      clearCart(slug);
+      removeSelected(slug, items.map((i) => i.productId));
       navigate({ to: "/store/$slug/order/$orderId", params: { slug, orderId: res.orderId } });
     } catch (err) {
       toast.error((err as Error).message);
