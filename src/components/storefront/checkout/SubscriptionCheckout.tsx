@@ -93,7 +93,15 @@ export function SubscriptionCheckout({
   }, [settings]);
 
   const allowed = settings?.payment_methods ?? [];
-  const manual = MANUAL_METHODS.filter((m) => !allowed.length || allowed.includes(m.id));
+  // A manual method only exists if the store owner actually configured it
+  // (enabled + a number / account) in the admin Payments settings.
+  const pc = (store as any)?.payments_config ?? {};
+  const manual = MANUAL_METHODS.filter((m) => {
+    if (allowed.length && !allowed.includes(m.id)) return false;
+    const cfg = pc[m.id];
+    if (!cfg || cfg.enabled === false) return false;
+    return !!(cfg.number || cfg.account);
+  });
   const online = (gateways as any[]).filter(
     (g) => !allowed.length || allowed.includes(g.key) || allowed.includes(g.id),
   );

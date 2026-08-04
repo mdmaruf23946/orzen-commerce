@@ -163,12 +163,13 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
     for (const m of SERVICE_MANUAL_METHODS) {
       if (allowed.length && !allowed.includes(m.id)) continue;
       const cfg = pc[m.id];
-      const detail = cfg?.number || cfg?.account;
-      if (!allowed.length && !detail) continue;
+      if (!cfg || cfg.enabled === false) continue;
+      const detail = cfg.number || cfg.account;
+      if (!detail) continue;
       list.push({
         id: m.id,
         label: m.label,
-        desc: detail ? `Send to ${detail}` : "Manual payment — we confirm it",
+        desc: `Send to ${detail}`,
         online: false,
       });
     }
