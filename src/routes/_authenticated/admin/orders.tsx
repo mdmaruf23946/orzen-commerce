@@ -141,7 +141,12 @@ function OrdersPage() {
   const [payment, setPayment] = useState("all");
   const [courier, setCourier] = useState("all");
   const [range, setRange] = useState("all");
+  const [subPlan, setSubPlan] = useState("all");
+  const [subCustomer, setSubCustomer] = useState("all");
+  const [renewFrom, setRenewFrom] = useState("");
+  const [renewTo, setRenewTo] = useState("");
   const [sort, setSort] = useState("new");
+
   const [fraudFor, setFraudFor] = useState<{ id: string; phone: string } | null>(null);
   const [detailsFor, setDetailsFor] = useState<string | null>(null);
   const { allowed: fraudAllowed } = useFeature("fraud_checker");
