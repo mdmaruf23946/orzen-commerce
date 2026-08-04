@@ -69,3 +69,39 @@ export function cartCount(slug: string): number {
 export function cartTotal(slug: string): number {
   return readCart(slug).reduce((acc, i) => acc + i.qty * i.price, 0);
 }
+
+// ---- Checkout selection -------------------------------------------------
+// Only one product type can be checked out at a time (physical / digital /
+// service / subscription). The cart page stores the chosen product ids here
+// and the checkout page honours them.
+
+const selKey = (slug: string) => `cart-selection:${slug}`;
+
+export function readSelection(slug: string): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(selKey(slug));
+    const arr = raw ? (JSON.parse(raw) as string[]) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeSelection(slug: string, ids: string[]) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(selKey(slug), JSON.stringify(ids));
+}
+
+export function clearSelection(slug: string) {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(selKey(slug));
+}
+
+/** Remove only the checked-out items, keeping the rest of the cart intact. */
+export function removeSelected(slug: string, ids: string[]) {
+  const keep = readCart(slug).filter((i) => !ids.includes(i.productId));
+  writeCart(slug, keep);
+  clearSelection(slug);
+}
+

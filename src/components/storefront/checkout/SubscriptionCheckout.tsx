@@ -11,7 +11,7 @@ import {
   placeOrder,
 } from "@/lib/storefront.functions";
 import { getPublicSubscriptionSettings } from "@/lib/subscriptions.functions";
-import { clearCart, type CartItem } from "@/lib/cart";
+import { removeSelected, type CartItem } from "@/lib/cart";
 import { useCustomerSession } from "@/lib/customer-session";
 import { computeFingerprint, getDeviceId } from "@/lib/fingerprint";
 import { billingSummary, CYCLE_LABEL, nextBillingDate, type SubCycle } from "@/lib/subscriptions";
@@ -182,12 +182,12 @@ export function SubscriptionCheckout({
       if (isOnline) {
         const pay = await startPay({ data: { orderId: (res as any).orderId, gatewayKey: method } });
         if ((pay as any)?.redirect_url) {
-          clearCart(slug);
+          removeSelected(slug, items.map((i) => i.productId));
           window.location.href = (pay as any).redirect_url;
           return;
         }
       }
-      clearCart(slug);
+      removeSelected(slug, items.map((i) => i.productId));
       navigate({
         to: "/store/$slug/order/$orderId",
         params: { slug, orderId: (res as any).orderId },

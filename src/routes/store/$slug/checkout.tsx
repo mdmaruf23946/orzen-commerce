@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { getStoreBySlug, listStoreOnlineGateways, startOnlineCheckout, placeOrder, validateCoupon, getStoreDeliveryZones, listProductsByIds } from "@/lib/storefront.functions";
-import { readCart, clearCart, type CartItem } from "@/lib/cart";
+import { readCart, readSelection, removeSelected, type CartItem } from "@/lib/cart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -111,7 +111,10 @@ function CheckoutPage() {
 
 
   useEffect(() => {
-    const c = readCart(slug);
+    // Only the product type the shopper ticked in the cart is checked out.
+    const all = readCart(slug);
+    const sel = readSelection(slug);
+    const c = sel.length ? all.filter((i) => sel.includes(i.productId)) : all;
     setItems(c);
     if (c.length) {
       fbTrack("InitiateCheckout", {
@@ -251,7 +254,33 @@ function CheckoutPage() {
     );
   }
 
+  // Mixed product types can never share one order — send the shopper back to
+  // the cart to tick a single type.
+  const typesInCart = new Set(
+    (cartProducts as any[]).map((p) => p.product_type ?? "physical"),
+  );
+  if (cartProducts.length > 0 && typesInCart.size > 1) {
+    return (
+      <div className="mx-auto max-w-md py-16 text-center">
+        <h1 className="text-xl font-semibold">Choose one product type</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Physical, digital, service and subscription products each have their own order
+          process, so they must be checked out separately.
+        </p>
+        <Link
+          to="/store/$slug/cart"
+          params={{ slug }}
+          className="mt-6 inline-flex h-10 items-center rounded-md px-4 text-sm font-medium text-white"
+          style={{ backgroundColor: "var(--primary)" }}
+        >
+          Back to cart
+        </Link>
+      </div>
+    );
+  }
+
   // Digital-only cart → dedicated digital checkout (no address / courier / COD).
+
   if (allDigital) {
     return <DigitalCheckout slug={slug} store={store} items={items} info={digitalInfo} />;
   }
@@ -312,14 +341,14 @@ function CheckoutPage() {
         // cart, so a failed session leaves them able to retry.
         const pay = await startPay({ data: { orderId: res.orderId, gatewayKey: method } });
         if (pay?.redirect_url) {
-          clearCart(slug);
+          removeSelected(slug, items.map((i) => i.productId));
           window.location.href = pay.redirect_url;
           return;
         }
         throw new Error("Payment could not be started. Please try another payment method.");
       }
 
-      clearCart(slug);
+      removeSelected(slug, items.map((i) => i.productId));
       navigate({ to: "/store/$slug/order/$orderId", params: { slug, orderId: res.orderId } });
     } catch (err) {
       const msg = (err as Error).message;
