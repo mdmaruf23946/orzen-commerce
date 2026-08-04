@@ -162,7 +162,30 @@ export const adminSubscriptionAction = createServerFn({ method: "POST" })
           .eq("id", s.id);
         break;
       }
+      case "expire":
+        await sb
+          .from("store_subscriptions")
+          .update({ status: "expired", expires_at: new Date().toISOString(), auto_renew: false })
+          .eq("id", s.id);
+        break;
+      case "change_cycle": {
+        if (data.cycle) {
+          const { nextPeriodEnd } = await import("@/lib/subscriptions");
+          const end = nextPeriodEnd(new Date(), data.cycle as any, Number((s as any).custom_cycle_days ?? 30));
+          await sb
+            .from("store_subscriptions")
+            .update({
+              billing_cycle: data.cycle,
+              current_period_start: new Date().toISOString(),
+              current_period_end: end,
+              next_billing_date: end,
+            })
+            .eq("id", s.id);
+        }
+        break;
+      }
       case "auto_renew_on":
+
         await sb.from("store_subscriptions").update({ auto_renew: true }).eq("id", s.id);
         break;
       case "auto_renew_off":
