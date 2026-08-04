@@ -137,6 +137,7 @@ import { Route as AuthenticatedOwnerCommunicationTemplatesRouteImport } from './
 import { Route as AuthenticatedOwnerCommunicationHistoryRouteImport } from './routes/_authenticated/owner/communication.history'
 import { Route as AuthenticatedOwnerCommunicationGmailRouteImport } from './routes/_authenticated/owner/communication.gmail'
 import { Route as AuthenticatedOwnerCommunicationComposeRouteImport } from './routes/_authenticated/owner/communication.compose'
+import { Route as AuthenticatedAdminSettingsInformationRouteImport } from './routes/_authenticated/admin/settings.information'
 import { Route as AuthenticatedAdminLandingPagesIdRouteImport } from './routes/_authenticated/admin/landing-pages.$id'
 import { Route as AuthenticatedAdminInvoiceOrderIdRouteImport } from './routes/_authenticated/admin/invoice.$orderId'
 import { Route as AuthenticatedAdminBillingReturnRouteImport } from './routes/_authenticated/admin/billing.return'
@@ -876,6 +877,12 @@ const AuthenticatedOwnerCommunicationComposeRoute =
     path: '/compose',
     getParentRoute: () => AuthenticatedOwnerCommunicationRouteRoute,
   } as any)
+const AuthenticatedAdminSettingsInformationRoute =
+  AuthenticatedAdminSettingsInformationRouteImport.update({
+    id: '/information',
+    path: '/information',
+    getParentRoute: () => AuthenticatedAdminSettingsRoute,
+  } as any)
 const AuthenticatedAdminLandingPagesIdRoute =
   AuthenticatedAdminLandingPagesIdRouteImport.update({
     id: '/landing-pages/$id',
@@ -1049,6 +1056,7 @@ export interface FileRoutesByFullPath {
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
+  '/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
   '/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
   '/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
   '/owner/communication/history': typeof AuthenticatedOwnerCommunicationHistoryRouteWithChildren
@@ -1181,6 +1189,7 @@ export interface FileRoutesByTo {
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
+  '/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
   '/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
   '/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
   '/owner/communication/history': typeof AuthenticatedOwnerCommunicationHistoryRouteWithChildren
@@ -1323,6 +1332,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/_authenticated/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/_authenticated/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
+  '/_authenticated/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
   '/_authenticated/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
   '/_authenticated/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
   '/_authenticated/owner/communication/history': typeof AuthenticatedOwnerCommunicationHistoryRouteWithChildren
@@ -1465,6 +1475,7 @@ export interface FileRouteTypes {
     | '/admin/billing/return'
     | '/admin/invoice/$orderId'
     | '/admin/landing-pages/$id'
+    | '/admin/settings/information'
     | '/owner/communication/compose'
     | '/owner/communication/gmail'
     | '/owner/communication/history'
@@ -1597,6 +1608,7 @@ export interface FileRouteTypes {
     | '/admin/billing/return'
     | '/admin/invoice/$orderId'
     | '/admin/landing-pages/$id'
+    | '/admin/settings/information'
     | '/owner/communication/compose'
     | '/owner/communication/gmail'
     | '/owner/communication/history'
@@ -1738,6 +1750,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/billing/return'
     | '/_authenticated/admin/invoice/$orderId'
     | '/_authenticated/admin/landing-pages/$id'
+    | '/_authenticated/admin/settings/information'
     | '/_authenticated/owner/communication/compose'
     | '/_authenticated/owner/communication/gmail'
     | '/_authenticated/owner/communication/history'
@@ -2705,6 +2718,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerCommunicationComposeRouteImport
       parentRoute: typeof AuthenticatedOwnerCommunicationRouteRoute
     }
+    '/_authenticated/admin/settings/information': {
+      id: '/_authenticated/admin/settings/information'
+      path: '/information'
+      fullPath: '/admin/settings/information'
+      preLoaderRoute: typeof AuthenticatedAdminSettingsInformationRouteImport
+      parentRoute: typeof AuthenticatedAdminSettingsRoute
+    }
     '/_authenticated/admin/landing-pages/$id': {
       id: '/_authenticated/admin/landing-pages/$id'
       path: '/landing-pages/$id'
@@ -2805,11 +2825,14 @@ const AuthenticatedAdminBillingRouteRouteWithChildren =
   )
 
 interface AuthenticatedAdminSettingsRouteChildren {
+  AuthenticatedAdminSettingsInformationRoute: typeof AuthenticatedAdminSettingsInformationRoute
   AuthenticatedAdminSettingsIndexRoute: typeof AuthenticatedAdminSettingsIndexRoute
 }
 
 const AuthenticatedAdminSettingsRouteChildren: AuthenticatedAdminSettingsRouteChildren =
   {
+    AuthenticatedAdminSettingsInformationRoute:
+      AuthenticatedAdminSettingsInformationRoute,
     AuthenticatedAdminSettingsIndexRoute: AuthenticatedAdminSettingsIndexRoute,
   }
 
