@@ -203,161 +203,168 @@ export function SubscriptionCheckout({
   const access: any[] = Array.isArray(meta.access_items) ? meta.access_items : [];
 
   return (
-    <form onSubmit={submit} className="mx-auto grid max-w-5xl gap-6 py-6 lg:grid-cols-[1fr_360px]">
-      <div className="space-y-5">
+    <form
+      onSubmit={submit}
+      className="mx-auto w-full max-w-full px-2 py-3 sm:px-4 sm:py-6 lg:max-w-5xl lg:grid lg:grid-cols-[1fr_360px] lg:gap-6"
+    >
+      <div className="space-y-3 sm:space-y-4 lg:space-y-5">
         <div>
-          <h1 className="text-2xl font-semibold">Start your subscription</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-lg font-semibold leading-tight sm:text-xl lg:text-2xl">Start your subscription</h1>
+          <p className="text-[11px] text-muted-foreground sm:text-sm">
             Recurring billing · cancel anytime from your account.
           </p>
         </div>
 
-        <section className="rounded-xl border bg-card p-4">
-          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
-            <RefreshCw className="h-3.5 w-3.5" /> Plan
+        <section className="rounded-lg border bg-card p-2.5 sm:p-4">
+          <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase text-muted-foreground sm:text-xs">
+            <RefreshCw className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Plan
           </div>
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start justify-between gap-2 sm:gap-3">
             <div className="min-w-0">
-              <div className="truncate font-medium">{item?.name}</div>
-              <div className="text-xs text-muted-foreground">
+              <div className="truncate text-sm font-medium sm:text-base">{item?.name}</div>
+              <div className="text-[11px] text-muted-foreground sm:text-xs">
                 {CYCLE_LABEL[cycle] ?? cycle} billing{qty > 1 ? ` · ${qty} licenses` : ""}
               </div>
             </div>
-            <div className="text-right">
-              <div className="font-semibold">{taka(summary.plan)}</div>
-              <div className="text-[11px] text-muted-foreground">/ {CYCLE_LABEL[cycle] ?? cycle}</div>
+            <div className="shrink-0 text-right">
+              <div className="text-sm font-semibold sm:text-base">{taka(summary.plan)}</div>
+              <div className="text-[10px] text-muted-foreground sm:text-[11px]">/ {CYCLE_LABEL[cycle] ?? cycle}</div>
             </div>
           </div>
           {trialEnabled && trialDays > 0 && (
-            <div className="mt-3 flex items-center gap-2 rounded-lg bg-sky-50 p-2 text-xs text-sky-800">
-              <Sparkles className="h-3.5 w-3.5" /> {trialDays}-day free trial — first charge on{" "}
+            <div className="mt-2 flex items-center gap-2 rounded-lg bg-sky-50 p-2 text-[11px] text-sky-800">
+              <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> {trialDays}-day free trial — first charge on{" "}
               {firstBilling ? new Date(firstBilling).toLocaleDateString() : "—"}
             </div>
           )}
           {(benefits.length > 0 || access.length > 0) && (
-            <ul className="mt-3 grid gap-1 sm:grid-cols-2">
+            <ul className="mt-2 grid gap-1 sm:mt-3 sm:grid-cols-2">
               {[...access.map((a) => a.label), ...benefits.map((b) => b.title)]
                 .filter(Boolean)
                 .slice(0, 8)
                 .map((label: string, i: number) => (
-                  <li key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> {label}
+                  <li key={i} className="flex items-center gap-1.5 text-[11px] text-muted-foreground sm:text-xs">
+                    <CheckCircle2 className="h-3 w-3 text-emerald-500 sm:h-3.5 sm:w-3.5" /> {label}
                   </li>
                 ))}
             </ul>
           )}
         </section>
 
-        <section className="rounded-xl border bg-card p-4">
-          <div className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Subscriber details</div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="s-name">Full name</Label>
-              <Input id="s-name" required value={name} onChange={(e) => setName(e.target.value)} />
+        <section className="rounded-lg border bg-card p-2.5 sm:p-4">
+          <div className="mb-2 text-[11px] font-semibold uppercase text-muted-foreground sm:text-xs">
+            Subscriber details
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="s-name" className="text-xs">Full name</Label>
+              <Input id="s-name" required value={name} onChange={(e) => setName(e.target.value)} className="h-8 text-sm sm:h-10" />
             </div>
-            <div>
-              <Label htmlFor="s-email">Email (invoices)</Label>
-              <Input id="s-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            <div className="space-y-1">
+              <Label htmlFor="s-email" className="text-xs">Email (invoices)</Label>
+              <Input id="s-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-8 text-sm sm:h-10" />
             </div>
-            <div>
-              <Label htmlFor="s-phone">Phone</Label>
-              <Input id="s-phone" required value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <div className="space-y-1">
+              <Label htmlFor="s-phone" className="text-xs">Phone</Label>
+              <Input id="s-phone" required value={phone} onChange={(e) => setPhone(e.target.value)} className="h-8 text-sm sm:h-10" />
             </div>
-            <div>
-              <Label htmlFor="s-country">Country</Label>
-              <Input id="s-country" value={country} onChange={(e) => setCountry(e.target.value)} />
+            <div className="space-y-1">
+              <Label htmlFor="s-country" className="text-xs">Country</Label>
+              <Input id="s-country" value={country} onChange={(e) => setCountry(e.target.value)} className="h-8 text-sm sm:h-10" />
             </div>
-            <div>
-              <Label htmlFor="s-company">Company (optional)</Label>
-              <Input id="s-company" value={company} onChange={(e) => setCompany(e.target.value)} />
+            <div className="space-y-1">
+              <Label htmlFor="s-company" className="text-xs">Company (optional)</Label>
+              <Input id="s-company" value={company} onChange={(e) => setCompany(e.target.value)} className="h-8 text-sm sm:h-10" />
             </div>
-            <div>
-              <Label htmlFor="s-vat">VAT / BIN (optional)</Label>
-              <Input id="s-vat" value={vat} onChange={(e) => setVat(e.target.value)} />
+            <div className="space-y-1">
+              <Label htmlFor="s-vat" className="text-xs">VAT / BIN (optional)</Label>
+              <Input id="s-vat" value={vat} onChange={(e) => setVat(e.target.value)} className="h-8 text-sm sm:h-10" />
             </div>
           </div>
-          <div className="mt-3">
-            <Label htmlFor="s-notes">Notes (optional)</Label>
-            <Textarea id="s-notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <div className="mt-2 space-y-1 sm:mt-3">
+            <Label htmlFor="s-notes" className="text-xs">Notes (optional)</Label>
+            <Textarea id="s-notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="text-sm" />
           </div>
         </section>
 
-        <section className="rounded-xl border bg-card p-4">
-          <div className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Payment method</div>
-          <div className="grid gap-2 sm:grid-cols-2">
+        <section className="rounded-lg border bg-card p-2.5 sm:p-4">
+          <div className="mb-2 text-[11px] font-semibold uppercase text-muted-foreground sm:text-xs">
+            Payment method
+          </div>
+          <div className="grid gap-2">
             {online.map((g: any) => {
               const key = g.key ?? `builtin:${g.id}`;
               return (
                 <label
                   key={key}
-                  className={`flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm ${
+                  className={`flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm sm:p-3 ${
                     method === key ? "border-primary ring-1 ring-primary" : ""
                   }`}
                 >
                   <input type="radio" name="pm" checked={method === key} onChange={() => setMethod(key)} />
-                  <span className="truncate">{g.label ?? g.name}</span>
+                  <span className="truncate text-sm">{g.label ?? g.name}</span>
                 </label>
               );
             })}
             {manual.map((m) => (
               <label
                 key={m.id}
-                className={`flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm ${
+                className={`flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm sm:p-3 ${
                   method === m.id ? "border-primary ring-1 ring-primary" : ""
                 }`}
               >
                 <input type="radio" name="pm" checked={method === m.id} onChange={() => setMethod(m.id)} />
-                <span>{m.label}</span>
+                <span className="text-sm">{m.label}</span>
               </label>
             ))}
             {settings?.cod_enabled && (
               <label
-                className={`flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm ${
+                className={`flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm sm:p-3 ${
                   method === "cod" ? "border-primary ring-1 ring-primary" : ""
                 }`}
               >
                 <input type="radio" name="pm" checked={method === "cod"} onChange={() => setMethod("cod")} />
-                <span>Cash on delivery</span>
+                <span className="text-sm">Cash on delivery</span>
               </label>
             )}
           </div>
           {isManual && (
-            <div className="mt-3">
-              <Label htmlFor="s-txn">Transaction ID</Label>
-              <Input id="s-txn" required value={txnId} onChange={(e) => setTxnId(e.target.value)} />
+            <div className="mt-2 space-y-1 sm:mt-3">
+              <Label htmlFor="s-txn" className="text-xs">Transaction ID</Label>
+              <Input id="s-txn" required value={txnId} onChange={(e) => setTxnId(e.target.value)} className="h-8 text-sm sm:h-10" />
             </div>
           )}
         </section>
 
-        <section className="space-y-2 rounded-xl border bg-card p-4">
+        <section className="space-y-2 rounded-lg border bg-card p-2.5 sm:p-4">
           <label className="flex items-start gap-2 text-sm">
             <input type="checkbox" className="mt-1" checked={autoRenew} onChange={(e) => setAutoRenew(e.target.checked)} />
-            <span>
+            <span className="text-sm">
               Auto-renew this subscription
-              <span className="block text-xs text-muted-foreground">
+              <span className="block text-[11px] text-muted-foreground sm:text-xs">
                 Renews at {taka(renewalPrice)} every {CYCLE_LABEL[cycle]?.toLowerCase() ?? cycle}.
               </span>
             </span>
           </label>
           <label className="flex items-start gap-2 text-sm">
             <input type="checkbox" className="mt-1" checked={reminders} onChange={(e) => setReminders(e.target.checked)} />
-            <span>Email me renewal reminders</span>
+            <span className="text-sm">Email me renewal reminders</span>
           </label>
           <label className="flex items-start gap-2 text-sm">
             <input type="checkbox" className="mt-1" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
-            <span>I accept the subscription, cancellation and refund terms</span>
+            <span className="text-sm">I accept the subscription, cancellation and refund terms</span>
           </label>
           {(settings?.subscription_terms || settings?.cancellation_policy || settings?.refund_policy) && (
             <div>
               <button
                 type="button"
                 onClick={() => setShowTerms((v) => !v)}
-                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground sm:text-xs"
               >
-                <ChevronDown className={`h-3.5 w-3.5 transition ${showTerms ? "rotate-180" : ""}`} /> Read the terms
+                <ChevronDown className={`h-3 w-3 transition sm:h-3.5 sm:w-3.5 ${showTerms ? "rotate-180" : ""}`} /> Read the terms
               </button>
               {showTerms && (
-                <div className="mt-2 space-y-2 whitespace-pre-wrap rounded-lg bg-muted p-3 text-xs text-muted-foreground">
+                <div className="mt-2 space-y-2 whitespace-pre-wrap rounded-lg bg-muted p-2 text-[11px] text-muted-foreground sm:p-3 sm:text-xs">
                   {settings?.subscription_terms && <p>{settings.subscription_terms}</p>}
                   {settings?.cancellation_policy && <p>{settings.cancellation_policy}</p>}
                   {settings?.refund_policy && <p>{settings.refund_policy}</p>}
@@ -368,40 +375,42 @@ export function SubscriptionCheckout({
         </section>
       </div>
 
-      <aside className="space-y-3 lg:sticky lg:top-20 lg:h-fit">
-        <div className="rounded-xl border bg-card p-4 text-sm">
-          <div className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Billing summary</div>
-          <div className="flex justify-between py-0.5">
+      <aside className="mt-3 space-y-3 sm:mt-4 lg:sticky lg:top-20 lg:mt-0 lg:h-fit">
+        <div className="rounded-lg border bg-card p-2.5 text-sm sm:p-4">
+          <div className="mb-2 text-[11px] font-semibold uppercase text-muted-foreground sm:text-xs">
+            Billing summary
+          </div>
+          <div className="flex justify-between py-0.5 text-sm">
             <span className="text-muted-foreground">Plan</span>
             <span>{taka(summary.plan)}</span>
           </div>
           {summary.setup > 0 && (
-            <div className="flex justify-between py-0.5">
+            <div className="flex justify-between py-0.5 text-sm">
               <span className="text-muted-foreground">Setup fee</span>
               <span>{taka(summary.setup)}</span>
             </div>
           )}
           {summary.tax > 0 && (
-            <div className="flex justify-between py-0.5">
+            <div className="flex justify-between py-0.5 text-sm">
               <span className="text-muted-foreground">Tax ({settings?.tax_percent}%)</span>
               <span>{taka(summary.tax)}</span>
             </div>
           )}
-          <div className="mt-2 flex justify-between border-t pt-2 font-semibold">
+          <div className="mt-2 flex justify-between border-t pt-2 text-sm font-semibold">
             <span>Due today</span>
             <span>{trialEnabled && trialDays > 0 ? taka(summary.setup) : taka(summary.total)}</span>
           </div>
-          <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <CalendarClock className="h-3.5 w-3.5" />
+          <div className="mt-2 flex items-center gap-1.5 text-[10px] text-muted-foreground sm:text-[11px]">
+            <CalendarClock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
             {cycle === "lifetime"
               ? "One-time payment — never renews"
               : `Next billing ${firstBilling ? new Date(firstBilling).toLocaleDateString() : "—"} · ${taka(renewalPrice)}`}
           </div>
-          <Button type="submit" className="mt-4 w-full" disabled={submitting}>
+          <Button type="submit" className="mt-3 h-10 w-full text-sm sm:h-11" disabled={submitting}>
             {submitting ? "Processing…" : trialEnabled && trialDays > 0 ? "Start free trial" : "Subscribe now"}
           </Button>
-          <div className="mt-2 flex items-center justify-center gap-1 text-[11px] text-muted-foreground">
-            <ShieldCheck className="h-3.5 w-3.5" /> Secure checkout · cancel anytime
+          <div className="mt-2 flex items-center justify-center gap-1 text-[10px] text-muted-foreground sm:text-[11px]">
+            <ShieldCheck className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Secure checkout · cancel anytime
           </div>
         </div>
       </aside>
