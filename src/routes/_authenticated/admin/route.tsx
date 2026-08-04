@@ -304,16 +304,19 @@ function AdminLayout() {
                     <div className="space-y-0.5">
                       {g.items.map((l) => {
                         const badgeVal = l.badgeKey ? (counts as any)[l.badgeKey] ?? 0 : 0;
+                        const hasChildren = !!l.children?.length && (!collapsed || open);
+                        const subOpen = subMenus[l.to] ?? currentPath.startsWith(l.to);
                         return (
+                        <div key={l.to}>
+                        <div className="flex items-center">
                         <Link
-                          key={l.to}
-                          to={l.to}
-                          onClick={() => setOpen(false)}
+                          to={hasChildren ? l.children![0].to : l.to}
+                          onClick={() => { if (!hasChildren) setOpen(false); }}
                           activeOptions={l.exact ? { exact: true } : undefined}
                           activeProps={{ className: "bg-primary/10 text-primary font-medium" }}
                           title={collapsed ? `${l.label}${badgeVal ? ` (${badgeVal})` : ""}` : undefined}
                           className={cn(
-                            "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground",
+                            "group relative flex flex-1 items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground",
                             collapsed && "md:justify-center md:px-2",
                           )}
                         >
@@ -328,6 +331,33 @@ function AdminLayout() {
                             <CountBadge count={badgeVal} label={l.label} />
                           )}
                         </Link>
+                        {hasChildren && (
+                          <button
+                            type="button"
+                            aria-label={`Toggle ${l.label} menu`}
+                            onClick={() => setSubMenus((s) => ({ ...s, [l.to]: !subOpen }))}
+                            className="mr-1 grid h-7 w-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                          >
+                            <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", !subOpen && "-rotate-90")} />
+                          </button>
+                        )}
+                        </div>
+                        {hasChildren && subOpen && (
+                          <div className="mt-0.5 space-y-0.5 border-l pl-3 ml-5">
+                            {l.children!.map((c) => (
+                              <Link
+                                key={c.to}
+                                to={c.to}
+                                onClick={() => setOpen(false)}
+                                activeProps={{ className: "bg-primary/10 text-primary font-medium" }}
+                                className="block rounded-lg px-3 py-1.5 text-[13px] text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                              >
+                                {c.label}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                        </div>
                         );
                       })}
 
