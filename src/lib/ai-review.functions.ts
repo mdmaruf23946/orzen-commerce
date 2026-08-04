@@ -72,9 +72,10 @@ export const listLowStockAlerts = createServerFn({ method: "GET" })
     if (!sid) return [];
     const { data } = await context.supabase
       .from("low_stock_alerts")
-      .select("id, product_id, current_stock, threshold, created_at, resolved_at, products(id,name,primary_image_url,stock,low_stock_threshold,category_id)")
+      .select("id, product_id, current_stock, threshold, created_at, resolved_at, products(id,name,primary_image_url,stock,low_stock_threshold,category_id,product_type)")
       .eq("store_id", sid)
       .is("resolved_at", null)
+      .or("products.product_type.eq.physical,products.product_type.is.null")
       .order("created_at", { ascending: false });
     return data ?? [];
   });
