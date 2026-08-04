@@ -222,6 +222,13 @@ function OrdersPage() {
       if (payment === "unpaid" && o.payment_status === "paid") return false;
       if (courier === "none" && o.courier_key) return false;
       if (courier !== "all" && courier !== "none" && o.courier_key !== courier) return false;
+      if (type === "subscription") {
+        if (subPlan !== "all" && subPlanName(o) !== subPlan) return false;
+        if (subCustomer !== "all" && o.customer_name !== subCustomer) return false;
+        const r = o.fulfillment?.renewal_at ? new Date(o.fulfillment.renewal_at).getTime() : null;
+        if (renewFrom && (!r || r < new Date(renewFrom).getTime())) return false;
+        if (renewTo && (!r || r > new Date(renewTo).getTime() + 864e5 - 1)) return false;
+      }
       if (term) {
         const hay = `${o.customer_name} ${o.phone} ${o.invoice_no ?? ""} ${o.id} ${o.items.map((i) => i.name).join(" ")}`.toLowerCase();
         if (!hay.includes(term)) return false;
@@ -235,7 +242,17 @@ function OrdersPage() {
       : +new Date(b.created_at) - +new Date(a.created_at),
     );
     return out;
-  }, [rows, tab, typeTab, type, physicalView, q, payment, courier, range, sort]);
+  }, [rows, tab, typeTab, type, physicalView, q, payment, courier, range, sort, subPlan, subCustomer, renewFrom, renewTo]);
+
+  const planOptions = useMemo(
+    () => Array.from(new Set(rows.map(subPlanName).filter(Boolean))) as string[],
+    [rows],
+  );
+  const customerOptions = useMemo(
+    () => Array.from(new Set(rows.map((o) => o.customer_name).filter(Boolean))) as string[],
+    [rows],
+  );
+
 
   const courierOptions = useMemo(
     () => Array.from(new Set(rows.map((o) => o.courier_key).filter(Boolean))) as string[],
