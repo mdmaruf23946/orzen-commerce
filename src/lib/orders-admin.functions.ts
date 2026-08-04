@@ -130,7 +130,11 @@ export const listAdminOrders = createServerFn({ method: "GET" })
         qty: Number(i.qty ?? 1),
         price: Number(i.price_snapshot ?? 0),
         sku: i.products?.sku ?? null,
-        image: i.products?.primary_image_url ?? null,
+        image: (() => {
+          const raw = i.products?.primary_image_url as string | null | undefined;
+          if (!raw) return null;
+          return raw.startsWith("http") || raw.startsWith("/") ? raw : `/api/img/${raw}`;
+        })(),
         cost: i.products?.cost_price != null ? Number(i.products.cost_price) : null,
       });
     }
