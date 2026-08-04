@@ -68,7 +68,6 @@ const links: LinkDef[] = [
   { to: "/admin/landing-pages", label: "Landing Pages", icon: ExternalLink, badgeKey: "landing_pages" },
   { to: "/admin/import-export", label: "Import / Export", icon: FileUp },
   { to: "/admin/invoice-templates", label: "Invoice Templates", icon: FileText },
-  { to: "/admin/subscriptions", label: "Subscriptions", icon: Users },
   { to: "/admin/subscription", label: "My Subscription", icon: CreditCard },
   { to: "/admin/billing", label: "Billing & Plans", icon: Wallet },
   { to: "/admin/settings", label: "Store Settings", icon: Settings },

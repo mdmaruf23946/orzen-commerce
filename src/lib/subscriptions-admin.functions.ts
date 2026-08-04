@@ -93,10 +93,13 @@ const ACTIONS = [
   "cancel_now",
   "renew",
   "extend",
+  "expire",
+  "change_cycle",
   "note",
   "auto_renew_on",
   "auto_renew_off",
 ] as const;
+
 
 export const adminSubscriptionAction = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -106,7 +109,9 @@ export const adminSubscriptionAction = createServerFn({ method: "POST" })
         id: z.string().uuid(),
         action: z.enum(ACTIONS),
         days: z.number().int().min(1).max(3650).optional(),
+        cycle: z.enum(CYCLES as [string, ...string[]]).optional(),
         note: z.string().max(1000).optional(),
+
       })
       .parse(d),
   )
@@ -157,7 +162,31 @@ export const adminSubscriptionAction = createServerFn({ method: "POST" })
           .eq("id", s.id);
         break;
       }
+      case "expire":
+        await sb
+          .from("store_subscriptions")
+          .update({ status: "expired", expires_at: new Date().toISOString(), auto_renew: false })
+          .eq("id", s.id);
+        break;
+      case "change_cycle": {
+        if (data.cycle) {
+          const { nextBillingDate } = await import("@/lib/subscriptions");
+          const end = nextBillingDate(new Date(), data.cycle as any, Number((s as any).custom_cycle_days ?? 30));
+          await sb
+            .from("store_subscriptions")
+            .update({
+              billing_cycle: data.cycle,
+              current_period_start: new Date().toISOString(),
+              current_period_end: end,
+              next_billing_date: end,
+            })
+            .eq("id", s.id);
+        }
+
+        break;
+      }
       case "auto_renew_on":
+
         await sb.from("store_subscriptions").update({ auto_renew: true }).eq("id", s.id);
         break;
       case "auto_renew_off":
@@ -262,4 +291,34 @@ export const saveSubscriptionSettings = createServerFn({ method: "POST" })
       });
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+/** Detail lookup keyed by the order id (Orders → Subscription tab controller). */
+export const getAdminSubscriptionByOrder = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ orderId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const storeId = await storeIdOf(context.supabase, context.userId);
+    if (!storeId) return null;
+    const { data: sub } = await context.supabase
+      .from("store_subscriptions")
+      .select("*")
+      .eq("order_id", data.orderId)
+      .eq("store_id", storeId)
+      .maybeSingle();
+    if (!sub) return null;
+    const [{ data: invoices }, { data: events }] = await Promise.all([
+      context.supabase
+        .from("store_subscription_invoices")
+        .select("*")
+        .eq("subscription_id", (sub as any).id)
+        .order("created_at", { ascending: false }),
+      context.supabase
+        .from("store_subscription_events")
+        .select("*")
+        .eq("subscription_id", (sub as any).id)
+        .order("created_at", { ascending: false })
+        .limit(50),
+    ]);
+    return { subscription: sub as any, invoices: (invoices ?? []) as any[], events: (events ?? []) as any[] };
   });

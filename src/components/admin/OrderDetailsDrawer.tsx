@@ -17,6 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FraudCheckModal, RiskBadge } from "@/components/admin/FraudCheckModal";
 import { ServiceWorkflowPanel } from "@/components/admin/service/ServiceWorkflowPanel";
+import { SubscriptionOrderPanel } from "@/components/admin/subscriptions/SubscriptionOrderPanel";
+
 import { toast } from "sonner";
 
 function resolveProductImageUrl(url: string | null | undefined): string | null {
@@ -298,18 +300,10 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
               )}
               {kind === "subscription" && (
                 <Section icon={ScrollText} title="Subscription">
-                  <dl className="grid grid-cols-2 gap-y-1 text-xs">
-                    <dt className="text-muted-foreground">State</dt>
-                    <dd className="text-right capitalize">{fulfil.subscription_state ?? "pending"}</dd>
-                    <dt className="text-muted-foreground">Cycle</dt>
-                    <dd className="text-right capitalize">{(fulfil.billing_cycle ?? "monthly").replace(/_/g, " ")}</dd>
-                    <dt className="text-muted-foreground">Renews</dt>
-                    <dd className="text-right">
-                      {fulfil.renewal_at ? new Date(fulfil.renewal_at).toLocaleDateString() : "—"}
-                    </dd>
-                  </dl>
+                  <SubscriptionOrderPanel orderId={order.id} fallback={fulfil} />
                 </Section>
               )}
+
 
               {/* Courier + fraud */}
               {isPhysical && (

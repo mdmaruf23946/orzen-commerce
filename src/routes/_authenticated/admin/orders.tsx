@@ -119,7 +119,13 @@ function matchesTab(o: AdminOrderRow, tab: TabKey) {
   }
 }
 
+/** Plan label for a subscription order (used by the Subscription tab filters). */
+function subPlanName(o: AdminOrderRow): string {
+  return (o.fulfillment as any)?.plan_name ?? o.items?.[0]?.name ?? "";
+}
+
 function OrdersPage() {
+
   const list = useServerFn(listAdminOrders);
   const update = useServerFn(updateOrderStatus);
   const qc = useQueryClient();
@@ -141,7 +147,12 @@ function OrdersPage() {
   const [payment, setPayment] = useState("all");
   const [courier, setCourier] = useState("all");
   const [range, setRange] = useState("all");
+  const [subPlan, setSubPlan] = useState("all");
+  const [subCustomer, setSubCustomer] = useState("all");
+  const [renewFrom, setRenewFrom] = useState("");
+  const [renewTo, setRenewTo] = useState("");
   const [sort, setSort] = useState("new");
+
   const [fraudFor, setFraudFor] = useState<{ id: string; phone: string } | null>(null);
   const [detailsFor, setDetailsFor] = useState<string | null>(null);
   const { allowed: fraudAllowed } = useFeature("fraud_checker");
@@ -217,6 +228,13 @@ function OrdersPage() {
       if (payment === "unpaid" && o.payment_status === "paid") return false;
       if (courier === "none" && o.courier_key) return false;
       if (courier !== "all" && courier !== "none" && o.courier_key !== courier) return false;
+      if (type === "subscription") {
+        if (subPlan !== "all" && subPlanName(o) !== subPlan) return false;
+        if (subCustomer !== "all" && o.customer_name !== subCustomer) return false;
+        const r = o.fulfillment?.renewal_at ? new Date(o.fulfillment.renewal_at).getTime() : null;
+        if (renewFrom && (!r || r < new Date(renewFrom).getTime())) return false;
+        if (renewTo && (!r || r > new Date(renewTo).getTime() + 864e5 - 1)) return false;
+      }
       if (term) {
         const hay = `${o.customer_name} ${o.phone} ${o.invoice_no ?? ""} ${o.id} ${o.items.map((i) => i.name).join(" ")}`.toLowerCase();
         if (!hay.includes(term)) return false;
@@ -230,7 +248,17 @@ function OrdersPage() {
       : +new Date(b.created_at) - +new Date(a.created_at),
     );
     return out;
-  }, [rows, tab, typeTab, type, physicalView, q, payment, courier, range, sort]);
+  }, [rows, tab, typeTab, type, physicalView, q, payment, courier, range, sort, subPlan, subCustomer, renewFrom, renewTo]);
+
+  const planOptions = useMemo(
+    () => Array.from(new Set(rows.map(subPlanName).filter(Boolean))) as string[],
+    [rows],
+  );
+  const customerOptions = useMemo(
+    () => Array.from(new Set(rows.map((o) => o.customer_name).filter(Boolean))) as string[],
+    [rows],
+  );
+
 
   const courierOptions = useMemo(
     () => Array.from(new Set(rows.map((o) => o.courier_key).filter(Boolean))) as string[],
@@ -360,11 +388,44 @@ function OrdersPage() {
                 ["all", "All time"], ["today", "Today"], ["7d", "Last 7 days"], ["30d", "Last 30 days"],
               ]} />
             </Field>
+            {type === "subscription" && (
+              <>
+                <Field label="Plan">
+                  <Select value={subPlan} onChange={setSubPlan} options={[
+                    ["all", "All plans"],
+                    ...planOptions.map((p) => [p, p] as [string, string]),
+                  ]} />
+                </Field>
+                <Field label="Customer">
+                  <Select value={subCustomer} onChange={setSubCustomer} options={[
+                    ["all", "All customers"],
+                    ...customerOptions.map((c) => [c, c] as [string, string]),
+                  ]} />
+                </Field>
+                <Field label="Renews from">
+                  <input
+                    type="date"
+                    value={renewFrom}
+                    onChange={(e) => setRenewFrom(e.target.value)}
+                    className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                  />
+                </Field>
+                <Field label="Renews to">
+                  <input
+                    type="date"
+                    value={renewTo}
+                    onChange={(e) => setRenewTo(e.target.value)}
+                    className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                  />
+                </Field>
+              </>
+            )}
             <Field label="Sort">
               <Select value={sort} onChange={setSort} options={[
                 ["new", "Newest first"], ["old", "Oldest first"], ["high", "Highest value"], ["low", "Lowest value"],
               ]} />
             </Field>
+
           </PopoverContent>
         </Popover>
       </div>
