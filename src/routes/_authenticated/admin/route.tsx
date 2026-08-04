@@ -77,7 +77,17 @@ const links: LinkDef[] = [
   { to: "/admin/invoice-templates", label: "Invoice Templates", icon: FileText },
   { to: "/admin/subscription", label: "My Subscription", icon: CreditCard },
   { to: "/admin/billing", label: "Billing & Plans", icon: Wallet },
-  { to: "/admin/settings", label: "Store Settings", icon: Settings },
+  {
+    to: "/admin/settings",
+    label: "Store Settings",
+    icon: Settings,
+    children: [
+      { to: "/admin/settings/information", label: "Store Information" },
+      { to: "/admin/settings/configuration", label: "Store Configuration" },
+      { to: "/admin/settings/workflow", label: "Order & Workflow" },
+      { to: "/admin/settings/subscription", label: "Subscription Settings" },
+    ],
+  },
 ];
 
 
