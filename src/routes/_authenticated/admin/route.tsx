@@ -136,6 +136,7 @@ function AdminLayout() {
   const [dark, setDark] = useState(false);
   const [search, setSearch] = useState("");
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const [subMenus, setSubMenus] = useState<Record<string, boolean>>({});
   const ownerCheck = useServerFn(amIOwner);
   const { data: ownerData } = useQuery({
     queryKey: ["amIOwner"],
