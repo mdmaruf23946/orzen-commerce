@@ -254,7 +254,33 @@ function CheckoutPage() {
     );
   }
 
+  // Mixed product types can never share one order — send the shopper back to
+  // the cart to tick a single type.
+  const typesInCart = new Set(
+    (cartProducts as any[]).map((p) => p.product_type ?? "physical"),
+  );
+  if (cartProducts.length > 0 && typesInCart.size > 1) {
+    return (
+      <div className="mx-auto max-w-md py-16 text-center">
+        <h1 className="text-xl font-semibold">Choose one product type</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Physical, digital, service and subscription products each have their own order
+          process, so they must be checked out separately.
+        </p>
+        <Link
+          to="/store/$slug/cart"
+          params={{ slug }}
+          className="mt-6 inline-flex h-10 items-center rounded-md px-4 text-sm font-medium text-white"
+          style={{ backgroundColor: "var(--primary)" }}
+        >
+          Back to cart
+        </Link>
+      </div>
+    );
+  }
+
   // Digital-only cart → dedicated digital checkout (no address / courier / COD).
+
   if (allDigital) {
     return <DigitalCheckout slug={slug} store={store} items={items} info={digitalInfo} />;
   }
