@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { getStoreBySlug, listStoreOnlineGateways, startOnlineCheckout, placeOrder, validateCoupon, getStoreDeliveryZones, listProductsByIds } from "@/lib/storefront.functions";
-import { readCart, clearCart, type CartItem } from "@/lib/cart";
+import { readCart, readSelection, removeSelected, type CartItem } from "@/lib/cart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -111,7 +111,10 @@ function CheckoutPage() {
 
 
   useEffect(() => {
-    const c = readCart(slug);
+    // Only the product type the shopper ticked in the cart is checked out.
+    const all = readCart(slug);
+    const sel = readSelection(slug);
+    const c = sel.length ? all.filter((i) => sel.includes(i.productId)) : all;
     setItems(c);
     if (c.length) {
       fbTrack("InitiateCheckout", {
