@@ -93,10 +93,13 @@ const ACTIONS = [
   "cancel_now",
   "renew",
   "extend",
+  "expire",
+  "change_cycle",
   "note",
   "auto_renew_on",
   "auto_renew_off",
 ] as const;
+
 
 export const adminSubscriptionAction = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
