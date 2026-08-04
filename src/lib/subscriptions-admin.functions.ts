@@ -109,7 +109,9 @@ export const adminSubscriptionAction = createServerFn({ method: "POST" })
         id: z.string().uuid(),
         action: z.enum(ACTIONS),
         days: z.number().int().min(1).max(3650).optional(),
+        cycle: z.enum(CYCLES as [string, ...string[]]).optional(),
         note: z.string().max(1000).optional(),
+
       })
       .parse(d),
   )
