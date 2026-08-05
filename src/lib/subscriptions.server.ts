@@ -31,7 +31,12 @@ export async function myStoreId(sb: Sb, userId: string): Promise<string | null> 
  */
 export async function loadSettings(sb: Sb, storeId: string): Promise<SubscriptionSettings> {
   const [{ data: inv }, { data: store }] = await Promise.all([
-    sb.from("store_invoice_settings").select("prefix").eq("store_id", storeId).maybeSingle(),
+    sb
+      .from("store_invoice_settings")
+      .select("prefix")
+      .eq("store_id", storeId)
+      .eq("order_type", "subscription")
+      .maybeSingle(),
     sb.from("stores").select("payments_config").eq("id", storeId).maybeSingle(),
   ]);
   const pc = ((store as any)?.payments_config ?? {}) as any;

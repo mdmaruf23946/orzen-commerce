@@ -43,7 +43,7 @@ function ReturnPage() {
             </div>
             <h1 className="mt-3 text-lg font-semibold">Subscription activated</h1>
             <p className="mt-1 text-sm text-muted-foreground">Invoice {invoice}. A receipt has been emailed.</p>
-            <Button className="mt-4 w-full" onClick={() => navigate({ to: "/admin/billing" })}>Continue</Button>
+            <Button className="mt-4 w-full" onClick={() => navigate({ to: "/admin/billing", search: {} })}>Continue</Button>
           </>
         ) : (
           <>
@@ -54,7 +54,7 @@ function ReturnPage() {
             <p className="mt-1 text-sm text-muted-foreground">
               {error ? (error as Error).message : "The payment could not be verified. You can try again."}
             </p>
-            <Link to="/admin/billing"><Button variant="outline" className="mt-4 w-full">Back to plans</Button></Link>
+            <Link to="/admin/billing" search={{}}><Button variant="outline" className="mt-4 w-full">Back to plans</Button></Link>
           </>
         )}
       </div>
