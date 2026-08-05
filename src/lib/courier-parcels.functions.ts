@@ -131,18 +131,20 @@ export const listSendableOrders = createServerFn({ method: "POST" })
     if (!list.length) return [];
     const { data: items } = await supabase
       .from("order_items")
-      .select("order_id,name_snapshot,price_snapshot,qty")
+      .select("order_id,name_snapshot,price_snapshot,qty,products(primary_image_url)")
       .in(
         "order_id",
         list.map((o: any) => o.id),
       );
-    const byOrder: Record<string, Array<{ name: string; qty: number; price: number }>> = {};
+    const byOrder: Record<string, Array<{ name: string; qty: number; price: number; image: string | null }>> = {};
     for (const i of items ?? []) {
       const row = i as any;
+      const rawImg = row.products?.primary_image_url as string | null | undefined;
       (byOrder[row.order_id] ??= []).push({
         name: row.name_snapshot,
         qty: row.qty,
         price: Number(row.price_snapshot ?? 0),
+        image: rawImg ? (rawImg.startsWith("http") || rawImg.startsWith("/") ? rawImg : `/api/img/${rawImg}`) : null,
       });
     }
     const defaultKey = defaultCourier(store);
@@ -646,13 +648,17 @@ async function loadParcel(supabase: any, storeId: string, id: string) {
 async function orderItems(supabase: any, orderId: string) {
   const { data } = await supabase
     .from("order_items")
-    .select("name_snapshot,price_snapshot,qty")
+    .select("name_snapshot,price_snapshot,qty,products(primary_image_url)")
     .eq("order_id", orderId);
-  return (data ?? []).map((i: any) => ({
-    name: i.name_snapshot,
-    qty: i.qty,
-    price: Number(i.price_snapshot ?? 0),
-  }));
+  return (data ?? []).map((i: any) => {
+    const rawImg = i.products?.primary_image_url as string | null | undefined;
+    return {
+      name: i.name_snapshot,
+      qty: i.qty,
+      price: Number(i.price_snapshot ?? 0),
+      image: rawImg ? (rawImg.startsWith("http") || rawImg.startsWith("/") ? rawImg : `/api/img/${rawImg}`) : null,
+    };
+  });
 }
 
 function toInput(parcel: any) {

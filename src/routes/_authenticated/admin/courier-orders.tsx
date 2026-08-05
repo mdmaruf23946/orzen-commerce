@@ -19,6 +19,7 @@ import {
   openPrintWindow,
 } from "@/components/admin/couriers/parcel-ui";
 import { SendToCourierDialog } from "@/components/admin/couriers/SendToCourierDialog";
+import { ItemThumbs } from "@/components/admin/couriers/ItemThumbs";
 import { type ParcelStatus } from "@/lib/couriers/status";
 import { type CourierKey } from "@/components/admin/couriers/providers";
 import {
@@ -307,9 +308,12 @@ function CourierOrdersPage() {
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   {[o.address, o.area].filter(Boolean).join(", ")}
                 </p>
-                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                  {(o.items ?? []).map((i: any) => `${i.name} × ${i.qty}`).join(", ") || "—"}
-                </p>
+                <div className="mt-2 flex items-start gap-2">
+                  <ItemThumbs items={o.items as any} />
+                  <p className="line-clamp-2 flex-1 pt-0.5 text-xs text-muted-foreground">
+                    {(o.items ?? []).map((i: any) => `${i.name} × ${i.qty}`).join(", ") || "—"}
+                  </p>
+                </div>
                 <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs">
                   <span>COD: <strong>{money(o.cod_amount)}</strong></span>
                   <span>Delivery: {money(o.delivery_amount)}</span>
@@ -395,6 +399,7 @@ function CourierOrdersPage() {
                           setSelected((s) => (v ? [...s, p.id] : s.filter((x) => x !== p.id)))
                         }
                       />
+                      <ItemThumbs items={(p as any).items} max={2} />
                       <button className="min-w-0 flex-1 text-left" onClick={() => setOpenId(p.id)}>
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="truncate text-sm font-medium">{p.recipient_name}</span>

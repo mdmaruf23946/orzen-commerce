@@ -178,7 +178,7 @@ function CheckoutPage() {
     return (
       <div className="mx-auto max-w-xl space-y-4 pb-10">
         <Link
-          to="/admin/billing" search={{}}
+          to="/admin/billing" search={{} as never}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" /> Back to billing
@@ -219,7 +219,7 @@ function CheckoutPage() {
   return (
     <div className="mx-auto max-w-xl space-y-5 pb-16">
       <Link
-        to="/admin/billing" search={{}}
+        to="/admin/billing" search={{} as never}
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" /> Back

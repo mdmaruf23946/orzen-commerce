@@ -36,7 +36,7 @@ export function SubscriptionStatusBanner() {
   return (
     <div className={`mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border px-4 py-2 text-sm ${tone}`}>
       <span>{msg}</span>
-      <Link to="/admin/billing" search={{}} className="rounded-md bg-white/60 px-3 py-1 text-xs font-medium hover:bg-white">View plans</Link>
+      <Link to="/admin/billing" search={{} as never} className="rounded-md bg-white/60 px-3 py-1 text-xs font-medium hover:bg-white">View plans</Link>
     </div>
   );
 }
