@@ -648,13 +648,17 @@ async function loadParcel(supabase: any, storeId: string, id: string) {
 async function orderItems(supabase: any, orderId: string) {
   const { data } = await supabase
     .from("order_items")
-    .select("name_snapshot,price_snapshot,qty")
+    .select("name_snapshot,price_snapshot,qty,products(primary_image_url)")
     .eq("order_id", orderId);
-  return (data ?? []).map((i: any) => ({
-    name: i.name_snapshot,
-    qty: i.qty,
-    price: Number(i.price_snapshot ?? 0),
-  }));
+  return (data ?? []).map((i: any) => {
+    const rawImg = i.products?.primary_image_url as string | null | undefined;
+    return {
+      name: i.name_snapshot,
+      qty: i.qty,
+      price: Number(i.price_snapshot ?? 0),
+      image: rawImg ? (rawImg.startsWith("http") || rawImg.startsWith("/") ? rawImg : `/api/img/${rawImg}`) : null,
+    };
+  });
 }
 
 function toInput(parcel: any) {
