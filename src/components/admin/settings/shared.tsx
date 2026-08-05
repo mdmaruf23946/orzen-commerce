@@ -152,10 +152,12 @@ export function SaveBar({
   label,
   saving,
   dirty,
+  fixed = true,
 }: {
   label: string;
   saving: boolean;
   dirty: boolean;
+  fixed?: boolean;
 }) {
   return (
     <>
@@ -168,16 +170,18 @@ export function SaveBar({
         </Button>
       </div>
 
-      <div className="fixed inset-x-0 bottom-[60px] z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:bottom-0">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <p className="hidden text-xs text-muted-foreground sm:block">
-            {dirty ? "You have unsaved changes." : "All changes saved."}
-          </p>
-          <Button type="submit" disabled={saving || !dirty} className="ml-auto min-w-32">
-            {saving ? "Saving…" : label}
-          </Button>
+      {fixed && (
+        <div className="fixed inset-x-0 bottom-[60px] z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:bottom-0">
+          <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+            <p className="hidden text-xs text-muted-foreground sm:block">
+              {dirty ? "You have unsaved changes." : "All changes saved."}
+            </p>
+            <Button type="submit" disabled={saving || !dirty} className="ml-auto min-w-32">
+              {saving ? "Saving…" : label}
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

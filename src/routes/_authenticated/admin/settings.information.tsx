@@ -284,7 +284,7 @@ function StoreInformationPage() {
 
         <AdSlot slotKey="admin_settings_bottom" />
 
-        <SaveBar label="Save Store Information" saving={saving} dirty={dirty} />
+        <SaveBar label="Save Store Information" saving={saving} dirty={dirty} fixed={false} />
       </div>
     </form>
   );
