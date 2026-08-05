@@ -59,8 +59,12 @@ export type CourierAdapter = {
   hasApi: boolean;
   supportsCancel?: boolean;
   supportsPickup?: boolean;
+  /** Credential keys the courier API requires (validated before any call). */
+  requiredCreds?: string[][];
   createParcel(ctx: AdapterCtx, parcel: ParcelInput): Promise<CreateResult>;
   getStatus?(ctx: AdapterCtx, parcel: ParcelInput): Promise<StatusResult>;
+  /** Official label from the courier API, when the provider exposes one. */
+  getLabel?(ctx: AdapterCtx, parcel: ParcelInput): Promise<{ url: string | null }>;
   cancelParcel?(ctx: AdapterCtx, parcel: ParcelInput): Promise<{ ok: boolean; message: string }>;
   requestPickup?(
     ctx: AdapterCtx,
