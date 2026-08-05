@@ -156,6 +156,84 @@ export function InvoiceTemplatesManager({ scope }: { scope: "global" | "store" }
     );
   }
 
+  // ---- Store Admin: pick a design + manage global invoice information ----
+  if (scope === "store") {
+    const own = templates.filter((t) => t.scope === "store");
+    const active = own.find((t) => t.is_default) ?? null;
+    const activeSource = active?.source_template_id ?? active?.id ?? null;
+    const choices = [
+      ...own.filter((t) => !t.source_template_id),
+      ...globals.map((g) => {
+        const copy = own.find((t) => t.source_template_id === g.id);
+        return copy ? { ...copy, name: g.name, description: g.description } : g;
+      }),
+    ];
+    const filtered = q.trim()
+      ? choices.filter((t) => `${t.name} ${t.description ?? ""}`.toLowerCase().includes(q.toLowerCase()))
+      : choices;
+
+    async function activate(t: any) {
+      let id = t.id;
+      if (t.scope === "global") {
+        const r: any = await dup({ data: { id: t.id } });
+        id = r?.id;
+      }
+      await setDefault({ data: { id } });
+      qc.invalidateQueries({ queryKey: ["invoice-templates"] });
+      toast.success("Template activated");
+    }
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold">Invoice Templates</h1>
+          <p className="text-sm text-muted-foreground">
+            Choose an invoice design. Your business details come from Global Invoice Information below.
+          </p>
+        </div>
+
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input className="h-9 pl-8" placeholder="Search templates…" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((t: any) => {
+            const isActive = !!activeSource && (t.id === activeSource || t.id === active?.id);
+            return (
+              <div key={t.id} className={cn("rounded-xl border bg-card p-4", isActive && "ring-2 ring-primary")}>
+                <TemplateThumb canvas={t.canvas} brand={t.brand} height={190} />
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="truncate font-medium">{t.name}</span>
+                  {isActive && <Badge>Active</Badge>}
+                </div>
+                <div className="mt-0.5 truncate text-xs text-muted-foreground">{t.description}</div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={() => { setPreviewOf(t); setPreviewSize(t.page_size ?? "a4"); }}>
+                    <Eye className="mr-1 h-4 w-4" /> Preview
+                  </Button>
+                  <Button size="sm" disabled={isActive} onClick={() => activate(t)}>
+                    <Star className="mr-1 h-4 w-4" /> {isActive ? "Active" : "Set active"}
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+          {!filtered.length && <p className="text-sm text-muted-foreground">No templates available yet.</p>}
+        </div>
+
+        <GlobalInvoiceInfo />
+
+        <Dialog open={!!previewOf} onOpenChange={(o) => !o && setPreviewOf(null)}>
+          <DialogContent className="max-h-[90vh] max-w-3xl overflow-auto">
+            <DialogHeader><DialogTitle>{previewOf?.name}</DialogTitle></DialogHeader>
+            {previewOf && <TemplateThumb canvas={previewOf.canvas} brand={previewOf.brand} height={640} />}
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
   if (draft) {
     return (
       <div className="space-y-3">
