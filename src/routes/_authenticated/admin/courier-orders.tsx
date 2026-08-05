@@ -399,6 +399,7 @@ function CourierOrdersPage() {
                           setSelected((s) => (v ? [...s, p.id] : s.filter((x) => x !== p.id)))
                         }
                       />
+                      <ItemThumbs items={(p as any).items} max={2} />
                       <button className="min-w-0 flex-1 text-left" onClick={() => setOpenId(p.id)}>
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="truncate text-sm font-medium">{p.recipient_name}</span>
