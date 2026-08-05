@@ -250,13 +250,23 @@ export async function createSubscriptionForOrder(sb: Sb, orderId: string) {
   const settings = await loadSettings(sb, o.store_id);
   const fm = (o.fulfillment_meta ?? {}).subscription ?? {};
 
-  const cycle = (fm.billing_cycle ?? meta.billing_cycle ?? settings.default_billing_cycle) as SubCycle;
-  const customDays = customDaysFromMeta(meta);
+  // The plan the customer picked at checkout (validated server-side when the
+  // order was placed) drives cycle, price and renewal price.
+  const { resolveBillingPlans, findPlan, planDays } = await import(
+    "@/components/admin/product-form/subscription/subscription-meta"
+  );
+  const plans = resolveBillingPlans(meta, Number((product as any)?.price ?? first.price_snapshot));
+  const plan = findPlan(plans as any, fm.plan_id ?? null);
+
+  const cycle = (plan?.cycle ?? fm.billing_cycle ?? meta.billing_cycle ?? "monthly") as SubCycle;
+  const customDays =
+    plan?.cycle === "custom" ? (planDays(plan) ?? 30) : customDaysFromMeta(meta);
   const price = Number(first.price_snapshot) * Number(first.qty ?? 1);
   const renewalPrice =
     meta.renewal_price_mode === "different" && meta.renewal_price != null
       ? Number(meta.renewal_price)
       : price;
+
 
   const { data: noRow } = await sb.rpc("next_subscription_no", { _store_id: o.store_id } as any);
 
