@@ -15,6 +15,12 @@ import { removeSelected, type CartItem } from "@/lib/cart";
 import { useCustomerSession } from "@/lib/customer-session";
 import { computeFingerprint, getDeviceId } from "@/lib/fingerprint";
 import { billingSummary, CYCLE_LABEL, nextBillingDate, type SubCycle } from "@/lib/subscriptions";
+import {
+  findPlan,
+  planDays,
+  planPeriodLabel,
+  resolveBillingPlans,
+} from "@/components/admin/product-form/subscription/subscription-meta";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
