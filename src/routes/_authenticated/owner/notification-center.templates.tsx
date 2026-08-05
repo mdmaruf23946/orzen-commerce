@@ -44,7 +44,7 @@ function Page() {
                 <Button size="icon" variant="ghost" title="Use in compose" onClick={() => {
                   const url = `/owner/notification-center/compose`;
                   sessionStorage.setItem("notif-tpl", JSON.stringify(t));
-                  nav({ to: url });
+                  nav({ to: url, search: {} } as any);
                 }}><Copy className="h-4 w-4" /></Button>
                 <Button size="icon" variant="ghost" onClick={async () => {
                   if (!confirm("Delete?")) return;

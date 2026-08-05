@@ -43,7 +43,7 @@ function Page() {
           {["draft", "scheduled", "sending", "completed", "failed", "cancelled"].map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
         <div className="ml-auto">
-          <Link to="/owner/notification-center/compose"><Button size="sm"><Plus className="mr-1 h-4 w-4" />New campaign</Button></Link>
+          <Link to="/owner/notification-center/compose" search={{}}><Button size="sm"><Plus className="mr-1 h-4 w-4" />New campaign</Button></Link>
         </div>
       </div>
 
