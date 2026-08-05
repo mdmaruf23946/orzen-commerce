@@ -242,6 +242,7 @@ export const setDefaultInvoiceTemplate = createServerFn({ method: "POST" })
     const sb = context.supabase;
     const sid = await myStoreId(sb, context.userId);
     if (!sid) throw new Error("No store");
+    await sb.from("invoice_templates").update({ is_default: false }).eq("store_id", sid).eq("is_default", true);
     const { error } = await sb
       .from("invoice_templates")
       .update({ is_default: true })

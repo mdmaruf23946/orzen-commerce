@@ -170,10 +170,19 @@ function CourierOrdersPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  /** Invoices always render with the store's selected invoice template. */
+  function openTemplateInvoices(orderIds: string[]) {
+    for (const id of orderIds) window.open(`/admin/invoice/${id}`, "_blank", "noopener");
+  }
+
   async function print(ids: string[], kind: "invoice" | "label" | "packing") {
     if (!ids.length) return toast.error("Select at least one parcel");
     try {
       const d: any = await printFn({ data: { ids } });
+      if (kind === "invoice") {
+        const orderIds = (d?.parcels ?? []).map((p: any) => p.order_id).filter(Boolean);
+        if (orderIds.length) return openTemplateInvoices(orderIds);
+      }
       openPrintWindow(d, kind);
     } catch (e) {
       toast.error((e as Error).message);
@@ -182,6 +191,7 @@ function CourierOrdersPage() {
 
   /** Ready-to-send orders have no parcel yet, so print straight from the order. */
   function printOrder(o: any, kind: "invoice" | "label") {
+    if (kind === "invoice") return openTemplateInvoices([o.id]);
     openPrintWindow(
       {
         store: null,
@@ -204,6 +214,7 @@ function CourierOrdersPage() {
       kind,
     );
   }
+
 
   const allChecked = rows.length > 0 && selected.length === rows.length;
 
