@@ -623,7 +623,6 @@ function buildCtx(store: { couriers: any }, key: string) {
   if (!creds.api_key && cfg.api_key) creds.api_key = cfg.api_key;
   if (!creds.secret && cfg.secret) creds.secret = cfg.secret;
   const baseUrl: string = creds.base_url || cfg.base_url || "";
-  if (!baseUrl && !isManualCourier(key)) return null;
   return {
     courierKey: key,
     baseUrl,
@@ -745,13 +744,16 @@ export async function dispatchParcel(
       .eq("store_id", store.id)
       .maybeSingle();
     if (!order) throw new Error("Order not found");
-    const { data: existing } = await supabase
+    // Duplicate guard: never create a second live parcel for the same order.
+    const { data: existingRows } = await supabase
       .from("courier_parcels")
       .select("id,status")
       .eq("order_id", order.id)
       .eq("store_id", store.id)
       .not("status", "in", "(cancelled,failed)")
-      .maybeSingle();
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const existing = (existingRows ?? [])[0];
     if (existing) {
       parcel = await loadParcel(supabase, store.id, existing.id);
     } else {
@@ -804,10 +806,11 @@ export async function dispatchParcel(
 
 
   const key = parcel.courier_key;
-  const { getAdapter } = await import("@/lib/couriers/registry.server");
+  const { getAdapter, assertCredentials, courierName } = await import("@/lib/couriers/registry.server");
   const adapter = getAdapter(key);
   const ctx = buildCtx(store, key);
-  if (!ctx) throw new Error("Courier is not configured (Base API URL missing)");
+  if (!ctx) throw new Error(`${courierName(key)} is not configured`);
+  assertCredentials(adapter, ctx.creds);
 
   const invoiceNo = await invoiceFor(supabase, parcel);
   try {
