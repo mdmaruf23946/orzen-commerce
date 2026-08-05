@@ -88,9 +88,20 @@ export function SubscriptionCheckout({
       setPhone((v) => v || customer.phone || "");
     }
   }, [customer]);
+  // Plans come from the subscription product itself.
+  const plans = useMemo(
+    () => resolveBillingPlans(meta, Number(item?.price ?? 0)),
+    [meta, item?.price],
+  );
+  const [planId, setPlanId] = useState<string>("");
   useEffect(() => {
-    if (settings) setAutoRenew(settings.auto_renew_default);
-  }, [settings]);
+    if (!planId && plans.length) setPlanId((findPlan(plans, null) ?? plans[0]).id);
+  }, [plans, planId]);
+  const plan = findPlan(plans, planId || null);
+
+  useEffect(() => {
+    if (meta.renewal?.mode === "manual") setAutoRenew(false);
+  }, [meta.renewal?.mode]);
 
   const allowed = settings?.payment_methods ?? [];
   // A manual method only exists if the store owner actually configured it
@@ -112,25 +123,25 @@ export function SubscriptionCheckout({
     else if (settings?.cod_enabled) setMethod("cod");
   }, [online.length, manual.length, settings?.cod_enabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const cycle = (meta.billing_cycle ?? settings?.default_billing_cycle ?? "monthly") as SubCycle;
+  const cycle = (plan?.cycle ?? meta.billing_cycle ?? "monthly") as SubCycle;
   const qty = item?.qty ?? 1;
-  const setupFee = Number(meta.setup_fee ?? settings?.setup_fee ?? 0);
+  const setupFee = Number(meta.setup_fee ?? 0);
   const summary = useMemo(
     () =>
       billingSummary({
-        price: Number(item?.price ?? 0),
+        price: Number(plan?.price ?? item?.price ?? 0),
         qty,
         setupFee,
-        taxPercent: Number(settings?.tax_percent ?? 0),
+        taxPercent: 0,
       }),
-    [item?.price, qty, setupFee, settings?.tax_percent],
+    [plan?.price, item?.price, qty, setupFee],
   );
 
-  const trialEnabled = !!meta.trial?.enabled || !!settings?.allow_free_trial;
+  const trialEnabled = !!meta.trial?.enabled;
   const trialDays = meta.trial?.enabled
     ? Number(meta.trial.duration ?? 0) *
       (meta.trial.unit === "weeks" ? 7 : meta.trial.unit === "months" ? 30 : 1)
-    : Number(settings?.trial_days ?? 0);
+    : 0;
   const renewalPrice =
     meta.renewal_price_mode === "different" && meta.renewal_price != null
       ? Number(meta.renewal_price) * qty
@@ -138,11 +149,9 @@ export function SubscriptionCheckout({
   const firstBilling = nextBillingDate(
     trialEnabled && trialDays > 0 ? new Date(Date.now() + trialDays * 86400000) : new Date(),
     cycle,
-    meta.custom_cycle?.number
-      ? Number(meta.custom_cycle.number) *
-        (meta.custom_cycle.unit === "weeks" ? 7 : meta.custom_cycle.unit === "years" ? 365 : meta.custom_cycle.unit === "days" ? 1 : 30)
-      : 30,
+    planDays(plan) ?? 30,
   );
+
 
   const isOnline = method.startsWith("builtin:") || method.startsWith("custom:");
   const isManual = !isOnline && method !== "cod" && !!method;
