@@ -25,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { TemplateBuilder, PAGE_PRESETS } from "@/components/invoice/builder/TemplateBuilder";
 import { InvoiceRenderer } from "@/components/invoice/InvoiceRenderer";
+import { GlobalInvoiceInfo } from "@/components/invoice/GlobalInvoiceInfo";
 import {
   deleteInvoiceTemplate,
   duplicateInvoiceTemplate,
