@@ -265,6 +265,9 @@ function OrderConfirmation() {
       )}
 
 
+      <ReturnRequestBlock order={order} slug={slug} />
+
+
       <PaymentTimeline orderId={order.id} refreshKey={String((order as any).payment_status ?? "")} />
 
       <div className="mt-4 rounded-xl border bg-card p-4">
