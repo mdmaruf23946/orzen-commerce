@@ -207,3 +207,71 @@ export function cycleLabel(sub: SubscriptionMeta | undefined | null): string {
   const u = sub.custom_cycle?.unit ?? "months";
   return n ? `Every ${n} ${u}` : "Custom";
 }
+
+/** Length of one billing period in days (lifetime → null). */
+export function planDays(plan: BillingPlan | null | undefined): number | null {
+  if (!plan) return 30;
+  switch (plan.cycle) {
+    case "weekly":
+      return 7;
+    case "monthly":
+      return 30;
+    case "quarterly":
+      return 90;
+    case "half_yearly":
+      return 182;
+    case "yearly":
+      return 365;
+    case "lifetime":
+      return null;
+    case "custom": {
+      const n = Math.max(1, Number(plan.custom_number ?? 1));
+      const u = plan.custom_unit ?? "months";
+      return u === "days" ? n : u === "weeks" ? n * 7 : u === "years" ? n * 365 : n * 30;
+    }
+    default:
+      return 30;
+  }
+}
+
+/** Human label for a plan period, e.g. "Every 3 months". */
+export function planPeriodLabel(plan: BillingPlan): string {
+  if (plan.cycle !== "custom") return BILLING_CYCLE_LABEL[plan.cycle];
+  const n = plan.custom_number;
+  const u = plan.custom_unit ?? "months";
+  return n ? `Every ${n} ${u}` : "Custom";
+}
+
+/**
+ * Billing plans of a subscription product. Products created before the
+ * multi-plan step fall back to a single plan built from the legacy fields,
+ * so nothing is lost.
+ */
+export function resolveBillingPlans(
+  sub: SubscriptionMeta | null | undefined,
+  fallbackPrice: number,
+): BillingPlan[] {
+  const list = Array.isArray(sub?.plans) ? sub!.plans!.filter((p) => p && p.price != null) : [];
+  if (list.length) {
+    const hasDefault = list.some((p) => p.is_default);
+    return list.map((p, i) => ({ ...p, is_default: hasDefault ? !!p.is_default : i === 0 }));
+  }
+  const cycle = sub?.billing_cycle ?? "monthly";
+  return [
+    {
+      id: "legacy",
+      label: cycle === "custom" ? (cycleLabel(sub) ?? "Custom") : BILLING_CYCLE_LABEL[cycle],
+      cycle,
+      custom_number: sub?.custom_cycle?.number ?? null,
+      custom_unit: sub?.custom_cycle?.unit ?? "months",
+      price: Number(fallbackPrice ?? 0),
+      compare_at: null,
+      badge: sub?.badge ?? null,
+      is_default: true,
+    },
+  ];
+}
+
+export function findPlan(plans: BillingPlan[], id: string | null | undefined): BillingPlan {
+  return plans.find((p) => p.id === id) ?? plans.find((p) => p.is_default) ?? plans[0];
+}
