@@ -530,6 +530,150 @@ export function SubscriptionProductDialog({
       ),
     },
     {
+      id: "plans",
+      label: "Billing plans",
+      content: (
+        <div className="space-y-4">
+          <StepCard
+            title="Billing plans"
+            description="Add every duration you want to sell. Customers pick one at checkout. The default plan sets the price shown on the product card."
+          >
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { label: "1 Month", cycle: "monthly" as BillingCycle },
+                { label: "2 Months", cycle: "custom" as BillingCycle, custom_number: 2, custom_unit: "months" as CycleUnit },
+                { label: "3 Months", cycle: "quarterly" as BillingCycle },
+                { label: "6 Months", cycle: "half_yearly" as BillingCycle },
+                { label: "12 Months", cycle: "yearly" as BillingCycle },
+                { label: "Lifetime", cycle: "lifetime" as BillingCycle },
+              ].map((p) => (
+                <Button
+                  key={p.label}
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px]"
+                  onClick={() => addPlan(p)}
+                >
+                  <Plus className="mr-1 h-3 w-3" /> {p.label}
+                </Button>
+              ))}
+            </div>
+
+            {plans.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                No plans yet — the price from the Pricing step will be used as a single plan.
+              </p>
+            )}
+
+            <div className="space-y-3">
+              {plans.map((p, i) => (
+                <div key={p.id} className="space-y-3 rounded-xl border p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold">{planPeriodLabel(p)}</span>
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                        <input
+                          type="radio"
+                          name="default-plan"
+                          checked={!!p.is_default}
+                          onChange={() => makeDefaultPlan(i)}
+                        />
+                        Default
+                      </label>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={() => setPlans((list) => list.filter((_, idx) => idx !== i))}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Field label="Plan label" required>
+                      <Input value={p.label} onChange={(e) => updatePlan(i, { label: e.target.value })} />
+                    </Field>
+                    <Field label="Duration">
+                      <select
+                        className={selectCls}
+                        value={p.cycle}
+                        onChange={(e) => updatePlan(i, { cycle: e.target.value as BillingCycle })}
+                      >
+                        {(Object.keys(BILLING_CYCLE_LABEL) as BillingCycle[]).map((c) => (
+                          <option key={c} value={c}>
+                            {BILLING_CYCLE_LABEL[c]}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    {p.cycle === "custom" && (
+                      <>
+                        <Field label="Every" required>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={p.custom_number ?? ""}
+                            onChange={(e) =>
+                              updatePlan(i, { custom_number: e.target.value === "" ? null : Number(e.target.value) })
+                            }
+                          />
+                        </Field>
+                        <Field label="Unit">
+                          <select
+                            className={selectCls}
+                            value={p.custom_unit ?? "months"}
+                            onChange={(e) => updatePlan(i, { custom_unit: e.target.value as CycleUnit })}
+                          >
+                            <option value="days">Days</option>
+                            <option value="weeks">Weeks</option>
+                            <option value="months">Months</option>
+                            <option value="years">Years</option>
+                          </select>
+                        </Field>
+                      </>
+                    )}
+                    <Field label="Price (৳)" required>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={p.price === 0 ? "" : String(p.price)}
+                        onChange={(e) => updatePlan(i, { price: Number(e.target.value) || 0 })}
+                      />
+                    </Field>
+                    <Field label="Compare-at price (৳)" hint="Optional — shows the saving.">
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={p.compare_at == null ? "" : String(p.compare_at)}
+                        onChange={(e) =>
+                          updatePlan(i, { compare_at: e.target.value === "" ? null : Number(e.target.value) })
+                        }
+                      />
+                    </Field>
+                    <Field label="Badge" hint="Optional — e.g. Most Popular.">
+                      <Input
+                        value={p.badge ?? ""}
+                        onChange={(e) => updatePlan(i, { badge: e.target.value || null })}
+                      />
+                    </Field>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <Button type="button" variant="outline" size="sm" onClick={() => addPlan()}>
+              <Plus className="mr-1 h-3.5 w-3.5" /> Add custom plan
+            </Button>
+          </StepCard>
+        </div>
+      ),
+    },
+    {
       id: "trial",
       label: "Trial",
       content: (
