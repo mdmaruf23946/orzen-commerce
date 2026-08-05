@@ -330,7 +330,7 @@ export const updateReturnRequest = createServerFn({ method: "POST" })
     if (!Object.keys(patch).length) return { id: data.id };
     const { error } = await context.supabase
       .from("returns")
-      .update(patch)
+      .update(patch as any)
       .eq("id", data.id)
       .eq("store_id", sid);
     if (error) throw new Error(error.message);
