@@ -2,7 +2,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { CYCLES } from "@/lib/subscriptions";
 
 async function storeIdOf(sb: any, userId: string) {
   const { data } = await sb.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
@@ -240,58 +239,6 @@ export const markSubscriptionInvoicePaid = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const getSubscriptionSettings = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const storeId = await storeIdOf(context.supabase, context.userId);
-    if (!storeId) return null;
-    const { normalizeSubscriptionSettings } = await import("@/lib/subscriptions");
-    const { data } = await context.supabase
-      .from("store_subscription_settings")
-      .select("*")
-      .eq("store_id", storeId)
-      .maybeSingle();
-    return normalizeSubscriptionSettings(storeId, data);
-  });
-
-export const saveSubscriptionSettings = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
-    z
-      .object({
-        auto_renew_default: z.boolean().optional(),
-        default_billing_cycle: z.enum(CYCLES as [string, ...string[]]).optional(),
-        allow_free_trial: z.boolean().optional(),
-        trial_days: z.number().int().min(0).max(365).optional(),
-        grace_period_days: z.number().int().min(0).max(90).optional(),
-        renewal_reminder_days: z.number().int().min(0).max(60).optional(),
-        failed_payment_retry: z.number().int().min(0).max(10).optional(),
-        cancellation_policy: z.string().max(4000).nullable().optional(),
-        refund_policy: z.string().max(4000).nullable().optional(),
-        subscription_terms: z.string().max(4000).nullable().optional(),
-        setup_fee: z.number().min(0).max(1000000).optional(),
-        tax_percent: z.number().min(0).max(100).optional(),
-        invoice_prefix: z.string().trim().max(12).optional(),
-        success_redirect_url: z.string().max(300).nullable().optional(),
-        payment_methods: z.array(z.string().max(120)).max(40).optional(),
-        cod_enabled: z.boolean().optional(),
-        notify_email: z.boolean().optional(),
-        notify_sms: z.boolean().optional(),
-        notify_whatsapp: z.boolean().optional(),
-      })
-      .parse(d),
-  )
-  .handler(async ({ data, context }) => {
-    const storeId = await storeIdOf(context.supabase, context.userId);
-    if (!storeId) throw new Error("Store not found");
-    const { error } = await context.supabase
-      .from("store_subscription_settings")
-      .upsert({ store_id: storeId, ...data, updated_at: new Date().toISOString() } as any, {
-        onConflict: "store_id",
-      });
-    if (error) throw new Error(error.message);
-    return { ok: true };
-  });
 
 /** Detail lookup keyed by the order id (Orders → Subscription tab controller). */
 export const getAdminSubscriptionByOrder = createServerFn({ method: "GET" })
