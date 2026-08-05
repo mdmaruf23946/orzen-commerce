@@ -956,27 +956,38 @@ export const placeOrder = createServerFn({ method: "POST" })
           ? 0
           : baseShip;
 
-    // Subscription pricing: plan setup fee + tax are added server-side from
-    // trusted product metadata and the store's subscription settings.
+    // Subscription pricing: the selected billing plan price and setup fee come
+    // from trusted product metadata — never from the client.
     let subscriptionFulfillment: any = null;
     if (allSubscription) {
       const firstProduct = byId.get(data.items[0].productId) as any;
       const smeta = ((firstProduct?.meta ?? {}) as any).subscription ?? {};
-      const st: any = subSettingsRow ?? {};
-      const setupFee = Number(smeta.setup_fee ?? st.setup_fee ?? 0);
-      const taxPercent = Number(st.tax_percent ?? 0);
-      const tax = Math.round(((subtotal + setupFee) * taxPercent) / 100);
-      subtotal = subtotal + setupFee + tax;
+      const { resolveBillingPlans, findPlan } = await import(
+        "@/components/admin/product-form/subscription/subscription-meta"
+      );
+      const plans = resolveBillingPlans(smeta, Number(firstProduct?.price ?? 0));
+      const plan = findPlan(plans as any, (data.subscription as any)?.planId ?? null);
+      if (plan) {
+        const qty = data.items[0].qty;
+        subtotal = subtotal - Number(firstProduct.price) * qty + Number(plan.price) * qty;
+        itemRows[0].price_snapshot = plan.price as any;
+        if (plans.length > 1) itemRows[0].name_snapshot = `${firstProduct.name} — ${plan.label}`;
+      }
+      const setupFee = Number(smeta.setup_fee ?? 0);
+      subtotal = subtotal + setupFee;
       subscriptionFulfillment = {
-        billing_cycle: data.subscription?.billingCycle ?? smeta.billing_cycle ?? st.default_billing_cycle ?? "monthly",
-        auto_renew: data.subscription?.autoRenew ?? st.auto_renew_default ?? true,
+        plan_id: plan?.id ?? null,
+        plan_label: plan?.label ?? null,
+        billing_cycle: plan?.cycle ?? data.subscription?.billingCycle ?? smeta.billing_cycle ?? "monthly",
+        auto_renew: data.subscription?.autoRenew ?? smeta.renewal?.mode !== "manual",
         reminders_opt_in: data.subscription?.remindersOptIn ?? true,
         vat: data.subscription?.vat ?? null,
         setup_fee: setupFee,
-        tax_amount: tax,
+        tax_amount: 0,
         accepted_terms: !!data.subscription?.acceptedTerms,
       };
     }
+
 
 
 
