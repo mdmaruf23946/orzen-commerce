@@ -130,7 +130,7 @@ function StoreConfigurationPage() {
 
         <InvoiceNumberingSection />
 
-        <SaveBar label="Save Store Configuration" saving={saving} dirty={dirty} />
+        <SaveBar label="Save Store Configuration" saving={saving} dirty={dirty} fixed={false} />
       </div>
     </form>
   );
