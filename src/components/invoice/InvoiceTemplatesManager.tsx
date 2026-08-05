@@ -402,27 +402,6 @@ export function InvoiceTemplatesManager({ scope }: { scope: "global" | "store" }
         {!mine.length && <p className="text-sm text-muted-foreground">No templates match your filters.</p>}
       </div>
 
-      {scope === "store" && (
-        <div>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Ready-made presets</h2>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {globals.map((t) => (
-              <div key={t.id} className="rounded-xl border bg-card p-4">
-                <TemplateThumb canvas={t.canvas} brand={t.brand} height={150} />
-                <div className="mt-2 font-medium">{t.name}</div>
-                <div className="mb-3 text-xs text-muted-foreground">{t.description}</div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={async () => { await dup({ data: { id: t.id } }); qc.invalidateQueries({ queryKey: ["invoice-templates"] }); toast.success("Copied to your store"); }}
-                >
-                  <Copy className="mr-1 h-4 w-4" /> Use this
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Preview dialog */}
       <Dialog open={!!previewOf} onOpenChange={(o) => !o && setPreviewOf(null)}>
