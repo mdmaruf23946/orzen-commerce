@@ -383,11 +383,6 @@ export function InvoiceTemplatesManager({ scope }: { scope: "global" | "store" }
                 >
                   {t.is_hidden ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                 </Button>
-                {scope === "store" && !t.is_default && (
-                  <Button size="sm" variant="outline" onClick={async () => { await setDefault({ data: { id: t.id } }); qc.invalidateQueries({ queryKey: ["invoice-templates"] }); }}>
-                    <Star className="mr-1 h-4 w-4" /> Set default
-                  </Button>
-                )}
                 <Button
                   size="sm"
                   variant="ghost"
