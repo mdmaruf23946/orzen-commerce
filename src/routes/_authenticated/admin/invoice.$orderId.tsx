@@ -60,10 +60,9 @@ function InvoicePage() {
       <style>{`
         @media print {
           @page { size: A4; margin: 0; }
-          body { background: #fff; }
-          .no-print { display: none !important; }
         }
       `}</style>
+
 
       <div className="no-print flex flex-wrap gap-2">
         <Button size="sm" onClick={() => window.print()}>
