@@ -1,4 +1,4 @@
-// Invoice Numbering settings — one independent configuration per order type.
+// Invoice Numbering settings — moved verbatim from the old single settings page.
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -11,48 +11,17 @@ import {
   getInvoiceSettings,
   updateInvoiceSettings,
   computeInvoicePreview,
-  type InvoiceOrderType,
 } from "@/lib/invoice-settings.functions";
-import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
 import { Section, Field } from "./shared";
 
-const TABS = [
-  { key: "physical" as const, label: "Physical" },
-  { key: "digital" as const, label: "Digital" },
-  { key: "service" as const, label: "Service" },
-  { key: "subscription" as const, label: "Subscription" },
-];
-
-const SAVE_LABEL: Record<InvoiceOrderType, string> = {
-  physical: "Save Physical Invoice Settings",
-  digital: "Save Digital Invoice Settings",
-  service: "Save Service Invoice Settings",
-  subscription: "Save Subscription Invoice Settings",
-};
-
 export function InvoiceNumberingSection() {
-  const [tab, setTab] = useState<InvoiceOrderType>("physical");
-
-  return (
-    <Section
-      icon={Hash}
-      title="Invoice Numbering"
-      description="Each order type has its own prefix, separator, padding and starting number."
-    >
-      <TypeFilterTabs tabs={TABS} value={tab} onChange={setTab} className="static -mx-0 px-0" />
-      <InvoiceTypeForm key={tab} orderType={tab} />
-    </Section>
-  );
-}
-
-function InvoiceTypeForm({ orderType }: { orderType: InvoiceOrderType }) {
   const qc = useQueryClient();
   const getFn = useServerFn(getInvoiceSettings);
   const saveFn = useServerFn(updateInvoiceSettings);
 
   const { data } = useQuery({
-    queryKey: ["admin", "invoice-settings", orderType],
-    queryFn: () => getFn({ data: { order_type: orderType } }),
+    queryKey: ["admin", "invoice-settings"],
+    queryFn: () => getFn(),
   });
 
   const [form, setForm] = useState<any>(null);
@@ -71,13 +40,17 @@ function InvoiceTypeForm({ orderType }: { orderType: InvoiceOrderType }) {
   }, [data]);
 
   if (!form || !data) {
-    return <div className="text-sm text-muted-foreground">Loading…</div>;
+    return (
+      <Section icon={Hash} title="Invoice Numbering" description="How invoice numbers are generated.">
+        <div className="text-sm text-muted-foreground">Loading…</div>
+      </Section>
+    );
   }
 
   const nextSeq = Math.max(Number(data.next_number ?? 1), Number(form.start_number || 1));
   const preview = (() => {
     try {
-      return computeInvoicePreview({ ...form, order_type: orderType }, nextSeq);
+      return computeInvoicePreview(form, nextSeq);
     } catch {
       return "";
     }
@@ -93,7 +66,6 @@ function InvoiceTypeForm({ orderType }: { orderType: InvoiceOrderType }) {
     try {
       await saveFn({
         data: {
-          order_type: orderType,
           prefix: String(form.prefix || "").toUpperCase(),
           separator: form.separator,
           padding: Number(form.padding),
@@ -102,7 +74,7 @@ function InvoiceTypeForm({ orderType }: { orderType: InvoiceOrderType }) {
           include_month: !!form.include_month,
         },
       });
-      await qc.invalidateQueries({ queryKey: ["admin", "invoice-settings", orderType] });
+      await qc.invalidateQueries({ queryKey: ["admin", "invoice-settings"] });
       toast.success("Invoice settings saved");
     } catch (err) {
       toast.error((err as Error).message);
@@ -112,19 +84,19 @@ function InvoiceTypeForm({ orderType }: { orderType: InvoiceOrderType }) {
   }
 
   return (
-    <div className="space-y-4">
+    <Section icon={Hash} title="Invoice Numbering" description="Prefix, separator, padding and starting number for invoices.">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Prefix" htmlFor={`inv-prefix-${orderType}`} hint="Letters and digits only, e.g. PH or SUB.">
+        <Field label="Prefix" htmlFor="inv-prefix" hint="Letters and digits only, e.g. INV or ST.">
           <Input
-            id={`inv-prefix-${orderType}`}
+            id="inv-prefix"
             maxLength={10}
             value={form.prefix ?? ""}
             onChange={(e) => set("prefix", e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
           />
         </Field>
-        <Field label="Separator" htmlFor={`inv-sep-${orderType}`}>
+        <Field label="Separator" htmlFor="inv-sep">
           <select
-            id={`inv-sep-${orderType}`}
+            id="inv-sep"
             value={form.separator}
             onChange={(e) => set("separator", e.target.value)}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -135,13 +107,9 @@ function InvoiceTypeForm({ orderType }: { orderType: InvoiceOrderType }) {
             <option value="">None</option>
           </select>
         </Field>
-        <Field
-          label="Number padding"
-          htmlFor={`inv-pad-${orderType}`}
-          hint="Zero-pad the sequence to this many digits (4–8)."
-        >
+        <Field label="Number padding" htmlFor="inv-pad" hint="Zero-pad the sequence to this many digits (4–8).">
           <Input
-            id={`inv-pad-${orderType}`}
+            id="inv-pad"
             type="number"
             min={4}
             max={8}
@@ -149,13 +117,9 @@ function InvoiceTypeForm({ orderType }: { orderType: InvoiceOrderType }) {
             onChange={(e) => set("padding", Number(e.target.value))}
           />
         </Field>
-        <Field
-          label="Starting number"
-          htmlFor={`inv-start-${orderType}`}
-          hint="Sequence starts here for new invoices."
-        >
+        <Field label="Starting number" htmlFor="inv-start" hint="Sequence starts here for new invoices.">
           <Input
-            id={`inv-start-${orderType}`}
+            id="inv-start"
             type="number"
             min={1}
             value={form.start_number}
@@ -182,13 +146,11 @@ function InvoiceTypeForm({ orderType }: { orderType: InvoiceOrderType }) {
       <div className="rounded-lg border bg-muted/40 p-3">
         <div className="text-xs uppercase tracking-wide text-muted-foreground">Live preview</div>
         <div className="mt-1 font-mono text-lg">{preview || "—"}</div>
-        <div className="mt-1 text-[11px] text-muted-foreground">
-          Next {orderType} invoice will use sequence #{nextSeq}.
-        </div>
+        <div className="mt-1 text-[11px] text-muted-foreground">Next invoice will use sequence #{nextSeq}.</div>
       </div>
       <Button type="button" onClick={onSave} disabled={saving} className="w-full sm:w-auto">
-        {saving ? "Saving…" : SAVE_LABEL[orderType]}
+        {saving ? "Saving…" : "Save invoice settings"}
       </Button>
-    </div>
+    </Section>
   );
 }
