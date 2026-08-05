@@ -38,9 +38,24 @@ export type SubscriptionNotifications = {
   cancelled: boolean;
 };
 
+/** One selectable billing plan of a subscription product. */
+export type BillingPlan = {
+  id: string;
+  label: string;
+  cycle: BillingCycle;
+  custom_number?: number | null;
+  custom_unit?: CycleUnit;
+  price: number;
+  compare_at?: number | null;
+  badge?: string | null;
+  is_default?: boolean;
+};
+
 export type SubscriptionMeta = {
   // Step 2 — plan
   billing_cycle?: BillingCycle;
+  /** Multiple billing plans; customers pick one at checkout. */
+  plans?: BillingPlan[];
   custom_cycle?: { number: number | null; unit: CycleUnit };
   plan_type?: PlanType;
   plan_type_custom?: string | null;
