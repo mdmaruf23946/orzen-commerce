@@ -34,8 +34,8 @@ function FitInvoice({ canvas, brand, data }: { canvas: any; brand: any; data: an
       <div className="print:hidden">
         <InvoiceRenderer canvas={canvas} brand={brand} data={data} scale={scale} className="mx-auto shadow" />
       </div>
-      {/* print: untouched full-size layout */}
-      <div className="hidden print:block">
+      {/* print: untouched full-size layout, isolated from admin chrome */}
+      <div className="print-root hidden print:block">
         <InvoiceRenderer canvas={canvas} brand={brand} data={data} />
       </div>
     </div>
@@ -60,10 +60,9 @@ function InvoicePage() {
       <style>{`
         @media print {
           @page { size: A4; margin: 0; }
-          body { background: #fff; }
-          .no-print { display: none !important; }
         }
       `}</style>
+
 
       <div className="no-print flex flex-wrap gap-2">
         <Button size="sm" onClick={() => window.print()}>
