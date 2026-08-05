@@ -545,7 +545,7 @@ export async function processRenewals(sb: Sb) {
     if (!due) continue;
     const daysToDue = Math.ceil((due.getTime() - now.getTime()) / 86400000);
 
-    if (daysToDue > 0 && daysToDue <= settings.renewal_reminder_days && s.reminders_opt_in) {
+    if (daysToDue > 0 && daysToDue <= reminderDays && s.reminders_opt_in) {
       const { data: already } = await sb
         .from("store_subscription_notifications")
         .select("id")
@@ -562,7 +562,7 @@ export async function processRenewals(sb: Sb) {
     }
 
     if (daysToDue <= 0) {
-      const graceEnd = new Date(due.getTime() + settings.grace_period_days * 86400000);
+      const graceEnd = new Date(due.getTime() + graceDays * 86400000);
       if (now <= graceEnd) {
         if (s.status !== "grace") {
           await sb.from("store_subscriptions").update({ status: "grace" }).eq("id", s.id);
