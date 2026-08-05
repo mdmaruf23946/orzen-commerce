@@ -852,15 +852,8 @@ export const placeOrder = createServerFn({ method: "POST" })
     const allService = orderType === "service";
     // Subscriptions are billed recurrently: no shipment, no courier, no zone.
     const allSubscription = orderType === "subscription";
-    const subSettingsRow = allSubscription
-      ? (
-          await sb
-            .from("store_subscription_settings")
-            .select("*")
-            .eq("store_id", data.storeId)
-            .maybeSingle()
-        ).data
-      : null;
+    // COD for subscriptions follows the store's own payment configuration.
+    const subCodEnabled = ((store as any)?.payments_config ?? {})?.cod?.enabled !== false;
 
     // Digital goods are never shipped and never paid on delivery.
     if (hasDigital && data.paymentMethod === "cod") {
@@ -869,7 +862,7 @@ export const placeOrder = createServerFn({ method: "POST" })
     if (allService && data.paymentMethod === "cod") {
       throw new Error("Cash on Delivery is not available for services");
     }
-    if (allSubscription && data.paymentMethod === "cod" && !(subSettingsRow as any)?.cod_enabled) {
+    if (allSubscription && data.paymentMethod === "cod" && !subCodEnabled) {
       throw new Error("Cash on Delivery is not available for subscriptions");
     }
     if (!allDigital && !allService && !allSubscription && (data.address ?? "").trim().length < 3) {
