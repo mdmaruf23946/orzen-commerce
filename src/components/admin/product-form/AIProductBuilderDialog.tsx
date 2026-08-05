@@ -672,7 +672,7 @@ function UpgradeCTA() {
       <p className="text-sm text-muted-foreground">
         Generate complete, editable products from photos and a short description in seconds.
       </p>
-      <Link to="/admin/billing" className="w-full">
+      <Link to="/admin/billing" search={{} as never} className="w-full">
         <Button className="w-full gap-1.5">
           <Sparkles className="h-4 w-4" /> Upgrade
         </Button>
