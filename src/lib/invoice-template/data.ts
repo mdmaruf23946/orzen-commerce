@@ -78,6 +78,12 @@ export const VARIABLE_GROUPS: { group: string; vars: { key: string; label: strin
       { key: "store_phone", label: "Store phone" },
       { key: "store_email", label: "Store email" },
       { key: "store_website", label: "Store website" },
+      { key: "owner_name", label: "Owner name" },
+      { key: "trade_license", label: "Trade license" },
+      { key: "bin_vat", label: "BIN / VAT number" },
+      { key: "thank_you", label: "Thank you message" },
+      { key: "terms", label: "Terms & conditions" },
+      { key: "refund_policy", label: "Return / refund policy" },
     ],
   },
   {
