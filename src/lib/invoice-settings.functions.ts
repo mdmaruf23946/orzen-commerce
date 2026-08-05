@@ -4,7 +4,18 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const SEPARATORS = ["-", "/", "_", ""] as const;
 
+export const ORDER_TYPES = ["physical", "digital", "service", "subscription"] as const;
+export type InvoiceOrderType = (typeof ORDER_TYPES)[number];
+
+export const DEFAULT_PREFIX: Record<InvoiceOrderType, string> = {
+  physical: "PH",
+  digital: "DG",
+  service: "SV",
+  subscription: "SUB",
+};
+
 const settingsSchema = z.object({
+  order_type: z.enum(ORDER_TYPES),
   prefix: z
     .string()
     .trim()
@@ -46,23 +57,32 @@ async function getOwnedStoreId(supabase: any, userId: string) {
 
 export const getInvoiceSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((data: unknown) =>
+    z
+      .object({ order_type: z.enum(ORDER_TYPES).default("physical") })
+      .default({ order_type: "physical" })
+      .parse(data ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    const orderType = data.order_type as InvoiceOrderType;
     const storeId = await getOwnedStoreId(context.supabase, context.userId);
-    const { data, error } = await context.supabase
+    const { data: row, error } = await context.supabase
       .from("store_invoice_settings")
       .select("prefix,separator,padding,start_number,include_year,include_month,next_number")
       .eq("store_id", storeId)
+      .eq("order_type", orderType)
       .maybeSingle();
     if (error) throw new Error(error.message);
     const settings: InvoiceSettingsInput = {
-      prefix: data?.prefix ?? "ST",
-      separator: (data?.separator ?? "-") as (typeof SEPARATORS)[number],
-      padding: data?.padding ?? 6,
-      start_number: Number(data?.start_number ?? 1),
-      include_year: !!data?.include_year,
-      include_month: !!data?.include_month,
+      order_type: orderType,
+      prefix: row?.prefix ?? DEFAULT_PREFIX[orderType],
+      separator: (row?.separator ?? "-") as (typeof SEPARATORS)[number],
+      padding: row?.padding ?? 6,
+      start_number: Number(row?.start_number ?? 1),
+      include_year: !!row?.include_year,
+      include_month: !!row?.include_month,
     };
-    const next = Math.max(Number(data?.next_number ?? 1), settings.start_number);
+    const next = Math.max(Number(row?.next_number ?? 1), settings.start_number);
     return {
       ...settings,
       next_number: next,
@@ -80,6 +100,7 @@ export const updateInvoiceSettings = createServerFn({ method: "POST" })
       .upsert(
         {
           store_id: storeId,
+          order_type: data.order_type,
           prefix: data.prefix,
           separator: data.separator,
           padding: data.padding,
@@ -87,7 +108,7 @@ export const updateInvoiceSettings = createServerFn({ method: "POST" })
           include_year: data.include_year,
           include_month: data.include_month,
         },
-        { onConflict: "store_id" },
+        { onConflict: "store_id,order_type" },
       );
     if (error) throw new Error(error.message);
     return { ok: true, preview: preview(data, data.start_number) };

@@ -5227,6 +5227,7 @@ export type Database = {
           include_month: boolean
           include_year: boolean
           next_number: number
+          order_type: string
           padding: number
           prefix: string
           separator: string
@@ -5239,6 +5240,7 @@ export type Database = {
           include_month?: boolean
           include_year?: boolean
           next_number?: number
+          order_type?: string
           padding?: number
           prefix?: string
           separator?: string
@@ -5251,6 +5253,7 @@ export type Database = {
           include_month?: boolean
           include_year?: boolean
           next_number?: number
+          order_type?: string
           padding?: number
           prefix?: string
           separator?: string
@@ -5262,7 +5265,7 @@ export type Database = {
           {
             foreignKeyName: "store_invoice_settings_store_id_fkey"
             columns: ["store_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
@@ -6787,7 +6790,10 @@ export type Database = {
         Returns: number
       }
       expire_trials: { Args: never; Returns: undefined }
-      generate_invoice_no: { Args: { _store_id: string }; Returns: string }
+      generate_invoice_no: {
+        Args: { _order_type?: string; _store_id: string }
+        Returns: string
+      }
       get_active_store_gateway_public: {
         Args: { _store_id: string }
         Returns: Json

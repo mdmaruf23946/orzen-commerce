@@ -15,7 +15,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/admin/billing/")({
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { highlight?: string; plan?: string; from?: string } => ({
     highlight: typeof s.highlight === "string" ? s.highlight : undefined,
     plan: typeof s.plan === "string" ? s.plan : undefined,
     from: typeof s.from === "string" ? s.from : undefined,

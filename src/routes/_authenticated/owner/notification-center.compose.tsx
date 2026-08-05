@@ -12,7 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/_authenticated/owner/notification-center/compose")({
   component: Compose,
-  validateSearch: (s: Record<string, unknown>) => ({ draft: s.draft as string | undefined }),
+  validateSearch: (s: Record<string, unknown>): { draft?: string } => ({
+    draft: typeof s.draft === "string" ? s.draft : undefined,
+  }),
 });
 
 type Form = {
