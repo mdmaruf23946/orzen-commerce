@@ -19,6 +19,23 @@ export type InvoiceData = {
     email?: string | null;
     logo?: string | null;
     website?: string | null;
+    owner_name?: string | null;
+    trade_license?: string | null;
+    bin_vat?: string | null;
+    signature?: string | null;
+    seal?: string | null;
+  };
+  /** Global invoice information footer (store-wide, template independent). */
+  footer?: {
+    thanks?: string | null;
+    terms?: string | null;
+    refund?: string | null;
+  };
+  display?: {
+    logo?: boolean;
+    signature?: boolean;
+    seal?: boolean;
+    terms?: boolean;
   };
   order: {
     id: string;
