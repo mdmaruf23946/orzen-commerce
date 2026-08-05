@@ -61,9 +61,7 @@ function InvoicePage() {
         </Button>
       </div>
 
-      <div className="overflow-auto">
-        <InvoiceRenderer canvas={canvas} brand={brand} data={invoice} className="mx-auto shadow" />
-      </div>
+      <FitInvoice canvas={canvas} brand={brand} data={invoice} />
     </div>
   );
 }
