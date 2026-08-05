@@ -13,6 +13,7 @@ function headers(c: Record<string, string>) {
 export const paperflyAdapter: CourierAdapter = {
   key: "paperfly",
   hasApi: true,
+  requiredCreds: [["username"], ["password"], ["api_key"]],
 
   async createParcel(ctx, p) {
     const url = trimUrl(ctx.baseUrl) || "https://mplog.paperfly.com.bd/api";

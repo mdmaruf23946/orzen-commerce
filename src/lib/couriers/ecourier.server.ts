@@ -15,6 +15,7 @@ export const ecourierAdapter: CourierAdapter = {
   key: "ecourier",
   hasApi: true,
   supportsPickup: true,
+  requiredCreds: [["api_key"], ["secret", "api_secret"], ["user_id"]],
 
   async createParcel(ctx, p) {
     const url = trimUrl(ctx.baseUrl) || "https://backoffice.ecourier.com.bd/api";
