@@ -185,6 +185,7 @@ export function SubscriptionCheckout({
           fingerprint: fingerprint || undefined,
           deviceId: deviceId || undefined,
           subscription: {
+            planId: plan?.id,
             billingCycle: cycle,
             autoRenew,
             remindersOptIn: reminders,
@@ -247,6 +248,44 @@ export function SubscriptionCheckout({
               <div className="text-[10px] text-muted-foreground sm:text-[11px]">/ {CYCLE_LABEL[cycle] ?? cycle}</div>
             </div>
           </div>
+
+          {plans.length > 1 && (
+            <div className="mt-2.5 grid gap-1.5 sm:grid-cols-2">
+              {plans.map((p) => (
+                <label
+                  key={p.id}
+                  className={`flex cursor-pointer items-start justify-between gap-2 rounded-lg border p-2 ${
+                    plan?.id === p.id ? "border-primary ring-1 ring-primary" : ""
+                  }`}
+                >
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-1.5">
+                      <input
+                        type="radio"
+                        name="sub-plan"
+                        checked={plan?.id === p.id}
+                        onChange={() => setPlanId(p.id)}
+                      />
+                      <span className="truncate text-xs font-medium">{p.label}</span>
+                    </span>
+                    <span className="ml-5 block text-[10px] text-muted-foreground">
+                      {planPeriodLabel(p)}
+                      {p.badge ? ` · ${p.badge}` : ""}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-right">
+                    <span className="block text-xs font-semibold">{taka(p.price)}</span>
+                    {p.compare_at != null && p.compare_at > p.price && (
+                      <span className="block text-[10px] text-muted-foreground line-through">
+                        {taka(p.compare_at)}
+                      </span>
+                    )}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+
           {trialEnabled && trialDays > 0 && (
             <div className="mt-2 flex items-center gap-2 rounded-lg bg-sky-50 p-2 text-[11px] text-sky-800">
               <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> {trialDays}-day free trial — first charge on{" "}
