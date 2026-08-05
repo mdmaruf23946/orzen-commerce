@@ -599,6 +599,52 @@ export const getParcelPrintData = createServerFn({ method: "POST" })
     return { store: s ?? null, parcels: rows ?? [], invoiceByOrder };
   });
 
+/**
+ * Resolve the official courier label for a parcel.
+ * Order of preference: courier API label -> courier merchant-panel label page
+ * -> ORZEN-generated fallback label.
+ */
+export const getParcelLabel = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: uuid }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertPlan(supabase, userId, "courier");
+    const store = await getStore(supabase, userId);
+    const parcel = await loadParcel(supabase, store.id, data.id);
+    const { getAdapter, courierName } = await import("@/lib/couriers/registry.server");
+    const { courierLabelPanelUrl, labelHelpText } = await import("@/lib/couriers/label");
+    const adapter = getAdapter(parcel.courier_key);
+    const consignment = parcel.consignment_id ?? parcel.tracking_code ?? null;
+
+    if (adapter.getLabel && consignment) {
+      const ctx = buildCtx(store, parcel.courier_key);
+      if (ctx) {
+        try {
+          const r = await adapter.getLabel(ctx, toInput(parcel));
+          await writeLogs(supabase, store.id, parcel.id, parcel.courier_key, ctx.logs);
+          if (r.url) {
+            return { source: "api" as const, url: r.url, message: `${courierName(parcel.courier_key)} label ready` };
+          }
+        } catch (e) {
+          await writeLogs(supabase, store.id, parcel.id, parcel.courier_key, ctx.logs);
+          return { source: "fallback" as const, url: null, message: (e as Error).message };
+        }
+      }
+    }
+
+    const panel = consignment ? courierLabelPanelUrl(parcel.courier_key, consignment) : null;
+    if (panel) return { source: "panel" as const, url: panel, message: labelHelpText(parcel.courier_key) };
+    return {
+      source: "fallback" as const,
+      url: null,
+      message: consignment
+        ? labelHelpText(parcel.courier_key)
+        : "No consignment ID yet — send the parcel to the courier first.",
+    };
+  });
+
+
 /* ------------------------------------------------------------------ */
 /* Internals                                                           */
 /* ------------------------------------------------------------------ */
