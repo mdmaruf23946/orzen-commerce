@@ -103,6 +103,14 @@ export function SubscriptionProductDialog({
   const [renewalPrice, setRenewalPrice] = useState<string>(
     s0.renewal_price != null ? String(s0.renewal_price) : "",
   );
+  // Billing plans — each subscription product carries its own plans.
+  const [plans, setPlans] = useState<BillingPlan[]>(() =>
+    resolveBillingPlans(s0, Number(editing?.price ?? 0)).map((p) =>
+      p.id === "legacy" && !editing ? { ...p, price: 0 } : p,
+    ),
+  );
+
+
 
   // Step 4 — Trial & activation
   const [trialEnabled, setTrialEnabled] = useState<boolean>(s0.trial?.enabled ?? false);
