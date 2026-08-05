@@ -342,10 +342,10 @@ export async function activateSubscriptionForOrder(sb: Sb, orderId: string) {
   const s = sub as any;
   if (["active", "trialing"].includes(s.status)) return s;
 
-  const settings = await loadSettings(sb, s.store_id);
   const { data: product } = await sb.from("products").select("meta").eq("id", s.product_id).maybeSingle();
   const meta = ((product as any)?.meta ?? {}).subscription ?? {};
-  const trialDays = trialDaysFromMeta(meta, settings);
+  const trialDays = trialDaysFromMeta(meta);
+
 
   const now = new Date();
   const trialEnds = trialDays > 0 ? new Date(now.getTime() + trialDays * 86400000).toISOString() : null;
