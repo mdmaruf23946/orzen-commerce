@@ -525,8 +525,12 @@ export async function processRenewals(sb: Sb) {
     .limit(1000);
 
   for (const s of (subs ?? []) as any[]) {
-    const settings = await loadSettings(sb, s.store_id);
+    // Grace + reminder windows come from the product plan snapshot.
+    const rules = (s.plan_snapshot ?? {}).renewal ?? {};
+    const reminderDays = Number(rules.renewal_reminder_days ?? 7);
+    const graceDays = Number(rules.grace_period_days ?? 3);
     if (s.billing_cycle === "lifetime") continue;
+
 
     // Trial that has run out becomes a normal billing period.
     if (s.status === "trialing" && s.trial_ends_at && new Date(s.trial_ends_at) <= now) {
