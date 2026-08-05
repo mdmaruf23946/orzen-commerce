@@ -293,6 +293,66 @@ function ElementBody({
   }
 }
 
+/**
+ * Store-wide "Global Invoice Information" footer. Rendered on top of every
+ * template so business info stays identical whichever design is active.
+ */
+function GlobalFooter({
+  data,
+  brand,
+  page,
+}: {
+  data: InvoiceData;
+  brand: Brand;
+  page: { width: number; height: number; margin: number };
+}) {
+  const sig = imgUrl(data.store.signature);
+  const seal = imgUrl(data.store.seal);
+  const thanks = data.footer?.thanks?.trim();
+  const terms = data.display?.terms === false ? "" : data.footer?.terms?.trim();
+  const refund = data.footer?.refund?.trim();
+  if (!sig && !seal && !thanks && !terms && !refund) return null;
+  const m = page.margin ?? 32;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: m,
+        right: m,
+        bottom: Math.max(m / 2, 12),
+        zIndex: 9999,
+        fontSize: 10,
+        lineHeight: 1.45,
+        color: brand.secondary,
+        display: "flex",
+        gap: 16,
+        alignItems: "flex-end",
+        justifyContent: "space-between",
+      }}
+    >
+      <div style={{ flex: 1, whiteSpace: "pre-wrap" }}>
+        {thanks && <div style={{ fontWeight: 600, color: brand.primary, marginBottom: 2 }}>{thanks}</div>}
+        {terms && <div>{terms}</div>}
+        {refund && <div style={{ marginTop: 2 }}>{refund}</div>}
+      </div>
+      {(sig || seal) && (
+        <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
+          {seal && <img src={seal} alt="" style={{ height: 56, objectFit: "contain", opacity: 0.9 }} />}
+          {sig && (
+            <div style={{ textAlign: "center" }}>
+              <img src={sig} alt="" style={{ height: 44, objectFit: "contain" }} />
+              <div style={{ borderTop: `1px solid ${brand.secondary}`, marginTop: 2, paddingTop: 2 }}>
+                {data.store.owner_name || "Authorised signature"}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 export function InvoiceRenderer({
   canvas,
   brand,
@@ -353,6 +413,7 @@ export function InvoiceRenderer({
             </Fragment>
           ),
         )}
+        <GlobalFooter data={data} brand={brand} page={page} />
       </div>
     </div>
   );

@@ -5221,6 +5221,86 @@ export type Database = {
           },
         ]
       }
+      store_invoice_profile: {
+        Row: {
+          bin_vat: string | null
+          business_address: string | null
+          business_name: string | null
+          created_at: string
+          email: string | null
+          logo_url: string | null
+          owner_name: string | null
+          phone: string | null
+          refund_policy: string | null
+          seal_url: string | null
+          show_logo: boolean
+          show_seal: boolean
+          show_signature: boolean
+          show_terms: boolean
+          signature_url: string | null
+          store_id: string
+          terms: string | null
+          thank_you_message: string | null
+          trade_license: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          bin_vat?: string | null
+          business_address?: string | null
+          business_name?: string | null
+          created_at?: string
+          email?: string | null
+          logo_url?: string | null
+          owner_name?: string | null
+          phone?: string | null
+          refund_policy?: string | null
+          seal_url?: string | null
+          show_logo?: boolean
+          show_seal?: boolean
+          show_signature?: boolean
+          show_terms?: boolean
+          signature_url?: string | null
+          store_id: string
+          terms?: string | null
+          thank_you_message?: string | null
+          trade_license?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          bin_vat?: string | null
+          business_address?: string | null
+          business_name?: string | null
+          created_at?: string
+          email?: string | null
+          logo_url?: string | null
+          owner_name?: string | null
+          phone?: string | null
+          refund_policy?: string | null
+          seal_url?: string | null
+          show_logo?: boolean
+          show_seal?: boolean
+          show_signature?: boolean
+          show_terms?: boolean
+          signature_url?: string | null
+          store_id?: string
+          terms?: string | null
+          thank_you_message?: string | null
+          trade_license?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_invoice_profile_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_invoice_settings: {
         Row: {
           created_at: string

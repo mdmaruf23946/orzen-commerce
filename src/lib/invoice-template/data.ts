@@ -19,6 +19,23 @@ export type InvoiceData = {
     email?: string | null;
     logo?: string | null;
     website?: string | null;
+    owner_name?: string | null;
+    trade_license?: string | null;
+    bin_vat?: string | null;
+    signature?: string | null;
+    seal?: string | null;
+  };
+  /** Global invoice information footer (store-wide, template independent). */
+  footer?: {
+    thanks?: string | null;
+    terms?: string | null;
+    refund?: string | null;
+  };
+  display?: {
+    logo?: boolean;
+    signature?: boolean;
+    seal?: boolean;
+    terms?: boolean;
   };
   order: {
     id: string;
@@ -61,6 +78,12 @@ export const VARIABLE_GROUPS: { group: string; vars: { key: string; label: strin
       { key: "store_phone", label: "Store phone" },
       { key: "store_email", label: "Store email" },
       { key: "store_website", label: "Store website" },
+      { key: "owner_name", label: "Owner name" },
+      { key: "trade_license", label: "Trade license" },
+      { key: "bin_vat", label: "BIN / VAT number" },
+      { key: "thank_you", label: "Thank you message" },
+      { key: "terms", label: "Terms & conditions" },
+      { key: "refund_policy", label: "Return / refund policy" },
     ],
   },
   {
@@ -115,6 +138,12 @@ export function variableMap(d: InvoiceData): Record<string, string> {
     store_phone: d.store.phone ?? "",
     store_email: d.store.email ?? "",
     store_website: d.store.website ?? "",
+    owner_name: d.store.owner_name ?? "",
+    trade_license: d.store.trade_license ?? "",
+    bin_vat: d.store.bin_vat ?? "",
+    thank_you: d.footer?.thanks ?? "",
+    terms: d.footer?.terms ?? "",
+    refund_policy: d.footer?.refund ?? "",
     customer_name: d.customer.name ?? "",
     customer_phone: d.customer.phone ?? "",
     customer_email: d.customer.email ?? "",
