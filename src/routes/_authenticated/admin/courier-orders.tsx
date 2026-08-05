@@ -308,9 +308,12 @@ function CourierOrdersPage() {
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   {[o.address, o.area].filter(Boolean).join(", ")}
                 </p>
-                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                  {(o.items ?? []).map((i: any) => `${i.name} × ${i.qty}`).join(", ") || "—"}
-                </p>
+                <div className="mt-2 flex items-start gap-2">
+                  <ItemThumbs items={o.items as any} />
+                  <p className="line-clamp-2 flex-1 pt-0.5 text-xs text-muted-foreground">
+                    {(o.items ?? []).map((i: any) => `${i.name} × ${i.qty}`).join(", ") || "—"}
+                  </p>
+                </div>
                 <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs">
                   <span>COD: <strong>{money(o.cod_amount)}</strong></span>
                   <span>Delivery: {money(o.delivery_amount)}</span>
