@@ -214,6 +214,7 @@ export function SubscriptionCheckout({
     }
   }
 
+  const policies: any = meta.policies ?? {};
   const benefits: any[] = Array.isArray(meta.benefits) ? meta.benefits : [];
   const access: any[] = Array.isArray(meta.access_items) ? meta.access_items : [];
 
@@ -369,7 +370,7 @@ export function SubscriptionCheckout({
             <input type="checkbox" className="mt-1" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
             <span className="text-sm">I accept the subscription, cancellation and refund terms</span>
           </label>
-          {(settings?.subscription_terms || settings?.cancellation_policy || settings?.refund_policy) && (
+          {(policies.terms || policies.cancellation || policies.refund) && (
             <div>
               <button
                 type="button"
@@ -380,9 +381,9 @@ export function SubscriptionCheckout({
               </button>
               {showTerms && (
                 <div className="mt-2 space-y-2 whitespace-pre-wrap rounded-lg bg-muted p-2 text-[11px] text-muted-foreground sm:p-3 sm:text-xs">
-                  {settings?.subscription_terms && <p>{settings.subscription_terms}</p>}
-                  {settings?.cancellation_policy && <p>{settings.cancellation_policy}</p>}
-                  {settings?.refund_policy && <p>{settings.refund_policy}</p>}
+                  {policies.terms && <p>{policies.terms}</p>}
+                  {policies.cancellation && <p>{policies.cancellation}</p>}
+                  {policies.refund && <p>{policies.refund}</p>}
                 </div>
               )}
             </div>
@@ -403,12 +404,6 @@ export function SubscriptionCheckout({
             <div className="flex justify-between py-0.5 text-sm">
               <span className="text-muted-foreground">Setup fee</span>
               <span>{taka(summary.setup)}</span>
-            </div>
-          )}
-          {summary.tax > 0 && (
-            <div className="flex justify-between py-0.5 text-sm">
-              <span className="text-muted-foreground">Tax ({settings?.tax_percent}%)</span>
-              <span>{taka(summary.tax)}</span>
             </div>
           )}
           <div className="mt-2 flex justify-between border-t pt-2 text-sm font-semibold">
