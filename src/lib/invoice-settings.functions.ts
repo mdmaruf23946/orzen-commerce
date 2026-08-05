@@ -109,3 +109,81 @@ export const updateInvoiceSettings = createServerFn({ method: "POST" })
 export function computeInvoicePreview(s: PreviewInput, seq: number) {
   return preview(s, seq);
 }
+
+/* ------------------------------------------------------------------ *
+ * Global Invoice Information (business details shared by every template)
+ * ------------------------------------------------------------------ */
+
+const profileSchema = z.object({
+  business_name: z.string().trim().max(120).nullable().optional(),
+  owner_name: z.string().trim().max(120).nullable().optional(),
+  business_address: z.string().trim().max(500).nullable().optional(),
+  phone: z.string().trim().max(60).nullable().optional(),
+  email: z.string().trim().max(160).nullable().optional(),
+  website: z.string().trim().max(200).nullable().optional(),
+  trade_license: z.string().trim().max(80).nullable().optional(),
+  bin_vat: z.string().trim().max(80).nullable().optional(),
+  logo_url: z.string().trim().max(500).nullable().optional(),
+  signature_url: z.string().trim().max(500).nullable().optional(),
+  seal_url: z.string().trim().max(500).nullable().optional(),
+  thank_you_message: z.string().trim().max(500).nullable().optional(),
+  terms: z.string().trim().max(4000).nullable().optional(),
+  refund_policy: z.string().trim().max(4000).nullable().optional(),
+  show_logo: z.boolean().optional(),
+  show_signature: z.boolean().optional(),
+  show_seal: z.boolean().optional(),
+  show_terms: z.boolean().optional(),
+});
+
+export type InvoiceProfileInput = z.infer<typeof profileSchema>;
+
+export const getInvoiceProfile = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const storeId = await getOwnedStoreId(context.supabase, context.userId);
+    const [{ data: row, error }, { data: store }] = await Promise.all([
+      context.supabase.from("store_invoice_profile").select("*").eq("store_id", storeId).maybeSingle(),
+      context.supabase
+        .from("stores")
+        .select("name,phone,address,email,logo_url,website")
+        .eq("id", storeId)
+        .maybeSingle(),
+    ]);
+    if (error) throw new Error(error.message);
+    return {
+      storeId,
+      exists: !!row,
+      profile: {
+        business_name: row?.business_name ?? store?.name ?? "",
+        owner_name: row?.owner_name ?? "",
+        business_address: row?.business_address ?? store?.address ?? "",
+        phone: row?.phone ?? store?.phone ?? "",
+        email: row?.email ?? store?.email ?? "",
+        website: row?.website ?? store?.website ?? "",
+        trade_license: row?.trade_license ?? "",
+        bin_vat: row?.bin_vat ?? "",
+        logo_url: row?.logo_url ?? store?.logo_url ?? "",
+        signature_url: row?.signature_url ?? "",
+        seal_url: row?.seal_url ?? "",
+        thank_you_message: row?.thank_you_message ?? "",
+        terms: row?.terms ?? "",
+        refund_policy: row?.refund_policy ?? "",
+        show_logo: row?.show_logo ?? true,
+        show_signature: row?.show_signature ?? false,
+        show_seal: row?.show_seal ?? false,
+        show_terms: row?.show_terms ?? true,
+      },
+    };
+  });
+
+export const saveInvoiceProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => profileSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const storeId = await getOwnedStoreId(context.supabase, context.userId);
+    const { error } = await context.supabase
+      .from("store_invoice_profile")
+      .upsert({ store_id: storeId, ...data }, { onConflict: "store_id" });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
