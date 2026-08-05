@@ -791,6 +791,7 @@ export const placeOrder = createServerFn({ method: "POST" })
         // Subscription-only payload. Ignored by every other checkout path.
         subscription: z
           .object({
+            planId: z.string().trim().max(60).optional(),
             billingCycle: z.string().trim().max(30).optional(),
             autoRenew: z.boolean().optional(),
             remindersOptIn: z.boolean().optional(),
