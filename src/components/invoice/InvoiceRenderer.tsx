@@ -353,6 +353,7 @@ export function InvoiceRenderer({
             </Fragment>
           ),
         )}
+        <GlobalFooter data={data} brand={brand} page={page} />
       </div>
     </div>
   );
