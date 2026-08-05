@@ -24,7 +24,10 @@ import {
   RESET_PERIOD_LABEL,
   USAGE_METRIC_PRESETS,
   cycleLabel,
+  planPeriodLabel,
+  resolveBillingPlans,
   type AccessItem,
+  type BillingPlan,
   type ActivationType,
   type Benefit,
   type BillingCycle,
@@ -100,6 +103,14 @@ export function SubscriptionProductDialog({
   const [renewalPrice, setRenewalPrice] = useState<string>(
     s0.renewal_price != null ? String(s0.renewal_price) : "",
   );
+  // Billing plans — each subscription product carries its own plans.
+  const [plans, setPlans] = useState<BillingPlan[]>(() =>
+    resolveBillingPlans(s0, Number(editing?.price ?? 0)).map((p) =>
+      p.id === "legacy" && !editing ? { ...p, price: 0 } : p,
+    ),
+  );
+
+
 
   // Step 4 — Trial & activation
   const [trialEnabled, setTrialEnabled] = useState<boolean>(s0.trial?.enabled ?? false);
@@ -190,10 +201,46 @@ export function SubscriptionProductDialog({
   const hasDiscount = sale != null && sale > 0 && sale < reg;
   const finalPrice = hasDiscount ? sale! : reg;
 
+  const cleanPlans = plans.filter((p) => p.label.trim() && Number(p.price) > 0);
+  const defaultPlan = cleanPlans.find((p) => p.is_default) ?? cleanPlans[0] ?? null;
+  const listPrice = defaultPlan ? Number(defaultPlan.price) : finalPrice;
+  const listCompare = defaultPlan
+    ? defaultPlan.compare_at != null && Number(defaultPlan.compare_at) > Number(defaultPlan.price)
+      ? Number(defaultPlan.compare_at)
+      : null
+    : hasDiscount
+      ? reg
+      : null;
+
+  function updatePlan(i: number, patch: Partial<BillingPlan>) {
+    setPlans((list) => list.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
+  }
+  function makeDefaultPlan(i: number) {
+    setPlans((list) => list.map((p, idx) => ({ ...p, is_default: idx === i })));
+  }
+  function addPlan(preset?: Partial<BillingPlan>) {
+    setPlans((list) => [
+      ...list,
+      {
+        id: `plan_${Date.now().toString(36)}_${list.length}`,
+        label: preset?.label ?? "New plan",
+        cycle: (preset?.cycle ?? "monthly") as BillingCycle,
+        custom_number: preset?.custom_number ?? null,
+        custom_unit: preset?.custom_unit ?? "months",
+        price: 0,
+        compare_at: null,
+        badge: null,
+        is_default: list.length === 0,
+      },
+    ]);
+  }
+
   function buildMeta(): any {
     const subscription: SubscriptionMeta = {
-      billing_cycle: cycle,
+      billing_cycle: defaultPlan ? defaultPlan.cycle : cycle,
+      plans: cleanPlans.map((p) => ({ ...p, price: Number(p.price) })),
       custom_cycle: { number: num(cycleNumber), unit: cycleUnit },
+
       plan_type: planType,
       plan_type_custom: planType === "custom" ? planTypeCustom.trim() || null : null,
       badge: badge.trim() || null,
@@ -249,10 +296,13 @@ export function SubscriptionProductDialog({
   async function persist(nextStatus: "draft" | "active") {
     if (!name.trim()) return toast.error("Enter a subscription name");
     if (!categoryId) return toast.error("Select a subscription category");
-    if (!regularPrice || reg <= 0) return toast.error("Enter a regular price");
+    if (!cleanPlans.length && (!regularPrice || reg <= 0))
+      return toast.error("Add at least one billing plan with a price");
     // Equal prices simply mean "no discount", only a higher sale price is an error.
     if (sale != null && sale > reg) return toast.error("Sale price must be less than the regular price");
     if (cycle === "custom" && !cycleNumber) return toast.error("Enter the custom billing cycle length");
+    if (plans.some((p) => p.cycle === "custom" && !p.custom_number))
+      return toast.error("Enter the length of every custom billing plan");
 
     setSaving(true);
     try {
@@ -262,8 +312,9 @@ export function SubscriptionProductDialog({
         short_description: shortDesc || null,
         description: description || null,
         brand: brand || null,
-        price: finalPrice,
-        old_price: hasDiscount ? reg : null,
+        price: listPrice,
+        old_price: listCompare,
+
         cost_price: 0,
         stock: 0,
         status: nextStatus,
@@ -474,6 +525,150 @@ export function SubscriptionProductDialog({
                 <Input type="number" min={0} step="0.01" value={renewalPrice} onChange={(e) => setRenewalPrice(e.target.value)} />
               </Field>
             )}
+          </StepCard>
+        </div>
+      ),
+    },
+    {
+      id: "plans",
+      label: "Billing plans",
+      content: (
+        <div className="space-y-4">
+          <StepCard
+            title="Billing plans"
+            description="Add every duration you want to sell. Customers pick one at checkout. The default plan sets the price shown on the product card."
+          >
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { label: "1 Month", cycle: "monthly" as BillingCycle },
+                { label: "2 Months", cycle: "custom" as BillingCycle, custom_number: 2, custom_unit: "months" as CycleUnit },
+                { label: "3 Months", cycle: "quarterly" as BillingCycle },
+                { label: "6 Months", cycle: "half_yearly" as BillingCycle },
+                { label: "12 Months", cycle: "yearly" as BillingCycle },
+                { label: "Lifetime", cycle: "lifetime" as BillingCycle },
+              ].map((p) => (
+                <Button
+                  key={p.label}
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px]"
+                  onClick={() => addPlan(p)}
+                >
+                  <Plus className="mr-1 h-3 w-3" /> {p.label}
+                </Button>
+              ))}
+            </div>
+
+            {plans.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                No plans yet — the price from the Pricing step will be used as a single plan.
+              </p>
+            )}
+
+            <div className="space-y-3">
+              {plans.map((p, i) => (
+                <div key={p.id} className="space-y-3 rounded-xl border p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold">{planPeriodLabel(p)}</span>
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                        <input
+                          type="radio"
+                          name="default-plan"
+                          checked={!!p.is_default}
+                          onChange={() => makeDefaultPlan(i)}
+                        />
+                        Default
+                      </label>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={() => setPlans((list) => list.filter((_, idx) => idx !== i))}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Field label="Plan label" required>
+                      <Input value={p.label} onChange={(e) => updatePlan(i, { label: e.target.value })} />
+                    </Field>
+                    <Field label="Duration">
+                      <select
+                        className={selectCls}
+                        value={p.cycle}
+                        onChange={(e) => updatePlan(i, { cycle: e.target.value as BillingCycle })}
+                      >
+                        {(Object.keys(BILLING_CYCLE_LABEL) as BillingCycle[]).map((c) => (
+                          <option key={c} value={c}>
+                            {BILLING_CYCLE_LABEL[c]}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    {p.cycle === "custom" && (
+                      <>
+                        <Field label="Every" required>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={p.custom_number ?? ""}
+                            onChange={(e) =>
+                              updatePlan(i, { custom_number: e.target.value === "" ? null : Number(e.target.value) })
+                            }
+                          />
+                        </Field>
+                        <Field label="Unit">
+                          <select
+                            className={selectCls}
+                            value={p.custom_unit ?? "months"}
+                            onChange={(e) => updatePlan(i, { custom_unit: e.target.value as CycleUnit })}
+                          >
+                            <option value="days">Days</option>
+                            <option value="weeks">Weeks</option>
+                            <option value="months">Months</option>
+                            <option value="years">Years</option>
+                          </select>
+                        </Field>
+                      </>
+                    )}
+                    <Field label="Price (৳)" required>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={p.price === 0 ? "" : String(p.price)}
+                        onChange={(e) => updatePlan(i, { price: Number(e.target.value) || 0 })}
+                      />
+                    </Field>
+                    <Field label="Compare-at price (৳)" hint="Optional — shows the saving.">
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={p.compare_at == null ? "" : String(p.compare_at)}
+                        onChange={(e) =>
+                          updatePlan(i, { compare_at: e.target.value === "" ? null : Number(e.target.value) })
+                        }
+                      />
+                    </Field>
+                    <Field label="Badge" hint="Optional — e.g. Most Popular.">
+                      <Input
+                        value={p.badge ?? ""}
+                        onChange={(e) => updatePlan(i, { badge: e.target.value || null })}
+                      />
+                    </Field>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <Button type="button" variant="outline" size="sm" onClick={() => addPlan()}>
+              <Plus className="mr-1 h-3.5 w-3.5" /> Add custom plan
+            </Button>
           </StepCard>
         </div>
       ),

@@ -85,7 +85,7 @@ const links: LinkDef[] = [
       { to: "/admin/settings/information", label: "Store Information" },
       { to: "/admin/settings/configuration", label: "Store Configuration" },
       { to: "/admin/settings/workflow", label: "Order & Workflow" },
-      { to: "/admin/settings/subscription", label: "Subscription Settings" },
+      
     ],
   },
 ];

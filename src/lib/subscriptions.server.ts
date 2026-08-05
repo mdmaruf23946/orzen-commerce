@@ -24,21 +24,22 @@ export async function myStoreId(sb: Sb, userId: string): Promise<string | null> 
   return (data as any)?.id ?? null;
 }
 
+/**
+ * Store-level values a subscription still needs. There is no subscription
+ * settings page any more — everything product specific lives on the product,
+ * and the few store-wide bits come from the store's own settings.
+ */
 export async function loadSettings(sb: Sb, storeId: string): Promise<SubscriptionSettings> {
-  const { data } = await sb
-    .from("store_subscription_settings")
-    .select("*")
-    .eq("store_id", storeId)
-    .maybeSingle();
-  return normalizeSubscriptionSettings(storeId, data);
-}
-
-export async function saveSettings(sb: Sb, storeId: string, patch: Record<string, any>) {
-  const current = await loadSettings(sb, storeId);
-  const next = { ...current, ...patch, store_id: storeId, updated_at: new Date().toISOString() };
-  const { error } = await sb.from("store_subscription_settings").upsert(next, { onConflict: "store_id" });
-  if (error) throw new Error(error.message);
-  return normalizeSubscriptionSettings(storeId, next);
+  const [{ data: inv }, { data: store }] = await Promise.all([
+    sb.from("store_invoice_settings").select("prefix").eq("store_id", storeId).maybeSingle(),
+    sb.from("stores").select("payments_config").eq("id", storeId).maybeSingle(),
+  ]);
+  const pc = ((store as any)?.payments_config ?? {}) as any;
+  return normalizeSubscriptionSettings(storeId, {
+    ...DEFAULT_SUBSCRIPTION_SETTINGS,
+    invoice_prefix: (inv as any)?.prefix || "SUB",
+    cod_enabled: pc?.cod?.enabled !== false,
+  });
 }
 
 /** Custom cycle length (days) from the product's subscription metadata. */
@@ -58,7 +59,8 @@ export function customDaysFromMeta(meta: any): number {
   }
 }
 
-export function trialDaysFromMeta(meta: any, settings: SubscriptionSettings): number {
+/** Trial length in days — product metadata is the only source of truth. */
+export function trialDaysFromMeta(meta: any): number {
   const t = meta?.trial;
   if (t?.enabled && t.duration) {
     const n = Number(t.duration);
@@ -66,8 +68,9 @@ export function trialDaysFromMeta(meta: any, settings: SubscriptionSettings): nu
     if (t.unit === "months") return n * 30;
     return n;
   }
-  return settings.allow_free_trial ? settings.trial_days : 0;
+  return 0;
 }
+
 
 export async function logEvent(
   sb: Sb,
@@ -247,13 +250,23 @@ export async function createSubscriptionForOrder(sb: Sb, orderId: string) {
   const settings = await loadSettings(sb, o.store_id);
   const fm = (o.fulfillment_meta ?? {}).subscription ?? {};
 
-  const cycle = (fm.billing_cycle ?? meta.billing_cycle ?? settings.default_billing_cycle) as SubCycle;
-  const customDays = customDaysFromMeta(meta);
+  // The plan the customer picked at checkout (validated server-side when the
+  // order was placed) drives cycle, price and renewal price.
+  const { resolveBillingPlans, findPlan, planDays } = await import(
+    "@/components/admin/product-form/subscription/subscription-meta"
+  );
+  const plans = resolveBillingPlans(meta, Number((product as any)?.price ?? first.price_snapshot));
+  const plan = findPlan(plans as any, fm.plan_id ?? null);
+
+  const cycle = (plan?.cycle ?? fm.billing_cycle ?? meta.billing_cycle ?? "monthly") as SubCycle;
+  const customDays =
+    plan?.cycle === "custom" ? (planDays(plan) ?? 30) : customDaysFromMeta(meta);
   const price = Number(first.price_snapshot) * Number(first.qty ?? 1);
   const renewalPrice =
     meta.renewal_price_mode === "different" && meta.renewal_price != null
       ? Number(meta.renewal_price)
       : price;
+
 
   const { data: noRow } = await sb.rpc("next_subscription_no", { _store_id: o.store_id } as any);
 
@@ -267,20 +280,28 @@ export async function createSubscriptionForOrder(sb: Sb, orderId: string) {
       subscription_no: (noRow as any) ?? `SUB-${Date.now().toString().slice(-8)}`,
       plan_name: (product as any)?.name ?? first.name_snapshot,
       plan_snapshot: {
-        badge: meta.badge ?? null,
+        badge: plan?.badge ?? meta.badge ?? null,
         plan_type: meta.plan_type ?? null,
         access_items: meta.access_items ?? [],
         benefits: meta.benefits ?? [],
         usage_limits: meta.usage_limits ?? [],
         policies: meta.policies ?? {},
         cycle_label: cycle,
+        plan_id: plan?.id ?? null,
+        plan_label: plan?.label ?? null,
+        // Per-product renewal rules — the renewal engine reads them from here.
+        renewal: {
+          grace_period_days: Number(meta.renewal?.grace_period_days ?? 3),
+          renewal_reminder_days: Number(meta.renewal?.renewal_reminder_days ?? 7),
+        },
       },
       billing_cycle: cycle,
       custom_cycle_days: cycle === "custom" ? customDays : null,
       status: "pending",
       price,
       renewal_price: renewalPrice,
-      setup_fee: Number(fm.setup_fee ?? meta.setup_fee ?? settings.setup_fee ?? 0),
+      setup_fee: Number(fm.setup_fee ?? meta.setup_fee ?? 0),
+
       tax_amount: Number(fm.tax_amount ?? 0),
       discount_amount: Number(o.discount_amount ?? 0),
       currency: "BDT",
@@ -339,10 +360,10 @@ export async function activateSubscriptionForOrder(sb: Sb, orderId: string) {
   const s = sub as any;
   if (["active", "trialing"].includes(s.status)) return s;
 
-  const settings = await loadSettings(sb, s.store_id);
   const { data: product } = await sb.from("products").select("meta").eq("id", s.product_id).maybeSingle();
   const meta = ((product as any)?.meta ?? {}).subscription ?? {};
-  const trialDays = trialDaysFromMeta(meta, settings);
+  const trialDays = trialDaysFromMeta(meta);
+
 
   const now = new Date();
   const trialEnds = trialDays > 0 ? new Date(now.getTime() + trialDays * 86400000).toISOString() : null;
@@ -504,8 +525,12 @@ export async function processRenewals(sb: Sb) {
     .limit(1000);
 
   for (const s of (subs ?? []) as any[]) {
-    const settings = await loadSettings(sb, s.store_id);
+    // Grace + reminder windows come from the product plan snapshot.
+    const rules = (s.plan_snapshot ?? {}).renewal ?? {};
+    const reminderDays = Number(rules.renewal_reminder_days ?? 7);
+    const graceDays = Number(rules.grace_period_days ?? 3);
     if (s.billing_cycle === "lifetime") continue;
+
 
     // Trial that has run out becomes a normal billing period.
     if (s.status === "trialing" && s.trial_ends_at && new Date(s.trial_ends_at) <= now) {
@@ -520,7 +545,7 @@ export async function processRenewals(sb: Sb) {
     if (!due) continue;
     const daysToDue = Math.ceil((due.getTime() - now.getTime()) / 86400000);
 
-    if (daysToDue > 0 && daysToDue <= settings.renewal_reminder_days && s.reminders_opt_in) {
+    if (daysToDue > 0 && daysToDue <= reminderDays && s.reminders_opt_in) {
       const { data: already } = await sb
         .from("store_subscription_notifications")
         .select("id")
@@ -537,7 +562,7 @@ export async function processRenewals(sb: Sb) {
     }
 
     if (daysToDue <= 0) {
-      const graceEnd = new Date(due.getTime() + settings.grace_period_days * 86400000);
+      const graceEnd = new Date(due.getTime() + graceDays * 86400000);
       if (now <= graceEnd) {
         if (s.status !== "grace") {
           await sb.from("store_subscriptions").update({ status: "grace" }).eq("id", s.id);

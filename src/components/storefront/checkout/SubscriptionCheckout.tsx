@@ -15,6 +15,12 @@ import { removeSelected, type CartItem } from "@/lib/cart";
 import { useCustomerSession } from "@/lib/customer-session";
 import { computeFingerprint, getDeviceId } from "@/lib/fingerprint";
 import { billingSummary, CYCLE_LABEL, nextBillingDate, type SubCycle } from "@/lib/subscriptions";
+import {
+  findPlan,
+  planDays,
+  planPeriodLabel,
+  resolveBillingPlans,
+} from "@/components/admin/product-form/subscription/subscription-meta";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -88,9 +94,20 @@ export function SubscriptionCheckout({
       setPhone((v) => v || customer.phone || "");
     }
   }, [customer]);
+  // Plans come from the subscription product itself.
+  const plans = useMemo(
+    () => resolveBillingPlans(meta, Number(item?.price ?? 0)),
+    [meta, item?.price],
+  );
+  const [planId, setPlanId] = useState<string>("");
   useEffect(() => {
-    if (settings) setAutoRenew(settings.auto_renew_default);
-  }, [settings]);
+    if (!planId && plans.length) setPlanId((findPlan(plans, null) ?? plans[0]).id);
+  }, [plans, planId]);
+  const plan = findPlan(plans, planId || null);
+
+  useEffect(() => {
+    if (meta.renewal?.mode === "manual") setAutoRenew(false);
+  }, [meta.renewal?.mode]);
 
   const allowed = settings?.payment_methods ?? [];
   // A manual method only exists if the store owner actually configured it
@@ -112,25 +129,25 @@ export function SubscriptionCheckout({
     else if (settings?.cod_enabled) setMethod("cod");
   }, [online.length, manual.length, settings?.cod_enabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const cycle = (meta.billing_cycle ?? settings?.default_billing_cycle ?? "monthly") as SubCycle;
+  const cycle = (plan?.cycle ?? meta.billing_cycle ?? "monthly") as SubCycle;
   const qty = item?.qty ?? 1;
-  const setupFee = Number(meta.setup_fee ?? settings?.setup_fee ?? 0);
+  const setupFee = Number(meta.setup_fee ?? 0);
   const summary = useMemo(
     () =>
       billingSummary({
-        price: Number(item?.price ?? 0),
+        price: Number(plan?.price ?? item?.price ?? 0),
         qty,
         setupFee,
-        taxPercent: Number(settings?.tax_percent ?? 0),
+        taxPercent: 0,
       }),
-    [item?.price, qty, setupFee, settings?.tax_percent],
+    [plan?.price, item?.price, qty, setupFee],
   );
 
-  const trialEnabled = !!meta.trial?.enabled || !!settings?.allow_free_trial;
+  const trialEnabled = !!meta.trial?.enabled;
   const trialDays = meta.trial?.enabled
     ? Number(meta.trial.duration ?? 0) *
       (meta.trial.unit === "weeks" ? 7 : meta.trial.unit === "months" ? 30 : 1)
-    : Number(settings?.trial_days ?? 0);
+    : 0;
   const renewalPrice =
     meta.renewal_price_mode === "different" && meta.renewal_price != null
       ? Number(meta.renewal_price) * qty
@@ -138,11 +155,9 @@ export function SubscriptionCheckout({
   const firstBilling = nextBillingDate(
     trialEnabled && trialDays > 0 ? new Date(Date.now() + trialDays * 86400000) : new Date(),
     cycle,
-    meta.custom_cycle?.number
-      ? Number(meta.custom_cycle.number) *
-        (meta.custom_cycle.unit === "weeks" ? 7 : meta.custom_cycle.unit === "years" ? 365 : meta.custom_cycle.unit === "days" ? 1 : 30)
-      : 30,
+    planDays(plan) ?? 30,
   );
+
 
   const isOnline = method.startsWith("builtin:") || method.startsWith("custom:");
   const isManual = !isOnline && method !== "cod" && !!method;
@@ -170,6 +185,7 @@ export function SubscriptionCheckout({
           fingerprint: fingerprint || undefined,
           deviceId: deviceId || undefined,
           subscription: {
+            planId: plan?.id,
             billingCycle: cycle,
             autoRenew,
             remindersOptIn: reminders,
@@ -199,6 +215,7 @@ export function SubscriptionCheckout({
     }
   }
 
+  const policies: any = meta.policies ?? {};
   const benefits: any[] = Array.isArray(meta.benefits) ? meta.benefits : [];
   const access: any[] = Array.isArray(meta.access_items) ? meta.access_items : [];
 
@@ -231,6 +248,44 @@ export function SubscriptionCheckout({
               <div className="text-[10px] text-muted-foreground sm:text-[11px]">/ {CYCLE_LABEL[cycle] ?? cycle}</div>
             </div>
           </div>
+
+          {plans.length > 1 && (
+            <div className="mt-2.5 grid gap-1.5 sm:grid-cols-2">
+              {plans.map((p) => (
+                <label
+                  key={p.id}
+                  className={`flex cursor-pointer items-start justify-between gap-2 rounded-lg border p-2 ${
+                    plan?.id === p.id ? "border-primary ring-1 ring-primary" : ""
+                  }`}
+                >
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-1.5">
+                      <input
+                        type="radio"
+                        name="sub-plan"
+                        checked={plan?.id === p.id}
+                        onChange={() => setPlanId(p.id)}
+                      />
+                      <span className="truncate text-xs font-medium">{p.label}</span>
+                    </span>
+                    <span className="ml-5 block text-[10px] text-muted-foreground">
+                      {planPeriodLabel(p)}
+                      {p.badge ? ` · ${p.badge}` : ""}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-right">
+                    <span className="block text-xs font-semibold">{taka(p.price)}</span>
+                    {p.compare_at != null && p.compare_at > p.price && (
+                      <span className="block text-[10px] text-muted-foreground line-through">
+                        {taka(p.compare_at)}
+                      </span>
+                    )}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+
           {trialEnabled && trialDays > 0 && (
             <div className="mt-2 flex items-center gap-2 rounded-lg bg-sky-50 p-2 text-[11px] text-sky-800">
               <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> {trialDays}-day free trial — first charge on{" "}
@@ -354,7 +409,7 @@ export function SubscriptionCheckout({
             <input type="checkbox" className="mt-1" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
             <span className="text-sm">I accept the subscription, cancellation and refund terms</span>
           </label>
-          {(settings?.subscription_terms || settings?.cancellation_policy || settings?.refund_policy) && (
+          {(policies.terms || policies.cancellation || policies.refund) && (
             <div>
               <button
                 type="button"
@@ -365,9 +420,9 @@ export function SubscriptionCheckout({
               </button>
               {showTerms && (
                 <div className="mt-2 space-y-2 whitespace-pre-wrap rounded-lg bg-muted p-2 text-[11px] text-muted-foreground sm:p-3 sm:text-xs">
-                  {settings?.subscription_terms && <p>{settings.subscription_terms}</p>}
-                  {settings?.cancellation_policy && <p>{settings.cancellation_policy}</p>}
-                  {settings?.refund_policy && <p>{settings.refund_policy}</p>}
+                  {policies.terms && <p>{policies.terms}</p>}
+                  {policies.cancellation && <p>{policies.cancellation}</p>}
+                  {policies.refund && <p>{policies.refund}</p>}
                 </div>
               )}
             </div>
@@ -388,12 +443,6 @@ export function SubscriptionCheckout({
             <div className="flex justify-between py-0.5 text-sm">
               <span className="text-muted-foreground">Setup fee</span>
               <span>{taka(summary.setup)}</span>
-            </div>
-          )}
-          {summary.tax > 0 && (
-            <div className="flex justify-between py-0.5 text-sm">
-              <span className="text-muted-foreground">Tax ({settings?.tax_percent}%)</span>
-              <span>{taka(summary.tax)}</span>
             </div>
           )}
           <div className="mt-2 flex justify-between border-t pt-2 text-sm font-semibold">

@@ -3,33 +3,27 @@
 // proven with the store customer session token, never with a Supabase JWT.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { DEFAULT_SUBSCRIPTION_SETTINGS } from "@/lib/subscriptions";
 
-/** Public subscription settings a storefront checkout needs. */
+/**
+ * Store-level checkout bits a subscription checkout still needs. Plan, trial,
+ * fees and policies now live on the subscription product itself.
+ */
 export const getPublicSubscriptionSettings = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ storeId: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin: sb } = await import("@/integrations/supabase/client.server");
-    const { data: row } = await sb.rpc("get_store_subscription_public_settings", {
-      _store_id: data.storeId,
-    } as any);
-    const r = (row as any) ?? {};
+    const { data: store } = await sb
+      .from("stores")
+      .select("payments_config")
+      .eq("id", data.storeId)
+      .maybeSingle();
+    const pc = ((store as any)?.payments_config ?? {}) as any;
     return {
-      auto_renew_default: r.auto_renew_default ?? DEFAULT_SUBSCRIPTION_SETTINGS.auto_renew_default,
-      default_billing_cycle: r.default_billing_cycle ?? "monthly",
-      allow_free_trial: r.allow_free_trial ?? false,
-      trial_days: Number(r.trial_days ?? 0),
-      grace_period_days: Number(r.grace_period_days ?? 3),
-      cancellation_policy: r.cancellation_policy ?? null,
-      refund_policy: r.refund_policy ?? null,
-      subscription_terms: r.subscription_terms ?? null,
-      setup_fee: Number(r.setup_fee ?? 0),
-      tax_percent: Number(r.tax_percent ?? 0),
-      payment_methods: Array.isArray(r.payment_methods) ? r.payment_methods : [],
-      cod_enabled: r.cod_enabled ?? false,
-      success_redirect_url: r.success_redirect_url ?? null,
+      cod_enabled: pc?.cod?.enabled !== false,
+      payment_methods: Array.isArray(pc?.methods) ? pc.methods : [],
     };
   });
+
 
 /** Success page / order details: the subscription created by an order. */
 export const getSubscriptionForOrder = createServerFn({ method: "GET" })
