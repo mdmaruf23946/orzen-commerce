@@ -24,21 +24,22 @@ export async function myStoreId(sb: Sb, userId: string): Promise<string | null> 
   return (data as any)?.id ?? null;
 }
 
+/**
+ * Store-level values a subscription still needs. There is no subscription
+ * settings page any more — everything product specific lives on the product,
+ * and the few store-wide bits come from the store's own settings.
+ */
 export async function loadSettings(sb: Sb, storeId: string): Promise<SubscriptionSettings> {
-  const { data } = await sb
-    .from("store_subscription_settings")
-    .select("*")
-    .eq("store_id", storeId)
-    .maybeSingle();
-  return normalizeSubscriptionSettings(storeId, data);
-}
-
-export async function saveSettings(sb: Sb, storeId: string, patch: Record<string, any>) {
-  const current = await loadSettings(sb, storeId);
-  const next = { ...current, ...patch, store_id: storeId, updated_at: new Date().toISOString() };
-  const { error } = await sb.from("store_subscription_settings").upsert(next, { onConflict: "store_id" });
-  if (error) throw new Error(error.message);
-  return normalizeSubscriptionSettings(storeId, next);
+  const [{ data: inv }, { data: store }] = await Promise.all([
+    sb.from("store_invoice_settings").select("prefix").eq("store_id", storeId).maybeSingle(),
+    sb.from("stores").select("payments_config").eq("id", storeId).maybeSingle(),
+  ]);
+  const pc = ((store as any)?.payments_config ?? {}) as any;
+  return normalizeSubscriptionSettings(storeId, {
+    ...DEFAULT_SUBSCRIPTION_SETTINGS,
+    invoice_prefix: (inv as any)?.prefix || "SUB",
+    cod_enabled: pc?.cod?.enabled !== false,
+  });
 }
 
 /** Custom cycle length (days) from the product's subscription metadata. */
@@ -58,7 +59,8 @@ export function customDaysFromMeta(meta: any): number {
   }
 }
 
-export function trialDaysFromMeta(meta: any, settings: SubscriptionSettings): number {
+/** Trial length in days — product metadata is the only source of truth. */
+export function trialDaysFromMeta(meta: any): number {
   const t = meta?.trial;
   if (t?.enabled && t.duration) {
     const n = Number(t.duration);
@@ -66,8 +68,9 @@ export function trialDaysFromMeta(meta: any, settings: SubscriptionSettings): nu
     if (t.unit === "months") return n * 30;
     return n;
   }
-  return settings.allow_free_trial ? settings.trial_days : 0;
+  return 0;
 }
+
 
 export async function logEvent(
   sb: Sb,
