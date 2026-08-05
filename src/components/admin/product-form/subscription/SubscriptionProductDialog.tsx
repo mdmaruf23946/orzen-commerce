@@ -201,10 +201,46 @@ export function SubscriptionProductDialog({
   const hasDiscount = sale != null && sale > 0 && sale < reg;
   const finalPrice = hasDiscount ? sale! : reg;
 
+  const cleanPlans = plans.filter((p) => p.label.trim() && Number(p.price) > 0);
+  const defaultPlan = cleanPlans.find((p) => p.is_default) ?? cleanPlans[0] ?? null;
+  const listPrice = defaultPlan ? Number(defaultPlan.price) : finalPrice;
+  const listCompare = defaultPlan
+    ? defaultPlan.compare_at != null && Number(defaultPlan.compare_at) > Number(defaultPlan.price)
+      ? Number(defaultPlan.compare_at)
+      : null
+    : hasDiscount
+      ? reg
+      : null;
+
+  function updatePlan(i: number, patch: Partial<BillingPlan>) {
+    setPlans((list) => list.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
+  }
+  function makeDefaultPlan(i: number) {
+    setPlans((list) => list.map((p, idx) => ({ ...p, is_default: idx === i })));
+  }
+  function addPlan(preset?: Partial<BillingPlan>) {
+    setPlans((list) => [
+      ...list,
+      {
+        id: `plan_${Date.now().toString(36)}_${list.length}`,
+        label: preset?.label ?? "New plan",
+        cycle: (preset?.cycle ?? "monthly") as BillingCycle,
+        custom_number: preset?.custom_number ?? null,
+        custom_unit: preset?.custom_unit ?? "months",
+        price: 0,
+        compare_at: null,
+        badge: null,
+        is_default: list.length === 0,
+      },
+    ]);
+  }
+
   function buildMeta(): any {
     const subscription: SubscriptionMeta = {
-      billing_cycle: cycle,
+      billing_cycle: defaultPlan ? defaultPlan.cycle : cycle,
+      plans: cleanPlans.map((p) => ({ ...p, price: Number(p.price) })),
       custom_cycle: { number: num(cycleNumber), unit: cycleUnit },
+
       plan_type: planType,
       plan_type_custom: planType === "custom" ? planTypeCustom.trim() || null : null,
       badge: badge.trim() || null,
