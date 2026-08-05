@@ -31,7 +31,11 @@ export function courierMeta(key: string | null | undefined) {
 
 export function resolveImg(url: string | null | undefined) {
   if (!url) return null;
-  return url.startsWith("http") ? url : `/api/img/${url}`;
+  const raw = url.trim();
+  if (!raw) return null;
+  // Already absolute (http/https, data:) or already proxied/root-relative.
+  if (/^(https?:|data:|blob:)/i.test(raw) || raw.startsWith("/")) return raw;
+  return `/api/img/${raw}`;
 }
 
 export function Thumb({ url, alt, className = "" }: { url?: string | null; alt: string; className?: string }) {
