@@ -30,6 +30,7 @@ import {
   refreshParcelStatus,
   syncActiveParcels,
   getParcelPrintData,
+  getParcelLabel,
 } from "@/lib/courier-parcels.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/courier-orders")({
@@ -96,6 +97,7 @@ function CourierOrdersPage() {
   const refreshFn = useServerFn(refreshParcelStatus);
   const syncAllFn = useServerFn(syncActiveParcels);
   const printFn = useServerFn(getParcelPrintData);
+  const labelFn = useServerFn(getParcelLabel);
 
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
@@ -178,6 +180,7 @@ function CourierOrdersPage() {
   async function print(ids: string[], kind: "invoice" | "label" | "packing") {
     if (!ids.length) return toast.error("Select at least one parcel");
     try {
+      if (kind === "label") return await openLabels(ids);
       const d: any = await printFn({ data: { ids } });
       if (kind === "invoice") {
         const orderIds = (d?.parcels ?? []).map((p: any) => p.order_id).filter(Boolean);
@@ -186,6 +189,33 @@ function CourierOrdersPage() {
       openPrintWindow(d, kind);
     } catch (e) {
       toast.error((e as Error).message);
+    }
+  }
+
+  /**
+   * Labels always come from the courier: the API label when the provider has
+   * one, otherwise the courier's official merchant-panel label page. The
+   * ORZEN-generated label is only used for couriers with no merchant system.
+   */
+  async function openLabels(ids: string[]) {
+    const fallback: string[] = [];
+    for (const id of ids) {
+      try {
+        const r: any = await labelFn({ data: { id } });
+        if (r?.url) {
+          window.open(r.url, "_blank", "noopener");
+        } else {
+          toast.message(r?.message ?? "Label unavailable");
+          fallback.push(id);
+        }
+      } catch (e) {
+        toast.error((e as Error).message);
+        fallback.push(id);
+      }
+    }
+    if (fallback.length) {
+      const d: any = await printFn({ data: { ids: fallback } });
+      openPrintWindow(d, "label");
     }
   }
 
