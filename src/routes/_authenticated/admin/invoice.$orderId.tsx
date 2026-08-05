@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -11,6 +12,35 @@ import { DEFAULT_BRAND, EMPTY_CANVAS } from "@/lib/invoice-template/types";
 export const Route = createFileRoute("/_authenticated/admin/invoice/$orderId")({
   component: InvoicePage,
 });
+
+function FitInvoice({ canvas, brand, data }: { canvas: any; brand: any; data: any }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  const pageW = canvas?.page?.width ?? 794;
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => setScale(Math.min(1, el.clientWidth / pageW));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [pageW]);
+
+  return (
+    <div ref={ref} className="w-full">
+      {/* screen: auto-scaled to fit viewport width */}
+      <div className="print:hidden">
+        <InvoiceRenderer canvas={canvas} brand={brand} data={data} scale={scale} className="mx-auto shadow" />
+      </div>
+      {/* print: untouched full-size layout */}
+      <div className="hidden print:block">
+        <InvoiceRenderer canvas={canvas} brand={brand} data={data} />
+      </div>
+    </div>
+  );
+}
 
 function InvoicePage() {
   const { orderId } = Route.useParams();
@@ -61,9 +91,7 @@ function InvoicePage() {
         </Button>
       </div>
 
-      <div className="overflow-auto">
-        <InvoiceRenderer canvas={canvas} brand={brand} data={invoice} className="mx-auto shadow" />
-      </div>
+      <FitInvoice canvas={canvas} brand={brand} data={invoice} />
     </div>
   );
 }
