@@ -11,6 +11,8 @@ import { fbTrack, purchaseEventId } from "@/lib/fb-track";
 import { PaymentTimeline } from "@/components/storefront/PaymentTimeline";
 import { ServiceOrderView } from "@/components/storefront/order/ServiceOrderView";
 import { SubscriptionOrderView } from "@/components/storefront/order/SubscriptionOrderView";
+import { ReturnRequestBlock } from "@/components/storefront/order/ReturnRequestBlock";
+
 
 
 const orderQuery = (orderId: string) =>
@@ -261,6 +263,9 @@ function OrderConfirmation() {
         ) : null}
       </div>
       )}
+
+
+      <ReturnRequestBlock order={order} slug={slug} />
 
 
       <PaymentTimeline orderId={order.id} refreshKey={String((order as any).payment_status ?? "")} />

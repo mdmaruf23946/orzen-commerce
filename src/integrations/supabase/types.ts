@@ -3821,11 +3821,20 @@ export type Database = {
       }
       returns: {
         Row: {
+          courier_name: string | null
+          courier_tracking_id: string | null
           created_at: string
+          customer_id: string | null
+          customer_name: string | null
           id: string
+          images: string[]
+          items: Json
           order_id: string
+          phone: string | null
           reason: string | null
           refund_amount: number | null
+          replacement_note: string | null
+          replacement_product_id: string | null
           resolution_note: string | null
           status: Database["public"]["Enums"]["return_status"]
           store_id: string
@@ -3833,11 +3842,20 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          courier_name?: string | null
+          courier_tracking_id?: string | null
           created_at?: string
+          customer_id?: string | null
+          customer_name?: string | null
           id?: string
+          images?: string[]
+          items?: Json
           order_id: string
+          phone?: string | null
           reason?: string | null
           refund_amount?: number | null
+          replacement_note?: string | null
+          replacement_product_id?: string | null
           resolution_note?: string | null
           status?: Database["public"]["Enums"]["return_status"]
           store_id: string
@@ -3845,11 +3863,20 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          courier_name?: string | null
+          courier_tracking_id?: string | null
           created_at?: string
+          customer_id?: string | null
+          customer_name?: string | null
           id?: string
+          images?: string[]
+          items?: Json
           order_id?: string
+          phone?: string | null
           reason?: string | null
           refund_amount?: number | null
+          replacement_note?: string | null
+          replacement_product_id?: string | null
           resolution_note?: string | null
           status?: Database["public"]["Enums"]["return_status"]
           store_id?: string
@@ -3858,10 +3885,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "returns_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "store_customers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "returns_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "returns_replacement_product_id_fkey"
+            columns: ["replacement_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {
@@ -6823,8 +6864,25 @@ export type Database = {
         Args: { _new: string; _old: string; _store_id: string; _token: string }
         Returns: Json
       }
+      customer_create_return: {
+        Args: {
+          _images: string[]
+          _items: Json
+          _order_id: string
+          _reason: string
+          _replacement_note: string
+          _store_id: string
+          _token: string
+          _type: string
+        }
+        Returns: Json
+      }
       customer_from_token: {
         Args: { _store_id: string; _token: string }
+        Returns: Json
+      }
+      customer_list_returns: {
+        Args: { _order_id: string; _store_id: string; _token: string }
         Returns: Json
       }
       customer_login: {

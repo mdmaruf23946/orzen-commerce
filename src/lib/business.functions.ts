@@ -261,7 +261,7 @@ export const financeSummary = createServerFn({ method: "GET" })
     };
   });
 
-// ---------- RETURNS ----------
+// ---------- RETURNS (customer-initiated; admin reviews only) ----------
 export const listReturns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -269,47 +269,74 @@ export const listReturns = createServerFn({ method: "GET" })
     if (!sid) return [];
     const { data } = await context.supabase
       .from("returns")
-      .select("*, orders(customer_name,phone,subtotal,invoice_no)")
+      .select(
+        "*, orders(customer_name,phone,subtotal,invoice_no,address,order_type,courier_name,courier_tracking_id), products:replacement_product_id(id,name,primary_image_url)",
+      )
       .eq("store_id", sid)
       .order("created_at", { ascending: false });
-    return data ?? [];
+    const rows = (data ?? []) as any[];
+    if (!rows.length) return [];
+
+    // Fall back to the order lines when the shopper did not pick specific items.
+    const orderIds = Array.from(new Set(rows.map((r) => r.order_id)));
+    const { data: items } = await context.supabase
+      .from("order_items")
+      .select("order_id,qty,price_snapshot,name_snapshot,product_id, products(primary_image_url)")
+      .in("order_id", orderIds);
+    const byOrder = new Map<string, any[]>();
+    for (const it of (items ?? []) as any[]) {
+      const list = byOrder.get(it.order_id) ?? [];
+      list.push({
+        product_id: it.product_id,
+        name: it.name_snapshot,
+        qty: it.qty,
+        price: Number(it.price_snapshot ?? 0),
+        image: it.products?.primary_image_url ?? null,
+      });
+      byOrder.set(it.order_id, list);
+    }
+    return rows.map((r) => ({
+      ...r,
+      items: Array.isArray(r.items) && r.items.length ? r.items : (byOrder.get(r.order_id) ?? []),
+      order_items: byOrder.get(r.order_id) ?? [],
+    }));
   });
 
-export const upsertReturn = createServerFn({ method: "POST" })
+/** Admin-only review actions. There is no create path — requests come from shoppers. */
+export const updateReturnRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
     z.object({
-      id: z.string().uuid().optional(),
-      order_id: z.string().uuid(),
-      type: z.enum(["return", "exchange"]),
-      reason: z.string().max(500).optional(),
-      status: z.enum(["requested", "approved", "rejected", "refunded", "completed"]).default("requested"),
+      id: z.string().uuid(),
+      status: z.enum(["requested", "approved", "rejected", "refunded", "completed"]).optional(),
       refund_amount: z.number().nonnegative().optional(),
-      resolution_note: z.string().max(500).optional(),
+      resolution_note: z.string().max(1000).optional(),
+      replacement_product_id: z.string().uuid().nullable().optional(),
+      courier_name: z.string().max(120).nullable().optional(),
+      courier_tracking_id: z.string().max(120).nullable().optional(),
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertPlan(context.supabase, context.userId, "returns");
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
-    const row = {
-      store_id: sid,
-      order_id: data.order_id,
-      type: data.type,
-      reason: data.reason ?? null,
-      status: data.status,
-      refund_amount: data.refund_amount ?? 0,
-      resolution_note: data.resolution_note ?? null,
-    };
-    if (data.id) {
-      const { error } = await context.supabase.from("returns").update(row).eq("id", data.id).eq("store_id", sid);
-      if (error) throw new Error(error.message);
-      return { id: data.id };
-    }
-    const { data: r, error } = await context.supabase.from("returns").insert(row).select("id").single();
+    const patch: Record<string, any> = {};
+    if (data.status !== undefined) patch["status"] = data.status;
+    if (data.refund_amount !== undefined) patch["refund_amount"] = data.refund_amount;
+    if (data.resolution_note !== undefined) patch["resolution_note"] = data.resolution_note || null;
+    if (data.replacement_product_id !== undefined) patch["replacement_product_id"] = data.replacement_product_id;
+    if (data.courier_name !== undefined) patch["courier_name"] = data.courier_name || null;
+    if (data.courier_tracking_id !== undefined) patch["courier_tracking_id"] = data.courier_tracking_id || null;
+    if (!Object.keys(patch).length) return { id: data.id };
+    const { error } = await context.supabase
+      .from("returns")
+      .update(patch as any)
+      .eq("id", data.id)
+      .eq("store_id", sid);
     if (error) throw new Error(error.message);
-    return r;
+    return { id: data.id };
   });
+
 
 // ---------- ORDER TIMELINE + INTERNAL NOTES + INVOICE ----------
 export const getOrderDetails = createServerFn({ method: "GET" })
