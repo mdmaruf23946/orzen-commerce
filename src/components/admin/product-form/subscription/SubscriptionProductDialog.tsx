@@ -296,10 +296,13 @@ export function SubscriptionProductDialog({
   async function persist(nextStatus: "draft" | "active") {
     if (!name.trim()) return toast.error("Enter a subscription name");
     if (!categoryId) return toast.error("Select a subscription category");
-    if (!regularPrice || reg <= 0) return toast.error("Enter a regular price");
+    if (!cleanPlans.length && (!regularPrice || reg <= 0))
+      return toast.error("Add at least one billing plan with a price");
     // Equal prices simply mean "no discount", only a higher sale price is an error.
     if (sale != null && sale > reg) return toast.error("Sale price must be less than the regular price");
     if (cycle === "custom" && !cycleNumber) return toast.error("Enter the custom billing cycle length");
+    if (plans.some((p) => p.cycle === "custom" && !p.custom_number))
+      return toast.error("Enter the length of every custom billing plan");
 
     setSaving(true);
     try {
@@ -309,8 +312,9 @@ export function SubscriptionProductDialog({
         short_description: shortDesc || null,
         description: description || null,
         brand: brand || null,
-        price: finalPrice,
-        old_price: hasDiscount ? reg : null,
+        price: listPrice,
+        old_price: listCompare,
+
         cost_price: 0,
         stock: 0,
         status: nextStatus,
