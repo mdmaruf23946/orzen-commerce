@@ -1,4 +1,4 @@
-// Invoice Numbering settings — moved verbatim from the old single settings page.
+// Invoice Numbering settings — one independent configuration per order type.
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -7,12 +7,29 @@ import { Hash } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
 import {
   getInvoiceSettings,
   updateInvoiceSettings,
   computeInvoicePreview,
+  ORDER_TYPES,
+  type InvoiceOrderType,
 } from "@/lib/invoice-settings.functions";
 import { Section, Field } from "./shared";
+
+const TABS: readonly { key: InvoiceOrderType; label: string }[] = [
+  { key: "physical", label: "Physical" },
+  { key: "digital", label: "Digital" },
+  { key: "service", label: "Service" },
+  { key: "subscription", label: "Subscription" },
+];
+
+const TAB_LABEL: Record<InvoiceOrderType, string> = {
+  physical: "Physical",
+  digital: "Digital",
+  service: "Service",
+  subscription: "Subscription",
+};
 
 export function InvoiceNumberingSection() {
   const qc = useQueryClient();
@@ -24,22 +41,27 @@ export function InvoiceNumberingSection() {
     queryFn: () => getFn(),
   });
 
-  const [form, setForm] = useState<any>(null);
+  const [tab, setTab] = useState<InvoiceOrderType>("physical");
+  const [forms, setForms] = useState<Record<string, any> | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (data)
-      setForm({
-        prefix: data.prefix,
-        separator: data.separator,
-        padding: data.padding,
-        start_number: data.start_number,
-        include_year: data.include_year,
-        include_month: data.include_month,
-      });
+    if (!data) return;
+    const next: Record<string, any> = {};
+    for (const row of data as any[]) {
+      next[row.order_type] = {
+        prefix: row.prefix,
+        separator: row.separator,
+        padding: row.padding,
+        start_number: row.start_number,
+        include_year: row.include_year,
+        include_month: row.include_month,
+      };
+    }
+    setForms(next);
   }, [data]);
 
-  if (!form || !data) {
+  if (!forms || !data) {
     return (
       <Section icon={Hash} title="Invoice Numbering" description="How invoice numbers are generated.">
         <div className="text-sm text-muted-foreground">Loading…</div>
@@ -47,7 +69,9 @@ export function InvoiceNumberingSection() {
     );
   }
 
-  const nextSeq = Math.max(Number(data.next_number ?? 1), Number(form.start_number || 1));
+  const row = (data as any[]).find((r) => r.order_type === tab);
+  const form = forms[tab];
+  const nextSeq = Math.max(Number(row?.next_number ?? 1), Number(form?.start_number || 1));
   const preview = (() => {
     try {
       return computeInvoicePreview(form, nextSeq);
@@ -56,8 +80,8 @@ export function InvoiceNumberingSection() {
     }
   })();
 
-  function set<K extends string>(k: K, v: any) {
-    setForm((f: any) => ({ ...f, [k]: v }));
+  function set(k: string, v: any) {
+    setForms((f) => ({ ...(f as any), [tab]: { ...(f as any)[tab], [k]: v } }));
   }
 
   async function onSave(e: React.MouseEvent) {
@@ -66,6 +90,7 @@ export function InvoiceNumberingSection() {
     try {
       await saveFn({
         data: {
+          order_type: tab,
           prefix: String(form.prefix || "").toUpperCase(),
           separator: form.separator,
           padding: Number(form.padding),
@@ -75,7 +100,7 @@ export function InvoiceNumberingSection() {
         },
       });
       await qc.invalidateQueries({ queryKey: ["admin", "invoice-settings"] });
-      toast.success("Invoice settings saved");
+      toast.success(`${TAB_LABEL[tab]} invoice settings saved`);
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -84,9 +109,15 @@ export function InvoiceNumberingSection() {
   }
 
   return (
-    <Section icon={Hash} title="Invoice Numbering" description="Prefix, separator, padding and starting number for invoices.">
+    <Section
+      icon={Hash}
+      title="Invoice Numbering"
+      description="Each order type has its own prefix, separator, padding and starting number."
+    >
+      <TypeFilterTabs tabs={TABS} value={tab} onChange={setTab} className="rounded-lg" />
+
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Prefix" htmlFor="inv-prefix" hint="Letters and digits only, e.g. INV or ST.">
+        <Field label="Prefix" htmlFor="inv-prefix" hint="Letters and digits only, e.g. PH or SUB.">
           <Input
             id="inv-prefix"
             maxLength={10}
@@ -144,12 +175,16 @@ export function InvoiceNumberingSection() {
         </label>
       </div>
       <div className="rounded-lg border bg-muted/40 p-3">
-        <div className="text-xs uppercase tracking-wide text-muted-foreground">Live preview</div>
+        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+          {TAB_LABEL[tab]} live preview
+        </div>
         <div className="mt-1 font-mono text-lg">{preview || "—"}</div>
-        <div className="mt-1 text-[11px] text-muted-foreground">Next invoice will use sequence #{nextSeq}.</div>
+        <div className="mt-1 text-[11px] text-muted-foreground">
+          Next {TAB_LABEL[tab].toLowerCase()} invoice will use sequence #{nextSeq}.
+        </div>
       </div>
       <Button type="button" onClick={onSave} disabled={saving} className="w-full sm:w-auto">
-        {saving ? "Saving…" : "Save invoice settings"}
+        {saving ? "Saving…" : `Save ${TAB_LABEL[tab]} Invoice Settings`}
       </Button>
     </Section>
   );
