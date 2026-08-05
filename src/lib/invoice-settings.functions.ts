@@ -4,7 +4,18 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const SEPARATORS = ["-", "/", "_", ""] as const;
 
+export const ORDER_TYPES = ["physical", "digital", "service", "subscription"] as const;
+export type InvoiceOrderType = (typeof ORDER_TYPES)[number];
+
+export const DEFAULT_PREFIX: Record<InvoiceOrderType, string> = {
+  physical: "PH",
+  digital: "DG",
+  service: "SV",
+  subscription: "SUB",
+};
+
 const settingsSchema = z.object({
+  order_type: z.enum(ORDER_TYPES),
   prefix: z
     .string()
     .trim()
