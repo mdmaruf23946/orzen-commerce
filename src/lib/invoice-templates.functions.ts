@@ -309,14 +309,31 @@ export const getInvoicePayload = createServerFn({ method: "GET" })
     const total = Number(order.subtotal ?? itemsTotal + delivery - discount);
     const paid = order.payment_status === "paid" ? total : 0;
 
+    const p: any = profile ?? {};
     const invoice: InvoiceData = {
       store: {
-        name: store?.name ?? "",
-        address: store?.address ?? null,
-        phone: store?.phone ?? null,
-        email: store?.email ?? null,
-        website: store?.website ?? null,
-        logo: store?.logo_url ?? null,
+        name: p.business_name || store?.name || "",
+        address: p.business_address || store?.address || null,
+        phone: p.phone || store?.phone || null,
+        email: p.email || store?.email || null,
+        website: p.website || store?.website || null,
+        logo: p.show_logo === false ? null : p.logo_url || store?.logo_url || null,
+        owner_name: p.owner_name ?? null,
+        trade_license: p.trade_license ?? null,
+        bin_vat: p.bin_vat ?? null,
+        signature: p.show_signature ? (p.signature_url ?? null) : null,
+        seal: p.show_seal ? (p.seal_url ?? null) : null,
+      },
+      footer: {
+        thanks: p.thank_you_message ?? null,
+        terms: p.show_terms === false ? null : (p.terms ?? null),
+        refund: p.refund_policy ?? null,
+      },
+      display: {
+        logo: p.show_logo ?? true,
+        signature: !!p.show_signature,
+        seal: !!p.show_seal,
+        terms: p.show_terms ?? true,
       },
       order: {
         id: order.id,
