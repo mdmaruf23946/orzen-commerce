@@ -6,6 +6,7 @@ export const steadfastAdapter: CourierAdapter = {
   key: "steadfast",
   hasApi: true,
   supportsCancel: false,
+  requiredCreds: [["api_key"], ["secret", "api_secret"]],
 
   async createParcel(ctx, p) {
     const url = trimUrl(ctx.baseUrl) || "https://portal.packzy.com/api/v1";

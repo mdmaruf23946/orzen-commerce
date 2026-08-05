@@ -26,6 +26,7 @@ export const pathaoAdapter: CourierAdapter = {
   key: "pathao",
   hasApi: true,
   supportsCancel: false,
+  requiredCreds: [["client_id"], ["client_secret"], ["username"], ["password"], ["store_id"]],
 
   async createParcel(ctx, p) {
     const url = trimUrl(ctx.baseUrl) || "https://api-hermes.pathao.com";

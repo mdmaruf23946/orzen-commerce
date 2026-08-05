@@ -12,6 +12,7 @@ function headers(c: Record<string, string>) {
 export const redxAdapter: CourierAdapter = {
   key: "redx",
   hasApi: true,
+  requiredCreds: [["api_key"]],
 
   async createParcel(ctx, p) {
     const url = trimUrl(ctx.baseUrl) || "https://openapi.redx.com.bd/v1.0.0-beta";
