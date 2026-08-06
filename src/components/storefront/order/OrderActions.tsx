@@ -24,10 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  ReturnRequestDialog,
-  type RequestPayload,
-} from "@/components/storefront/order/ReturnRequestDialog";
+import { ReturnWizard } from "@/components/storefront/order/ReturnWizard";
 import { createMyReturnRequest, listMyOrderReturns } from "@/lib/returns.functions";
 import { cancelMyOrder } from "@/lib/customer-account.functions";
 import { useCustomerSession } from "@/lib/customer-session";
@@ -175,15 +172,17 @@ export function OrderActions({ order, slug }: { order: any; slug: string }) {
         </p>
       )}
 
-      {type && (
-        <ReturnRequestDialog
-          initialType={type}
-          items={(order.items as any[]) ?? []}
-          submitting={create.isPending}
+      {type && token && (
+        <ReturnWizard
+          slug={slug}
+          token={token}
+          orderId={order.id}
+          initialKind={type === "exchange" ? "exchange_same" : "return"}
           onClose={() => setType(null)}
-          onSubmit={(payload: RequestPayload) =>
-            create.mutate({ storeSlug: slug, token, orderId: order.id, ...payload })
-          }
+          onDone={() => {
+            qc.invalidateQueries({ queryKey: ["my-returns", order.id] });
+            qc.invalidateQueries({ queryKey: ["my-orders"] });
+          }}
         />
       )}
 
