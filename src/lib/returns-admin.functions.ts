@@ -1,0 +1,387 @@
+// Returns & Exchanges — admin state machine.
+// Every transition is recorded on return_timeline so the customer sees a live,
+// auditable history. Inventory, replacement orders, courier and refunds are all
+// driven from here so the merchant only clicks one button per stage.
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertPlan } from "@/lib/plan-guard";
+import { computeReturnAmounts, normalizePolicy, type ReturnKind } from "@/lib/returns-pricing";
+
+async function myStoreId(supabase: any, userId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from("stores")
+    .select("id")
+    .eq("owner_user_id", userId)
+    .maybeSingle();
+  return (data as any)?.id ?? null;
+}
+
+async function admin() {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return supabaseAdmin;
+}
+
+async function loadRequest(sb: any, sid: string, id: string) {
+  const { data } = await sb.from("returns").select("*").eq("id", id).eq("store_id", sid).maybeSingle();
+  if (!data) throw new Error("Request not found");
+  return data as any;
+}
+
+async function log(sb: any, r: any, status: string, note?: string | null) {
+  await sb.from("return_timeline").insert({
+    return_id: r.id,
+    store_id: r.store_id,
+    status,
+    note: note ?? null,
+    actor: "store",
+  } as any);
+}
+
+// ---------- SETTINGS ----------
+export const getReturnSettings = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) return null;
+    const { data } = await context.supabase
+      .from("store_return_settings")
+      .select("*")
+      .eq("store_id", sid)
+      .maybeSingle();
+    return { store_id: sid, ...normalizePolicy(data), ...(data ?? {}) };
+  });
+
+const settingsSchema = z.object({
+  enabled: z.boolean(),
+  eligibility_days: z.number().int().min(0).max(365),
+  allow_return: z.boolean(),
+  allow_exchange_same: z.boolean(),
+  allow_exchange_other: z.boolean(),
+  return_shipping_payer: z.enum(["store", "customer"]),
+  return_shipping_charge: z.number().nonnegative().max(100000),
+  replacement_shipping_payer: z.enum(["store", "customer"]),
+  replacement_shipping_charge: z.number().nonnegative().max(100000),
+  restocking_fee_type: z.enum(["none", "percent", "flat"]),
+  restocking_fee_value: z.number().nonnegative().max(100000),
+  require_inspection: z.boolean(),
+  auto_approve_under: z.number().nonnegative().max(1_000_000).nullable().optional(),
+  policy_note: z.string().max(2000).nullable().optional(),
+});
+
+export const saveReturnSettings = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => settingsSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) throw new Error("No store");
+    const { error } = await context.supabase
+      .from("store_return_settings")
+      .upsert({ store_id: sid, ...data } as any, { onConflict: "store_id" });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------- LIST ----------
+export const listReturnRequests = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) return [];
+    const { data } = await context.supabase
+      .from("returns")
+      .select(
+        "*, orders!returns_order_id_fkey(customer_name,phone,address,area,invoice_no,order_type,payment_method,payment_status,subtotal,delivery_amount), return_items(*), return_timeline(status,note,actor,created_at)",
+      )
+      .eq("store_id", sid)
+      .order("created_at", { ascending: false });
+    const rows = ((data ?? []) as any[]).map((r) => ({
+      ...r,
+      lines: (r.return_items ?? []).map((i: any) => ({
+        id: i.id,
+        product_id: i.product_id,
+        order_item_id: i.order_item_id,
+        name: i.name,
+        variant: i.variant,
+        qty: i.qty,
+        price: Number(i.unit_price ?? 0),
+        image: i.image_url,
+        inspection_result: i.inspection_result,
+      })),
+      timeline: (r.return_timeline ?? []).sort(
+        (a: any, b: any) => +new Date(a.created_at) - +new Date(b.created_at),
+      ),
+    }));
+    return rows;
+  });
+
+// ---------- ACTIONS ----------
+const actionSchema = z.object({
+  id: z.string().uuid(),
+  action: z.enum([
+    "approve",
+    "reject",
+    "create_shipment",
+    "mark_in_transit",
+    "mark_received",
+    "inspect",
+    "create_replacement",
+    "process_refund",
+    "complete",
+    "cancel",
+  ]),
+  note: z.string().max(1500).optional(),
+  courier_name: z.string().max(120).optional(),
+  courier_tracking_id: z.string().max(160).optional(),
+  inspection: z.enum(["passed", "failed"]).optional(),
+  restock: z.boolean().optional(),
+  refund_method: z.enum(["original", "store_credit", "manual", "cod_adjust"]).optional(),
+  refund_amount: z.number().nonnegative().max(10_000_000).optional(),
+  dispatch_courier: z.boolean().optional(),
+});
+
+export const runReturnAction = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => actionSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "returns");
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) throw new Error("No store");
+    const sb = await admin();
+    const r = await loadRequest(sb, sid, data.id);
+
+    const patch: Record<string, any> = {};
+    let nextStatus: string | null = null;
+    let extra: Record<string, any> = {};
+
+    switch (data.action) {
+      case "approve": {
+        if (!["requested"].includes(r.status)) throw new Error("Only pending requests can be approved");
+        nextStatus = "approved";
+        break;
+      }
+      case "reject": {
+        if (!["requested", "approved"].includes(r.status)) throw new Error("Cannot reject at this stage");
+        nextStatus = "rejected";
+        break;
+      }
+      case "cancel": {
+        nextStatus = "cancelled";
+        break;
+      }
+      case "create_shipment": {
+        if (!["approved", "shipment_created"].includes(r.status))
+          throw new Error("Approve the request first");
+        patch["courier_name"] = data.courier_name || r.courier_name || null;
+        patch["courier_tracking_id"] = data.courier_tracking_id || r.courier_tracking_id || null;
+        nextStatus = "shipment_created";
+        break;
+      }
+      case "mark_in_transit": {
+        nextStatus = "in_transit";
+        break;
+      }
+      case "mark_received": {
+        nextStatus = "received";
+        patch["received_at"] = new Date().toISOString();
+        break;
+      }
+      case "inspect": {
+        if (!["received", "in_transit", "shipment_created"].includes(r.status))
+          throw new Error("Mark the parcel received first");
+        const passed = data.inspection === "passed";
+        nextStatus = passed ? "inspection_passed" : "inspection_failed";
+        patch["inspected_at"] = new Date().toISOString();
+        patch["inspection_note"] = data.note ?? null;
+        await sb
+          .from("return_items")
+          .update({ inspection_result: passed ? "passed" : "failed" } as any)
+          .eq("return_id", r.id);
+
+        // Inventory moves only after a successful inspection.
+        if (passed && data.restock !== false) {
+          const { data: lines } = await sb
+            .from("return_items")
+            .select("id,product_id,qty,restocked_qty")
+            .eq("return_id", r.id);
+          for (const l of ((lines ?? []) as any[])) {
+            if (!l.product_id || Number(l.restocked_qty ?? 0) >= Number(l.qty ?? 0)) continue;
+            const { data: p } = await sb
+              .from("products")
+              .select("id,stock,product_type")
+              .eq("id", l.product_id)
+              .maybeSingle();
+            if (!p || (p as any).product_type !== "physical") continue;
+            const add = Number(l.qty ?? 0);
+            await sb
+              .from("products")
+              .update({ stock: Number((p as any).stock ?? 0) + add } as any)
+              .eq("id", l.product_id);
+            await sb.from("stock_movements").insert({
+              store_id: sid,
+              product_id: l.product_id,
+              delta: add,
+              type: "return",
+              ref_order_id: r.order_id,
+              reason: `Return ${r.id.slice(0, 8)} inspected`,
+            } as any);
+            await sb.from("return_items").update({ restocked_qty: add } as any).eq("id", l.id);
+          }
+        }
+        break;
+      }
+      case "create_replacement": {
+        if (r.request_kind === "return") throw new Error("This is a refund-only request");
+        if (r.replacement_order_id) throw new Error("Replacement order already exists");
+        if (!["inspection_passed", "received", "approved"].includes(r.status))
+          throw new Error("Complete the inspection first");
+
+        const items = Array.isArray(r.replacement_items) ? r.replacement_items : [];
+        if (!items.length) throw new Error("No replacement items on this request");
+
+        const { data: order } = await sb
+          .from("orders")
+          .select("customer_name,phone,address,area,email,customer_id,payment_method,delivery_zone_id")
+          .eq("id", r.order_id)
+          .maybeSingle();
+
+        const subtotal = items.reduce(
+          (s: number, i: any) => s + Number(i.price ?? 0) * Number(i.qty ?? 1),
+          0,
+        );
+        const { data: newOrder, error: oErr } = await sb
+          .from("orders")
+          .insert({
+            store_id: sid,
+            customer_name: (order as any)?.customer_name ?? r.customer_name ?? "Customer",
+            phone: (order as any)?.phone ?? r.phone ?? "",
+            address: (order as any)?.address ?? "",
+            area: (order as any)?.area ?? null,
+            email: (order as any)?.email ?? null,
+            customer_id: (order as any)?.customer_id ?? r.customer_id ?? null,
+            payment_method: Number(r.extra_payment_due ?? 0) > 0 ? "cod" : "cod",
+            payment_status: Number(r.extra_payment_due ?? 0) > 0 ? "unpaid" : "paid",
+            subtotal,
+            discount_amount: subtotal, // replacement is not re-charged; customer pays only the difference
+            delivery_amount: Number(r.replacement_shipping_charge ?? 0),
+            status: "confirmed",
+            order_type: "physical",
+            source: "return_exchange",
+            notes: `Replacement for return ${r.id.slice(0, 8)} (order ${r.order_id.slice(0, 8)})`,
+          } as any)
+          .select("id,invoice_no")
+          .maybeSingle();
+        if (oErr) throw new Error(oErr.message);
+
+        await sb.from("order_items").insert(
+          items.map((i: any) => ({
+            order_id: (newOrder as any).id,
+            product_id: i.product_id ?? null,
+            name_snapshot: i.name,
+            price_snapshot: Number(i.price ?? 0),
+            qty: Number(i.qty ?? 1),
+          })) as any,
+        );
+
+        patch["replacement_order_id"] = (newOrder as any).id;
+        nextStatus = "replacement_created";
+        extra = { replacement_order_id: (newOrder as any).id };
+
+        // Courier label + tracking for the replacement shipment.
+        if (data.dispatch_courier) {
+          try {
+            const { dispatchParcel } = await import("@/lib/courier-parcels.functions");
+            const { data: store } = await sb
+              .from("stores")
+              .select("id,couriers")
+              .eq("id", sid)
+              .maybeSingle();
+            await dispatchParcel(sb, store as any, { orderId: (newOrder as any).id });
+          } catch (e) {
+            extra["courier_error"] = (e as Error).message;
+          }
+        }
+        break;
+      }
+      case "process_refund": {
+        const amount = Number(data.refund_amount ?? r.refund_amount ?? 0);
+        patch["refund_amount"] = amount;
+        patch["refund_method"] = data.refund_method ?? r.refund_method ?? "manual";
+        patch["refund_status"] = "paid";
+        patch["refund_processed_at"] = new Date().toISOString();
+        nextStatus = "refunded";
+        break;
+      }
+      case "complete": {
+        nextStatus = "completed";
+        break;
+      }
+    }
+
+    if (data.note && data.action !== "inspect") patch["resolution_note"] = data.note;
+    if (nextStatus) patch["status"] = nextStatus;
+
+    const { error } = await sb.from("returns").update(patch as any).eq("id", r.id).eq("store_id", sid);
+    if (error) throw new Error(error.message);
+    if (nextStatus) await log(sb, r, nextStatus, data.note ?? null);
+
+    return { id: r.id, status: nextStatus ?? r.status, ...extra };
+  });
+
+/** Recalculate the money for a request after the merchant tweaks charges. */
+export const repriceReturn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        return_shipping_charge: z.number().nonnegative().max(100000),
+        replacement_shipping_charge: z.number().nonnegative().max(100000),
+        restocking_fee: z.number().nonnegative().max(100000),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "returns");
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) throw new Error("No store");
+    const sb = await admin();
+    const r = await loadRequest(sb, sid, data.id);
+
+    const lines = (
+      (await sb.from("return_items").select("qty,unit_price").eq("return_id", r.id)).data ?? []
+    ).map((l: any) => ({ name: "", qty: Number(l.qty), price: Number(l.unit_price) }));
+    const replacements = (Array.isArray(r.replacement_items) ? r.replacement_items : []).map(
+      (i: any) => ({ name: i.name, qty: Number(i.qty ?? 1), price: Number(i.price ?? 0) }),
+    );
+
+    const amounts = computeReturnAmounts(
+      normalizePolicy({
+        return_shipping_payer: "customer",
+        replacement_shipping_payer: "customer",
+        return_shipping_charge: data.return_shipping_charge,
+        replacement_shipping_charge: data.replacement_shipping_charge,
+        restocking_fee_type: "flat",
+        restocking_fee_value: data.restocking_fee,
+      }),
+      (r.request_kind ?? "return") as ReturnKind,
+      lines as any,
+      replacements as any,
+    );
+
+    const { error } = await sb
+      .from("returns")
+      .update({
+        return_shipping_charge: amounts.return_shipping_charge,
+        replacement_shipping_charge: amounts.replacement_shipping_charge,
+        restocking_fee: amounts.restocking_fee,
+        items_value: amounts.items_value,
+        replacement_value: amounts.replacement_value,
+        refund_amount: amounts.refund_amount,
+        extra_payment_due: amounts.extra_payment_due,
+      } as any)
+      .eq("id", r.id)
+      .eq("store_id", sid);
+    if (error) throw new Error(error.message);
+    return amounts;
+  });
