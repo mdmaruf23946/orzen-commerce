@@ -3819,24 +3819,162 @@ export type Database = {
           },
         ]
       }
+      return_items: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          inspection_result: string | null
+          name: string
+          order_item_id: string | null
+          product_id: string | null
+          qty: number
+          restocked_qty: number
+          return_id: string
+          store_id: string
+          unit_price: number
+          variant: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          inspection_result?: string | null
+          name: string
+          order_item_id?: string | null
+          product_id?: string | null
+          qty?: number
+          restocked_qty?: number
+          return_id: string
+          store_id: string
+          unit_price?: number
+          variant?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          inspection_result?: string | null
+          name?: string
+          order_item_id?: string | null
+          product_id?: string | null
+          qty?: number
+          restocked_qty?: number
+          return_id?: string
+          store_id?: string
+          unit_price?: number
+          variant?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_items_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_items_return_id_fkey"
+            columns: ["return_id"]
+            isOneToOne: false
+            referencedRelation: "returns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      return_timeline: {
+        Row: {
+          actor: string
+          created_at: string
+          id: string
+          note: string | null
+          return_id: string
+          status: string
+          store_id: string
+        }
+        Insert: {
+          actor?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          return_id: string
+          status: string
+          store_id: string
+        }
+        Update: {
+          actor?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          return_id?: string
+          status?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_timeline_return_id_fkey"
+            columns: ["return_id"]
+            isOneToOne: false
+            referencedRelation: "returns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_timeline_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       returns: {
         Row: {
           courier_name: string | null
+          courier_parcel_id: string | null
           courier_tracking_id: string | null
           created_at: string
           customer_id: string | null
           customer_name: string | null
           customer_note: string | null
+          extra_payment_due: number
           id: string
           images: string[]
+          inspected_at: string | null
+          inspection_note: string | null
           items: Json
+          items_value: number
           order_id: string
           phone: string | null
           reason: string | null
+          received_at: string | null
           refund_amount: number | null
+          refund_method: string | null
+          refund_processed_at: string | null
+          refund_status: string
+          replacement_items: Json
           replacement_note: string | null
+          replacement_order_id: string | null
           replacement_product_id: string | null
+          replacement_shipping_charge: number
+          replacement_value: number
+          request_kind: string
           resolution_note: string | null
+          restocking_fee: number
+          return_shipping_charge: number
           status: Database["public"]["Enums"]["return_status"]
           store_id: string
           type: Database["public"]["Enums"]["return_type"]
@@ -3844,21 +3982,37 @@ export type Database = {
         }
         Insert: {
           courier_name?: string | null
+          courier_parcel_id?: string | null
           courier_tracking_id?: string | null
           created_at?: string
           customer_id?: string | null
           customer_name?: string | null
           customer_note?: string | null
+          extra_payment_due?: number
           id?: string
           images?: string[]
+          inspected_at?: string | null
+          inspection_note?: string | null
           items?: Json
+          items_value?: number
           order_id: string
           phone?: string | null
           reason?: string | null
+          received_at?: string | null
           refund_amount?: number | null
+          refund_method?: string | null
+          refund_processed_at?: string | null
+          refund_status?: string
+          replacement_items?: Json
           replacement_note?: string | null
+          replacement_order_id?: string | null
           replacement_product_id?: string | null
+          replacement_shipping_charge?: number
+          replacement_value?: number
+          request_kind?: string
           resolution_note?: string | null
+          restocking_fee?: number
+          return_shipping_charge?: number
           status?: Database["public"]["Enums"]["return_status"]
           store_id: string
           type?: Database["public"]["Enums"]["return_type"]
@@ -3866,27 +4020,50 @@ export type Database = {
         }
         Update: {
           courier_name?: string | null
+          courier_parcel_id?: string | null
           courier_tracking_id?: string | null
           created_at?: string
           customer_id?: string | null
           customer_name?: string | null
           customer_note?: string | null
+          extra_payment_due?: number
           id?: string
           images?: string[]
+          inspected_at?: string | null
+          inspection_note?: string | null
           items?: Json
+          items_value?: number
           order_id?: string
           phone?: string | null
           reason?: string | null
+          received_at?: string | null
           refund_amount?: number | null
+          refund_method?: string | null
+          refund_processed_at?: string | null
+          refund_status?: string
+          replacement_items?: Json
           replacement_note?: string | null
+          replacement_order_id?: string | null
           replacement_product_id?: string | null
+          replacement_shipping_charge?: number
+          replacement_value?: number
+          request_kind?: string
           resolution_note?: string | null
+          restocking_fee?: number
+          return_shipping_charge?: number
           status?: Database["public"]["Enums"]["return_status"]
           store_id?: string
           type?: Database["public"]["Enums"]["return_type"]
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "returns_courier_parcel_id_fkey"
+            columns: ["courier_parcel_id"]
+            isOneToOne: false
+            referencedRelation: "courier_parcels"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "returns_customer_id_fkey"
             columns: ["customer_id"]
@@ -3897,6 +4074,13 @@ export type Database = {
           {
             foreignKeyName: "returns_order_id_fkey"
             columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "returns_replacement_order_id_fkey"
+            columns: ["replacement_order_id"]
             isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
@@ -4917,6 +5101,7 @@ export type Database = {
           last_login_at: string | null
           phone: string | null
           preferred_language: string | null
+          store_credit: number
           store_id: string
           updated_at: string
         }
@@ -4930,6 +5115,7 @@ export type Database = {
           last_login_at?: string | null
           phone?: string | null
           preferred_language?: string | null
+          store_credit?: number
           store_id: string
           updated_at?: string
         }
@@ -4943,6 +5129,7 @@ export type Database = {
           last_login_at?: string | null
           phone?: string | null
           preferred_language?: string | null
+          store_credit?: number
           store_id?: string
           updated_at?: string
         }
@@ -5518,6 +5705,77 @@ export type Database = {
             foreignKeyName: "store_payment_gateways_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_return_settings: {
+        Row: {
+          allow_exchange_other: boolean
+          allow_exchange_same: boolean
+          allow_return: boolean
+          auto_approve_under: number | null
+          created_at: string
+          eligibility_days: number
+          enabled: boolean
+          policy_note: string | null
+          refund_methods: string[]
+          replacement_shipping_charge: number
+          replacement_shipping_payer: string
+          require_inspection: boolean
+          restocking_fee_type: string
+          restocking_fee_value: number
+          return_shipping_charge: number
+          return_shipping_payer: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          allow_exchange_other?: boolean
+          allow_exchange_same?: boolean
+          allow_return?: boolean
+          auto_approve_under?: number | null
+          created_at?: string
+          eligibility_days?: number
+          enabled?: boolean
+          policy_note?: string | null
+          refund_methods?: string[]
+          replacement_shipping_charge?: number
+          replacement_shipping_payer?: string
+          require_inspection?: boolean
+          restocking_fee_type?: string
+          restocking_fee_value?: number
+          return_shipping_charge?: number
+          return_shipping_payer?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          allow_exchange_other?: boolean
+          allow_exchange_same?: boolean
+          allow_return?: boolean
+          auto_approve_under?: number | null
+          created_at?: string
+          eligibility_days?: number
+          enabled?: boolean
+          policy_note?: string | null
+          refund_methods?: string[]
+          replacement_shipping_charge?: number
+          replacement_shipping_payer?: string
+          require_inspection?: boolean
+          restocking_fee_type?: string
+          restocking_fee_value?: number
+          return_shipping_charge?: number
+          return_shipping_payer?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_return_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
@@ -6881,11 +7139,31 @@ export type Database = {
         }
         Returns: Json
       }
+      customer_create_return_v2: {
+        Args: {
+          _amounts: Json
+          _images: string[]
+          _kind: string
+          _lines: Json
+          _note: string
+          _order_id: string
+          _reason: string
+          _replacement_items: Json
+          _store_id: string
+          _token: string
+          _type: string
+        }
+        Returns: Json
+      }
       customer_from_token: {
         Args: { _store_id: string; _token: string }
         Returns: Json
       }
       customer_list_returns: {
+        Args: { _order_id: string; _store_id: string; _token: string }
+        Returns: Json
+      }
+      customer_list_returns_v2: {
         Args: { _order_id: string; _store_id: string; _token: string }
         Returns: Json
       }
@@ -6996,6 +7274,7 @@ export type Database = {
           sort_order: number
         }[]
       }
+      get_public_return_settings: { Args: { _store_id: string }; Returns: Json }
       get_public_service_order: { Args: { _order_id: string }; Returns: Json }
       get_public_store_by_slug: { Args: { _slug: string }; Returns: Json }
       get_public_subscription_order: {
@@ -7093,6 +7372,13 @@ export type Database = {
         | "rejected"
         | "refunded"
         | "completed"
+        | "shipment_created"
+        | "in_transit"
+        | "received"
+        | "inspection_passed"
+        | "inspection_failed"
+        | "replacement_created"
+        | "cancelled"
       return_type: "return" | "exchange"
       stock_movement_type:
         | "order"
@@ -7257,6 +7543,13 @@ export const Constants = {
         "rejected",
         "refunded",
         "completed",
+        "shipment_created",
+        "in_transit",
+        "received",
+        "inspection_passed",
+        "inspection_failed",
+        "replacement_created",
+        "cancelled",
       ],
       return_type: ["return", "exchange"],
       stock_movement_type: [
