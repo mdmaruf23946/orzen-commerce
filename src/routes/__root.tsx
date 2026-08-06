@@ -182,7 +182,13 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   useEffect(() => {
+    // App rendered fine: arm chunk recovery and reset the one-shot guard.
+    installChunkRecovery();
+    clearChunkRecoveryFlag();
+  }, []);
+  useEffect(() => {
     let mounted = true;
+
     import("@/integrations/supabase/client").then(({ supabase }) => {
       const { data: sub } = supabase.auth.onAuthStateChange((event) => {
         if (!mounted) return;
