@@ -175,16 +175,21 @@ export function ProductDialog({
   const createCat = useServerFn(upsertCategory);
   const listProductsFn = useServerFn(listMyProducts);
   const meta0 = ((editing as any)?.meta ?? {}) as ProductMeta;
+  const resolvedType = ((editing as any)?.product_type ??
+    meta0.product_type ??
+    initialType ??
+    "physical") as ProductTypeKey;
+  const pd = defaultsForType(productDefaults, resolvedType);
 
   // ---- state ----
   const [name, setName] = useState(editing?.name ?? "");
   const [shortDesc, setShortDesc] = useState<string>((editing as any)?.short_description ?? "");
-  const [description, setDescription] = useState(editing?.description ?? "");
+  const [description, setDescription] = useState(
+    editing ? (editing.description ?? "") : applyDescriptionFooter("", pd.footer),
+  );
   const [brand, setBrand] = useState<string>((editing as any)?.brand ?? "");
   const [productCode, setProductCode] = useState<string>((editing as any)?.product_code ?? "");
-  const [productType] = useState<ProductMeta["product_type"]>(
-    (editing as any)?.product_type ?? meta0.product_type ?? initialType ?? "physical",
-  );
+  const [productType] = useState<ProductMeta["product_type"]>(resolvedType);
   const [svcBookingType, setSvcBookingType] = useState<"instant" | "scheduled" | "request">(
     meta0.service?.booking_type ?? "scheduled",
   );
