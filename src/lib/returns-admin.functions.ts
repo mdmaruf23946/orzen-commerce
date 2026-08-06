@@ -175,6 +175,8 @@ const actionSchema = z.object({
     "inspect",
     "create_replacement",
     "process_refund",
+    "refund_pending",
+    "reject_refund",
     "complete",
     "cancel",
   ]),
@@ -208,6 +210,7 @@ export const runReturnAction = createServerFn({ method: "POST" })
 
     const patch: Record<string, any> = {};
     let nextStatus: string | null = null;
+    let timelineStatus: string | null = null;
     let extra: Record<string, any> = {};
 
     switch (data.action) {
@@ -373,6 +376,18 @@ export const runReturnAction = createServerFn({ method: "POST" })
         nextStatus = "refunded";
         break;
       }
+      case "refund_pending": {
+        patch["refund_amount"] = Number(data.refund_amount ?? r.refund_amount ?? 0);
+        patch["refund_method"] = data.refund_method ?? r.refund_method ?? "manual";
+        patch["refund_status"] = "pending";
+        timelineStatus = "refund_pending";
+        break;
+      }
+      case "reject_refund": {
+        patch["refund_status"] = "rejected";
+        timelineStatus = "refund_rejected";
+        break;
+      }
       case "complete": {
         nextStatus = "completed";
         break;
@@ -384,7 +399,14 @@ export const runReturnAction = createServerFn({ method: "POST" })
 
     const { error } = await sb.from("returns").update(patch as any).eq("id", r.id).eq("store_id", sid);
     if (error) throw new Error(error.message);
-    if (nextStatus) await log(sb, r, nextStatus, data.note ?? null);
+    const logged = nextStatus ?? timelineStatus;
+    if (logged) {
+      await log(sb, r, logged, data.note ?? null);
+      const { notifyReturnStatus } = await import("@/lib/returns-notify.server");
+      await notifyReturnStatus(sb, { ...r, ...patch }, logged, data.note ?? null, {
+        notifyCustomer: auto.notify_customer !== false,
+      });
+    }
 
     return { id: r.id, status: nextStatus ?? r.status, ...extra };
   });
@@ -497,4 +519,322 @@ export const setReturnUseGlobal = createServerFn({ method: "POST" })
     const { error } = await sb.from("returns").update(patch as any).eq("id", r.id).eq("store_id", sid);
     if (error) throw new Error(error.message);
     return { ok: true, use_global: data.use_global };
+  });
+
+// ---------- MANUAL CREATION ----------
+
+/** Order lookup for the manual return wizard: order id, invoice no or phone. */
+export const searchOrdersForReturn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ q: z.string().trim().max(120) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "returns");
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) return [];
+    const sb = await admin();
+    const q = data.q.trim();
+
+    let query = sb
+      .from("orders")
+      .select(
+        "id,invoice_no,customer_name,phone,status,order_type,created_at,subtotal,delivery_amount,discount_amount,customer_id,order_items(id,product_id,name_snapshot,price_snapshot,qty)",
+      )
+      .eq("store_id", sid)
+      .eq("order_type", "physical")
+      .neq("status", "cancelled")
+      .order("created_at", { ascending: false })
+      .limit(15);
+
+    if (q) {
+      const digits = q.replace(/[^0-9]/g, "");
+      const ors = [`invoice_no.ilike.%${q}%`];
+      if (digits.length >= 4) ors.push(`phone.ilike.%${digits}%`);
+      if (/^[0-9a-f-]{6,}$/i.test(q)) ors.push(`id.eq.${q}`);
+      query = query.or(ors.join(","));
+    }
+
+    const { data: rows } = await query;
+    const ids = ((rows ?? []) as any[]).flatMap((o) =>
+      (o.order_items ?? []).map((i: any) => i.product_id).filter(Boolean),
+    );
+    const imageById = new Map<string, string | null>();
+    if (ids.length) {
+      const { data: prods } = await sb
+        .from("products")
+        .select("id,primary_image_url,gallery")
+        .in("id", Array.from(new Set(ids)));
+      for (const p of ((prods ?? []) as any[])) {
+        imageById.set(
+          p.id,
+          p.primary_image_url ?? (Array.isArray(p.gallery) ? (p.gallery[0] ?? null) : null),
+        );
+      }
+    }
+
+    // Units already claimed by earlier requests, so the merchant cannot over-return.
+    const orderIds = ((rows ?? []) as any[]).map((o) => o.id);
+    const used = new Map<string, number>();
+    if (orderIds.length) {
+      const { data: claimed } = await sb
+        .from("return_items")
+        .select("order_item_id,qty, returns!inner(order_id,status)")
+        .in("returns.order_id", orderIds);
+      for (const c of ((claimed ?? []) as any[])) {
+        if (["rejected", "cancelled"].includes(c.returns?.status ?? "")) continue;
+        if (!c.order_item_id) continue;
+        used.set(c.order_item_id, (used.get(c.order_item_id) ?? 0) + Number(c.qty ?? 0));
+      }
+    }
+
+    return ((rows ?? []) as any[]).map((o) => ({
+      id: o.id,
+      invoice_no: o.invoice_no,
+      customer_name: o.customer_name,
+      phone: o.phone,
+      customer_id: o.customer_id,
+      status: o.status,
+      created_at: o.created_at,
+      total:
+        Number(o.subtotal ?? 0) + Number(o.delivery_amount ?? 0) - Number(o.discount_amount ?? 0),
+      items: (o.order_items ?? []).map((i: any) => ({
+        order_item_id: i.id,
+        product_id: i.product_id,
+        name: i.name_snapshot,
+        price: Number(i.price_snapshot ?? 0),
+        qty: Number(i.qty ?? 1),
+        returnable_qty: Math.max(0, Number(i.qty ?? 1) - (used.get(i.id) ?? 0)),
+        image_url: i.product_id ? (imageById.get(i.product_id) ?? null) : null,
+      })),
+    }));
+  });
+
+/** In-stock catalogue for picking a replacement product manually. */
+export const listReplacementProducts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ q: z.string().trim().max(120).optional() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) return [];
+    const sb = await admin();
+    let q = sb
+      .from("products")
+      .select("id,name,price,stock,primary_image_url,gallery")
+      .eq("store_id", sid)
+      .eq("product_type", "physical")
+      .eq("status", "active")
+      .order("name")
+      .limit(40);
+    if (data.q) q = q.ilike("name", `%${data.q}%`);
+    const { data: rows } = await q;
+    return ((rows ?? []) as any[]).map((p) => ({
+      id: p.id,
+      name: p.name,
+      price: Number(p.price ?? 0),
+      stock: Number(p.stock ?? 0),
+      image_url: p.primary_image_url ?? (Array.isArray(p.gallery) ? (p.gallery[0] ?? null) : null),
+    }));
+  });
+
+const manualLine = z.object({
+  order_item_id: z.string().uuid(),
+  qty: z.number().int().min(1).max(999),
+  variant: z.string().max(120).nullable().optional(),
+});
+
+const manualReplacement = z.object({
+  product_id: z.string().uuid(),
+  qty: z.number().int().min(1).max(999),
+  variant: z.string().max(120).nullable().optional(),
+});
+
+const manualArgs = z.object({
+  order_id: z.string().uuid(),
+  kind: z.enum(["return", "exchange_same", "exchange_other"]),
+  reason: z.string().trim().max(600).optional(),
+  internal_note: z.string().trim().max(1000).optional(),
+  customer_note: z.string().trim().max(1000).optional(),
+  lines: z.array(manualLine).min(1).max(30),
+  replacements: z.array(manualReplacement).max(30).default([]),
+  use_global: z.boolean().default(true),
+  charges: z
+    .object({
+      return_shipping_charge: z.number().nonnegative().max(100000),
+      replacement_shipping_charge: z.number().nonnegative().max(100000),
+      restocking_fee: z.number().nonnegative().max(100000),
+      manual_adjustment: z.number().min(-1_000_000).max(1_000_000),
+    })
+    .default({
+      return_shipping_charge: 0,
+      replacement_shipping_charge: 0,
+      restocking_fee: 0,
+      manual_adjustment: 0,
+    }),
+});
+
+/**
+ * Store-admin created request. Always attached to a real order and its existing
+ * customer — no new customer or order rows are created here.
+ */
+export const createManualReturn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => manualArgs.parse(d))
+  .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "returns");
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) throw new Error("No store");
+    const sb = await admin();
+
+    const { data: order } = await sb
+      .from("orders")
+      .select("id,store_id,customer_id,customer_name,phone,status")
+      .eq("id", data.order_id)
+      .eq("store_id", sid)
+      .maybeSingle();
+    if (!order) throw new Error("Order not found");
+    if ((order as any).status === "cancelled") throw new Error("Cancelled orders are not eligible");
+
+    const { data: items } = await sb
+      .from("order_items")
+      .select("id,product_id,name_snapshot,price_snapshot,qty")
+      .eq("order_id", data.order_id);
+    const byId = new Map(((items ?? []) as any[]).map((i) => [i.id, i]));
+
+    const productIds = ((items ?? []) as any[]).map((i) => i.product_id).filter(Boolean);
+    const imageById = new Map<string, string | null>();
+    if (productIds.length) {
+      const { data: prods } = await sb
+        .from("products")
+        .select("id,primary_image_url,gallery")
+        .in("id", Array.from(new Set(productIds)));
+      for (const p of ((prods ?? []) as any[])) {
+        imageById.set(
+          p.id,
+          p.primary_image_url ?? (Array.isArray(p.gallery) ? (p.gallery[0] ?? null) : null),
+        );
+      }
+    }
+
+    const lines = data.lines.map((l) => {
+      const src = byId.get(l.order_item_id);
+      if (!src) throw new Error("Invalid item in request");
+      return {
+        order_item_id: src.id,
+        product_id: src.product_id,
+        name: src.name_snapshot,
+        variant: l.variant ?? null,
+        qty: Math.min(Number(l.qty), Number(src.qty ?? 1)),
+        price: Number(src.price_snapshot ?? 0),
+        image_url: src.product_id ? (imageById.get(src.product_id) ?? null) : null,
+      };
+    });
+
+    const replacements: any[] = [];
+    if (data.kind !== "return") {
+      for (const r of data.replacements) {
+        const { data: p } = await sb
+          .from("products")
+          .select("id,name,price,primary_image_url,gallery")
+          .eq("id", r.product_id)
+          .eq("store_id", sid)
+          .maybeSingle();
+        if (!p) throw new Error("Replacement product unavailable");
+        replacements.push({
+          product_id: (p as any).id,
+          name: (p as any).name,
+          variant: r.variant ?? null,
+          qty: Number(r.qty),
+          price: Number((p as any).price ?? 0),
+          image_url:
+            (p as any).primary_image_url ??
+            (Array.isArray((p as any).gallery) ? ((p as any).gallery[0] ?? null) : null),
+        });
+      }
+      if (!replacements.length) throw new Error("Pick a replacement product");
+    }
+
+    const { data: settings } = await sb
+      .from("store_return_settings")
+      .select("*")
+      .eq("store_id", sid)
+      .maybeSingle();
+
+    const policy = data.use_global
+      ? normalizePolicy(settings)
+      : normalizePolicy({
+          return_shipping_mode: "customer",
+          replacement_shipping_mode: "customer",
+          return_shipping_charge: data.charges.return_shipping_charge,
+          replacement_shipping_charge: data.charges.replacement_shipping_charge,
+          restocking_fee_type: "flat",
+          restocking_fee_value: data.charges.restocking_fee,
+        });
+
+    const amounts = computeReturnAmounts(
+      policy,
+      data.kind as ReturnKind,
+      lines as any,
+      replacements as any,
+    );
+
+    // A positive adjustment reduces the refund / increases what the customer owes.
+    const adj = Number(data.charges.manual_adjustment ?? 0);
+    let net = amounts.refund_amount - amounts.extra_payment_due - adj;
+    const refund_amount = net > 0 ? Math.round(net * 100) / 100 : 0;
+    const extra_payment_due = net < 0 ? Math.round(-net * 100) / 100 : 0;
+
+    const { data: inserted, error } = await sb
+      .from("returns")
+      .insert({
+        store_id: sid,
+        order_id: data.order_id,
+        customer_id: (order as any).customer_id ?? null,
+        customer_name: (order as any).customer_name ?? null,
+        phone: (order as any).phone ?? null,
+        type: data.kind === "return" ? "return" : "exchange",
+        request_kind: data.kind,
+        status: "requested",
+        reason: data.reason ?? null,
+        customer_note: data.customer_note ?? null,
+        internal_note: data.internal_note ?? null,
+        created_by: "admin",
+        use_global_settings: data.use_global,
+        manual_adjustment: adj,
+        items: lines as any,
+        replacement_items: replacements as any,
+        replacement_product_id: replacements[0]?.product_id ?? null,
+        items_value: amounts.items_value,
+        replacement_value: amounts.replacement_value,
+        return_shipping_charge: amounts.return_shipping_charge,
+        replacement_shipping_charge: amounts.replacement_shipping_charge,
+        restocking_fee: amounts.restocking_fee,
+        refund_amount,
+        extra_payment_due,
+        images: [],
+      } as any)
+      .select("*")
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    const ret = inserted as any;
+
+    await sb.from("return_items").insert(
+      lines.map((l) => ({
+        return_id: ret.id,
+        store_id: sid,
+        order_item_id: l.order_item_id,
+        product_id: l.product_id,
+        name: l.name,
+        variant: l.variant,
+        qty: l.qty,
+        unit_price: l.price,
+        image_url: l.image_url,
+      })) as any,
+    );
+
+    await log(sb, ret, "requested", data.reason ?? "Created by store admin");
+    const { notifyReturnStatus } = await import("@/lib/returns-notify.server");
+    await notifyReturnStatus(sb, ret, "requested", data.reason ?? null, {
+      notifyCustomer: normalizeAutoWorkflow((settings as any)?.auto_workflow).notify_customer !== false,
+    });
+
+    return { id: ret.id as string, refund_amount, extra_payment_due };
   });

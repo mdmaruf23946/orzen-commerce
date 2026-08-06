@@ -3947,6 +3947,7 @@ export type Database = {
           courier_parcel_id: string | null
           courier_tracking_id: string | null
           created_at: string
+          created_by: string
           customer_id: string | null
           customer_name: string | null
           customer_note: string | null
@@ -3955,8 +3956,10 @@ export type Database = {
           images: string[]
           inspected_at: string | null
           inspection_note: string | null
+          internal_note: string | null
           items: Json
           items_value: number
+          manual_adjustment: number
           order_id: string
           phone: string | null
           reason: string | null
@@ -3986,6 +3989,7 @@ export type Database = {
           courier_parcel_id?: string | null
           courier_tracking_id?: string | null
           created_at?: string
+          created_by?: string
           customer_id?: string | null
           customer_name?: string | null
           customer_note?: string | null
@@ -3994,8 +3998,10 @@ export type Database = {
           images?: string[]
           inspected_at?: string | null
           inspection_note?: string | null
+          internal_note?: string | null
           items?: Json
           items_value?: number
+          manual_adjustment?: number
           order_id: string
           phone?: string | null
           reason?: string | null
@@ -4025,6 +4031,7 @@ export type Database = {
           courier_parcel_id?: string | null
           courier_tracking_id?: string | null
           created_at?: string
+          created_by?: string
           customer_id?: string | null
           customer_name?: string | null
           customer_note?: string | null
@@ -4033,8 +4040,10 @@ export type Database = {
           images?: string[]
           inspected_at?: string | null
           inspection_note?: string | null
+          internal_note?: string | null
           items?: Json
           items_value?: number
+          manual_adjustment?: number
           order_id?: string
           phone?: string | null
           reason?: string | null

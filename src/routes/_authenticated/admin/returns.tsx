@@ -3,7 +3,7 @@ import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
-import { Package, Image as ImageIcon, Settings } from "lucide-react";
+import { Package, Image as ImageIcon, Settings, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ReturnPolicySection } from "@/components/admin/settings/ReturnPolicySection";
@@ -11,6 +11,7 @@ import { listReturnRequests } from "@/lib/returns-admin.functions";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { ReturnDrawer, img } from "@/components/admin/returns/ReturnDrawer";
+import { ManualReturnWizard } from "@/components/admin/returns/ManualReturnWizard";
 import { KIND_LABEL, STATUS_LABEL } from "@/lib/returns-pricing";
 
 export const Route = createFileRoute("/_authenticated/admin/returns")({
@@ -81,6 +82,7 @@ function ReturnsPage() {
   const [tab, setTab] = useState<TabKey>("pending");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
 
   const all = (rows as any[]) ?? [];
   const filtered = useMemo(() => all.filter((r) => matches(tab, r.status)), [all, tab]);
@@ -92,13 +94,21 @@ function ReturnsPage() {
         title="Returns & Exchanges"
         description="Every request moves through approval, return shipment, inspection, then refund or replacement."
         action={
-          <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
-            <Settings className="mr-2 h-4 w-4" /> Settings
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => setManualOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" /> Create return / exchange
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
+              <Settings className="mr-2 h-4 w-4" /> Settings
+            </Button>
+          </div>
         }
       />
 
-      <div className="sm:hidden">
+      <div className="grid gap-2 sm:hidden">
+        <Button size="sm" className="w-full" onClick={() => setManualOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Create return / exchange
+        </Button>
         <Button
           variant="outline"
           size="sm"
@@ -207,6 +217,8 @@ function ReturnsPage() {
           })}
         </div>
       )}
+
+      {manualOpen && <ManualReturnWizard onClose={() => setManualOpen(false)} />}
 
       {current && (
         <ReturnDrawer key={current.id} request={current} onClose={() => setActiveId(null)} />

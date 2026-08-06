@@ -281,6 +281,7 @@ export const createMyReturnRequest = createServerFn({ method: "POST" })
       _store_id: storeId,
     } as any);
     const policy = normalizePolicy(policyRaw);
+    if (!policy.enabled) throw new Error("Returns & exchanges are currently unavailable");
     if (policy.require_photo && data.images.length === 0)
       throw new Error("Please attach at least one photo of the product");
     const amounts = computeReturnAmounts(policy, data.kind as ReturnKind, lines, replacements);

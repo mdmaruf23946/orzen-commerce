@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ReturnWizard } from "@/components/storefront/order/ReturnWizard";
-import { createMyReturnRequest, listMyOrderReturns } from "@/lib/returns.functions";
+import { createMyReturnRequest, getReturnContext, listMyOrderReturns } from "@/lib/returns.functions";
 import { cancelMyOrder } from "@/lib/customer-account.functions";
 import { useCustomerSession } from "@/lib/customer-session";
 import { addToCart } from "@/lib/cart";
@@ -36,6 +36,7 @@ export function OrderActions({ order, slug }: { order: any; slug: string }) {
   const { token } = useCustomerSession(slug);
   const qc = useQueryClient();
   const listFn = useServerFn(listMyOrderReturns);
+  const contextFn = useServerFn(getReturnContext);
   const createFn = useServerFn(createMyReturnRequest);
   const cancelFn = useServerFn(cancelMyOrder);
   const [type, setType] = useState<"return" | "exchange" | null>(null);
@@ -46,6 +47,13 @@ export function OrderActions({ order, slug }: { order: any; slug: string }) {
     queryFn: () => listFn({ data: { storeSlug: slug, token: token!, orderId: order.id } }),
     enabled: !!token,
   });
+
+  const { data: returnCtx } = useQuery({
+    queryKey: ["return-context", order.id, token],
+    queryFn: () => contextFn({ data: { storeSlug: slug, token: token!, orderId: order.id } }),
+    enabled: !!token,
+  });
+  const returnsEnabled = (returnCtx as any)?.policy?.enabled !== false;
 
   const create = useMutation({
     mutationFn: (payload: any) => createFn({ data: payload }),
@@ -88,6 +96,7 @@ export function OrderActions({ order, slug }: { order: any; slug: string }) {
     (order.order_type ?? "physical") !== "subscription";
 
   const returnEligible =
+    returnsEnabled &&
     (order.order_type ?? "physical") === "physical" &&
     !cancelled &&
     !!delivered &&
