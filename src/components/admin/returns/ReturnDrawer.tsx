@@ -394,6 +394,28 @@ export function ReturnDrawer({ request, onClose }: { request: any | null; onClos
                   >
                     Process refund
                   </Button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() =>
+                        run.mutate({
+                          action: "refund_pending",
+                          refund_method: refundMethod as any,
+                          refund_amount: Number(refundAmount) || 0,
+                        })
+                      }
+                    >
+                      Mark pending
+                    </Button>
+                    <Button
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => run.mutate({ action: "reject_refund" })}
+                    >
+                      Reject refund
+                    </Button>
+                  </div>
                 </div>
               )}
 
