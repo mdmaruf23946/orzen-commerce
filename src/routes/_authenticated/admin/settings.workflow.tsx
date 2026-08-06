@@ -18,6 +18,7 @@ function OrderWorkflowPage() {
       </div>
       <div className="space-y-5">
         <OrderConfirmationSection />
+        <ReturnPolicySection />
         <ServiceWorkflowSection />
       </div>
     </div>
