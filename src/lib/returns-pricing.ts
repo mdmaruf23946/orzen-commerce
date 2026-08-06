@@ -258,6 +258,11 @@ export const STATUS_LABEL: Record<string, string> = {
   refunded: "Refund processed",
   completed: "Completed",
   cancelled: "Cancelled",
+  courier_assigned: "Courier assigned",
+  customer_sent: "Customer sent the item",
+  refund_pending: "Refund pending",
+  refund_rejected: "Refund rejected",
+  replacement_shipped: "Replacement shipped",
 };
 
 export const REFUND_METHOD_LABEL: Record<string, string> = {
