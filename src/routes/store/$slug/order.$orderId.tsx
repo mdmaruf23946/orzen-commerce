@@ -344,7 +344,11 @@ function OrderConfirmation() {
           <div>Address</div>
           <div className="text-right text-foreground">{order.address}</div>
           <div>Payment</div>
-          <div className="text-right text-foreground uppercase">{order.payment_method}</div>
+          <div className="text-right text-foreground">
+            {String(order.payment_method ?? "cod").toLowerCase() === "cod"
+              ? "Cash on Delivery"
+              : String(order.payment_method).toUpperCase()}
+          </div>
           <div>Payment status</div>
           <div className="text-right">
             <span
@@ -356,9 +360,13 @@ function OrderConfirmation() {
                     : "bg-amber-100 text-amber-700"
               }`}
             >
-              {String((order as any).payment_status ?? "pending").toUpperCase()}
+              {paymentStatusLabel(
+                order.payment_method,
+                String((order as any).payment_status ?? "pending"),
+              )}
             </span>
           </div>
+
         </div>
       </div>
       <Link
