@@ -7,12 +7,18 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import {
+  clearChunkRecoveryFlag,
+  installChunkRecovery,
+  recoverFromChunkError,
+} from "../lib/chunk-recovery";
 import { Toaster } from "@/components/ui/sonner";
 import { usePlatformBranding } from "@/lib/platform-branding";
+
 
 
 function NotFoundComponent() {
@@ -40,9 +46,20 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
+  const [recovering] = useState(() => recoverFromChunkError(error));
   useEffect(() => {
+    if (recovering) return;
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
+  }, [error, recovering]);
+
+  if (recovering) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <p className="text-sm text-muted-foreground">Updating to the latest version…</p>
+      </div>
+    );
+  }
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -165,7 +182,13 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   useEffect(() => {
+    // App rendered fine: arm chunk recovery and reset the one-shot guard.
+    installChunkRecovery();
+    clearChunkRecoveryFlag();
+  }, []);
+  useEffect(() => {
     let mounted = true;
+
     import("@/integrations/supabase/client").then(({ supabase }) => {
       const { data: sub } = supabase.auth.onAuthStateChange((event) => {
         if (!mounted) return;
