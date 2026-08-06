@@ -212,7 +212,20 @@ export const listAdminOrders = createServerFn({ method: "GET" })
         order_type: (raw.order_type ?? "physical") as OrderKind,
         confirmation_status: (raw.confirmation_status ?? "pending") as "pending" | "confirmed",
         confirmed_at: raw.confirmed_at ?? null,
-        fulfillment: (raw.fulfillment_meta ?? {}) as Record<string, any>,
+        fulfillment: (() => {
+          const meta = { ...(raw.fulfillment_meta ?? {}) } as Record<string, any>;
+          const serviceState = meta.service_state;
+          if (serviceState && typeof serviceState === "object" && !Array.isArray(serviceState)) {
+            meta.service_state_detail = serviceState;
+            meta.service_state =
+              typeof serviceState.stage === "string"
+                ? serviceState.stage
+                : serviceState.cancel_requested
+                  ? "cancel_requested"
+                  : "requested";
+          }
+          return meta;
+        })(),
         access: accessByOrder[raw.id] ?? null,
         parcel: parcel
           ? {
