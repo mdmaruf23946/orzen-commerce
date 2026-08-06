@@ -7,12 +7,18 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import {
+  clearChunkRecoveryFlag,
+  installChunkRecovery,
+  recoverFromChunkError,
+} from "../lib/chunk-recovery";
 import { Toaster } from "@/components/ui/sonner";
 import { usePlatformBranding } from "@/lib/platform-branding";
+
 
 
 function NotFoundComponent() {
