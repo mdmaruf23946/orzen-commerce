@@ -449,3 +449,52 @@ export const repriceReturn = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return amounts;
   });
+
+/**
+ * Per-request override switch. Turning it back on re-applies the store's global
+ * return settings to this request's money; turning it off keeps the manual
+ * charges the merchant entered on the request.
+ */
+export const setReturnUseGlobal = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid(), use_global: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "returns");
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) throw new Error("No store");
+    const sb = await admin();
+    const r = await loadRequest(sb, sid, data.id);
+
+    const patch: Record<string, any> = { use_global_settings: data.use_global };
+
+    if (data.use_global) {
+      const { data: settings } = await sb
+        .from("store_return_settings")
+        .select("*")
+        .eq("store_id", sid)
+        .maybeSingle();
+      const policy = normalizePolicy(settings);
+      const lines = (
+        (await sb.from("return_items").select("qty,unit_price").eq("return_id", r.id)).data ?? []
+      ).map((l: any) => ({ name: "", qty: Number(l.qty), price: Number(l.unit_price) }));
+      const replacements = (Array.isArray(r.replacement_items) ? r.replacement_items : []).map(
+        (i: any) => ({ name: i.name, qty: Number(i.qty ?? 1), price: Number(i.price ?? 0) }),
+      );
+      const amounts = computeReturnAmounts(
+        policy,
+        (r.request_kind ?? "return") as ReturnKind,
+        lines as any,
+        replacements as any,
+      );
+      Object.assign(patch, amounts, {
+        refund_amount: amounts.refund_amount,
+        extra_payment_due: amounts.extra_payment_due,
+      });
+      delete (patch as any).items_value;
+      patch["items_value"] = amounts.items_value;
+    }
+
+    const { error } = await sb.from("returns").update(patch as any).eq("id", r.id).eq("store_id", sid);
+    if (error) throw new Error(error.message);
+    return { ok: true, use_global: data.use_global };
+  });
