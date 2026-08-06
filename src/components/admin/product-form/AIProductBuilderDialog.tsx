@@ -1,28 +1,13 @@
-// Two-step AI Product Builder wizard.
-// Step 1: images -> Step 2: description -> generate -> hand off to
-// the existing ProductDialog prefilled with the AI draft.
-import { useEffect, useRef, useState } from "react";
+// Type-aware AI Product Builder wizard.
+// Step 1 images + classification -> Step 2 type-specific essentials ->
+// Step 3 describe -> generate -> hand off to the matching product form.
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import {
-  Sparkles,
-  Camera,
-  Image as ImageIcon,
-  Loader2,
-  ArrowLeft,
-  ArrowRight,
-  X,
-  CheckCircle2,
-  Lock,
-  Youtube,
-  Facebook,
-} from "lucide-react";
+import { Sparkles, Loader2, ArrowLeft, ArrowRight, CheckCircle2, Lock } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { compressImage } from "@/lib/compress-image";
 import { INCLUDED_ITEMS } from "@/lib/digital";
@@ -30,13 +15,23 @@ import { generateProductDraft, type ProductDraft } from "@/lib/ai-product-builde
 import { ProductDialog } from "./ProductDialog";
 import { ServiceProductDialog } from "./service/ServiceProductDialog";
 import { SubscriptionProductDialog } from "./subscription/SubscriptionProductDialog";
-
+import { StepBasics, type BuilderCategory } from "./ai-builder/StepBasics";
+import { StepEssentials } from "./ai-builder/StepEssentials";
+import { StepDescribe } from "./ai-builder/StepDescribe";
+import {
+  PLAN_KEYS,
+  PLAN_LABEL,
+  defaultEssentials,
+  essentialsReady,
+  type AiEssentials,
+  type AiExtras,
+  type AiProductType,
+} from "./ai-builder/types";
 
 import { useFeature } from "@/components/admin/FeatureGate";
 
 const MAX_IMAGES = 8;
 const MAX_BYTES = 5 * 1024 * 1024;
-const MAX_DESC = 4000;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MIN_DIM = 200;
 const MAX_DIM = 8000;
@@ -64,9 +59,9 @@ const STAGES = [
 
 type Props = {
   storeId: string;
-  categories: any[];
+  categories: BuilderCategory[];
   productDefaults: any;
-  productType?: "physical" | "digital" | "service" | "subscription";
+  productType?: AiProductType;
   onClose: () => void;
   onSave: (data: any) => Promise<void>;
 };
@@ -87,17 +82,11 @@ export function AIProductBuilderDialog({
   const [uploading, setUploading] = useState(false);
   const [uploadErrors, setUploadErrors] = useState<{ name: string; reason: string }[]>([]);
   const [description, setDescription] = useState("");
-  const [youtubeUrl, setYoutubeUrl] = useState("");
-  const [facebookUrl, setFacebookUrl] = useState("");
-  // Essentials (user-provided, overrides AI guesses when set)
-  const [essPrice, setEssPrice] = useState<string>("");
-  const [essOldPrice, setEssOldPrice] = useState<string>("");
-  const [essCostPrice, setEssCostPrice] = useState<string>("");
-  const [essStock, setEssStock] = useState<string>("");
-  const [essLowStock, setEssLowStock] = useState<string>("5");
-  const [essSku, setEssSku] = useState<string>("");
-  const [essBrand, setEssBrand] = useState<string>("");
-  const [essWeight, setEssWeight] = useState<string>("");
+  const [categoryId, setCategoryId] = useState("");
+  const [subcategoryId, setSubcategoryId] = useState("");
+  const [brand, setBrand] = useState("");
+  const [ess, setEss] = useState<AiEssentials>(() => defaultEssentials());
+  const [extras, setExtrasState] = useState<AiExtras>({ youtubeUrl: "", facebookUrl: "", demoVideoUrl: "" });
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState(0);
   const [generationError, setGenerationError] = useState<string | null>(null);
@@ -113,6 +102,20 @@ export function AIProductBuilderDialog({
   const stageTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => () => { if (stageTimer.current) clearInterval(stageTimer.current); }, []);
+
+  const set = <K extends keyof AiEssentials>(key: K, value: AiEssentials[K]) =>
+    setEss((p) => ({ ...p, [key]: value }));
+  const setExtras = <K extends keyof AiExtras>(key: K, value: AiExtras[K]) =>
+    setExtrasState((p) => ({ ...p, [key]: value }));
+
+  const categoryName = useMemo(
+    () => categories.find((c) => c.id === categoryId)?.name ?? "",
+    [categories, categoryId],
+  );
+  const subcategoryName = useMemo(
+    () => categories.find((c) => c.id === subcategoryId)?.name ?? "",
+    [categories, subcategoryId],
+  );
 
   async function uploadFiles(files: FileList) {
     const remaining = MAX_IMAGES - images.length;
@@ -184,6 +187,37 @@ export function AIProductBuilderDialog({
     setImages((prev) => prev.filter((_, i) => i !== idx));
   }
 
+  function knownFacts(): string {
+    const lines: string[] = [];
+    if (productType === "subscription") {
+      const enabled = PLAN_KEYS.filter((k) => ess.plans[k].enabled && Number(ess.plans[k].price) > 0);
+      if (enabled.length)
+        lines.push(`Billing plans: ${enabled.map((k) => `${PLAN_LABEL[k]} ${ess.plans[k].price} BDT`).join(", ")}`);
+      if (ess.trialEnabled) lines.push(`Free trial: ${ess.trialDays} days`);
+      lines.push(`Activation: ${ess.activation}`, `Renewal: ${ess.renewal}`);
+    } else if (ess.price) {
+      lines.push(`Price: ${ess.price} BDT${ess.pricingMode === "starting" && productType === "service" ? " (starting from)" : ""}`);
+    }
+    if (productType === "physical") {
+      if (ess.warranty) lines.push(`Warranty: ${ess.warranty}`);
+      if (ess.manufacturer) lines.push(`Manufacturer: ${ess.manufacturer}`);
+      if (ess.origin) lines.push(`Country of origin: ${ess.origin}`);
+      if (ess.weight) lines.push(`Weight: ${ess.weight} g`);
+    }
+    if (productType === "digital") {
+      lines.push(`Delivery: ${ess.deliveryType}`, `License: ${ess.licenseType}`);
+      if (ess.fileVersion) lines.push(`Version: ${ess.fileVersion}`);
+      if (ess.files.length) lines.push(`Files: ${ess.files.map((f) => f.name).join(", ")}`);
+    }
+    if (productType === "service") {
+      lines.push(`Booking required: ${ess.bookingRequired ? "yes" : "no"}`, `Mode: ${ess.serviceMode}`);
+      if (ess.serviceArea) lines.push(`Service area: ${ess.serviceArea}`);
+      if (ess.deliveryTime) lines.push(`Delivery time: ${ess.deliveryTime}`);
+      if (ess.responseTime) lines.push(`Response time: ${ess.responseTime}`);
+    }
+    return lines.join("\n");
+  }
+
   async function generate() {
     if (images.length === 0 && !description.trim()) {
       toast.error("Add at least one image or a description");
@@ -192,12 +226,21 @@ export function AIProductBuilderDialog({
     setGenerationError(null);
     setBusy(true);
     setStage(0);
-    // Simulated staged progress while awaiting the model.
     stageTimer.current = setInterval(() => {
       setStage((s) => (s < STAGES.length - 2 ? s + 1 : s));
     }, 2200);
     try {
-      const res = await gen({ data: { imagePaths: images, description, productType } });
+      const res = await gen({
+        data: {
+          imagePaths: images,
+          description,
+          productType,
+          categoryName,
+          subcategoryName,
+          brand,
+          knownFacts: knownFacts(),
+        },
+      });
       setStage(STAGES.length - 1);
       setDraftResult(res as any);
     } catch (e) {
@@ -211,25 +254,21 @@ export function AIProductBuilderDialog({
     }
   }
 
-  // Once we have a draft, hand off to the existing ProductDialog prefilled.
+  // Once we have a draft, hand off to the matching product form prefilled.
   if (draftResult) {
-    const essentials = {
-      price: essPrice ? Number(essPrice) : undefined,
-      old_price: essOldPrice ? Number(essOldPrice) : undefined,
-      cost_price: essCostPrice ? Number(essCostPrice) : undefined,
-      stock: essStock ? Number(essStock) : undefined,
-      low_stock_threshold: essLowStock ? Number(essLowStock) : undefined,
-      sku: essSku.trim() || undefined,
-      brand: essBrand.trim() || undefined,
-      weight_g: essWeight ? Number(essWeight) : undefined,
-    };
-    const editingLike = buildEditingLike(draftResult, { youtubeUrl, facebookUrl }, essentials, productType);
+    const editingLike = buildEditingLike(
+      { ...draftResult, matchedCategoryId: categoryId || draftResult.matchedCategoryId, matchedSubcategoryId: subcategoryId || draftResult.matchedSubcategoryId },
+      extras,
+      ess,
+      brand,
+      productType,
+    );
     if (productType === "subscription") {
       return (
         <SubscriptionProductDialog
           storeId={storeId}
           editing={editingLike}
-          categories={categories}
+          categories={categories as any}
           productDefaults={productDefaults}
           onClose={onClose}
           onSave={onSave}
@@ -241,7 +280,7 @@ export function AIProductBuilderDialog({
         <ServiceProductDialog
           storeId={storeId}
           editing={editingLike}
-          categories={categories}
+          categories={categories as any}
           productDefaults={productDefaults}
           onClose={onClose}
           onSave={onSave}
@@ -249,11 +288,10 @@ export function AIProductBuilderDialog({
       );
     }
     return (
-
       <ProductDialog
         storeId={storeId}
         editing={editingLike}
-        categories={categories}
+        categories={categories as any}
         productDefaults={productDefaults}
         initialType={productType}
         onClose={onClose}
@@ -262,15 +300,16 @@ export function AIProductBuilderDialog({
     );
   }
 
+  const canContinueStep1 = !!categoryId && (productType === "service" || productType === "subscription" || images.length > 0);
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto">
+      <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex flex-wrap items-center gap-2 text-base sm:text-lg">
             <Sparkles className="h-5 w-5 text-amber-500" />
             AI Product Builder
-            <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
               Premium
             </span>
           </DialogTitle>
@@ -291,7 +330,10 @@ export function AIProductBuilderDialog({
             )}
             <StepIndicator step={step} />
             {step === 1 ? (
-              <StepImages
+              <StepBasics
+                productType={productType}
+                maxImages={MAX_IMAGES}
+                minDim={MIN_DIM}
                 images={images}
                 uploading={uploading}
                 errors={uploadErrors}
@@ -299,26 +341,23 @@ export function AIProductBuilderDialog({
                 onPick={() => fileRef.current?.click()}
                 onCamera={() => cameraRef.current?.click()}
                 onRemove={removeImage}
+                categories={categories}
+                categoryId={categoryId}
+                setCategoryId={setCategoryId}
+                subcategoryId={subcategoryId}
+                setSubcategoryId={setSubcategoryId}
+                brand={brand}
+                setBrand={setBrand}
               />
             ) : step === 2 ? (
-              <StepEssentials
-                price={essPrice} setPrice={setEssPrice}
-                oldPrice={essOldPrice} setOldPrice={setEssOldPrice}
-                costPrice={essCostPrice} setCostPrice={setEssCostPrice}
-                stock={essStock} setStock={setEssStock}
-                lowStock={essLowStock} setLowStock={setEssLowStock}
-                sku={essSku} setSku={setEssSku}
-                brand={essBrand} setBrand={setEssBrand}
-                weight={essWeight} setWeight={setEssWeight}
-              />
+              <StepEssentials storeId={storeId} productType={productType} ess={ess} set={set} />
             ) : (
-              <StepDescription
+              <StepDescribe
+                productType={productType}
                 description={description}
                 setDescription={setDescription}
-                youtubeUrl={youtubeUrl}
-                setYoutubeUrl={setYoutubeUrl}
-                facebookUrl={facebookUrl}
-                setFacebookUrl={setFacebookUrl}
+                extras={extras}
+                setExtras={setExtras}
               />
             )}
 
@@ -348,11 +387,11 @@ export function AIProductBuilderDialog({
                 <span />
               )}
               {step === 1 ? (
-                <Button onClick={() => setStep(2)} disabled={images.length === 0}>
+                <Button onClick={() => setStep(2)} disabled={!canContinueStep1}>
                   Continue <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
               ) : step === 2 ? (
-                <Button onClick={() => setStep(3)} disabled={!essPrice || Number(essPrice) <= 0}>
+                <Button onClick={() => setStep(3)} disabled={!essentialsReady(productType, ess)}>
                   Continue <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
               ) : (
@@ -381,9 +420,9 @@ function StepIndicator({ step }: { step: 1 | 2 | 3 }) {
 }
 function StepPill({ n, active, done, label }: { n: number; active: boolean; done: boolean; label: string }) {
   return (
-    <div className={`flex items-center gap-2 ${active ? "text-foreground" : "text-muted-foreground"}`}>
+    <div className={`flex items-center gap-1.5 ${active ? "text-foreground" : "text-muted-foreground"}`}>
       <span
-        className={`grid h-6 w-6 place-items-center rounded-full text-[11px] font-semibold ${
+        className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-semibold ${
           done ? "bg-emerald-500 text-white" : active ? "bg-primary text-primary-foreground" : "bg-muted"
         }`}
       >
@@ -393,252 +432,6 @@ function StepPill({ n, active, done, label }: { n: number; active: boolean; done
     </div>
   );
 }
-
-function StepImages({
-  images,
-  uploading,
-  errors,
-  onDismissErrors,
-  onPick,
-  onCamera,
-  onRemove,
-}: {
-  images: string[];
-  uploading: boolean;
-  errors: { name: string; reason: string }[];
-  onDismissErrors: () => void;
-  onPick: () => void;
-  onCamera: () => void;
-  onRemove: (i: number) => void;
-}) {
-  return (
-    <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">
-        Add up to {MAX_IMAGES} product photos. JPG, PNG, WebP, or GIF · min {MIN_DIM}×{MIN_DIM}px · max 5 MB each.
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {images.map((path, idx) => (
-          <div key={path + idx} className="relative h-24 w-24 overflow-hidden rounded-md border bg-muted">
-            <img src={`/api/img/${path}`} alt="" className="h-full w-full object-cover" />
-            <button
-              type="button"
-              onClick={() => onRemove(idx)}
-              className="absolute right-1 top-1 rounded bg-black/60 p-0.5 text-white"
-              aria-label="Remove"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </div>
-        ))}
-        {images.length < MAX_IMAGES && (
-          <>
-            <button
-              type="button"
-              onClick={onPick}
-              disabled={uploading}
-              className="grid h-24 w-24 place-items-center gap-1 rounded-md border border-dashed bg-muted/40 text-xs text-muted-foreground hover:bg-muted disabled:opacity-50"
-            >
-              <ImageIcon className="h-5 w-5" />
-              Gallery
-            </button>
-            <button
-              type="button"
-              onClick={onCamera}
-              disabled={uploading}
-              className="grid h-24 w-24 place-items-center gap-1 rounded-md border border-dashed bg-muted/40 text-xs text-muted-foreground hover:bg-muted disabled:opacity-50"
-            >
-              <Camera className="h-5 w-5" />
-              Camera
-            </button>
-          </>
-        )}
-      </div>
-      {uploading && (
-        <p className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Validating and uploading…
-        </p>
-      )}
-      {errors.length > 0 && (
-        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs">
-          <div className="mb-1 flex items-center justify-between">
-            <span className="font-medium text-destructive">
-              {errors.length} image{errors.length === 1 ? "" : "s"} skipped
-            </span>
-            <button
-              type="button"
-              onClick={onDismissErrors}
-              className="text-muted-foreground hover:text-foreground"
-              aria-label="Dismiss"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-          <ul className="space-y-1">
-            {errors.map((e, i) => (
-              <li key={i} className="text-muted-foreground">
-                <span className="font-medium text-foreground">{e.name}:</span> {e.reason}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function StepDescription({
-  description,
-  setDescription,
-  youtubeUrl,
-  setYoutubeUrl,
-  facebookUrl,
-  setFacebookUrl,
-}: {
-  description: string;
-  setDescription: (v: string) => void;
-  youtubeUrl: string;
-  setYoutubeUrl: (v: string) => void;
-  facebookUrl: string;
-  setFacebookUrl: (v: string) => void;
-}) {
-  return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <p className="text-sm text-muted-foreground">
-          Tell the AI everything you know. The more detail you give, the better the result.
-        </p>
-        <Textarea
-          rows={10}
-          maxLength={MAX_DESC}
-          placeholder={`Describe your product in as much detail as possible.
-
-Example:
-Product name
-Brand
-Color / Material / Size / Weight
-Specifications
-Key features
-What's in the package
-Warranty
-Target customer
-Selling price
-Anything else`}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-        <div className="text-right text-xs text-muted-foreground">
-          {description.length} / {MAX_DESC}
-        </div>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label className="flex items-center gap-1.5 text-xs">
-            <Youtube className="h-3.5 w-3.5 text-red-500" />
-            YouTube URL <span className="text-muted-foreground">(optional)</span>
-          </Label>
-          <Input
-            type="url"
-            placeholder="https://youtube.com/watch?v=…"
-            value={youtubeUrl}
-            onChange={(e) => setYoutubeUrl(e.target.value)}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="flex items-center gap-1.5 text-xs">
-            <Facebook className="h-3.5 w-3.5 text-blue-600" />
-            Facebook Video URL <span className="text-muted-foreground">(optional)</span>
-          </Label>
-          <Input
-            type="url"
-            placeholder="https://facebook.com/…"
-            value={facebookUrl}
-            onChange={(e) => setFacebookUrl(e.target.value)}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-type EssProps = {
-  price: string; setPrice: (v: string) => void;
-  oldPrice: string; setOldPrice: (v: string) => void;
-  costPrice: string; setCostPrice: (v: string) => void;
-  stock: string; setStock: (v: string) => void;
-  lowStock: string; setLowStock: (v: string) => void;
-  sku: string; setSku: (v: string) => void;
-  brand: string; setBrand: (v: string) => void;
-  weight: string; setWeight: (v: string) => void;
-};
-
-function StepEssentials(p: EssProps) {
-  const priceNum = Number(p.price);
-  const oldNum = Number(p.oldPrice);
-  const showDiscount = priceNum > 0 && oldNum > priceNum;
-  const discountPct = showDiscount ? Math.round(((oldNum - priceNum) / oldNum) * 100) : 0;
-  return (
-    <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Essentials — AI can't reliably guess your price or stock. Fill these in for accuracy. <span className="text-destructive">*</span> required.
-      </p>
-
-      <div className="rounded-xl border bg-muted/30 p-3">
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pricing (BDT)</div>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Selling price <span className="text-destructive">*</span></Label>
-            <Input type="number" min={0} inputMode="decimal" placeholder="e.g. 499" value={p.price} onChange={(e) => p.setPrice(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Old / compare-at price</Label>
-            <Input type="number" min={0} inputMode="decimal" placeholder="e.g. 699" value={p.oldPrice} onChange={(e) => p.setOldPrice(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Cost price <span className="text-muted-foreground">(profit calc)</span></Label>
-            <Input type="number" min={0} inputMode="decimal" placeholder="e.g. 300" value={p.costPrice} onChange={(e) => p.setCostPrice(e.target.value)} />
-          </div>
-        </div>
-        {showDiscount && (
-          <p className="mt-2 text-xs text-emerald-600">Discount: {discountPct}% off</p>
-        )}
-      </div>
-
-      <div className="rounded-xl border bg-muted/30 p-3">
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Inventory</div>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Stock quantity</Label>
-            <Input type="number" min={0} inputMode="numeric" placeholder="e.g. 50" value={p.stock} onChange={(e) => p.setStock(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Low-stock alert at</Label>
-            <Input type="number" min={0} inputMode="numeric" placeholder="e.g. 5" value={p.lowStock} onChange={(e) => p.setLowStock(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">SKU / Product code</Label>
-            <Input placeholder="e.g. SHRT-001" value={p.sku} onChange={(e) => p.setSku(e.target.value)} />
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-xl border bg-muted/30 p-3">
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Extras</div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Brand</Label>
-            <Input placeholder="e.g. Orzen" value={p.brand} onChange={(e) => p.setBrand(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Weight (grams) <span className="text-muted-foreground">(shipping)</span></Label>
-            <Input type="number" min={0} inputMode="decimal" placeholder="e.g. 250" value={p.weight} onChange={(e) => p.setWeight(e.target.value)} />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 
 function ProgressPanel({ stage }: { stage: number }) {
   return (
@@ -681,7 +474,14 @@ function UpgradeCTA() {
   );
 }
 
-// Turn an AI draft into the same shape ProductDialog expects for `editing`.
+// ---------------------------------------------------------------- mapping
+
+const num = (v: string): number | null => {
+  const n = Number(v);
+  return v.trim() !== "" && Number.isFinite(n) ? n : null;
+};
+
+/** Turn an AI draft + the wizard's essentials into `editing`-shaped data. */
 function buildEditingLike(
   res: {
     draft: ProductDraft;
@@ -689,15 +489,11 @@ function buildEditingLike(
     matchedSubcategoryId: string | null;
     imagePaths: string[];
   },
-  extras: { youtubeUrl?: string; facebookUrl?: string } = {},
-  essentials: {
-    price?: number; old_price?: number; cost_price?: number;
-    stock?: number; low_stock_threshold?: number;
-    sku?: string; brand?: string; weight_g?: number;
-  } = {},
-  productType: "physical" | "digital" | "service" | "subscription" = "physical",
+  extras: AiExtras,
+  ess: AiEssentials,
+  brand: string,
+  productType: AiProductType,
 ) {
-  const pick = <T,>(user: T | undefined, ai: T): T => (user !== undefined && user !== null && !(typeof user === "number" && Number.isNaN(user)) ? user : ai);
   const { draft, matchedCategoryId, matchedSubcategoryId, imagePaths } = res;
   const primaryIdx = Math.min(Math.max(draft.primary_image_index ?? 0, 0), Math.max(0, imagePaths.length - 1));
   const primary = imagePaths[primaryIdx] ?? imagePaths[0] ?? null;
@@ -709,7 +505,27 @@ function buildEditingLike(
   if (yt) videos.push({ url: yt, provider: "youtube" });
   if (fb) videos.push({ url: fb, provider: "facebook" });
   if (videos.length > 0) videos[0].primary = true;
-  const primaryVideoUrl = videos[0]?.url ?? null;
+  const demo = extras.demoVideoUrl?.trim() || null;
+  const primaryVideoUrl = videos[0]?.url ?? demo;
+
+  // Extra facts the seller typed become specifications so nothing is lost.
+  const specifications = [...(draft.specifications ?? [])];
+  const addSpec = (key: string, value?: string | null) => {
+    if (!value) return;
+    if (specifications.some((s) => s.key?.toLowerCase() === key.toLowerCase())) return;
+    specifications.push({ key, value });
+  };
+  if (productType === "physical") {
+    addSpec("Warranty", ess.warranty);
+    addSpec("Manufacturer", ess.manufacturer);
+    addSpec("Country of origin", ess.origin);
+  }
+  if (productType === "service") {
+    addSpec("Service area", ess.serviceArea);
+    addSpec("Delivery time", ess.deliveryTime);
+    addSpec("Response time", ess.responseTime);
+    addSpec("Mode", ess.serviceMode === "both" ? "Online & offline" : ess.serviceMode === "online" ? "Online" : "Offline");
+  }
 
   const meta: Record<string, any> = {
     product_type: productType,
@@ -722,14 +538,18 @@ function buildEditingLike(
       slug: draft.slug_suggestion,
       keywords: (draft.keywords ?? []).join(", "),
     },
-    shipping: {
-      type: "free",
-      weight: pick(essentials.weight_g, draft.suggested_weight_g ?? undefined),
-      l: draft.dimensions_cm?.l ?? undefined,
-      w: draft.dimensions_cm?.w ?? undefined,
-      h: draft.dimensions_cm?.h ?? undefined,
-    },
+    shipping:
+      productType === "physical"
+        ? {
+            type: "free",
+            weight: num(ess.weight) ?? draft.suggested_weight_g ?? undefined,
+            l: num(ess.dimL) ?? draft.dimensions_cm?.l ?? undefined,
+            w: num(ess.dimW) ?? draft.dimensions_cm?.w ?? undefined,
+            h: num(ess.dimH) ?? draft.dimensions_cm?.h ?? undefined,
+          }
+        : { type: "free" },
     purchase: { cod: true, online: true, min_qty: 1 },
+    faq: (draft.faq ?? []).map((f) => ({ question: f.question, answer: f.answer })),
     ai_suggestions: {
       confidence: draft.confidence,
       category_confidence: draft.category_confidence,
@@ -742,61 +562,61 @@ function buildEditingLike(
       tags: draft.tags,
       alt_texts: draft.alt_texts,
       includes: draft.includes,
+      box_contents: draft.box_contents,
     },
   };
 
-  const specs = draft.specifications ?? [];
-  const specValue = (needle: string) =>
-    specs.find((s) => s.key?.toLowerCase().includes(needle))?.value ?? "";
+  if (productType === "physical" && (draft.box_contents ?? []).length > 0) {
+    meta.box_contents = draft.box_contents;
+  }
 
-  // Digital drafts prefill the digital tabs of the standard product form.
+  // ---------------------------------------------------------- digital
   if (productType === "digital") {
     const includedIds = INCLUDED_ITEMS.filter((item) =>
       (draft.includes ?? []).some(
-        (inc) =>
-          inc.toLowerCase().includes(item.label.toLowerCase()) ||
-          inc.toLowerCase().includes(item.id),
+        (inc) => inc.toLowerCase().includes(item.label.toLowerCase()) || inc.toLowerCase().includes(item.id),
       ),
     ).map((item) => item.id as string);
-    const licRaw = (specValue("licen") || "").toLowerCase();
-    const licenseType =
-      (["personal", "commercial", "extended", "custom"] as const).find((l) => licRaw.includes(l)) ??
-      "personal";
+    const reqs = draft.system_requirements ?? [];
+    const reqVal = (needle: string) =>
+      reqs.find((r) => r.key?.toLowerCase().includes(needle))?.value ?? undefined;
     meta.digital = {
-      files: [],
-      external_url: null,
-      version: specValue("version") || null,
-      changelog: null,
+      files: ess.files.map((f) => ({ path: f.path, name: f.name, size: f.size, type: f.type })),
+      external_url: ess.deliveryType === "external" ? ess.externalUrl.trim() || null : null,
+      version: ess.fileVersion.trim() || null,
+      changelog: draft.changelog || null,
       platforms: [],
       tags: draft.tags ?? [],
-      preview: { images: [], video_url: null, demo_url: null },
-      download: { mode: "instant", allow_redownload: true },
+      preview: { images: [], video_url: demo, demo_url: null },
+      download: {
+        mode: ess.deliveryType === "manual" ? "manual" : "instant",
+        max_downloads: num(ess.downloadLimit),
+        expiry_days: num(ess.expiryDays),
+        allow_redownload: true,
+      },
       free: false,
-      license_type: licenseType,
-      license_note: specValue("licen") || null,
+      license_type: ess.licenseType,
+      license_note: null,
       included: includedIds,
       requirements: {
-        os: specValue("os") || specValue("operating") || undefined,
-        software: specValue("software") || undefined,
-        browser: specValue("browser") || undefined,
-        storage: specValue("storage") || undefined,
+        os: reqVal("os") ?? reqVal("operating"),
+        software: reqVal("software"),
+        browser: reqVal("browser"),
+        ram: reqVal("ram"),
+        storage: reqVal("storage"),
+        dependencies: reqVal("depend"),
       },
-      faq: [],
+      installation: draft.installation_html || null,
+      faq: (draft.faq ?? []).map((f) => ({ q: f.question, a: f.answer })),
     };
   }
 
-  // Service drafts prefill the dedicated service form's metadata.
+  // ---------------------------------------------------------- service
   if (productType === "service") {
-    const delRaw = specValue("delivery") || specValue("turnaround");
-    const delNum = Number((delRaw.match(/\d+/) ?? [])[0]);
-    const delUnit = /hour/i.test(delRaw) ? "hours" : /week/i.test(delRaw) ? "weeks" : "days";
-    const priceRaw = (specValue("pricing") || "").toLowerCase();
-    const pricingType =
-      (["hourly", "daily", "weekly", "monthly", "quote", "starting"] as const).find((p) =>
-        priceRaw.includes(p),
-      ) ?? "fixed";
+    const delNum = Number((ess.deliveryTime.match(/\d+/) ?? [])[0]);
+    const delUnit = /hour/i.test(ess.deliveryTime) ? "hours" : /week/i.test(ess.deliveryTime) ? "weeks" : "days";
     meta.service = {
-      pricing_type: pricingType,
+      pricing_type: ess.pricingMode === "starting" ? "starting" : "fixed",
       tax_included: false,
       delivery: {
         time: Number.isFinite(delNum) && delNum > 0 ? delNum : null,
@@ -808,54 +628,57 @@ function buildEditingLike(
       availability: "available",
       max_orders: null,
       max_orders_period: "day",
-      included: draft.includes ?? [],
-      requirements: draft.features ?? [],
+      included: (draft.includes ?? []).length ? draft.includes : draft.included_services ?? [],
+      requirements: draft.customer_requirements ?? [],
       deliverables: draft.features ?? [],
+      workflow: draft.workflow_steps ?? [],
+      service_area: ess.serviceArea.trim() || null,
+      response_time: ess.responseTime.trim() || null,
+      mode: ess.serviceMode,
       booking: {
-        type: "request",
+        type: ess.bookingRequired ? "appointment" : "instant",
         working_days: [],
         working_hours: { start: "09:00", end: "18:00" },
-        slot_minutes: 60,
+        slot_minutes: num(ess.appointmentMinutes) ?? 60,
         buffer_minutes: 0,
       },
-      media: { portfolio: [], before_after: [], demo_video: null },
+      media: { portfolio: [], before_after: [], demo_video: demo },
       addons: [],
-      faq: [],
+      faq: (draft.faq ?? []).map((f) => ({ question: f.question, answer: f.answer })),
       policies: {},
       flags: {},
     };
   }
 
-
-
-  // Subscription drafts prefill the dedicated subscription form's metadata.
+  // ----------------------------------------------------- subscription
+  const enabledPlans = PLAN_KEYS.filter((k) => ess.plans[k].enabled && Number(ess.plans[k].price) > 0);
   if (productType === "subscription") {
-    const specs = draft.specifications ?? [];
-    const specVal = (needle: string) =>
-      specs.find((s) => s.key?.toLowerCase().includes(needle))?.value?.toLowerCase() ?? "";
-    const cycleRaw = specVal("billing") || specVal("cycle");
-    const cycle =
-      (["weekly", "quarterly", "yearly", "lifetime"] as const).find((c) => cycleRaw.includes(c)) ??
-      (cycleRaw.includes("half") ? "half_yearly" : cycleRaw.includes("annual") ? "yearly" : "monthly");
-    const planRaw = specVal("plan type");
-    const planType =
-      (["business", "enterprise"] as const).find((p) => planRaw.includes(p)) ?? "individual";
+    const plans = enabledPlans.map((k, i) => ({
+      id: k,
+      label: PLAN_LABEL[k],
+      cycle: k === "quarterly" ? "quarterly" : k,
+      price: Number(ess.plans[k].price),
+      compare_at: num(ess.plans[k].compare),
+      badge: null,
+      is_default: i === 0,
+    }));
     meta.subscription = {
-      billing_cycle: cycle,
+      billing_cycle: plans[0]?.cycle ?? "monthly",
+      plans,
       custom_cycle: { number: null, unit: "months" },
-      plan_type: planType,
+      plan_type: "individual",
       badge: null,
       setup_fee: null,
       tax_included: false,
       renewal_price_mode: "same",
       renewal_price: null,
-      trial: { enabled: false, duration: 7, unit: "days" },
-      activation: { type: "automatic", delay_hours: null },
-      access_items: (draft.includes ?? []).map((label) => ({ label })),
+      trial: { enabled: ess.trialEnabled, duration: num(ess.trialDays) ?? 7, unit: "days" },
+      activation: { type: ess.activation, delay_hours: null },
+      access_items: (draft.included_services ?? draft.includes ?? []).map((label) => ({ label })),
       usage_limits: [],
-      benefits: (draft.features ?? []).map((title) => ({ title })),
+      benefits: ((draft.benefits ?? []).length ? draft.benefits : draft.features ?? []).map((title) => ({ title })),
       renewal: {
-        mode: "automatic",
+        mode: ess.renewal,
         allow_upgrade: true,
         allow_downgrade: false,
         upgrade_rules: "",
@@ -866,16 +689,18 @@ function buildEditingLike(
         upgrade_discount: null,
       },
       customer_fields: [],
-      media: { preview_images: [], promo_video: null, documents: [] },
+      media: { preview_images: [], promo_video: demo, documents: [] },
       flags: {},
       publish_at: null,
       policies: {},
     };
   }
 
-
-  // Build the variants object if the AI proposed options.
-  const options = (draft.variant_options ?? []).filter((v) => v.name && v.values.length > 0);
+  // Variants only make sense for physical products.
+  const options =
+    productType === "physical"
+      ? (draft.variant_options ?? []).filter((v) => v.name && v.values.length > 0)
+      : [];
   const variants =
     options.length > 0
       ? {
@@ -893,30 +718,39 @@ function buildEditingLike(
         }
       : [];
 
+  const basePrice =
+    productType === "subscription"
+      ? Number(ess.plans[enabledPlans[0] ?? "monthly"]?.price ?? 0)
+      : num(ess.price) ?? draft.suggested_price ?? 0;
+  const compareAt =
+    productType === "subscription"
+      ? num(ess.plans[enabledPlans[0] ?? "monthly"]?.compare ?? "")
+      : num(ess.oldPrice) ?? draft.suggested_old_price ?? null;
+
   return {
     id: undefined,
     name: draft.name,
     short_description: draft.short_description,
     description: draft.long_description_html,
-    brand: pick(essentials.brand, draft.brand ?? ""),
-    product_code: essentials.sku ?? null,
-    price: pick(essentials.price, draft.suggested_price ?? 0),
-    old_price: pick(essentials.old_price, draft.suggested_old_price ?? null),
-    cost_price: essentials.cost_price ?? 0,
-    sku: essentials.sku ?? null,
-    low_stock_threshold: essentials.low_stock_threshold ?? 5,
-    stock: essentials.stock ?? 0,
+    brand: brand.trim() || draft.brand || "",
+    product_code: ess.sku.trim() || null,
+    price: basePrice,
+    old_price: compareAt,
+    cost_price: num(ess.costPrice) ?? 0,
+    sku: ess.sku.trim() || null,
+    low_stock_threshold: num(ess.lowStock) ?? 5,
+    stock: productType === "physical" ? num(ess.stock) ?? 0 : 0,
     status: "draft",
     primary_image_url: primary,
     gallery,
     video_url: primaryVideoUrl,
     category_id: matchedCategoryId,
-    warranty: null,
+    warranty: productType === "physical" ? ess.warranty.trim() || null : null,
     return_policy: null,
     shipping_info: null,
     is_featured: (draft.labels ?? []).includes("Featured"),
     features: draft.features ?? [],
-    specifications: draft.specifications ?? [],
+    specifications,
     variants,
     related_product_ids: [],
     product_type: productType,
