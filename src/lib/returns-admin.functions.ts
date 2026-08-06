@@ -6,7 +6,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertPlan } from "@/lib/plan-guard";
-import { computeReturnAmounts, normalizePolicy, type ReturnKind } from "@/lib/returns-pricing";
+import {
+  computeReturnAmounts,
+  normalizeAutoWorkflow,
+  normalizePolicy,
+  type ReturnKind,
+} from "@/lib/returns-pricing";
 
 async function myStoreId(supabase: any, userId: string): Promise<string | null> {
   const { data } = await supabase
