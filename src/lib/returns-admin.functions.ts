@@ -255,7 +255,7 @@ export const runReturnAction = createServerFn({ method: "POST" })
           .eq("return_id", r.id);
 
         // Inventory moves only after a successful inspection.
-        if (passed && data.restock !== false) {
+        if (passed && data.restock !== false && auto.update_inventory !== false) {
           const { data: lines } = await sb
             .from("return_items")
             .select("id,product_id,qty,restocked_qty")
@@ -349,7 +349,7 @@ export const runReturnAction = createServerFn({ method: "POST" })
         extra = { replacement_order_id: (newOrder as any).id };
 
         // Courier label + tracking for the replacement shipment.
-        if (data.dispatch_courier) {
+        if (data.dispatch_courier ?? auto.return_courier) {
           try {
             const { dispatchParcel } = await import("@/lib/courier-parcels.functions");
             const { data: store } = await sb
