@@ -1,7 +1,39 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { CreditCard, CheckCircle2, XCircle, Clock, Info } from "lucide-react";
+import { CreditCard, CheckCircle2, XCircle, Clock, Info, Wallet } from "lucide-react";
 import { getOrderPaymentTimeline } from "@/lib/storefront.functions";
+import { isCodMethod } from "@/lib/order-display";
+
+/** Cash on delivery has no gateway: show a plain, honest status card. */
+function CodPaymentCard({ paid, refunded }: { paid: boolean; refunded: boolean }) {
+  return (
+    <div className="mt-4 rounded-xl border bg-card p-4">
+      <div className="mb-3 flex items-center gap-2 text-xs uppercase text-muted-foreground">
+        <Wallet className="h-3 w-3" /> Payment status
+      </div>
+      <p
+        className={`text-sm font-semibold ${
+          refunded ? "text-sky-600" : paid ? "text-emerald-600" : "text-amber-600"
+        }`}
+      >
+        {refunded ? "Refunded" : paid ? "Paid" : "Pay on Delivery"}
+      </p>
+      <div className="mt-1 text-xs text-muted-foreground">Payment method: Cash on Delivery</div>
+      {!paid && !refunded && (
+        <p className="mt-3 rounded-md bg-amber-50 p-2 text-xs text-amber-700">
+          ডেলিভারির সময় পণ্য বুঝে নিয়ে পেমেন্ট করবেন। · Payment will be collected in cash when
+          your order is delivered.
+        </p>
+      )}
+      {paid && (
+        <p className="mt-3 rounded-md bg-emerald-50 p-2 text-xs text-emerald-700">
+          Cash payment received. Thank you!
+        </p>
+      )}
+    </div>
+  );
+}
+
 
 const STATUS_TEXT: Record<string, string> = {
   paid: "পেমেন্ট সফল হয়েছে",
