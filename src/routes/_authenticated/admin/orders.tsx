@@ -23,6 +23,10 @@ import type { OrderKind } from "@/lib/orders-admin.functions";
 import { confirmOrder, scheduleService, completeService, extendSubscription, cancelSubscription } from "@/lib/orders-types.functions";
 import { setDigitalAccess, resendDigitalEmail } from "@/lib/digital-admin.functions";
 import { QuickOrderSheet } from "@/components/admin/quick-order/QuickOrderSheet";
+import { RouteErrorPanel } from "@/components/admin/RouteErrorPanel";
+import { useRouteErrorTracking } from "@/hooks/use-error-tracking";
+import { recoverFromChunkError } from "@/lib/chunk-recovery";
+import { useRouter } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/admin/orders")({
   head: () => ({
@@ -36,7 +40,34 @@ export const Route = createFileRoute("/_authenticated/admin/orders")({
     ],
   }),
   component: OrdersPage,
+  errorComponent: OrdersErrorComponent,
+  notFoundComponent: () => (
+    <div className="py-16 text-center text-sm text-muted-foreground">Orders not found.</div>
+  ),
 });
+
+/** Route-level boundary: shows the real error, stack and user context. */
+function OrdersErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+  const router = useRouter();
+  const [recovering] = useState(() => recoverFromChunkError(error));
+  if (recovering) {
+    return (
+      <div className="py-16 text-center text-sm text-muted-foreground">
+        Updating to the latest version…
+      </div>
+    );
+  }
+  return (
+    <RouteErrorPanel
+      error={error}
+      scope="Admin · Orders"
+      onRetry={() => {
+        router.invalidate();
+        reset();
+      }}
+    />
+  );
+}
 
 type TabKey =
   | "all" | "pending" | "confirmed" | "processing"
@@ -126,6 +157,7 @@ function subPlanName(o: AdminOrderRow): string {
 }
 
 function OrdersPage() {
+  useRouteErrorTracking("Admin · Orders");
 
   const list = useServerFn(listAdminOrders);
   const update = useServerFn(updateOrderStatus);
@@ -133,14 +165,17 @@ function OrdersPage() {
   const [quickOpen, setQuickOpen] = useState(false);
   const { scope, setScope, filter } = useProductTypeScope();
   const countsFn = useServerFn(typeScopeCounts);
-  const { data: orders, isFetching, refetch } = useQuery({
+  const { data: orders, isFetching, refetch, error: ordersError } = useQuery({
     queryKey: ["admin", "orders", "rich", filter ?? "all"],
     queryFn: () => list({ data: { product_type: filter } } as any),
+    retry: 1,
   });
-  const { data: orderTypeCounts } = useQuery({
+  const { data: orderTypeCounts, error: countsError } = useQuery({
     queryKey: ["admin", "counts", "orders"],
     queryFn: () => countsFn({ data: { entity: "orders" } }),
+    retry: 1,
   });
+  const dataError = ordersError ?? countsError;
 
   const type = scope as TypeKey;
   const [tab, setTab] = useState<TabKey>("all");
@@ -279,6 +314,17 @@ function OrdersPage() {
 
   return (
     <div className="space-y-4">
+      {dataError && (
+        <RouteErrorPanel
+          error={dataError}
+          scope="Admin · Orders (data)"
+          compact
+          onRetry={() => {
+            qc.invalidateQueries({ queryKey: ["admin", "orders"] });
+            refetch();
+          }}
+        />
+      )}
       {/* Header */}
       <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:justify-between">
         <div className="min-w-0">
