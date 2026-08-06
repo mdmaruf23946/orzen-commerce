@@ -3,7 +3,10 @@ import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
-import { Package, Image as ImageIcon } from "lucide-react";
+import { Package, Image as ImageIcon, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ReturnPolicySection } from "@/components/admin/settings/ReturnPolicySection";
 import { listReturnRequests } from "@/lib/returns-admin.functions";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
@@ -77,6 +80,7 @@ function ReturnsPage() {
   const { data: rows } = useQuery({ queryKey: ["admin", "returns"], queryFn: () => list() });
   const [tab, setTab] = useState<TabKey>("pending");
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const all = (rows as any[]) ?? [];
   const filtered = useMemo(() => all.filter((r) => matches(tab, r.status)), [all, tab]);
@@ -87,7 +91,33 @@ function ReturnsPage() {
       <AdminPageHeader
         title="Returns & Exchanges"
         description="Every request moves through approval, return shipment, inspection, then refund or replacement."
+        action={
+          <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
+            <Settings className="mr-2 h-4 w-4" /> Settings
+          </Button>
+        }
       />
+
+      <div className="sm:hidden">
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={() => setSettingsOpen(true)}
+        >
+          <Settings className="mr-2 h-4 w-4" /> Return &amp; Exchange settings
+        </Button>
+      </div>
+
+      <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <SheetContent side="right" className="w-full overflow-y-auto p-4 sm:max-w-lg">
+          <SheetHeader className="mb-4">
+            <SheetTitle>Return &amp; Exchange settings</SheetTitle>
+          </SheetHeader>
+          <ReturnPolicySection />
+        </SheetContent>
+      </Sheet>
+
 
       <TypeFilterTabs
         tabs={TABS.map((t) => ({

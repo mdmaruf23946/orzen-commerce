@@ -6,7 +6,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertPlan } from "@/lib/plan-guard";
-import { computeReturnAmounts, normalizePolicy, type ReturnKind } from "@/lib/returns-pricing";
+import {
+  computeReturnAmounts,
+  normalizeAutoWorkflow,
+  normalizePolicy,
+  type ReturnKind,
+} from "@/lib/returns-pricing";
 
 async function myStoreId(supabase: any, userId: string): Promise<string | null> {
   const { data } = await supabase
@@ -49,12 +54,25 @@ export const getReturnSettings = createServerFn({ method: "GET" })
       .select("*")
       .eq("store_id", sid)
       .maybeSingle();
-    return { store_id: sid, ...normalizePolicy(data), ...(data ?? {}) };
+    const row = (data ?? {}) as any;
+    return {
+      store_id: sid,
+      ...normalizePolicy(data),
+      ...row,
+      exchange_rules: normalizePolicy(data).exchange_rules,
+      auto_workflow: normalizeAutoWorkflow(row.auto_workflow),
+      refund_methods: row.refund_methods ?? ["original", "store_credit", "manual"],
+      require_admin_approval: row.require_admin_approval !== false,
+      require_courier_tracking: !!row.require_courier_tracking,
+    };
   });
+
+const shippingMode = z.enum(["customer", "store", "split", "free"]);
 
 const settingsSchema = z.object({
   enabled: z.boolean(),
   eligibility_days: z.number().int().min(0).max(365),
+  exchange_window_days: z.number().int().min(0).max(365),
   allow_return: z.boolean(),
   allow_exchange_same: z.boolean(),
   allow_exchange_other: z.boolean(),
@@ -62,12 +80,42 @@ const settingsSchema = z.object({
   return_shipping_charge: z.number().nonnegative().max(100000),
   replacement_shipping_payer: z.enum(["store", "customer"]),
   replacement_shipping_charge: z.number().nonnegative().max(100000),
+  return_shipping_mode: shippingMode,
+  return_split_customer: z.number().nonnegative().max(100000),
+  return_split_store: z.number().nonnegative().max(100000),
+  replacement_shipping_mode: shippingMode,
+  replacement_split_customer: z.number().nonnegative().max(100000),
+  replacement_split_store: z.number().nonnegative().max(100000),
   restocking_fee_type: z.enum(["none", "percent", "flat"]),
   restocking_fee_value: z.number().nonnegative().max(100000),
+  exchange_rules: z.object({
+    same_variant: z.boolean(),
+    different_variant: z.boolean(),
+    different_product: z.boolean(),
+    higher_price: z.boolean(),
+    lower_price: z.boolean(),
+    equal_price: z.boolean(),
+  }),
+  replacement_source: z.enum(["cart", "wishlist", "all"]),
+  customer_pays_difference: z.boolean(),
+  refund_direction: z.enum(["refund_bank", "store_credit", "no_refund"]),
+  refund_methods: z.array(z.enum(["original", "store_credit", "manual", "cod_adjust"])).max(6),
+  require_admin_approval: z.boolean(),
   require_inspection: z.boolean(),
+  require_photo: z.boolean(),
+  require_courier_tracking: z.boolean(),
+  auto_workflow: z.object({
+    return_courier: z.boolean(),
+    replacement_order: z.boolean(),
+    reserve_stock: z.boolean(),
+    update_inventory: z.boolean(),
+    notify_customer: z.boolean(),
+    sync_tracking: z.boolean(),
+  }),
   auto_approve_under: z.number().nonnegative().max(1_000_000).nullable().optional(),
   policy_note: z.string().max(2000).nullable().optional(),
 });
+
 
 export const saveReturnSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -149,6 +197,14 @@ export const runReturnAction = createServerFn({ method: "POST" })
     if (!sid) throw new Error("No store");
     const sb = await admin();
     const r = await loadRequest(sb, sid, data.id);
+    const { data: settingsRow } = await sb
+      .from("store_return_settings")
+      .select("auto_workflow")
+      .eq("store_id", sid)
+      .maybeSingle();
+    const auto = normalizeAutoWorkflow((settingsRow as any)?.auto_workflow);
+
+
 
     const patch: Record<string, any> = {};
     let nextStatus: string | null = null;
@@ -199,7 +255,7 @@ export const runReturnAction = createServerFn({ method: "POST" })
           .eq("return_id", r.id);
 
         // Inventory moves only after a successful inspection.
-        if (passed && data.restock !== false) {
+        if (passed && data.restock !== false && auto.update_inventory !== false) {
           const { data: lines } = await sb
             .from("return_items")
             .select("id,product_id,qty,restocked_qty")
@@ -293,7 +349,7 @@ export const runReturnAction = createServerFn({ method: "POST" })
         extra = { replacement_order_id: (newOrder as any).id };
 
         // Courier label + tracking for the replacement shipment.
-        if (data.dispatch_courier) {
+        if (data.dispatch_courier ?? auto.return_courier) {
           try {
             const { dispatchParcel } = await import("@/lib/courier-parcels.functions");
             const { data: store } = await sb
@@ -364,6 +420,9 @@ export const repriceReturn = createServerFn({ method: "POST" })
       normalizePolicy({
         return_shipping_payer: "customer",
         replacement_shipping_payer: "customer",
+        return_shipping_mode: "customer",
+        replacement_shipping_mode: "customer",
+
         return_shipping_charge: data.return_shipping_charge,
         replacement_shipping_charge: data.replacement_shipping_charge,
         restocking_fee_type: "flat",
@@ -389,4 +448,53 @@ export const repriceReturn = createServerFn({ method: "POST" })
       .eq("store_id", sid);
     if (error) throw new Error(error.message);
     return amounts;
+  });
+
+/**
+ * Per-request override switch. Turning it back on re-applies the store's global
+ * return settings to this request's money; turning it off keeps the manual
+ * charges the merchant entered on the request.
+ */
+export const setReturnUseGlobal = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid(), use_global: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "returns");
+    const sid = await myStoreId(context.supabase, context.userId);
+    if (!sid) throw new Error("No store");
+    const sb = await admin();
+    const r = await loadRequest(sb, sid, data.id);
+
+    const patch: Record<string, any> = { use_global_settings: data.use_global };
+
+    if (data.use_global) {
+      const { data: settings } = await sb
+        .from("store_return_settings")
+        .select("*")
+        .eq("store_id", sid)
+        .maybeSingle();
+      const policy = normalizePolicy(settings);
+      const lines = (
+        (await sb.from("return_items").select("qty,unit_price").eq("return_id", r.id)).data ?? []
+      ).map((l: any) => ({ name: "", qty: Number(l.qty), price: Number(l.unit_price) }));
+      const replacements = (Array.isArray(r.replacement_items) ? r.replacement_items : []).map(
+        (i: any) => ({ name: i.name, qty: Number(i.qty ?? 1), price: Number(i.price ?? 0) }),
+      );
+      const amounts = computeReturnAmounts(
+        policy,
+        (r.request_kind ?? "return") as ReturnKind,
+        lines as any,
+        replacements as any,
+      );
+      Object.assign(patch, amounts, {
+        refund_amount: amounts.refund_amount,
+        extra_payment_due: amounts.extra_payment_due,
+      });
+      delete (patch as any).items_value;
+      patch["items_value"] = amounts.items_value;
+    }
+
+    const { error } = await sb.from("returns").update(patch as any).eq("id", r.id).eq("store_id", sid);
+    if (error) throw new Error(error.message);
+    return { ok: true, use_global: data.use_global };
   });

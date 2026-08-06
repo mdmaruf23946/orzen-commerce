@@ -152,7 +152,7 @@ export const getReturnContext = createServerFn({ method: "POST" })
     });
 
     let catalogue: any[] = [];
-    if (policy.allow_exchange_other) {
+    if (policy.allow_exchange_other && policy.replacement_source !== "cart") {
       const { data: prods } = await sb
         .from("products")
         .select("id,name,price,stock,variants,primary_image_url,gallery,product_type,status")
@@ -281,7 +281,10 @@ export const createMyReturnRequest = createServerFn({ method: "POST" })
       _store_id: storeId,
     } as any);
     const policy = normalizePolicy(policyRaw);
+    if (policy.require_photo && data.images.length === 0)
+      throw new Error("Please attach at least one photo of the product");
     const amounts = computeReturnAmounts(policy, data.kind as ReturnKind, lines, replacements);
+
 
     // --- Evidence photos ---
     const paths: string[] = [];

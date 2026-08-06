@@ -15,9 +15,14 @@ import {
   Banknote,
   Flag,
 } from "lucide-react";
-import { runReturnAction, repriceReturn } from "@/lib/returns-admin.functions";
+import {
+  runReturnAction,
+  repriceReturn,
+  setReturnUseGlobal,
+} from "@/lib/returns-admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -88,6 +93,7 @@ export function ReturnDrawer({ request, onClose }: { request: any | null; onClos
   const qc = useQueryClient();
   const act = useServerFn(runReturnAction);
   const reprice = useServerFn(repriceReturn);
+  const setGlobalFn = useServerFn(setReturnUseGlobal);
 
   const [note, setNote] = useState<string>(request?.resolution_note ?? "");
   const [courier, setCourier] = useState<string>(request?.courier_name ?? "");
@@ -127,6 +133,17 @@ export function ReturnDrawer({ request, onClose }: { request: any | null; onClos
     },
     onError: (e: any) => toast.error(e?.message ?? "Could not reprice"),
   });
+
+  const useGlobal = request?.use_global_settings !== false;
+  const toggleGlobal = useMutation({
+    mutationFn: async (v: boolean) => setGlobalFn({ data: { id: request.id, use_global: v } }),
+    onSuccess: (_r, v) => {
+      qc.invalidateQueries({ queryKey: ["admin", "returns"] });
+      toast.success(v ? "Using global settings" : "Manual charges enabled");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not update"),
+  });
+
 
   if (!request) return null;
 
@@ -381,6 +398,19 @@ export function ReturnDrawer({ request, onClose }: { request: any | null; onClos
               )}
 
               <div className="space-y-2 rounded-lg border p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Label>Use global settings</Label>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      Off = enter manual charges for this request only.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={useGlobal}
+                    disabled={toggleGlobal.isPending}
+                    onCheckedChange={(v) => toggleGlobal.mutate(v)}
+                  />
+                </div>
                 <Label>Adjust charges</Label>
                 <div className="grid grid-cols-3 gap-2">
                   <Input
@@ -405,8 +435,13 @@ export function ReturnDrawer({ request, onClose }: { request: any | null; onClos
                     placeholder="Fee"
                   />
                 </div>
-                <Button variant="outline" className="w-full" disabled={busy} onClick={() => price.mutate()}>
-                  Recalculate amounts
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  disabled={busy || useGlobal}
+                  onClick={() => price.mutate()}
+                >
+                  {useGlobal ? "Turn off global settings to edit" : "Recalculate amounts"}
                 </Button>
               </div>
 

@@ -3979,6 +3979,7 @@ export type Database = {
           store_id: string
           type: Database["public"]["Enums"]["return_type"]
           updated_at: string
+          use_global_settings: boolean
         }
         Insert: {
           courier_name?: string | null
@@ -4017,6 +4018,7 @@ export type Database = {
           store_id: string
           type?: Database["public"]["Enums"]["return_type"]
           updated_at?: string
+          use_global_settings?: boolean
         }
         Update: {
           courier_name?: string | null
@@ -4055,6 +4057,7 @@ export type Database = {
           store_id?: string
           type?: Database["public"]["Enums"]["return_type"]
           updated_at?: string
+          use_global_settings?: boolean
         }
         Relationships: [
           {
@@ -5722,18 +5725,33 @@ export type Database = {
           allow_exchange_same: boolean
           allow_return: boolean
           auto_approve_under: number | null
+          auto_workflow: Json
           created_at: string
+          customer_pays_difference: boolean
           eligibility_days: number
           enabled: boolean
+          exchange_rules: Json
+          exchange_window_days: number
           policy_note: string | null
+          refund_direction: string
           refund_methods: string[]
           replacement_shipping_charge: number
+          replacement_shipping_mode: string
           replacement_shipping_payer: string
+          replacement_source: string
+          replacement_split_customer: number
+          replacement_split_store: number
+          require_admin_approval: boolean
+          require_courier_tracking: boolean
           require_inspection: boolean
+          require_photo: boolean
           restocking_fee_type: string
           restocking_fee_value: number
           return_shipping_charge: number
+          return_shipping_mode: string
           return_shipping_payer: string
+          return_split_customer: number
+          return_split_store: number
           store_id: string
           updated_at: string
         }
@@ -5742,18 +5760,33 @@ export type Database = {
           allow_exchange_same?: boolean
           allow_return?: boolean
           auto_approve_under?: number | null
+          auto_workflow?: Json
           created_at?: string
+          customer_pays_difference?: boolean
           eligibility_days?: number
           enabled?: boolean
+          exchange_rules?: Json
+          exchange_window_days?: number
           policy_note?: string | null
+          refund_direction?: string
           refund_methods?: string[]
           replacement_shipping_charge?: number
+          replacement_shipping_mode?: string
           replacement_shipping_payer?: string
+          replacement_source?: string
+          replacement_split_customer?: number
+          replacement_split_store?: number
+          require_admin_approval?: boolean
+          require_courier_tracking?: boolean
           require_inspection?: boolean
+          require_photo?: boolean
           restocking_fee_type?: string
           restocking_fee_value?: number
           return_shipping_charge?: number
+          return_shipping_mode?: string
           return_shipping_payer?: string
+          return_split_customer?: number
+          return_split_store?: number
           store_id: string
           updated_at?: string
         }
@@ -5762,18 +5795,33 @@ export type Database = {
           allow_exchange_same?: boolean
           allow_return?: boolean
           auto_approve_under?: number | null
+          auto_workflow?: Json
           created_at?: string
+          customer_pays_difference?: boolean
           eligibility_days?: number
           enabled?: boolean
+          exchange_rules?: Json
+          exchange_window_days?: number
           policy_note?: string | null
+          refund_direction?: string
           refund_methods?: string[]
           replacement_shipping_charge?: number
+          replacement_shipping_mode?: string
           replacement_shipping_payer?: string
+          replacement_source?: string
+          replacement_split_customer?: number
+          replacement_split_store?: number
+          require_admin_approval?: boolean
+          require_courier_tracking?: boolean
           require_inspection?: boolean
+          require_photo?: boolean
           restocking_fee_type?: string
           restocking_fee_value?: number
           return_shipping_charge?: number
+          return_shipping_mode?: string
           return_shipping_payer?: string
+          return_split_customer?: number
+          return_split_store?: number
           store_id?: string
           updated_at?: string
         }
