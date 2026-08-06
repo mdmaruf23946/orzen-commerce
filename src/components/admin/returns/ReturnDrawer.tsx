@@ -434,8 +434,13 @@ export function ReturnDrawer({ request, onClose }: { request: any | null; onClos
                     placeholder="Fee"
                   />
                 </div>
-                <Button variant="outline" className="w-full" disabled={busy} onClick={() => price.mutate()}>
-                  Recalculate amounts
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  disabled={busy || useGlobal}
+                  onClick={() => price.mutate()}
+                >
+                  {useGlobal ? "Turn off global settings to edit" : "Recalculate amounts"}
                 </Button>
               </div>
 
