@@ -493,9 +493,7 @@ export function QuickOrderSheet({
                       {lines.length === 0 && <p className="text-xs text-muted-foreground">No items yet.</p>}
                       {lines.map((l, i) => (
                         <div key={`${l.productId}-${l.variantId ?? ""}`} className="flex items-center gap-2 rounded-lg border p-2">
-                          {l.image
-                            ? <img src={l.image} alt="" className="h-9 w-9 rounded object-cover" />
-                            : <div className="h-9 w-9 rounded bg-muted" />}
+                          <PickThumb url={l.image} className="h-9 w-9" />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium">{l.name}{l.variant ? ` — ${l.variant}` : ""}</p>
                             <p className="text-xs text-muted-foreground">
