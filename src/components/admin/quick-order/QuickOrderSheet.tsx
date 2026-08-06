@@ -24,6 +24,36 @@ import { listDeliveryZones } from "@/lib/admin.functions";
 
 const money = (n: number) => `৳${Math.round(Number(n) || 0).toLocaleString("en-US")}`;
 
+function resolveImg(url?: string | null) {
+  if (!url) return null;
+  const raw = String(url).trim();
+  if (!raw) return null;
+  if (/^(https?:|data:|blob:)/i.test(raw) || raw.startsWith("/")) return raw;
+  return `/api/img/${raw}`;
+}
+
+function PickThumb({ url, className = "" }: { url?: string | null; className?: string }) {
+  const [err, setErr] = useState(false);
+  const src = resolveImg(url);
+  if (!src || err) {
+    return (
+      <div className={`grid shrink-0 place-items-center rounded bg-muted ${className}`}>
+        <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      onError={() => setErr(true)}
+      className={`shrink-0 rounded border object-cover ${className}`}
+    />
+  );
+}
+
 type Line = {
   productId: string;
   name: string;
@@ -421,9 +451,7 @@ export function QuickOrderSheet({
                         return (
                           <div key={p.id} className="rounded-lg border p-2">
                             <div className="flex items-center gap-2">
-                              {p.image
-                                ? <img src={p.image} alt="" className="h-10 w-10 rounded object-cover" />
-                                : <div className="h-10 w-10 rounded bg-muted" />}
+                              <PickThumb url={p.image} className="h-10 w-10" />
                               <div className="min-w-0 flex-1">
                                 <p className="truncate text-sm font-medium">{p.name}</p>
                                 <p className="text-xs text-muted-foreground">
@@ -465,9 +493,7 @@ export function QuickOrderSheet({
                       {lines.length === 0 && <p className="text-xs text-muted-foreground">No items yet.</p>}
                       {lines.map((l, i) => (
                         <div key={`${l.productId}-${l.variantId ?? ""}`} className="flex items-center gap-2 rounded-lg border p-2">
-                          {l.image
-                            ? <img src={l.image} alt="" className="h-9 w-9 rounded object-cover" />
-                            : <div className="h-9 w-9 rounded bg-muted" />}
+                          <PickThumb url={l.image} className="h-9 w-9" />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium">{l.name}{l.variant ? ` — ${l.variant}` : ""}</p>
                             <p className="text-xs text-muted-foreground">
