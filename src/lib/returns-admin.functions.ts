@@ -375,6 +375,18 @@ export const runReturnAction = createServerFn({ method: "POST" })
         nextStatus = "refunded";
         break;
       }
+      case "refund_pending": {
+        patch["refund_amount"] = Number(data.refund_amount ?? r.refund_amount ?? 0);
+        patch["refund_method"] = data.refund_method ?? r.refund_method ?? "manual";
+        patch["refund_status"] = "pending";
+        timelineStatus = "refund_pending";
+        break;
+      }
+      case "reject_refund": {
+        patch["refund_status"] = "rejected";
+        timelineStatus = "refund_rejected";
+        break;
+      }
       case "complete": {
         nextStatus = "completed";
         break;
@@ -386,7 +398,14 @@ export const runReturnAction = createServerFn({ method: "POST" })
 
     const { error } = await sb.from("returns").update(patch as any).eq("id", r.id).eq("store_id", sid);
     if (error) throw new Error(error.message);
-    if (nextStatus) await log(sb, r, nextStatus, data.note ?? null);
+    const logged = nextStatus ?? timelineStatus;
+    if (logged) {
+      await log(sb, r, logged, data.note ?? null);
+      const { notifyReturnStatus } = await import("@/lib/returns-notify.server");
+      await notifyReturnStatus(sb, { ...r, ...patch }, logged, data.note ?? null, {
+        notifyCustomer: auto.notify_customer !== false,
+      });
+    }
 
     return { id: r.id, status: nextStatus ?? r.status, ...extra };
   });
