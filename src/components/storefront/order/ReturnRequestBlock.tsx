@@ -16,8 +16,8 @@ export function ReturnRequestBlock({ order, slug }: { order: any; slug: string }
   const { token } = useCustomerSession(slug);
   const qc = useQueryClient();
   const listFn = useServerFn(listMyOrderReturns);
-  const createFn = useServerFn(createMyReturnRequest);
   const [type, setType] = useState<"return" | "exchange" | null>(null);
+
 
   const { data: requests = [] } = useQuery({
     queryKey: ["my-returns", order.id, token],
