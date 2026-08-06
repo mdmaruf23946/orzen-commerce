@@ -125,7 +125,13 @@ export const listMyOrders = createServerFn({ method: "POST" })
       returnsByOrder.set(r.order_id, list);
     }
 
-    const RETURN_WINDOW_MS = 7 * 86_400_000;
+    // Store-level Returns & Exchanges policy (master toggle + window).
+    const { data: policyRaw } = await sb.rpc("get_public_return_settings" as any, {
+      _store_id: storeId,
+    } as any);
+    const returnsEnabled = (policyRaw as any)?.enabled !== false;
+    const RETURN_WINDOW_MS =
+      Number((policyRaw as any)?.eligibility_days ?? 7 || 7) * 86_400_000;
 
     let out = rows.map((o) => {
       const list = byOrder.get(o.id) ?? [];
