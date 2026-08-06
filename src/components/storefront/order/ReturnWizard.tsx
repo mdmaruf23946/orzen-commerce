@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getReturnContext, createMyReturnRequest } from "@/lib/returns.functions";
+import { readWishlist } from "@/lib/wishlist";
 import {
   computeReturnAmounts,
   KIND_LABEL,
@@ -180,9 +181,20 @@ export function ReturnWizard({
     ...(policy?.allow_exchange_other ? (["exchange_other"] as ReturnKind[]) : []),
   ];
 
-  const catalogue: any[] = ((ctx as any)?.catalogue ?? []).filter((p: any) =>
-    search.trim() ? p.name.toLowerCase().includes(search.trim().toLowerCase()) : true,
+  const wishlistIds = useMemo(
+    () =>
+      policy?.replacement_source === "wishlist"
+        ? new Set(readWishlist(slug).map((w) => w.productId))
+        : null,
+    [policy?.replacement_source, slug],
   );
+
+  const catalogue: any[] = ((ctx as any)?.catalogue ?? [])
+    .filter((p: any) => (wishlistIds ? wishlistIds.has(p.id) : true))
+    .filter((p: any) =>
+      search.trim() ? p.name.toLowerCase().includes(search.trim().toLowerCase()) : true,
+    );
+
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
