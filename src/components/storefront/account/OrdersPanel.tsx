@@ -17,12 +17,8 @@ import {
   Repeat,
 } from "lucide-react";
 import { listMyOrders, cancelMyOrder } from "@/lib/customer-account.functions";
-import { createMyReturnRequest } from "@/lib/returns.functions";
-import {
-  ReturnRequestDialog,
-  ReturnStatusCard,
-  type RequestPayload,
-} from "@/components/storefront/order/ReturnRequestDialog";
+import { ReturnStatusCard } from "@/components/storefront/order/ReturnRequestDialog";
+import { ReturnWizard } from "@/components/storefront/order/ReturnWizard";
 import {
   ORDER_TYPE_ACTION,
   ORDER_TYPE_LABEL,
@@ -98,25 +94,6 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
   );
   const [returnBusy, setReturnBusy] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const createReturnFn = useServerFn(createMyReturnRequest);
-
-  async function submitReturn(payload: RequestPayload) {
-    if (!returnFor) return;
-    setReturnBusy(true);
-    try {
-      await createReturnFn({
-        data: { storeSlug: slug, token, orderId: returnFor.order.id, ...payload },
-      });
-      toast.success("Request submitted");
-      setReturnFor(null);
-      qc.invalidateQueries({ queryKey: ["my-orders"] });
-      qc.invalidateQueries({ queryKey: ["my-returns"] });
-    } catch (e: any) {
-      toast.error(e?.message ?? "Could not submit request");
-    } finally {
-      setReturnBusy(false);
-    }
-  }
 
 
   const { data, isLoading } = useQuery({
@@ -368,13 +345,17 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
         </ul>
       )}
 
-      {returnFor && (
-        <ReturnRequestDialog
-          initialType={returnFor.type}
-          items={(returnFor.order.items as any[]) ?? []}
-          submitting={returnBusy}
+      {returnFor && token && (
+        <ReturnWizard
+          slug={slug}
+          token={token}
+          orderId={returnFor.order.id}
+          initialKind={returnFor.type === "exchange" ? "exchange_same" : "return"}
           onClose={() => setReturnFor(null)}
-          onSubmit={submitReturn}
+          onDone={() => {
+            qc.invalidateQueries({ queryKey: ["my-orders"] });
+            qc.invalidateQueries({ queryKey: ["my-returns"] });
+          }}
         />
       )}
 
