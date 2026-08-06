@@ -15,6 +15,7 @@ import { getInboxStats } from "@/lib/messenger-inbox.functions";
 import { AdSlot } from "@/components/admin/AdSlot";
 import { WelcomeCard } from "@/components/admin/dashboard/WelcomeCard";
 import { cn } from "@/lib/utils";
+import { QuickOrderSheet } from "@/components/admin/quick-order/QuickOrderSheet";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: Dashboard,
@@ -68,6 +69,7 @@ function Dashboard() {
     return `${window.location.origin}/store/${data.store.slug}`;
   }, [data?.store]);
 
+  const [quickOrderOpen, setQuickOrderOpen] = useState(false);
   const shareStore = async () => {
     if (!storeUrl) return;
     try { await navigator.clipboard.writeText(storeUrl); toast.success("Store link copied"); }
@@ -292,6 +294,8 @@ function Dashboard() {
           </Card>
         </div>
       </div>
+
+      <QuickOrderSheet open={quickOrderOpen} onOpenChange={setQuickOrderOpen} />
 
       {/* 6. Quick Actions */}
       <Card>
