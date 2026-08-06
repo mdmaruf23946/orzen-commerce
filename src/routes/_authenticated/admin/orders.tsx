@@ -23,6 +23,10 @@ import type { OrderKind } from "@/lib/orders-admin.functions";
 import { confirmOrder, scheduleService, completeService, extendSubscription, cancelSubscription } from "@/lib/orders-types.functions";
 import { setDigitalAccess, resendDigitalEmail } from "@/lib/digital-admin.functions";
 import { QuickOrderSheet } from "@/components/admin/quick-order/QuickOrderSheet";
+import { RouteErrorPanel } from "@/components/admin/RouteErrorPanel";
+import { useRouteErrorTracking } from "@/hooks/use-error-tracking";
+import { recoverFromChunkError } from "@/lib/chunk-recovery";
+import { useRouter } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/admin/orders")({
   head: () => ({
@@ -36,7 +40,34 @@ export const Route = createFileRoute("/_authenticated/admin/orders")({
     ],
   }),
   component: OrdersPage,
+  errorComponent: OrdersErrorComponent,
+  notFoundComponent: () => (
+    <div className="py-16 text-center text-sm text-muted-foreground">Orders not found.</div>
+  ),
 });
+
+/** Route-level boundary: shows the real error, stack and user context. */
+function OrdersErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+  const router = useRouter();
+  const [recovering] = useState(() => recoverFromChunkError(error));
+  if (recovering) {
+    return (
+      <div className="py-16 text-center text-sm text-muted-foreground">
+        Updating to the latest version…
+      </div>
+    );
+  }
+  return (
+    <RouteErrorPanel
+      error={error}
+      scope="Admin · Orders"
+      onRetry={() => {
+        router.invalidate();
+        reset();
+      }}
+    />
+  );
+}
 
 type TabKey =
   | "all" | "pending" | "confirmed" | "processing"
