@@ -305,6 +305,63 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
                     </button>
                   )}
                 </div>
+
+                {(o.return_eligible || (o.returns ?? []).length > 0) && (
+                  <div className="border-t border-neutral-100 px-3 py-2">
+                    {(o.returns ?? []).length > 0 && (
+                      <div className="space-y-2">
+                        <button
+                          type="button"
+                          onClick={() => setExpanded((p) => ({ ...p, [o.id]: !p[o.id] }))}
+                          className="flex w-full items-center gap-2"
+                        >
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ring-1 ${
+                              RETURN_STATUS_TONE[o.returns[0].status] ??
+                              "bg-neutral-100 text-neutral-600 ring-neutral-200"
+                            }`}
+                          >
+                            {RETURN_STATUS_LABEL[o.returns[0].status] ?? o.returns[0].status}
+                          </span>
+                          <ChevronDown
+                            className={`ml-auto h-4 w-4 text-neutral-400 transition-transform ${
+                              expanded[o.id] ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+                        {expanded[o.id] && (
+                          <div className="space-y-2">
+                            {(o.returns as any[]).map((r) => (
+                              <ReturnStatusCard key={r.id} r={r} />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {o.return_eligible && (
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-[11px]"
+                          onClick={() => setReturnFor({ order: o, type: "return" })}
+                        >
+                          <RotateCcw className="mr-1 h-3.5 w-3.5" /> Request return
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-[11px]"
+                          onClick={() => setReturnFor({ order: o, type: "exchange" })}
+                        >
+                          <Repeat className="mr-1 h-3.5 w-3.5" /> Request exchange
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
               </li>
             );
           })}
