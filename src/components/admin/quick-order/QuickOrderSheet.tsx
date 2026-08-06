@@ -24,6 +24,36 @@ import { listDeliveryZones } from "@/lib/admin.functions";
 
 const money = (n: number) => `৳${Math.round(Number(n) || 0).toLocaleString("en-US")}`;
 
+function resolveImg(url?: string | null) {
+  if (!url) return null;
+  const raw = String(url).trim();
+  if (!raw) return null;
+  if (/^(https?:|data:|blob:)/i.test(raw) || raw.startsWith("/")) return raw;
+  return `/api/img/${raw}`;
+}
+
+function PickThumb({ url, className = "" }: { url?: string | null; className?: string }) {
+  const [err, setErr] = useState(false);
+  const src = resolveImg(url);
+  if (!src || err) {
+    return (
+      <div className={`grid shrink-0 place-items-center rounded bg-muted ${className}`}>
+        <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      onError={() => setErr(true)}
+      className={`shrink-0 rounded border object-cover ${className}`}
+    />
+  );
+}
+
 type Line = {
   productId: string;
   name: string;
