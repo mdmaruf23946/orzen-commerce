@@ -4,15 +4,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-
-async function myStoreId(supabase: any, userId: string): Promise<string | null> {
-  const { data } = await supabase
-    .from("stores")
-    .select("id")
-    .eq("owner_user_id", userId)
-    .maybeSingle();
-  return data?.id ?? null;
-}
+import { getOwnedStoreId } from "@/lib/admin-order.server";
 
 export type AdminOrderItem = {
   name: string;
@@ -86,7 +78,7 @@ export const listAdminOrders = createServerFn({ method: "GET" })
   )
   .handler(async ({ data: input, context }): Promise<AdminOrderRow[]> => {
     const { supabase, userId } = context;
-    const sid = await myStoreId(supabase, userId);
+    const sid = await getOwnedStoreId(supabase, userId);
     if (!sid) return [];
 
     let ordersQ = supabase
@@ -244,7 +236,7 @@ export const getOrderCustomerStats = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ phone: z.string().min(1).max(40) }).parse(d))
   .handler(async ({ data, context }) => {
-    const sid = await myStoreId(context.supabase, context.userId);
+    const sid = await getOwnedStoreId(context.supabase, context.userId);
     if (!sid) return null;
     const { data: rows } = await context.supabase
       .from("orders")
