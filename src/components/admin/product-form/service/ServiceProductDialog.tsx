@@ -3,6 +3,12 @@
 import { lazy, Suspense, useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  applyDescriptionFooter,
+  defaultsForType,
+  mergeTags,
+  resolveDefaultStatus,
+} from "@/lib/product-defaults";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,11 +47,13 @@ export function ServiceProductDialog({
   storeId: string;
   editing: any | null;
   categories: Category[];
-  productDefaults: { warranty?: string; return_policy?: string; shipping_info?: string } | null;
+  productDefaults: any;
   onClose: () => void;
   onSave: (data: any) => Promise<void>;
 }) {
   const meta0 = (editing?.meta ?? {}) as any;
+
+  const pd = defaultsForType(productDefaults, "service");
   const svc0 = (meta0.service ?? {}) as ServiceMeta;
 
   // Step 1 — General
@@ -54,11 +62,15 @@ export function ServiceProductDialog({
   const [subcategoryId, setSubcategoryId] = useState<string>(meta0.subcategory_id ?? "");
   const [brand, setBrand] = useState<string>(editing?.brand ?? "");
   const [shortDesc, setShortDesc] = useState<string>(editing?.short_description ?? "");
-  const [description, setDescription] = useState<string>(editing?.description ?? "");
+  const [description, setDescription] = useState<string>(
+    editing ? (editing.description ?? "") : applyDescriptionFooter("", pd.footer),
+  );
   const [image, setImage] = useState<string | null>(editing?.primary_image_url ?? null);
   const [gallery, setGallery] = useState<string[]>(Array.isArray(editing?.gallery) ? editing.gallery : []);
   const [introVideo, setIntroVideo] = useState<string>(editing?.video_url ?? "");
-  const [status, setStatus] = useState<"draft" | "active">(editing?.status === "draft" ? "draft" : "active");
+  const [status, setStatus] = useState<"draft" | "active">(
+    editing ? (editing.status === "draft" ? "draft" : "active") : resolveDefaultStatus(pd),
+  );
 
   // Step 2 — Pricing
   const [pricingType, setPricingType] = useState<ServicePricingType>(svc0.pricing_type ?? "fixed");
@@ -115,7 +127,9 @@ export function ServiceProductDialog({
 
   // Step 9 — SEO
   const [seo, setSeo] = useState<{ title?: string; description?: string; slug?: string; keywords?: string }>(
-    meta0.seo ?? {},
+    editing
+      ? (meta0.seo ?? {})
+      : { ...(meta0.seo ?? {}), keywords: mergeTags((meta0.seo as any)?.keywords, pd.tags) },
   );
 
   // Step 10 — Visibility
@@ -126,12 +140,12 @@ export function ServiceProductDialog({
 
   // Step 11 — Policies
   const [refund, setRefund] = useState<string>(
-    svc0.policies?.refund ?? editing?.return_policy ?? (editing ? "" : (productDefaults?.return_policy ?? "")),
+    svc0.policies?.refund ?? editing?.return_policy ?? "",
   );
   const [cancellation, setCancellation] = useState<string>(svc0.policies?.cancellation ?? "");
   const [terms, setTerms] = useState<string>(svc0.policies?.terms ?? "");
   const [warranty, setWarranty] = useState<string>(
-    svc0.policies?.warranty ?? editing?.warranty ?? (editing ? "" : (productDefaults?.warranty ?? "")),
+    svc0.policies?.warranty ?? editing?.warranty ?? "",
   );
 
   const [saving, setSaving] = useState(false);
