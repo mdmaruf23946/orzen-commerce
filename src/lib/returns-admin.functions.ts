@@ -283,6 +283,11 @@ export const runReturnAction = createServerFn({ method: "POST" })
           })) as any,
         );
 
+        // Confirming through an UPDATE lets the order trigger deduct stock and
+        // mint the invoice number exactly like a normal sale.
+        await sb.from("orders").update({ status: "confirmed" } as any).eq("id", (newOrder as any).id);
+
+
         patch["replacement_order_id"] = (newOrder as any).id;
         nextStatus = "replacement_created";
         extra = { replacement_order_id: (newOrder as any).id };
