@@ -173,7 +173,7 @@ export function ProductDialog({
   storeId: string;
   editing: Product | null;
   categories: Category[];
-  productDefaults: { warranty?: string; return_policy?: string; shipping_info?: string } | null;
+  productDefaults: any;
   initialType?: "physical" | "digital" | "service" | "subscription";
   onClose: () => void;
   onSave: (data: any) => Promise<void>;
@@ -246,7 +246,7 @@ export function ProductDialog({
     meta0.purchase ?? { cod: true, online: true, min_qty: 1 },
   );
 
-  const [status, setStatus] = useState<Product["status"]>(editing?.status ?? "active");
+  const [status, setStatus] = useState<Product["status"]>(editing?.status ?? resolveDefaultStatus(pd));
   const [scheduledAt, setScheduledAt] = useState<string>(meta0.visibility?.scheduled_at ?? "");
   const [isFeatured, setIsFeatured] = useState<boolean>(!!(editing as any)?.is_featured);
   const [labels, setLabels] = useState<string[]>(
@@ -257,11 +257,15 @@ export function ProductDialog({
     meta0.related ?? { related: editing?.related_product_ids ?? [], fbt: [], cross: [], upsell: [] },
   );
 
-  const [seo, setSeo] = useState<NonNullable<ProductMeta["seo"]>>(meta0.seo ?? {});
+  const [seo, setSeo] = useState<NonNullable<ProductMeta["seo"]>>(
+    editing
+      ? (meta0.seo ?? {})
+      : { ...(meta0.seo ?? {}), keywords: mergeTags((meta0.seo as any)?.keywords, pd.tags) },
+  );
 
-  const [warranty, setWarranty] = useState<string>((editing as any)?.warranty ?? (editing ? "" : productDefaults?.warranty ?? ""));
-  const [returnPolicy, setReturnPolicy] = useState<string>((editing as any)?.return_policy ?? (editing ? "" : productDefaults?.return_policy ?? ""));
-  const [shippingInfo, setShippingInfo] = useState<string>((editing as any)?.shipping_info ?? (editing ? "" : productDefaults?.shipping_info ?? ""));
+  const [warranty, setWarranty] = useState<string>((editing as any)?.warranty ?? (editing ? "" : (pd.warranty ?? "")));
+  const [returnPolicy, setReturnPolicy] = useState<string>((editing as any)?.return_policy ?? (editing ? "" : (pd.return_policy ?? "")));
+  const [shippingInfo, setShippingInfo] = useState<string>((editing as any)?.shipping_info ?? "");
 
   const [newCatName, setNewCatName] = useState("");
 
