@@ -314,6 +314,17 @@ function OrdersPage() {
 
   return (
     <div className="space-y-4">
+      {dataError && (
+        <RouteErrorPanel
+          error={dataError}
+          scope="Admin · Orders (data)"
+          compact
+          onRetry={() => {
+            qc.invalidateQueries({ queryKey: ["admin", "orders"] });
+            refetch();
+          }}
+        />
+      )}
       {/* Header */}
       <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:justify-between">
         <div className="min-w-0">
