@@ -466,7 +466,12 @@ export function ProductDialog({
         related,
         seo,
         videos,
-        visibility: { scheduled_at: scheduledAt || null },
+        visibility: {
+          scheduled_at: scheduledAt || null,
+          ...(editing
+            ? { mode: (meta0.visibility as any)?.mode ?? null }
+            : { mode: pd.visibility === "hidden" ? "hidden" : null }),
+        } as any,
         ai_ready: { description: false, enhance: false, bg_removal: false, seo: false },
         ...(digital ? { digital } : {}),
         ...(isService ? { service: { booking_type: svcBookingType, delivery_time: svcDeliveryTime || null } } : {}),
