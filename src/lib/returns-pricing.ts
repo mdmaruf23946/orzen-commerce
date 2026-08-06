@@ -271,3 +271,10 @@ export const REFUND_METHOD_LABEL: Record<string, string> = {
   manual: "Manual / cash",
   cod_adjust: "COD adjustment",
 };
+
+export const REFUND_STATUS_LABEL: Record<string, string> = {
+  none: "Not started",
+  pending: "Pending",
+  paid: "Completed",
+  rejected: "Rejected",
+};
