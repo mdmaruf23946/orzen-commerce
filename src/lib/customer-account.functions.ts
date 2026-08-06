@@ -97,15 +97,18 @@ export const listMyOrders = createServerFn({ method: "POST" })
       byOrder.set(it.order_id, list);
     }
 
-    // Delivery timestamps (for the return window) and existing return requests.
+    // Fulfilment stages: delivery timestamps (return window) + shipment state.
     const { data: tl } = await sb
       .from("order_timeline")
       .select("order_id,stage,created_at")
       .in("order_id", ids)
-      .eq("stage", "delivered");
+      .in("stage", ["courier_assigned", "shipped", "delivered"]);
     const deliveredAt = new Map<string, string>();
+    const shippedIds = new Set<string>();
     for (const t of ((tl ?? []) as any[])) {
-      if (!deliveredAt.has(t.order_id)) deliveredAt.set(t.order_id, t.created_at);
+      if (t.stage === "delivered") {
+        if (!deliveredAt.has(t.order_id)) deliveredAt.set(t.order_id, t.created_at);
+      } else shippedIds.add(t.order_id);
     }
 
     const { data: rets } = await sb
