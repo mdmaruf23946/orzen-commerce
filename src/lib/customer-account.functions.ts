@@ -158,6 +158,7 @@ export const listMyOrders = createServerFn({ method: "POST" })
           price_snapshot: Number(i.price_snapshot ?? 0),
         })),
         delivered_at: delivered,
+        shipped: shippedIds.has(o.id),
         returns: orderReturns,
         return_eligible:
           (o.order_type ?? "physical") === "physical" &&
