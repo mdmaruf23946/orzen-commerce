@@ -5,34 +5,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { createInput, digits, myStoreId } from "./quick-order.shared";
 
-async function myStoreId(supabase: any, userId: string): Promise<string | null> {
-  const { data } = await supabase
-    .from("stores")
-    .select("id")
-    .eq("owner_user_id", userId)
-    .maybeSingle();
-  return data?.id ?? null;
-}
-
-function digits(v: string | null | undefined) {
-  return (v ?? "").replace(/[^0-9]/g, "");
-}
-
-export type QuickCustomer = {
-  id: string | null;
-  name: string;
-  phone: string;
-  email: string | null;
-  address: string | null;
-  area: string | null;
-  deliveryZoneId: string | null;
-  note: string | null;
-  orders: number;
-  spend: number;
-  lastOrderAt: string | null;
-  existing: boolean;
-};
+export type { QuickCustomer, QuickOrderInput } from "./quick-order.shared";
 
 /* ------------------------------------------------------------------ */
 /* Customer lookup                                                     */
