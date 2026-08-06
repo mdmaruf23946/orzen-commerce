@@ -49,12 +49,25 @@ export const getReturnSettings = createServerFn({ method: "GET" })
       .select("*")
       .eq("store_id", sid)
       .maybeSingle();
-    return { store_id: sid, ...normalizePolicy(data), ...(data ?? {}) };
+    const row = (data ?? {}) as any;
+    return {
+      store_id: sid,
+      ...normalizePolicy(data),
+      ...row,
+      exchange_rules: normalizePolicy(data).exchange_rules,
+      auto_workflow: normalizeAutoWorkflow(row.auto_workflow),
+      refund_methods: row.refund_methods ?? ["original", "store_credit", "manual"],
+      require_admin_approval: row.require_admin_approval !== false,
+      require_courier_tracking: !!row.require_courier_tracking,
+    };
   });
+
+const shippingMode = z.enum(["customer", "store", "split", "free"]);
 
 const settingsSchema = z.object({
   enabled: z.boolean(),
   eligibility_days: z.number().int().min(0).max(365),
+  exchange_window_days: z.number().int().min(0).max(365),
   allow_return: z.boolean(),
   allow_exchange_same: z.boolean(),
   allow_exchange_other: z.boolean(),
@@ -62,12 +75,42 @@ const settingsSchema = z.object({
   return_shipping_charge: z.number().nonnegative().max(100000),
   replacement_shipping_payer: z.enum(["store", "customer"]),
   replacement_shipping_charge: z.number().nonnegative().max(100000),
+  return_shipping_mode: shippingMode,
+  return_split_customer: z.number().nonnegative().max(100000),
+  return_split_store: z.number().nonnegative().max(100000),
+  replacement_shipping_mode: shippingMode,
+  replacement_split_customer: z.number().nonnegative().max(100000),
+  replacement_split_store: z.number().nonnegative().max(100000),
   restocking_fee_type: z.enum(["none", "percent", "flat"]),
   restocking_fee_value: z.number().nonnegative().max(100000),
+  exchange_rules: z.object({
+    same_variant: z.boolean(),
+    different_variant: z.boolean(),
+    different_product: z.boolean(),
+    higher_price: z.boolean(),
+    lower_price: z.boolean(),
+    equal_price: z.boolean(),
+  }),
+  replacement_source: z.enum(["cart", "wishlist", "all"]),
+  customer_pays_difference: z.boolean(),
+  refund_direction: z.enum(["refund_bank", "store_credit", "no_refund"]),
+  refund_methods: z.array(z.enum(["original", "store_credit", "manual", "cod_adjust"])).max(6),
+  require_admin_approval: z.boolean(),
   require_inspection: z.boolean(),
+  require_photo: z.boolean(),
+  require_courier_tracking: z.boolean(),
+  auto_workflow: z.object({
+    return_courier: z.boolean(),
+    replacement_order: z.boolean(),
+    reserve_stock: z.boolean(),
+    update_inventory: z.boolean(),
+    notify_customer: z.boolean(),
+    sync_tracking: z.boolean(),
+  }),
   auto_approve_under: z.number().nonnegative().max(1_000_000).nullable().optional(),
   policy_note: z.string().max(2000).nullable().optional(),
 });
+
 
 export const saveReturnSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
