@@ -177,9 +177,14 @@ export function ReturnWizard({
 
   const kinds: ReturnKind[] = [
     ...(policy?.allow_return ? (["return"] as ReturnKind[]) : []),
-    ...(policy?.allow_exchange_same ? (["exchange_same"] as ReturnKind[]) : []),
-    ...(policy?.allow_exchange_other ? (["exchange_other"] as ReturnKind[]) : []),
+    ...(policy?.allow_exchange_same && policy?.exchange_rules?.different_variant !== false
+      ? (["exchange_same"] as ReturnKind[])
+      : []),
+    ...(policy?.allow_exchange_other && policy?.exchange_rules?.different_product !== false
+      ? (["exchange_other"] as ReturnKind[])
+      : []),
   ];
+
 
   const wishlistIds = useMemo(
     () =>
