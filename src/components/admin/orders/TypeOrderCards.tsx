@@ -209,7 +209,18 @@ export function DigitalOrderCard({ order, a }: { order: AdminOrderRow; a: TypeCa
 
 export function ServiceOrderCard({ order, a }: { order: AdminOrderRow; a: TypeCardActions }) {
   const f = order.fulfillment ?? {};
-  const done = f.service_state === "completed";
+  const rawState = f.service_state;
+  const state =
+    typeof rawState === "string"
+      ? rawState
+      : rawState && typeof rawState === "object"
+        ? typeof rawState.stage === "string"
+          ? rawState.stage
+          : rawState.cancel_requested
+            ? "cancel_requested"
+            : "requested"
+        : "requested";
+  const done = state === "completed";
   return (
     <Shell
       order={order}
@@ -217,7 +228,7 @@ export function ServiceOrderCard({ order, a }: { order: AdminOrderRow; a: TypeCa
         <>
           <ConfirmationBadge status={order.confirmation_status} />
           <span className="rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold capitalize text-muted-foreground">
-            {f.service_state ?? "requested"}
+            {state.replace(/_/g, " ")}
           </span>
         </>
       }
