@@ -79,7 +79,9 @@ export const createMyReturnRequest = createServerFn({ method: "POST" })
       _items: data.items as any,
       _images: paths,
       _replacement_note: data.replacementNote ?? null,
+      _note: data.note ?? null,
     } as any);
+
     if (error) throw new Error(error.message);
     const out = res as any;
     if (out?.error) throw new Error(out.error);
