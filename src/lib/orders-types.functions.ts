@@ -3,37 +3,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-
-async function myStoreId(supabase: any, userId: string): Promise<string | null> {
-  const { data } = await supabase
-    .from("stores")
-    .select("id")
-    .eq("owner_user_id", userId)
-    .maybeSingle();
-  return data?.id ?? null;
-}
-
-async function ownedOrder(supabase: any, userId: string, orderId: string) {
-  const storeId = await myStoreId(supabase, userId);
-  if (!storeId) throw new Error("Store not found");
-  const { supabaseAdmin: sb } = await import("@/integrations/supabase/client.server");
-  const { data: order } = await sb
-    .from("orders")
-    .select("id,store_id,order_type,confirmation_status,fulfillment_meta")
-    .eq("id", orderId)
-    .eq("store_id", storeId)
-    .maybeSingle();
-  if (!order) throw new Error("Order not found");
-  return { sb, storeId, order: order as any };
-}
-
-const orderInput = z.object({ orderId: z.string().uuid() });
+import { getOwnedOrder, getOwnedStoreId } from "@/lib/admin-order.server";
+import { orderInput } from "@/lib/orders-types.schema";
 
 /** Store-level auto/manual confirmation preferences. */
 export const getOrderConfirmationSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const storeId = await myStoreId(context.supabase, context.userId);
+    const storeId = await getOwnedStoreId(context.supabase, context.userId);
     if (!storeId) return { digital: "auto", service: "manual", subscription: "manual" };
     const { data } = await context.supabase
       .from("stores")
@@ -56,7 +33,7 @@ export const setOrderConfirmationSettings = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const storeId = await myStoreId(context.supabase, context.userId);
+    const storeId = await getOwnedStoreId(context.supabase, context.userId);
     if (!storeId) throw new Error("Store not found");
     const { error } = await context.supabase
       .from("stores")
@@ -71,7 +48,7 @@ export const confirmOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => orderInput.parse(d))
   .handler(async ({ data, context }) => {
-    const { sb, order } = await ownedOrder(context.supabase, context.userId, data.orderId);
+    const { sb, order } = await getOwnedOrder(context.supabase, context.userId, data.orderId);
     if (order.order_type === "physical") throw new Error("Physical orders use the existing workflow");
     const { confirmOrderRow } = await import("@/lib/orders-confirm.server");
     return confirmOrderRow(sb as any, order.id);
@@ -91,7 +68,7 @@ export const scheduleService = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { sb, order } = await ownedOrder(context.supabase, context.userId, data.orderId);
+    const { sb, order } = await getOwnedOrder(context.supabase, context.userId, data.orderId);
     if (order.order_type !== "service") throw new Error("Not a service order");
     const meta = { ...(order.fulfillment_meta ?? {}) };
     if (data.booking_date !== undefined) meta.booking_date = data.booking_date || null;
@@ -109,7 +86,7 @@ export const completeService = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => orderInput.parse(d))
   .handler(async ({ data, context }) => {
-    const { sb, order } = await ownedOrder(context.supabase, context.userId, data.orderId);
+    const { sb, order } = await getOwnedOrder(context.supabase, context.userId, data.orderId);
     if (order.order_type !== "service") throw new Error("Not a service order");
     const meta = {
       ...(order.fulfillment_meta ?? {}),
@@ -126,7 +103,7 @@ export const extendSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => orderInput.extend({ days: z.number().int().min(1).max(3650) }).parse(d))
   .handler(async ({ data, context }) => {
-    const { sb, order } = await ownedOrder(context.supabase, context.userId, data.orderId);
+    const { sb, order } = await getOwnedOrder(context.supabase, context.userId, data.orderId);
     if (order.order_type !== "subscription") throw new Error("Not a subscription order");
     const meta = { ...(order.fulfillment_meta ?? {}) };
     const base = meta.renewal_at && new Date(meta.renewal_at) > new Date() ? new Date(meta.renewal_at) : new Date();
@@ -143,7 +120,7 @@ export const cancelSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => orderInput.parse(d))
   .handler(async ({ data, context }) => {
-    const { sb, order } = await ownedOrder(context.supabase, context.userId, data.orderId);
+    const { sb, order } = await getOwnedOrder(context.supabase, context.userId, data.orderId);
     if (order.order_type !== "subscription") throw new Error("Not a subscription order");
     const meta = {
       ...(order.fulfillment_meta ?? {}),
