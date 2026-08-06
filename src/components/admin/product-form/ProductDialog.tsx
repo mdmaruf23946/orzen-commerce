@@ -8,6 +8,13 @@ import {
   upsertCategory,
   listMyProducts,
 } from "@/lib/admin.functions";
+import {
+  applyDescriptionFooter,
+  defaultsForType,
+  mergeTags,
+  resolveDefaultStatus,
+  type ProductTypeKey,
+} from "@/lib/product-defaults";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
