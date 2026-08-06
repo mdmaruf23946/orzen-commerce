@@ -210,6 +210,7 @@ export const runReturnAction = createServerFn({ method: "POST" })
 
     const patch: Record<string, any> = {};
     let nextStatus: string | null = null;
+    let timelineStatus: string | null = null;
     let extra: Record<string, any> = {};
 
     switch (data.action) {
