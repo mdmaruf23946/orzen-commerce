@@ -185,12 +185,22 @@ export function computeReturnAmounts(
     ? money(replacements.reduce((s, l) => s + Number(l.price || 0) * Number(l.qty || 0), 0))
     : 0;
 
-  const returnShip =
-    policy.return_shipping_payer === "customer" ? money(policy.return_shipping_charge) : 0;
-  const replacementShip =
-    isExchange && policy.replacement_shipping_payer === "customer"
-      ? money(policy.replacement_shipping_charge)
-      : 0;
+  const returnShip = money(
+    customerShippingShare(
+      policy.return_shipping_mode,
+      policy.return_shipping_charge,
+      policy.return_split_customer,
+    ),
+  );
+  const replacementShip = isExchange
+    ? money(
+        customerShippingShare(
+          policy.replacement_shipping_mode,
+          policy.replacement_shipping_charge,
+          policy.replacement_split_customer,
+        ),
+      )
+    : 0;
 
   let restocking = 0;
   if (policy.restocking_fee_type === "percent") {
@@ -200,7 +210,11 @@ export function computeReturnAmounts(
   }
 
   // Positive net = money back to the customer, negative = customer owes.
-  const net = itemsValue - replacementValue - returnShip - replacementShip - restocking;
+  let net = itemsValue - replacementValue - returnShip - replacementShip - restocking;
+  // When the store absorbs price differences, the customer never owes extra.
+  if (net < 0 && !policy.customer_pays_difference) net = 0;
+  if (net > 0 && policy.refund_direction === "no_refund" && isExchange) net = 0;
+
 
   return {
     items_value: itemsValue,
