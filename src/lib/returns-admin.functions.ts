@@ -264,7 +264,7 @@ export const runReturnAction = createServerFn({ method: "POST" })
             subtotal,
             discount_amount: subtotal, // replacement is not re-charged; customer pays only the difference
             delivery_amount: Number(r.replacement_shipping_charge ?? 0),
-            status: "confirmed",
+            status: "pending",
             order_type: "physical",
             source: "return_exchange",
             notes: `Replacement for return ${r.id.slice(0, 8)} (order ${r.order_id.slice(0, 8)})`,
