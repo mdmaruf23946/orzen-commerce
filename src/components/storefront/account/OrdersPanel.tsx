@@ -93,6 +93,31 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
   const [search, setSearch] = useState("");
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [returnFor, setReturnFor] = useState<{ order: any; type: "return" | "exchange" } | null>(
+    null,
+  );
+  const [returnBusy, setReturnBusy] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const createReturnFn = useServerFn(createMyReturnRequest);
+
+  async function submitReturn(payload: RequestPayload) {
+    if (!returnFor) return;
+    setReturnBusy(true);
+    try {
+      await createReturnFn({
+        data: { storeSlug: slug, token, orderId: returnFor.order.id, ...payload },
+      });
+      toast.success("Request submitted");
+      setReturnFor(null);
+      qc.invalidateQueries({ queryKey: ["my-orders"] });
+      qc.invalidateQueries({ queryKey: ["my-returns"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not submit request");
+    } finally {
+      setReturnBusy(false);
+    }
+  }
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["my-orders", slug, token, type, status, sort, search],
