@@ -31,12 +31,18 @@ export function isChunkLoadError(error: unknown): boolean {
   return CHUNK_ERROR_PATTERNS.some((pattern) => lower.includes(pattern));
 }
 
-/** Reload once to pick up the new build. Returns true if a reload was started. */
+// Never reload more than once inside this window — that would loop on a
+// genuinely broken build. Outside it (e.g. a later deploy in a long-lived
+// tab) recovery is allowed again instead of being dead for the whole session.
+const RELOAD_COOLDOWN_MS = 60_000;
+
+/** Reload to pick up the new build. Returns true if a reload was started. */
 export function recoverFromChunkError(error: unknown): boolean {
   if (typeof window === "undefined") return false;
   if (!isChunkLoadError(error)) return false;
   try {
-    if (sessionStorage.getItem(RELOAD_FLAG)) return false;
+    const last = Number(sessionStorage.getItem(RELOAD_FLAG) ?? 0);
+    if (last && Date.now() - last < RELOAD_COOLDOWN_MS) return false;
     sessionStorage.setItem(RELOAD_FLAG, String(Date.now()));
   } catch {
     /* storage unavailable — still attempt one reload */
