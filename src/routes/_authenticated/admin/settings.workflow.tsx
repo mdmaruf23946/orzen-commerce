@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { OrderConfirmationSection } from "@/components/admin/settings/OrderConfirmationSection";
+import { ReturnPolicySection } from "@/components/admin/settings/ReturnPolicySection";
 import { ServiceWorkflowSection } from "@/components/admin/settings/ServiceWorkflowSection";
 
 export const Route = createFileRoute("/_authenticated/admin/settings/workflow")({
