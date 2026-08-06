@@ -157,6 +157,7 @@ function subPlanName(o: AdminOrderRow): string {
 }
 
 function OrdersPage() {
+  useRouteErrorTracking("Admin · Orders");
 
   const list = useServerFn(listAdminOrders);
   const update = useServerFn(updateOrderStatus);
@@ -164,14 +165,17 @@ function OrdersPage() {
   const [quickOpen, setQuickOpen] = useState(false);
   const { scope, setScope, filter } = useProductTypeScope();
   const countsFn = useServerFn(typeScopeCounts);
-  const { data: orders, isFetching, refetch } = useQuery({
+  const { data: orders, isFetching, refetch, error: ordersError } = useQuery({
     queryKey: ["admin", "orders", "rich", filter ?? "all"],
     queryFn: () => list({ data: { product_type: filter } } as any),
+    retry: 1,
   });
-  const { data: orderTypeCounts } = useQuery({
+  const { data: orderTypeCounts, error: countsError } = useQuery({
     queryKey: ["admin", "counts", "orders"],
     queryFn: () => countsFn({ data: { entity: "orders" } }),
+    retry: 1,
   });
+  const dataError = ordersError ?? countsError;
 
   const type = scope as TypeKey;
   const [tab, setTab] = useState<TabKey>("all");
