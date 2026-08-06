@@ -92,6 +92,7 @@ export function ReturnDrawer({ request, onClose }: { request: any | null; onClos
   const qc = useQueryClient();
   const act = useServerFn(runReturnAction);
   const reprice = useServerFn(repriceReturn);
+  const setGlobalFn = useServerFn(setReturnUseGlobal);
 
   const [note, setNote] = useState<string>(request?.resolution_note ?? "");
   const [courier, setCourier] = useState<string>(request?.courier_name ?? "");
