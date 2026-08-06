@@ -175,6 +175,8 @@ const actionSchema = z.object({
     "inspect",
     "create_replacement",
     "process_refund",
+    "refund_pending",
+    "reject_refund",
     "complete",
     "cancel",
   ]),
