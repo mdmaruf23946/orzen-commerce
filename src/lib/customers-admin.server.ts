@@ -94,6 +94,8 @@ export type ReturnRow = {
   phone: string | null;
   refund_amount: number | null;
   replacement_order_id: string | null;
+  refund_status: string | null;
+  refund_processed_at: string | null;
   courier_name: string | null;
   courier_tracking_id: string | null;
   created_at: string;
@@ -104,7 +106,7 @@ export async function loadReturns(supabase: AnyClient, storeId: string) {
     .from("returns")
     .select(
       sel(
-        "id,order_id,type,request_kind,status,phone,refund_amount,replacement_order_id,courier_name,courier_tracking_id,created_at",
+        "id,order_id,type,request_kind,status,phone,refund_amount,replacement_order_id,refund_status,refund_processed_at,courier_name,courier_tracking_id,created_at",
       ),
     )
     .eq("store_id", storeId)
