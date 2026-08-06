@@ -281,14 +281,14 @@ export const listReturns = createServerFn({ method: "GET" })
     const orderIds = Array.from(new Set(rows.map((r) => r.order_id)));
     const { data: items } = await context.supabase
       .from("order_items")
-      .select("order_id,qty,price_snapshot,name_snapshot,product_id, products(primary_image_url,images)")
+      .select("order_id,qty,price_snapshot,name_snapshot,product_id, products(primary_image_url,gallery)")
       .in("order_id", orderIds);
     const byOrder = new Map<string, any[]>();
     const imageByProduct = new Map<string, string>();
     const imageByName = new Map<string, string>();
     for (const it of (items ?? []) as any[]) {
       const image: string | null =
-        it.products?.primary_image_url ?? (Array.isArray(it.products?.images) ? it.products.images[0] : null) ?? null;
+        it.products?.primary_image_url ?? (Array.isArray(it.products?.gallery) ? it.products.gallery[0] : null) ?? null;
       if (image && it.product_id) imageByProduct.set(it.product_id, image);
       if (image && it.name_snapshot) imageByName.set(String(it.name_snapshot).trim().toLowerCase(), image);
       const list = byOrder.get(it.order_id) ?? [];
