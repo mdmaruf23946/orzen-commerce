@@ -292,6 +292,9 @@ function OrderConfirmation() {
 
       <PaymentTimeline orderId={order.id} refreshKey={String((order as any).payment_status ?? "")} />
 
+      <OrderActions order={order} slug={slug} />
+
+
       <div className="mt-4 rounded-xl border bg-card p-4">
         <div className="mb-2 flex items-center gap-2 text-xs uppercase text-muted-foreground">
           <Package className="h-3 w-3" /> Order summary
