@@ -1372,10 +1372,21 @@ export const updateNotifications = createServerFn({ method: "POST" })
     updateStoreColumn(context.supabase, context.userId, "notifications", data),
   );
 
+const typeDefaultsSchema = z.object({
+  footer: z.string().trim().max(2000).default(""),
+  tags: z.string().trim().max(500).default(""),
+  visibility: z.enum(["public", "draft", "hidden"]).default("public"),
+  status: z.enum(["active", "inactive"]).default("active"),
+  warranty: z.string().trim().max(2000).optional(),
+  return_policy: z.string().trim().max(2000).optional(),
+});
 const productDefaultsSchema = z.object({
-  warranty: z.string().trim().max(2000).optional().nullable(),
-  return_policy: z.string().trim().max(2000).optional().nullable(),
-  shipping_info: z.string().trim().max(2000).optional().nullable(),
+  per_type: z.object({
+    physical: typeDefaultsSchema,
+    digital: typeDefaultsSchema,
+    service: typeDefaultsSchema,
+    subscription: typeDefaultsSchema,
+  }),
 });
 export const updateProductDefaults = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
