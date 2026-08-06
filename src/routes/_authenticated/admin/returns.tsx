@@ -87,7 +87,33 @@ function ReturnsPage() {
       <AdminPageHeader
         title="Returns & Exchanges"
         description="Every request moves through approval, return shipment, inspection, then refund or replacement."
+        action={
+          <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
+            <Settings className="mr-2 h-4 w-4" /> Settings
+          </Button>
+        }
       />
+
+      <div className="sm:hidden">
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={() => setSettingsOpen(true)}
+        >
+          <Settings className="mr-2 h-4 w-4" /> Return &amp; Exchange settings
+        </Button>
+      </div>
+
+      <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <SheetContent side="right" className="w-full overflow-y-auto p-4 sm:max-w-lg">
+          <SheetHeader className="mb-4">
+            <SheetTitle>Return &amp; Exchange settings</SheetTitle>
+          </SheetHeader>
+          <ReturnPolicySection />
+        </SheetContent>
+      </Sheet>
+
 
       <TypeFilterTabs
         tabs={TABS.map((t) => ({
