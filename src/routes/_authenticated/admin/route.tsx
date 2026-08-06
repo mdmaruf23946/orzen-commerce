@@ -135,6 +135,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
  *  contained inside the admin panel with a retry, instead of blanking the app. */
 function AdminErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
+  const router = useRouter();
   const [recovering] = useState(() => recoverFromChunkError(error));
 
   if (recovering) {
@@ -153,7 +154,14 @@ function AdminErrorComponent({ error, reset }: { error: Error; reset: () => void
           সাময়িক সমস্যা হয়েছে। আবার চেষ্টা করুন।
         </p>
         <div className="mt-5 flex justify-center gap-2">
-          <Button size="sm" onClick={() => reset()}>
+          <Button
+            size="sm"
+            onClick={() => {
+              // Re-run the failed loaders too, not just the boundary UI.
+              router.invalidate();
+              reset();
+            }}
+          >
             আবার চেষ্টা করুন
           </Button>
           <Button size="sm" variant="outline" onClick={() => window.location.reload()}>
