@@ -412,6 +412,9 @@ export const repriceReturn = createServerFn({ method: "POST" })
       normalizePolicy({
         return_shipping_payer: "customer",
         replacement_shipping_payer: "customer",
+        return_shipping_mode: "customer",
+        replacement_shipping_mode: "customer",
+
         return_shipping_charge: data.return_shipping_charge,
         replacement_shipping_charge: data.replacement_shipping_charge,
         restocking_fee_type: "flat",
