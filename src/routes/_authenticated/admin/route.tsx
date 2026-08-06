@@ -127,7 +127,43 @@ function buildGroups(query: string) {
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminLayout,
+  errorComponent: AdminErrorComponent,
 });
+
+/** Keeps a transient failure (stale chunk, network blip, server hiccup)
+ *  contained inside the admin panel with a retry, instead of blanking the app. */
+function AdminErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+  console.error(error);
+  const [recovering] = useState(() => recoverFromChunkError(error));
+
+  if (recovering) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4 text-sm text-muted-foreground">
+        Updating to the latest version…
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="max-w-sm text-center">
+        <h1 className="text-lg font-semibold">এই পেজটি লোড হয়নি</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          সাময়িক সমস্যা হয়েছে। আবার চেষ্টা করুন।
+        </p>
+        <div className="mt-5 flex justify-center gap-2">
+          <Button size="sm" onClick={() => reset()}>
+            আবার চেষ্টা করুন
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => window.location.reload()}>
+            রিফ্রেশ
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function AdminLayout() {
   const navigate = useNavigate();
