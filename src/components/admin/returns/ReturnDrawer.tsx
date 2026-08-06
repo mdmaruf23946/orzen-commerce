@@ -15,7 +15,11 @@ import {
   Banknote,
   Flag,
 } from "lucide-react";
-import { runReturnAction, repriceReturn } from "@/lib/returns-admin.functions";
+import {
+  runReturnAction,
+  repriceReturn,
+  setReturnUseGlobal,
+} from "@/lib/returns-admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -127,6 +131,17 @@ export function ReturnDrawer({ request, onClose }: { request: any | null; onClos
     },
     onError: (e: any) => toast.error(e?.message ?? "Could not reprice"),
   });
+
+  const useGlobal = request?.use_global_settings !== false;
+  const toggleGlobal = useMutation({
+    mutationFn: async (v: boolean) => setGlobalFn({ data: { id: request.id, use_global: v } }),
+    onSuccess: (_r, v) => {
+      qc.invalidateQueries({ queryKey: ["admin", "returns"] });
+      toast.success(v ? "Using global settings" : "Manual charges enabled");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not update"),
+  });
+
 
   if (!request) return null;
 
