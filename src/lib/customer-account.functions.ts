@@ -131,7 +131,7 @@ export const listMyOrders = createServerFn({ method: "POST" })
     } as any);
     const returnsEnabled = (policyRaw as any)?.enabled !== false;
     const RETURN_WINDOW_MS =
-      Number((policyRaw as any)?.eligibility_days ?? 7 || 7) * 86_400_000;
+      (Number((policyRaw as any)?.eligibility_days) || 7) * 86_400_000;
 
     let out = rows.map((o) => {
       const list = byOrder.get(o.id) ?? [];
