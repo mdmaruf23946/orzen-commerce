@@ -4,8 +4,25 @@ import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Search, Download, Truck, Wrench, RefreshCw, ChevronRight, Package } from "lucide-react";
+import {
+  Search,
+  Download,
+  Truck,
+  Wrench,
+  RefreshCw,
+  ChevronRight,
+  ChevronDown,
+  Package,
+  RotateCcw,
+  Repeat,
+} from "lucide-react";
 import { listMyOrders, cancelMyOrder } from "@/lib/customer-account.functions";
+import { createMyReturnRequest } from "@/lib/returns.functions";
+import {
+  ReturnRequestDialog,
+  ReturnStatusCard,
+  type RequestPayload,
+} from "@/components/storefront/order/ReturnRequestDialog";
 import {
   ORDER_TYPE_ACTION,
   ORDER_TYPE_LABEL,
@@ -30,6 +47,23 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EmptyState } from "./EmptyState";
+
+const RETURN_STATUS_LABEL: Record<string, string> = {
+  requested: "Return pending",
+  approved: "Return approved",
+  rejected: "Return rejected",
+  refunded: "Refunded",
+  completed: "Return completed",
+};
+
+const RETURN_STATUS_TONE: Record<string, string> = {
+  requested: "bg-amber-50 text-amber-700 ring-amber-200",
+  approved: "bg-blue-50 text-blue-700 ring-blue-200",
+  rejected: "bg-rose-50 text-rose-700 ring-rose-200",
+  refunded: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  completed: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+};
+
 
 const TYPE_TABS: { key: "all" | OrderType; label: string }[] = [
   { key: "all", label: "All" },
@@ -59,6 +93,31 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
   const [search, setSearch] = useState("");
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [returnFor, setReturnFor] = useState<{ order: any; type: "return" | "exchange" } | null>(
+    null,
+  );
+  const [returnBusy, setReturnBusy] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const createReturnFn = useServerFn(createMyReturnRequest);
+
+  async function submitReturn(payload: RequestPayload) {
+    if (!returnFor) return;
+    setReturnBusy(true);
+    try {
+      await createReturnFn({
+        data: { storeSlug: slug, token, orderId: returnFor.order.id, ...payload },
+      });
+      toast.success("Request submitted");
+      setReturnFor(null);
+      qc.invalidateQueries({ queryKey: ["my-orders"] });
+      qc.invalidateQueries({ queryKey: ["my-returns"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not submit request");
+    } finally {
+      setReturnBusy(false);
+    }
+  }
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["my-orders", slug, token, type, status, sort, search],
@@ -246,13 +305,81 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
                     </button>
                   )}
                 </div>
+
+                {(o.return_eligible || (o.returns ?? []).length > 0) && (
+                  <div className="border-t border-neutral-100 px-3 py-2">
+                    {(o.returns ?? []).length > 0 && (
+                      <div className="space-y-2">
+                        <button
+                          type="button"
+                          onClick={() => setExpanded((p) => ({ ...p, [o.id]: !p[o.id] }))}
+                          className="flex w-full items-center gap-2"
+                        >
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ring-1 ${
+                              RETURN_STATUS_TONE[o.returns[0].status] ??
+                              "bg-neutral-100 text-neutral-600 ring-neutral-200"
+                            }`}
+                          >
+                            {RETURN_STATUS_LABEL[o.returns[0].status] ?? o.returns[0].status}
+                          </span>
+                          <ChevronDown
+                            className={`ml-auto h-4 w-4 text-neutral-400 transition-transform ${
+                              expanded[o.id] ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+                        {expanded[o.id] && (
+                          <div className="space-y-2">
+                            {(o.returns as any[]).map((r) => (
+                              <ReturnStatusCard key={r.id} r={r} />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {o.return_eligible && (
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-[11px]"
+                          onClick={() => setReturnFor({ order: o, type: "return" })}
+                        >
+                          <RotateCcw className="mr-1 h-3.5 w-3.5" /> Request return
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-[11px]"
+                          onClick={() => setReturnFor({ order: o, type: "exchange" })}
+                        >
+                          <Repeat className="mr-1 h-3.5 w-3.5" /> Request exchange
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
               </li>
             );
           })}
         </ul>
       )}
 
+      {returnFor && (
+        <ReturnRequestDialog
+          initialType={returnFor.type}
+          items={(returnFor.order.items as any[]) ?? []}
+          submitting={returnBusy}
+          onClose={() => setReturnFor(null)}
+          onSubmit={submitReturn}
+        />
+      )}
+
       <AlertDialog open={!!cancelId} onOpenChange={(o) => !o && setCancelId(null)}>
+
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel this order?</AlertDialogTitle>

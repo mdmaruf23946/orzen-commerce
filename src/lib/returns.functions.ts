@@ -34,9 +34,11 @@ const createArgs = z.object({
   reason: z.string().trim().min(3).max(600),
   items: z.array(itemSchema).max(30).default([]),
   replacementNote: z.string().trim().max(400).optional(),
+  note: z.string().trim().max(600).optional(),
   // Data URLs (image/*), max 4, compressed client-side.
   images: z.array(z.string().max(3_000_000)).max(4).default([]),
 });
+
 
 const EXT: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -77,7 +79,9 @@ export const createMyReturnRequest = createServerFn({ method: "POST" })
       _items: data.items as any,
       _images: paths,
       _replacement_note: data.replacementNote ?? null,
+      _note: data.note ?? null,
     } as any);
+
     if (error) throw new Error(error.message);
     const out = res as any;
     if (out?.error) throw new Error(out.error);

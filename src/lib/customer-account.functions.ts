@@ -97,11 +97,43 @@ export const listMyOrders = createServerFn({ method: "POST" })
       byOrder.set(it.order_id, list);
     }
 
+    // Delivery timestamps (for the return window) and existing return requests.
+    const { data: tl } = await sb
+      .from("order_timeline")
+      .select("order_id,stage,created_at")
+      .in("order_id", ids)
+      .eq("stage", "delivered");
+    const deliveredAt = new Map<string, string>();
+    for (const t of ((tl ?? []) as any[])) {
+      if (!deliveredAt.has(t.order_id)) deliveredAt.set(t.order_id, t.created_at);
+    }
+
+    const { data: rets } = await sb
+      .from("returns")
+      .select(
+        "id,order_id,type,status,reason,resolution_note,refund_amount,courier_name,courier_tracking_id,created_at,replacement_product_id",
+      )
+      .in("order_id", ids)
+      .order("created_at", { ascending: false });
+    const returnsByOrder = new Map<string, any[]>();
+    for (const r of ((rets ?? []) as any[])) {
+      const list = returnsByOrder.get(r.order_id) ?? [];
+      list.push(r);
+      returnsByOrder.set(r.order_id, list);
+    }
+
+    const RETURN_WINDOW_MS = 7 * 86_400_000;
+
     let out = rows.map((o) => {
       const list = byOrder.get(o.id) ?? [];
       const first = list[0];
       const total =
         Number(o.subtotal ?? 0) + Number(o.delivery_amount ?? 0) - Number(o.discount_amount ?? 0);
+      const delivered = deliveredAt.get(o.id) ?? null;
+      const orderReturns = returnsByOrder.get(o.id) ?? [];
+      const hasOpen = orderReturns.some(
+        (r) => r.status === "requested" || r.status === "approved",
+      );
       return {
         id: o.id,
         invoice_no: o.invoice_no as string | null,
@@ -116,8 +148,23 @@ export const listMyOrders = createServerFn({ method: "POST" })
         product_name: first?.name_snapshot ?? "Order",
         product_image: first?.product_id ? (imageById.get(first.product_id) ?? null) : null,
         extra_items: Math.max(0, list.length - 1),
+        items: list.map((i) => ({
+          product_id: i.product_id ?? null,
+          name_snapshot: i.name_snapshot,
+          qty: Number(i.qty ?? 1),
+          price_snapshot: Number(i.price_snapshot ?? 0),
+        })),
+        delivered_at: delivered,
+        returns: orderReturns,
+        return_eligible:
+          (o.order_type ?? "physical") === "physical" &&
+          o.status !== "cancelled" &&
+          !!delivered &&
+          Date.now() - new Date(delivered).getTime() <= RETURN_WINDOW_MS &&
+          !hasOpen,
       };
     });
+
 
     if (data.status) {
       const s = data.status;
