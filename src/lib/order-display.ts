@@ -47,15 +47,31 @@ export function paymentTone(status: string) {
   return "bg-amber-50 text-amber-700 ring-amber-200";
 }
 
-/** Cancellation is allowed only while nothing has been confirmed yet. */
+/** Cancellation stays open until the parcel is handed to the courier. */
 export function canCancel(order: {
   order_type: string;
   status: string;
   confirmation_status?: string;
+  shipped?: boolean;
+  courier_tracking_id?: string | null;
 }) {
   if (order.order_type === "subscription") return false;
-  if (order.status !== "pending") return false;
-  return order.confirmation_status !== "confirmed";
+  if (order.status === "cancelled" || order.status === "delivered") return false;
+  if (order.shipped) return false;
+  if (order.courier_tracking_id) return false;
+  return true;
+}
+
+/** Cash on delivery / offline methods never go through a payment gateway. */
+export function isCodMethod(method?: string | null) {
+  return String(method ?? "cod").toLowerCase() === "cod";
+}
+
+export function paymentStatusLabel(method: string | null | undefined, status: string) {
+  if (status === "paid") return "PAID";
+  if (isCodMethod(method) && (status === "pending" || status === "unpaid"))
+    return "PAY ON DELIVERY";
+  return String(status ?? "pending").toUpperCase();
 }
 
 export function taka(n: any) {

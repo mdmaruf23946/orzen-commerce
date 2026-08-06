@@ -12,6 +12,9 @@ import { PaymentTimeline } from "@/components/storefront/PaymentTimeline";
 import { ServiceOrderView } from "@/components/storefront/order/ServiceOrderView";
 import { SubscriptionOrderView } from "@/components/storefront/order/SubscriptionOrderView";
 import { ReturnRequestBlock } from "@/components/storefront/order/ReturnRequestBlock";
+import { ReturnStages } from "@/components/storefront/order/ReturnStages";
+import { OrderActions } from "@/components/storefront/order/OrderActions";
+import { paymentStatusLabel } from "@/lib/order-display";
 
 
 
@@ -41,11 +44,21 @@ const STAGE_LABEL: Record<string, string> = {
   courier_assigned: "Courier Assigned",
   shipped: "Shipped",
   delivered: "Delivered",
+  completed: "Completed",
   returned: "Returned",
   cancelled: "Cancelled",
 };
 
-const STAGE_ORDER = ["placed", "confirmed", "packed", "courier_assigned", "shipped", "delivered"];
+const STAGE_ORDER = [
+  "placed",
+  "confirmed",
+  "packed",
+  "courier_assigned",
+  "shipped",
+  "delivered",
+  "completed",
+];
+
 
 function OrderConfirmation() {
   const { slug, orderId } = Route.useParams();
@@ -196,7 +209,8 @@ function OrderConfirmation() {
         </>
       ) : (
       /* Tracking Stepper */
-      <div className="mt-6 rounded-xl border bg-card p-4">
+      <div id="order-tracking" className="mt-6 scroll-mt-20 rounded-xl border bg-card p-4">
+
 
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold">Order tracking</h2>
@@ -207,10 +221,15 @@ function OrderConfirmation() {
             This order has been cancelled.
           </div>
         ) : (
+          <>
           <ol className="space-y-3">
             {STAGE_ORDER.map((stage) => {
               const event = timeline.find((t) => t.stage === stage);
-              const done = !!event;
+              const done =
+                !!event ||
+                (stage === "completed" &&
+                  reachedStages.has("delivered") &&
+                  (order as any).payment_status === "paid");
               return (
                 <li key={stage} className="flex items-start gap-3">
                   <span
@@ -235,7 +254,10 @@ function OrderConfirmation() {
               );
             })}
           </ol>
+          <ReturnStages order={order} slug={slug} />
+          </>
         )}
+
 
         {(order as any).courier_name || (order as any).courier_tracking_id ? (
           <div className="mt-4 rounded-lg border bg-muted/30 p-3 text-sm">
@@ -269,6 +291,9 @@ function OrderConfirmation() {
 
 
       <PaymentTimeline orderId={order.id} refreshKey={String((order as any).payment_status ?? "")} />
+
+      <OrderActions order={order} slug={slug} />
+
 
       <div className="mt-4 rounded-xl border bg-card p-4">
         <div className="mb-2 flex items-center gap-2 text-xs uppercase text-muted-foreground">
@@ -322,7 +347,11 @@ function OrderConfirmation() {
           <div>Address</div>
           <div className="text-right text-foreground">{order.address}</div>
           <div>Payment</div>
-          <div className="text-right text-foreground uppercase">{order.payment_method}</div>
+          <div className="text-right text-foreground">
+            {String(order.payment_method ?? "cod").toLowerCase() === "cod"
+              ? "Cash on Delivery"
+              : String(order.payment_method).toUpperCase()}
+          </div>
           <div>Payment status</div>
           <div className="text-right">
             <span
@@ -334,9 +363,13 @@ function OrderConfirmation() {
                     : "bg-amber-100 text-amber-700"
               }`}
             >
-              {String((order as any).payment_status ?? "pending").toUpperCase()}
+              {paymentStatusLabel(
+                order.payment_method,
+                String((order as any).payment_status ?? "pending"),
+              )}
             </span>
           </div>
+
         </div>
       </div>
       <Link

@@ -65,22 +65,13 @@ export function ReturnRequestBlock({ order, slug }: { order: any; slug: string }
         ))}
       </div>
 
-      {eligible ? (
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <Button variant="outline" onClick={() => setType("return")}>
-            <RotateCcw className="mr-1 h-4 w-4" /> Request return
-          </Button>
-          <Button variant="outline" onClick={() => setType("exchange")}>
-            <Repeat className="mr-1 h-4 w-4" /> Request exchange
-          </Button>
-        </div>
-      ) : (
-        (requests as any[]).length === 0 && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Requests can be made within {WINDOW_DAYS} days of delivery.
-          </p>
-        )
+      {eligible && (requests as any[]).length === 0 && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Use the buttons in “Order actions” to request a return or exchange within {WINDOW_DAYS}{" "}
+          days of delivery.
+        </p>
       )}
+
 
       {type && (
         <ReturnRequestDialog

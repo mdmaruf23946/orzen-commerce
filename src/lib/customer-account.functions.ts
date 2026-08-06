@@ -97,15 +97,18 @@ export const listMyOrders = createServerFn({ method: "POST" })
       byOrder.set(it.order_id, list);
     }
 
-    // Delivery timestamps (for the return window) and existing return requests.
+    // Fulfilment stages: delivery timestamps (return window) + shipment state.
     const { data: tl } = await sb
       .from("order_timeline")
       .select("order_id,stage,created_at")
       .in("order_id", ids)
-      .eq("stage", "delivered");
+      .in("stage", ["courier_assigned", "shipped", "delivered"]);
     const deliveredAt = new Map<string, string>();
+    const shippedIds = new Set<string>();
     for (const t of ((tl ?? []) as any[])) {
-      if (!deliveredAt.has(t.order_id)) deliveredAt.set(t.order_id, t.created_at);
+      if (t.stage === "delivered") {
+        if (!deliveredAt.has(t.order_id)) deliveredAt.set(t.order_id, t.created_at);
+      } else shippedIds.add(t.order_id);
     }
 
     const { data: rets } = await sb
@@ -155,6 +158,7 @@ export const listMyOrders = createServerFn({ method: "POST" })
           price_snapshot: Number(i.price_snapshot ?? 0),
         })),
         delivered_at: delivered,
+        shipped: shippedIds.has(o.id),
         returns: orderReturns,
         return_eligible:
           (o.order_type ?? "physical") === "physical" &&
@@ -207,7 +211,9 @@ export const cancelMyOrder = createServerFn({ method: "POST" })
     const { sb, storeId, customer } = await requireCustomer(data.storeSlug, data.token);
     const { data: order } = await sb
       .from("orders")
-      .select("id,status,order_type,payment_status,confirmation_status,fulfillment_meta")
+      .select(
+        "id,status,order_type,payment_status,confirmation_status,fulfillment_meta,courier_tracking_id",
+      )
       .eq("id", data.orderId)
       .eq("store_id", storeId)
       .eq("customer_id", customer.id)
@@ -218,8 +224,16 @@ export const cancelMyOrder = createServerFn({ method: "POST" })
     if (o.status === "cancelled") throw new Error("This order is already cancelled");
     if (o.order_type === "subscription")
       throw new Error("Please cancel this from your subscriptions page");
-    if (o.status !== "pending" || o.confirmation_status === "confirmed")
-      throw new Error("This order can no longer be cancelled");
+    if (o.status === "delivered") throw new Error("This order can no longer be cancelled");
+
+    // Cancellation stays open until the parcel is handed to the courier.
+    const { data: stages } = await sb
+      .from("order_timeline")
+      .select("stage")
+      .eq("order_id", data.orderId)
+      .in("stage", ["courier_assigned", "shipped", "delivered", "returned"]);
+    if ((stages ?? []).length > 0 || o.courier_tracking_id)
+      throw new Error("This order has already been shipped and can no longer be cancelled");
 
     const meta = (o.fulfillment_meta ?? {}) as any;
     const { error } = await sb
@@ -235,7 +249,7 @@ export const cancelMyOrder = createServerFn({ method: "POST" })
       } as any)
       .eq("id", data.orderId)
       .eq("store_id", storeId)
-      .eq("status", "pending");
+      .neq("status", "cancelled");
     if (error) throw new Error(error.message);
     return { ok: true };
   });
