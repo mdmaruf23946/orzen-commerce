@@ -80,6 +80,7 @@ function ReturnsPage() {
   const { data: rows } = useQuery({ queryKey: ["admin", "returns"], queryFn: () => list() });
   const [tab, setTab] = useState<TabKey>("pending");
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const all = (rows as any[]) ?? [];
   const filtered = useMemo(() => all.filter((r) => matches(tab, r.status)), [all, tab]);
