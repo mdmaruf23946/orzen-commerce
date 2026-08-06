@@ -23,6 +23,7 @@ import { CountBadge } from "@/components/admin/CountBadge";
 import { useBadgeCounts, useMarkSeen } from "@/lib/use-badge-counts";
 import { getMyStore } from "@/lib/admin.functions";
 import { resolveStoreIcon } from "@/lib/store-icon";
+import { recoverFromChunkError } from "@/lib/chunk-recovery";
 
 
 type BadgeKey =
