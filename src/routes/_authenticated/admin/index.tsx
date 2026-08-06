@@ -299,6 +299,7 @@ function Dashboard() {
           <h2 className="text-base font-semibold tracking-tight">Quick Actions</h2>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <QuickAction onClick={() => setQuickOrderOpen(true)} icon={ShoppingBag} label="Create Order" tone="text-primary bg-primary/10" />
           <QuickAction to="/admin/products" icon={Plus} label="Add Product" tone="text-primary bg-primary/10" />
           <QuickAction to="/admin/coupons" icon={Ticket} label="Create Coupon" tone="text-emerald-600 bg-emerald-50" />
           <QuickAction to="/admin/banners" icon={ImageIcon} label="Create Banner" tone="text-violet-600 bg-violet-50" />
