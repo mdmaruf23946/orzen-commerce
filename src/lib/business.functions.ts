@@ -288,7 +288,7 @@ export const listReturns = createServerFn({ method: "GET" })
     const imageByName = new Map<string, string>();
     for (const it of (items ?? []) as any[]) {
       const image: string | null =
-        it.products?.primary_image_url ?? (Array.isArray(it.products?.images) ? it.products.images[0] : null) ?? null;
+        it.products?.primary_image_url ?? (Array.isArray(it.products?.gallery) ? it.products.gallery[0] : null) ?? null;
       if (image && it.product_id) imageByProduct.set(it.product_id, image);
       if (image && it.name_snapshot) imageByName.set(String(it.name_snapshot).trim().toLowerCase(), image);
       const list = byOrder.get(it.order_id) ?? [];
