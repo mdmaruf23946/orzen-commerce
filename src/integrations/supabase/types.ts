@@ -3077,6 +3077,7 @@ export type Database = {
           delivery_zone_id: string | null
           device_id: string | null
           discount_amount: number | null
+          due_amount: number
           email: string | null
           external_order_id: string | null
           fingerprint: string | null
@@ -3088,6 +3089,7 @@ export type Database = {
           landing_page_url: string | null
           notes: string | null
           order_type: string
+          paid_amount: number
           payment_gateway_id: string | null
           payment_gateway_name: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
@@ -3123,6 +3125,7 @@ export type Database = {
           delivery_zone_id?: string | null
           device_id?: string | null
           discount_amount?: number | null
+          due_amount?: number
           email?: string | null
           external_order_id?: string | null
           fingerprint?: string | null
@@ -3134,6 +3137,7 @@ export type Database = {
           landing_page_url?: string | null
           notes?: string | null
           order_type?: string
+          paid_amount?: number
           payment_gateway_id?: string | null
           payment_gateway_name?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
@@ -3169,6 +3173,7 @@ export type Database = {
           delivery_zone_id?: string | null
           device_id?: string | null
           discount_amount?: number | null
+          due_amount?: number
           email?: string | null
           external_order_id?: string | null
           fingerprint?: string | null
@@ -3180,6 +3185,7 @@ export type Database = {
           landing_page_url?: string | null
           notes?: string | null
           order_type?: string
+          paid_amount?: number
           payment_gateway_id?: string | null
           payment_gateway_name?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]

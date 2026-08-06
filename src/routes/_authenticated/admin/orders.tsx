@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Search, SlidersHorizontal, RefreshCw, ShoppingBag, TrendingUp, Wallet, Clock } from "lucide-react";
+import { Search, SlidersHorizontal, RefreshCw, ShoppingBag, TrendingUp, Wallet, Clock, Plus } from "lucide-react";
 import { listAdminOrders, type AdminOrderRow } from "@/lib/orders-admin.functions";
 import { updateOrderStatus } from "@/lib/admin.functions";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ import { typeScopeCounts } from "@/lib/admin.functions";
 import type { OrderKind } from "@/lib/orders-admin.functions";
 import { confirmOrder, scheduleService, completeService, extendSubscription, cancelSubscription } from "@/lib/orders-types.functions";
 import { setDigitalAccess, resendDigitalEmail } from "@/lib/digital-admin.functions";
+import { QuickOrderSheet } from "@/components/admin/quick-order/QuickOrderSheet";
 
 export const Route = createFileRoute("/_authenticated/admin/orders")({
   head: () => ({
@@ -129,6 +130,7 @@ function OrdersPage() {
   const list = useServerFn(listAdminOrders);
   const update = useServerFn(updateOrderStatus);
   const qc = useQueryClient();
+  const [quickOpen, setQuickOpen] = useState(false);
   const { scope, setScope, filter } = useProductTypeScope();
   const countsFn = useServerFn(typeScopeCounts);
   const { data: orders, isFetching, refetch } = useQuery({
@@ -285,10 +287,17 @@ function OrdersPage() {
             {filtered.length} of {rows.length} orders
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} className="shrink-0 gap-1.5">
-          <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} /> Refresh
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1.5">
+            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} /> Refresh
+          </Button>
+          <Button size="sm" onClick={() => setQuickOpen(true)} className="gap-1.5">
+            <Plus className="h-3.5 w-3.5" /> Create order
+          </Button>
+        </div>
       </header>
+
+      <QuickOrderSheet open={quickOpen} onOpenChange={setQuickOpen} />
 
       {/* Summary */}
       <TypeFilterTabs

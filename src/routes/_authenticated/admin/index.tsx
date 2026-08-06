@@ -15,6 +15,7 @@ import { getInboxStats } from "@/lib/messenger-inbox.functions";
 import { AdSlot } from "@/components/admin/AdSlot";
 import { WelcomeCard } from "@/components/admin/dashboard/WelcomeCard";
 import { cn } from "@/lib/utils";
+import { QuickOrderSheet } from "@/components/admin/quick-order/QuickOrderSheet";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: Dashboard,
@@ -68,6 +69,7 @@ function Dashboard() {
     return `${window.location.origin}/store/${data.store.slug}`;
   }, [data?.store]);
 
+  const [quickOrderOpen, setQuickOrderOpen] = useState(false);
   const shareStore = async () => {
     if (!storeUrl) return;
     try { await navigator.clipboard.writeText(storeUrl); toast.success("Store link copied"); }
@@ -293,12 +295,15 @@ function Dashboard() {
         </div>
       </div>
 
+      <QuickOrderSheet open={quickOrderOpen} onOpenChange={setQuickOrderOpen} />
+
       {/* 6. Quick Actions */}
       <Card>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold tracking-tight">Quick Actions</h2>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <QuickAction onClick={() => setQuickOrderOpen(true)} icon={ShoppingBag} label="Create Order" tone="text-primary bg-primary/10" />
           <QuickAction to="/admin/products" icon={Plus} label="Add Product" tone="text-primary bg-primary/10" />
           <QuickAction to="/admin/coupons" icon={Ticket} label="Create Coupon" tone="text-emerald-600 bg-emerald-50" />
           <QuickAction to="/admin/banners" icon={ImageIcon} label="Create Banner" tone="text-violet-600 bg-violet-50" />
