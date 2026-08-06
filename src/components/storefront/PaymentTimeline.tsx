@@ -69,6 +69,11 @@ export function PaymentTimeline({ orderId, refreshKey }: { orderId: string; refr
   const failed = ["failed", "cancelled", "expired"].includes(data.payment_status);
   const lastMessage = [...data.events].reverse().find((e) => e.message)?.message ?? null;
 
+  // Cash on delivery never touches a gateway — no initiation / waiting messages.
+  if (isCodMethod(data.payment_method))
+    return <CodPaymentCard paid={paid} refunded={data.payment_status === "refunded"} />;
+
+
   return (
     <div className="mt-4 rounded-xl border bg-card p-4">
       <div className="mb-3 flex items-center gap-2 text-xs uppercase text-muted-foreground">
