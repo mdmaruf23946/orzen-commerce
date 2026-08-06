@@ -245,7 +245,7 @@ export const cancelMyOrder = createServerFn({ method: "POST" })
       } as any)
       .eq("id", data.orderId)
       .eq("store_id", storeId)
-      .eq("status", "pending");
+      .neq("status", "cancelled");
     if (error) throw new Error(error.message);
     return { ok: true };
   });
