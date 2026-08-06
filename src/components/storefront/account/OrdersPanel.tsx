@@ -4,8 +4,25 @@ import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Search, Download, Truck, Wrench, RefreshCw, ChevronRight, Package } from "lucide-react";
+import {
+  Search,
+  Download,
+  Truck,
+  Wrench,
+  RefreshCw,
+  ChevronRight,
+  ChevronDown,
+  Package,
+  RotateCcw,
+  Repeat,
+} from "lucide-react";
 import { listMyOrders, cancelMyOrder } from "@/lib/customer-account.functions";
+import { createMyReturnRequest } from "@/lib/returns.functions";
+import {
+  ReturnRequestDialog,
+  ReturnStatusCard,
+  type RequestPayload,
+} from "@/components/storefront/order/ReturnRequestDialog";
 import {
   ORDER_TYPE_ACTION,
   ORDER_TYPE_LABEL,
@@ -30,6 +47,23 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EmptyState } from "./EmptyState";
+
+const RETURN_STATUS_LABEL: Record<string, string> = {
+  requested: "Return pending",
+  approved: "Return approved",
+  rejected: "Return rejected",
+  refunded: "Refunded",
+  completed: "Return completed",
+};
+
+const RETURN_STATUS_TONE: Record<string, string> = {
+  requested: "bg-amber-50 text-amber-700 ring-amber-200",
+  approved: "bg-blue-50 text-blue-700 ring-blue-200",
+  rejected: "bg-rose-50 text-rose-700 ring-rose-200",
+  refunded: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  completed: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+};
+
 
 const TYPE_TABS: { key: "all" | OrderType; label: string }[] = [
   { key: "all", label: "All" },
