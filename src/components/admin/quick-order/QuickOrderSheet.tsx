@@ -421,9 +421,7 @@ export function QuickOrderSheet({
                         return (
                           <div key={p.id} className="rounded-lg border p-2">
                             <div className="flex items-center gap-2">
-                              {p.image
-                                ? <img src={p.image} alt="" className="h-10 w-10 rounded object-cover" />
-                                : <div className="h-10 w-10 rounded bg-muted" />}
+                              <PickThumb url={p.image} className="h-10 w-10" />
                               <div className="min-w-0 flex-1">
                                 <p className="truncate text-sm font-medium">{p.name}</p>
                                 <p className="text-xs text-muted-foreground">
