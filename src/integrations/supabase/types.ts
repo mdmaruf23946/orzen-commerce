@@ -3826,6 +3826,7 @@ export type Database = {
           created_at: string
           customer_id: string | null
           customer_name: string | null
+          customer_note: string | null
           id: string
           images: string[]
           items: Json
@@ -3847,6 +3848,7 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           customer_name?: string | null
+          customer_note?: string | null
           id?: string
           images?: string[]
           items?: Json
@@ -3868,6 +3870,7 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           customer_name?: string | null
+          customer_note?: string | null
           id?: string
           images?: string[]
           items?: Json
@@ -6868,6 +6871,7 @@ export type Database = {
         Args: {
           _images: string[]
           _items: Json
+          _note: string
           _order_id: string
           _reason: string
           _replacement_note: string
