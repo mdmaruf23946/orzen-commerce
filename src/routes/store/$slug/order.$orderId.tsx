@@ -218,10 +218,15 @@ function OrderConfirmation() {
             This order has been cancelled.
           </div>
         ) : (
+          <>
           <ol className="space-y-3">
             {STAGE_ORDER.map((stage) => {
               const event = timeline.find((t) => t.stage === stage);
-              const done = !!event;
+              const done =
+                !!event ||
+                (stage === "completed" &&
+                  reachedStages.has("delivered") &&
+                  (order as any).payment_status === "paid");
               return (
                 <li key={stage} className="flex items-start gap-3">
                   <span
@@ -246,7 +251,10 @@ function OrderConfirmation() {
               );
             })}
           </ol>
+          <ReturnStages order={order} slug={slug} />
+          </>
         )}
+
 
         {(order as any).courier_name || (order as any).courier_tracking_id ? (
           <div className="mt-4 rounded-lg border bg-muted/30 p-3 text-sm">
