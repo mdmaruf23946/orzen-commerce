@@ -281,23 +281,43 @@ export const listReturns = createServerFn({ method: "GET" })
     const orderIds = Array.from(new Set(rows.map((r) => r.order_id)));
     const { data: items } = await context.supabase
       .from("order_items")
-      .select("order_id,qty,price_snapshot,name_snapshot,product_id, products(primary_image_url)")
+      .select("order_id,qty,price_snapshot,name_snapshot,product_id, products(primary_image_url,images)")
       .in("order_id", orderIds);
     const byOrder = new Map<string, any[]>();
+    const imageByProduct = new Map<string, string>();
+    const imageByName = new Map<string, string>();
     for (const it of (items ?? []) as any[]) {
+      const image: string | null =
+        it.products?.primary_image_url ?? (Array.isArray(it.products?.images) ? it.products.images[0] : null) ?? null;
+      if (image && it.product_id) imageByProduct.set(it.product_id, image);
+      if (image && it.name_snapshot) imageByName.set(String(it.name_snapshot).trim().toLowerCase(), image);
       const list = byOrder.get(it.order_id) ?? [];
       list.push({
         product_id: it.product_id,
         name: it.name_snapshot,
         qty: it.qty,
         price: Number(it.price_snapshot ?? 0),
-        image: it.products?.primary_image_url ?? null,
+        image,
       });
       byOrder.set(it.order_id, list);
     }
+    // Shopper-submitted items only carry name/qty/price — backfill the thumbnail
+    // from the matching order line so admin cards always show the product photo.
+    const withImages = (list: any[]) =>
+      list.map((it) => ({
+        ...it,
+        image:
+          it.image ??
+          (it.product_id ? imageByProduct.get(it.product_id) : null) ??
+          imageByName.get(String(it.name ?? "").trim().toLowerCase()) ??
+          null,
+      }));
     return rows.map((r) => ({
       ...r,
-      items: Array.isArray(r.items) && r.items.length ? r.items : (byOrder.get(r.order_id) ?? []),
+      items:
+        Array.isArray(r.items) && r.items.length
+          ? withImages(r.items as any[])
+          : (byOrder.get(r.order_id) ?? []),
       order_items: byOrder.get(r.order_id) ?? [],
     }));
   });
