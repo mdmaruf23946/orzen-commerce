@@ -219,6 +219,8 @@
 
 
 /* ---- Print: isolate invoice content only ---- */
+.print-root { display: none; }
+
 @media print {
   @page { size: A4; margin: 0; }
   html, body {
@@ -228,17 +230,17 @@
     height: auto !important;
     overflow: visible !important;
   }
-  body * { visibility: hidden !important; }
-  .print-root, .print-root * { visibility: visible !important; }
+  /* Hide the app shell entirely, keep only the portalled invoice. */
+  body:has(> .print-root) > *:not(.print-root) { display: none !important; }
   .print-root {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    margin: 0 !important;
+    display: block !important;
+    position: static !important;
+    margin: 0 auto !important;
     padding: 0 !important;
     box-shadow: none !important;
     background: #fff !important;
   }
+  .print-root * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .no-print, [data-no-print] { display: none !important; }
 }
+

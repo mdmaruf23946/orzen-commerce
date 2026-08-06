@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -16,7 +17,10 @@ export const Route = createFileRoute("/_authenticated/admin/invoice/$orderId")({
 function FitInvoice({ canvas, brand, data }: { canvas: any; brand: any; data: any }) {
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [mounted, setMounted] = useState(false);
   const pageW = canvas?.page?.width ?? 794;
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const el = ref.current;
@@ -34,13 +38,18 @@ function FitInvoice({ canvas, brand, data }: { canvas: any; brand: any; data: an
       <div className="print:hidden">
         <InvoiceRenderer canvas={canvas} brand={brand} data={data} scale={scale} className="mx-auto shadow" />
       </div>
-      {/* print: untouched full-size layout, isolated from admin chrome */}
-      <div className="print-root hidden print:block">
-        <InvoiceRenderer canvas={canvas} brand={brand} data={data} />
-      </div>
+      {/* print: portalled to <body> so no admin layout clipping applies */}
+      {mounted &&
+        createPortal(
+          <div className="print-root">
+            <InvoiceRenderer canvas={canvas} brand={brand} data={data} />
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
+
 
 function InvoicePage() {
   const { orderId } = Route.useParams();
