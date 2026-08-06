@@ -397,6 +397,19 @@ export function ReturnDrawer({ request, onClose }: { request: any | null; onClos
               )}
 
               <div className="space-y-2 rounded-lg border p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Label>Use global settings</Label>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      Off = enter manual charges for this request only.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={useGlobal}
+                    disabled={toggleGlobal.isPending}
+                    onCheckedChange={(v) => toggleGlobal.mutate(v)}
+                  />
+                </div>
                 <Label>Adjust charges</Label>
                 <div className="grid grid-cols-3 gap-2">
                   <Input
