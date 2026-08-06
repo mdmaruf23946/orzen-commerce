@@ -167,6 +167,7 @@ export const listMyOrders = createServerFn({ method: "POST" })
         shipped: shippedIds.has(o.id),
         returns: orderReturns,
         return_eligible:
+          returnsEnabled &&
           (o.order_type ?? "physical") === "physical" &&
           o.status !== "cancelled" &&
           !!delivered &&
