@@ -231,7 +231,7 @@
     overflow: visible !important;
   }
   /* Hide the app shell entirely, keep only the portalled invoice. */
-  body > *:not(.print-root) { display: none !important; }
+  body:has(> .print-root) > *:not(.print-root) { display: none !important; }
   .print-root {
     display: block !important;
     position: static !important;
