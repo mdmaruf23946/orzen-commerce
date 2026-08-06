@@ -41,11 +41,21 @@ const STAGE_LABEL: Record<string, string> = {
   courier_assigned: "Courier Assigned",
   shipped: "Shipped",
   delivered: "Delivered",
+  completed: "Completed",
   returned: "Returned",
   cancelled: "Cancelled",
 };
 
-const STAGE_ORDER = ["placed", "confirmed", "packed", "courier_assigned", "shipped", "delivered"];
+const STAGE_ORDER = [
+  "placed",
+  "confirmed",
+  "packed",
+  "courier_assigned",
+  "shipped",
+  "delivered",
+  "completed",
+];
+
 
 function OrderConfirmation() {
   const { slug, orderId } = Route.useParams();
