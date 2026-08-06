@@ -4812,6 +4812,8 @@ export type Database = {
           delta: number
           id: string
           product_id: string
+          qty_after: number | null
+          qty_before: number | null
           reason: string | null
           ref_order_id: string | null
           store_id: string
@@ -4823,6 +4825,8 @@ export type Database = {
           delta: number
           id?: string
           product_id: string
+          qty_after?: number | null
+          qty_before?: number | null
           reason?: string | null
           ref_order_id?: string | null
           store_id: string
@@ -4834,6 +4838,8 @@ export type Database = {
           delta?: number
           id?: string
           product_id?: string
+          qty_after?: number | null
+          qty_before?: number | null
           reason?: string | null
           ref_order_id?: string | null
           store_id?: string

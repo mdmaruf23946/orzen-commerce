@@ -79,7 +79,10 @@ export const adjustStock = createServerFn({ method: "POST" })
       type: data.delta >= 0 ? "manual_in" : "manual_out",
       reason: data.reason ?? null,
       created_by: context.userId,
+      qty_before: prod.stock ?? 0,
+      qty_after: newStock,
     });
+
     if (e2) throw new Error(e2.message);
     return { stock: newStock };
   });
