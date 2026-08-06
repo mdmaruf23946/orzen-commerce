@@ -36,7 +36,10 @@ const STATUS_STYLE: Record<string, string> = {
 
 function img(p?: string | null) {
   if (!p) return null;
-  return /^https?:\/\//i.test(p) ? p : `/api/img/${p}`;
+  const raw = p.trim();
+  if (!raw) return null;
+  if (/^(https?:|data:|blob:)/i.test(raw) || raw.startsWith("/")) return raw;
+  return `/api/img/${raw}`;
 }
 
 function matches(tab: TabKey, status: string) {
