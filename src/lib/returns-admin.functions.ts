@@ -197,6 +197,14 @@ export const runReturnAction = createServerFn({ method: "POST" })
     if (!sid) throw new Error("No store");
     const sb = await admin();
     const r = await loadRequest(sb, sid, data.id);
+    const { data: settingsRow } = await sb
+      .from("store_return_settings")
+      .select("auto_workflow")
+      .eq("store_id", sid)
+      .maybeSingle();
+    const auto = normalizeAutoWorkflow((settingsRow as any)?.auto_workflow);
+
+
 
     const patch: Record<string, any> = {};
     let nextStatus: string | null = null;
