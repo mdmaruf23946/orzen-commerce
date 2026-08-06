@@ -152,7 +152,7 @@ export const getReturnContext = createServerFn({ method: "POST" })
     });
 
     let catalogue: any[] = [];
-    if (policy.allow_exchange_other) {
+    if (policy.allow_exchange_other && policy.replacement_source !== "cart") {
       const { data: prods } = await sb
         .from("products")
         .select("id,name,price,stock,variants,primary_image_url,gallery,product_type,status")
