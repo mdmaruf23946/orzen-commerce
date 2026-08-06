@@ -368,7 +368,18 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
         </ul>
       )}
 
+      {returnFor && (
+        <ReturnRequestDialog
+          initialType={returnFor.type}
+          items={(returnFor.order.items as any[]) ?? []}
+          submitting={returnBusy}
+          onClose={() => setReturnFor(null)}
+          onSubmit={submitReturn}
+        />
+      )}
+
       <AlertDialog open={!!cancelId} onOpenChange={(o) => !o && setCancelId(null)}>
+
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel this order?</AlertDialogTitle>
