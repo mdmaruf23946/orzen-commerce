@@ -206,7 +206,8 @@ function OrderConfirmation() {
         </>
       ) : (
       /* Tracking Stepper */
-      <div className="mt-6 rounded-xl border bg-card p-4">
+      <div id="order-tracking" className="mt-6 scroll-mt-20 rounded-xl border bg-card p-4">
+
 
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold">Order tracking</h2>
