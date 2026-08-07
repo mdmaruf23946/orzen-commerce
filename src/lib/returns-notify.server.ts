@@ -107,6 +107,29 @@ export async function notifyReturnStatus(
       meta: { return_id: ret.id, order_id: ret.order_id, store_id: ret.store_id, status },
     } as any);
 
+    // Store's own notification channels.
+    let custEmail: string | null = null;
+    let custPhone: string | null = null;
+    {
+      const { data: o } = await sb
+        .from("orders")
+        .select("email,phone")
+        .eq("id", ret.order_id)
+        .maybeSingle();
+      custEmail = (o as any)?.email ?? null;
+      custPhone = (o as any)?.phone ?? null;
+    }
+    try {
+      const { dispatchNotification } = await import("@/lib/notify-dispatch.server");
+      await dispatchNotification(sb, {
+        storeId: ret.store_id,
+        event: "return_update",
+        subject: `Return ${ref}: ${label}`,
+        message: `${storeName} — return ${ref} is now ${label}.${note ? " " + note : ""}`,
+        customer: { email: custEmail, phone: custPhone },
+      });
+    } catch { /* best effort */ }
+
     if (opts.notifyCustomer === false) return;
 
     const message = customerMessage(ret, status, storeName);

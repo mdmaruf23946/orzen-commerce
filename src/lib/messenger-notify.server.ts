@@ -2,6 +2,7 @@
 // Sends Messenger updates to the customer who placed the order.
 import { sendPostPurchaseUpdate } from "@/lib/messenger-send.server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import type { NotifyEventKey } from "@/lib/notify-settings";
 
 const STAGE_MESSAGES: Record<string, (o: any) => string> = {
   placed: (o) => `✅ আপনার অর্ডার ${o.invoice_no ? "#" + o.invoice_no : ""} গ্রহণ করা হয়েছে। শীঘ্রই কনফার্ম করা হবে।`,
@@ -12,6 +13,17 @@ const STAGE_MESSAGES: Record<string, (o: any) => string> = {
   cancelled: (o) => `❌ আপনার অর্ডার ${o.invoice_no ? "#" + o.invoice_no : ""} বাতিল হয়েছে। প্রয়োজনে আমাদের সাথে যোগাযোগ করুন।`,
   returned: (o) => `↩️ আপনার অর্ডার ${o.invoice_no ? "#" + o.invoice_no : ""} রিটার্ন হিসাবে রেকর্ড করা হয়েছে।`,
   courier_assigned: (o) => `🚚 আপনার অর্ডার ${o.invoice_no ? "#" + o.invoice_no : ""} কুরিয়ারে অ্যাসাইন করা হয়েছে।`,
+};
+
+const STAGE_EVENTS: Record<string, NotifyEventKey> = {
+  placed: "new_order",
+  confirmed: "order_confirmed",
+  packed: "order_status",
+  shipped: "order_status",
+  delivered: "order_status",
+  cancelled: "order_cancelled",
+  returned: "return_update",
+  courier_assigned: "courier_update",
 };
 
 type MessengerConversation = { id: string; external_id: string | null };
@@ -79,7 +91,7 @@ export async function drainOutbox(opts: { orderId?: string; limit?: number; late
 
       const { data: order } = await supabaseAdmin
         .from("orders")
-        .select("id,invoice_no,phone,subtotal,delivery_amount,courier_tracking_id")
+        .select("id,invoice_no,phone,email,subtotal,delivery_amount,courier_tracking_id")
         .eq("id", row.order_id)
         .maybeSingle();
       if (!order) throw new Error("order_missing");
@@ -88,6 +100,19 @@ export async function drainOutbox(opts: { orderId?: string; limit?: number; late
         grand_total: Number(order.subtotal ?? 0) + Number(order.delivery_amount ?? 0),
       };
       const text = builder(orderView);
+
+      // Fan out to the store's own notification channels (WhatsApp/Email/SMS).
+      const event = STAGE_EVENTS[row.stage];
+      if (event) {
+        const { dispatchNotification } = await import("@/lib/notify-dispatch.server");
+        await dispatchNotification(supabaseAdmin, {
+          storeId: row.store_id,
+          event,
+          subject: `Order ${order.invoice_no ? "#" + order.invoice_no : ""} — ${row.stage}`.trim(),
+          message: text,
+          customer: { phone: (order as any).phone, email: (order as any).email },
+        });
+      }
 
       const phoneNorm = order.phone ? String(order.phone).replace(/\D/g, "") : null;
       // Try multiple phone normalizations (raw, 0xxxxx, 880xxxx)
