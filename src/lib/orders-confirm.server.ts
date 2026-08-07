@@ -119,6 +119,23 @@ export async function handlePaymentConfirmed(sb: Sb, orderId: string) {
   if (!order) return { confirmed: false };
   const kind: OrderKind = (order as any).order_type ?? "physical";
 
+  // Store notification channels: payment update.
+  try {
+    const { data: full } = await sb
+      .from("orders")
+      .select("invoice_no,email,phone")
+      .eq("id", orderId)
+      .maybeSingle();
+    const { dispatchNotification } = await import("@/lib/notify-dispatch.server");
+    await dispatchNotification(sb, {
+      storeId: (order as any).store_id,
+      event: "payment_update",
+      subject: `Payment received${(full as any)?.invoice_no ? " — #" + (full as any).invoice_no : ""}`,
+      message: `Payment for order ${(full as any)?.invoice_no ? "#" + (full as any).invoice_no : orderId.slice(0, 8)} has been received.`,
+      customer: { email: (full as any)?.email, phone: (full as any)?.phone },
+    });
+  } catch { /* best effort */ }
+
   if (kind === "physical") {
     // Legacy safety net: older physical orders may still carry digital items.
     const { activateDigitalAccess } = await import("@/lib/digital.server");
