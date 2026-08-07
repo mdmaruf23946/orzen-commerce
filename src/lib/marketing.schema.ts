@@ -60,3 +60,33 @@ export const GTM_ID_RE = /^GTM-[A-Z0-9]{4,10}$/i;
 export const TT_PIXEL_RE = /^[A-Z0-9]{10,30}$/i;
 
 export type PlatformStatus = "connected" | "test" | "not_configured" | "error";
+
+export const facebookSchema = z
+  .object({
+    fb_pixel_id: z.string().trim().max(60).optional().nullable(),
+    fb_pixel_enabled: z.boolean().optional(),
+    fb_capi_token: z.string().trim().max(300).optional().nullable(),
+    fb_capi_enabled: z.boolean().optional(),
+    fb_test_event_code: z.string().trim().max(40).optional().nullable(),
+  })
+  .superRefine((v, ctx) => {
+    if (v.fb_pixel_id && !/^\d{15,17}$/.test(v.fb_pixel_id)) {
+      ctx.addIssue({ code: "custom", path: ["fb_pixel_id"], message: "Facebook Pixel ID must be 15–17 digits" });
+    }
+    if (v.fb_capi_enabled && (!v.fb_capi_token || v.fb_capi_token.length < 40)) {
+      ctx.addIssue({ code: "custom", path: ["fb_capi_token"], message: "CAPI access token looks too short" });
+    }
+    if (v.fb_test_event_code && !/^[A-Za-z0-9_-]{4,40}$/.test(v.fb_test_event_code)) {
+      ctx.addIssue({ code: "custom", path: ["fb_test_event_code"], message: "Invalid test event code" });
+    }
+  });
+
+export type FacebookConfig = z.infer<typeof facebookSchema>;
+
+export const facebookDefaults = {
+  fb_pixel_id: "",
+  fb_pixel_enabled: true,
+  fb_capi_token: "",
+  fb_capi_enabled: false,
+  fb_test_event_code: "",
+};

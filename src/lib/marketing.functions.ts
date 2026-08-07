@@ -1,7 +1,7 @@
 // Marketing settings server functions — Google + TikTok (Facebook lives in admin.functions.ts).
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { googleSchema, tiktokSchema } from "@/lib/marketing.schema";
+import { facebookSchema, googleSchema, tiktokSchema } from "@/lib/marketing.schema";
 
 export const updateMarketingGoogle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -146,4 +146,14 @@ export const sendTiktokTestEvent = createServerFn({ method: "POST" })
         },
       ],
     });
+  });
+
+export const updateMarketingFacebook = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => facebookSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { assertPlan } = await import("@/lib/plan-guard");
+    await assertPlan(context.supabase, context.userId, "pixel");
+    const { saveMarketingNamespace } = await import("@/lib/marketing.server");
+    return saveMarketingNamespace(context.supabase, context.userId, null, data as Record<string, unknown>);
   });
