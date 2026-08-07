@@ -172,7 +172,18 @@ function toMessengerUrl(fb: string | null): string | null {
 function TrackingScripts({ marketing, slug }: { marketing: any; slug: string }) {
   const m = marketing ?? {};
   const en = m.enabled ?? {};
+  const g = m.google ?? {};
+  const tt = m.tiktok ?? {};
   const slugForInit = slug;
+
+  // Namespaced config wins; legacy top-level ids stay supported.
+  const gtmId = (g.gtm_enabled !== false && (g.gtm_id || (g.gtm_id === undefined ? m.gtm_id : ""))) || "";
+  const ga4Id = (g.ga4_enabled !== false && (g.ga4_id || (g.ga4_id === undefined ? m.ga4_id : ""))) || "";
+  const adsId = (g.ads_enabled ? g.ads_conversion_id : "") || "";
+  const ttPixel = (tt.pixel_enabled !== false && (tt.pixel_id || (tt.pixel_id === undefined ? m.tiktok_pixel_id : ""))) || "";
+  const ttServer = !!tt.events_api_enabled;
+  const ga4Server = !!(g.ga4_enabled && g.ga4_api_secret);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const added: HTMLScriptElement[] = [];
@@ -184,39 +195,74 @@ function TrackingScripts({ marketing, slug }: { marketing: any; slug: string }) 
       document.head.appendChild(s);
       added.push(s);
     };
-    if (m.gtm_id && en.gtm !== false) {
+    const fbOn = !!m.fb_pixel_id && m.fb_pixel_enabled !== false && en.fb_pixel !== false;
+    const gtmOn = !!gtmId && en.gtm !== false;
+    const ga4On = !!ga4Id && en.ga4 !== false;
+    const ttOn = !!ttPixel && en.tiktok !== false;
+
+    (window as any).__trackInit = {
+      slug: slugForInit,
+      fbPixel: fbOn,
+      ga4: ga4On,
+      ga4Server,
+      ads: adsId ? { id: adsId, label: g.ads_conversion_label || "", purchase: g.ads_purchase_tracking !== false } : null,
+      tiktokPixel: ttOn,
+      tiktokServer: ttServer,
+    };
+
+    if (gtmOn) {
       add(
         "",
-        `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s);j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${m.gtm_id}');`,
+        `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s);j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${gtmId}');`,
       );
     }
-    if (m.ga4_id && en.ga4 !== false) {
-      add(`https://www.googletagmanager.com/gtag/js?id=${m.ga4_id}`);
+    if (ga4On || adsId) {
+      const bootId = ga4On ? ga4Id : adsId;
+      add(`https://www.googletagmanager.com/gtag/js?id=${bootId}`);
       add(
         "",
-        `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${m.ga4_id}');`,
+        `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=gtag;gtag('js',new Date());${ga4On ? `gtag('config','${ga4Id}');` : ""}${adsId ? `gtag('config','${adsId}');` : ""}`,
       );
     }
-    if (m.fb_pixel_id && m.fb_pixel_enabled !== false && en.fb_pixel !== false) {
+    if (fbOn) {
       (window as any).__fbInit = { slug: slugForInit, pixelId: m.fb_pixel_id };
       add(
         "",
         `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${m.fb_pixel_id}');`,
       );
-      import("@/lib/fb-track").then(({ fbTrack }) => fbTrack("PageView"));
     }
-    if (m.tiktok_pixel_id && en.tiktok !== false) {
+    if (ttOn) {
       add(
         "",
-        `!function (w, d, t) {w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e};ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=i,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};var o=document.createElement("script");o.type="text/javascript",o.async=!0,o.src=i+"?sdkid="+e+"&lib="+t;var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};ttq.load('${m.tiktok_pixel_id}');ttq.page();}(window,document,'ttq');`,
+        `!function (w, d, t) {w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e};ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=i,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};var o=document.createElement("script");o.type="text/javascript",o.async=!0,o.src=i+"?sdkid="+e+"&lib="+t;var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};ttq.load('${ttPixel}');}(window,document,'ttq');`,
       );
+    }
+    if (fbOn || ga4On || ga4Server || ttOn || ttServer) {
+      import("@/lib/fb-track").then(({ track }) => track("PageView"));
     }
     return () => {
       for (const s of added) s.remove();
     };
-  }, [m.gtm_id, m.ga4_id, m.fb_pixel_id, m.fb_pixel_enabled, m.tiktok_pixel_id, en.gtm, en.ga4, en.fb_pixel, en.tiktok, slugForInit]);
+  }, [
+    gtmId,
+    ga4Id,
+    adsId,
+    ga4Server,
+    ttPixel,
+    ttServer,
+    g.ads_conversion_label,
+    g.ads_purchase_tracking,
+    m.fb_pixel_id,
+    m.fb_pixel_enabled,
+    en.gtm,
+    en.ga4,
+    en.fb_pixel,
+    en.tiktok,
+    slugForInit,
+  ]);
   return null;
 }
+
 
 function StoreHeader({
   slug,
