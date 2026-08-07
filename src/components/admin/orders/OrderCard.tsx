@@ -133,11 +133,13 @@ type Props = {
   onView: () => void;
   onFraud: () => void;
   onStatus: (status: string) => void;
+  selected?: boolean;
+  onSelectChange?: (v: boolean) => void;
 };
 
 const STATUSES = ["pending", "confirmed", "processing", "delivered", "cancelled"] as const;
 
-export function OrderCard({ order, onView, onFraud, onStatus }: Props) {
+export function OrderCard({ order, onView, onFraud, onStatus, selected, onSelectChange }: Props) {
   const [open, setOpen] = useState(false);
   const first = order.items[0];
 
@@ -150,13 +152,25 @@ export function OrderCard({ order, onView, onFraud, onStatus }: Props) {
   }
 
   return (
-    <article className="group rounded-2xl border bg-card p-3 shadow-sm transition-all duration-200 hover:border-primary/40 hover:shadow-md sm:p-4">
+    <article
+      className={`group rounded-2xl border bg-card p-3 shadow-sm transition-all duration-200 hover:border-primary/40 hover:shadow-md sm:p-4 ${selected ? "border-primary ring-1 ring-primary/30" : ""}`}
+    >
       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-3">
         {/* Left */}
         <div className="flex flex-col items-center gap-1.5">
+          {onSelectChange && (
+            <input
+              type="checkbox"
+              checked={!!selected}
+              onChange={(e) => onSelectChange(e.target.checked)}
+              aria-label={`Select order ${order.invoice_no ?? order.id.slice(0, 8)}`}
+              className="h-4 w-4 accent-[hsl(var(--primary))]"
+            />
+          )}
           <Thumb url={first?.image} alt={first?.name ?? "Product"} className="h-14 w-14 sm:h-16 sm:w-16" />
           {order.tags.includes("new_order") && <Tag tag="new_order" />}
         </div>
+
 
         {/* Center */}
         <button onClick={() => setOpen((v) => !v)} className="min-w-0 text-left sm:cursor-default" type="button">
