@@ -298,6 +298,7 @@ export const searchQuickOrderProducts = createServerFn({ method: "POST" })
         .from("categories")
         .select("id,name")
         .eq("store_id", storeId)
+        .eq("product_type", "physical")
         .order("name")
         .limit(100),
     ]);
