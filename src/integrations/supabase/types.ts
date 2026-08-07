@@ -4883,12 +4883,21 @@ export type Database = {
       store_ai_agents: {
         Row: {
           agent_name: string
+          ask_for_info: boolean
           created_at: string
+          description: string
           enabled: boolean
+          escalate_to_human: boolean
+          fallback_message: string
           human_like: boolean
           id: string
           knowledge: Json
           language: string
+          order_assistance: boolean
+          product_recommendations: boolean
+          recommend_related: boolean
+          sales_focused: boolean
+          sources: Json
           store_id: string
           style: string
           updated_at: string
@@ -4897,12 +4906,21 @@ export type Database = {
         }
         Insert: {
           agent_name?: string
+          ask_for_info?: boolean
           created_at?: string
+          description?: string
           enabled?: boolean
+          escalate_to_human?: boolean
+          fallback_message?: string
           human_like?: boolean
           id?: string
           knowledge?: Json
           language?: string
+          order_assistance?: boolean
+          product_recommendations?: boolean
+          recommend_related?: boolean
+          sales_focused?: boolean
+          sources?: Json
           store_id: string
           style?: string
           updated_at?: string
@@ -4911,12 +4929,21 @@ export type Database = {
         }
         Update: {
           agent_name?: string
+          ask_for_info?: boolean
           created_at?: string
+          description?: string
           enabled?: boolean
+          escalate_to_human?: boolean
+          fallback_message?: string
           human_like?: boolean
           id?: string
           knowledge?: Json
           language?: string
+          order_assistance?: boolean
+          product_recommendations?: boolean
+          recommend_related?: boolean
+          sales_focused?: boolean
+          sources?: Json
           store_id?: string
           style?: string
           updated_at?: string
