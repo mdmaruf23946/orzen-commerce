@@ -1,127 +1,109 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { FeatureGate } from "@/components/admin/FeatureGate";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { businessAnalytics } from "@/lib/business.functions";
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { AdSlot } from "@/components/admin/AdSlot";
+import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
 import { useProductTypeScope, scopeTabs } from "@/lib/product-type-scope";
+import { storeAnalytics } from "@/lib/analytics.functions";
+import {
+  analyticsRange,
+  compareRange,
+  type AnalyticsRangeKey,
+  type CompareKey,
+  type DateRange,
+} from "@/lib/analytics-ui";
+import { AnalyticsRangeBar } from "@/components/admin/analytics/AnalyticsRangeBar";
+import { KpiGrid } from "@/components/admin/analytics/KpiGrid";
+import { RevenueChart } from "@/components/admin/analytics/RevenueChart";
+import { SalesBreakdown } from "@/components/admin/analytics/SalesBreakdown";
+import { OrdersOverview } from "@/components/admin/analytics/OrdersOverview";
+import { ProductPerformance } from "@/components/admin/analytics/ProductPerformance";
+import { CustomerInsights } from "@/components/admin/analytics/CustomerInsights";
+import { TypeSections } from "@/components/admin/analytics/TypeSections";
+import { SalesFunnel } from "@/components/admin/analytics/SalesFunnel";
+import { ActivityFeed } from "@/components/admin/analytics/ActivityFeed";
+import { Insights, ProfitPanel } from "@/components/admin/analytics/ProfitPanel";
 
 export const Route = createFileRoute("/_authenticated/admin/analytics")({
-  component: () => <FeatureGate feature="analytics"><AnalyticsPage /></FeatureGate>,
+  component: () => (
+    <FeatureGate feature="analytics">
+      <AnalyticsPage />
+    </FeatureGate>
+  ),
 });
 
-function Sparkline({ data }: { data: number[] }) {
-  if (data.length === 0) return null;
-  const max = Math.max(...data, 1);
-  const w = 280, h = 60;
-  const step = w / Math.max(data.length - 1, 1);
-  const pts = data.map((v, i) => `${(i * step).toFixed(1)},${(h - (v / max) * h).toFixed(1)}`).join(" ");
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="h-16 w-full">
-      <polyline fill="none" stroke="currentColor" strokeWidth="2" points={pts} className="text-primary" />
-    </svg>
-  );
-}
-
 function AnalyticsPage() {
-  const a = useServerFn(businessAnalytics);
+  const run = useServerFn(storeAnalytics);
   const { scope, setScope, filter } = useProductTypeScope();
-  const { data } = useQuery({
-    queryKey: ["analytics", filter ?? "all"],
-    queryFn: () => a({ data: { product_type: filter } } as any),
+  const [rangeKey, setRangeKey] = useState<AnalyticsRangeKey>("30d");
+  const [customRange, setCustomRange] = useState<DateRange>(analyticsRange("this_month"));
+  const [compare, setCompare] = useState<CompareKey>("previous_period");
+
+  const range = useMemo(() => analyticsRange(rangeKey, customRange), [rangeKey, customRange]);
+  const cmp = useMemo(() => compareRange(range, compare), [range, compare]);
+
+  const { data, isFetching } = useQuery({
+    queryKey: ["analytics", filter ?? "all", range.from, range.to, cmp.from, cmp.to],
+    queryFn: () =>
+      run({
+        data: {
+          product_type: filter,
+          from: range.from,
+          to: range.to,
+          compare_from: cmp.from,
+          compare_to: cmp.to,
+        },
+      } as any),
+    placeholderData: (prev) => prev,
   });
-  const tabs = scopeTabs({});
 
-  if (!data)
-    return (
-      <div className="space-y-4">
-        <TypeFilterTabs tabs={tabs.map((t) => ({ key: t.key, label: t.label.replace(/ \(0\)$/, "") }))} value={scope} onChange={(k) => setScope(k as any)} />
-        <div className="text-sm text-muted-foreground">Loading…</div>
-      </div>
-    );
-
-  const totalCustomers = data.newCustomers + data.returningCustomers;
-  const returningPct = totalCustomers ? ((data.returningCustomers / totalCustomers) * 100).toFixed(0) : "0";
+  const tabs = scopeTabs({}).map((t) => ({ key: t.key, label: t.label.replace(/ \(0\)$/, "") }));
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Business Analytics</h1>
-      <TypeFilterTabs
-        tabs={tabs.map((t) => ({ key: t.key, label: t.label.replace(/ \(0\)$/, "") }))}
-        value={scope}
-        onChange={(k) => setScope(k as any)}
+    <div className="space-y-4 pb-10">
+      <AdminPageHeader
+        title="Analytics"
+        description="Business performance from your real store data."
+      />
+      <TypeFilterTabs tabs={tabs} value={scope} onChange={(k) => setScope(k as any)} />
+      <AnalyticsRangeBar
+        rangeKey={rangeKey}
+        onRangeKey={setRangeKey}
+        custom={customRange}
+        onCustom={setCustomRange}
+        compare={compare}
+        onCompare={setCompare}
       />
 
-      <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase text-muted-foreground">Sales</h2>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Card label="Total Sales" value={`৳${data.totalSales.toFixed(0)}`} />
-          <Card label="Total Orders" value={data.totalOrders} />
-          <Card label="Average Order Value" value={`৳${data.aov.toFixed(0)}`} />
+      {!data ? (
+        <div className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
+          {isFetching ? "Loading analytics…" : "No analytics available yet."}
         </div>
-        <div className="mt-3 rounded-xl border bg-card p-4">
-          <div className="mb-1 text-xs text-muted-foreground">Last 14 days revenue</div>
-          <Sparkline data={data.series.map((s) => s.sales)} />
-          <div className="mt-2 grid grid-cols-7 gap-1 text-[10px] text-muted-foreground">
-            {data.series.filter((_, i) => i % 2 === 0).map((s) => (
-              <span key={s.d}>{s.d.slice(5)}</span>
-            ))}
+      ) : (
+        <div className={isFetching ? "space-y-4 opacity-60 transition-opacity" : "space-y-4"}>
+          <KpiGrid k={data.kpis} />
+          <RevenueChart series={data.series} mode={data.range.mode} />
+          <div className="grid gap-3 lg:grid-cols-2">
+            <SalesBreakdown rows={data.typeBreakdown} />
+            <OrdersOverview counts={data.statusCounts} />
+          </div>
+          <ProductPerformance products={data.products} />
+          <CustomerInsights customers={data.customers} series={data.series} mode={data.range.mode} />
+          <div className="grid gap-3 lg:grid-cols-2">
+            <ProfitPanel finance={data.finance} />
+            <SalesFunnel funnel={data.funnel} marketing={data.marketing} />
+          </div>
+          <TypeSections data={data} />
+          <div className="grid gap-3 lg:grid-cols-2">
+            <ActivityFeed items={data.activity} />
+            <Insights items={data.insights} />
           </div>
         </div>
-      </section>
-
-      <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase text-muted-foreground">Products</h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <List title="Best selling" items={data.bestSellers} />
-          <List title="Lowest selling" items={data.worstSellers} />
-        </div>
-      </section>
-
-      <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase text-muted-foreground">Customers</h2>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Card label="New Customers" value={data.newCustomers} />
-          <Card label="Returning Customers" value={data.returningCustomers} />
-          <Card label="Returning Rate" value={`${returningPct}%`} />
-        </div>
-      </section>
-
-      <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase text-muted-foreground">Performance</h2>
-        <p className="rounded-xl border bg-card p-4 text-xs text-muted-foreground">
-          Conversion rate, add-to-cart rate, and checkout success rate require client-side event tracking. Configure Facebook Pixel or GA4 in <b>Marketing</b> to populate these metrics from your provider's dashboard.
-        </p>
-      </section>
-      <AdSlot slotKey="admin_analytics_bottom" />
-    </div>
-  );
-}
-
-function Card({ label, value }: { label: string; value: any }) {
-  return (
-    <div className="rounded-xl border bg-card p-4">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-2xl font-bold">{value}</div>
-    </div>
-  );
-}
-
-function List({ title, items }: { title: string; items: { name: string; qty: number }[] }) {
-  return (
-    <div className="rounded-xl border bg-card p-4">
-      <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">{title}</div>
-      {items.length === 0 ? <p className="text-sm text-muted-foreground">No data</p> : (
-        <ul className="space-y-1.5 text-sm">
-          {items.map((i, idx) => (
-            <li key={idx} className="flex justify-between">
-              <span className="line-clamp-1">{i.name}</span>
-              <span className="font-mono text-muted-foreground">{i.qty}</span>
-            </li>
-          ))}
-        </ul>
       )}
+      <AdSlot slotKey="admin_analytics_bottom" />
     </div>
   );
 }
