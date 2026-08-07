@@ -108,7 +108,35 @@ function formatWhen(iso?: string | null) {
   }
 }
 
+function Section({
+  title,
+  description,
+  action,
+  children,
+}: {
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold tracking-tight sm:text-lg">{title}</h2>
+          {description && (
+            <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+          )}
+        </div>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}
+
 function PaymentGatewayPage() {
+
   const storeId = useStoreId();
   const list = useServerFn(listStorePaymentGateways);
   const qc = useQueryClient();
@@ -125,17 +153,17 @@ function PaymentGatewayPage() {
   const refresh = () => qc.invalidateQueries({ queryKey: ["storePaymentGateways", storeId] });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 pb-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Payment Gateway</h1>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Payment Gateway</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Connect your own merchant account. Customer payments go directly to you.
         </p>
       </header>
 
-      {/* Active gateway hero */}
+      {/* Active gateway summary */}
       <div
-        className="relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm"
+        className="relative overflow-hidden rounded-2xl border bg-card p-4 shadow-sm"
         style={
           activeBrand
             ? { background: `linear-gradient(135deg, ${activeBrand.accentColor}, transparent 70%)` }
@@ -143,7 +171,7 @@ function PaymentGatewayPage() {
         }
       >
         {active && activeBrand ? (
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <BrandMark brand={activeBrand} size="lg" logoUrl={active.logo_url} />
             <div className="min-w-0 flex-1">
               <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -157,7 +185,7 @@ function PaymentGatewayPage() {
                     className="h-6 w-auto object-contain sm:h-7"
                   />
                 ) : (
-                  <span className="text-lg font-semibold" style={{ color: activeBrand.brandColor }}>
+                  <span className="text-base font-semibold sm:text-lg" style={{ color: activeBrand.brandColor }}>
                     {active.label}
                   </span>
                 )}
@@ -173,12 +201,12 @@ function PaymentGatewayPage() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-xl bg-amber-100 text-amber-700">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-700">
               <AlertTriangle className="h-5 w-5" />
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-semibold">No active gateway</div>
+            <div className="min-w-0">
+              <div className="text-sm font-semibold">No active gateway</div>
               <div className="text-xs text-muted-foreground">
                 Online payment is hidden at checkout until you connect and activate a gateway.
               </div>
@@ -187,32 +215,49 @@ function PaymentGatewayPage() {
         )}
       </div>
 
-      {/* Cards */}
-      {isLoading || !storeId ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-52 rounded-xl" />
-          ))}
-        </div>
-      ) : data && data.length ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {data.map((g) => (
-            <GatewayCard
-              key={g.provider_id}
-              g={g}
-              storeId={storeId}
-              onConfigure={() => setOpenId(g.provider_id)}
-              onChange={refresh}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="grid place-items-center rounded-xl border border-dashed bg-muted/40 p-10 text-center text-sm text-muted-foreground">
-          <Sparkles className="mb-2 h-6 w-6" />
-          No payment gateways are enabled for your store yet. Please contact support to enable providers.
-        </div>
-      )}
+      {/* 1. Built-in providers */}
+      <Section
+        title="Payment Providers"
+        description="Connect a built-in gateway with your own merchant credentials."
+      >
+        {isLoading || !storeId ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-52 rounded-xl" />
+            ))}
+          </div>
+        ) : data && data.length ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {data.map((g) => (
+              <GatewayCard
+                key={g.provider_id}
+                g={g}
+                storeId={storeId}
+                onConfigure={() => setOpenId(g.provider_id)}
+                onChange={refresh}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="grid place-items-center rounded-xl border border-dashed bg-muted/40 p-6 text-center text-sm text-muted-foreground">
+            <Sparkles className="mb-2 h-6 w-6" />
+            No payment gateways are enabled for your store yet. Please contact support to enable providers.
+          </div>
+        )}
+      </Section>
 
+      {/* 2. Custom gateways */}
+      {storeId && <CustomGatewaySection storeId={storeId} />}
+
+      {/* 3. Order status rules */}
+      <Section
+        title="Order Status Rules"
+        description="Decide which order status is applied after each type of payment."
+      >
+        <PaymentStatusRules />
+      </Section>
+
+      {/* 4. Webhook events */}
       {storeId && data && data.length > 0 && (
         <WebhookEventsPanel
           storeId={storeId}
@@ -220,9 +265,6 @@ function PaymentGatewayPage() {
         />
       )}
 
-      <PaymentStatusRules />
-
-      {storeId && <CustomGatewaySection storeId={storeId} />}
 
       <Sheet open={!!open} onOpenChange={(v) => !v && setOpenId(null)}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
