@@ -236,10 +236,10 @@ export const getMyAgentKnowledgeSummary = createServerFn({ method: "GET" })
       sb.from("products").select("id", { count: "exact", head: true }).eq("store_id", storeId).eq("status", "active"),
       sb.from("categories").select("id", { count: "exact", head: true }).eq("store_id", storeId),
       sb.from("delivery_zones").select("name,charge").eq("store_id", storeId).limit(6),
-      sb.from("store_payment_gateways").select("gateway_id,enabled").eq("store_id", storeId).eq("enabled", true),
+      sb.from("store_payment_gateways").select("provider_id").eq("store_id", storeId).eq("enabled", true),
       sb
         .from("store_return_settings")
-        .select("returns_enabled,return_window_days,exchange_window_days")
+        .select("enabled,eligibility_days,exchange_window_days")
         .eq("store_id", storeId)
         .maybeSingle(),
     ]);
@@ -257,10 +257,10 @@ export const getMyAgentKnowledgeSummary = createServerFn({ method: "GET" })
       products_active: activeProducts.count ?? 0,
       categories_total: categories.count ?? 0,
       delivery_zones: (zones.data ?? []).map((z: any) => ({ name: z.name, charge: Number(z.charge ?? 0) })),
-      payment_gateways: (gateways.data ?? []).map((g: any) => String(g.gateway_id)),
+      payment_gateways: (gateways.data ?? []).map((g: any) => String(g.provider_id)),
       returns: {
-        enabled: Boolean((returns.data as any)?.returns_enabled),
-        return_window_days: (returns.data as any)?.return_window_days ?? null,
+        enabled: Boolean((returns.data as any)?.enabled),
+        return_window_days: (returns.data as any)?.eligibility_days ?? null,
         exchange_window_days: (returns.data as any)?.exchange_window_days ?? null,
       },
     };
