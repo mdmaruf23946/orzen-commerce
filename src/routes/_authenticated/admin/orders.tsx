@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Search, SlidersHorizontal, RefreshCw, ShoppingBag, TrendingUp, Wallet, Clock, Plus } from "lucide-react";
 import { listAdminOrders, type AdminOrderRow } from "@/lib/orders-admin.functions";
@@ -27,6 +27,8 @@ import { RouteErrorPanel } from "@/components/admin/RouteErrorPanel";
 import { useRouteErrorTracking } from "@/hooks/use-error-tracking";
 import { recoverFromChunkError } from "@/lib/chunk-recovery";
 import { useRouter } from "@tanstack/react-router";
+import { BulkActionsBar, BulkSummaryPanel, type BulkSummary } from "@/components/admin/orders/BulkActionsBar";
+import { isPhysical } from "@/lib/orders-bulk";
 
 export const Route = createFileRoute("/_authenticated/admin/orders")({
   head: () => ({
@@ -190,6 +192,9 @@ function OrdersPage() {
   const [renewTo, setRenewTo] = useState("");
   const [sort, setSort] = useState("new");
 
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkSummary, setBulkSummary] = useState<BulkSummary | null>(null);
+
   const [fraudFor, setFraudFor] = useState<{ id: string; phone: string } | null>(null);
   const [detailsFor, setDetailsFor] = useState<string | null>(null);
   const { allowed: fraudAllowed } = useFeature("fraud_checker");
@@ -286,6 +291,31 @@ function OrdersPage() {
     );
     return out;
   }, [rows, tab, typeTab, type, physicalView, q, payment, courier, range, sort, subPlan, subCustomer, renewFrom, renewTo]);
+
+  const selectableIds = useMemo(
+    () => (physicalView ? filtered.filter(isPhysical).map((o) => o.id) : []),
+    [filtered, physicalView],
+  );
+  const selectable = useMemo(
+    () => new Set(selectableIds),
+    [selectableIds],
+  );
+  const selectedOrders = useMemo(
+    () => filtered.filter((o) => selectable.has(o.id) && selectedIds.includes(o.id)),
+    [filtered, selectable, selectedIds],
+  );
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const next = prev.filter((id) => selectable.has(id));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [selectable]);
+
+  const allSelected = selectableIds.length > 0 && selectedOrders.length === selectableIds.length;
+
+  function toggleOne(id: string, v: boolean) {
+    setSelectedIds((prev) => (v ? [...new Set([...prev, id])] : prev.filter((x) => x !== id)));
+  }
 
   const planOptions = useMemo(
     () => Array.from(new Set(rows.map(subPlanName).filter(Boolean))) as string[],
@@ -485,6 +515,36 @@ function OrdersPage() {
         </Popover>
       </div>
 
+      {bulkSummary && (
+        <BulkSummaryPanel summary={bulkSummary} onClose={() => setBulkSummary(null)} />
+      )}
+
+      {selectableIds.length > 0 && (
+        <label className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={allSelected}
+            onChange={(e) => setSelectedIds(e.target.checked ? selectableIds : [])}
+            className="h-4 w-4 accent-[hsl(var(--primary))]"
+          />
+          Select all ({selectableIds.length})
+        </label>
+      )}
+
+      {selectedOrders.length > 0 && (
+        <BulkActionsBar
+          orders={selectedOrders}
+          onClear={() => setSelectedIds([])}
+          onDone={(doneIds, summary) => {
+            setSelectedIds((prev) => prev.filter((id) => !doneIds.includes(id)));
+            setBulkSummary(summary);
+            qc.invalidateQueries({ queryKey: ["admin", "orders"] });
+            if (summary.failures.length) toast.warning(`${summary.action}: ${summary.failures.length} failed`);
+            else if (summary.ok) toast.success(`${summary.action}: ${summary.ok} done`);
+          }}
+        />
+      )}
+
       {/* List */}
       {filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed bg-card/50 p-12 text-center">
@@ -530,6 +590,8 @@ function OrdersPage() {
                 key={o.id}
                 order={o}
                 onView={() => setDetailsFor(o.id)}
+                selected={selectedIds.includes(o.id)}
+                onSelectChange={physicalView ? (v) => toggleOne(o.id, v) : undefined}
                 onStatus={(s) => setStatus(o.id, s)}
                 onFraud={() =>
                   fraudAllowed
