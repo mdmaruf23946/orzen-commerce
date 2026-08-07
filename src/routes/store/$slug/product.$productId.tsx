@@ -3,6 +3,14 @@ import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fbTrack } from "@/lib/fb-track";
 import { isStockless } from "@/lib/product-stock";
+import { getRequestOrigin } from "@/lib/seo.functions";
+import {
+  resolveStoreSeo,
+  absUrl,
+  jsonLdScript,
+  productJsonLd,
+  breadcrumbJsonLd,
+} from "@/lib/seo";
 
 import { toast } from "sonner";
 import {
