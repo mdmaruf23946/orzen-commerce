@@ -48,37 +48,52 @@ export const Route = createFileRoute("/store/$slug/product/$productId")({
       productQuery(store.id, params.productId),
     );
     if (!product) throw notFound();
-    return { store, product };
+    let origin = "";
+    try {
+      origin = await getRequestOrigin();
+    } catch {
+      /* ignore */
+    }
+    return { store, product, origin };
   },
-  head: ({ loaderData }) =>
-    loaderData
-      ? {
-          meta: [
-            { title: `${loaderData.product.name} — ${loaderData.store.name}` },
-            {
-              name: "description",
-              content:
-                stripHtml(loaderData.product.description ?? "")?.slice(0, 155) ||
-                loaderData.product.name,
-            },
-            { property: "og:title", content: loaderData.product.name },
-            {
-              property: "og:description",
-              content:
-                stripHtml(loaderData.product.description ?? "")?.slice(0, 155) ||
-                loaderData.product.name,
-            },
-            { property: "og:type", content: "product" },
-            { name: "twitter:card", content: "summary_large_image" },
-            ...(loaderData.product.primary_image_url?.startsWith("http")
-              ? [
-                  { property: "og:image", content: loaderData.product.primary_image_url },
-                  { name: "twitter:image", content: loaderData.product.primary_image_url },
-                ]
-              : []),
-          ],
-        }
-      : {},
+  head: ({ loaderData, params }) => {
+    if (!loaderData) return {};
+    const s: any = loaderData.store;
+    const p: any = loaderData.product;
+    const origin: string = (loaderData as any).origin || "";
+    const base = resolveStoreSeo(s, { origin });
+    const storeUrl = base.canonical ?? origin ?? "";
+    const url = storeUrl ? `${storeUrl.replace(/\/$/, "")}/product/${params.productId}` : null;
+    const desc = stripHtml(p.description ?? "").slice(0, 160) || p.name;
+    const image = absUrl(origin, p.primary_image_url);
+    const meta: any[] = [
+      { title: `${p.name} — ${s.name}` },
+      { name: "description", content: desc },
+      { property: "og:title", content: p.name },
+      { property: "og:description", content: desc },
+      { property: "og:type", content: "product" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ];
+    if (url) meta.push({ property: "og:url", content: url });
+    if (image) {
+      meta.push({ property: "og:image", content: image });
+      meta.push({ name: "twitter:image", content: image });
+    }
+    if (base.noindex) meta.push({ name: "robots", content: "noindex, nofollow" });
+    return {
+      meta,
+      links: url ? [{ rel: "canonical", href: url }] : [],
+      scripts: [
+        jsonLdScript([
+          productJsonLd({ product: p, storeName: s.name, url, image }),
+          breadcrumbJsonLd([
+            { name: s.name, url: storeUrl || null },
+            { name: p.name, url },
+          ]),
+        ]),
+      ],
+    };
+  },
   errorComponent: () => <div className="p-6 text-center">Something went wrong.</div>,
   notFoundComponent: () => <div className="p-6 text-center">Product not found</div>,
   component: ProductPage,
