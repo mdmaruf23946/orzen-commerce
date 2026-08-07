@@ -63,13 +63,13 @@ export function PaymentStatusRules() {
   const current = rules;
 
   return (
-    <section className="rounded-xl border bg-card p-4">
-      <div className="flex items-start gap-3">
+    <section className="rounded-xl border bg-card p-4 shadow-sm">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
         <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-muted">
           <Settings2 className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <h2 className="font-semibold">Order status rules</h2>
+          <h3 className="text-sm font-semibold">Status after payment</h3>
           <p className="text-xs text-muted-foreground">
             Choose which status an order gets after each type of payment.
           </p>
@@ -78,7 +78,7 @@ export function PaymentStatusRules() {
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         {FIELDS.map((f) => (
-          <div key={f.key} className="space-y-1.5">
+          <div key={f.key} className="min-w-0 space-y-1.5">
             <Label>{f.label}</Label>
             <Select
               value={current?.[f.key] ?? "pending"}
@@ -101,6 +101,8 @@ export function PaymentStatusRules() {
           </div>
         ))}
       </div>
+
+
 
       <div className="mt-4">
         <Button
