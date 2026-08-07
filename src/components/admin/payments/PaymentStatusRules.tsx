@@ -101,13 +101,12 @@ export function PaymentStatusRules() {
           </div>
         ))}
       </div>
-
-
-
       <div className="mt-4">
         <Button
           size="sm"
+          className="w-full sm:w-auto"
           disabled={saving || !current}
+
           onClick={async () => {
             if (!current) return;
             setSaving(true);
