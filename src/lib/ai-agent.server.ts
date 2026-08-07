@@ -104,6 +104,59 @@ export function buildSystemPrompt(
   const faqs = Array.isArray(k.faqs)
     ? k.faqs.map((f: any) => `Q: ${f.q}\nA: ${f.a}`).join("\n\n")
     : "";
+
+  // ---- Store-admin behaviour toggles (default ON when column is absent) ----
+  const on = (v: any) => v !== false;
+  const src = (agent.sources ?? {}) as Record<string, any>;
+  const srcOn = (key: string) => src[key] !== false;
+  const allowRecommend = on(agent.product_recommendations);
+  const allowOrders = on(agent.order_assistance);
+  const salesFocused = on(agent.sales_focused);
+  const allowRelated = allowRecommend && on(agent.recommend_related);
+  const askForInfo = on(agent.ask_for_info);
+  const allowEscalate = on(agent.escalate_to_human);
+  const fallbackMessage = String(agent.fallback_message ?? "").trim();
+  const agentDescription = String(agent.description ?? "").trim();
+
+  const behaviourLines = [
+    salesFocused
+      ? "- Be sales-focused: highlight benefits, offers and next steps, and gently move the customer toward a purchase — without pressure or exaggeration."
+      : "- Be informative and helpful. Do not push the customer to buy.",
+    allowRecommend
+      ? "- You may suggest products from the store catalogue when they match what the customer needs."
+      : "- Do NOT suggest or recommend products. Only answer what the customer explicitly asks about.",
+    allowRelated
+      ? "- After showing or confirming a product you may offer 2-3 genuinely related items."
+      : "- Do NOT offer related or add-on products.",
+    askForInfo
+      ? "- When information is missing to help (product, quantity, area, budget), ask ONE short specific question at a time."
+      : "- Do not interrogate the customer. Answer with what you already know and ask for details only if it is impossible to proceed.",
+    allowOrders
+      ? "- You may help the customer place and track orders using the order tools."
+      : "- Do NOT take orders or collect order details. If the customer wants to buy, point them to the website checkout or the store admin.",
+    allowEscalate
+      ? "- If you cannot help or the customer asks for a human, call escalateToHuman and tell the customer an admin will reply."
+      : "- Do not promise a human callback. Ask the customer to contact the store using the store contact details.",
+    `- NEVER invent facts. Prices, stock, delivery charges, payment methods, policies, warranty and business hours must come from a tool result or the store facts below.`,
+    fallbackMessage
+      ? `- If you genuinely do not know something, reply with this fallback message (translate to the customer's language if needed): "${fallbackMessage}"`
+      : "- If you genuinely do not know something, say so plainly and suggest contacting the store admin.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const sourceLines = [
+    srcOn("products") ? "- Products and prices: use the product tools." : "- Product catalogue access is OFF: do not discuss specific products or prices.",
+    srcOn("stock") ? "- Stock/availability: use the stock value from product tool results." : "- Stock data is OFF: do not state availability.",
+    srcOn("categories") ? "- Categories: use listCategories." : "- Category data is OFF.",
+    srcOn("delivery") ? "- Delivery info: use the delivery facts below / delivery tools." : "- Delivery data is OFF: do not quote delivery charges or times.",
+    srcOn("payments") ? "- Payment methods: use the payment facts below." : "- Payment data is OFF: do not list payment methods.",
+    srcOn("returns") ? "- Return & exchange policy: use the policy below." : "- Return policy is OFF: refer the customer to the store admin.",
+    srcOn("warranty") ? "- Warranty: use the warranty facts below." : "- Warranty data is OFF.",
+    srcOn("store_info") ? "- Store information: name, address, phone, description below." : "- Store info is OFF: share only what the customer already knows.",
+    srcOn("business_hours") ? "- Business hours: as listed below." : "- Business hours are OFF.",
+  ].join("\n");
+
   const globalPrompt = (settings?.global_system_prompt ?? "").trim();
   const brand = (settings?.brand_voice ?? "").trim();
   const safety = (settings?.safety_rules ?? "").trim();
