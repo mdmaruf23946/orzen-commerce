@@ -124,7 +124,9 @@ import { Route as StoreSlugAuthSignupRouteImport } from './routes/store/$slug/au
 import { Route as StoreSlugAuthLoginRouteImport } from './routes/store/$slug/auth.login'
 import { Route as StoreSlugAuthForgotRouteImport } from './routes/store/$slug/auth.forgot'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
+import { Route as ApiPublicTiktokTrackRouteImport } from './routes/api/public/tiktok/track'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
+import { Route as ApiPublicGa4TrackRouteImport } from './routes/api/public/ga4/track'
 import { Route as ApiPublicFbCapiTrackRouteImport } from './routes/api/public/fb-capi/track'
 import { Route as ApiPublicCronSyncParcelsRouteImport } from './routes/api/public/cron/sync-parcels'
 import { Route as ApiPublicCronSubscriptionRenewalsRouteImport } from './routes/api/public/cron/subscription-renewals'
@@ -803,12 +805,22 @@ const LovableEmailQueueProcessRoute =
     path: '/lovable/email/queue/process',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicTiktokTrackRoute = ApiPublicTiktokTrackRouteImport.update({
+  id: '/api/public/tiktok/track',
+  path: '/api/public/tiktok/track',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicMessengerWebhookRoute =
   ApiPublicMessengerWebhookRouteImport.update({
     id: '/api/public/messenger/webhook',
     path: '/api/public/messenger/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicGa4TrackRoute = ApiPublicGa4TrackRouteImport.update({
+  id: '/api/public/ga4/track',
+  path: '/api/public/ga4/track',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicFbCapiTrackRoute = ApiPublicFbCapiTrackRouteImport.update({
   id: '/api/public/fb-capi/track',
   path: '/api/public/fb-capi/track',
@@ -1093,7 +1105,9 @@ export interface FileRoutesByFullPath {
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
+  '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
+  '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
@@ -1229,7 +1243,9 @@ export interface FileRoutesByTo {
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
+  '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
+  '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
@@ -1375,7 +1391,9 @@ export interface FileRoutesById {
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
+  '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
+  '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
@@ -1521,7 +1539,9 @@ export interface FileRouteTypes {
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
     | '/api/public/fb-capi/track'
+    | '/api/public/ga4/track'
     | '/api/public/messenger/webhook'
+    | '/api/public/tiktok/track'
     | '/lovable/email/queue/process'
     | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
@@ -1657,7 +1677,9 @@ export interface FileRouteTypes {
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
     | '/api/public/fb-capi/track'
+    | '/api/public/ga4/track'
     | '/api/public/messenger/webhook'
+    | '/api/public/tiktok/track'
     | '/lovable/email/queue/process'
     | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
@@ -1802,7 +1824,9 @@ export interface FileRouteTypes {
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
     | '/api/public/fb-capi/track'
+    | '/api/public/ga4/track'
     | '/api/public/messenger/webhook'
+    | '/api/public/tiktok/track'
     | '/lovable/email/queue/process'
     | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
@@ -1849,7 +1873,9 @@ export interface RootRouteChildren {
   ApiPublicCronSubscriptionRenewalsRoute: typeof ApiPublicCronSubscriptionRenewalsRoute
   ApiPublicCronSyncParcelsRoute: typeof ApiPublicCronSyncParcelsRoute
   ApiPublicFbCapiTrackRoute: typeof ApiPublicFbCapiTrackRoute
+  ApiPublicGa4TrackRoute: typeof ApiPublicGa4TrackRoute
   ApiPublicMessengerWebhookRoute: typeof ApiPublicMessengerWebhookRoute
+  ApiPublicTiktokTrackRoute: typeof ApiPublicTiktokTrackRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   ApiPublicLandingPagesConnectionIdOrdersRoute: typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   ApiPublicSubscriptionPayWebhookProviderRoute: typeof ApiPublicSubscriptionPayWebhookProviderRoute
@@ -2666,11 +2692,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/tiktok/track': {
+      id: '/api/public/tiktok/track'
+      path: '/api/public/tiktok/track'
+      fullPath: '/api/public/tiktok/track'
+      preLoaderRoute: typeof ApiPublicTiktokTrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/messenger/webhook': {
       id: '/api/public/messenger/webhook'
       path: '/api/public/messenger/webhook'
       fullPath: '/api/public/messenger/webhook'
       preLoaderRoute: typeof ApiPublicMessengerWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/ga4/track': {
+      id: '/api/public/ga4/track'
+      path: '/api/public/ga4/track'
+      fullPath: '/api/public/ga4/track'
+      preLoaderRoute: typeof ApiPublicGa4TrackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/fb-capi/track': {
@@ -3268,7 +3308,9 @@ const rootRouteChildren: RootRouteChildren = {
     ApiPublicCronSubscriptionRenewalsRoute,
   ApiPublicCronSyncParcelsRoute: ApiPublicCronSyncParcelsRoute,
   ApiPublicFbCapiTrackRoute: ApiPublicFbCapiTrackRoute,
+  ApiPublicGa4TrackRoute: ApiPublicGa4TrackRoute,
   ApiPublicMessengerWebhookRoute: ApiPublicMessengerWebhookRoute,
+  ApiPublicTiktokTrackRoute: ApiPublicTiktokTrackRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   ApiPublicLandingPagesConnectionIdOrdersRoute:
     ApiPublicLandingPagesConnectionIdOrdersRoute,
