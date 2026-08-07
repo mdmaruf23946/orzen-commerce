@@ -1149,9 +1149,18 @@ const seoSchema = z.object({
 export const updateSeo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => seoSchema.parse(d))
-  .handler(async ({ data, context }) =>
-    updateStoreColumn(context.supabase, context.userId, "seo", data),
-  );
+  .handler(async ({ data, context }) => {
+    // Merge so each SEO tab can save independently without clearing others.
+    const { data: row } = await context.supabase
+      .from("stores")
+      .select("seo")
+      .eq("owner_user_id", context.userId)
+      .maybeSingle();
+    const current = ((row as any)?.seo ?? {}) as Record<string, unknown>;
+    const next = { ...current, ...data };
+    delete (next as any).keywords;
+    return updateStoreColumn(context.supabase, context.userId, "seo", next);
+  });
 
 const deliverySchema = z.object({
   free_min: z.number().nonnegative().optional(),
