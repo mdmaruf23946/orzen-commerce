@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ShippingPolicyRouteImport } from './routes/shipping-policy'
 import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
@@ -158,6 +159,11 @@ import { Route as ApiPublicLandingPagesConnectionIdApiOrdersRouteImport } from '
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShippingPolicyRoute = ShippingPolicyRouteImport.update({
@@ -994,6 +1000,7 @@ export interface FileRoutesByFullPath {
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/shipping-policy': typeof ShippingPolicyRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/owner': typeof AuthenticatedOwnerRouteRouteWithChildren
@@ -1140,6 +1147,7 @@ export interface FileRoutesByTo {
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/shipping-policy': typeof ShippingPolicyRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -1280,6 +1288,7 @@ export interface FileRoutesById {
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/shipping-policy': typeof ShippingPolicyRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/_authenticated/owner': typeof AuthenticatedOwnerRouteRouteWithChildren
@@ -1428,6 +1437,7 @@ export interface FileRouteTypes {
     | '/privacy-policy'
     | '/refund-policy'
     | '/shipping-policy'
+    | '/sitemap.xml'
     | '/terms'
     | '/admin'
     | '/owner'
@@ -1574,6 +1584,7 @@ export interface FileRouteTypes {
     | '/privacy-policy'
     | '/refund-policy'
     | '/shipping-policy'
+    | '/sitemap.xml'
     | '/terms'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -1713,6 +1724,7 @@ export interface FileRouteTypes {
     | '/privacy-policy'
     | '/refund-policy'
     | '/shipping-policy'
+    | '/sitemap.xml'
     | '/terms'
     | '/_authenticated/admin'
     | '/_authenticated/owner'
@@ -1861,6 +1873,7 @@ export interface RootRouteChildren {
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   RefundPolicyRoute: typeof RefundPolicyRoute
   ShippingPolicyRoute: typeof ShippingPolicyRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   StoreSlugRouteRoute: typeof StoreSlugRouteRouteWithChildren
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
@@ -1892,6 +1905,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/shipping-policy': {
@@ -3294,6 +3314,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   RefundPolicyRoute: RefundPolicyRoute,
   ShippingPolicyRoute: ShippingPolicyRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   StoreSlugRouteRoute: StoreSlugRouteRouteWithChildren,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
