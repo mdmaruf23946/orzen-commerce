@@ -27,10 +27,10 @@ export function OrdersOverview({ counts }: { counts: AnalyticsPayload["statusCou
               <XAxis dataKey="label" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} interval={0} angle={-20} textAnchor="end" height={44} />
               <YAxis tick={{ fontSize: 10 }} allowDecimals={false} tickLine={false} axisLine={false} width={40} />
               <Tooltip
-                cursor={{ fill: "hsl(var(--muted))" }}
-                contentStyle={{ borderRadius: 12, fontSize: 12, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+                cursor={{ fill: "var(--muted)" }}
+                contentStyle={{ borderRadius: 12, fontSize: 12, background: "var(--card)", border: "1px solid var(--border)" }}
               />
-              <Bar dataKey="value" name="Orders" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="value" name="Orders" fill="var(--primary)" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

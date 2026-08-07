@@ -58,8 +58,8 @@ export function RevenueChart({
           <AreaChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
-                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
@@ -67,9 +67,9 @@ export function RevenueChart({
             <YAxis tick={{ fontSize: 10 }} tickFormatter={fmt} tickLine={false} axisLine={false} width={56} />
             <Tooltip
               formatter={(v: any) => [fmt(Number(v)), active.label]}
-              contentStyle={{ borderRadius: 12, fontSize: 12, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+              contentStyle={{ borderRadius: 12, fontSize: 12, background: "var(--card)", border: "1px solid var(--border)" }}
             />
-            <Area type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#revFill)" />
+            <Area type="monotone" dataKey="value" stroke="var(--primary)" strokeWidth={2} fill="url(#revFill)" />
           </AreaChart>
         </ResponsiveContainer>
       </div>

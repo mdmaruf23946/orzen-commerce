@@ -33,12 +33,12 @@ export function CustomerInsights({
             <XAxis dataKey="label" tick={{ fontSize: 10 }} interval="preserveStartEnd" tickLine={false} axisLine={false} />
             <YAxis tick={{ fontSize: 10 }} allowDecimals={false} tickLine={false} axisLine={false} width={36} />
             <Tooltip
-              cursor={{ fill: "hsl(var(--muted))" }}
-              contentStyle={{ borderRadius: 12, fontSize: 12, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+              cursor={{ fill: "var(--muted)" }}
+              contentStyle={{ borderRadius: 12, fontSize: 12, background: "var(--card)", border: "1px solid var(--border)" }}
             />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar dataKey="New" stackId="c" fill="hsl(var(--primary))" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="Returning" stackId="c" fill="hsl(var(--muted-foreground))" radius={[6, 6, 0, 0]} />
+            <Bar dataKey="New" stackId="c" fill="var(--primary)" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="Returning" stackId="c" fill="var(--muted-foreground)" radius={[6, 6, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
