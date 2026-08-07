@@ -168,15 +168,37 @@ export const deleteCoupon = createServerFn({ method: "POST" })
   });
 
 // ---------- EXPENSES ----------
+const EXPENSE_CATEGORIES = [
+  "ads",
+  "fb_ads",
+  "courier",
+  "product_purchase",
+  "packaging",
+  "payment_gateway",
+  "staff",
+  "salary",
+  "misc",
+  "other",
+] as const;
+
 export const listExpenses = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ from: z.string().optional(), to: z.string().optional() }).parse(d ?? {}))
+  .inputValidator((d) =>
+    z
+      .object({
+        from: z.string().optional(),
+        to: z.string().optional(),
+        category: z.enum(EXPENSE_CATEGORIES).optional(),
+      })
+      .parse(d ?? {}),
+  )
   .handler(async ({ data, context }) => {
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) return [];
-    let q = context.supabase.from("expenses").select("*").eq("store_id", sid).order("spent_on", { ascending: false }).limit(200);
+    let q = context.supabase.from("expenses").select("*").eq("store_id", sid).order("spent_on", { ascending: false }).limit(500);
     if (data.from) q = q.gte("spent_on", data.from);
     if (data.to) q = q.lte("spent_on", data.to);
+    if (data.category) q = q.eq("category", data.category);
     const { data: rows } = await q;
     return rows ?? [];
   });
@@ -185,7 +207,8 @@ export const addExpense = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
     z.object({
-      category: z.enum(["fb_ads", "courier", "packaging", "salary", "misc"]),
+      id: z.string().uuid().optional(),
+      category: z.enum(EXPENSE_CATEGORIES),
       amount: z.number().positive(),
       note: z.string().max(300).optional(),
       spent_on: z.string().optional(),
@@ -194,13 +217,18 @@ export const addExpense = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) throw new Error("No store");
-    const { error } = await context.supabase.from("expenses").insert({
-      store_id: sid,
+    const row = {
       category: data.category,
       amount: data.amount,
-      note: data.note ?? null,
+      note: data.note?.trim() || null,
       spent_on: data.spent_on || new Date().toISOString().slice(0, 10),
-    });
+    };
+    if (data.id) {
+      const { error } = await context.supabase.from("expenses").update(row).eq("id", data.id).eq("store_id", sid);
+      if (error) throw new Error(error.message);
+      return { ok: true };
+    }
+    const { error } = await context.supabase.from("expenses").insert({ store_id: sid, ...row });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -216,53 +244,98 @@ export const deleteExpense = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const dayKey = (v: string | Date) => new Date(v).toISOString().slice(0, 10);
+
 export const financeSummary = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d) => z.object({ from: z.string().optional(), to: z.string().optional() }).parse(d ?? {}))
+  .handler(async ({ data, context }) => {
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) return null;
-    const today = new Date(); today.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const from = data.from || dayKey(today);
+    const to = data.to || dayKey(today);
+    const inRange = (d: string) => d >= from && d <= to;
+
     const [{ data: orders }, { data: items }, { data: expenses }] = await Promise.all([
-      context.supabase.from("orders").select("id,subtotal,discount_amount,status,created_at").eq("store_id", sid),
-      context.supabase.from("order_items").select("qty,price_snapshot,products(cost_price),orders!inner(store_id,status,created_at)").eq("orders.store_id", sid),
-      context.supabase.from("expenses").select("amount,spent_on").eq("store_id", sid),
+      context.supabase
+        .from("orders")
+        .select("id,subtotal,discount_amount,delivery_amount,paid_amount,payment_method,payment_status,status,created_at")
+        .eq("store_id", sid),
+      context.supabase
+        .from("order_items")
+        .select("qty,price_snapshot,products(cost_price),orders!inner(store_id,status,created_at)")
+        .eq("orders.store_id", sid),
+      context.supabase.from("expenses").select("amount,spent_on,category").eq("store_id", sid),
     ]);
-    let todaySales = 0, monthSales = 0, totalSales = 0;
-    for (const o of orders ?? []) {
+
+    const series = new Map<string, { d: string; sales: number; expense: number; cogs: number }>();
+    const bucket = (d: string) => {
+      let b = series.get(d);
+      if (!b) { b = { d, sales: 0, expense: 0, cogs: 0 }; series.set(d, b); }
+      return b;
+    };
+
+    let rangeSales = 0, monthSales = 0, totalSales = 0, codReceivable = 0;
+    for (const o of (orders ?? []) as any[]) {
       if (o.status === "cancelled") continue;
-      const v = Number(o.subtotal);
+      const v = Number(o.subtotal ?? 0);
+      const d = dayKey(o.created_at);
       totalSales += v;
-      const dt = new Date(o.created_at);
-      if (dt >= today) todaySales += v;
-      if (dt >= monthStart) monthSales += v;
+      if (d >= dayKey(monthStart)) monthSales += v;
+      if (inRange(d)) { rangeSales += v; bucket(d).sales += v; }
+      const isCod = String(o.payment_method) === "cod";
+      const paidFlag = String(o.payment_status ?? "").toLowerCase() === "paid";
+      if (isCod && !paidFlag && o.status !== "delivered") {
+        const gross = v + Number(o.delivery_amount ?? 0) - Number(o.discount_amount ?? 0);
+        codReceivable += Math.max(0, gross - Number(o.paid_amount ?? 0));
+      }
     }
-    let todayCogs = 0, monthCogs = 0, totalCogs = 0;
+
+    let rangeCogs = 0, monthCogs = 0, totalCogs = 0;
     for (const it of (items ?? []) as any[]) {
       if (it.orders?.status === "cancelled") continue;
-      const cost = Number(it.products?.cost_price ?? 0) * Number(it.qty);
+      const cost = Number(it.products?.cost_price ?? 0) * Number(it.qty ?? 0);
+      const d = dayKey(it.orders?.created_at);
       totalCogs += cost;
-      const dt = new Date(it.orders?.created_at);
-      if (dt >= today) todayCogs += cost;
-      if (dt >= monthStart) monthCogs += cost;
+      if (d >= dayKey(monthStart)) monthCogs += cost;
+      if (inRange(d)) { rangeCogs += cost; bucket(d).cogs += cost; }
     }
-    let todayExpense = 0, monthExpense = 0, totalExpense = 0;
-    const tStr = today.toISOString().slice(0, 10);
-    const mStr = monthStart.toISOString().slice(0, 10);
-    for (const e of expenses ?? []) {
-      const amt = Number(e.amount);
+
+    let rangeExpense = 0, monthExpense = 0, totalExpense = 0;
+    const byCategory: Record<string, number> = {};
+    for (const e of (expenses ?? []) as any[]) {
+      const amt = Number(e.amount ?? 0);
+      const d = String(e.spent_on);
       totalExpense += amt;
-      if (e.spent_on >= mStr) monthExpense += amt;
-      if (e.spent_on >= tStr) todayExpense += amt;
+      if (d >= dayKey(monthStart)) monthExpense += amt;
+      if (inRange(d)) {
+        rangeExpense += amt;
+        bucket(d).expense += amt;
+        byCategory[e.category] = (byCategory[e.category] ?? 0) + amt;
+      }
     }
+
     return {
-      todaySales, monthSales, totalSales,
-      todayExpense, monthExpense, totalExpense,
-      todayProfit: todaySales - todayCogs - todayExpense,
+      from,
+      to,
+      rangeSales,
+      rangeCogs,
+      rangeExpense,
+      rangeProfit: rangeSales - rangeCogs - rangeExpense,
       monthProfit: monthSales - monthCogs - monthExpense,
       netProfit: totalSales - totalCogs - totalExpense,
+      totalSales,
+      totalExpense,
+      codReceivable,
+      byCategory,
+      series: Array.from(series.values()).sort((a, b) => a.d.localeCompare(b.d)),
     };
   });
+
 
 // ---------- RETURNS (customer-initiated; admin reviews only) ----------
 export const listReturns = createServerFn({ method: "GET" })
