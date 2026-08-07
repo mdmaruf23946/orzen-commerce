@@ -1,79 +1,107 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getMyStore, updateSeo } from "@/lib/admin.functions";
-import { SettingsPage } from "@/components/admin/SettingsPage";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { ImageUploader } from "@/components/admin/ImageUploader";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { updateSeo } from "@/lib/admin.functions";
+import { getMySeoOverview } from "@/lib/seo.functions";
+import { resolveStoreSeo, seoHealth, type StoreSeo } from "@/lib/seo";
+import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
+import { BasicTab } from "@/components/admin/seo/BasicTab";
+import { SocialTab } from "@/components/admin/seo/SocialTab";
+import { SearchTab } from "@/components/admin/seo/SearchTab";
+import { VerificationTab } from "@/components/admin/seo/VerificationTab";
+import { SeoHealth } from "@/components/admin/seo/SeoHealth";
+import type { SeoOverview } from "@/components/admin/seo/shared";
 
 export const Route = createFileRoute("/_authenticated/admin/seo")({
   component: SeoPage,
 });
 
-const defaults = {
-  title: "",
-  description: "",
-  keywords: "",
-  og_image_url: "",
-  favicon_url: "",
-};
+const TABS = [
+  { key: "basic", label: "Basic" },
+  { key: "social", label: "Social" },
+  { key: "search", label: "Search" },
+  { key: "verification", label: "Verification" },
+] as const;
+
+type TabKey = (typeof TABS)[number]["key"];
 
 function SeoPage() {
-  const storeFn = useServerFn(getMyStore);
-  const { data: store } = useQuery({ queryKey: ["admin", "store"], queryFn: () => storeFn() });
-  const storeId = (store as any)?.id;
+  const fetchOverview = useServerFn(getMySeoOverview);
+  const saveSeo = useServerFn(updateSeo);
+  const qc = useQueryClient();
+  const [tab, setTab] = useState<TabKey>("basic");
+  const [form, setForm] = useState<StoreSeo | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin", "seo-overview"],
+    queryFn: () => fetchOverview(),
+  });
+
+  useEffect(() => {
+    if (data) setForm({ ...(((data as any).store?.seo ?? {}) as StoreSeo) });
+  }, [data]);
+
+  if (isLoading || !form || !data) {
+    return <div className="p-1 text-sm text-muted-foreground">Loading…</div>;
+  }
+
+  const overview = data as unknown as SeoOverview;
+
+  function set<K extends keyof StoreSeo>(k: K, v: StoreSeo[K]) {
+    setForm((f) => ({ ...(f as StoreSeo), [k]: v }));
+  }
+
+  async function onSave(keys: (keyof StoreSeo)[]) {
+    if (!form) return;
+    setSaving(true);
+    try {
+      const payload: Record<string, unknown> = {};
+      for (const k of keys) payload[k as string] = (form as any)[k] ?? null;
+      await saveSeo({ data: payload as any });
+      await qc.invalidateQueries({ queryKey: ["admin", "seo-overview"] });
+      qc.invalidateQueries({ queryKey: ["admin", "store"] });
+      toast.success("SEO settings saved");
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const resolved = resolveStoreSeo(
+    { ...overview.store, seo: form },
+    {
+      origin: overview.storeUrl,
+      categories: overview.categories,
+      productCount: overview.productCount,
+    },
+  );
+  const health = seoHealth({
+    store: { ...overview.store, seo: form },
+    resolved,
+    productCount: overview.productCount,
+  });
+
+  const props = { form, set, overview, saving, onSave };
 
   return (
-    <SettingsPage
-      title="SEO Settings"
-      description="How your storefront appears in search results and link previews."
-      column="seo"
-      save={updateSeo}
-      defaults={defaults}
-    >
-      {(form, set) => (
-        <>
-          <div className="space-y-1.5">
-            <Label>SEO Title</Label>
-            <Input value={form.title ?? ""} onChange={(e) => set("title", e.target.value)} maxLength={160} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Meta Description</Label>
-            <Textarea
-              rows={3}
-              value={form.description ?? ""}
-              onChange={(e) => set("description", e.target.value)}
-              maxLength={320}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Meta Keywords (comma separated)</Label>
-            <Input value={form.keywords ?? ""} onChange={(e) => set("keywords", e.target.value)} />
-          </div>
-          {storeId && (
-            <>
-              <div className="space-y-1.5">
-                <Label>Open Graph Image (1200×630 recommended)</Label>
-                <ImageUploader
-                  storeId={storeId}
-                  value={form.og_image_url}
-                  onChange={(v) => set("og_image_url", v ?? "")}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Favicon</Label>
-                <ImageUploader
-                  storeId={storeId}
-                  value={form.favicon_url}
-                  onChange={(v) => set("favicon_url", v ?? "")}
-                />
-              </div>
-            </>
-          )}
-        </>
-      )}
-    </SettingsPage>
+    <div className="mx-auto max-w-2xl space-y-4 pb-10">
+      <div>
+        <h1 className="text-2xl font-semibold">SEO Settings</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Control how your store appears on Google and social platforms. Empty fields fall back to
+          automatic values.
+        </p>
+      </div>
+      <TypeFilterTabs tabs={TABS} value={tab} onChange={(k) => setTab(k as TabKey)} />
+      {tab === "basic" && <BasicTab {...props} />}
+      {tab === "social" && <SocialTab {...props} />}
+      {tab === "search" && <SearchTab {...props} />}
+      {tab === "verification" && <VerificationTab {...props} />}
+      <SeoHealth items={health} />
+    </div>
   );
 }
