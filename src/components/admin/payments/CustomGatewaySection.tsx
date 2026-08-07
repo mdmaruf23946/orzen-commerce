@@ -274,14 +274,16 @@ export function CustomGatewaySection({ storeId }: { storeId: string }) {
 
   return (
     <section className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 className="text-lg font-semibold">Custom Payment Gateways</h2>
-          <p className="text-xs text-muted-foreground">
-            Connect any provider that isn't in the built-in list — it only takes three short steps.
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold tracking-tight sm:text-lg">
+            Custom Payment Gateways
+          </h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Connect any provider that isn&apos;t in the built-in list — it only takes three short steps.
           </p>
         </div>
-        <Button size="sm" onClick={() => setOpen({ mode: "new" })}>
+        <Button size="sm" className="shrink-0" onClick={() => setOpen({ mode: "new" })}>
           <Plus className="mr-1.5 h-4 w-4" /> Add Custom Gateway
         </Button>
       </div>
@@ -301,13 +303,14 @@ export function CustomGatewaySection({ storeId }: { storeId: string }) {
         ) : (
           <button
             onClick={() => setOpen({ mode: "new" })}
-            className="col-span-full grid place-items-center rounded-xl border border-dashed bg-muted/30 p-8 text-center text-sm text-muted-foreground transition hover:bg-muted/60"
+            className="col-span-full flex items-center gap-2 rounded-xl border border-dashed bg-muted/30 px-4 py-3 text-left text-sm text-muted-foreground transition hover:bg-muted/60"
           >
-            <Wand2 className="mb-2 h-6 w-6" />
-            No custom gateways yet. Click to connect your first one.
+            <Wand2 className="h-4 w-4 shrink-0" />
+            <span className="min-w-0">No custom gateways yet — tap to connect your first one.</span>
           </button>
         )}
       </div>
+
 
       <Sheet open={!!open} onOpenChange={(v) => !v && setOpen(null)}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
