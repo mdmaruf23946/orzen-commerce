@@ -3,6 +3,14 @@ import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query"
 import { useEffect, useMemo, useState } from "react";
 import { ShoppingCart, Phone, MessageCircle, Facebook, Menu, Mail, User } from "lucide-react";
 import { getStoreBySlug, listStoreCategories, listStoreProducts } from "@/lib/storefront.functions";
+import { getRequestOrigin } from "@/lib/seo.functions";
+import {
+  resolveStoreSeo,
+  storeHeadMeta,
+  jsonLdScript,
+  organizationJsonLd,
+  websiteJsonLd,
+} from "@/lib/seo";
 import { DEFAULT_THEME, mergeTheme, themeCssVars } from "@/lib/theme/definition";
 import { ThemeStyle, THEME_SCOPE } from "@/lib/theme/ThemeStyle";
 import {
