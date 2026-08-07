@@ -3,7 +3,8 @@ import { Plus, Trash2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { SectionCard, ToggleRow } from "./ui";
+import { Switch } from "@/components/ui/switch";
+import { SectionCard } from "./ui";
 import type { AgentForm, AgentSources, KnowledgeSummary } from "./types";
 
 type SourceDef = {
@@ -121,7 +122,7 @@ export function KnowledgeTab({
                       </Link>
                     ) : null}
                   </div>
-                  <ToggleRowInline checked={enabled} onChange={(v) => setSource(s.key, v)} />
+                  <Switch checked={enabled} onCheckedChange={(v) => setSource(s.key, v)} className="mt-0.5 shrink-0" />
                 </div>
                 {s.noteKey ? (
                   <details className="border-t px-3 py-2">
@@ -193,8 +194,4 @@ export function KnowledgeTab({
       </SectionCard>
     </div>
   );
-}
-
-function ToggleRowInline({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
-  return <ToggleRow label="" checked={checked} onChange={onChange} />;
 }
