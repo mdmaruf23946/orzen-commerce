@@ -1,4 +1,5 @@
 // Server-only load/save for store notification settings (secrets encrypted).
+import { encryptJSON, decryptJSON } from "@/lib/crypto/credentials.server";
 import { normalizeSettings, computeState, type ChannelKey, type NotifySettings } from "@/lib/notify-settings";
 
 type Sb = any;
@@ -39,15 +40,12 @@ export function redact(settings: StoredSettings) {
 }
 
 export function encryptSecret(value: string): string {
-  // Lazy require keeps the crypto helper out of any client-reachable graph.
-  const { encryptJSON } = require("@/lib/crypto/credentials.server");
   return encryptJSON({ v: value });
 }
 
 export function readSecret(stored?: string | null): string | null {
   if (!stored) return null;
   try {
-    const { decryptJSON } = require("@/lib/crypto/credentials.server");
     return (decryptJSON(stored) as any)?.v ?? null;
   } catch {
     return null;
