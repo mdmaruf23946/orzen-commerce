@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ShippingPolicyRouteImport } from './routes/shipping-policy'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as McpRouteImport } from './routes/mcp'
@@ -169,6 +170,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const ShippingPolicyRoute = ShippingPolicyRouteImport.update({
   id: '/shipping-policy',
   path: '/shipping-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RefundPolicyRoute = RefundPolicyRouteImport.update({
@@ -999,6 +1005,7 @@ export interface FileRoutesByFullPath {
   '/mcp': typeof McpRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/refund-policy': typeof RefundPolicyRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/shipping-policy': typeof ShippingPolicyRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
@@ -1146,6 +1153,7 @@ export interface FileRoutesByTo {
   '/mcp': typeof McpRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/refund-policy': typeof RefundPolicyRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/shipping-policy': typeof ShippingPolicyRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
@@ -1287,6 +1295,7 @@ export interface FileRoutesById {
   '/mcp': typeof McpRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/refund-policy': typeof RefundPolicyRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/shipping-policy': typeof ShippingPolicyRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
@@ -1436,6 +1445,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/privacy-policy'
     | '/refund-policy'
+    | '/robots.txt'
     | '/shipping-policy'
     | '/sitemap.xml'
     | '/terms'
@@ -1583,6 +1593,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/privacy-policy'
     | '/refund-policy'
+    | '/robots.txt'
     | '/shipping-policy'
     | '/sitemap.xml'
     | '/terms'
@@ -1723,6 +1734,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/privacy-policy'
     | '/refund-policy'
+    | '/robots.txt'
     | '/shipping-policy'
     | '/sitemap.xml'
     | '/terms'
@@ -1872,6 +1884,7 @@ export interface RootRouteChildren {
   McpRoute: typeof McpRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   RefundPolicyRoute: typeof RefundPolicyRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
   ShippingPolicyRoute: typeof ShippingPolicyRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
@@ -1919,6 +1932,13 @@ declare module '@tanstack/react-router' {
       path: '/shipping-policy'
       fullPath: '/shipping-policy'
       preLoaderRoute: typeof ShippingPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/refund-policy': {
@@ -3313,6 +3333,7 @@ const rootRouteChildren: RootRouteChildren = {
   McpRoute: McpRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   RefundPolicyRoute: RefundPolicyRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
   ShippingPolicyRoute: ShippingPolicyRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
