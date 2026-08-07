@@ -7443,7 +7443,17 @@ export type Database = {
     Enums: {
       app_role: "owner" | "user"
       coupon_type: "percent" | "fixed" | "free_shipping"
-      expense_category: "fb_ads" | "courier" | "packaging" | "salary" | "misc"
+      expense_category:
+        | "fb_ads"
+        | "courier"
+        | "packaging"
+        | "salary"
+        | "misc"
+        | "ads"
+        | "product_purchase"
+        | "payment_gateway"
+        | "staff"
+        | "other"
       fraud_risk: "safe" | "medium" | "high"
       order_stage:
         | "placed"
@@ -7612,7 +7622,18 @@ export const Constants = {
     Enums: {
       app_role: ["owner", "user"],
       coupon_type: ["percent", "fixed", "free_shipping"],
-      expense_category: ["fb_ads", "courier", "packaging", "salary", "misc"],
+      expense_category: [
+        "fb_ads",
+        "courier",
+        "packaging",
+        "salary",
+        "misc",
+        "ads",
+        "product_purchase",
+        "payment_gateway",
+        "staff",
+        "other",
+      ],
       fraud_risk: ["safe", "medium", "high"],
       order_stage: [
         "placed",

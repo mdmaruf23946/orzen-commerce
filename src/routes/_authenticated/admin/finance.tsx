@@ -1,23 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
-import { toast } from "sonner";
-import { Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Download } from "lucide-react";
 import { listExpenses, addExpense, deleteExpense, financeSummary } from "@/lib/business.functions";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-
-const CATEGORIES = [
-  { id: "fb_ads", label: "Facebook Ads" },
-  { id: "courier", label: "Courier Cost" },
-  { id: "packaging", label: "Packaging" },
-  { id: "salary", label: "Staff Salary" },
-  { id: "misc", label: "Miscellaneous" },
-] as const;
+import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
+import { RangeFilter } from "@/components/admin/finance/RangeFilter";
+import { SummaryCards, ProfitLoss, type FinanceSummary } from "@/components/admin/finance/SummaryCards";
+import { FinanceChart } from "@/components/admin/finance/FinanceChart";
+import { ExpenseForm, type ExpenseRow } from "@/components/admin/finance/ExpenseForm";
+import { ExpenseHistory } from "@/components/admin/finance/ExpenseHistory";
+import { categoryLabel, downloadCsv, iso, money, rangeFor, type RangeKey } from "@/lib/finance-ui";
 
 export const Route = createFileRoute("/_authenticated/admin/finance")({
+  head: () => ({
+    meta: [
+      { title: "Business Finance | ORZEN Store Admin" },
+      { name: "description", content: "Track store sales, expenses, profit and COD receivable with date-range reporting." },
+    ],
+  }),
   component: FinancePage,
 });
 
@@ -27,103 +28,116 @@ function FinancePage() {
   const del = useServerFn(deleteExpense);
   const sumFn = useServerFn(financeSummary);
   const qc = useQueryClient();
-  const { data: items } = useQuery({ queryKey: ["expenses"], queryFn: () => list({ data: {} }) });
-  const { data: sum } = useQuery({ queryKey: ["finance-summary"], queryFn: () => sumFn() });
-  const [cat, setCat] = useState<typeof CATEGORIES[number]["id"]>("fb_ads");
-  const [amount, setAmount] = useState("");
-  const [note, setNote] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    try {
-      await add({ data: { category: cat, amount: Number(amount), note, spent_on: date } });
-      setAmount(""); setNote("");
-      qc.invalidateQueries({ queryKey: ["expenses"] });
-      qc.invalidateQueries({ queryKey: ["finance-summary"] });
-      toast.success("Expense recorded");
-    } catch (err) { toast.error((err as Error).message); }
-  }
+  const [rangeKey, setRangeKey] = useState<RangeKey>("month");
+  const [custom, setCustom] = useState({ from: iso(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), to: iso(new Date()) });
+  const range = useMemo(() => rangeFor(rangeKey, custom), [rangeKey, custom]);
+  const [editing, setEditing] = useState<ExpenseRow | null>(null);
 
-  async function remove(id: string) {
-    if (!confirm("Delete?")) return;
-    await del({ data: { id } });
+  const { data: sum } = useQuery({
+    queryKey: ["finance-summary", range.from, range.to],
+    queryFn: () => sumFn({ data: range }),
+  });
+  const { data: items } = useQuery({
+    queryKey: ["expenses", range.from, range.to],
+    queryFn: () => list({ data: range }),
+  });
+
+  const rows = (items ?? []) as ExpenseRow[];
+
+  function refresh() {
     qc.invalidateQueries({ queryKey: ["expenses"] });
     qc.invalidateQueries({ queryKey: ["finance-summary"] });
   }
 
-  const cards = [
-    { label: "Today's Sales", v: sum?.todaySales ?? 0, c: "text-foreground" },
-    { label: "Today's Expenses", v: sum?.todayExpense ?? 0, c: "text-destructive" },
-    { label: "Today's Profit", v: sum?.todayProfit ?? 0, c: (sum?.todayProfit ?? 0) >= 0 ? "text-emerald-600" : "text-destructive" },
-    { label: "Monthly Profit", v: sum?.monthProfit ?? 0, c: (sum?.monthProfit ?? 0) >= 0 ? "text-emerald-600" : "text-destructive" },
-    { label: "Net Profit", v: sum?.netProfit ?? 0, c: (sum?.netProfit ?? 0) >= 0 ? "text-emerald-600" : "text-destructive" },
-  ];
+  async function remove(id: string) {
+    if (!confirm("Delete this expense?")) return;
+    await del({ data: { id } });
+    if (editing?.id === id) setEditing(null);
+    refresh();
+  }
+
+  function exportCsv() {
+    if (!sum) return;
+    downloadCsv(`finance-${range.from}_${range.to}.csv`, [
+      ["ORZEN Finance Report", `${range.from} to ${range.to}`],
+      [],
+      ["Metric", "Amount (BDT)"],
+      ["Sales", sum.rangeSales],
+      ["Product Cost", sum.rangeCogs],
+      ["Other Expenses", sum.rangeExpense],
+      ["Net Profit", sum.rangeProfit],
+      ["COD Receivable", sum.codReceivable],
+      [],
+      ["Date", "Sales", "Product Cost", "Expenses", "Profit"],
+      ...sum.series.map((s) => [s.d, s.sales, s.cogs, s.expense, s.sales - s.cogs - s.expense]),
+      [],
+      ["Expense date", "Category", "Amount", "Note"],
+      ...rows.map((r) => [r.spent_on, categoryLabel(r.category), Number(r.amount), r.note ?? ""]),
+    ]);
+  }
+
+  function exportPdf() {
+    window.print();
+  }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Business Finance</h1>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {cards.map((c) => (
-          <div key={c.label} className="rounded-xl border bg-card p-4">
-            <div className="text-xs text-muted-foreground">{c.label}</div>
-            <div className={`mt-1 text-xl font-bold ${c.c}`}>৳{Number(c.v).toFixed(0)}</div>
+    <div className="space-y-4 print:space-y-3">
+      <AdminPageHeader
+        title="Business Finance"
+        description="Sales, expenses, profit and COD receivable from your real store data."
+        action={
+          <div className="flex gap-2 print:hidden">
+            <button onClick={exportCsv} className="inline-flex items-center gap-1.5 rounded-md border px-3 py-2 text-sm hover:bg-muted">
+              <Download className="h-4 w-4" /> CSV / Excel
+            </button>
+            <button onClick={exportPdf} className="rounded-md border px-3 py-2 text-sm hover:bg-muted">PDF</button>
           </div>
-        ))}
+        }
+      />
+
+      <div className="print:hidden">
+        <RangeFilter value={rangeKey} onChange={setRangeKey} custom={custom} onCustomChange={setCustom} />
       </div>
 
-      <form onSubmit={submit} className="space-y-3 rounded-xl border bg-card p-4">
-        <h2 className="text-sm font-semibold">Add expense</h2>
-        <div className="grid gap-3 sm:grid-cols-4">
-          <div className="space-y-1.5">
-            <Label>Category</Label>
-            <select value={cat} onChange={(e) => setCat(e.target.value as any)} className="flex h-9 w-full rounded-md border bg-background px-3 text-sm">
-              {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-            </select>
+      {!sum ? (
+        <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">Loading…</div>
+      ) : (
+        <>
+          <SummaryCards s={sum as FinanceSummary} />
+          <div className="grid gap-3 lg:grid-cols-2">
+            <ProfitLoss s={sum as FinanceSummary} />
+            <FinanceChart series={sum.series} />
           </div>
-          <div className="space-y-1.5">
-            <Label>Amount (৳)</Label>
-            <Input type="number" min={0} step="0.01" required value={amount} onChange={(e) => setAmount(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Date</Label>
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Note (optional)</Label>
-            <Input value={note} onChange={(e) => setNote(e.target.value)} />
-          </div>
-        </div>
-        <Button type="submit">Record expense</Button>
-      </form>
 
-      <div className="overflow-x-auto rounded-xl border bg-card">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-left text-xs uppercase text-muted-foreground">
-            <tr>
-              <th className="p-3">Date</th>
-              <th className="p-3">Category</th>
-              <th className="p-3 text-right">Amount</th>
-              <th className="p-3">Note</th>
-              <th className="p-3"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {(items ?? []).map((e: any) => (
-              <tr key={e.id} className="border-t">
-                <td className="p-3 text-xs">{e.spent_on}</td>
-                <td className="p-3 text-xs">{CATEGORIES.find((c) => c.id === e.category)?.label ?? e.category}</td>
-                <td className="p-3 text-right">৳{Number(e.amount).toFixed(0)}</td>
-                <td className="p-3 text-xs text-muted-foreground">{e.note ?? "—"}</td>
-                <td className="p-3 text-right">
-                  <button onClick={() => remove(e.id)} className="rounded p-1.5 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {(items ?? []).length === 0 && <div className="p-10 text-center text-sm text-muted-foreground">No expenses logged.</div>}
+          {Object.keys(sum.byCategory).length > 0 && (
+            <div className="rounded-xl border bg-card p-3 sm:p-4">
+              <h2 className="text-sm font-semibold">Expenses by category</h2>
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {Object.entries(sum.byCategory).map(([c, v]) => (
+                  <div key={c} className="rounded-lg border bg-muted/30 p-2.5">
+                    <div className="truncate text-[11px] text-muted-foreground">{categoryLabel(c)}</div>
+                    <div className="text-sm font-semibold tabular-nums">{money(v)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      <div className="print:hidden">
+        <ExpenseForm
+          editing={editing}
+          onCancelEdit={() => setEditing(null)}
+          onSubmit={async (v) => {
+            await add({ data: v });
+            refresh();
+          }}
+        />
       </div>
+
+      <ExpenseHistory rows={rows} onEdit={setEditing} onDelete={remove} />
     </div>
   );
 }
