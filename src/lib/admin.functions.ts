@@ -1134,16 +1134,33 @@ export const syncCourierInfo = createServerFn({ method: "POST" })
 const seoSchema = z.object({
   title: z.string().trim().max(160).optional().nullable(),
   description: z.string().trim().max(320).optional().nullable(),
-  keywords: z.string().trim().max(300).optional().nullable(),
-  og_image_url: z.string().max(500).optional().nullable(),
   favicon_url: z.string().max(500).optional().nullable(),
+  canonical_url: z.string().trim().max(300).optional().nullable(),
+  noindex: z.boolean().optional().nullable(),
+  og_title: z.string().trim().max(160).optional().nullable(),
+  og_description: z.string().trim().max(320).optional().nullable(),
+  og_image_url: z.string().max(500).optional().nullable(),
+  twitter_image_url: z.string().max(500).optional().nullable(),
+  google_verification: z.string().trim().max(300).optional().nullable(),
+  bing_verification: z.string().trim().max(300).optional().nullable(),
+  sitemap_enabled: z.boolean().optional().nullable(),
+  robots_extra: z.string().trim().max(2000).optional().nullable(),
 });
 export const updateSeo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => seoSchema.parse(d))
-  .handler(async ({ data, context }) =>
-    updateStoreColumn(context.supabase, context.userId, "seo", data),
-  );
+  .handler(async ({ data, context }) => {
+    // Merge so each SEO tab can save independently without clearing others.
+    const { data: row } = await context.supabase
+      .from("stores")
+      .select("seo")
+      .eq("owner_user_id", context.userId)
+      .maybeSingle();
+    const current = ((row as any)?.seo ?? {}) as Record<string, unknown>;
+    const next = { ...current, ...data };
+    delete (next as any).keywords;
+    return updateStoreColumn(context.supabase, context.userId, "seo", next);
+  });
 
 const deliverySchema = z.object({
   free_min: z.number().nonnegative().optional(),

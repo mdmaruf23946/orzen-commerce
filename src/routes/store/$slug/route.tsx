@@ -3,6 +3,14 @@ import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query"
 import { useEffect, useMemo, useState } from "react";
 import { ShoppingCart, Phone, MessageCircle, Facebook, Menu, Mail, User } from "lucide-react";
 import { getStoreBySlug, listStoreCategories, listStoreProducts } from "@/lib/storefront.functions";
+import { getRequestOrigin } from "@/lib/seo.functions";
+import {
+  resolveStoreSeo,
+  storeHeadMeta,
+  jsonLdScript,
+  organizationJsonLd,
+  websiteJsonLd,
+} from "@/lib/seo";
 import { DEFAULT_THEME, mergeTheme, themeCssVars } from "@/lib/theme/definition";
 import { ThemeStyle, THEME_SCOPE } from "@/lib/theme/ThemeStyle";
 import {
@@ -40,33 +48,31 @@ export const Route = createFileRoute("/store/$slug")({
   loader: async ({ context, params }) => {
     const store = await context.queryClient.ensureQueryData(storeQuery(params.slug));
     if (!store) throw notFound();
-    return { store };
+    let origin = "";
+    try {
+      origin = await getRequestOrigin();
+    } catch {
+      /* ignore */
+    }
+    return { store, origin };
   },
   head: ({ loaderData }) => {
     if (!loaderData) return {};
     const s: any = loaderData.store;
-    const seo = s.seo ?? {};
-    const title = seo.title || s.name;
-    const description = seo.description || s.description || s.name;
-    const meta: any[] = [
-      { title },
-      { name: "description", content: description },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-    ];
-    if (seo.keywords) meta.push({ name: "keywords", content: seo.keywords });
-    if (seo.og_image_url) meta.push({ property: "og:image", content: seo.og_image_url });
-    // Prefer per-store favicon → store icon → legacy seo.favicon_url → store logo.
-    const useIcon = s.use_icon_as_favicon !== false;
-    const favicon = useIcon
-      ? (s.favicon_url || s.icon_url || s.custom_favicon_url || seo.favicon_url || s.logo_url)
-      : (s.custom_favicon_url || s.favicon_url || s.icon_url || seo.favicon_url || s.logo_url);
+    const origin: string = loaderData.origin || "";
+    const r = resolveStoreSeo(s, { origin });
+    const meta = storeHeadMeta(r);
     const links: any[] = [];
-    if (favicon) {
-      links.push({ rel: "icon", href: favicon });
-      links.push({ rel: "apple-touch-icon", href: favicon });
+    if (r.canonical) links.push({ rel: "canonical", href: r.canonical });
+    if (r.favicon) {
+      links.push({ rel: "icon", href: r.favicon });
+      links.push({ rel: "apple-touch-icon", href: r.favicon });
     }
-    return { meta, links };
+    return {
+      meta,
+      links,
+      scripts: [jsonLdScript([organizationJsonLd(s, r), websiteJsonLd(s, r)])],
+    };
   },
   notFoundComponent: () => (
     <div className="flex min-h-screen items-center justify-center p-6 text-center">
