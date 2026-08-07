@@ -158,11 +158,43 @@ export const updateMyAgent = createServerFn({ method: "POST" })
       .object({
         enabled: z.boolean(),
         agent_name: z.string().trim().min(1).max(80),
+        description: z.string().trim().max(200).optional().default(""),
         welcome_message: z.string().trim().min(1).max(500),
+        fallback_message: z.string().trim().max(500).optional().default(""),
+        product_recommendations: z.boolean().optional().default(true),
+        order_assistance: z.boolean().optional().default(true),
         language: z.enum(["bn", "en", "both"]),
         style: z.string().trim().min(1).max(40),
         use_emoji: z.boolean(),
         human_like: z.boolean(),
+        sales_focused: z.boolean().optional().default(true),
+        recommend_related: z.boolean().optional().default(true),
+        ask_for_info: z.boolean().optional().default(true),
+        escalate_to_human: z.boolean().optional().default(true),
+        sources: z
+          .object({
+            products: z.boolean().optional().default(true),
+            stock: z.boolean().optional().default(true),
+            categories: z.boolean().optional().default(true),
+            delivery: z.boolean().optional().default(true),
+            payments: z.boolean().optional().default(true),
+            returns: z.boolean().optional().default(true),
+            warranty: z.boolean().optional().default(true),
+            store_info: z.boolean().optional().default(true),
+            business_hours: z.boolean().optional().default(true),
+          })
+          .optional()
+          .default(() => ({
+            products: true,
+            stock: true,
+            categories: true,
+            delivery: true,
+            payments: true,
+            returns: true,
+            warranty: true,
+            store_info: true,
+            business_hours: true,
+          })),
         knowledge: z
           .object({
             store_info: z.string().max(2000).optional().default(""),
@@ -190,6 +222,50 @@ export const updateMyAgent = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ---------- Store admin: live knowledge source summary ----------
+export const getMyAgentKnowledgeSummary = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sb = context.supabase;
+    const storeId = await getOwnedStoreId(sb, context.userId);
+
+    const [store, products, activeProducts, categories, zones, gateways, returns] = await Promise.all([
+      sb.from("stores").select("name,address,phone,email,description,delivery").eq("id", storeId).maybeSingle(),
+      sb.from("products").select("id", { count: "exact", head: true }).eq("store_id", storeId),
+      sb.from("products").select("id", { count: "exact", head: true }).eq("store_id", storeId).eq("status", "active"),
+      sb.from("categories").select("id", { count: "exact", head: true }).eq("store_id", storeId),
+      sb.from("delivery_zones").select("name,charge").eq("store_id", storeId).limit(6),
+      sb.from("store_payment_gateways").select("provider_id").eq("store_id", storeId).eq("enabled", true),
+      sb
+        .from("store_return_settings")
+        .select("enabled,eligibility_days,exchange_window_days")
+        .eq("store_id", storeId)
+        .maybeSingle(),
+    ]);
+
+    const s = (store.data ?? {}) as Record<string, any>;
+    return {
+      store: {
+        name: s.name ?? "",
+        address: s.address ?? "",
+        phone: s.phone ?? "",
+        email: s.email ?? "",
+        has_description: Boolean(s.description),
+      },
+      products_total: products.count ?? 0,
+      products_active: activeProducts.count ?? 0,
+      categories_total: categories.count ?? 0,
+      delivery_zones: (zones.data ?? []).map((z: any) => ({ name: z.name, charge: Number(z.charge ?? 0) })),
+      payment_gateways: (gateways.data ?? []).map((g: any) => String(g.provider_id)),
+      returns: {
+        enabled: Boolean((returns.data as any)?.enabled),
+        return_window_days: (returns.data as any)?.eligibility_days ?? null,
+        exchange_window_days: (returns.data as any)?.exchange_window_days ?? null,
+      },
+    };
+  });
+
 
 // ---------- Storefront: read public agent config ----------
 export const getStoreAgentPublic = createServerFn({ method: "GET" })

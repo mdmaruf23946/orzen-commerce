@@ -104,6 +104,59 @@ export function buildSystemPrompt(
   const faqs = Array.isArray(k.faqs)
     ? k.faqs.map((f: any) => `Q: ${f.q}\nA: ${f.a}`).join("\n\n")
     : "";
+
+  // ---- Store-admin behaviour toggles (default ON when column is absent) ----
+  const on = (v: any) => v !== false;
+  const src = (agent.sources ?? {}) as Record<string, any>;
+  const srcOn = (key: string) => src[key] !== false;
+  const allowRecommend = on(agent.product_recommendations);
+  const allowOrders = on(agent.order_assistance);
+  const salesFocused = on(agent.sales_focused);
+  const allowRelated = allowRecommend && on(agent.recommend_related);
+  const askForInfo = on(agent.ask_for_info);
+  const allowEscalate = on(agent.escalate_to_human);
+  const fallbackMessage = String(agent.fallback_message ?? "").trim();
+  const agentDescription = String(agent.description ?? "").trim();
+
+  const behaviourLines = [
+    salesFocused
+      ? "- Be sales-focused: highlight benefits, offers and next steps, and gently move the customer toward a purchase — without pressure or exaggeration."
+      : "- Be informative and helpful. Do not push the customer to buy.",
+    allowRecommend
+      ? "- You may suggest products from the store catalogue when they match what the customer needs."
+      : "- Do NOT suggest or recommend products. Only answer what the customer explicitly asks about.",
+    allowRelated
+      ? "- After showing or confirming a product you may offer 2-3 genuinely related items."
+      : "- Do NOT offer related or add-on products.",
+    askForInfo
+      ? "- When information is missing to help (product, quantity, area, budget), ask ONE short specific question at a time."
+      : "- Do not interrogate the customer. Answer with what you already know and ask for details only if it is impossible to proceed.",
+    allowOrders
+      ? "- You may help the customer place and track orders using the order tools."
+      : "- Do NOT take orders or collect order details. If the customer wants to buy, point them to the website checkout or the store admin.",
+    allowEscalate
+      ? "- If you cannot help or the customer asks for a human, call escalateToHuman and tell the customer an admin will reply."
+      : "- Do not promise a human callback. Ask the customer to contact the store using the store contact details.",
+    `- NEVER invent facts. Prices, stock, delivery charges, payment methods, policies, warranty and business hours must come from a tool result or the store facts below.`,
+    fallbackMessage
+      ? `- If you genuinely do not know something, reply with this fallback message (translate to the customer's language if needed): "${fallbackMessage}"`
+      : "- If you genuinely do not know something, say so plainly and suggest contacting the store admin.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const sourceLines = [
+    srcOn("products") ? "- Products and prices: use the product tools." : "- Product catalogue access is OFF: do not discuss specific products or prices.",
+    srcOn("stock") ? "- Stock/availability: use the stock value from product tool results." : "- Stock data is OFF: do not state availability.",
+    srcOn("categories") ? "- Categories: use listCategories." : "- Category data is OFF.",
+    srcOn("delivery") ? "- Delivery info: use the delivery facts below / delivery tools." : "- Delivery data is OFF: do not quote delivery charges or times.",
+    srcOn("payments") ? "- Payment methods: use the payment facts below." : "- Payment data is OFF: do not list payment methods.",
+    srcOn("returns") ? "- Return & exchange policy: use the policy below." : "- Return policy is OFF: refer the customer to the store admin.",
+    srcOn("warranty") ? "- Warranty: use the warranty facts below." : "- Warranty data is OFF.",
+    srcOn("store_info") ? "- Store information: name, address, phone, description below." : "- Store info is OFF: share only what the customer already knows.",
+    srcOn("business_hours") ? "- Business hours: as listed below." : "- Business hours are OFF.",
+  ].join("\n");
+
   const globalPrompt = (settings?.global_system_prompt ?? "").trim();
   const brand = (settings?.brand_voice ?? "").trim();
   const safety = (settings?.safety_rules ?? "").trim();
@@ -178,8 +231,15 @@ export function buildSystemPrompt(
   }
 
   return `${globalBlock ? globalBlock + "\n\n" : ""}You are ${agent.agent_name}, the sales assistant for "${store.name}".
-${lang} ${emoji} ${human}
+${agentDescription ? `Role: ${agentDescription}\n` : ""}${lang} ${emoji} ${human}
 Style: ${agent.style}.
+
+
+# Behaviour (configured by the store admin)
+${behaviourLines}
+
+# Allowed knowledge sources
+${sourceLines}
 
 
 # Hard rules — never violate
@@ -191,39 +251,44 @@ Style: ${agent.style}.
 - If searchProducts returns 0 results, try again with a broader query (drop filters, translate Bangla→English keyword, try a synonym) before telling the customer "not found".
 - When you have products to show, call ${displayTools}. Also write a short friendly text line (1 sentence) introducing them. Never leave the text reply empty when you showed products — always add a line like "এই প্রোডাক্টগুলো দেখুন 👇".
 - Never say a product image is unavailable until you checked the product tool result. If primary_image_url or gallery has an image, send a product card.
-- If a product is out of stock, tell the customer and call searchProducts in the same category to suggest alternatives.
+- If a product is out of stock, tell the customer${allowRecommend ? " and call searchProducts in the same category to suggest alternatives" : ""}.
 - If the customer changes topic mid-conversation (e.g. asks about delivery charge while an order is pending), answer the new topic FIRST using the appropriate tool, then only resume the order flow when they signal they're ready to continue.
-- If you cannot answer confidently from tools or store data, ask ONE specific follow-up question in the customer's language. Never send a generic greeting, apology, or "how can I help you?" template.
-- If you cannot answer confidently or the customer asks for a human, call escalateToHuman.
 - Never expose internal tool errors, productId problems, ids, database wording, or implementation details to the customer. If a tool fails, recover naturally or ask one helpful follow-up question.
 
-
+${
+  allowOrders
+    ? `
 # Order flow
 When the customer wants to buy:
 1. Use collectOrderInfo to save each field as the customer gives it (name, phone, district, upazila, union, village, full_address, product_id, variant, qty, delivery_method, payment_method).
 2. Ask only for fields that are still missing — never re-ask what you already have (see the pending-order slot in the state block below).
 3. Once every required field is present, call finalizeOrder. It creates the order and returns the confirmation.
 4. If finalizeOrder returns error="duplicate_blocked", send the returned reply exactly and stop the order flow. Do not show product cards or say you are ordering again.
-5. After finalizeOrder succeeds, use getRelatedProducts and offer 2-3 add-ons via sendProductCarousel.
+${allowRelated ? "5. After finalizeOrder succeeds, use getRelatedProducts and offer 2-3 add-ons via sendProductCarousel." : "5. After finalizeOrder succeeds, thank the customer. Do not upsell."}
 
 # Tracking
 If asked "where is my order" / "track my order", call trackOrder with orderId, invoice_no, or phone.
-
+`
+    : `
+# Orders
+Order assistance is turned off. Do not collect order details or create orders. If the customer wants to buy or track an order, ask them to use the website or contact the store.
+`
+}
 # Memory
 At the start of each conversation call getCustomerMemory to see previous orders and preferences. Personalise your greeting.
 
 ${latestBlock ? latestBlock + "\n\n" : ""}${focusBlock ? focusBlock + "\n\n" : ""}${stateBlock ? stateBlock + "\n\n" : ""}# Store facts
-Address: ${store.address || "n/a"}
-Phone: ${store.phone || "n/a"}
-Delivery: ${k.delivery_policy || JSON.stringify(store.delivery ?? {})}
-Returns: ${k.return_policy || ""}
-Warranty: ${k.warranty_policy || ""}
-Payment: ${k.payment_methods || ""}
-Business hours: ${k.business_hours || ""}
-Store info: ${k.store_info || store.description || ""}
+${srcOn("store_info") ? `Address: ${store.address || "n/a"}\nPhone: ${store.phone || "n/a"}` : ""}
+${srcOn("delivery") ? `Delivery: ${k.delivery_policy || JSON.stringify(store.delivery ?? {})}` : ""}
+${srcOn("returns") ? `Returns: ${k.return_policy || ""}` : ""}
+${srcOn("warranty") ? `Warranty: ${k.warranty_policy || ""}` : ""}
+${srcOn("payments") ? `Payment: ${k.payment_methods || ""}` : ""}
+${srcOn("business_hours") ? `Business hours: ${k.business_hours || ""}` : ""}
+${srcOn("store_info") ? `Store info: ${k.store_info || store.description || ""}` : ""}
 
 FAQs:
 ${faqs}`;
+
 }
 
 
