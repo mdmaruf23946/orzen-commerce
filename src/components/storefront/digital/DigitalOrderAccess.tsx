@@ -153,7 +153,7 @@ export function DigitalOrderAccess({
                 </span>
               </div>
 
-              {!locked && (
+              {!locked && verified && (
                 <div className="mt-3 space-y-2">
                   {(it.files as any[]).map((f) => (
                     <div
