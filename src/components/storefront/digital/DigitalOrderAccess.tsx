@@ -2,34 +2,90 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Download, KeyRound, Copy, Clock, FileDown, LifeBuoy } from "lucide-react";
+import { Download, KeyRound, Copy, Clock, FileDown, LifeBuoy, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { getOrderDigitalAccess, requestDigitalDownload } from "@/lib/digital.functions";
 import { formatBytes, LICENSE_LABELS, type LicenseType } from "@/lib/digital";
 import { getDeviceId } from "@/lib/fingerprint";
+import { readToken } from "@/lib/customer-session";
+
+const contactKey = (orderId: string) => `orzen_order_contact__${orderId}`;
+
+function readContact(orderId: string) {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem(contactKey(orderId)) ?? "";
+  } catch {
+    return "";
+  }
+}
 
 /**
  * Post-payment access panel shown on the order page: files, license keys
  * and the remaining download allowance for every digital item.
+ * License keys and download links require proof of ownership — a customer
+ * session, or the phone/email used on the order.
  */
-export function DigitalOrderAccess({ orderId }: { orderId: string }) {
+export function DigitalOrderAccess({
+  orderId,
+  slug,
+  storeId,
+}: {
+  orderId: string;
+  slug?: string;
+  storeId?: string;
+}) {
   const listAccess = useServerFn(getOrderDigitalAccess);
   const requestDl = useServerFn(requestDigitalDownload);
   const [busy, setBusy] = useState<string | null>(null);
+  const [contact, setContact] = useState(() => readContact(orderId));
+  const [contactInput, setContactInput] = useState("");
+  const token = slug ? readToken(slug) : null;
 
   const { data: items = [], refetch } = useQuery({
-    queryKey: ["digitalAccess", orderId],
-    queryFn: () => listAccess({ data: { orderId } }),
+    queryKey: ["digitalAccess", orderId, contact, token],
+    queryFn: () =>
+      listAccess({
+        data: {
+          orderId,
+          ...(storeId ? { storeId } : {}),
+          ...(token ? { token } : {}),
+          ...(contact ? { contact } : {}),
+        },
+      }),
   });
 
   if (!items.length) return null;
+
+  const verified = (items as any[]).some((i) => i.verified);
+
+  function submitContact(e: React.FormEvent) {
+    e.preventDefault();
+    const value = contactInput.trim();
+    if (!value) return;
+    try {
+      window.localStorage.setItem(contactKey(orderId), value);
+    } catch {
+      /* ignore */
+    }
+    setContact(value);
+  }
 
   async function download(entitlementId: string, fileIndex: number) {
     const key = `${entitlementId}:${fileIndex}`;
     setBusy(key);
     try {
       const res = await requestDl({
-        data: { entitlementId, fileIndex, orderId, deviceId: getDeviceId() || undefined },
+        data: {
+          entitlementId,
+          fileIndex,
+          orderId,
+          ...(storeId ? { storeId } : {}),
+          ...(token ? { token } : {}),
+          ...(contact ? { contact } : {}),
+          deviceId: getDeviceId() || undefined,
+        },
       });
       window.open(res.url, "_blank", "noopener");
       refetch();
@@ -45,7 +101,35 @@ export function DigitalOrderAccess({ orderId }: { orderId: string }) {
       <div className="mb-3 flex items-center gap-2 text-xs uppercase text-muted-foreground">
         <Download className="h-3 w-3" /> Your downloads
       </div>
+
+      {!verified && (
+        <form
+          onSubmit={submitContact}
+          className="mb-4 rounded-lg border bg-muted/30 p-3 space-y-2"
+        >
+          <p className="flex items-center gap-1.5 text-xs font-medium">
+            <ShieldCheck className="h-3.5 w-3.5" /> Verify it's your order
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            Enter the phone number or email you used at checkout to unlock license keys and
+            download links.
+          </p>
+          <div className="flex gap-2">
+            <Input
+              value={contactInput}
+              onChange={(e) => setContactInput(e.target.value)}
+              placeholder="Phone or email"
+              className="h-9"
+            />
+            <Button type="submit" size="sm" className="h-9">
+              Unlock
+            </Button>
+          </div>
+        </form>
+      )}
+
       <div className="space-y-4">
+
         {(items as any[]).map((it) => {
           const locked = it.status !== "active";
           const remaining =
@@ -69,7 +153,7 @@ export function DigitalOrderAccess({ orderId }: { orderId: string }) {
                 </span>
               </div>
 
-              {!locked && (
+              {!locked && verified && (
                 <div className="mt-3 space-y-2">
                   {(it.files as any[]).map((f) => (
                     <div

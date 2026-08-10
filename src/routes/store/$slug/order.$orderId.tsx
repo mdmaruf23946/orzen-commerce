@@ -181,7 +181,7 @@ function OrderConfirmation() {
             </ol>
           </div>
 
-          <DigitalOrderAccess orderId={order.id} />
+          <DigitalOrderAccess orderId={order.id} slug={slug} storeId={order.store_id} />
 
           <div className="mt-4 grid grid-cols-2 gap-2">
             <Link
