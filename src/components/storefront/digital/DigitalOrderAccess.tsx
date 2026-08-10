@@ -96,7 +96,40 @@ export function DigitalOrderAccess({
     }
   }
 
+  return (
+    <div className="mt-4 rounded-xl border bg-card p-4">
+      <div className="mb-3 flex items-center gap-2 text-xs uppercase text-muted-foreground">
+        <Download className="h-3 w-3" /> Your downloads
+      </div>
+
+      {!verified && (
+        <form
+          onSubmit={submitContact}
+          className="mb-4 rounded-lg border bg-muted/30 p-3 space-y-2"
+        >
+          <p className="flex items-center gap-1.5 text-xs font-medium">
+            <ShieldCheck className="h-3.5 w-3.5" /> Verify it's your order
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            Enter the phone number or email you used at checkout to unlock license keys and
+            download links.
+          </p>
+          <div className="flex gap-2">
+            <Input
+              value={contactInput}
+              onChange={(e) => setContactInput(e.target.value)}
+              placeholder="Phone or email"
+              className="h-9"
+            />
+            <Button type="submit" size="sm" className="h-9">
+              Unlock
+            </Button>
+          </div>
+        </form>
+      )}
+
       <div className="space-y-4">
+
         {(items as any[]).map((it) => {
           const locked = it.status !== "active";
           const remaining =
