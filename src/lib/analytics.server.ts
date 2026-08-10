@@ -175,7 +175,11 @@ export async function computeAnalytics(supabase: any, sid: string, input: Analyt
     const row = perProduct.get(key) ?? {
       id: it.product_id ?? "",
       name: p?.name ?? it.name_snapshot ?? "Unnamed product",
-      image: p?.primary_image_url ?? null,
+      image: (() => {
+        const raw = (p?.primary_image_url as string | null | undefined) ?? null;
+        if (!raw) return null;
+        return raw.startsWith("http") || raw.startsWith("/") ? raw : `/api/img/${raw}`;
+      })(),
       qty: 0,
       revenue: 0,
     };
