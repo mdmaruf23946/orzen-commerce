@@ -1029,22 +1029,23 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
             .maybeSingle();
           if (!integ) continue;
 
-          // Verify the HMAC only when the store configured an App Secret.
-          // App Secret is optional in the connect form, so pages without one
-          // must keep receiving events (otherwise the inbox goes silent).
+          // Facebook signs every delivery. Unsigned events are untrusted and are
+          // never processed: without an App Secret anyone who knows the public
+          // Page ID could forge customer messages and drive the AI order flow.
           const appSecret = await decryptToken((integ as any).app_secret_encrypted);
-          if (appSecret) {
-            if (!signatureHeader) continue;
-            if (!(await verifyMessengerSignature(rawBody, signatureHeader, appSecret))) continue;
-          } else {
+          if (!appSecret) {
             await sb
               .from("messenger_integrations")
               .update({
                 last_error:
-                  "App Secret সেট করা নেই — webhook signature যাচাই করা যাচ্ছে না। নিরাপত্তার জন্য App Secret যোগ করুন।",
+                  "App Secret সেট করা নেই — নিরাপত্তার কারণে webhook ইভেন্ট গ্রহণ করা হচ্ছে না। App Secret যোগ করুন।",
               })
               .eq("id", (integ as any).id);
+            continue;
           }
+          if (!signatureHeader) continue;
+          if (!(await verifyMessengerSignature(rawBody, signatureHeader, appSecret))) continue;
+
 
 
           const token =
