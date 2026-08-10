@@ -30,7 +30,7 @@ import { cancelMyOrder } from "@/lib/customer-account.functions";
 import { useCustomerSession } from "@/lib/customer-session";
 import { addToCart } from "@/lib/cart";
 
-const WINDOW_DAYS = 7;
+const DEFAULT_WINDOW_DAYS = 7;
 
 export function OrderActions({ order, slug }: { order: any; slug: string }) {
   const { token } = useCustomerSession(slug);
@@ -54,6 +54,10 @@ export function OrderActions({ order, slug }: { order: any; slug: string }) {
     enabled: !!token,
   });
   const returnsEnabled = (returnCtx as any)?.policy?.enabled !== false;
+  const windowDays =
+    Number((returnCtx as any)?.policy?.eligibility_days) > 0
+      ? Number((returnCtx as any).policy.eligibility_days)
+      : DEFAULT_WINDOW_DAYS;
 
   const create = useMutation({
     mutationFn: (payload: any) => createFn({ data: payload }),
