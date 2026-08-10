@@ -104,7 +104,7 @@ export function OrderActions({ order, slug }: { order: any; slug: string }) {
     (order.order_type ?? "physical") === "physical" &&
     !cancelled &&
     !!delivered &&
-    Date.now() - new Date(delivered.created_at).getTime() <= WINDOW_DAYS * 86_400_000 &&
+    Date.now() - new Date(delivered.created_at).getTime() <= windowDays * 86_400_000 &&
     !openRequest;
 
   const canBuyAgain = !!delivered || cancelled || order.status === "delivered";
