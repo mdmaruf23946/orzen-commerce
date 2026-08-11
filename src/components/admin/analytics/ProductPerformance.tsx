@@ -6,11 +6,11 @@ type Row = AnalyticsPayload["products"]["top"][number];
 
 function ProductRow({ p, rank }: { p: Row; rank: number }) {
   return (
-    <li className="flex items-center gap-2 sm:gap-3">
-      <span className="w-3 shrink-0 text-[10px] font-semibold text-muted-foreground sm:w-4 sm:text-xs">
+    <li className="flex items-center gap-3">
+      <span className="w-4 shrink-0 text-xs font-semibold text-muted-foreground sm:w-5">
         {rank}
       </span>
-      <div className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-md border bg-muted sm:h-10 sm:w-10 sm:rounded-lg">
+      <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg border bg-muted sm:h-11 sm:w-11">
         {p.image ? (
           <img
             src={p.image}
@@ -19,12 +19,12 @@ function ProductRow({ p, rank }: { p: Row; rank: number }) {
             className="h-full w-full object-cover"
           />
         ) : (
-          <Package className="h-3.5 w-3.5 text-muted-foreground sm:h-4 sm:w-4" />
+          <Package className="h-4 w-4 text-muted-foreground sm:h-5 sm:w-5" />
         )}
       </div>
       <div className="min-w-0 flex-1">
         <div className="truncate text-xs font-medium sm:text-sm">{p.name}</div>
-        <div className="mt-1 h-1 overflow-hidden rounded-full bg-muted sm:h-1.5">
+        <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
           <div
             className="h-full rounded-full bg-primary"
             style={{ width: `${Math.max(p.share, 2)}%` }}
@@ -35,7 +35,7 @@ function ProductRow({ p, rank }: { p: Row; rank: number }) {
         <div className="text-xs font-semibold tabular-nums sm:text-sm">
           {compactMoney(p.revenue)}
         </div>
-        <div className="text-[10px] text-muted-foreground sm:text-[11px]">{p.qty} sold</div>
+        <div className="text-[10px] text-muted-foreground sm:text-xs">{p.qty} sold</div>
       </div>
     </li>
   );
