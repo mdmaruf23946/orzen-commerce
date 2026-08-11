@@ -101,7 +101,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "ORZEN is an all-in-one eCommerce SaaS: store builder, AI sales agent, Messenger automation, courier integration, Facebook Pixel, analytics and payments.",
+          "Launch, run, and grow your online store with ORZEN — an all-in-one platform for store building, AI sales assistance, messenger automation, courier delivery, analytics, and secure payments.",
       },
       { name: "author", content: "ORZEN" },
       { property: "og:title", content: "ORZEN — Launch your online store in minutes" },
