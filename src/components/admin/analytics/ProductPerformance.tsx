@@ -60,9 +60,9 @@ function Panel({ title, items }: { title: string; items: Row[] }) {
 
 export function ProductPerformance({ products }: { products: AnalyticsPayload["products"] }) {
   return (
-    <section className="space-y-2 sm:space-y-3">
-      <h2 className="text-xs font-semibold sm:text-sm">Product Performance</h2>
-      <div className="grid gap-2 sm:gap-3 lg:grid-cols-2">
+    <section className="space-y-3">
+      <h2 className="text-sm font-semibold sm:text-base">Product Performance</h2>
+      <div className="grid gap-3 lg:grid-cols-2">
         <Panel title="Top Selling Products" items={products.top} />
         <Panel title="Lowest Performing Products" items={products.low} />
       </div>
