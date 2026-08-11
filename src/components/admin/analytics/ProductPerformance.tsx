@@ -43,12 +43,12 @@ function ProductRow({ p, rank }: { p: Row; rank: number }) {
 
 function Panel({ title, items }: { title: string; items: Row[] }) {
   return (
-    <div className="rounded-xl border bg-card p-2 sm:p-4">
-      <h3 className="text-xs font-semibold sm:text-sm">{title}</h3>
+    <div className="rounded-xl border bg-card p-3 sm:p-4">
+      <h3 className="text-sm font-semibold sm:text-base">{title}</h3>
       {items.length === 0 ? (
-        <p className="mt-3 text-xs text-muted-foreground sm:text-sm">No product sales yet.</p>
+        <p className="mt-3 text-sm text-muted-foreground">No product sales yet.</p>
       ) : (
-        <ul className="mt-2 space-y-2 sm:mt-3 sm:space-y-3">
+        <ul className="mt-3 space-y-3">
           {items.map((p, i) => (
             <ProductRow key={`${p.id}-${p.name}`} p={p} rank={i + 1} />
           ))}
