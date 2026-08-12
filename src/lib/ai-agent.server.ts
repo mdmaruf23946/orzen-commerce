@@ -1284,12 +1284,25 @@ export function buildTools(ctx: AgentContext) {
 
         const { data: product } = await sb
           .from("products")
-          .select("id,name,price,stock,delivery_charge,product_type")
+          .select("id,name,slug,price,stock,delivery_charge,product_type")
           .eq("store_id", storeId)
           .eq("id", slot.product_id)
           .maybeSingle();
         if (!product) return { ok: false, error: "product_not_found" };
+        // Defence in depth: never create a digital/service/subscription order from Messenger.
+        if (!isMessengerOrderable(product)) {
+          return {
+            ok: false,
+            error: "not_orderable_in_messenger",
+            product_type: productKind(product),
+            product_name: product.name,
+            product_url: productUrl(ctx, product.slug, product.id),
+            instruction:
+              "Do not create an order. Tell the customer this is purchased on the website and send the product_url.",
+          };
+        }
         if (product.stock < slot.qty) return { ok: false, error: "out_of_stock", available: product.stock };
+
 
         const duplicateBlocked = await blockDuplicateMessengerToolOrder({
           sb,
