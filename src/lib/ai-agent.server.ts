@@ -382,11 +382,39 @@ function stringifyProductField(value: any): string {
   return String(value);
 }
 
+export type ProductKind = "physical" | "digital" | "service" | "subscription";
+
+export function productKind(product: any): ProductKind {
+  const t = String(product?.product_type ?? "physical").toLowerCase();
+  return t === "digital" || t === "service" || t === "subscription" ? (t as ProductKind) : "physical";
+}
+
+/** Only physical products may be ordered inside Messenger. */
+export function isMessengerOrderable(product: any) {
+  return productKind(product) === "physical";
+}
+
+function subscriptionBilling(product: any) {
+  const meta = (product?.meta ?? {}) as any;
+  const sub = meta?.subscription ?? null;
+  if (!sub || typeof sub !== "object") return null;
+  return {
+    billing_interval: sub.interval ?? sub.billing_interval ?? sub.cycle ?? null,
+    trial_days: sub.trial_days ?? null,
+    benefits: sub.benefits ?? sub.features ?? null,
+    included: sub.included ?? null,
+  };
+}
+
 function productSummary(ctx: AgentContext, product: any, categoryName?: string | null) {
+  const kind = productKind(product);
   return {
     id: product.id,
     name: product.name,
     slug: product.slug,
+    product_type: kind,
+    purchase_channel: kind === "physical" ? "messenger" : "website",
+    ...(kind === "subscription" ? { subscription: subscriptionBilling(product) } : {}),
     brand: product.brand,
     category_id: product.category_id,
     category_name: categoryName ?? null,
@@ -414,6 +442,7 @@ function productSummary(ctx: AgentContext, product: any, categoryName?: string |
     product_url: productUrl(ctx, product.slug, product.id),
   };
 }
+
 
 async function getConversationSlot(conversationId: string): Promise<Record<string, any>> {
   const sb = admin();
