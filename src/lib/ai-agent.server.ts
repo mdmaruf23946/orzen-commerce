@@ -808,7 +808,9 @@ export function buildTools(ctx: AgentContext) {
         if (input.brand) q = q.ilike("brand", `%${input.brand}%`);
         if (input.minPrice != null) q = q.gte("price", input.minPrice);
         if (input.maxPrice != null) q = q.lte("price", input.maxPrice);
-        if (input.inStockOnly) q = q.gt("stock", 0);
+        // Stock only gates physical products — digital/service/subscription are stockless.
+        if (input.inStockOnly) q = q.or("stock.gt.0,product_type.neq.physical");
+
         const cats = await categoryMap();
         if (input.category) {
           const { data: cat } = await sb
