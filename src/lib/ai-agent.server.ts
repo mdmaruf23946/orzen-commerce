@@ -1243,11 +1243,33 @@ export function buildTools(ctx: AgentContext) {
         Object.entries(input).forEach(([k, v]) => {
           if (v !== undefined && v !== null && v !== "") patch[k] = v;
         });
+        // Hard rule: only physical products can be ordered inside Messenger.
+        if (patch.product_id) {
+          const { data: p } = await sb
+            .from("products")
+            .select("id,name,slug,product_type")
+            .eq("store_id", storeId)
+            .eq("id", patch.product_id)
+            .maybeSingle();
+          if (!p) return { saved: {}, error: "product_not_found" };
+          if (!isMessengerOrderable(p)) {
+            return {
+              saved: {},
+              error: "not_orderable_in_messenger",
+              product_type: productKind(p),
+              product_name: p.name,
+              product_url: productUrl(ctx, p.slug, p.id),
+              instruction:
+                "This product is purchased on the website only. Do not collect order or payment details. Politely tell the customer and send the product_url.",
+            };
+          }
+        }
         const slot = await updateConversationSlot(convId, patch);
         const required = ["customer_name", "phone", "full_address", "product_id", "qty", "payment_method"];
         const missing = required.filter((f) => !slot[f]);
         return { saved: patch, current: slot, missing };
       },
+
     });
 
     tools.finalizeOrder = tool({
