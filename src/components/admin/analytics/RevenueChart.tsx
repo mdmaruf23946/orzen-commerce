@@ -34,7 +34,7 @@ export function RevenueChart({
   const fmt = (v: number) => (active.money ? compactMoney(v) : String(Math.round(v)));
 
   return (
-    <section className="rounded-xl border bg-card p-3 sm:p-4">
+    <section className="min-w-0 overflow-hidden rounded-xl border bg-card p-3 sm:p-4">
       <div className="mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:justify-between">
         <h2 className="truncate text-sm font-semibold">Revenue Overview</h2>
         <div className="flex shrink-0 gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

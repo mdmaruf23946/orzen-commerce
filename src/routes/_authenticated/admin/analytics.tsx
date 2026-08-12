@@ -63,7 +63,7 @@ function AnalyticsPage() {
   const tabs = scopeTabs({}).map((t) => ({ key: t.key, label: t.label.replace(/ \(0\)$/, "") }));
 
   return (
-    <div className="space-y-4 pb-10">
+    <div className="min-w-0 space-y-4 overflow-x-hidden pb-10">
       <AdminPageHeader
         title="Analytics"
         description="Business performance from your real store data."
@@ -86,18 +86,18 @@ function AnalyticsPage() {
         <div className={isFetching ? "space-y-4 opacity-60 transition-opacity" : "space-y-4"}>
           <KpiGrid k={data.kpis} />
           <RevenueChart series={data.series} mode={data.range.mode} />
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid min-w-0 grid-cols-1 gap-3 lg:grid-cols-2 [&>*]:min-w-0">
             <SalesBreakdown rows={data.typeBreakdown} />
             <OrdersOverview counts={data.statusCounts} />
           </div>
           <ProductPerformance products={data.products} />
           <CustomerInsights customers={data.customers} series={data.series} mode={data.range.mode} />
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid min-w-0 grid-cols-1 gap-3 lg:grid-cols-2 [&>*]:min-w-0">
             <ProfitPanel finance={data.finance} />
             <SalesFunnel funnel={data.funnel} marketing={data.marketing} />
           </div>
           <TypeSections data={data} />
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid min-w-0 grid-cols-1 gap-3 lg:grid-cols-2 [&>*]:min-w-0">
             <ActivityFeed items={data.activity} />
             <Insights items={data.insights} />
           </div>
