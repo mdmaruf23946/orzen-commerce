@@ -18,7 +18,7 @@ export function CustomerInsights({
   }));
 
   return (
-    <section className="rounded-xl border bg-card p-3 sm:p-4">
+    <section className="min-w-0 overflow-hidden rounded-xl border bg-card p-3 sm:p-4">
       <h2 className="text-sm font-semibold">Customer Insights</h2>
       <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
         <Stat label="Total Customers" value={String(customers.total)} />

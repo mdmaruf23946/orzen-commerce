@@ -14,7 +14,7 @@ const ORDER: { key: string; label: string }[] = [
 export function OrdersOverview({ counts }: { counts: AnalyticsPayload["statusCounts"] }) {
   const data = ORDER.map((s) => ({ label: s.label, value: counts[s.key] ?? 0 })).filter((d) => d.value > 0);
   return (
-    <section className="rounded-xl border bg-card p-3 sm:p-4">
+    <section className="min-w-0 overflow-hidden rounded-xl border bg-card p-3 sm:p-4">
       <h2 className="text-sm font-semibold">Orders Overview</h2>
       <p className="mt-0.5 text-xs text-muted-foreground">Order pipeline for this period</p>
       {data.length === 0 ? (
