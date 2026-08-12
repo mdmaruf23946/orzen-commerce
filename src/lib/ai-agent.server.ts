@@ -200,7 +200,8 @@ export function buildSystemPrompt(
   // ONLY product the assistant is allowed to describe/name/price/image in text.
   let focusBlock = "";
   if (focus?.product) {
-    const p = focus.product;
+    const p = focus.product as any;
+    const kind = productKind(p);
     const feat = stringifyProductField(p.features).slice(0, 400);
     const varList = Array.isArray(p.variants)
       ? p.variants.map((v: any) => v?.label || v?.name).filter(Boolean).slice(0, 10).join(", ")
@@ -209,9 +210,11 @@ export function buildSystemPrompt(
       `# Focus product (ONLY product allowed in this reply)`,
       `id: ${p.id}`,
       `name: ${p.name}`,
+      `product_type: ${kind}`,
+      `purchase_channel: ${kind === "physical" ? "messenger (order allowed here)" : "website only — send the product link, never take an order or payment"}`,
       p.brand ? `brand: ${p.brand}` : "",
       `price: ৳${p.price}${p.old_price ? ` (was ৳${p.old_price})` : ""}`,
-      `stock: ${p.stock}`,
+      kind === "physical" ? `stock: ${p.stock}` : "",
       p.sku ? `sku: ${p.sku}` : "",
       p.short_description ? `short_description: ${p.short_description}` : "",
       feat ? `features: ${feat}` : "",
@@ -219,6 +222,7 @@ export function buildSystemPrompt(
       ``,
       `Rule: every product fact in your reply MUST come from this record. Do not name, describe, price, or image any other product in this reply. To show it, call ${channel === "web" ? "showProduct" : "sendProductCard"} with productId=${p.id}.`,
     ].filter(Boolean).join("\n");
+
   } else if (focus?.ambiguous && focus.candidates?.length) {
     const list = focus.candidates.slice(0, 4).map((c: any, i: number) => `${i + 1}. ${c.name} — ৳${c.price} (id ${c.id})`).join("\n");
     focusBlock = [
