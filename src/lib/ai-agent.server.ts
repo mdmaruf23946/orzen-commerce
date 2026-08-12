@@ -200,7 +200,8 @@ export function buildSystemPrompt(
   // ONLY product the assistant is allowed to describe/name/price/image in text.
   let focusBlock = "";
   if (focus?.product) {
-    const p = focus.product;
+    const p = focus.product as any;
+    const kind = productKind(p);
     const feat = stringifyProductField(p.features).slice(0, 400);
     const varList = Array.isArray(p.variants)
       ? p.variants.map((v: any) => v?.label || v?.name).filter(Boolean).slice(0, 10).join(", ")
@@ -209,9 +210,11 @@ export function buildSystemPrompt(
       `# Focus product (ONLY product allowed in this reply)`,
       `id: ${p.id}`,
       `name: ${p.name}`,
+      `product_type: ${kind}`,
+      `purchase_channel: ${kind === "physical" ? "messenger (order allowed here)" : "website only — send the product link, never take an order or payment"}`,
       p.brand ? `brand: ${p.brand}` : "",
       `price: ৳${p.price}${p.old_price ? ` (was ৳${p.old_price})` : ""}`,
-      `stock: ${p.stock}`,
+      kind === "physical" ? `stock: ${p.stock}` : "",
       p.sku ? `sku: ${p.sku}` : "",
       p.short_description ? `short_description: ${p.short_description}` : "",
       feat ? `features: ${feat}` : "",
@@ -219,6 +222,7 @@ export function buildSystemPrompt(
       ``,
       `Rule: every product fact in your reply MUST come from this record. Do not name, describe, price, or image any other product in this reply. To show it, call ${channel === "web" ? "showProduct" : "sendProductCard"} with productId=${p.id}.`,
     ].filter(Boolean).join("\n");
+
   } else if (focus?.ambiguous && focus.candidates?.length) {
     const list = focus.candidates.slice(0, 4).map((c: any, i: number) => `${i + 1}. ${c.name} — ৳${c.price} (id ${c.id})`).join("\n");
     focusBlock = [
@@ -255,16 +259,30 @@ ${sourceLines}
 - If the customer changes topic mid-conversation (e.g. asks about delivery charge while an order is pending), answer the new topic FIRST using the appropriate tool, then only resume the order flow when they signal they're ready to continue.
 - Never expose internal tool errors, productId problems, ids, database wording, or implementation details to the customer. If a tool fails, recover naturally or ask one helpful follow-up question.
 
+# Product type rules (STRICT — never violate)
+Every product record has product_type: physical, digital, service or subscription. Always check it before you offer anything.
+- physical → information + image + price + stock, AND you may take the order here in Messenger.
+- digital → information + image + price + what the customer receives + the official product link. NO order here.
+- service → information + image + price + what is included + the official service link. NO order here.
+- subscription → information + image + price + billing frequency + benefits + the official subscription link. NO subscription here.
+- For digital, service and subscription: never call collectOrderInfo or finalizeOrder, never confirm a purchase, never say an order is placed, and never ask for or accept card number, CVV, OTP, banking password, or any payment credential.
+- If the customer says "buy this / order this / I want this / can I pay here" for a digital, service or subscription product, reply politely that it is purchased on the website and send the product_url from the tool result, e.g. "এই প্রোডাক্টটি আমাদের ওয়েবসাইট থেকে নিরাপদে কিনতে পারবেন: <link>".
+- Product links MUST be the product_url returned by a tool. Never invent, guess, shorten, or modify a URL, and never share admin or internal links.
+- In mixed conversations apply the rule per product: a physical item stays orderable in Messenger even when a digital/service/subscription item was just discussed, and vice versa. Recommendations follow the same rule.
+- If a detail (price, billing frequency, feature, availability) is not in the tool result, say it is currently unavailable — never guess.
+
 ${
   allowOrders
     ? `
-# Order flow
-When the customer wants to buy:
+# Order flow (PHYSICAL products only)
+When the customer wants to buy a physical product:
 1. Use collectOrderInfo to save each field as the customer gives it (name, phone, district, upazila, union, village, full_address, product_id, variant, qty, delivery_method, payment_method).
 2. Ask only for fields that are still missing — never re-ask what you already have (see the pending-order slot in the state block below).
 3. Once every required field is present, call finalizeOrder. It creates the order and returns the confirmation.
 4. If finalizeOrder returns error="duplicate_blocked", send the returned reply exactly and stop the order flow. Do not show product cards or say you are ordering again.
-${allowRelated ? "5. After finalizeOrder succeeds, use getRelatedProducts and offer 2-3 add-ons via sendProductCarousel." : "5. After finalizeOrder succeeds, thank the customer. Do not upsell."}
+5. If collectOrderInfo or finalizeOrder returns error="not_orderable_in_messenger", stop the order flow immediately and send the returned product_url with a short line saying the purchase is completed on the website.
+${allowRelated ? "6. After finalizeOrder succeeds, use getRelatedProducts and offer 2-3 add-ons via sendProductCarousel." : "6. After finalizeOrder succeeds, thank the customer. Do not upsell."}
+
 
 # Tracking
 If asked "where is my order" / "track my order", call trackOrder with orderId, invoice_no, or phone.
@@ -382,11 +400,39 @@ function stringifyProductField(value: any): string {
   return String(value);
 }
 
+export type ProductKind = "physical" | "digital" | "service" | "subscription";
+
+export function productKind(product: any): ProductKind {
+  const t = String(product?.product_type ?? "physical").toLowerCase();
+  return t === "digital" || t === "service" || t === "subscription" ? (t as ProductKind) : "physical";
+}
+
+/** Only physical products may be ordered inside Messenger. */
+export function isMessengerOrderable(product: any) {
+  return productKind(product) === "physical";
+}
+
+function subscriptionBilling(product: any) {
+  const meta = (product?.meta ?? {}) as any;
+  const sub = meta?.subscription ?? null;
+  if (!sub || typeof sub !== "object") return null;
+  return {
+    billing_interval: sub.interval ?? sub.billing_interval ?? sub.cycle ?? null,
+    trial_days: sub.trial_days ?? null,
+    benefits: sub.benefits ?? sub.features ?? null,
+    included: sub.included ?? null,
+  };
+}
+
 function productSummary(ctx: AgentContext, product: any, categoryName?: string | null) {
+  const kind = productKind(product);
   return {
     id: product.id,
     name: product.name,
     slug: product.slug,
+    product_type: kind,
+    purchase_channel: kind === "physical" ? "messenger" : "website",
+    ...(kind === "subscription" ? { subscription: subscriptionBilling(product) } : {}),
     brand: product.brand,
     category_id: product.category_id,
     category_name: categoryName ?? null,
@@ -414,6 +460,7 @@ function productSummary(ctx: AgentContext, product: any, categoryName?: string |
     product_url: productUrl(ctx, product.slug, product.id),
   };
 }
+
 
 async function getConversationSlot(conversationId: string): Promise<Record<string, any>> {
   const sb = admin();
@@ -541,7 +588,7 @@ const DEICTIC_TOKENS = [
 ];
 
 const PRODUCT_SELECT_MIN =
-  "id,name,slug,brand,product_code,sku,category_id,short_description,price,old_price,stock,status,primary_image_url,gallery,features,variants,total_sold,rating,is_featured";
+  "id,name,slug,brand,product_code,sku,category_id,short_description,price,old_price,stock,status,product_type,meta,primary_image_url,gallery,features,variants,total_sold,rating,is_featured";
 
 /** Pure scoring function — exposed for tests. Returns 0 when no meaningful signal. */
 export function scoreProductAgainstQuery(
@@ -725,7 +772,7 @@ export function buildTools(ctx: AgentContext) {
   const storeId = ctx.storeId;
 
   const productSelect =
-    "id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,status,primary_image_url,gallery,features,specifications,variants,video_url,delivery_charge,delivery_time_days,rating,total_sold,warranty,return_policy,shipping_info,is_featured,created_at";
+    "id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,status,product_type,meta,primary_image_url,gallery,features,specifications,variants,video_url,delivery_charge,delivery_time_days,rating,total_sold,warranty,return_policy,shipping_info,is_featured,created_at";
 
   const convId = ctx.conversationId ?? null;
 
@@ -779,7 +826,9 @@ export function buildTools(ctx: AgentContext) {
         if (input.brand) q = q.ilike("brand", `%${input.brand}%`);
         if (input.minPrice != null) q = q.gte("price", input.minPrice);
         if (input.maxPrice != null) q = q.lte("price", input.maxPrice);
-        if (input.inStockOnly) q = q.gt("stock", 0);
+        // Stock only gates physical products — digital/service/subscription are stockless.
+        if (input.inStockOnly) q = q.or("stock.gt.0,product_type.neq.physical");
+
         const cats = await categoryMap();
         if (input.category) {
           const { data: cat } = await sb
@@ -1035,17 +1084,19 @@ export function buildTools(ctx: AgentContext) {
         }
         const { data: p } = await sb
           .from("products")
-          .select("id,name,slug,short_description,price,old_price,stock,primary_image_url,gallery")
+          .select("id,name,slug,short_description,price,old_price,stock,product_type,meta,primary_image_url,gallery")
           .eq("store_id", storeId)
           .eq("id", productId)
           .maybeSingle();
         if (!p) return { sent: false, error: "not_found" };
 
+        const kind = productKind(p);
+        const orderable = kind === "physical";
         const priceLine = p.old_price
           ? `৳${p.price} (was ৳${p.old_price})`
           : `৳${p.price}`;
-        const stockLine = p.stock > 0 ? "In stock" : "Out of stock";
-        const subtitle = `${priceLine} · ${stockLine}${p.short_description ? " — " + p.short_description : ""}`;
+        const statusLine = orderable ? (p.stock > 0 ? "In stock" : "Out of stock") : "Buy on website";
+        const subtitle = `${priceLine} · ${statusLine}${p.short_description ? " — " + p.short_description : ""}`;
         try {
           await fbSendProductCard(ctx.pageToken!, ctx.psid!, {
             title: p.name,
@@ -1053,6 +1104,7 @@ export function buildTools(ctx: AgentContext) {
             image_url: firstImage(ctx, p),
             buy_url: productUrl(ctx, p.slug, p.id),
             product_id: p.id,
+            orderable,
           });
           if (ctx.conversationId) {
             await sb.from("ai_messages").insert({
@@ -1064,7 +1116,17 @@ export function buildTools(ctx: AgentContext) {
               attachments: [{ type: "product_card", product_id: p.id }],
             } as any);
           }
-          return { sent: true, canonical_caption: canonicalCaption(p as any), product_id: p.id, name: p.name };
+          return {
+            sent: true,
+            canonical_caption: canonicalCaption(p as any),
+            product_id: p.id,
+            name: p.name,
+            product_type: kind,
+            purchase_channel: orderable ? "messenger" : "website",
+            product_url: productUrl(ctx, p.slug, p.id),
+            ...(kind === "subscription" ? { subscription: subscriptionBilling(p) } : {}),
+          };
+
         } catch (e) {
           return { sent: false, error: (e as Error).message };
         }
@@ -1080,16 +1142,23 @@ export function buildTools(ctx: AgentContext) {
       execute: async ({ productIds }) => {
         const { data } = await sb
           .from("products")
-          .select("id,name,slug,short_description,price,old_price,stock,primary_image_url,gallery")
+          .select("id,name,slug,short_description,price,old_price,stock,product_type,meta,primary_image_url,gallery")
           .eq("store_id", storeId)
           .in("id", productIds);
-        const items = (data ?? []).map((p) => ({
-          title: p.name,
-          subtitle: `${p.old_price ? `৳${p.price} (was ৳${p.old_price})` : `৳${p.price}`} · ${p.stock > 0 ? "In stock" : "Out of stock"}`,
-          image_url: firstImage(ctx, p),
-          buy_url: productUrl(ctx, p.slug, p.id),
-          product_id: p.id,
-        }));
+        const items = (data ?? []).map((p) => {
+          const kind = productKind(p);
+          const orderable = kind === "physical";
+          return {
+            title: p.name,
+            subtitle: `${p.old_price ? `৳${p.price} (was ৳${p.old_price})` : `৳${p.price}`} · ${orderable ? (p.stock > 0 ? "In stock" : "Out of stock") : "Buy on website"}`,
+            image_url: firstImage(ctx, p),
+            buy_url: productUrl(ctx, p.slug, p.id),
+            product_id: p.id,
+            orderable,
+            product_type: kind,
+          };
+        });
+
         if (!items.length) return { sent: false, error: "no_products" };
         try {
           await fbSendProductCarousel(ctx.pageToken!, ctx.psid!, items);
@@ -1103,7 +1172,17 @@ export function buildTools(ctx: AgentContext) {
               attachments: items.map((i) => ({ type: "product_card", product_id: i.product_id })),
             } as any);
           }
-          return { sent: true, count: items.length };
+          return {
+            sent: true,
+            count: items.length,
+            products: items.map((i) => ({
+              product_id: i.product_id,
+              product_type: i.product_type,
+              purchase_channel: i.orderable ? "messenger" : "website",
+              product_url: i.buy_url,
+            })),
+          };
+
         } catch (e) {
           return { sent: false, error: (e as Error).message };
         }
@@ -1182,11 +1261,33 @@ export function buildTools(ctx: AgentContext) {
         Object.entries(input).forEach(([k, v]) => {
           if (v !== undefined && v !== null && v !== "") patch[k] = v;
         });
+        // Hard rule: only physical products can be ordered inside Messenger.
+        if (patch.product_id) {
+          const { data: p } = await sb
+            .from("products")
+            .select("id,name,slug,product_type")
+            .eq("store_id", storeId)
+            .eq("id", patch.product_id)
+            .maybeSingle();
+          if (!p) return { saved: {}, error: "product_not_found" };
+          if (!isMessengerOrderable(p)) {
+            return {
+              saved: {},
+              error: "not_orderable_in_messenger",
+              product_type: productKind(p),
+              product_name: p.name,
+              product_url: productUrl(ctx, p.slug, p.id),
+              instruction:
+                "This product is purchased on the website only. Do not collect order or payment details. Politely tell the customer and send the product_url.",
+            };
+          }
+        }
         const slot = await updateConversationSlot(convId, patch);
         const required = ["customer_name", "phone", "full_address", "product_id", "qty", "payment_method"];
         const missing = required.filter((f) => !slot[f]);
         return { saved: patch, current: slot, missing };
       },
+
     });
 
     tools.finalizeOrder = tool({
@@ -1201,12 +1302,25 @@ export function buildTools(ctx: AgentContext) {
 
         const { data: product } = await sb
           .from("products")
-          .select("id,name,price,stock,delivery_charge")
+          .select("id,name,slug,price,stock,delivery_charge,product_type")
           .eq("store_id", storeId)
           .eq("id", slot.product_id)
           .maybeSingle();
         if (!product) return { ok: false, error: "product_not_found" };
+        // Defence in depth: never create a digital/service/subscription order from Messenger.
+        if (!isMessengerOrderable(product)) {
+          return {
+            ok: false,
+            error: "not_orderable_in_messenger",
+            product_type: productKind(product),
+            product_name: product.name,
+            product_url: productUrl(ctx, product.slug, product.id),
+            instruction:
+              "Do not create an order. Tell the customer this is purchased on the website and send the product_url.",
+          };
+        }
         if (product.stock < slot.qty) return { ok: false, error: "out_of_stock", available: product.stock };
+
 
         const duplicateBlocked = await blockDuplicateMessengerToolOrder({
           sb,

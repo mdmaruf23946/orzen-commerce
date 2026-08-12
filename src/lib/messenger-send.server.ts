@@ -67,19 +67,24 @@ export type ProductCardInput = {
   image_url?: string;
   buy_url?: string; // opens storefront checkout / product page
   product_id?: string; // used for postback "buy now via AI"
+  /** false for digital/service/subscription — purchase happens on the website only */
+  orderable?: boolean;
+  /** overrides the web_url button label */
+  link_title?: string;
 };
 
 function buildElement(p: ProductCardInput) {
   const buttons: any[] = [];
+  const orderable = p.orderable !== false;
   if (p.buy_url) {
     buttons.push({
       type: "web_url",
       url: p.buy_url,
-      title: "View Product",
+      title: (p.link_title || (orderable ? "View Product" : "Buy on Website")).slice(0, 20),
       webview_height_ratio: "tall",
     });
   }
-  if (p.product_id) {
+  if (p.product_id && orderable) {
     buttons.push({
       type: "postback",
       title: "Buy Now",
@@ -93,6 +98,7 @@ function buildElement(p: ProductCardInput) {
     buttons: buttons.length ? buttons.slice(0, 3) : undefined,
   };
 }
+
 
 export function sendProductCard(token: string, psid: string, product: ProductCardInput) {
   return post(token, {
