@@ -1127,13 +1127,20 @@ export function buildTools(ctx: AgentContext) {
           .select("id,name,slug,short_description,price,old_price,stock,product_type,meta,primary_image_url,gallery")
           .eq("store_id", storeId)
           .in("id", productIds);
-        const items = (data ?? []).map((p) => ({
-          title: p.name,
-          subtitle: `${p.old_price ? `৳${p.price} (was ৳${p.old_price})` : `৳${p.price}`} · ${p.stock > 0 ? "In stock" : "Out of stock"}`,
-          image_url: firstImage(ctx, p),
-          buy_url: productUrl(ctx, p.slug, p.id),
-          product_id: p.id,
-        }));
+        const items = (data ?? []).map((p) => {
+          const kind = productKind(p);
+          const orderable = kind === "physical";
+          return {
+            title: p.name,
+            subtitle: `${p.old_price ? `৳${p.price} (was ৳${p.old_price})` : `৳${p.price}`} · ${orderable ? (p.stock > 0 ? "In stock" : "Out of stock") : "Buy on website"}`,
+            image_url: firstImage(ctx, p),
+            buy_url: productUrl(ctx, p.slug, p.id),
+            product_id: p.id,
+            orderable,
+            product_type: kind,
+          };
+        });
+
         if (!items.length) return { sent: false, error: "no_products" };
         try {
           await fbSendProductCarousel(ctx.pageToken!, ctx.psid!, items);
