@@ -501,7 +501,7 @@ function AdminLayout() {
             </div>
           </header>
 
-          <main className="flex-1 p-4 pb-[70px] md:p-6 md:pb-8 lg:p-8">
+          <main className="min-w-0 flex-1 overflow-x-hidden p-4 pb-[70px] md:p-6 md:pb-8 lg:p-8">
             <SubscriptionStatusBanner />
             <Outlet />
           </main>
