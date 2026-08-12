@@ -541,7 +541,7 @@ const DEICTIC_TOKENS = [
 ];
 
 const PRODUCT_SELECT_MIN =
-  "id,name,slug,brand,product_code,sku,category_id,short_description,price,old_price,stock,status,primary_image_url,gallery,features,variants,total_sold,rating,is_featured";
+  "id,name,slug,brand,product_code,sku,category_id,short_description,price,old_price,stock,status,product_type,meta,primary_image_url,gallery,features,variants,total_sold,rating,is_featured";
 
 /** Pure scoring function — exposed for tests. Returns 0 when no meaningful signal. */
 export function scoreProductAgainstQuery(
@@ -725,7 +725,7 @@ export function buildTools(ctx: AgentContext) {
   const storeId = ctx.storeId;
 
   const productSelect =
-    "id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,status,primary_image_url,gallery,features,specifications,variants,video_url,delivery_charge,delivery_time_days,rating,total_sold,warranty,return_policy,shipping_info,is_featured,created_at";
+    "id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,status,product_type,meta,primary_image_url,gallery,features,specifications,variants,video_url,delivery_charge,delivery_time_days,rating,total_sold,warranty,return_policy,shipping_info,is_featured,created_at";
 
   const convId = ctx.conversationId ?? null;
 
@@ -1035,7 +1035,7 @@ export function buildTools(ctx: AgentContext) {
         }
         const { data: p } = await sb
           .from("products")
-          .select("id,name,slug,short_description,price,old_price,stock,primary_image_url,gallery")
+          .select("id,name,slug,short_description,price,old_price,stock,product_type,meta,primary_image_url,gallery")
           .eq("store_id", storeId)
           .eq("id", productId)
           .maybeSingle();
@@ -1080,7 +1080,7 @@ export function buildTools(ctx: AgentContext) {
       execute: async ({ productIds }) => {
         const { data } = await sb
           .from("products")
-          .select("id,name,slug,short_description,price,old_price,stock,primary_image_url,gallery")
+          .select("id,name,slug,short_description,price,old_price,stock,product_type,meta,primary_image_url,gallery")
           .eq("store_id", storeId)
           .in("id", productIds);
         const items = (data ?? []).map((p) => ({
@@ -1201,7 +1201,7 @@ export function buildTools(ctx: AgentContext) {
 
         const { data: product } = await sb
           .from("products")
-          .select("id,name,price,stock,delivery_charge")
+          .select("id,name,price,stock,delivery_charge,product_type")
           .eq("store_id", storeId)
           .eq("id", slot.product_id)
           .maybeSingle();
