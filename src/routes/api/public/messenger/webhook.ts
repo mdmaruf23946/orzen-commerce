@@ -879,14 +879,33 @@ async function handleBuyPostback(opts: {
   if (!/^[0-9a-f-]{36}$/i.test(productId)) return false;
   const { data: product } = await sb
     .from("products")
-    .select("id,name,stock,status")
+    .select("id,name,slug,stock,status,product_type")
     .eq("store_id", storeId)
     .eq("id", productId)
     .maybeSingle();
-  if (!product || product.status !== "active" || Number(product.stock) <= 0) {
+  if (!product || product.status !== "active") {
+    await sendAndLogText(sb, token, psid, conversationId, "দুঃখিত, এই প্রোডাক্টটি এখন পাওয়া যাচ্ছে না। চাইলে কাছাকাছি অন্য প্রোডাক্ট দেখাতে পারি।");
+    return true;
+  }
+  // Only physical products can be ordered inside Messenger.
+  if (String((product as any).product_type ?? "physical") !== "physical") {
+    const { data: store } = await sb.from("stores").select("slug").eq("id", storeId).maybeSingle();
+    const origin = (process.env["PUBLIC_APP_URL"] || process.env["VITE_APP_URL"] || "https://orzen-commerce.lovable.app").replace(/\/$/, "");
+    const url = store?.slug ? `${origin}/store/${store.slug}/product/${product.id}` : `${origin}/product/${product.id}`;
+    await sendAndLogText(
+      sb,
+      token,
+      psid,
+      conversationId,
+      `এই প্রোডাক্টটি আমাদের ওয়েবসাইট থেকে নিরাপদে কিনতে পারবেন 👇\n${url}`,
+    );
+    return true;
+  }
+  if (Number(product.stock) <= 0) {
     await sendAndLogText(sb, token, psid, conversationId, "দুঃখিত, এই প্রোডাক্টটি এখন স্টকে নেই। চাইলে কাছাকাছি অন্য প্রোডাক্ট দেখাতে পারি।");
     return true;
   }
+
   const current = await getConversationPendingOrder(sb, conversationId);
   const slot = await patchConversationPendingOrder(sb, conversationId, {
     ...current,
