@@ -1154,7 +1154,17 @@ export function buildTools(ctx: AgentContext) {
               attachments: items.map((i) => ({ type: "product_card", product_id: i.product_id })),
             } as any);
           }
-          return { sent: true, count: items.length };
+          return {
+            sent: true,
+            count: items.length,
+            products: items.map((i) => ({
+              product_id: i.product_id,
+              product_type: i.product_type,
+              purchase_channel: i.orderable ? "messenger" : "website",
+              product_url: i.buy_url,
+            })),
+          };
+
         } catch (e) {
           return { sent: false, error: (e as Error).message };
         }
