@@ -1072,11 +1072,13 @@ export function buildTools(ctx: AgentContext) {
           .maybeSingle();
         if (!p) return { sent: false, error: "not_found" };
 
+        const kind = productKind(p);
+        const orderable = kind === "physical";
         const priceLine = p.old_price
           ? `৳${p.price} (was ৳${p.old_price})`
           : `৳${p.price}`;
-        const stockLine = p.stock > 0 ? "In stock" : "Out of stock";
-        const subtitle = `${priceLine} · ${stockLine}${p.short_description ? " — " + p.short_description : ""}`;
+        const statusLine = orderable ? (p.stock > 0 ? "In stock" : "Out of stock") : "Buy on website";
+        const subtitle = `${priceLine} · ${statusLine}${p.short_description ? " — " + p.short_description : ""}`;
         try {
           await fbSendProductCard(ctx.pageToken!, ctx.psid!, {
             title: p.name,
@@ -1084,6 +1086,7 @@ export function buildTools(ctx: AgentContext) {
             image_url: firstImage(ctx, p),
             buy_url: productUrl(ctx, p.slug, p.id),
             product_id: p.id,
+            orderable,
           });
           if (ctx.conversationId) {
             await sb.from("ai_messages").insert({
@@ -1095,7 +1098,17 @@ export function buildTools(ctx: AgentContext) {
               attachments: [{ type: "product_card", product_id: p.id }],
             } as any);
           }
-          return { sent: true, canonical_caption: canonicalCaption(p as any), product_id: p.id, name: p.name };
+          return {
+            sent: true,
+            canonical_caption: canonicalCaption(p as any),
+            product_id: p.id,
+            name: p.name,
+            product_type: kind,
+            purchase_channel: orderable ? "messenger" : "website",
+            product_url: productUrl(ctx, p.slug, p.id),
+            ...(kind === "subscription" ? { subscription: subscriptionBilling(p) } : {}),
+          };
+
         } catch (e) {
           return { sent: false, error: (e as Error).message };
         }
