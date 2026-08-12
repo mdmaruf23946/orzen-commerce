@@ -6,11 +6,11 @@ type Row = AnalyticsPayload["products"]["top"][number];
 
 function ProductRow({ p, rank }: { p: Row; rank: number }) {
   return (
-    <li className="flex items-center gap-3">
-      <span className="w-4 shrink-0 text-xs font-semibold text-muted-foreground sm:w-5">
+    <li className="grid min-w-0 grid-cols-[1.25rem_3rem_minmax(0,1fr)] items-center gap-2.5 sm:grid-cols-[1.25rem_2.75rem_minmax(0,1fr)_auto] sm:gap-3">
+      <span className="text-sm font-semibold text-muted-foreground">
         {rank}
       </span>
-      <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg border bg-muted sm:h-11 sm:w-11">
+      <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg border bg-muted sm:h-11 sm:w-11">
         {p.image ? (
           <img
             src={p.image}
@@ -19,11 +19,13 @@ function ProductRow({ p, rank }: { p: Row; rank: number }) {
             className="h-full w-full object-cover"
           />
         ) : (
-          <Package className="h-4 w-4 text-muted-foreground sm:h-5 sm:w-5" />
+          <Package className="h-5 w-5 text-muted-foreground" />
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-xs font-medium sm:text-sm">{p.name}</div>
+        <div className="block max-w-full truncate text-sm font-medium" title={p.name}>
+          {p.name}
+        </div>
         <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
           <div
             className="h-full rounded-full bg-primary"
@@ -31,11 +33,11 @@ function ProductRow({ p, rank }: { p: Row; rank: number }) {
           />
         </div>
       </div>
-      <div className="shrink-0 text-right">
-        <div className="text-xs font-semibold tabular-nums sm:text-sm">
+      <div className="hidden shrink-0 text-right sm:block">
+        <div className="text-sm font-semibold tabular-nums">
           {compactMoney(p.revenue)}
         </div>
-        <div className="text-[10px] text-muted-foreground sm:text-xs">{p.qty} sold</div>
+        <div className="text-xs text-muted-foreground">{p.qty} sold</div>
       </div>
     </li>
   );
@@ -43,12 +45,12 @@ function ProductRow({ p, rank }: { p: Row; rank: number }) {
 
 function Panel({ title, items }: { title: string; items: Row[] }) {
   return (
-    <div className="rounded-xl border bg-card p-3 sm:p-4">
-      <h3 className="text-sm font-semibold sm:text-base">{title}</h3>
+    <div className="min-w-0 overflow-hidden rounded-xl border bg-card p-4">
+      <h3 className="text-base font-semibold">{title}</h3>
       {items.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">No product sales yet.</p>
       ) : (
-        <ul className="mt-3 space-y-3">
+        <ul className="mt-3 min-w-0 space-y-3">
           {items.map((p, i) => (
             <ProductRow key={`${p.id}-${p.name}`} p={p} rank={i + 1} />
           ))}
@@ -60,9 +62,9 @@ function Panel({ title, items }: { title: string; items: Row[] }) {
 
 export function ProductPerformance({ products }: { products: AnalyticsPayload["products"] }) {
   return (
-    <section className="space-y-3">
+    <section className="min-w-0 space-y-3 overflow-hidden">
       <h2 className="text-sm font-semibold sm:text-base">Product Performance</h2>
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid min-w-0 grid-cols-1 gap-3 lg:grid-cols-2">
         <Panel title="Top Selling Products" items={products.top} />
         <Panel title="Lowest Performing Products" items={products.low} />
       </div>
