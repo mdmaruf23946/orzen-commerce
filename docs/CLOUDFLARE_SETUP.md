@@ -186,3 +186,39 @@ Cloudflare API credentials.
 | Workers Paid | $5 / mo (10M requests) |
 | SSL for SaaS | first 100 hostnames free, then $0.10 / hostname / mo |
 | Lovable Cloud (backend) | unchanged |
+
+## Option B — drag-and-drop `dist/` to Cloudflare Pages
+
+No GitHub, no Wrangler login, no domain needed.
+
+```bash
+bun run build:dist      # or: npm run build:dist
+```
+
+That produces one upload-ready folder:
+
+```
+dist/
+  index.html      compiled entry HTML
+  _worker.js      SSR + server functions
+  _routes.json    static assets served by the CDN, everything else by the worker
+  _headers        immutable caching for hashed assets
+  assets/…        hashed JS/CSS/images and other public files
+```
+
+Then:
+
+1. Cloudflare dashboard → **Workers & Pages → Create → Pages → Upload assets**
+2. Drag the whole `dist` folder in and deploy
+3. Project → **Settings → Variables and Secrets**, add:
+   - `VITE_SUPABASE_URL`, `VITE_SUPABASE_PROJECT_ID`, `VITE_SUPABASE_PUBLISHABLE_KEY`,
+     `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` — values are in `wrangler.toml`
+   - `SUPABASE_SERVICE_ROLE_KEY`, `LOVABLE_API_KEY` — as **secrets** (never commit them)
+4. Re-deploy once so the variables apply, then test on the `*.pages.dev` URL.
+
+Existing accounts, products and orders live in the database, so they appear on
+the new deployment immediately. Attach `orzen.top` only after testing, from the
+Pages project's **Custom domains** tab. `dist/` is git-ignored.
+
+The Workers flow above (`wrangler deploy`, `wrangler.toml`) is unaffected and
+still works; the two can even run side by side against the same database.
