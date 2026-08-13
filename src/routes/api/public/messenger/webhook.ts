@@ -929,12 +929,13 @@ async function handleBuyPostback(opts: {
     const { data: store } = await sb.from("stores").select("slug").eq("id", storeId).maybeSingle();
     const origin = (process.env["PUBLIC_APP_URL"] || process.env["VITE_APP_URL"] || "https://orzen-commerce.lovable.app").replace(/\/$/, "");
     const url = store?.slug ? `${origin}/store/${store.slug}/product/${product.id}` : `${origin}/product/${product.id}`;
-    await sendAndLogText(
+    await sendAndLogViewSiteButton(
       sb,
       token,
       psid,
       conversationId,
-      `এই প্রোডাক্টটি আমাদের ওয়েবসাইট থেকে নিরাপদে কিনতে পারবেন 👇\n${url}`,
+      "এই প্রোডাক্টটি আমাদের ওয়েবসাইট থেকে নিরাপদে কিনতে পারবেন",
+      url,
     );
     return true;
   }
