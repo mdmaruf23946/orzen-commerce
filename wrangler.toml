@@ -4,41 +4,50 @@
 #   .output/server/index.mjs   ← SSR Worker entry (main)
 #   .output/public/            ← static assets served by the [assets] binding
 #
-# Deploy with:  bunx wrangler deploy
+# Manual deploy (no GitHub connection needed):
+#   npx wrangler login
+#   npx wrangler deploy
 name = "orzen-commerce-3ea3838d"
 main = ".output/server/index.mjs"
 compatibility_date = "2025-09-01"
 compatibility_flags = ["nodejs_compat"]
+
+# Serve the app on the free <name>.<subdomain>.workers.dev URL so it can be
+# tested end-to-end before any custom domain is attached.
+workers_dev = true
 
 [assets]
 directory = ".output/public"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
 
-# Route the Worker on the apex and www subdomain via custom domains.
-# Custom domains do not support wildcard operators or paths, so wildcard
-# subdomain hosting (per-store subdomains like <slug>.orzen.top plus the
-# shared `stores.orzen.top` fallback used by custom-domain CNAMEs) is
-# covered by a standard zone route below.
-[[routes]]
-pattern = "orzen.top"
-custom_domain = true
-
-[[routes]]
-pattern = "www.orzen.top"
-custom_domain = true
-
-# Wildcard route: every subdomain of orzen.top (store subdomains and
-# stores.orzen.top) hits the Worker. Requires the zone to be on
-# Cloudflare and a wildcard DNS record (`*.orzen.top` → proxied) to exist.
-[[routes]]
-pattern = "*.orzen.top/*"
-zone_name = "orzen.top"
-
+# ---------------------------------------------------------------------------
+# NO DOMAIN ROUTES ARE DEFINED ON PURPOSE.
+#
+# Attach orzen.top later from the Cloudflare dashboard:
+#   Workers & Pages → this Worker → Settings → Domains & Routes → Add
+# (that flow creates and manages the DNS records for you).
+#
+# If you would rather declare them in this file instead, uncomment the block
+# below AFTER the zone is active on this Cloudflare account. Do NOT add a
+# wildcard route such as "*.orzen.top/*" — that is what created the locked,
+# uneditable DNS records and the host errors previously.
+#
+# [[routes]]
+# pattern = "orzen.top"
+# custom_domain = true
+#
+# [[routes]]
+# pattern = "www.orzen.top"
+# custom_domain = true
+# ---------------------------------------------------------------------------
 
 # Public runtime vars (safe to ship in the client bundle).
-# Secrets (CF_API_TOKEN, CF_ZONE_ID, CF_ACCOUNT_ID, SUPABASE_SERVICE_ROLE_KEY,
-# LOVABLE_API_KEY) must be pushed with `wrangler secret put` — never commit.
+# These point the Worker at the existing Lovable Cloud database, so a fresh
+# Cloudflare account picks up all existing users, products and orders with no
+# extra setup. Secrets (SUPABASE_SERVICE_ROLE_KEY, LOVABLE_API_KEY and the
+# optional CF_* custom-hostname keys) must be pushed with
+# `wrangler secret put` — never commit them.
 [vars]
 VITE_SUPABASE_URL = "https://dqhfxvhzagitytpvildw.supabase.co"
 VITE_SUPABASE_PROJECT_ID = "dqhfxvhzagitytpvildw"
@@ -48,4 +57,3 @@ SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXB
 
 [observability]
 enabled = true
-  
