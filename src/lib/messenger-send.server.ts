@@ -136,6 +136,36 @@ export function sendProductCarousel(
   });
 }
 
+/** Send a text message with a single "View site" button that opens the URL. */
+export function sendViewSiteButton(
+  token: string,
+  psid: string,
+  text: string,
+  url: string,
+) {
+  return post(token, {
+    recipient: { id: psid },
+    messaging_type: "RESPONSE",
+    message: {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "button",
+          text: text.slice(0, 640),
+          buttons: [
+            {
+              type: "web_url",
+              url,
+              title: "View site",
+              webview_height_ratio: "tall",
+            },
+          ],
+        },
+      },
+    },
+  });
+}
+
 export function sendQuickReplies(
   token: string,
   psid: string,
