@@ -282,7 +282,7 @@ When the customer wants to buy a physical product:
 2. Ask only for fields that are still missing — never re-ask what you already have (see the pending-order slot in the state block below).
 3. Once every required field is present, call finalizeOrder. It creates the order and returns the confirmation.
 4. If finalizeOrder returns error="duplicate_blocked", send the returned reply exactly and stop the order flow. Do not show product cards or say you are ordering again.
-5. If collectOrderInfo or finalizeOrder returns error="not_orderable_in_messenger", stop the order flow immediately and send the returned product_url with a short line saying the purchase is completed on the website.
+5. If collectOrderInfo or finalizeOrder returns error="not_orderable_in_messenger", stop the order flow immediately and call sendProductLink with a short friendly line. Do not type the raw URL in the text.
 ${allowRelated ? "6. After finalizeOrder succeeds, use getRelatedProducts and offer 2-3 add-ons via sendProductCarousel." : "6. After finalizeOrder succeeds, thank the customer. Do not upsell."}
 
 
