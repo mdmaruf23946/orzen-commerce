@@ -5,6 +5,7 @@ import { buildSystemPrompt, generateAgentReply, loadAiContext, resolveFocusProdu
 import {
   sendProductCard,
   sendProductCarousel,
+  sendViewSiteButton,
   type ProductCardInput,
 } from "@/lib/messenger-send.server";
 import { checkDuplicate } from "@/lib/duplicate-guard.server";
