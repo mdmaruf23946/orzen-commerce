@@ -1189,6 +1189,37 @@ export function buildTools(ctx: AgentContext) {
         }
       },
     });
+
+    tools.sendProductLink = tool({
+      description:
+        "Send a 'View site' button that opens the product page on the website. Use this whenever a digital/service/subscription product is discussed, when the customer asks for a link, or when you need to share any product URL — NEVER type the raw URL in a text reply.",
+      inputSchema: z.object({
+        productId: z.string().uuid(),
+        text: z
+          .string()
+          .min(1)
+          .max(640)
+          .describe(
+            "Short friendly sentence above the button, e.g. 'এই প্রোডাক্টটি আমাদের ওয়েবসাইট থেকে নিরাপদে কিনতে পারবেন'",
+          ),
+      }),
+      execute: async ({ productId, text }) => {
+        const { data: p } = await sb
+          .from("products")
+          .select("id,name,slug,product_type")
+          .eq("store_id", storeId)
+          .eq("id", productId)
+          .maybeSingle();
+        if (!p) return { sent: false, error: "not_found" };
+        const url = productUrl(ctx, p.slug, p.id);
+        try {
+          await fbSendViewSiteButton(ctx.pageToken!, ctx.psid!, text, url);
+          return { sent: true, product_url: url };
+        } catch (e) {
+          return { sent: false, error: (e as Error).message };
+        }
+      },
+    });
   }
 
   // Web-only display tools — return structured JSON that the chat panel renders inline.
