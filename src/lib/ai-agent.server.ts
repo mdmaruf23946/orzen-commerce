@@ -7,6 +7,7 @@ import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 import {
   sendProductCard as fbSendProductCard,
   sendProductCarousel as fbSendProductCarousel,
+  sendViewSiteButton as fbSendViewSiteButton,
 } from "./messenger-send.server";
 import { checkDuplicate } from "./duplicate-guard.server";
 
