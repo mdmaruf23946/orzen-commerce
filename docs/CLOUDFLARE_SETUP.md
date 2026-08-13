@@ -93,12 +93,40 @@ bash scripts/deploy-cloudflare.sh
 Nothing goes live until you run that command. User accounts and data are
 unaffected by a redeploy; users may just need to sign in again once.
 
-## 8. Optional: a second backup deployment
+## 8. Secondary deployment for automatic failover
 
-You can deploy the exact same code to a second Cloudflare account/Worker. Both
-read the same `[vars]`, so they share one database — a user who registers on
-one can sign in on the other and see everything. Keep the tested version on the
-primary and try new builds on the backup first.
+A second Worker (`orzen-commerce-backup`) is pre-configured in `wrangler.toml`
+under `[env.backup]`. It runs the same code and points at the **same** Lovable
+Cloud database, so users, products and orders are identical on both.
+
+Deploy it in the same Cloudflare account or in a separate backup account:
+
+```bash
+npx wrangler login                          # backup account, if separate
+export SUPABASE_SERVICE_ROLE_KEY=...
+export LOVABLE_API_KEY=...
+bash scripts/cf-push-secrets.sh --env backup   # secrets are per-Worker
+bash scripts/deploy-cloudflare-backup.sh
+```
+
+It comes up on `https://orzen-commerce-backup.<subdomain>.workers.dev`.
+
+### Failing over
+
+Cloudflare routes one hostname to one Worker, so failover is a hostname move:
+
+1. Dashboard → **Workers & Pages → orzen-commerce-3ea3838d → Settings →
+   Domains & Routes** → remove `orzen.top` and `www.orzen.top`.
+2. Add the same two hostnames to **orzen-commerce-backup**.
+
+Propagation is near-instant. Reverse the steps to switch back. Keep the tested
+build on the primary and try new builds on the backup first. Still no wildcard
+routes on either Worker.
+
+Want it fully automatic instead of manual? That needs a Cloudflare Load
+Balancer (Workers Paid + LB add-on) with both Workers as pool origins and a
+health check on `/` — the config above is the prerequisite for it.
+
 
 ---
 
