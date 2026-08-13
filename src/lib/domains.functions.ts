@@ -311,41 +311,53 @@ export const resolveHost = createServerFn({ method: "GET" }).handler(async () =>
   }
   if (!host) return { host: "", slug: null, isPlatform: true };
 
-  const sb = publicSbClient();
-  const { data: pSettings } = await sb
-    .from("platform_settings")
-    .select("settings")
-    .eq("id", 1)
-    .maybeSingle();
-  const s = ((pSettings?.settings as any) ?? {}) as Record<string, string>;
-  const rootDomain = (s.root_domain ?? "orzen.top").toLowerCase();
-  const loginHost = (s.login_host ?? "").toLowerCase();
-
-  const platformHosts = new Set(
-    [rootDomain, `www.${rootDomain}`, loginHost].filter(Boolean),
-  );
+  // Hosting-provided hosts (workers.dev / pages.dev / preview / local) always
+  // render the main platform site — never treat them as a store subdomain.
   const isEphemeral =
     host === "localhost" ||
+    host.endsWith(".workers.dev") ||
+    host.endsWith(".pages.dev") ||
     host.endsWith(".lovable.app") ||
     host.endsWith(".lovable.dev") ||
     host.endsWith(".sslip.io");
+  if (isEphemeral) return { host, slug: null, isPlatform: true };
 
-  if (isEphemeral || platformHosts.has(host)) {
+  // Any failure below (missing env, DB unreachable) must fall back to the
+  // platform site rather than crashing the whole request.
+  try {
+    const sb = publicSbClient();
+    const { data: pSettings } = await sb
+      .from("platform_settings")
+      .select("settings")
+      .eq("id", 1)
+      .maybeSingle();
+    const s = ((pSettings?.settings as any) ?? {}) as Record<string, string>;
+    const rootDomain = (s.root_domain ?? "orzen.top").toLowerCase();
+    const loginHost = (s.login_host ?? "").toLowerCase();
+
+    const platformHosts = new Set(
+      [rootDomain, `www.${rootDomain}`, loginHost].filter(Boolean),
+    );
+
+    if (platformHosts.has(host)) {
+      return { host, slug: null, isPlatform: true };
+    }
+
+    // <slug>.<root_domain>
+    if (host.endsWith(`.${rootDomain}`)) {
+      const slug = host.slice(0, -(rootDomain.length + 1));
+      if (slug && !slug.includes(".") && slug !== "www") {
+        return { host, slug, isPlatform: false };
+      }
+    }
+
+    // Custom domain lookup
+    const { data: resolved } = await sb.rpc("resolve_domain", { _host: host });
+    const r = resolved as any;
+    if (r && r.slug) return { host, slug: r.slug as string, isPlatform: false };
+  } catch {
     return { host, slug: null, isPlatform: true };
   }
-
-  // <slug>.<root_domain>
-  if (host.endsWith(`.${rootDomain}`)) {
-    const slug = host.slice(0, -(rootDomain.length + 1));
-    if (slug && !slug.includes(".") && slug !== "www") {
-      return { host, slug, isPlatform: false };
-    }
-  }
-
-  // Custom domain lookup
-  const { data: resolved } = await sb.rpc("resolve_domain", { _host: host });
-  const r = resolved as any;
-  if (r && r.slug) return { host, slug: r.slug as string, isPlatform: false };
 
   return { host, slug: null, isPlatform: true };
 });
