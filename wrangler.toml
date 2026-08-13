@@ -57,3 +57,36 @@ SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXB
 
 [observability]
 enabled = true
+
+# ---------------------------------------------------------------------------
+# BACKUP / FAILOVER DEPLOYMENT
+#
+#   bash scripts/deploy-cloudflare-backup.sh      (wrangler deploy --env backup)
+#
+# A second, independent Worker running the exact same code and pointing at the
+# exact same Lovable Cloud database — users, products and orders are shared.
+# Deploy it in the same account or a completely separate backup account.
+# It has no routes either; attach orzen.top to it only when failing over.
+# Named environments do NOT inherit [vars] or secrets, so both are repeated
+# here and must be pushed once per environment with:
+#   bash scripts/cf-push-secrets.sh --env backup
+# ---------------------------------------------------------------------------
+[env.backup]
+name = "orzen-commerce-backup"
+workers_dev = true
+
+[env.backup.assets]
+directory = ".output/public"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+[env.backup.vars]
+VITE_SUPABASE_URL = "https://dqhfxvhzagitytpvildw.supabase.co"
+VITE_SUPABASE_PROJECT_ID = "dqhfxvhzagitytpvildw"
+VITE_SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxaGZ4dmh6YWdpdHl0cHZpbGR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0NTY2NzgsImV4cCI6MjA5ODAzMjY3OH0.keRBpXr2vygR-pWK4KQ2WaCHJOlYd99stEKyqMbJMDg"
+SUPABASE_URL = "https://dqhfxvhzagitytpvildw.supabase.co"
+SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxaGZ4dmh6YWdpdHl0cHZpbGR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0NTY2NzgsImV4cCI6MjA5ODAzMjY3OH0.keRBpXr2vygR-pWK4KQ2WaCHJOlYd99stEKyqMbJMDg"
+
+[env.backup.observability]
+enabled = true
+
