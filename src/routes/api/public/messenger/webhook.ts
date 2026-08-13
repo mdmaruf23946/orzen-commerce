@@ -735,6 +735,42 @@ async function sendAndLogText(sb: ReturnType<typeof admin>, token: string, psid:
   }
 }
 
+async function sendAndLogViewSiteButton(
+  sb: ReturnType<typeof admin>,
+  token: string,
+  psid: string,
+  conversationId: string,
+  text: string,
+  url: string,
+) {
+  try {
+    const sent = await sendViewSiteButton(token, psid, text, url);
+    await sb.from("ai_messages").insert({
+      conversation_id: conversationId,
+      role: "assistant",
+      direction: "out",
+      message_type: "button",
+      content: text,
+      attachments: [{ type: "web_url", url }],
+      mid: sent.message_id ?? null,
+      delivery_status: "sent",
+    } as any);
+    return true;
+  } catch (e) {
+    await sb.from("ai_messages").insert({
+      conversation_id: conversationId,
+      role: "assistant",
+      direction: "out",
+      message_type: "button",
+      content: text,
+      attachments: [{ type: "web_url", url }],
+      delivery_status: "failed",
+      error: (e as Error).message,
+    } as any);
+    throw e;
+  }
+}
+
 async function maybeSendDirectProductReply(opts: {
   sb: ReturnType<typeof admin>;
   storeId: string;
