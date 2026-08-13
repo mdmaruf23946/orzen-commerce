@@ -5,6 +5,7 @@ import { buildSystemPrompt, generateAgentReply, loadAiContext, resolveFocusProdu
 import {
   sendProductCard,
   sendProductCarousel,
+  sendViewSiteButton,
   type ProductCardInput,
 } from "@/lib/messenger-send.server";
 import { checkDuplicate } from "@/lib/duplicate-guard.server";
@@ -734,6 +735,42 @@ async function sendAndLogText(sb: ReturnType<typeof admin>, token: string, psid:
   }
 }
 
+async function sendAndLogViewSiteButton(
+  sb: ReturnType<typeof admin>,
+  token: string,
+  psid: string,
+  conversationId: string,
+  text: string,
+  url: string,
+) {
+  try {
+    const sent = await sendViewSiteButton(token, psid, text, url);
+    await sb.from("ai_messages").insert({
+      conversation_id: conversationId,
+      role: "assistant",
+      direction: "out",
+      message_type: "button",
+      content: text,
+      attachments: [{ type: "web_url", url }],
+      mid: sent.message_id ?? null,
+      delivery_status: "sent",
+    } as any);
+    return true;
+  } catch (e) {
+    await sb.from("ai_messages").insert({
+      conversation_id: conversationId,
+      role: "assistant",
+      direction: "out",
+      message_type: "button",
+      content: text,
+      attachments: [{ type: "web_url", url }],
+      delivery_status: "failed",
+      error: (e as Error).message,
+    } as any);
+    throw e;
+  }
+}
+
 async function maybeSendDirectProductReply(opts: {
   sb: ReturnType<typeof admin>;
   storeId: string;
@@ -892,12 +929,13 @@ async function handleBuyPostback(opts: {
     const { data: store } = await sb.from("stores").select("slug").eq("id", storeId).maybeSingle();
     const origin = (process.env["PUBLIC_APP_URL"] || process.env["VITE_APP_URL"] || "https://orzen-commerce.lovable.app").replace(/\/$/, "");
     const url = store?.slug ? `${origin}/store/${store.slug}/product/${product.id}` : `${origin}/product/${product.id}`;
-    await sendAndLogText(
+    await sendAndLogViewSiteButton(
       sb,
       token,
       psid,
       conversationId,
-      `এই প্রোডাক্টটি আমাদের ওয়েবসাইট থেকে নিরাপদে কিনতে পারবেন 👇\n${url}`,
+      "এই প্রোডাক্টটি আমাদের ওয়েবসাইট থেকে নিরাপদে কিনতে পারবেন",
+      url,
     );
     return true;
   }

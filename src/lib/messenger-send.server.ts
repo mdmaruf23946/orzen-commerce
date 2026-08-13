@@ -69,7 +69,7 @@ export type ProductCardInput = {
   product_id?: string; // used for postback "buy now via AI"
   /** false for digital/service/subscription — purchase happens on the website only */
   orderable?: boolean;
-  /** overrides the web_url button label */
+  /** overrides the web_url button label (default: "View site") */
   link_title?: string;
 };
 
@@ -80,7 +80,7 @@ function buildElement(p: ProductCardInput) {
     buttons.push({
       type: "web_url",
       url: p.buy_url,
-      title: (p.link_title || (orderable ? "View Product" : "Buy on Website")).slice(0, 20),
+      title: (p.link_title || "View site").slice(0, 20),
       webview_height_ratio: "tall",
     });
   }
@@ -130,6 +130,36 @@ export function sendProductCarousel(
         payload: {
           template_type: "generic",
           elements: products.slice(0, 10).map(buildElement),
+        },
+      },
+    },
+  });
+}
+
+/** Send a text message with a single "View site" button that opens the URL. */
+export function sendViewSiteButton(
+  token: string,
+  psid: string,
+  text: string,
+  url: string,
+) {
+  return post(token, {
+    recipient: { id: psid },
+    messaging_type: "RESPONSE",
+    message: {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "button",
+          text: text.slice(0, 640),
+          buttons: [
+            {
+              type: "web_url",
+              url,
+              title: "View site",
+              webview_height_ratio: "tall",
+            },
+          ],
         },
       },
     },

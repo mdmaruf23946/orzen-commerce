@@ -7,6 +7,7 @@ import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 import {
   sendProductCard as fbSendProductCard,
   sendProductCarousel as fbSendProductCarousel,
+  sendViewSiteButton as fbSendViewSiteButton,
 } from "./messenger-send.server";
 import { checkDuplicate } from "./duplicate-guard.server";
 
@@ -266,8 +267,9 @@ Every product record has product_type: physical, digital, service or subscriptio
 - service → information + image + price + what is included + the official service link. NO order here.
 - subscription → information + image + price + billing frequency + benefits + the official subscription link. NO subscription here.
 - For digital, service and subscription: never call collectOrderInfo or finalizeOrder, never confirm a purchase, never say an order is placed, and never ask for or accept card number, CVV, OTP, banking password, or any payment credential.
-- If the customer says "buy this / order this / I want this / can I pay here" for a digital, service or subscription product, reply politely that it is purchased on the website and send the product_url from the tool result, e.g. "এই প্রোডাক্টটি আমাদের ওয়েবসাইট থেকে নিরাপদে কিনতে পারবেন: <link>".
-- Product links MUST be the product_url returned by a tool. Never invent, guess, shorten, or modify a URL, and never share admin or internal links.
+- If the customer says "buy this / order this / I want this / can I pay here" for a digital, service or subscription product, reply politely that it is purchased on the website and call sendProductLink with a short friendly text. The button will say "View site" and take the customer to the product page. NEVER type the raw URL in the text reply.
+- Product links MUST come from a tool result (sendProductLink, sendProductCard, sendProductCarousel). Never invent, guess, shorten, or modify a URL, and never share admin or internal links.
+- Never type a raw product URL in a text reply. Always present product links through a tool that renders a button.
 - In mixed conversations apply the rule per product: a physical item stays orderable in Messenger even when a digital/service/subscription item was just discussed, and vice versa. Recommendations follow the same rule.
 - If a detail (price, billing frequency, feature, availability) is not in the tool result, say it is currently unavailable — never guess.
 
@@ -280,7 +282,7 @@ When the customer wants to buy a physical product:
 2. Ask only for fields that are still missing — never re-ask what you already have (see the pending-order slot in the state block below).
 3. Once every required field is present, call finalizeOrder. It creates the order and returns the confirmation.
 4. If finalizeOrder returns error="duplicate_blocked", send the returned reply exactly and stop the order flow. Do not show product cards or say you are ordering again.
-5. If collectOrderInfo or finalizeOrder returns error="not_orderable_in_messenger", stop the order flow immediately and send the returned product_url with a short line saying the purchase is completed on the website.
+5. If collectOrderInfo or finalizeOrder returns error="not_orderable_in_messenger", stop the order flow immediately and call sendProductLink with a short friendly line. Do not type the raw URL in the text.
 ${allowRelated ? "6. After finalizeOrder succeeds, use getRelatedProducts and offer 2-3 add-ons via sendProductCarousel." : "6. After finalizeOrder succeeds, thank the customer. Do not upsell."}
 
 
@@ -1183,6 +1185,37 @@ export function buildTools(ctx: AgentContext) {
             })),
           };
 
+        } catch (e) {
+          return { sent: false, error: (e as Error).message };
+        }
+      },
+    });
+
+    tools.sendProductLink = tool({
+      description:
+        "Send a 'View site' button that opens the product page on the website. Use this whenever a digital/service/subscription product is discussed, when the customer asks for a link, or when you need to share any product URL — NEVER type the raw URL in a text reply.",
+      inputSchema: z.object({
+        productId: z.string().uuid(),
+        text: z
+          .string()
+          .min(1)
+          .max(640)
+          .describe(
+            "Short friendly sentence above the button, e.g. 'এই প্রোডাক্টটি আমাদের ওয়েবসাইট থেকে নিরাপদে কিনতে পারবেন'",
+          ),
+      }),
+      execute: async ({ productId, text }) => {
+        const { data: p } = await sb
+          .from("products")
+          .select("id,name,slug,product_type")
+          .eq("store_id", storeId)
+          .eq("id", productId)
+          .maybeSingle();
+        if (!p) return { sent: false, error: "not_found" };
+        const url = productUrl(ctx, p.slug, p.id);
+        try {
+          await fbSendViewSiteButton(ctx.pageToken!, ctx.psid!, text, url);
+          return { sent: true, product_url: url };
         } catch (e) {
           return { sent: false, error: (e as Error).message };
         }
