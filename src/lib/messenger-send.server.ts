@@ -69,7 +69,7 @@ export type ProductCardInput = {
   product_id?: string; // used for postback "buy now via AI"
   /** false for digital/service/subscription — purchase happens on the website only */
   orderable?: boolean;
-  /** overrides the web_url button label */
+  /** overrides the web_url button label (default: "View site") */
   link_title?: string;
 };
 
@@ -80,7 +80,7 @@ function buildElement(p: ProductCardInput) {
     buttons.push({
       type: "web_url",
       url: p.buy_url,
-      title: (p.link_title || (orderable ? "View Product" : "Buy on Website")).slice(0, 20),
+      title: (p.link_title || "View site").slice(0, 20),
       webview_height_ratio: "tall",
     });
   }
