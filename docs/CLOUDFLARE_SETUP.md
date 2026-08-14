@@ -1,143 +1,113 @@
-# Manual deploy to Cloudflare Workers
+# Deploy to Cloudflare Pages from GitHub (automatic builds)
 
-This project deploys **manually** — you upload the code yourself when you are
-ready. There is no GitHub auto-deploy, no webhook, and nothing goes live
-because of an in-progress edit in Lovable.
+Push to GitHub → Cloudflare Pages builds and deploys automatically. No
+Wrangler, no manual upload, no domain required to get started.
 
-The database, auth, storage and secrets stay in **Lovable Cloud**. Changing or
-recreating the Cloudflare account does not touch user accounts, products or
-orders — those live in the database, not in the hosting account.
+The database, auth, storage and secrets stay in **Lovable Cloud**. Changing the
+hosting account does not touch user accounts, products or orders — those live
+in the database.
 
-> This app is server-rendered (TanStack Start). It cannot be deployed by
-> drag-and-dropping a `dist` folder into Cloudflare Pages. The equivalent
-> manual flow is `wrangler deploy`, which uploads straight from your computer
-> and needs no GitHub connection.
+> **This app is server-rendered.** Checkout, orders, admin, webhooks, cron, the
+> AI agent and the Messenger integration all run as server code. The build
+> still produces one plain `dist` folder, but that folder also contains a
+> `_worker.js` that runs the backend. Deep links and hard refreshes are served
+> by that worker — no `_redirects` file is needed, and adding one would shadow
+> the API routes.
 
 ---
 
-## 1. Get the code
+## 1. Connect the repository
 
-1. Open the GitHub repository → **Code → Download ZIP**.
-2. Unzip it on your computer.
-3. Open a terminal in that folder.
+Cloudflare dashboard → **Workers & Pages → Create → Pages → Connect to Git** →
+pick the repository and branch.
 
-## 2. Install and log in to the new Cloudflare account
+## 2. Build settings
 
-```bash
-npm install          # or: bun install
-npx wrangler login   # log in to the NEW Cloudflare account
-```
+| Setting | Value |
+|---|---|
+| Framework preset | **None** |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+| Root directory | *(leave empty)* |
 
-## 3. Push the runtime secrets (once per account)
-
-```bash
-export SUPABASE_SERVICE_ROLE_KEY=...   # Lovable Cloud service role key
-export LOVABLE_API_KEY=...             # Lovable AI Gateway key
-
-bash scripts/cf-push-secrets.sh
-```
-
-The Supabase URL and publishable key are already in `wrangler.toml` under
-`[vars]`, so the Worker connects to the existing database automatically.
-
-## 4. Deploy
-
-```bash
-bash scripts/deploy-cloudflare.sh
-```
-
-or, equivalently:
-
-```bash
-NITRO_PRESET=cloudflare_module npm run build
-npx wrangler deploy
-```
-
-Wrangler prints a free URL such as:
+`npm run build` detects the Cloudflare build runner (`CF_PAGES=1`) and packages
+the output automatically:
 
 ```
-https://orzen-commerce-3ea3838d.<your-subdomain>.workers.dev
+dist/
+  _worker.js      SSR + server functions, bundled into a single file
+  _routes.json    static assets from the CDN, everything else through the worker
+  _headers        immutable caching for hashed assets
+  assets/...      hashed JS/CSS/images, robots.txt, favicon, other public files
 ```
 
-## 5. Test on the free URL first
+On any other builder the command leaves the normal `dist/client` +
+`dist/server` output untouched. To reproduce the Pages folder locally, run
+`npm run build:dist` (or `bun run build:dist`).
 
-Open the `workers.dev` URL and check: home page, login/registration, a store
-page, a product page, cart and checkout, and the admin panel. Unknown hosts
-(including `workers.dev`) always render the main platform site, so nothing
-depends on a domain being attached.
+## 3. Runtime settings
+
+Project → **Settings → Runtime**:
+
+- Compatibility date: `2025-09-01` or later
+- Compatibility flag: `nodejs_compat`
+
+## 4. Environment variables
+
+Project → **Settings → Variables and Secrets**. Add these to **both**
+Production and Preview, as plain variables:
+
+| Variable | Value |
+|---|---|
+| `VITE_SUPABASE_URL` | `https://dqhfxvhzagitytpvildw.supabase.co` |
+| `VITE_SUPABASE_PROJECT_ID` | `dqhfxvhzagitytpvildw` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | the publishable (anon) key from `.env` |
+| `SUPABASE_URL` | same as `VITE_SUPABASE_URL` |
+| `SUPABASE_PUBLISHABLE_KEY` | same as `VITE_SUPABASE_PUBLISHABLE_KEY` |
+
+And these as **secrets** (never commit them):
+
+| Secret | Purpose |
+|---|---|
+| `SUPABASE_SERVICE_ROLE_KEY` | privileged server-side database access |
+| `LOVABLE_API_KEY` | AI Gateway (AI agent, product builder) |
+
+The `VITE_*` values are read at build time and must exist before the build
+runs. The unprefixed ones are read per request by the worker. Nothing is
+hardcoded in the repository, so a rebuild always picks up whatever the Pages
+project provides.
+
+## 5. Deploy and test
+
+Save & Deploy. When it finishes, open the `*.pages.dev` URL and check: home
+page, login/registration, a store page, a product page (refresh it — no 404),
+cart, checkout, and the admin panel. Unknown hosts (including `pages.dev`)
+render the main platform site, so nothing depends on a domain being attached.
 
 ## 6. Attach the domain — only after step 5 passes
 
-1. Add `orzen.top` to the Cloudflare account (**Websites → Add a site**) and set
-   the registrar's nameservers to the two Cloudflare gives you.
-2. Cloudflare dashboard → **Workers & Pages → this Worker → Settings →
-   Domains & Routes → Add** → `orzen.top`.
-3. Repeat for `www.orzen.top`.
+Project → **Custom domains → Set up a domain** → `orzen.top`, then repeat for
+`www.orzen.top`. Cloudflare creates and manages the DNS records itself.
 
-Cloudflare creates and manages the DNS records for those two hostnames itself.
-
-**Never add a wildcard route** (`*.orzen.top/*`) or a manual `A`/`CNAME` record
-for `*`. That is what produced the locked, uneditable DNS records and the host
-errors. `wrangler.toml` intentionally ships with no routes at all; a
-commented-out apex + www block is in the file if you prefer to declare them
-there instead of in the dashboard.
+**Never add a wildcard record** (`*.orzen.top`). That is what produced the
+locked, uneditable DNS records and the host errors previously.
 
 ## 7. Updating later
 
-Finish your changes in Lovable, download the ZIP again, then re-run:
-
-```bash
-bash scripts/deploy-cloudflare.sh
-```
-
-Nothing goes live until you run that command. User accounts and data are
-unaffected by a redeploy; users may just need to sign in again once.
-
-## 8. Secondary deployment for automatic failover
-
-A second Worker (`orzen-commerce-backup`) is pre-configured in `wrangler.toml`
-under `[env.backup]`. It runs the same code and points at the **same** Lovable
-Cloud database, so users, products and orders are identical on both.
-
-Deploy it in the same Cloudflare account or in a separate backup account:
-
-```bash
-npx wrangler login                          # backup account, if separate
-export SUPABASE_SERVICE_ROLE_KEY=...
-export LOVABLE_API_KEY=...
-bash scripts/cf-push-secrets.sh --env backup   # secrets are per-Worker
-bash scripts/deploy-cloudflare-backup.sh
-```
-
-It comes up on `https://orzen-commerce-backup.<subdomain>.workers.dev`.
-
-### Failing over
-
-Cloudflare routes one hostname to one Worker, so failover is a hostname move:
-
-1. Dashboard → **Workers & Pages → orzen-commerce-3ea3838d → Settings →
-   Domains & Routes** → remove `orzen.top` and `www.orzen.top`.
-2. Add the same two hostnames to **orzen-commerce-backup**.
-
-Propagation is near-instant. Reverse the steps to switch back. Keep the tested
-build on the primary and try new builds on the backup first. Still no wildcard
-routes on either Worker.
-
-Want it fully automatic instead of manual? That needs a Cloudflare Load
-Balancer (Workers Paid + LB add-on) with both Workers as pool origins and a
-health check on `/` — the config above is the prerequisite for it.
-
+Push to the connected branch. Cloudflare rebuilds and deploys automatically;
+every push to another branch gets its own preview URL. User data is unaffected
+by a redeploy.
 
 ---
 
 # Optional, later: customer custom domains (SSL for SaaS)
 
-Skip this entirely until the main site is live and stable. It only powers the
+Skip this until the main site is live and stable. It only powers the
 **Admin → Domains** feature, where merchants attach their own domains.
 
 ## Requirements
 
-- Workers Paid plan, `orzen.top` as a full zone on Cloudflare
+- `orzen.top` as a full zone on Cloudflare
 - SSL/TLS → **Custom Hostnames**, fallback origin `stores.orzen.top`
 - A proxied `CNAME stores → orzen.top` record (fallback origin only — still no
   wildcard record)
@@ -150,10 +120,9 @@ Skip this entirely until the main site is live and stable. It only powers the
 |---|---|
 | Zone → SSL and Certificates → Edit | `orzen.top` |
 | Zone → Zone → Read | `orzen.top` |
-| Account → Workers Scripts → Edit | your account |
 
-Then export `CF_API_TOKEN`, `CF_ZONE_ID`, `CF_ACCOUNT_ID` and re-run
-`scripts/cf-push-secrets.sh` (it pushes them only when they are set).
+Add `CF_API_TOKEN`, `CF_ZONE_ID` and `CF_ACCOUNT_ID` as secrets in the Pages
+project.
 
 ## How it works
 
@@ -178,52 +147,3 @@ active, then flips `store_domains.status → active`.
 
 The DNS-only flow in `src/lib/domains.functions.ts` still works without any
 Cloudflare API credentials.
-
-## Costs
-
-| Item | Cost |
-|---|---|
-| Workers Paid | $5 / mo (10M requests) |
-| SSL for SaaS | first 100 hostnames free, then $0.10 / hostname / mo |
-| Lovable Cloud (backend) | unchanged |
-
-## Option B — drag-and-drop `dist/` to Cloudflare Pages
-
-No GitHub, no Wrangler login, no domain needed.
-
-```bash
-bun run build:dist      # or: npm run build:dist
-```
-
-That produces one upload-ready folder:
-
-```
-dist/
-  _worker.js      SSR + server functions, bundled into a single file
-  _routes.json    static assets served by the CDN, everything else by the worker
-  _headers        immutable caching for hashed assets
-  assets/...      hashed JS/CSS/images and other public files
-```
-
-This app is server-rendered, so page HTML (including the document `<head>`) is
-generated by `_worker.js` per request — there is no pre-rendered `index.html`
-to upload, and none is needed.
-
-Then:
-
-1. Cloudflare dashboard -> **Workers & Pages -> Create -> Pages -> Upload assets**
-2. Drag the whole `dist` folder in and deploy
-3. Project -> **Settings -> Runtime**: compatibility date `2025-09-01` or later
-   and compatibility flag `nodejs_compat`
-4. Project -> **Settings -> Variables and Secrets**, add:
-   - `VITE_SUPABASE_URL`, `VITE_SUPABASE_PROJECT_ID`, `VITE_SUPABASE_PUBLISHABLE_KEY`,
-     `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` — values are in `wrangler.toml`
-   - `SUPABASE_SERVICE_ROLE_KEY`, `LOVABLE_API_KEY` — as **secrets** (never commit them)
-5. Re-deploy once so the flag and variables apply, then test on the `*.pages.dev` URL.
-
-Existing accounts, products and orders live in the database, so they appear on
-the new deployment immediately. Attach `orzen.top` only after testing, from the
-Pages project's **Custom domains** tab. `dist/` is git-ignored.
-
-The Workers flow above (`wrangler deploy`, `wrangler.toml`) is unaffected and
-still works; the two can even run side by side against the same database.
