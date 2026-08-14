@@ -7,10 +7,10 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 
-// Force Nitro to build with the `cloudflare-pages` preset so the output is
-// compatible with Cloudflare Pages (emits `.output/public/_worker.js` +
-// static assets under `.output/public/`), not the Workers-only preset
-// (which emits `.output/server/index.mjs` and requires `wrangler deploy`).
+// Nitro build preset. The build emits `dist/client` + `dist/server/index.mjs`;
+// `scripts/pages-postbuild.sh` then reshapes that into the Cloudflare Pages
+// layout (`dist/_worker.js` + static assets at the root) when running on the
+// Pages build runner. Override with NITRO_PRESET if another target is needed.
 process.env.NITRO_PRESET ||= "cloudflare_module";
 
 export default defineConfig({
