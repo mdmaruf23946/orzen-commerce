@@ -12,9 +12,10 @@ import { checkDuplicate } from "@/lib/duplicate-guard.server";
 
 // Absolute origin used for images and product links sent to Messenger.
 // Configurable per deployment so it follows the live custom domain.
-const PUBLIC_MESSENGER_ORIGIN = (
-  process.env["PUBLIC_SITE_ORIGIN"] || "https://orzen.top"
-).replace(/\/$/, "");
+// Read lazily: env is injected per request on Workers.
+function publicOrigin() {
+  return (process.env["PUBLIC_SITE_ORIGIN"] || "https://orzen.top").replace(/\/$/, "");
+}
 const PRODUCT_STOPWORDS = new Set([
   "this", "that", "these", "those", "show", "send", "photo", "image", "picture", "pic", "please", "price", "details", "do", "you", "have", "any",
   "এটা", "এইটা", "ওটা", "এই", "ওই", "এর", "টার", "একটা", "একটি", "ছবি", "দাও", "দেন", "দেখাও", "দেখান", "কি", "কী", "আছে", "দাম", "কত", "ডিটেইলস", "বিস্তারিত", "প্লিজ", "আমাদের", "আপনাদের", "তোমার", "কাছে", "হবে", "লাগবে",
