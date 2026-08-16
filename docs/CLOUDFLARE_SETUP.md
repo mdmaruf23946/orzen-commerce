@@ -65,17 +65,54 @@ Production and Preview, as plain variables:
 | `SUPABASE_URL` | same as `VITE_SUPABASE_URL` |
 | `SUPABASE_PUBLISHABLE_KEY` | same as `VITE_SUPABASE_PUBLISHABLE_KEY` |
 
+Optional, also as a plain variable:
+
+| Variable | Value |
+|---|---|
+| `PUBLIC_SITE_ORIGIN` | `https://orzen.top` (origin used for Messenger image/product links) |
+
 And these as **secrets** (never commit them):
 
 | Secret | Purpose |
 |---|---|
-| `SUPABASE_SERVICE_ROLE_KEY` | privileged server-side database access |
+| `SUPABASE_SERVICE_ROLE_KEY` | optional — privileged server-side operations |
 | `LOVABLE_API_KEY` | AI Gateway (AI agent, product builder) |
+
+`SUPABASE_SERVICE_ROLE_KEY` is **not required for images**. The `/api/img`
+proxy now reads store media with the publishable key, backed by a storage rule
+that exposes image files only — paid digital files, invoices and return
+evidence stay private. Features that genuinely need admin access (some
+webhooks and maintenance jobs) still use the key when it is present.
 
 The `VITE_*` values are read at build time and must exist before the build
 runs. The unprefixed ones are read per request by the worker. Nothing is
 hardcoded in the repository, so a rebuild always picks up whatever the Pages
 project provides.
+
+> Changing a variable does **not** rebuild by itself — trigger a new
+> deployment (Deployments → Retry/redeploy) afterwards.
+
+## 4b. If images do not load on the live domain
+
+Symptom: pages render but every image is broken, and
+`https://<your-domain>/api/img/<some-path>.png` returns **500**.
+
+Checklist, in order:
+
+1. `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` exist in the Pages project
+   (Production **and** Preview) — the proxy needs them at request time.
+2. Compatibility flag `nodejs_compat` is set with a compatibility date of
+   `2025-04-01` or later, so `process.env` is populated inside the worker.
+3. Redeploy after adding variables.
+4. Zone → **SSL/TLS** mode **Full (strict)**, **Always Use HTTPS** on,
+   **Automatic HTTPS Rewrites** on (removes any mixed-content blocking).
+5. Speed → **Optimization**: keep **Polish** and **Mirage** off while
+   testing — they rewrite image responses.
+6. Rules → make sure no Cache Rule / Page Rule bypasses, caches, or redirects
+   `/api/*`. The image proxy must reach the worker.
+7. Test directly: `curl -I https://<your-domain>/api/img/<path>.png` should
+   return `200` with `content-type: image/...`.
+
 
 ## 5. Deploy and test
 
