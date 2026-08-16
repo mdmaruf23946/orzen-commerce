@@ -5210,11 +5210,13 @@ export type Database = {
           is_primary: boolean
           kind: string
           last_checked_at: string | null
+          last_error: string | null
           previous_state: Json | null
           ssl_status: string
           status: string
           store_id: string
           updated_at: string
+          verification_method: string | null
           verification_token: string
           verified_at: string | null
         }
@@ -5233,11 +5235,13 @@ export type Database = {
           is_primary?: boolean
           kind?: string
           last_checked_at?: string | null
+          last_error?: string | null
           previous_state?: Json | null
           ssl_status?: string
           status?: string
           store_id: string
           updated_at?: string
+          verification_method?: string | null
           verification_token?: string
           verified_at?: string | null
         }
@@ -5256,11 +5260,13 @@ export type Database = {
           is_primary?: boolean
           kind?: string
           last_checked_at?: string | null
+          last_error?: string | null
           previous_state?: Json | null
           ssl_status?: string
           status?: string
           store_id?: string
           updated_at?: string
+          verification_method?: string | null
           verification_token?: string
           verified_at?: string | null
         }
