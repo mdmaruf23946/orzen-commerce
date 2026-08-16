@@ -10,7 +10,12 @@ import {
 } from "@/lib/messenger-send.server";
 import { checkDuplicate } from "@/lib/duplicate-guard.server";
 
-const PUBLIC_MESSENGER_ORIGIN = "https://orzen-commerce.lovable.app";
+// Absolute origin used for images and product links sent to Messenger.
+// Configurable per deployment so it follows the live custom domain.
+// Read lazily: env is injected per request on Workers.
+function publicOrigin() {
+  return (process.env["PUBLIC_SITE_ORIGIN"] || "https://orzen.top").replace(/\/$/, "");
+}
 const PRODUCT_STOPWORDS = new Set([
   "this", "that", "these", "those", "show", "send", "photo", "image", "picture", "pic", "please", "price", "details", "do", "you", "have", "any",
   "এটা", "এইটা", "ওটা", "এই", "ওই", "এর", "টার", "একটা", "একটি", "ছবি", "দাও", "দেন", "দেখাও", "দেখান", "কি", "কী", "আছে", "দাম", "কত", "ডিটেইলস", "বিস্তারিত", "প্লিজ", "আমাদের", "আপনাদের", "তোমার", "কাছে", "হবে", "লাগবে",
@@ -113,14 +118,14 @@ async function fbSendImage(pageToken: string, recipientId: string, imageUrl: str
 function publicImageUrl(value: string | null | undefined) {
   if (!value) return undefined;
   if (/^https?:\/\//i.test(value)) return value;
-  if (value.startsWith("/api/img/")) return `${PUBLIC_MESSENGER_ORIGIN}${value}`;
+  if (value.startsWith("/api/img/")) return `${publicOrigin()}${value}`;
   const clean = value.replace(/^\/+/, "");
-  return `${PUBLIC_MESSENGER_ORIGIN}/api/img/${clean}`;
+  return `${publicOrigin()}/api/img/${clean}`;
 }
 
 function productPageUrl(storeSlug: string | null | undefined, product: ProductRow) {
   const slug = storeSlug || "store";
-  return `${PUBLIC_MESSENGER_ORIGIN}/store/${slug}/product/${product.id}`;
+  return `${publicOrigin()}/store/${slug}/product/${product.id}`;
 }
 
 function firstProductImage(product: ProductRow) {
