@@ -118,14 +118,14 @@ async function fbSendImage(pageToken: string, recipientId: string, imageUrl: str
 function publicImageUrl(value: string | null | undefined) {
   if (!value) return undefined;
   if (/^https?:\/\//i.test(value)) return value;
-  if (value.startsWith("/api/img/")) return `${PUBLIC_MESSENGER_ORIGIN}${value}`;
+  if (value.startsWith("/api/img/")) return `${publicOrigin()}${value}`;
   const clean = value.replace(/^\/+/, "");
-  return `${PUBLIC_MESSENGER_ORIGIN}/api/img/${clean}`;
+  return `${publicOrigin()}/api/img/${clean}`;
 }
 
 function productPageUrl(storeSlug: string | null | undefined, product: ProductRow) {
   const slug = storeSlug || "store";
-  return `${PUBLIC_MESSENGER_ORIGIN}/store/${slug}/product/${product.id}`;
+  return `${publicOrigin()}/store/${slug}/product/${product.id}`;
 }
 
 function firstProductImage(product: ProductRow) {
