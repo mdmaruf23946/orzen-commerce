@@ -40,15 +40,34 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
-      // Canonical host: redirect www.orzen.top → orzen.top (301, preserve path + query)
       const url = new URL(request.url);
-      if (url.hostname === "www.orzen.top") {
-        url.hostname = "orzen.top";
+      const envRecord = {
+        ...(typeof process !== "undefined" ? (process.env as Record<string, string | undefined>) : {}),
+        ...((env ?? {}) as Record<string, string | undefined>),
+      };
+      const rootDomain = (envRecord["PUBLIC_ROOT_DOMAIN"] ?? "orzen.top").toLowerCase();
+
+      // Canonical host: redirect www.<root> → <root> (301, preserve path + query)
+      if (url.hostname === `www.${rootDomain}`) {
+        url.hostname = rootDomain;
         return Response.redirect(url.toString(), 301);
       }
 
+      // Multi-tenant: serve store subdomains and verified custom domains at
+      // clean root URLs by rewriting the path internally (browser URL is kept).
+      let workRequest = request;
+      if (isRewritablePath(url.pathname)) {
+        const slug = await resolveTenantSlug(url.hostname, envRecord);
+        if (slug) {
+          const rewritten = new URL(url.toString());
+          const suffix = url.pathname === "/" ? "" : url.pathname.replace(/\/$/, "");
+          rewritten.pathname = `/store/${slug}${suffix}`;
+          workRequest = new Request(rewritten.toString(), request);
+        }
+      }
+
       const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
+      const response = await handler.fetch(workRequest, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
       console.error(error);
