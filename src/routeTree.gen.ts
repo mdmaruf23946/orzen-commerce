@@ -109,6 +109,7 @@ import { Route as AuthenticatedAdminBannersRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin/analytics'
 import { Route as AuthenticatedAdminAiRecommendationsRouteImport } from './routes/_authenticated/admin/ai-recommendations'
 import { Route as AuthenticatedAdminAiAgentRouteImport } from './routes/_authenticated/admin/ai-agent'
+import { Route as DotwellKnownOrzenDomainVerificationTokenRouteImport } from './routes/[.]well-known.orzen-domain-verification.$token'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as AuthenticatedOwnerSubscriptionPayRouteRouteImport } from './routes/_authenticated/owner/subscription-pay.route'
@@ -720,6 +721,12 @@ const AuthenticatedAdminAiAgentRoute =
     path: '/ai-agent',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const DotwellKnownOrzenDomainVerificationTokenRoute =
+  DotwellKnownOrzenDomainVerificationTokenRouteImport.update({
+    id: '/.well-known/orzen-domain-verification/$token',
+    path: '/.well-known/orzen-domain-verification/$token',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
   Char91DotmcpChar93InvokeToolToolRouteImport.update({
     id: '/.mcp/invoke-tool/$tool',
@@ -1026,6 +1033,7 @@ export interface FileRoutesByFullPath {
   '/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/.well-known/orzen-domain-verification/$token': typeof DotwellKnownOrzenDomainVerificationTokenRoute
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
@@ -1168,6 +1176,7 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/.well-known/orzen-domain-verification/$token': typeof DotwellKnownOrzenDomainVerificationTokenRoute
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
@@ -1318,6 +1327,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/.well-known/orzen-domain-verification/$token': typeof DotwellKnownOrzenDomainVerificationTokenRoute
   '/_authenticated/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/_authenticated/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
@@ -1469,6 +1479,7 @@ export interface FileRouteTypes {
     | '/owner/subscription-pay'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/.well-known/orzen-domain-verification/$token'
     | '/admin/ai-agent'
     | '/admin/ai-recommendations'
     | '/admin/analytics'
@@ -1611,6 +1622,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/.well-known/orzen-domain-verification/$token'
     | '/admin/ai-agent'
     | '/admin/ai-recommendations'
     | '/admin/analytics'
@@ -1760,6 +1772,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/subscription-pay'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/.well-known/orzen-domain-verification/$token'
     | '/_authenticated/admin/ai-agent'
     | '/_authenticated/admin/ai-recommendations'
     | '/_authenticated/admin/analytics'
@@ -1905,6 +1918,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  DotwellKnownOrzenDomainVerificationTokenRoute: typeof DotwellKnownOrzenDomainVerificationTokenRoute
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiImgSplatRoute: typeof ApiImgSplatRoute
   ApiPublicCronNotifyOrdersRoute: typeof ApiPublicCronNotifyOrdersRoute
@@ -2624,6 +2638,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/ai-agent'
       preLoaderRoute: typeof AuthenticatedAdminAiAgentRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/.well-known/orzen-domain-verification/$token': {
+      id: '/.well-known/orzen-domain-verification/$token'
+      path: '/.well-known/orzen-domain-verification/$token'
+      fullPath: '/.well-known/orzen-domain-verification/$token'
+      preLoaderRoute: typeof DotwellKnownOrzenDomainVerificationTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/.mcp/invoke-tool/$tool': {
       id: '/.mcp/invoke-tool/$tool'
@@ -3364,6 +3385,8 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  DotwellKnownOrzenDomainVerificationTokenRoute:
+    DotwellKnownOrzenDomainVerificationTokenRoute,
   ApiAiChatRoute: ApiAiChatRoute,
   ApiImgSplatRoute: ApiImgSplatRoute,
   ApiPublicCronNotifyOrdersRoute: ApiPublicCronNotifyOrdersRoute,
