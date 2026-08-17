@@ -126,8 +126,32 @@ render the main platform site, so nothing depends on a domain being attached.
 Project → **Custom domains → Set up a domain** → `orzen.top`, then repeat for
 `www.orzen.top`. Cloudflare creates and manages the DNS records itself.
 
-**Never add a wildcard record** (`*.orzen.top`). That is what produced the
-locked, uneditable DNS records and the host errors previously.
+## 6b. Required for merchant stores (subdomains + custom domains)
+
+The application code is complete, but two Cloudflare-side pieces must exist or
+merchant domains will never work:
+
+1. **Wildcard for store subdomains.** Every store advertises
+   `<slug>.orzen.top`. Add `*.orzen.top` as a **custom hostname on the Pages
+   project** (Custom domains → Set up a domain → `*.orzen.top`). Cloudflare
+   manages the record itself — do **not** hand-create a wildcard DNS record in
+   the zone, which is what previously produced locked, uneditable records.
+   Without this, every subdomain link handed to merchants fails to resolve.
+2. **SSL for SaaS for custom domains.** Enable Custom Hostnames with fallback
+   origin `stores.orzen.top`, create the proxied `CNAME stores → orzen.top`
+   record, and add `CF_API_TOKEN`, `CF_ZONE_ID`, `CF_ACCOUNT_ID` as secrets
+   (see the section below). Without the token the merchant flow still verifies
+   DNS and shows "Verified (DNS OK)", but nothing issues a certificate, so the
+   domain shows a TLS warning in the browser and never becomes Active.
+
+Owner → **Domains & Routing** shows a live "Platform routing health" panel with
+exactly these checks (root, wildcard, fallback origin, automatic SSL), so the
+platform owner can confirm the setup instead of guessing.
+
+Reserved subdomains (`www`, `admin`, `stores`, `api`, `auth`, …) always render
+the platform site and can never be claimed by a store.
+
+
 
 ## 7. Updating later
 

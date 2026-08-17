@@ -22,6 +22,8 @@ import {
   setPrimaryDomain,
   updateMySubdomain,
   checkSubdomainAvailable,
+  checkDnsResolution,
+
 } from "@/lib/domains.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,21 +40,34 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  pending: "Pending verification",
-  verified: "Verified",
+  pending: "Pending DNS",
+  verified: "Verified (DNS OK)",
   active: "Active",
   failed: "Failed",
 };
 
-function StatusPill({ s }: { s: string }) {
+/** Live state combines the DNS status with the certificate status. */
+function domainState(d: any): { key: string; label: string } {
+  if (d.status === "active") return { key: "active", label: "Active" };
+  if (d.status === "verified") {
+    if (d.ssl_status === "issuing") return { key: "verified", label: "Issuing SSL" };
+    if (d.ssl_status === "issued") return { key: "active", label: "Active" };
+    return { key: "verified", label: "Verified (DNS OK)" };
+  }
+  return { key: d.status, label: STATUS_LABEL[d.status] ?? d.status };
+}
+
+function StatusPill({ d }: { d: any }) {
+  const st = domainState(d);
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[s] ?? "bg-muted"}`}
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[st.key] ?? "bg-muted"}`}
     >
-      {STATUS_LABEL[s] ?? s}
+      {st.label}
     </span>
   );
 }
+
 
 function CopyBtn({ v }: { v: string }) {
   const [ok, setOk] = useState(false);
@@ -101,12 +116,50 @@ function Page() {
   const primaryFn = useServerFn(setPrimaryDomain);
   const saveSlugFn = useServerFn(updateMySubdomain);
   const slugCheckFn = useServerFn(checkSubdomainAvailable);
+  const dnsFn = useServerFn(checkDnsResolution);
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["admin", "domains"], queryFn: () => listFn() });
+
+  // Subdomain reachability probe — warns when the platform wildcard is missing.
+  const { data: dns } = useQuery({
+    queryKey: ["admin", "domains", "subdomain-dns"],
+    queryFn: () => dnsFn({ data: {} }),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
 
   const [host, setHost] = useState("");
   const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+
+  const pendingDomains = (data?.domains ?? []).filter((d: any) => d.status !== "active");
+
+  // Tick for the cooldown countdown while something is still pending.
+  useEffect(() => {
+    if (pendingDomains.length === 0) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [pendingDomains.length]);
+
+  // Silent auto-refresh every 20s while a domain is not live yet.
+  const pendingIds = pendingDomains.map((d: any) => d.id).join(",");
+  useEffect(() => {
+    if (!pendingIds) return;
+    const ids = pendingIds.split(",");
+    const t = setInterval(async () => {
+      for (const id of ids) {
+        try {
+          await checkFn({ data: { domainId: id } });
+        } catch {
+          // rate limit / transient — ignore, the next tick retries
+        }
+      }
+      qc.invalidateQueries({ queryKey: ["admin", "domains"] });
+    }, 20_000);
+    return () => clearInterval(t);
+  }, [pendingIds, checkFn, qc]);
+
 
   // Subdomain editor
   const [slug, setSlug] = useState("");
@@ -194,15 +247,21 @@ function Page() {
     }
   }
 
-  async function remove(id: string) {
+  async function remove(id: string, wasPrimary = false) {
     if (!confirm("Remove this domain?")) return;
     try {
       await removeFn({ data: { domainId: id } });
+      toast.success(
+        wasPrimary
+          ? "Domain removed — your store now uses its subdomain again"
+          : "Domain removed",
+      );
       qc.invalidateQueries({ queryKey: ["admin", "domains"] });
     } catch (e) {
       toast.error((e as Error).message);
     }
   }
+
 
   async function setPrimary(id: string | null) {
     try {
@@ -269,7 +328,19 @@ function Page() {
           </a>
           <CopyBtn v={subdomainUrl} />
         </div>
+
+        {dns && !dns.hostResolves && (
+          <div className="flex items-start gap-2 rounded-md bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span className="min-w-0 break-words">
+              এই সাবডোমেইনটি এখনো DNS-এ রিজলভ করছে না — প্ল্যাটফর্মে wildcard
+              (<code>*.{rootDomain}</code>) সেটআপ না থাকলে সাবডোমেইন লিংক কাজ করবে না।
+              প্ল্যাটফর্ম অ্যাডমিনকে জানান; আপনার স্টোর ততক্ষণ কাস্টম ডোমেইনে চালু রাখতে পারেন।
+            </span>
+          </div>
+        )}
       </section>
+
 
       {/* Custom domains (plan-gated) */}
       <FeatureGate feature={"custom_domain" as any} inline>
@@ -312,11 +383,18 @@ function Page() {
             {data.domains.map((d: any) => {
               const apex = isApexHost(d.hostname);
               const target = d.dns_target || settings.dnsTarget;
+              const cooldownLeft = d.last_checked_at
+                ? Math.max(0, Math.ceil((15_000 - (now - new Date(d.last_checked_at).getTime())) / 1000))
+                : 0;
+              const live = d.status === "active" || d.ssl_status === "issued";
+              const canBePrimary = data.autoSsl
+                ? live
+                : d.status === "verified" || d.status === "active";
               return (
                 <div key={d.id} className="space-y-3 rounded-lg border bg-background p-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <code className="mr-auto min-w-0 truncate font-medium">{d.hostname}</code>
-                    <StatusPill s={d.status} />
+                    <StatusPill d={d} />
                     {d.ssl_status && d.ssl_status !== "none" && (
                       <span className="rounded-full bg-muted px-2 py-0.5 text-xs capitalize">
                         SSL: {d.ssl_status}
@@ -328,6 +406,15 @@ function Page() {
                       </span>
                     )}
                   </div>
+
+                  {d.status === "verified" && !live && (
+                    <div className="rounded-md bg-blue-50 p-2 text-xs text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+                      DNS ঠিক আছে — এখন SSL সার্টিফিকেট ইস্যু হওয়ার অপেক্ষা।
+                      {data.autoSsl
+                        ? " সাধারণত ৫–১৫ মিনিট লাগে; এই পেজ নিজে নিজেই আপডেট হবে।"
+                        : " এই প্ল্যাটফর্মে অটোমেটিক SSL এখনো চালু নেই, তাই সার্টিফিকেট ইস্যু না হওয়া পর্যন্ত ব্রাউজারে নিরাপত্তা সতর্কতা দেখাতে পারে — প্ল্যাটফর্ম অ্যাডমিনকে জানান।"}
+                    </div>
+                  )}
 
                   {d.last_error && d.status !== "active" && (
                     <div className="flex items-start gap-2 rounded-md bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
@@ -369,7 +456,7 @@ function Page() {
                     <Button
                       size="sm"
                       variant="outline"
-                      disabled={checking === d.id}
+                      disabled={checking === d.id || cooldownLeft > 0}
                       onClick={() => check(d.id)}
                     >
                       {checking === d.id ? (
@@ -377,22 +464,28 @@ function Page() {
                       ) : (
                         <RefreshCw className="mr-1 h-3.5 w-3.5" />
                       )}
-                      Check now
+                      {cooldownLeft > 0 ? `Check now (${cooldownLeft}s)` : "Check now"}
                     </Button>
-                    {(d.status === "verified" || d.status === "active") && primaryId !== d.id && (
+                    {primaryId !== d.id && canBePrimary && (
                       <Button size="sm" onClick={() => setPrimary(d.id)}>
                         Make primary
                       </Button>
+                    )}
+                    {primaryId !== d.id && !canBePrimary && (
+                      <span className="self-center text-[11px] text-muted-foreground">
+                        SSL ইস্যু হওয়ার পর primary করা যাবে
+                      </span>
                     )}
                     <Button
                       size="sm"
                       variant="ghost"
                       className="text-destructive"
-                      onClick={() => remove(d.id)}
+                      onClick={() => remove(d.id, primaryId === d.id)}
                     >
                       <Trash2 className="mr-1 h-3.5 w-3.5" /> Remove
                     </Button>
                   </div>
+
                   {d.last_checked_at && (
                     <p className="text-[11px] text-muted-foreground">
                       Last checked: {new Date(d.last_checked_at).toLocaleString()}

@@ -400,7 +400,44 @@ export const ownerRemoveDomain = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ---------- Owner platform routing health ----------
+
+export const platformDomainHealth = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireOwner(context.supabase, context.userId);
+    const { rootDomain, loginHost, dnsTarget, apexIp } = await platformDomainSettings(
+      context.supabase,
+    );
+    const { resolveA, resolveCname } = await import("./dns-lookup.server");
+
+    const probe = `wildcard-probe-${Date.now().toString(36)}.${rootDomain}`;
+    const [rootA, wildcardA, wildcardCname, targetA, targetCname, loginA] = await Promise.all([
+      resolveA(rootDomain),
+      resolveA(probe),
+      resolveCname(probe),
+      dnsTarget ? resolveA(dnsTarget) : Promise.resolve([]),
+      dnsTarget ? resolveCname(dnsTarget) : Promise.resolve([]),
+      loginHost ? resolveA(loginHost) : Promise.resolve([]),
+    ]);
+
+    return {
+      rootDomain,
+      loginHost,
+      dnsTarget,
+      apexIp,
+      cloudflareConfigured: cloudflareConfigured(),
+      rootResolves: rootA.length > 0,
+      wildcardResolves: wildcardA.length > 0 || wildcardCname.length > 0,
+      fallbackOriginResolves: targetA.length > 0 || targetCname.length > 0,
+      loginHostResolves: loginHost ? loginA.length > 0 : true,
+      records: { rootA, wildcardA, wildcardCname, targetA, targetCname, loginA },
+      checkedAt: new Date().toISOString(),
+    };
+  });
+
 // ---------- DNS diagnostics ----------
+
 
 export const checkDnsResolution = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -503,9 +540,10 @@ export const resolveHost = createServerFn({ method: "GET" }).handler(async () =>
     const s = ((pSettings?.settings as any) ?? {}) as Record<string, string>;
     const rootDomain = (s.root_domain ?? "orzen.top").toLowerCase();
     const loginHost = (s.login_host ?? "").toLowerCase();
+    const dnsTarget = (s.dns_target ?? "").toLowerCase();
 
     const platformHosts = new Set(
-      [rootDomain, `www.${rootDomain}`, loginHost].filter(Boolean),
+      [rootDomain, `www.${rootDomain}`, loginHost, dnsTarget].filter(Boolean),
     );
 
     if (platformHosts.has(host)) {
@@ -515,10 +553,12 @@ export const resolveHost = createServerFn({ method: "GET" }).handler(async () =>
     // <slug>.<root_domain>
     if (host.endsWith(`.${rootDomain}`)) {
       const slug = host.slice(0, -(rootDomain.length + 1));
-      if (slug && !slug.includes(".") && slug !== "www") {
+      if (slug && !slug.includes(".") && !RESERVED_SLUGS.has(slug)) {
         return { host, slug, isPlatform: false };
       }
+      return { host, slug: null, isPlatform: true };
     }
+
 
     // Custom domain lookup
     const { data: resolved } = await sb.rpc("resolve_domain", { _host: host });

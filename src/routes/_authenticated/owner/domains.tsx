@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { getPlatformSettings, updatePlatformSettings } from "@/lib/owner-ext.functions";
-import { listAllDomains, setDomainSslStatus, ownerRemoveDomain } from "@/lib/domains.functions";
+import { listAllDomains, setDomainSslStatus, ownerRemoveDomain, platformDomainHealth } from "@/lib/domains.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,22 @@ const STATUS_STYLE: Record<string, string> = {
   failed: "bg-red-100 text-red-800",
 };
 
+function HealthRow({ ok, label, hint }: { ok: boolean; label: string; hint: string }) {
+  return (
+    <div className="rounded-md border p-2">
+      <div className="flex items-center gap-2 text-sm font-medium">
+        <span
+          className={`inline-block h-2 w-2 shrink-0 rounded-full ${ok ? "bg-emerald-500" : "bg-red-500"}`}
+        />
+        <span className="min-w-0 break-words">{label}</span>
+      </div>
+      {!ok && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
 function Page() {
+
   const getS = useServerFn(getPlatformSettings);
   const saveS = useServerFn(updatePlatformSettings);
   const listAll = useServerFn(listAllDomains);
@@ -28,8 +43,16 @@ function Page() {
   const removeFn = useServerFn(ownerRemoveDomain);
   const qc = useQueryClient();
 
+  const healthFn = useServerFn(platformDomainHealth);
   const { data: sData } = useQuery({ queryKey: ["owner", "sysSettings"], queryFn: () => getS() });
   const { data: domains } = useQuery({ queryKey: ["owner", "domains"], queryFn: () => listAll() });
+  const { data: health, isFetching: healthLoading, refetch: refetchHealth } = useQuery({
+    queryKey: ["owner", "domainHealth"],
+    queryFn: () => healthFn(),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+
   const [f, setF] = useState<any>(null);
   const [saving, setSaving] = useState(false);
 
@@ -79,6 +102,48 @@ function Page() {
       <OwnerPageHeader title="Domains & Routing" description="Root domain, login host, wildcard SSL, and every custom domain across all stores." />
 
       <div className="space-y-6">
+        <section className="rounded-xl border bg-card p-4">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <h2 className="font-semibold">Platform routing health</h2>
+            <Button
+              size="sm"
+              variant="outline"
+              className="ml-auto"
+              disabled={healthLoading}
+              onClick={() => refetchHealth()}
+            >
+              {healthLoading ? "Checking…" : "Re-check"}
+            </Button>
+          </div>
+          {!health ? (
+            <div className="text-sm text-muted-foreground">Checking DNS…</div>
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-2">
+              <HealthRow
+                ok={health.rootResolves}
+                label={`Root domain ${health.rootDomain}`}
+                hint="The platform site itself must resolve."
+              />
+              <HealthRow
+                ok={health.wildcardResolves}
+                label={`Wildcard *.${health.rootDomain}`}
+                hint="Required for store subdomains. Add a wildcard custom hostname in Cloudflare."
+              />
+              <HealthRow
+                ok={health.fallbackOriginResolves}
+                label={`Fallback origin ${health.dnsTarget || "(not set)"}`}
+                hint="Merchant custom domains CNAME here. Must exist and be proxied."
+              />
+              <HealthRow
+                ok={health.cloudflareConfigured}
+                label="Automatic SSL (CF_API_TOKEN + CF_ZONE_ID)"
+                hint="Without these, merchant domains verify but never get a certificate."
+              />
+            </div>
+          )}
+        </section>
+
+
         <section className="rounded-xl border bg-card p-4">
           <h2 className="mb-3 font-semibold">Global Settings</h2>
           {!f ? (

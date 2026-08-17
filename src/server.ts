@@ -1,5 +1,6 @@
 import "./lib/error-capture";
-import { isRewritablePath, resolveTenantSlug } from "./lib/tenant-host";
+import { getRoutingHosts, isRewritablePath, resolveTenant } from "./lib/tenant-host";
+
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
@@ -46,7 +47,8 @@ export default {
         ...(typeof process !== "undefined" ? (process.env as Record<string, string | undefined>) : {}),
         ...((env ?? {}) as Record<string, string | undefined>),
       };
-      const rootDomain = (envRecord["PUBLIC_ROOT_DOMAIN"] ?? "orzen.top").toLowerCase();
+      const hosts = await getRoutingHosts(envRecord);
+      const rootDomain = hosts.rootDomain;
 
       // Canonical host: redirect www.<root> → <root> (301, preserve path + query)
       if (url.hostname === `www.${rootDomain}`) {
@@ -58,14 +60,24 @@ export default {
       // clean root URLs by rewriting the path internally (browser URL is kept).
       let workRequest = request;
       if (isRewritablePath(url.pathname)) {
-        const slug = await resolveTenantSlug(url.hostname, envRecord);
-        if (slug) {
+        const tenant = await resolveTenant(url.hostname, envRecord);
+        if (tenant) {
+          // Non-primary host → 301 to the store's canonical hostname.
+          const primary = tenant.primaryHostname;
+          if (primary && primary !== url.hostname.toLowerCase()) {
+            const canonical = new URL(url.toString());
+            canonical.hostname = primary;
+            canonical.port = "";
+            canonical.protocol = "https:";
+            return Response.redirect(canonical.toString(), 301);
+          }
           const rewritten = new URL(url.toString());
           const suffix = url.pathname === "/" ? "" : url.pathname.replace(/\/$/, "");
-          rewritten.pathname = `/store/${slug}${suffix}`;
+          rewritten.pathname = `/store/${tenant.slug}${suffix}`;
           workRequest = new Request(rewritten.toString(), request);
         }
       }
+
 
       const handler = await getServerEntry();
       const response = await handler.fetch(workRequest, env, ctx);
