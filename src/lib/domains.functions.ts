@@ -503,9 +503,10 @@ export const resolveHost = createServerFn({ method: "GET" }).handler(async () =>
     const s = ((pSettings?.settings as any) ?? {}) as Record<string, string>;
     const rootDomain = (s.root_domain ?? "orzen.top").toLowerCase();
     const loginHost = (s.login_host ?? "").toLowerCase();
+    const dnsTarget = (s.dns_target ?? "").toLowerCase();
 
     const platformHosts = new Set(
-      [rootDomain, `www.${rootDomain}`, loginHost].filter(Boolean),
+      [rootDomain, `www.${rootDomain}`, loginHost, dnsTarget].filter(Boolean),
     );
 
     if (platformHosts.has(host)) {
@@ -515,10 +516,12 @@ export const resolveHost = createServerFn({ method: "GET" }).handler(async () =>
     // <slug>.<root_domain>
     if (host.endsWith(`.${rootDomain}`)) {
       const slug = host.slice(0, -(rootDomain.length + 1));
-      if (slug && !slug.includes(".") && slug !== "www") {
+      if (slug && !slug.includes(".") && !RESERVED_SLUGS.has(slug)) {
         return { host, slug, isPlatform: false };
       }
+      return { host, slug: null, isPlatform: true };
     }
+
 
     // Custom domain lookup
     const { data: resolved } = await sb.rpc("resolve_domain", { _host: host });
