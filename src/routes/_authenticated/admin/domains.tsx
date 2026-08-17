@@ -247,15 +247,21 @@ function Page() {
     }
   }
 
-  async function remove(id: string) {
+  async function remove(id: string, wasPrimary = false) {
     if (!confirm("Remove this domain?")) return;
     try {
       await removeFn({ data: { domainId: id } });
+      toast.success(
+        wasPrimary
+          ? "Domain removed — your store now uses its subdomain again"
+          : "Domain removed",
+      );
       qc.invalidateQueries({ queryKey: ["admin", "domains"] });
     } catch (e) {
       toast.error((e as Error).message);
     }
   }
+
 
   async function setPrimary(id: string | null) {
     try {
