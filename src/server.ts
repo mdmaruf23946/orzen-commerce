@@ -1,5 +1,6 @@
 import "./lib/error-capture";
-import { isRewritablePath, resolveTenantSlug } from "./lib/tenant-host";
+import { getRoutingHosts, isRewritablePath, resolveTenant } from "./lib/tenant-host";
+
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
