@@ -7420,6 +7420,7 @@ export type Database = {
         Returns: number
       }
       next_subscription_no: { Args: { _store_id: string }; Returns: string }
+      platform_routing_hosts: { Args: never; Returns: Json }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
