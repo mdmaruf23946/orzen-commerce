@@ -20,7 +20,22 @@ const STATUS_STYLE: Record<string, string> = {
   failed: "bg-red-100 text-red-800",
 };
 
+function HealthRow({ ok, label, hint }: { ok: boolean; label: string; hint: string }) {
+  return (
+    <div className="rounded-md border p-2">
+      <div className="flex items-center gap-2 text-sm font-medium">
+        <span
+          className={`inline-block h-2 w-2 shrink-0 rounded-full ${ok ? "bg-emerald-500" : "bg-red-500"}`}
+        />
+        <span className="min-w-0 break-words">{label}</span>
+      </div>
+      {!ok && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
 function Page() {
+
   const getS = useServerFn(getPlatformSettings);
   const saveS = useServerFn(updatePlatformSettings);
   const listAll = useServerFn(listAllDomains);
