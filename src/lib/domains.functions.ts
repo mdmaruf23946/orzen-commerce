@@ -295,7 +295,7 @@ export const checkDomainVerification = createServerFn({ method: "POST" })
     patch.last_error = ok ? null : reason || "Verification failed";
     if (!ok && row.status !== "active") patch.status = patch.status ?? "pending";
 
-    await supabase.from("store_domains").update(patch).eq("id", row.id);
+    await supabase.from("store_domains").update(patch as never).eq("id", row.id);
     return { ok, reason, status: patch.status ?? row.status };
   });
 
