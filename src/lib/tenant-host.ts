@@ -57,7 +57,7 @@ const RESERVED_PREFIXES = [
  * Storefront paths that live under /store/<slug>/ but are also platform routes
  * at the root. On a tenant host they belong to the store.
  */
-const TENANT_ONLY_PATHS = ["/auth", "/sitemap.xml", "/robots.txt"];
+const TENANT_ONLY_PATHS = ["/auth", "/sitemap.xml"];
 
 export function isRewritablePath(pathname: string): boolean {
   if (RESERVED_PREFIXES.some((p) => pathname === p.replace(/\/$/, "") || pathname.startsWith(p))) {
