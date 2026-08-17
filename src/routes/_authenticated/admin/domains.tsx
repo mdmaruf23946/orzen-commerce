@@ -114,12 +114,50 @@ function Page() {
   const primaryFn = useServerFn(setPrimaryDomain);
   const saveSlugFn = useServerFn(updateMySubdomain);
   const slugCheckFn = useServerFn(checkSubdomainAvailable);
+  const dnsFn = useServerFn(checkDnsResolution);
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["admin", "domains"], queryFn: () => listFn() });
+
+  // Subdomain reachability probe — warns when the platform wildcard is missing.
+  const { data: dns } = useQuery({
+    queryKey: ["admin", "domains", "subdomain-dns"],
+    queryFn: () => dnsFn({ data: {} }),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
 
   const [host, setHost] = useState("");
   const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+
+  const pendingDomains = (data?.domains ?? []).filter((d: any) => d.status !== "active");
+
+  // Tick for the cooldown countdown while something is still pending.
+  useEffect(() => {
+    if (pendingDomains.length === 0) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [pendingDomains.length]);
+
+  // Silent auto-refresh every 20s while a domain is not live yet.
+  const pendingIds = pendingDomains.map((d: any) => d.id).join(",");
+  useEffect(() => {
+    if (!pendingIds) return;
+    const ids = pendingIds.split(",");
+    const t = setInterval(async () => {
+      for (const id of ids) {
+        try {
+          await checkFn({ data: { domainId: id } });
+        } catch {
+          // rate limit / transient — ignore, the next tick retries
+        }
+      }
+      qc.invalidateQueries({ queryKey: ["admin", "domains"] });
+    }, 20_000);
+    return () => clearInterval(t);
+  }, [pendingIds, checkFn, qc]);
+
 
   // Subdomain editor
   const [slug, setSlug] = useState("");
