@@ -28,8 +28,16 @@ function Page() {
   const removeFn = useServerFn(ownerRemoveDomain);
   const qc = useQueryClient();
 
+  const healthFn = useServerFn(platformDomainHealth);
   const { data: sData } = useQuery({ queryKey: ["owner", "sysSettings"], queryFn: () => getS() });
   const { data: domains } = useQuery({ queryKey: ["owner", "domains"], queryFn: () => listAll() });
+  const { data: health, isFetching: healthLoading, refetch: refetchHealth } = useQuery({
+    queryKey: ["owner", "domainHealth"],
+    queryFn: () => healthFn(),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+
   const [f, setF] = useState<any>(null);
   const [saving, setSaving] = useState(false);
 
