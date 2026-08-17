@@ -365,11 +365,18 @@ function Page() {
             {data.domains.map((d: any) => {
               const apex = isApexHost(d.hostname);
               const target = d.dns_target || settings.dnsTarget;
+              const cooldownLeft = d.last_checked_at
+                ? Math.max(0, Math.ceil((15_000 - (now - new Date(d.last_checked_at).getTime())) / 1000))
+                : 0;
+              const live = d.status === "active" || d.ssl_status === "issued";
+              const canBePrimary = data.autoSsl
+                ? live
+                : d.status === "verified" || d.status === "active";
               return (
                 <div key={d.id} className="space-y-3 rounded-lg border bg-background p-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <code className="mr-auto min-w-0 truncate font-medium">{d.hostname}</code>
-                    <StatusPill s={d.status} />
+                    <StatusPill d={d} />
                     {d.ssl_status && d.ssl_status !== "none" && (
                       <span className="rounded-full bg-muted px-2 py-0.5 text-xs capitalize">
                         SSL: {d.ssl_status}
@@ -381,6 +388,15 @@ function Page() {
                       </span>
                     )}
                   </div>
+
+                  {d.status === "verified" && !live && (
+                    <div className="rounded-md bg-blue-50 p-2 text-xs text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+                      DNS ঠিক আছে — এখন SSL সার্টিফিকেট ইস্যু হওয়ার অপেক্ষা।
+                      {data.autoSsl
+                        ? " সাধারণত ৫–১৫ মিনিট লাগে; এই পেজ নিজে নিজেই আপডেট হবে।"
+                        : " এই প্ল্যাটফর্মে অটোমেটিক SSL এখনো চালু নেই, তাই সার্টিফিকেট ইস্যু না হওয়া পর্যন্ত ব্রাউজারে নিরাপত্তা সতর্কতা দেখাতে পারে — প্ল্যাটফর্ম অ্যাডমিনকে জানান।"}
+                    </div>
+                  )}
 
                   {d.last_error && d.status !== "active" && (
                     <div className="flex items-start gap-2 rounded-md bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
@@ -422,7 +438,7 @@ function Page() {
                     <Button
                       size="sm"
                       variant="outline"
-                      disabled={checking === d.id}
+                      disabled={checking === d.id || cooldownLeft > 0}
                       onClick={() => check(d.id)}
                     >
                       {checking === d.id ? (
@@ -430,22 +446,28 @@ function Page() {
                       ) : (
                         <RefreshCw className="mr-1 h-3.5 w-3.5" />
                       )}
-                      Check now
+                      {cooldownLeft > 0 ? `Check now (${cooldownLeft}s)` : "Check now"}
                     </Button>
-                    {(d.status === "verified" || d.status === "active") && primaryId !== d.id && (
+                    {primaryId !== d.id && canBePrimary && (
                       <Button size="sm" onClick={() => setPrimary(d.id)}>
                         Make primary
                       </Button>
+                    )}
+                    {primaryId !== d.id && !canBePrimary && (
+                      <span className="self-center text-[11px] text-muted-foreground">
+                        SSL ইস্যু হওয়ার পর primary করা যাবে
+                      </span>
                     )}
                     <Button
                       size="sm"
                       variant="ghost"
                       className="text-destructive"
-                      onClick={() => remove(d.id)}
+                      onClick={() => remove(d.id, primaryId === d.id)}
                     >
                       <Trash2 className="mr-1 h-3.5 w-3.5" /> Remove
                     </Button>
                   </div>
+
                   {d.last_checked_at && (
                     <p className="text-[11px] text-muted-foreground">
                       Last checked: {new Date(d.last_checked_at).toLocaleString()}
