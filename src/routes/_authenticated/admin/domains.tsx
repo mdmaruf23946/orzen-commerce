@@ -38,21 +38,34 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  pending: "Pending verification",
-  verified: "Verified",
+  pending: "Pending DNS",
+  verified: "Verified (DNS OK)",
   active: "Active",
   failed: "Failed",
 };
 
-function StatusPill({ s }: { s: string }) {
+/** Live state combines the DNS status with the certificate status. */
+function domainState(d: any): { key: string; label: string } {
+  if (d.status === "active") return { key: "active", label: "Active" };
+  if (d.status === "verified") {
+    if (d.ssl_status === "issuing") return { key: "verified", label: "Issuing SSL" };
+    if (d.ssl_status === "issued") return { key: "active", label: "Active" };
+    return { key: "verified", label: "Verified (DNS OK)" };
+  }
+  return { key: d.status, label: STATUS_LABEL[d.status] ?? d.status };
+}
+
+function StatusPill({ d }: { d: any }) {
+  const st = domainState(d);
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[s] ?? "bg-muted"}`}
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[st.key] ?? "bg-muted"}`}
     >
-      {STATUS_LABEL[s] ?? s}
+      {st.label}
     </span>
   );
 }
+
 
 function CopyBtn({ v }: { v: string }) {
   const [ok, setOk] = useState(false);
