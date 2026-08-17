@@ -326,9 +326,19 @@ function Page() {
             <span className="truncate">{subdomainUrl}</span>
             <ExternalLink className="h-3 w-3 shrink-0" />
           </a>
-          <CopyBtn v={subdomainUrl} />
         </div>
+        {dns && !dns.hostResolves && (
+          <div className="flex items-start gap-2 rounded-md bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span className="min-w-0 break-words">
+              এই সাবডোমেইনটি এখনো DNS-এ রিজলভ করছে না — প্ল্যাটফর্মে wildcard
+              (<code>*.{rootDomain}</code>) সেটআপ না থাকলে সাবডোমেইন লিংক কাজ করবে না।
+              প্ল্যাটফর্ম অ্যাডমিনকে জানান; আপনার স্টোর ততক্ষণ কাস্টম ডোমেইনে চালু রাখতে পারেন।
+            </span>
+          </div>
+        )}
       </section>
+
 
       {/* Custom domains (plan-gated) */}
       <FeatureGate feature={"custom_domain" as any} inline>
