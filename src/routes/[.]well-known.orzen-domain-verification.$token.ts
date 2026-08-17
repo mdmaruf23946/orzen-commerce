@@ -17,11 +17,7 @@ export const Route = createFileRoute("/.well-known/orzen-domain-verification/$to
         const sb = createClient<Database>(url, key, {
           auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
         });
-        const { data } = await sb
-          .from("store_domains")
-          .select("verification_token")
-          .eq("verification_token", token)
-          .maybeSingle();
+        const { data } = await sb.rpc("domain_token_exists", { _token: token });
 
         if (!data) return new Response("Not found", { status: 404 });
         return new Response(token, {
