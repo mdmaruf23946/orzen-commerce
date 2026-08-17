@@ -43,7 +43,11 @@ export function ItemCard({
   right?: ReactNode;
   children?: ReactNode;
 }) {
-  const src = image ? (image.startsWith("http") || image.startsWith("data:") ? image : image) : null;
+  const src = image
+    ? image.startsWith("http") || image.startsWith("data:") || image.startsWith("/api/img/")
+      ? image
+      : `/api/img/${image.replace(/^\/+/, "")}`
+    : null;
   return (
     <div className="rounded-xl border bg-card p-3">
       <div className="flex items-start gap-3">
