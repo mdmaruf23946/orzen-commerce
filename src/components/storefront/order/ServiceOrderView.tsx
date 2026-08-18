@@ -179,6 +179,29 @@ export function ServiceOrderView({ order, slug }: { order: any; slug: string }) 
         </div>
       </div>
 
+      {!isLoading && !verified && (
+        <form onSubmit={submitContact} className="mt-4 space-y-2 rounded-xl border bg-muted/30 p-4">
+          <p className="text-sm font-medium">Verify it's your order</p>
+          <p className="text-xs text-muted-foreground">
+            Enter the phone number or email you used at checkout to unlock files, meeting details and
+            order actions.
+          </p>
+          <div className="flex gap-2">
+            <input
+              value={contactInput}
+              onChange={(e) => setContactInput(e.target.value)}
+              placeholder="Phone or email"
+              className="h-9 flex-1 rounded-md border bg-background px-3 text-sm"
+            />
+            <button type="submit" className="h-9 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground">
+              Unlock
+            </button>
+          </div>
+        </form>
+      )}
+
+
+
       {isLoading && (
         <div className="mt-6 flex justify-center text-muted-foreground">
           <Loader2 className="h-5 w-5 animate-spin" />
