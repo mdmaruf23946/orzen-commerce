@@ -1,6 +1,9 @@
 // Shared, browser-safe SEO resolution for a store.
 // Priority everywhere: Custom SEO -> Store defaults -> Automatic.
 
+/** Canonical origin of the platform site (never a preview/deploy host). */
+export const PLATFORM_ORIGIN = "https://orzen.top";
+
 export type StoreSeo = {
   title?: string | null;
   description?: string | null;
