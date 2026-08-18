@@ -12,10 +12,25 @@ export const Route = createFileRoute("/sitemap.xml")({
         const slug = await slugFromHost(host);
 
         if (!slug) {
+          // Platform site: always emit the canonical domain, never a preview host.
+          const { PLATFORM_ORIGIN } = await import("@/lib/seo");
+          const paths: Array<[string, string]> = [
+            ["/", "1.0"],
+            ["/about", "0.6"],
+            ["/contact", "0.6"],
+            ["/privacy-policy", "0.3"],
+            ["/terms", "0.3"],
+            ["/refund-policy", "0.3"],
+            ["/shipping-policy", "0.3"],
+            ["/data-deletion", "0.3"],
+          ];
           const xml = [
             '<?xml version="1.0" encoding="UTF-8"?>',
             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-            `  <url><loc>${origin}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>`,
+            ...paths.map(
+              ([p, priority]) =>
+                `  <url><loc>${PLATFORM_ORIGIN}${p === "/" ? "/" : p}</loc><changefreq>weekly</changefreq><priority>${priority}</priority></url>`,
+            ),
             "</urlset>",
           ].join("\n");
           return new Response(xml, {
