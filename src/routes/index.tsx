@@ -62,7 +62,33 @@ export const Route = createFileRoute("/")({
     }
   },
   head: () => ({
+    meta: [{ property: "og:url", content: "https://orzen.top/" }],
     links: [{ rel: "canonical", href: "https://orzen.top/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Organization",
+              "@id": "https://orzen.top/#organization",
+              name: "ORZEN",
+              url: "https://orzen.top/",
+              description:
+                "All-in-one eCommerce platform for store building, AI sales assistance, messenger automation, courier delivery, analytics and secure payments.",
+            },
+            {
+              "@type": "WebSite",
+              "@id": "https://orzen.top/#website",
+              name: "ORZEN",
+              url: "https://orzen.top/",
+              publisher: { "@id": "https://orzen.top/#organization" },
+            },
+          ],
+        }),
+      },
+    ],
   }),
   component: Landing,
 });
@@ -606,8 +632,12 @@ function ChatMockup() {
           <div className="flex-1 rounded-full bg-[color:var(--orzen-slate-50)] px-4 py-2 text-xs text-[color:var(--orzen-muted)]">
             Type a message…
           </div>
-          <button className="grid h-9 w-9 place-items-center rounded-full bg-[color:var(--orzen-blue)] text-white">
-            <ArrowRight className="h-4 w-4" />
+          <button
+            type="button"
+            aria-label="Send message"
+            className="grid h-9 w-9 place-items-center rounded-full bg-[color:var(--orzen-blue)] text-white"
+          >
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </div>
