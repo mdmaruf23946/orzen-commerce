@@ -12,6 +12,8 @@ import {
   requestServiceCancel, requestServiceDeliverable,
 } from "@/lib/service-order.functions";
 import { SERVICE_STAGE_LABEL, stageFlow, type ServiceStage } from "@/lib/service-workflow";
+import { readToken } from "@/lib/customer-session";
+
 
 function Card({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
   return (
