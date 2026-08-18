@@ -12,6 +12,8 @@ import {
   requestServiceCancel, requestServiceDeliverable,
 } from "@/lib/service-order.functions";
 import { SERVICE_STAGE_LABEL, stageFlow, type ServiceStage } from "@/lib/service-workflow";
+import { readToken } from "@/lib/customer-session";
+
 
 function Card({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -49,14 +51,41 @@ function useCountdown(iso?: string | null) {
   return d > 0 ? `in ${d}d ${h}h` : h > 0 ? `in ${h}h ${m}m` : `in ${m}m`;
 }
 
+const contactKey = (orderId: string) => `orzen_order_contact__${orderId}`;
+
+function readContact(orderId: string) {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem(contactKey(orderId)) ?? "";
+  } catch {
+    return "";
+  }
+}
+
 export function ServiceOrderView({ order, slug }: { order: any; slug: string }) {
   const qc = useQueryClient();
   const load = useServerFn(getServiceOrder);
+  const token = readToken(slug);
+  const [contact, setContact] = useState(() => readContact(order.id));
+  const [contactInput, setContactInput] = useState("");
+
+  // Ownership proof sent with every service-order call — an order id alone
+  // must never unlock deliverables, secrets or write actions.
+  const proof = useMemo(
+    () => ({
+      ...(order.store_id ? { storeId: order.store_id as string } : {}),
+      ...(token ? { token } : {}),
+      ...(contact ? { contact } : {}),
+    }),
+    [order.store_id, token, contact],
+  );
+
   const { data, isLoading } = useQuery({
-    queryKey: ["serviceOrder", order.id],
-    queryFn: () => load({ data: { orderId: order.id } }),
+    queryKey: ["serviceOrder", order.id, token, contact],
+    queryFn: () => load({ data: { orderId: order.id, ...proof } }),
     refetchInterval: 30_000,
   });
+  const verified = !!data?.verified;
 
   const askRevision = useServerFn(requestServiceRevision);
   const sendReview = useServerFn(submitServiceReview);
@@ -70,23 +99,35 @@ export function ServiceOrderView({ order, slug }: { order: any; slug: string }) 
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["serviceOrder", order.id] });
 
+  function submitContact(e: React.FormEvent) {
+    e.preventDefault();
+    const value = contactInput.trim();
+    if (!value) return;
+    try {
+      window.localStorage.setItem(contactKey(order.id), value);
+    } catch {
+      /* ignore */
+    }
+    setContact(value);
+  }
+
   const revMut = useMutation({
-    mutationFn: () => askRevision({ data: { orderId: order.id, text: revText } }),
+    mutationFn: () => askRevision({ data: { orderId: order.id, text: revText, ...proof } }),
     onSuccess: () => { setRevText(""); toast.success("Revision requested"); invalidate(); },
     onError: (e: any) => toast.error(e?.message ?? "Could not request revision"),
   });
   const reviewMut = useMutation({
-    mutationFn: () => sendReview({ data: { orderId: order.id, rating, text: reviewText, recommend } }),
+    mutationFn: () => sendReview({ data: { orderId: order.id, rating, text: reviewText, recommend, ...proof } }),
     onSuccess: () => { toast.success("Thanks for your review"); invalidate(); },
     onError: (e: any) => toast.error(e?.message ?? "Could not submit review"),
   });
   const cancelMut = useMutation({
-    mutationFn: () => askCancel({ data: { orderId: order.id } }),
+    mutationFn: () => askCancel({ data: { orderId: order.id, ...proof } }),
     onSuccess: () => { toast.success("Cancellation requested"); invalidate(); },
     onError: (e: any) => toast.error(e?.message ?? "Could not request cancellation"),
   });
   const fileMut = useMutation({
-    mutationFn: (id: string) => getFile({ data: { orderId: order.id, deliverableId: id } }),
+    mutationFn: (id: string) => getFile({ data: { orderId: order.id, deliverableId: id, ...proof } }),
     onSuccess: (r: any) => {
       if (r?.url) window.open(r.url, "_blank", "noopener");
       else if (r?.secret) toast.success(r.secret, { duration: 15_000 });
@@ -94,6 +135,7 @@ export function ServiceOrderView({ order, slug }: { order: any; slug: string }) 
     },
     onError: (e: any) => toast.error(e?.message ?? "Download failed"),
   });
+
 
   const meta = (order.fulfillment_meta ?? {}) as any;
   const service = meta.service ?? {};
@@ -136,6 +178,29 @@ export function ServiceOrderView({ order, slug }: { order: any; slug: string }) 
           />
         </div>
       </div>
+
+      {!isLoading && !verified && (
+        <form onSubmit={submitContact} className="mt-4 space-y-2 rounded-xl border bg-muted/30 p-4">
+          <p className="text-sm font-medium">Verify it's your order</p>
+          <p className="text-xs text-muted-foreground">
+            Enter the phone number or email you used at checkout to unlock files, meeting details and
+            order actions.
+          </p>
+          <div className="flex gap-2">
+            <input
+              value={contactInput}
+              onChange={(e) => setContactInput(e.target.value)}
+              placeholder="Phone or email"
+              className="h-9 flex-1 rounded-md border bg-background px-3 text-sm"
+            />
+            <button type="submit" className="h-9 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground">
+              Unlock
+            </button>
+          </div>
+        </form>
+      )}
+
+
 
       {isLoading && (
         <div className="mt-6 flex justify-center text-muted-foreground">

@@ -1,22 +1,48 @@
-// Shopper-facing Service order functions. Keyed by order id (guest safe) —
-// service orders never expose courier, shipping or delivery data.
+// Shopper-facing Service order functions. An order id alone is never enough:
+// every read of sensitive workflow data and every write action requires
+// ownership proof (customer session token, or the phone/email on the order).
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+const proofShape = {
+  storeId: z.string().uuid().optional(),
+  token: z.string().min(16).max(128).optional(),
+  contact: z.string().trim().max(160).optional(),
+};
+
+async function requireOwner(sb: any, orderId: string, proof: any) {
+  const { ownsOrderById } = await import("@/lib/order-ownership.server");
+  const ok = await ownsOrderById(sb, orderId, {
+    storeId: proof.storeId,
+    token: proof.token,
+    contact: proof.contact,
+  });
+  if (!ok) throw new Error("Verify the phone or email used on this order to continue");
+  return true;
+}
+
 export const getServiceOrder = createServerFn({ method: "GET" })
-  .inputValidator((d) => z.object({ orderId: z.string().uuid() }).parse(d))
+  .inputValidator((d) => z.object({ orderId: z.string().uuid(), ...proofShape }).parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin: sb } = await import("@/integrations/supabase/client.server");
+    const { normalizeWorkflow } = await import("@/lib/service-workflow");
+    const { loadServiceOrder } = await import("@/lib/service-order.server");
+    const { ownsOrderById } = await import("@/lib/order-ownership.server");
+
+    const order = await loadServiceOrder(sb, data.orderId);
+    if (!order) return null;
+
+    const verified = await ownsOrderById(sb, data.orderId, {
+      storeId: data.storeId,
+      token: data.token,
+      contact: data.contact,
+    });
+
     const { data: bundle, error } = await sb.rpc("get_public_service_order" as any, {
       _order_id: data.orderId,
     } as any);
     if (error) throw new Error(error.message);
     if (!bundle) return null;
-
-    const { normalizeWorkflow } = await import("@/lib/service-workflow");
-    const { loadServiceOrder } = await import("@/lib/service-order.server");
-    const order = await loadServiceOrder(sb, data.orderId);
-    if (!order) return null;
 
     const b = bundle as any;
     const settings = normalizeWorkflow(order.store_id, b.settings);
@@ -28,7 +54,29 @@ export const getServiceOrder = createServerFn({ method: "GET" })
     const usedRevisions = (b.revisions ?? []).length;
     const totalRevisions = Number(state.revisions_allowed ?? settings.default_revisions ?? 0);
 
+    if (!verified) {
+      // Unverified visitors only see the coarse progress timeline — no
+      // deliverables, secrets, meeting links, contact details or reviews.
+      return {
+        verified: false,
+        settings,
+        currentStage,
+        progress: progress.map((p: any) => ({ stage: p.stage, created_at: p.created_at })),
+        meetings: [],
+        assignment: null,
+        updates: [],
+        deliverables: [],
+        revisions: [],
+        review: null,
+        files: [],
+        revisionsRemaining: Math.max(0, totalRevisions - usedRevisions),
+        revisionsAllowed: totalRevisions,
+        cancelRequested: !!state.cancel_requested,
+      };
+    }
+
     return {
+      verified: true,
       settings,
       currentStage,
       progress,
@@ -47,13 +95,20 @@ export const getServiceOrder = createServerFn({ method: "GET" })
 
 export const requestServiceRevision = createServerFn({ method: "POST" })
   .inputValidator((d) =>
-    z.object({ orderId: z.string().uuid(), text: z.string().trim().min(5).max(2000) }).parse(d),
+    z
+      .object({
+        orderId: z.string().uuid(),
+        text: z.string().trim().min(5).max(2000),
+        ...proofShape,
+      })
+      .parse(d),
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin: sb } = await import("@/integrations/supabase/client.server");
     const { loadServiceOrder, workflowFor } = await import("@/lib/service-order.server");
     const order = await loadServiceOrder(sb, data.orderId);
     if (!order) throw new Error("Service order not found");
+    await requireOwner(sb, data.orderId, data);
 
     const settings = await workflowFor(sb, order.store_id);
     const state = ((order.fulfillment_meta ?? {}) as any).service_state ?? {};
@@ -82,6 +137,7 @@ export const submitServiceReview = createServerFn({ method: "POST" })
         text: z.string().trim().max(2000).optional(),
         recommend: z.boolean().optional(),
         screenshot: z.object({ name: z.string().max(200), data: z.string().max(8_000_000) }).optional(),
+        ...proofShape,
       })
       .parse(d),
   )
@@ -92,6 +148,7 @@ export const submitServiceReview = createServerFn({ method: "POST" })
     );
     const order = await loadServiceOrder(sb, data.orderId);
     if (!order) throw new Error("Service order not found");
+    await requireOwner(sb, data.orderId, data);
 
     let screenshotPath: string | null = null;
     if (data.screenshot) {
@@ -121,7 +178,13 @@ export const submitServiceReview = createServerFn({ method: "POST" })
 
 export const requestServiceCancel = createServerFn({ method: "POST" })
   .inputValidator((d) =>
-    z.object({ orderId: z.string().uuid(), reason: z.string().trim().max(1000).optional() }).parse(d),
+    z
+      .object({
+        orderId: z.string().uuid(),
+        reason: z.string().trim().max(1000).optional(),
+        ...proofShape,
+      })
+      .parse(d),
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin: sb } = await import("@/integrations/supabase/client.server");
@@ -130,6 +193,7 @@ export const requestServiceCancel = createServerFn({ method: "POST" })
     );
     const order = await loadServiceOrder(sb, data.orderId);
     if (!order) throw new Error("Service order not found");
+    await requireOwner(sb, data.orderId, data);
     const settings = await workflowFor(sb, order.store_id);
     if (!settings.allow_cancel) throw new Error("Cancellation is not allowed for this service");
 
@@ -150,11 +214,19 @@ export const requestServiceCancel = createServerFn({ method: "POST" })
 /** Short-lived signed link for a delivered file; enforces expiry + limit. */
 export const requestServiceDeliverable = createServerFn({ method: "POST" })
   .inputValidator((d) =>
-    z.object({ orderId: z.string().uuid(), deliverableId: z.string().uuid() }).parse(d),
+    z
+      .object({
+        orderId: z.string().uuid(),
+        deliverableId: z.string().uuid(),
+        ...proofShape,
+      })
+      .parse(d),
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin: sb } = await import("@/integrations/supabase/client.server");
     const { DELIVERABLE_BUCKET } = await import("@/lib/service-order.server");
+    await requireOwner(sb, data.orderId, data);
+
     const { data: row } = await sb
       .from("service_order_deliverables")
       .select("*")
