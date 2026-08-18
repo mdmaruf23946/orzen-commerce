@@ -1,5 +1,13 @@
 import "./lib/error-capture";
-import { getRoutingHosts, isRewritablePath, resolveTenant } from "./lib/tenant-host";
+// Loaded lazily inside the handler: the worker bundle has been observed to
+// evaluate this entry before the statically-imported tenant-host module
+// bindings are initialised ("isRewritablePath is not defined" → 500).
+type TenantHost = typeof import("./lib/tenant-host");
+let tenantHostPromise: Promise<TenantHost> | undefined;
+function getTenantHost(): Promise<TenantHost> {
+  if (!tenantHostPromise) tenantHostPromise = import("./lib/tenant-host");
+  return tenantHostPromise;
+}
 
 
 import { consumeLastCapturedError } from "./lib/error-capture";
@@ -47,6 +55,7 @@ export default {
         ...(typeof process !== "undefined" ? (process.env as Record<string, string | undefined>) : {}),
         ...((env ?? {}) as Record<string, string | undefined>),
       };
+      const { getRoutingHosts, isRewritablePath, resolveTenant } = await getTenantHost();
       const hosts = await getRoutingHosts(envRecord);
       const rootDomain = hosts.rootDomain;
 
