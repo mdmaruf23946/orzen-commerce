@@ -606,8 +606,12 @@ function ChatMockup() {
           <div className="flex-1 rounded-full bg-[color:var(--orzen-slate-50)] px-4 py-2 text-xs text-[color:var(--orzen-muted)]">
             Type a message…
           </div>
-          <button className="grid h-9 w-9 place-items-center rounded-full bg-[color:var(--orzen-blue)] text-white">
-            <ArrowRight className="h-4 w-4" />
+          <button
+            type="button"
+            aria-label="Send message"
+            className="grid h-9 w-9 place-items-center rounded-full bg-[color:var(--orzen-blue)] text-white"
+          >
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </div>
