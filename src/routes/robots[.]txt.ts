@@ -11,7 +11,10 @@ export const Route = createFileRoute("/robots.txt")({
         const slug = await slugFromHost(host);
 
         if (!slug) {
-          return new Response(`User-agent: *\nAllow: /\n\nSitemap: ${origin}/sitemap.xml\n`, {
+          // Platform site: always advertise the canonical domain, never an
+          // ephemeral preview/deploy host.
+          const { PLATFORM_ORIGIN } = await import("@/lib/seo");
+          return new Response(`User-agent: *\nAllow: /\n\nSitemap: ${PLATFORM_ORIGIN}/sitemap.xml\n`, {
             headers: { "Content-Type": "text/plain", "Cache-Control": "public, max-age=3600" },
           });
         }
