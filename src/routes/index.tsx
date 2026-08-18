@@ -62,7 +62,33 @@ export const Route = createFileRoute("/")({
     }
   },
   head: () => ({
+    meta: [{ property: "og:url", content: "https://orzen.top/" }],
     links: [{ rel: "canonical", href: "https://orzen.top/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Organization",
+              "@id": "https://orzen.top/#organization",
+              name: "ORZEN",
+              url: "https://orzen.top/",
+              description:
+                "All-in-one eCommerce platform for store building, AI sales assistance, messenger automation, courier delivery, analytics and secure payments.",
+            },
+            {
+              "@type": "WebSite",
+              "@id": "https://orzen.top/#website",
+              name: "ORZEN",
+              url: "https://orzen.top/",
+              publisher: { "@id": "https://orzen.top/#organization" },
+            },
+          ],
+        }),
+      },
+    ],
   }),
   component: Landing,
 });
