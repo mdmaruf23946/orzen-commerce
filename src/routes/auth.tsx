@@ -10,7 +10,25 @@ import { CheckCircle2, XCircle, Loader2, AlertCircle } from "lucide-react";
 import { BrandMark } from "@/lib/platform-branding";
 
 export const Route = createFileRoute("/auth")({
-  head: () => ({ meta: [{ title: "Sign in — ORZEN" }] }),
+  head: () => ({
+    meta: [
+      { title: "Sign in or create your store — ORZEN" },
+      {
+        name: "description",
+        content:
+          "Sign in to your ORZEN dashboard or create a free account to launch your online store with AI sales, courier delivery and secure payments.",
+      },
+      { property: "og:title", content: "Sign in or create your store — ORZEN" },
+      {
+        property: "og:description",
+        content:
+          "Access your ORZEN dashboard or start a new online store in minutes — no coding required.",
+      },
+      { property: "og:url", content: "https://orzen.top/auth" },
+      { name: "robots", content: "noindex, follow" },
+    ],
+    links: [{ rel: "canonical", href: "https://orzen.top/auth" }],
+  }),
   component: AuthPage,
 });
 
