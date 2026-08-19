@@ -500,6 +500,24 @@ function productSummary(ctx: AgentContext, product: any, categoryName?: string |
   };
 }
 
+/** Store-admin configured Buy Now / order collection flow. */
+export async function loadOrderFlow(storeId: string) {
+  const sb = admin();
+  const { data } = await sb
+    .from("store_ai_agents")
+    .select("order_flow")
+    .eq("store_id", storeId)
+    .maybeSingle();
+  return normalizeOrderFlow((data as any)?.order_flow);
+}
+
+/** Payment methods a Messenger order may use for this store. */
+export async function loadMessengerPaymentMethods(storeId: string) {
+  const sb = admin();
+  const { data } = await sb.from("stores").select("payments_config").eq("id", storeId).maybeSingle();
+  return messengerPaymentMethods((data as any)?.payments_config);
+}
+
 
 async function getConversationSlot(conversationId: string): Promise<Record<string, any>> {
   const sb = admin();
