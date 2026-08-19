@@ -4,12 +4,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getMyAgent, updateMyAgent, getMyAgentKnowledgeSummary } from "@/lib/ai.functions";
+import { getMyAgent, updateMyAgent, getMyAgentKnowledgeSummary, getMyMessengerPaymentMethods } from "@/lib/ai.functions";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GeneralTab } from "@/components/admin/ai-agent/GeneralTab";
 import { KnowledgeTab } from "@/components/admin/ai-agent/KnowledgeTab";
 import { BehaviorTab } from "@/components/admin/ai-agent/BehaviorTab";
+import { OrderingTab } from "@/components/admin/ai-agent/OrderingTab";
+import { normalizeOrderFlow, type OrderFlowConfig } from "@/lib/messenger-order-flow";
 import { AGENT_DEFAULTS, type AgentForm, type AgentSources, type KnowledgeSummary } from "@/components/admin/ai-agent/types";
 
 export const Route = createFileRoute("/_authenticated/admin/ai-agent")({
