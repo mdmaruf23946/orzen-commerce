@@ -128,6 +128,17 @@ export function buildSystemPrompt(
   const fallbackMessage = String(agent.fallback_message ?? "").trim();
   const agentDescription = String(agent.description ?? "").trim();
 
+  // ---- Admin-configured Buy Now / order collection flow (physical only) ----
+  const orderFlow = normalizeOrderFlow(agent.order_flow);
+  const requiredKeys = requiredSlotFields(orderFlow).filter((k) => k !== "product_id");
+  const optionalKeys = optionalSlotFields(orderFlow);
+  const label = (k: string) => ORDER_FIELD_LABELS[k as OrderFieldKey] ?? k;
+  const payMethods = messengerPaymentMethods((store as any).payments_config);
+  const payLine = payMethods.length
+    ? payMethods.map((m) => `${m.label} (${m.id})`).join(", ")
+    : "none configured — ask the customer to contact the store for payment";
+
+
   const behaviourLines = [
     salesFocused
       ? "- Be sales-focused: highlight benefits, offers and next steps, and gently move the customer toward a purchase — without pressure or exaggeration."
