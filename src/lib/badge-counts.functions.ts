@@ -103,7 +103,7 @@ export const getAdminBadgeCounts = createServerFn({ method: "POST" })
         q.eq("store_id", storeId).gt("created_at", c("orders")).neq("status", "cancelled"),
       ),
       count(supabase, "returns", (q) =>
-        q.eq("store_id", storeId).gt("created_at", c("returns")).eq("status", "pending"),
+        q.eq("store_id", storeId).gt("created_at", c("returns")).eq("status", "requested"),
       ),
       count(supabase, "store_customers", (q) =>
         q.eq("store_id", storeId).gt("created_at", c("customers")),
