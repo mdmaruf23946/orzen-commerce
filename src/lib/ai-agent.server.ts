@@ -309,11 +309,15 @@ Every product record has product_type: physical, digital, service or subscriptio
 ${
   allowOrders
     ? `
-# Order flow (PHYSICAL products only)
-When the customer wants to buy a physical product:
-1. Use collectOrderInfo to save each field as the customer gives it (name, phone, district, upazila, union, village, full_address, product_id, variant, qty, delivery_method, payment_method).
+# Order flow (PHYSICAL products only — configured by the store admin)
+Required information (must all be collected before finalizeOrder): ${requiredKeys.map(label).join(", ") || "none"}.
+Optional information (ask at most once, never block the order): ${optionalKeys.map(label).join(", ") || "none"}.
+Allowed payment methods: ${payLine}. Never offer a method that is not on this list.
+Collection style: ${orderFlow.collection_style === "combined" ? "ask for all missing details in ONE clear message, as a short numbered list." : "ask for ONE missing detail per message, in a natural conversational way."}
+
+1. Use collectOrderInfo to save each field the moment the customer gives it.
 2. Ask only for fields that are still missing — never re-ask what you already have (see the pending-order slot in the state block below).
-3. Once every required field is present, call finalizeOrder. It creates the order and returns the confirmation.
+3. Once every required field above is present, call finalizeOrder. It creates the order and returns the confirmation text — send that confirmation as written.
 4. If finalizeOrder returns error="duplicate_blocked", send the returned reply exactly and stop the order flow. Do not show product cards or say you are ordering again.
 5. If collectOrderInfo or finalizeOrder returns error="not_orderable_in_messenger", stop the order flow immediately and call sendProductLink with a short friendly line. Do not type the raw URL in the text.
 ${allowRelated ? "6. After finalizeOrder succeeds, use getRelatedProducts and offer 2-3 add-ons via sendProductCarousel." : "6. After finalizeOrder succeeds, thank the customer. Do not upsell."}
