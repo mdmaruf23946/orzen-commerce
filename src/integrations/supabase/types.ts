@@ -4894,6 +4894,7 @@ export type Database = {
           knowledge: Json
           language: string
           order_assistance: boolean
+          order_flow: Json
           product_recommendations: boolean
           recommend_related: boolean
           sales_focused: boolean
@@ -4917,6 +4918,7 @@ export type Database = {
           knowledge?: Json
           language?: string
           order_assistance?: boolean
+          order_flow?: Json
           product_recommendations?: boolean
           recommend_related?: boolean
           sales_focused?: boolean
@@ -4940,6 +4942,7 @@ export type Database = {
           knowledge?: Json
           language?: string
           order_assistance?: boolean
+          order_flow?: Json
           product_recommendations?: boolean
           recommend_related?: boolean
           sales_focused?: boolean

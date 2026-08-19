@@ -1,0 +1,1 @@
+ALTER TABLE public.store_ai_agents ADD COLUMN IF NOT EXISTS order_flow jsonb NOT NULL DEFAULT '{}'::jsonb;
