@@ -206,7 +206,12 @@ export const updateMyAgent = createServerFn({ method: "POST" })
               .default({}),
           })
           .optional()
-          .default({}),
+          .default(() => ({
+            buy_now_message: "",
+            collection_style: "one_by_one" as const,
+            confirmation_message: "",
+            fields: {} as Record<string, { enabled: boolean; required: boolean }>,
+          })),
         knowledge: z
           .object({
             store_info: z.string().max(2000).optional().default(""),
