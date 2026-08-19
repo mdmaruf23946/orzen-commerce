@@ -25,12 +25,18 @@ export const Route = createFileRoute("/_authenticated/admin/ai-agent")({
 function AdminAgent() {
   const fetchAgent = useServerFn(getMyAgent);
   const fetchSummary = useServerFn(getMyAgentKnowledgeSummary);
+  const fetchPayments = useServerFn(getMyMessengerPaymentMethods);
   const save = useServerFn(updateMyAgent);
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["admin", "agent"], queryFn: () => fetchAgent() });
   const { data: summary } = useQuery({
     queryKey: ["admin", "agent", "knowledge-summary"],
     queryFn: () => fetchSummary() as Promise<KnowledgeSummary>,
+    staleTime: 60_000,
+  });
+  const { data: paymentMethods } = useQuery({
+    queryKey: ["admin", "agent", "payment-methods"],
+    queryFn: () => fetchPayments() as Promise<{ id: string; label: string }[]>,
     staleTime: 60_000,
   });
 
@@ -47,6 +53,7 @@ function AdminAgent() {
       fallback_message: d.fallback_message || AGENT_DEFAULTS.fallback_message,
       language: (["bn", "en", "both"].includes(d.language) ? d.language : "both") as AgentForm["language"],
       sources: { ...AGENT_DEFAULTS.sources, ...((d.sources ?? {}) as Partial<AgentSources>) },
+      order_flow: normalizeOrderFlow(d.order_flow),
       knowledge: { ...AGENT_DEFAULTS.knowledge, ...(d.knowledge ?? {}) },
     });
   }, [data]);
@@ -59,6 +66,9 @@ function AdminAgent() {
   }
   function setSource(k: keyof AgentSources, v: boolean) {
     setForm((f) => ({ ...f, sources: { ...f.sources, [k]: v } }));
+  }
+  function setOrderFlow<K extends keyof OrderFlowConfig>(k: K, v: OrderFlowConfig[K]) {
+    setForm((f) => ({ ...f, order_flow: { ...f.order_flow, [k]: v } }));
   }
 
   async function submit() {
