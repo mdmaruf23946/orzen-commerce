@@ -1,0 +1,1 @@
+GRANT SELECT ON public.store_customers TO authenticated;
