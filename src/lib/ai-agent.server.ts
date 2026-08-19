@@ -10,6 +10,15 @@ import {
   sendViewSiteButton as fbSendViewSiteButton,
 } from "./messenger-send.server";
 import { checkDuplicate } from "./duplicate-guard.server";
+import {
+  ORDER_FIELD_LABELS,
+  messengerPaymentMethods,
+  normalizeOrderFlow,
+  optionalSlotFields,
+  renderConfirmation,
+  requiredSlotFields,
+  type OrderFieldKey,
+} from "./messenger-order-flow";
 
 function admin() {
   return createClient<Database>(
@@ -118,6 +127,17 @@ export function buildSystemPrompt(
   const allowEscalate = on(agent.escalate_to_human);
   const fallbackMessage = String(agent.fallback_message ?? "").trim();
   const agentDescription = String(agent.description ?? "").trim();
+
+  // ---- Admin-configured Buy Now / order collection flow (physical only) ----
+  const orderFlow = normalizeOrderFlow(agent.order_flow);
+  const requiredKeys = requiredSlotFields(orderFlow).filter((k) => k !== "product_id");
+  const optionalKeys = optionalSlotFields(orderFlow);
+  const label = (k: string) => ORDER_FIELD_LABELS[k as OrderFieldKey] ?? k;
+  const payMethods = messengerPaymentMethods((store as any).payments_config);
+  const payLine = payMethods.length
+    ? payMethods.map((m) => `${m.label} (${m.id})`).join(", ")
+    : "none configured — ask the customer to contact the store for payment";
+
 
   const behaviourLines = [
     salesFocused
@@ -254,8 +274,21 @@ ${sourceLines}
 - The MOMENT a customer mentions a product, category, price range, brand, or asks "what do you sell / show me products / আপনাদের কি আছে / দাম কত" — IMMEDIATELY call searchProducts (or listCategories if they ask for categories). Do not answer from memory, do not ask clarifying questions first for a general browse intent.
 - If a Focus product is set below, you MUST use its id when calling sendProductCard/showProduct, and every product fact in your text MUST come from that record. Never mix in facts from another product, earlier turn, or the pending-order slot.
 - If searchProducts returns 0 results, try again with a broader query (drop filters, translate Bangla→English keyword, try a synonym) before telling the customer "not found".
-- When you have products to show, call ${displayTools}. Also write a short friendly text line (1 sentence) introducing them. Never leave the text reply empty when you showed products — always add a line like "এই প্রোডাক্টগুলো দেখুন 👇".
+- When you have products to show, call ${displayTools}, plus one short friendly line of text that adds something the card does NOT already show (why it fits, stock, next step). Do not restate the name, price or image in that line.
 - Never say a product image is unavailable until you checked the product tool result. If primary_image_url or gallery has an image, send a product card.
+
+# Message / payload consistency (STRICT)
+- You may only point at something ("নিচে দেখুন", "ছবিটি দিলাম", "এই লিংকে ক্লিক করুন", "see below", "tap the button", 👇) when you are calling the matching tool in the SAME turn.
+- If no card, image, link or button is being sent, state the information plainly in words with no pointer phrase and no arrow emoji.
+- Never type a raw URL. Links are always delivered by a tool that renders a button.
+- Never promise something you are not sending in this turn ("I'll send the photo", "details are coming below") — either call the tool now or say plainly what you can.
+
+# Human-like conversation
+- One clear intent per reply. Short when a short answer is enough; never pad.
+- Do not start replies with the same stock opener every time (অবশ্যই!, জি!, Sure!). Vary naturally, or start straight with the answer.
+- Mirror the customer's language; mix Bangla and English only where it sounds natural.
+- Explain product benefits conversationally from the real product data (features, short description) — vary your phrasing, never invent a benefit.
+- Never re-ask for anything the customer already gave. If they change product or quantity, update only that part and keep the rest.
 - If a product is out of stock, tell the customer${allowRecommend ? " and call searchProducts in the same category to suggest alternatives" : ""}.
 - If the customer changes topic mid-conversation (e.g. asks about delivery charge while an order is pending), answer the new topic FIRST using the appropriate tool, then only resume the order flow when they signal they're ready to continue.
 - Never expose internal tool errors, productId problems, ids, database wording, or implementation details to the customer. If a tool fails, recover naturally or ask one helpful follow-up question.
@@ -276,11 +309,15 @@ Every product record has product_type: physical, digital, service or subscriptio
 ${
   allowOrders
     ? `
-# Order flow (PHYSICAL products only)
-When the customer wants to buy a physical product:
-1. Use collectOrderInfo to save each field as the customer gives it (name, phone, district, upazila, union, village, full_address, product_id, variant, qty, delivery_method, payment_method).
+# Order flow (PHYSICAL products only — configured by the store admin)
+Required information (must all be collected before finalizeOrder): ${requiredKeys.map(label).join(", ") || "none"}.
+Optional information (ask at most once, never block the order): ${optionalKeys.map(label).join(", ") || "none"}.
+Allowed payment methods: ${payLine}. Never offer a method that is not on this list.
+Collection style: ${orderFlow.collection_style === "combined" ? "ask for all missing details in ONE clear message, as a short numbered list." : "ask for ONE missing detail per message, in a natural conversational way."}
+
+1. Use collectOrderInfo to save each field the moment the customer gives it.
 2. Ask only for fields that are still missing — never re-ask what you already have (see the pending-order slot in the state block below).
-3. Once every required field is present, call finalizeOrder. It creates the order and returns the confirmation.
+3. Once every required field above is present, call finalizeOrder. It creates the order and returns the confirmation text — send that confirmation as written.
 4. If finalizeOrder returns error="duplicate_blocked", send the returned reply exactly and stop the order flow. Do not show product cards or say you are ordering again.
 5. If collectOrderInfo or finalizeOrder returns error="not_orderable_in_messenger", stop the order flow immediately and call sendProductLink with a short friendly line. Do not type the raw URL in the text.
 ${allowRelated ? "6. After finalizeOrder succeeds, use getRelatedProducts and offer 2-3 add-ons via sendProductCarousel." : "6. After finalizeOrder succeeds, thank the customer. Do not upsell."}

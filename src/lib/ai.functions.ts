@@ -195,6 +195,23 @@ export const updateMyAgent = createServerFn({ method: "POST" })
             store_info: true,
             business_hours: true,
           })),
+        order_flow: z
+          .object({
+            buy_now_message: z.string().max(700).optional().default(""),
+            collection_style: z.enum(["one_by_one", "combined"]).optional().default("one_by_one"),
+            confirmation_message: z.string().max(1000).optional().default(""),
+            fields: z
+              .record(z.string(), z.object({ enabled: z.boolean(), required: z.boolean() }))
+              .optional()
+              .default({}),
+          })
+          .optional()
+          .default(() => ({
+            buy_now_message: "",
+            collection_style: "one_by_one" as const,
+            confirmation_message: "",
+            fields: {} as Record<string, { enabled: boolean; required: boolean }>,
+          })),
         knowledge: z
           .object({
             store_info: z.string().max(2000).optional().default(""),
@@ -264,6 +281,20 @@ export const getMyAgentKnowledgeSummary = createServerFn({ method: "GET" })
         exchange_window_days: (returns.data as any)?.exchange_window_days ?? null,
       },
     };
+  });
+
+// ---------- Store admin: payment methods usable in a Messenger order ----------
+export const getMyMessengerPaymentMethods = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const storeId = await getOwnedStoreId(context.supabase, context.userId);
+    const { data } = await context.supabase
+      .from("stores")
+      .select("payments_config")
+      .eq("id", storeId)
+      .maybeSingle();
+    const { messengerPaymentMethods } = await import("@/lib/messenger-order-flow");
+    return messengerPaymentMethods((data as any)?.payments_config);
   });
 
 

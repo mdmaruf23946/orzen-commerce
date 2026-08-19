@@ -1,3 +1,5 @@
+import { ORDER_FLOW_DEFAULTS, type OrderFlowConfig } from "@/lib/messenger-order-flow";
+
 export type Faq = { q: string; a: string };
 
 export type AgentSources = {
@@ -29,6 +31,7 @@ export type AgentForm = {
   ask_for_info: boolean;
   escalate_to_human: boolean;
   sources: AgentSources;
+  order_flow: OrderFlowConfig;
   knowledge: {
     store_info: string;
     delivery_policy: string;
@@ -67,6 +70,7 @@ export const AGENT_DEFAULTS: AgentForm = {
     store_info: true,
     business_hours: true,
   },
+  order_flow: ORDER_FLOW_DEFAULTS,
   knowledge: {
     store_info: "",
     delivery_policy: "",
