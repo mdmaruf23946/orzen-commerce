@@ -94,10 +94,11 @@ function AdminAgent() {
       </div>
 
       <Tabs defaultValue="general">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="knowledge">Knowledge</TabsTrigger>
           <TabsTrigger value="behavior">Behavior</TabsTrigger>
+          <TabsTrigger value="ordering">Ordering</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="mt-4">
@@ -108,6 +109,9 @@ function AdminAgent() {
         </TabsContent>
         <TabsContent value="behavior" className="mt-4">
           <BehaviorTab form={form} set={set} />
+        </TabsContent>
+        <TabsContent value="ordering" className="mt-4">
+          <OrderingTab form={form} setOrderFlow={setOrderFlow} paymentMethods={paymentMethods} />
         </TabsContent>
       </Tabs>
 
