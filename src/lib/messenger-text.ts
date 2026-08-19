@@ -16,7 +16,7 @@ const LINKY = (f: PayloadFacts) => Boolean(f.hasLink || f.hasButton || f.hasCard
 // Sentence-level patterns. Each is dropped when its requirement is unmet.
 const RULES: Rule[] = [
   // Bangla — image / below pointers
-  { re: /[^।\n.!?]*\b?(ছবি(টি|গুলো)?|ইমেজ)[^।\n.!?]*(নিচে|দিলাম|দেখুন|পাঠালাম|দেখে নিন)[^।\n.!?]*[।.!?]?/gi, needs: VISUAL },
+  { re: /[^।\n.!?]*(ছবি(টি|গুলো)?|ইমেজ)[^।\n.!?]*(নিচে|দিলাম|দেখুন|পাঠালাম|দেখে নিন)[^।\n.!?]*[।.!?]?/gi, needs: VISUAL },
   { re: /[^।\n.!?]*(নিচে\s*(দেখুন|দিলাম|দেওয়া|দেয়া|আছে|পাবেন))[^।\n.!?]*[।.!?]?/gi, needs: (f) => VISUAL(f) || LINKY(f) },
   { re: /[^।\n.!?]*(নিচের\s*(ছবি|কার্ড|লিংক|লিঙ্ক|বাটন))[^।\n.!?]*[।.!?]?/gi, needs: (f) => VISUAL(f) || LINKY(f) },
   // Bangla — link / button pointers
