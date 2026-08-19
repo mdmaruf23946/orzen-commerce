@@ -195,6 +195,18 @@ export const updateMyAgent = createServerFn({ method: "POST" })
             store_info: true,
             business_hours: true,
           })),
+        order_flow: z
+          .object({
+            buy_now_message: z.string().max(700).optional().default(""),
+            collection_style: z.enum(["one_by_one", "combined"]).optional().default("one_by_one"),
+            confirmation_message: z.string().max(1000).optional().default(""),
+            fields: z
+              .record(z.string(), z.object({ enabled: z.boolean(), required: z.boolean() }))
+              .optional()
+              .default({}),
+          })
+          .optional()
+          .default({}),
         knowledge: z
           .object({
             store_info: z.string().max(2000).optional().default(""),
