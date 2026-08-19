@@ -1371,9 +1371,18 @@ export function buildTools(ctx: AgentContext) {
           }
         }
         const slot = await updateConversationSlot(convId, patch);
-        const required = ["customer_name", "phone", "full_address", "product_id", "qty", "payment_method"];
+        const cfg = await loadOrderFlow(storeId);
+        const required = requiredSlotFields(cfg);
         const missing = required.filter((f) => !slot[f]);
-        return { saved: patch, current: slot, missing };
+        const optional = optionalSlotFields(cfg).filter((f) => !slot[f]);
+        return {
+          saved: patch,
+          current: slot,
+          missing,
+          optional_not_asked: optional,
+          collection_style: cfg.collection_style,
+          allowed_payment_methods: (await loadMessengerPaymentMethods(storeId)).map((m) => m.id),
+        };
       },
 
     });
@@ -1384,7 +1393,8 @@ export function buildTools(ctx: AgentContext) {
       inputSchema: z.object({}),
       execute: async () => {
         const slot = await getConversationSlot(convId);
-        const required = ["customer_name", "phone", "full_address", "product_id", "qty", "payment_method"];
+        const cfg = await loadOrderFlow(storeId);
+        const required = requiredSlotFields(cfg);
         const missing = required.filter((f) => !slot[f]);
         if (missing.length) return { ok: false, error: "missing_fields", missing };
 
