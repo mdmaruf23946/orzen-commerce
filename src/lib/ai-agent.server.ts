@@ -1720,6 +1720,31 @@ async function runGenerate(opts: {
   return { result, modelId, settings };
 }
 
+export type MessengerPayloadFacts = {
+  hasCard?: boolean;
+  hasImage?: boolean;
+  hasLink?: boolean;
+  hasButton?: boolean;
+};
+
+/** What the agent actually sent this turn, so pointer phrases can be verified. */
+function payloadFactsFromResult(result: any): MessengerPayloadFacts {
+  const names: string[] = [];
+  for (const step of (result?.steps ?? []) as any[]) {
+    for (const call of (step?.toolCalls ?? []) as any[]) {
+      if (call?.toolName) names.push(String(call.toolName));
+    }
+  }
+  const has = (n: string) => names.includes(n);
+  const card = has("sendProductCard") || has("sendProductCarousel");
+  return {
+    hasCard: card,
+    hasImage: card,
+    hasLink: has("sendProductLink"),
+    hasButton: has("sendProductLink") || card,
+  };
+}
+
 export async function generateAgentReply(opts: {
   ctx: AgentContext;
   messages: any[];
@@ -1742,7 +1767,7 @@ export async function generateAgentReply(opts: {
   const { result, modelId } = attempt;
   void logUsage(opts.ctx.storeId, modelId, result.usage, "messenger");
   const duplicateReply = findDuplicateBlockedReply(result as any);
-  if (duplicateReply) return duplicateReply;
-  return result.text;
+  if (duplicateReply) return { text: duplicateReply, facts: {} as MessengerPayloadFacts };
+  return { text: result.text as string, facts: payloadFactsFromResult(result) };
 }
 

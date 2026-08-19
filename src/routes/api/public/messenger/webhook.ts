@@ -1453,7 +1453,10 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
 
 
 
-              const replyText = sanitizeMessengerReply(reply ?? "", effectiveText);
+              const replyText = sanitizeOutgoingText(
+                sanitizeMessengerReply(reply?.text ?? "", effectiveText),
+                reply?.facts ?? {},
+              );
               if (!replyText) {
                 // AI answered by sending a product card/carousel via tool call;
                 // nothing more to say. Clear stale errors, don't POST empty text.
