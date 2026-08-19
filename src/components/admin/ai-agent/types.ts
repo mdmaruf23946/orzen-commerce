@@ -1,3 +1,5 @@
+import { ORDER_FLOW_DEFAULTS, type OrderFlowConfig } from "@/lib/messenger-order-flow";
+
 export type Faq = { q: string; a: string };
 
 export type AgentSources = {
