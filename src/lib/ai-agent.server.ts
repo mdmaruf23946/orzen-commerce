@@ -1397,6 +1397,10 @@ export function buildTools(ctx: AgentContext) {
         const required = requiredSlotFields(cfg);
         const missing = required.filter((f) => !slot[f]);
         if (missing.length) return { ok: false, error: "missing_fields", missing };
+        // Quantity is optional in some store configs — default to 1.
+        const qty = Math.max(1, Number(slot.qty ?? 1) || 1);
+        slot.qty = qty;
+
 
         const { data: product } = await sb
           .from("products")
