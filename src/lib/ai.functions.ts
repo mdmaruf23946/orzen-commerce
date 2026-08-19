@@ -283,6 +283,20 @@ export const getMyAgentKnowledgeSummary = createServerFn({ method: "GET" })
     };
   });
 
+// ---------- Store admin: payment methods usable in a Messenger order ----------
+export const getMyMessengerPaymentMethods = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const storeId = await getOwnedStoreId(context.supabase, context.userId);
+    const { data } = await context.supabase
+      .from("stores")
+      .select("payments_config")
+      .eq("id", storeId)
+      .maybeSingle();
+    const { messengerPaymentMethods } = await import("@/lib/messenger-order-flow");
+    return messengerPaymentMethods((data as any)?.payments_config);
+  });
+
 
 // ---------- Storefront: read public agent config ----------
 export const getStoreAgentPublic = createServerFn({ method: "GET" })
