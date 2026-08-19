@@ -70,6 +70,7 @@ export const AGENT_DEFAULTS: AgentForm = {
     store_info: true,
     business_hours: true,
   },
+  order_flow: ORDER_FLOW_DEFAULTS,
   knowledge: {
     store_info: "",
     delivery_policy: "",
