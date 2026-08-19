@@ -9,6 +9,13 @@ import {
   type ProductCardInput,
 } from "@/lib/messenger-send.server";
 import { checkDuplicate } from "@/lib/duplicate-guard.server";
+import { sanitizeOutgoingText, type PayloadFacts } from "@/lib/messenger-text";
+import {
+  normalizeOrderFlow,
+  renderConfirmation,
+  requiredSlotFields,
+  type OrderFlowConfig,
+} from "@/lib/messenger-order-flow";
 
 // Absolute origin used for images and product links sent to Messenger.
 // Configurable per deployment so it follows the live custom domain.
@@ -303,13 +310,33 @@ async function patchConversationPendingOrder(
   return profile.pending_order as Record<string, any>;
 }
 
-function orderMissingFields(slot: Record<string, any>) {
-  const missing: string[] = [];
-  if (!slot.customer_name) missing.push("নাম");
-  if (!slot.phone) missing.push("ফোন নম্বর");
-  if (!slot.full_address) missing.push("সম্পূর্ণ ঠিকানা");
-  if (!slot.payment_method) missing.push("পেমেন্ট মেথড (COD/bKash/Nagad)");
-  return missing;
+const ORDER_FIELD_BN: Record<string, string> = {
+  customer_name: "নাম",
+  phone: "ফোন নম্বর",
+  district: "জেলা",
+  upazila: "থানা/উপজেলা",
+  union: "ইউনিয়ন",
+  village: "গ্রাম",
+  area: "এলাকা",
+  full_address: "সম্পূর্ণ ঠিকানা",
+  qty: "কতটি লাগবে",
+  payment_method: "পেমেন্ট মেথড (COD/bKash/Nagad)",
+  note: "অতিরিক্ত নোট",
+};
+
+/** Store-admin configured Buy Now flow for this store. */
+async function loadStoreOrderFlow(sb: ReturnType<typeof admin>, storeId: string): Promise<OrderFlowConfig> {
+  const { data } = await sb
+    .from("store_ai_agents")
+    .select("order_flow")
+    .eq("store_id", storeId)
+    .maybeSingle();
+  return normalizeOrderFlow((data as any)?.order_flow);
+}
+
+function orderMissingFields(slot: Record<string, any>, cfg?: OrderFlowConfig) {
+  const keys = requiredSlotFields(cfg ?? normalizeOrderFlow(null)).filter((k) => k !== "product_id");
+  return keys.filter((k) => !slot[k]).map((k) => ORDER_FIELD_BN[k] ?? k);
 }
 
 function normalizePhone(value: string | null | undefined) {
@@ -422,7 +449,8 @@ async function finalizePendingMessengerOrder(opts: {
 }) {
   const { sb, storeId, conversationId, psid, token } = opts;
   const slot = await getConversationPendingOrder(sb, conversationId);
-  const missing = orderMissingFields(slot);
+  const flowCfg = await loadStoreOrderFlow(sb, storeId);
+  const missing = orderMissingFields(slot, flowCfg);
   if (!slot.product_id) missing.unshift("প্রোডাক্ট");
   if (missing.length) {
     await sendAndLogText(sb, token, psid, conversationId, `অর্ডার কনফার্ম করতে ${missing.join(", ")} দিন।`);
@@ -538,12 +566,19 @@ async function finalizePendingMessengerOrder(opts: {
   });
 
   const confirmation = [
-    `আপনার অর্ডার কনফার্ম হয়েছে ✅`,
+    renderConfirmation(flowCfg.confirmation_message, {
+      product: product.name,
+      qty,
+      total: `৳${total.toFixed(0)}`,
+      customer_name: slot.customer_name,
+      address: slot.full_address,
+      payment_method: String(slot.payment_method ?? "").toUpperCase(),
+      invoice_no: order.invoice_no || order.id,
+    }),
     `অর্ডার নম্বর: ${order.invoice_no || order.id}`,
     `প্রোডাক্ট: ${product.name} × ${qty}`,
     `মোট: ৳${total.toFixed(0)}`,
     `পেমেন্ট: ${String(slot.payment_method).toUpperCase()}`,
-    "আমাদের টিম দ্রুত আপনার সাথে যোগাযোগ করবে।",
   ].join("\n");
   await sendAndLogText(sb, token, psid, conversationId, confirmation);
   return true;
@@ -729,7 +764,16 @@ async function logOutgoingText(sb: ReturnType<typeof admin>, conversationId: str
   } as any);
 }
 
-async function sendAndLogText(sb: ReturnType<typeof admin>, token: string, psid: string, conversationId: string, text: string) {
+async function sendAndLogText(
+  sb: ReturnType<typeof admin>,
+  token: string,
+  psid: string,
+  conversationId: string,
+  rawText: string,
+  facts: PayloadFacts = {},
+) {
+  // Never point at a card/image/link that is not part of this payload.
+  const text = sanitizeOutgoingText(rawText, facts) || rawText;
   try {
     const sent = await fbSend(token, psid, text);
     await logOutgoingText(sb, conversationId, text, sent.message_id ?? null);
@@ -830,7 +874,7 @@ async function maybeSendDirectProductReply(opts: {
       product: { id: product.id, name: product.name },
     });
     if (blocked) return true;
-    const missing = orderMissingFields(slot);
+    const missing = orderMissingFields(slot, await loadStoreOrderFlow(sb, storeId));
     if (!missing.length) {
       await logProductRecommendations(sb, storeId, conversationId, [product], text);
       return finalizePendingMessengerOrder({ sb, storeId, conversationId, psid, token });
@@ -849,7 +893,7 @@ async function maybeSendDirectProductReply(opts: {
     : products.length === 1
     ? `জি, ${products[0].name} আছে — ছবিসহ বিস্তারিত দেখুন।`
     : "জি, মিল থাকা প্রোডাক্টগুলো ছবিসহ পাঠাচ্ছি।";
-  await sendAndLogText(sb, token, psid, conversationId, intro);
+  await sendAndLogText(sb, token, psid, conversationId, intro, { hasCard: true });
 
   const cards = products.map((p) => productCardInput(storeSlug, p));
   try {
@@ -955,9 +999,10 @@ async function handleBuyPostback(opts: {
     product_id: product.id,
     qty: current.qty ?? 1,
   });
-  const missing = orderMissingFields(slot);
+  const cfg = await loadStoreOrderFlow(sb, storeId);
+  const missing = orderMissingFields(slot, cfg);
   const reply = missing.length
-    ? `ঠিক আছে, ${product.name} অর্ডার শুরু করলাম। কনফার্ম করতে ${missing.join(", ")} দিন।`
+    ? `${cfg.buy_now_message}\n\n${product.name} — কনফার্ম করতে ${missing.join(", ")} দিন।`
     : `ঠিক আছে, ${product.name} অর্ডারের তথ্য পেয়েছি। কনফার্ম করার আগে আর কিছু যোগ করতে চান?`;
   await sendAndLogText(
     sb,
@@ -1408,7 +1453,10 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
 
 
 
-              const replyText = sanitizeMessengerReply(reply ?? "", effectiveText);
+              const replyText = sanitizeOutgoingText(
+                sanitizeMessengerReply(reply?.text ?? "", effectiveText),
+                reply?.facts ?? {},
+              );
               if (!replyText) {
                 // AI answered by sending a product card/carousel via tool call;
                 // nothing more to say. Clear stale errors, don't POST empty text.

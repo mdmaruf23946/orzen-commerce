@@ -500,6 +500,24 @@ function productSummary(ctx: AgentContext, product: any, categoryName?: string |
   };
 }
 
+/** Store-admin configured Buy Now / order collection flow. */
+export async function loadOrderFlow(storeId: string) {
+  const sb = admin();
+  const { data } = await sb
+    .from("store_ai_agents")
+    .select("order_flow")
+    .eq("store_id", storeId)
+    .maybeSingle();
+  return normalizeOrderFlow((data as any)?.order_flow);
+}
+
+/** Payment methods a Messenger order may use for this store. */
+export async function loadMessengerPaymentMethods(storeId: string) {
+  const sb = admin();
+  const { data } = await sb.from("stores").select("payments_config").eq("id", storeId).maybeSingle();
+  return messengerPaymentMethods((data as any)?.payments_config);
+}
+
 
 async function getConversationSlot(conversationId: string): Promise<Record<string, any>> {
   const sb = admin();
@@ -1353,9 +1371,18 @@ export function buildTools(ctx: AgentContext) {
           }
         }
         const slot = await updateConversationSlot(convId, patch);
-        const required = ["customer_name", "phone", "full_address", "product_id", "qty", "payment_method"];
+        const cfg = await loadOrderFlow(storeId);
+        const required = requiredSlotFields(cfg);
         const missing = required.filter((f) => !slot[f]);
-        return { saved: patch, current: slot, missing };
+        const optional = optionalSlotFields(cfg).filter((f) => !slot[f]);
+        return {
+          saved: patch,
+          current: slot,
+          missing,
+          optional_not_asked: optional,
+          collection_style: cfg.collection_style,
+          allowed_payment_methods: (await loadMessengerPaymentMethods(storeId)).map((m) => m.id),
+        };
       },
 
     });
@@ -1366,9 +1393,14 @@ export function buildTools(ctx: AgentContext) {
       inputSchema: z.object({}),
       execute: async () => {
         const slot = await getConversationSlot(convId);
-        const required = ["customer_name", "phone", "full_address", "product_id", "qty", "payment_method"];
+        const cfg = await loadOrderFlow(storeId);
+        const required = requiredSlotFields(cfg);
         const missing = required.filter((f) => !slot[f]);
         if (missing.length) return { ok: false, error: "missing_fields", missing };
+        // Quantity is optional in some store configs — default to 1.
+        const qty = Math.max(1, Number(slot.qty ?? 1) || 1);
+        slot.qty = qty;
+
 
         const { data: product } = await sb
           .from("products")
@@ -1456,6 +1488,16 @@ export function buildTools(ctx: AgentContext) {
 
         await clearConversationSlot(convId);
 
+        const confirmation = renderConfirmation(cfg.confirmation_message, {
+          product: product.name,
+          qty,
+          total: `৳${subtotal + delivery}`,
+          customer_name: slot.customer_name,
+          address: slot.full_address,
+          payment_method: slot.payment_method,
+          invoice_no: order.invoice_no,
+        });
+
         return {
           ok: true,
           orderId: order.id,
@@ -1464,7 +1506,9 @@ export function buildTools(ctx: AgentContext) {
           delivery,
           grand_total: subtotal + delivery,
           product_name: product.name,
-          qty: slot.qty,
+          qty,
+          confirmation_message: confirmation,
+          instruction: "Send confirmation_message to the customer as written (translate only if the customer's language clearly differs).",
         };
       },
     });
@@ -1676,6 +1720,31 @@ async function runGenerate(opts: {
   return { result, modelId, settings };
 }
 
+export type MessengerPayloadFacts = {
+  hasCard?: boolean;
+  hasImage?: boolean;
+  hasLink?: boolean;
+  hasButton?: boolean;
+};
+
+/** What the agent actually sent this turn, so pointer phrases can be verified. */
+function payloadFactsFromResult(result: any): MessengerPayloadFacts {
+  const names: string[] = [];
+  for (const step of (result?.steps ?? []) as any[]) {
+    for (const call of (step?.toolCalls ?? []) as any[]) {
+      if (call?.toolName) names.push(String(call.toolName));
+    }
+  }
+  const has = (n: string) => names.includes(n);
+  const card = has("sendProductCard") || has("sendProductCarousel");
+  return {
+    hasCard: card,
+    hasImage: card,
+    hasLink: has("sendProductLink"),
+    hasButton: has("sendProductLink") || card,
+  };
+}
+
 export async function generateAgentReply(opts: {
   ctx: AgentContext;
   messages: any[];
@@ -1698,7 +1767,7 @@ export async function generateAgentReply(opts: {
   const { result, modelId } = attempt;
   void logUsage(opts.ctx.storeId, modelId, result.usage, "messenger");
   const duplicateReply = findDuplicateBlockedReply(result as any);
-  if (duplicateReply) return duplicateReply;
-  return result.text;
+  if (duplicateReply) return { text: duplicateReply, facts: {} as MessengerPayloadFacts };
+  return { text: result.text as string, facts: payloadFactsFromResult(result) };
 }
 
