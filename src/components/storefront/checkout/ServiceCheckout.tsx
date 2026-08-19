@@ -316,6 +316,17 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
       });
       if ((res as any)?.warning) toast.warning((res as any).warning);
 
+      // Remember the contact used at checkout so the order page can prove
+      // ownership without asking the shopper to retype phone/email.
+      try {
+        const proof = (phone || email || "").trim();
+        if (proof && res?.orderId) {
+          window.localStorage.setItem(`orzen_order_contact__${res.orderId}`, proof);
+        }
+      } catch {
+        /* storage unavailable */
+      }
+
       if (total > 0 && isOnline) {
         setStage("redirecting");
         const pay = await startPay({ data: { orderId: res.orderId, gatewayKey: method } });
