@@ -31,6 +31,7 @@ export type AgentForm = {
   ask_for_info: boolean;
   escalate_to_human: boolean;
   sources: AgentSources;
+  order_flow: OrderFlowConfig;
   knowledge: {
     store_info: string;
     delivery_policy: string;
