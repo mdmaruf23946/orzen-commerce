@@ -566,12 +566,19 @@ async function finalizePendingMessengerOrder(opts: {
   });
 
   const confirmation = [
-    `আপনার অর্ডার কনফার্ম হয়েছে ✅`,
+    renderConfirmation(flowCfg.confirmation_message, {
+      product: product.name,
+      qty,
+      total: `৳${total.toFixed(0)}`,
+      customer_name: slot.customer_name,
+      address: slot.full_address,
+      payment_method: String(slot.payment_method ?? "").toUpperCase(),
+      invoice_no: order.invoice_no || order.id,
+    }),
     `অর্ডার নম্বর: ${order.invoice_no || order.id}`,
     `প্রোডাক্ট: ${product.name} × ${qty}`,
     `মোট: ৳${total.toFixed(0)}`,
     `পেমেন্ট: ${String(slot.payment_method).toUpperCase()}`,
-    "আমাদের টিম দ্রুত আপনার সাথে যোগাযোগ করবে।",
   ].join("\n");
   await sendAndLogText(sb, token, psid, conversationId, confirmation);
   return true;
