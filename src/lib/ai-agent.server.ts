@@ -1488,6 +1488,16 @@ export function buildTools(ctx: AgentContext) {
 
         await clearConversationSlot(convId);
 
+        const confirmation = renderConfirmation(cfg.confirmation_message, {
+          product: product.name,
+          qty,
+          total: `৳${subtotal + delivery}`,
+          customer_name: slot.customer_name,
+          address: slot.full_address,
+          payment_method: slot.payment_method,
+          invoice_no: order.invoice_no,
+        });
+
         return {
           ok: true,
           orderId: order.id,
@@ -1496,7 +1506,9 @@ export function buildTools(ctx: AgentContext) {
           delivery,
           grand_total: subtotal + delivery,
           product_name: product.name,
-          qty: slot.qty,
+          qty,
+          confirmation_message: confirmation,
+          instruction: "Send confirmation_message to the customer as written (translate only if the customer's language clearly differs).",
         };
       },
     });
