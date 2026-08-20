@@ -170,3 +170,49 @@ export async function resolveTenantSlug(
 ): Promise<string | null> {
   return (await resolveTenant(host, env))?.slug ?? null;
 }
+
+// ---------- Landing pages ----------
+
+export type HostTarget =
+  | { kind: "store"; slug: string; primaryHostname: string | null }
+  | { kind: "landing"; slug: string; primaryHostname: string | null };
+
+const hostCache = new Map<string, { target: HostTarget | null; at: number }>();
+
+/**
+ * Resolve an incoming Host header to either a storefront or a builder landing
+ * page. Returns null for the platform site.
+ */
+export async function resolveHostTarget(
+  host: string,
+  env: Record<string, string | undefined>,
+): Promise<HostTarget | null> {
+  const hosts = await getRoutingHosts(env);
+  const clean = host.toLowerCase().replace(/:\d+$/, "");
+  if (isPlatformHost(clean, hosts)) return null;
+
+  const hit = hostCache.get(clean);
+  if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.target;
+
+  const json = await rpc<{
+    kind?: string;
+    slug?: string;
+    primary_hostname?: string | null;
+  } | null>("resolve_host_kind", { _host: clean }, env);
+
+  let target: HostTarget | null = null;
+  if (json?.slug && (json.kind === "landing" || json.kind === "store")) {
+    target = {
+      kind: json.kind,
+      slug: json.slug,
+      primaryHostname: (json.primary_hostname || null)?.toLowerCase() ?? null,
+    };
+  } else {
+    // Fall back to plain store resolution (reserved-label rules included).
+    const tenant = await resolveTenant(clean, env);
+    if (tenant) target = { kind: "store", slug: tenant.slug, primaryHostname: tenant.primaryHostname };
+  }
+
+  hostCache.set(clean, { target, at: Date.now() });
+  return target;
+}
