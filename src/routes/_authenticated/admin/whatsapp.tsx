@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
-  MessageCircle, Loader2, Copy, RefreshCw, Plug, PlugZap, Send, AlertTriangle, CheckCircle2,
+  Loader2, Copy, RefreshCw, Plug, PlugZap, Send, AlertTriangle, CheckCircle2,
 } from "lucide-react";
 import {
   getWhatsappIntegration, connectWhatsapp, disconnectWhatsapp, testWhatsappConnection,
