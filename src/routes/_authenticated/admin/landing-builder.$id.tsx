@@ -354,7 +354,7 @@ function LandingEditor() {
                       setForm({
                         ...form,
                         paymentMethods: on
-                          ? form.paymentMethods.filter((x) => x !== m) || ["cod"]
+                          ? (form.paymentMethods.filter((x) => x !== m).length ? form.paymentMethods.filter((x) => x !== m) : ["cod"])
                           : [...form.paymentMethods, m],
                       })
                     }
