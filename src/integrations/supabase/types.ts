@@ -2310,6 +2310,87 @@ export type Database = {
           },
         ]
       }
+      landing_page_domains: {
+        Row: {
+          cf_hostname_id: string | null
+          cf_ownership: Json | null
+          cf_ssl_status: string | null
+          cf_ssl_validation: Json | null
+          cf_status: string | null
+          created_at: string
+          dns_target: string | null
+          hostname: string
+          id: string
+          kind: string
+          landing_page_id: string
+          last_checked_at: string | null
+          last_error: string | null
+          ssl_status: string
+          status: string
+          store_id: string
+          updated_at: string
+          verification_token: string
+          verified_at: string | null
+        }
+        Insert: {
+          cf_hostname_id?: string | null
+          cf_ownership?: Json | null
+          cf_ssl_status?: string | null
+          cf_ssl_validation?: Json | null
+          cf_status?: string | null
+          created_at?: string
+          dns_target?: string | null
+          hostname: string
+          id?: string
+          kind?: string
+          landing_page_id: string
+          last_checked_at?: string | null
+          last_error?: string | null
+          ssl_status?: string
+          status?: string
+          store_id: string
+          updated_at?: string
+          verification_token?: string
+          verified_at?: string | null
+        }
+        Update: {
+          cf_hostname_id?: string | null
+          cf_ownership?: Json | null
+          cf_ssl_status?: string | null
+          cf_ssl_validation?: Json | null
+          cf_status?: string | null
+          created_at?: string
+          dns_target?: string | null
+          hostname?: string
+          id?: string
+          kind?: string
+          landing_page_id?: string
+          last_checked_at?: string | null
+          last_error?: string | null
+          ssl_status?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+          verification_token?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_domains_landing_page_id_fkey"
+            columns: ["landing_page_id"]
+            isOneToOne: false
+            referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_page_domains_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       landing_page_field_map: {
         Row: {
           connection_id: string
@@ -2453,6 +2534,78 @@ export type Database = {
             columns: ["store_product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_pages: {
+        Row: {
+          content: Json
+          created_at: string
+          form_config: Json
+          id: string
+          orders_count: number
+          product_id: string | null
+          published_at: string | null
+          seo: Json
+          slug: string
+          status: string
+          store_id: string
+          synced_at: string | null
+          theme: Json
+          title: string
+          updated_at: string
+          views: number
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          form_config?: Json
+          id?: string
+          orders_count?: number
+          product_id?: string | null
+          published_at?: string | null
+          seo?: Json
+          slug: string
+          status?: string
+          store_id: string
+          synced_at?: string | null
+          theme?: Json
+          title?: string
+          updated_at?: string
+          views?: number
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          form_config?: Json
+          id?: string
+          orders_count?: number
+          product_id?: string | null
+          published_at?: string | null
+          seo?: Json
+          slug?: string
+          status?: string
+          store_id?: string
+          synced_at?: string | null
+          theme?: Json
+          title?: string
+          updated_at?: string
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_pages_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_pages_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -7554,6 +7707,7 @@ export type Database = {
           sort_order: number
         }[]
       }
+      get_public_landing_page: { Args: { _slug: string }; Returns: Json }
       get_public_order: { Args: { _order_id: string }; Returns: Json }
       get_public_payment_gateways: {
         Args: never
@@ -7599,6 +7753,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_landing_slug_taken: { Args: { _slug: string }; Returns: boolean }
       is_slug_taken: { Args: { _slug: string }; Returns: boolean }
       is_store_active: { Args: { _store_id: string }; Returns: boolean }
       is_store_owner: { Args: { _store_id: string }; Returns: boolean }
@@ -7626,6 +7781,7 @@ export type Database = {
         Returns: undefined
       }
       resolve_domain: { Args: { _host: string }; Returns: Json }
+      resolve_host_kind: { Args: { _host: string }; Returns: Json }
       validate_coupon: {
         Args: { _code: string; _store_id: string; _subtotal: number }
         Returns: Json
