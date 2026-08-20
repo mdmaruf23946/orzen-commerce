@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
-  MessageCircle, Loader2, Copy, RefreshCw, Plug, PlugZap, Send, AlertTriangle, CheckCircle2,
+  Loader2, Copy, RefreshCw, Plug, PlugZap, Send, AlertTriangle, CheckCircle2,
 } from "lucide-react";
 import {
   getWhatsappIntegration, connectWhatsapp, disconnectWhatsapp, testWhatsappConnection,
@@ -12,6 +12,7 @@ import {
   clearWhatsappLastError, listWhatsappTemplates, syncWhatsappTemplates,
   listWhatsappWebhookEvents, getWhatsappAnalytics,
 } from "@/lib/whatsapp.functions";
+import { WhatsAppMark } from "@/components/admin/brand/WhatsAppMark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,7 +42,7 @@ const AI_FLAGS: { key: string; label: string; hint: string }[] = [
 
 function StatusPill({ status }: { status: string }) {
   const map: Record<string, string> = {
-    connected: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+    connected: "bg-whatsapp/10 text-whatsapp-deep border-whatsapp/30 dark:text-whatsapp",
     error: "bg-destructive/10 text-destructive border-destructive/20",
     connecting: "bg-amber-500/10 text-amber-600 border-amber-500/20",
   };
@@ -131,10 +132,8 @@ function WhatsappPage() {
 
   return (
     <div className="max-w-3xl space-y-5">
-      <header className="flex flex-wrap items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
-          <MessageCircle className="h-5 w-5" />
-        </div>
+      <header className="flex flex-wrap items-center gap-3 rounded-xl border border-whatsapp/20 bg-whatsapp/5 p-3">
+        <WhatsAppMark size={40} />
         <div className="min-w-0 flex-1">
           <h1 className="text-xl font-semibold sm:text-2xl">WhatsApp Integration</h1>
           <p className="text-sm text-muted-foreground">
@@ -212,6 +211,7 @@ function WhatsappPage() {
         <div className="flex flex-wrap gap-2">
           <Button
             size="sm"
+            className="bg-whatsapp text-whatsapp-foreground hover:bg-whatsapp/90"
             disabled={busy === "connect" || !form.phone_number_id}
             onClick={() =>
               run(
@@ -234,7 +234,7 @@ function WhatsappPage() {
           </Button>
           {d.connected && (
             <>
-              <Button size="sm" variant="outline" disabled={busy === "test"} onClick={() => run("test", () => test(), "Connection is healthy")}>
+              <Button size="sm" variant="outline" className="border-whatsapp/40 text-whatsapp-deep hover:bg-whatsapp/10 dark:text-whatsapp" disabled={busy === "test"} onClick={() => run("test", () => test(), "Connection is healthy")}>
                 {busy === "test" ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1 h-4 w-4" />}
                 Test connection
               </Button>
@@ -327,6 +327,7 @@ function WhatsappPage() {
             />
             <Button
               size="sm"
+              className="bg-whatsapp text-whatsapp-foreground hover:bg-whatsapp/90"
               disabled={busy === "sendtest" || testTo.trim().length < 6}
               onClick={() => run("sendtest", () => sendTest({ data: { to: testTo.trim() } }), "Test message sent")}
             >

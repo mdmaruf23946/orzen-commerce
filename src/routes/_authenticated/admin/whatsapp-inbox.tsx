@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Bot, Loader2, MessageCircle, Search, Send, User, ArrowLeft, Clock } from "lucide-react";
+import { Bot, Loader2, Search, Send, User, ArrowLeft, Clock } from "lucide-react";
+import { WhatsAppMark } from "@/components/admin/brand/WhatsAppMark";
 import {
   listConversations, getConversation, listMessages, markRead, setHandoffMode,
   setConversationStatus, sendManualMessage, sendTemplateMessage, getInboxStats,
@@ -116,10 +117,8 @@ function WhatsappInboxPage() {
 
   return (
     <div className="space-y-4">
-      <header className="flex flex-wrap items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
-          <MessageCircle className="h-5 w-5" />
-        </div>
+      <header className="flex flex-wrap items-center gap-3 rounded-xl border border-whatsapp/20 bg-whatsapp/5 p-3">
+        <WhatsAppMark size={40} />
         <div className="min-w-0 flex-1">
           <h1 className="text-xl font-semibold sm:text-2xl">WhatsApp Inbox</h1>
           <p className="text-sm text-muted-foreground">Every WhatsApp conversation, AI or human handled.</p>
@@ -147,7 +146,9 @@ function WhatsappInboxPage() {
                 onClick={() => setFilter(f)}
                 className={cn(
                   "rounded-full border px-2.5 py-1 text-[11px] capitalize",
-                  filter === f ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted",
+                  filter === f
+                    ? "border-whatsapp bg-whatsapp text-whatsapp-foreground"
+                    : "hover:bg-whatsapp/10",
                 )}
               >
                 {f}
@@ -165,7 +166,7 @@ function WhatsappInboxPage() {
                 onClick={() => setActiveId(c.id)}
                 className={cn(
                   "w-full rounded-lg p-2.5 text-left hover:bg-muted",
-                  activeId === c.id && "bg-muted",
+                  activeId === c.id && "bg-whatsapp/10 ring-1 ring-whatsapp/30",
                 )}
               >
                 <div className="flex items-center gap-2">
@@ -176,7 +177,7 @@ function WhatsappInboxPage() {
                     <Bot className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                   )}
                   {c.unread_count > 0 && (
-                    <span className="ml-auto rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">{c.unread_count}</span>
+                    <span className="ml-auto rounded-full bg-whatsapp px-1.5 text-[10px] text-whatsapp-foreground">{c.unread_count}</span>
                   )}
                 </div>
                 <p className="mt-0.5 truncate text-xs text-muted-foreground">{c.last_message_preview || "—"}</p>
@@ -234,7 +235,7 @@ function WhatsappInboxPage() {
                     <div
                       className={cn(
                         "max-w-[80%] rounded-2xl px-3 py-2 text-sm",
-                        m.direction === "out" ? "bg-primary text-primary-foreground" : "bg-muted",
+                        m.direction === "out" ? "bg-whatsapp text-whatsapp-foreground" : "bg-muted",
                       )}
                     >
                       <p className="whitespace-pre-wrap break-words">{m.content || `[${m.message_type}]`}</p>
@@ -280,7 +281,11 @@ function WhatsappInboxPage() {
                     placeholder={windowOpen ? "Write a reply…" : "Window closed — a template is required"}
                     className="min-h-[44px] flex-1 resize-none"
                   />
-                  <Button onClick={send} disabled={sending || !draft.trim()}>
+                  <Button
+                    onClick={send}
+                    disabled={sending || !draft.trim()}
+                    className="bg-whatsapp text-whatsapp-foreground hover:bg-whatsapp/90"
+                  >
                     {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </Button>
                 </div>
