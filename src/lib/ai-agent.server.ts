@@ -1283,6 +1283,122 @@ export function buildTools(ctx: AgentContext) {
     });
   }
 
+  // WhatsApp tools — image + caption, plus a Buy now / View site button.
+  if (ctx.channel === "whatsapp" && ctx.waTo && ctx.waToken && ctx.waPhoneNumberId) {
+    const waSend = () => import("./whatsapp-send.server");
+
+    tools.sendProductCard = tool({
+      description:
+        "Send one product to the WhatsApp customer with its photo, price, stock and a Buy now button. Prefer this over describing a product in plain text.",
+      inputSchema: z.object({ productId: z.string().uuid() }),
+      execute: async ({ productId }) => {
+        if (ctx.focusProductId && productId !== ctx.focusProductId) {
+          return { sent: false, error: "must_use_focus_product", focus_product_id: ctx.focusProductId };
+        }
+        const { data: p } = await sb
+          .from("products")
+          .select("id,name,slug,short_description,price,old_price,stock,product_type,meta,primary_image_url,gallery")
+          .eq("store_id", storeId)
+          .eq("id", productId)
+          .maybeSingle();
+        if (!p) return { sent: false, error: "not_found" };
+
+        const kind = productKind(p);
+        const orderable = kind === "physical";
+        const url = productUrl(ctx, p.slug, p.id);
+        const image = firstImage(ctx, p);
+        const priceLine = p.old_price ? `৳${p.price} (আগে ৳${p.old_price})` : `৳${p.price}`;
+        const statusLine = orderable ? (p.stock > 0 ? "স্টকে আছে" : "স্টকে নেই") : "ওয়েবসাইট থেকে কিনতে হবে";
+        const caption = [`*${p.name}*`, `${priceLine} · ${statusLine}`, p.short_description ?? ""]
+          .filter(Boolean)
+          .join("\n");
+        try {
+          const wa = await waSend();
+          if (image) {
+            await wa.sendWaImage(ctx.waPhoneNumberId!, ctx.waToken!, ctx.waTo!, image, caption);
+          } else {
+            await wa.sendWaText(ctx.waPhoneNumberId!, ctx.waToken!, ctx.waTo!, caption);
+          }
+          if (orderable && p.stock > 0) {
+            await wa.sendWaButtons(ctx.waPhoneNumberId!, ctx.waToken!, ctx.waTo!, "কী করতে চান?", [
+              { id: `BUY_${p.id}`, title: "Buy now" },
+            ]);
+          } else {
+            await wa.sendWaCtaUrl(
+              ctx.waPhoneNumberId!,
+              ctx.waToken!,
+              ctx.waTo!,
+              "ওয়েবসাইট থেকে নিরাপদে কিনতে পারবেন",
+              url,
+            );
+          }
+          if (ctx.conversationId) {
+            await sb.from("ai_messages").insert({
+              conversation_id: ctx.conversationId,
+              role: "assistant",
+              direction: "out",
+              message_type: "product_card",
+              content: `[card] ${p.name}`,
+              attachments: [{ type: "product_card", product_id: p.id, image_url: image, url }],
+              delivery_status: "sent",
+            } as any);
+          }
+          return {
+            sent: true,
+            has_image: !!image,
+            canonical_caption: canonicalCaption(p as any),
+            product_id: p.id,
+            name: p.name,
+            product_type: kind,
+            purchase_channel: orderable ? "whatsapp" : "website",
+            product_url: url,
+          };
+        } catch (e) {
+          return { sent: false, error: (e as Error).message };
+        }
+      },
+    });
+
+    tools.sendProductLink = tool({
+      description:
+        "Send a 'View site' button that opens the product page on the website. Use for digital/service/subscription products or whenever the customer asks for a link — never type the raw URL yourself.",
+      inputSchema: z.object({
+        productId: z.string().uuid(),
+        text: z.string().min(1).max(600).describe("Short friendly sentence above the button"),
+      }),
+      execute: async ({ productId, text }) => {
+        const { data: p } = await sb
+          .from("products")
+          .select("id,name,slug,product_type")
+          .eq("store_id", storeId)
+          .eq("id", productId)
+          .maybeSingle();
+        if (!p) return { sent: false, error: "not_found" };
+        const url = productUrl(ctx, p.slug, p.id);
+        try {
+          const wa = await waSend();
+          await wa.sendWaCtaUrl(ctx.waPhoneNumberId!, ctx.waToken!, ctx.waTo!, text, url);
+          if (ctx.conversationId) {
+            await sb.from("ai_messages").insert({
+              conversation_id: ctx.conversationId,
+              role: "assistant",
+              direction: "out",
+              message_type: "button",
+              content: text,
+              attachments: [{ type: "web_url", url }],
+              delivery_status: "sent",
+            } as any);
+          }
+          return { sent: true, product_url: url };
+        } catch (e) {
+          return { sent: false, error: (e as Error).message };
+        }
+      },
+    });
+  }
+
+
+
   // Web-only display tools — return structured JSON that the chat panel renders inline.
   if (ctx.channel === "web") {
     async function loadProducts(ids: string[]) {
