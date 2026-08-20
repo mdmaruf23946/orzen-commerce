@@ -72,6 +72,8 @@ import { Route as AuthenticatedOwnerApiRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedOwnerAiUsageRouteImport } from './routes/_authenticated/owner/ai-usage'
 import { Route as AuthenticatedOwnerAiRouteImport } from './routes/_authenticated/owner/ai'
 import { Route as AuthenticatedOwnerAdsRouteImport } from './routes/_authenticated/owner/ads'
+import { Route as AuthenticatedAdminWhatsappInboxRouteImport } from './routes/_authenticated/admin/whatsapp-inbox'
+import { Route as AuthenticatedAdminWhatsappRouteImport } from './routes/_authenticated/admin/whatsapp'
 import { Route as AuthenticatedAdminThemeRouteImport } from './routes/_authenticated/admin/theme'
 import { Route as AuthenticatedAdminSubscriptionsRouteImport } from './routes/_authenticated/admin/subscriptions'
 import { Route as AuthenticatedAdminSubscriptionRouteImport } from './routes/_authenticated/admin/subscription'
@@ -128,6 +130,7 @@ import { Route as StoreSlugAuthSignupRouteImport } from './routes/store/$slug/au
 import { Route as StoreSlugAuthLoginRouteImport } from './routes/store/$slug/auth.login'
 import { Route as StoreSlugAuthForgotRouteImport } from './routes/store/$slug/auth.forgot'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
+import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
 import { Route as ApiPublicTiktokTrackRouteImport } from './routes/api/public/tiktok/track'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
 import { Route as ApiPublicGa4TrackRouteImport } from './routes/api/public/ga4/track'
@@ -503,6 +506,18 @@ const AuthenticatedOwnerAdsRoute = AuthenticatedOwnerAdsRouteImport.update({
   path: '/ads',
   getParentRoute: () => AuthenticatedOwnerRouteRoute,
 } as any)
+const AuthenticatedAdminWhatsappInboxRoute =
+  AuthenticatedAdminWhatsappInboxRouteImport.update({
+    id: '/whatsapp-inbox',
+    path: '/whatsapp-inbox',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminWhatsappRoute =
+  AuthenticatedAdminWhatsappRouteImport.update({
+    id: '/whatsapp',
+    path: '/whatsapp',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminThemeRoute = AuthenticatedAdminThemeRouteImport.update({
   id: '/theme',
   path: '/theme',
@@ -830,6 +845,12 @@ const LovableEmailQueueProcessRoute =
     path: '/lovable/email/queue/process',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicWhatsappWebhookRoute =
+  ApiPublicWhatsappWebhookRouteImport.update({
+    id: '/api/public/whatsapp/webhook',
+    path: '/api/public/whatsapp/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicTiktokTrackRoute = ApiPublicTiktokTrackRouteImport.update({
   id: '/api/public/tiktok/track',
   path: '/api/public/tiktok/track',
@@ -1071,6 +1092,8 @@ export interface FileRoutesByFullPath {
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
+  '/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
+  '/admin/whatsapp-inbox': typeof AuthenticatedAdminWhatsappInboxRoute
   '/owner/ads': typeof AuthenticatedOwnerAdsRoute
   '/owner/ai': typeof AuthenticatedOwnerAiRoute
   '/owner/ai-usage': typeof AuthenticatedOwnerAiUsageRoute
@@ -1137,6 +1160,7 @@ export interface FileRoutesByFullPath {
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
+  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
@@ -1213,6 +1237,8 @@ export interface FileRoutesByTo {
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
+  '/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
+  '/admin/whatsapp-inbox': typeof AuthenticatedAdminWhatsappInboxRoute
   '/owner/ads': typeof AuthenticatedOwnerAdsRoute
   '/owner/ai': typeof AuthenticatedOwnerAiRoute
   '/owner/ai-usage': typeof AuthenticatedOwnerAiUsageRoute
@@ -1279,6 +1305,7 @@ export interface FileRoutesByTo {
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
+  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
@@ -1365,6 +1392,8 @@ export interface FileRoutesById {
   '/_authenticated/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/_authenticated/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
   '/_authenticated/admin/theme': typeof AuthenticatedAdminThemeRoute
+  '/_authenticated/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
+  '/_authenticated/admin/whatsapp-inbox': typeof AuthenticatedAdminWhatsappInboxRoute
   '/_authenticated/owner/ads': typeof AuthenticatedOwnerAdsRoute
   '/_authenticated/owner/ai': typeof AuthenticatedOwnerAiRoute
   '/_authenticated/owner/ai-usage': typeof AuthenticatedOwnerAiUsageRoute
@@ -1431,6 +1460,7 @@ export interface FileRoutesById {
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
+  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
@@ -1517,6 +1547,8 @@ export interface FileRouteTypes {
     | '/admin/subscription'
     | '/admin/subscriptions'
     | '/admin/theme'
+    | '/admin/whatsapp'
+    | '/admin/whatsapp-inbox'
     | '/owner/ads'
     | '/owner/ai'
     | '/owner/ai-usage'
@@ -1583,6 +1615,7 @@ export interface FileRouteTypes {
     | '/api/public/ga4/track'
     | '/api/public/messenger/webhook'
     | '/api/public/tiktok/track'
+    | '/api/public/whatsapp/webhook'
     | '/lovable/email/queue/process'
     | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
@@ -1659,6 +1692,8 @@ export interface FileRouteTypes {
     | '/admin/subscription'
     | '/admin/subscriptions'
     | '/admin/theme'
+    | '/admin/whatsapp'
+    | '/admin/whatsapp-inbox'
     | '/owner/ads'
     | '/owner/ai'
     | '/owner/ai-usage'
@@ -1725,6 +1760,7 @@ export interface FileRouteTypes {
     | '/api/public/ga4/track'
     | '/api/public/messenger/webhook'
     | '/api/public/tiktok/track'
+    | '/api/public/whatsapp/webhook'
     | '/lovable/email/queue/process'
     | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
@@ -1810,6 +1846,8 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/subscription'
     | '/_authenticated/admin/subscriptions'
     | '/_authenticated/admin/theme'
+    | '/_authenticated/admin/whatsapp'
+    | '/_authenticated/admin/whatsapp-inbox'
     | '/_authenticated/owner/ads'
     | '/_authenticated/owner/ai'
     | '/_authenticated/owner/ai-usage'
@@ -1876,6 +1914,7 @@ export interface FileRouteTypes {
     | '/api/public/ga4/track'
     | '/api/public/messenger/webhook'
     | '/api/public/tiktok/track'
+    | '/api/public/whatsapp/webhook'
     | '/lovable/email/queue/process'
     | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
@@ -1928,6 +1967,7 @@ export interface RootRouteChildren {
   ApiPublicGa4TrackRoute: typeof ApiPublicGa4TrackRoute
   ApiPublicMessengerWebhookRoute: typeof ApiPublicMessengerWebhookRoute
   ApiPublicTiktokTrackRoute: typeof ApiPublicTiktokTrackRoute
+  ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   ApiPublicLandingPagesConnectionIdOrdersRoute: typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   ApiPublicSubscriptionPayWebhookProviderRoute: typeof ApiPublicSubscriptionPayWebhookProviderRoute
@@ -2380,6 +2420,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerAdsRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
+    '/_authenticated/admin/whatsapp-inbox': {
+      id: '/_authenticated/admin/whatsapp-inbox'
+      path: '/whatsapp-inbox'
+      fullPath: '/admin/whatsapp-inbox'
+      preLoaderRoute: typeof AuthenticatedAdminWhatsappInboxRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/whatsapp': {
+      id: '/_authenticated/admin/whatsapp'
+      path: '/whatsapp'
+      fullPath: '/admin/whatsapp'
+      preLoaderRoute: typeof AuthenticatedAdminWhatsappRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/theme': {
       id: '/_authenticated/admin/theme'
       path: '/theme'
@@ -2772,6 +2826,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/whatsapp/webhook': {
+      id: '/api/public/whatsapp/webhook'
+      path: '/api/public/whatsapp/webhook'
+      fullPath: '/api/public/whatsapp/webhook'
+      preLoaderRoute: typeof ApiPublicWhatsappWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/tiktok/track': {
       id: '/api/public/tiktok/track'
       path: '/api/public/tiktok/track'
@@ -3069,6 +3130,8 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminSubscriptionRoute: typeof AuthenticatedAdminSubscriptionRoute
   AuthenticatedAdminSubscriptionsRoute: typeof AuthenticatedAdminSubscriptionsRoute
   AuthenticatedAdminThemeRoute: typeof AuthenticatedAdminThemeRoute
+  AuthenticatedAdminWhatsappRoute: typeof AuthenticatedAdminWhatsappRoute
+  AuthenticatedAdminWhatsappInboxRoute: typeof AuthenticatedAdminWhatsappInboxRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminInvoiceOrderIdRoute: typeof AuthenticatedAdminInvoiceOrderIdRoute
   AuthenticatedAdminLandingPagesIdRoute: typeof AuthenticatedAdminLandingPagesIdRoute
@@ -3124,6 +3187,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminSubscriptionRoute: AuthenticatedAdminSubscriptionRoute,
     AuthenticatedAdminSubscriptionsRoute: AuthenticatedAdminSubscriptionsRoute,
     AuthenticatedAdminThemeRoute: AuthenticatedAdminThemeRoute,
+    AuthenticatedAdminWhatsappRoute: AuthenticatedAdminWhatsappRoute,
+    AuthenticatedAdminWhatsappInboxRoute: AuthenticatedAdminWhatsappInboxRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
     AuthenticatedAdminInvoiceOrderIdRoute:
       AuthenticatedAdminInvoiceOrderIdRoute,
@@ -3397,6 +3462,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicGa4TrackRoute: ApiPublicGa4TrackRoute,
   ApiPublicMessengerWebhookRoute: ApiPublicMessengerWebhookRoute,
   ApiPublicTiktokTrackRoute: ApiPublicTiktokTrackRoute,
+  ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   ApiPublicLandingPagesConnectionIdOrdersRoute:
     ApiPublicLandingPagesConnectionIdOrdersRoute,
