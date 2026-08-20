@@ -62,6 +62,12 @@
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --color-surface-soft: var(--surface-soft);
+  --color-whatsapp: var(--whatsapp);
+  --color-whatsapp-deep: var(--whatsapp-deep);
+  --color-whatsapp-foreground: var(--whatsapp-foreground);
+  --color-messenger: var(--messenger);
+  --color-messenger-deep: var(--messenger-deep);
+  --color-messenger-foreground: var(--messenger-foreground);
 }
 
 :root {
