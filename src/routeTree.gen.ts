@@ -154,6 +154,7 @@ import { Route as AuthenticatedAdminSettingsSubscriptionRouteImport } from './ro
 import { Route as AuthenticatedAdminSettingsInformationRouteImport } from './routes/_authenticated/admin/settings.information'
 import { Route as AuthenticatedAdminSettingsConfigurationRouteImport } from './routes/_authenticated/admin/settings.configuration'
 import { Route as AuthenticatedAdminLandingPagesIdRouteImport } from './routes/_authenticated/admin/landing-pages.$id'
+import { Route as AuthenticatedAdminLandingBuilderIdRouteImport } from './routes/_authenticated/admin/landing-builder.$id'
 import { Route as AuthenticatedAdminInvoiceOrderIdRouteImport } from './routes/_authenticated/admin/invoice.$orderId'
 import { Route as AuthenticatedAdminBillingReturnRouteImport } from './routes/_authenticated/admin/billing.return'
 import { Route as ApiPublicSubscriptionPayWebhookProviderRouteImport } from './routes/api/public/subscription-pay/webhook.$provider'
@@ -987,6 +988,12 @@ const AuthenticatedAdminLandingPagesIdRoute =
     path: '/landing-pages/$id',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminLandingBuilderIdRoute =
+  AuthenticatedAdminLandingBuilderIdRouteImport.update({
+    id: '/landing-builder/$id',
+    path: '/landing-builder/$id',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminInvoiceOrderIdRoute =
   AuthenticatedAdminInvoiceOrderIdRouteImport.update({
     id: '/invoice/$orderId',
@@ -1160,6 +1167,7 @@ export interface FileRoutesByFullPath {
   '/store/$slug/': typeof StoreSlugIndexRoute
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
+  '/admin/landing-builder/$id': typeof AuthenticatedAdminLandingBuilderIdRoute
   '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
   '/admin/settings/configuration': typeof AuthenticatedAdminSettingsConfigurationRoute
   '/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
@@ -1308,6 +1316,7 @@ export interface FileRoutesByTo {
   '/store/$slug': typeof StoreSlugIndexRoute
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
+  '/admin/landing-builder/$id': typeof AuthenticatedAdminLandingBuilderIdRoute
   '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
   '/admin/settings/configuration': typeof AuthenticatedAdminSettingsConfigurationRoute
   '/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
@@ -1466,6 +1475,7 @@ export interface FileRoutesById {
   '/store/$slug/': typeof StoreSlugIndexRoute
   '/_authenticated/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/_authenticated/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
+  '/_authenticated/admin/landing-builder/$id': typeof AuthenticatedAdminLandingBuilderIdRoute
   '/_authenticated/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
   '/_authenticated/admin/settings/configuration': typeof AuthenticatedAdminSettingsConfigurationRoute
   '/_authenticated/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
@@ -1624,6 +1634,7 @@ export interface FileRouteTypes {
     | '/store/$slug/'
     | '/admin/billing/return'
     | '/admin/invoice/$orderId'
+    | '/admin/landing-builder/$id'
     | '/admin/landing-pages/$id'
     | '/admin/settings/configuration'
     | '/admin/settings/information'
@@ -1772,6 +1783,7 @@ export interface FileRouteTypes {
     | '/store/$slug'
     | '/admin/billing/return'
     | '/admin/invoice/$orderId'
+    | '/admin/landing-builder/$id'
     | '/admin/landing-pages/$id'
     | '/admin/settings/configuration'
     | '/admin/settings/information'
@@ -1929,6 +1941,7 @@ export interface FileRouteTypes {
     | '/store/$slug/'
     | '/_authenticated/admin/billing/return'
     | '/_authenticated/admin/invoice/$orderId'
+    | '/_authenticated/admin/landing-builder/$id'
     | '/_authenticated/admin/landing-pages/$id'
     | '/_authenticated/admin/settings/configuration'
     | '/_authenticated/admin/settings/information'
@@ -3033,6 +3046,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminLandingPagesIdRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/landing-builder/$id': {
+      id: '/_authenticated/admin/landing-builder/$id'
+      path: '/landing-builder/$id'
+      fullPath: '/admin/landing-builder/$id'
+      preLoaderRoute: typeof AuthenticatedAdminLandingBuilderIdRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/invoice/$orderId': {
       id: '/_authenticated/admin/invoice/$orderId'
       path: '/invoice/$orderId'
@@ -3194,6 +3214,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminWhatsappInboxRoute: typeof AuthenticatedAdminWhatsappInboxRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminInvoiceOrderIdRoute: typeof AuthenticatedAdminInvoiceOrderIdRoute
+  AuthenticatedAdminLandingBuilderIdRoute: typeof AuthenticatedAdminLandingBuilderIdRoute
   AuthenticatedAdminLandingPagesIdRoute: typeof AuthenticatedAdminLandingPagesIdRoute
   AuthenticatedAdminLandingBuilderIndexRoute: typeof AuthenticatedAdminLandingBuilderIndexRoute
   AuthenticatedAdminLandingPagesIndexRoute: typeof AuthenticatedAdminLandingPagesIndexRoute
@@ -3253,6 +3274,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
     AuthenticatedAdminInvoiceOrderIdRoute:
       AuthenticatedAdminInvoiceOrderIdRoute,
+    AuthenticatedAdminLandingBuilderIdRoute:
+      AuthenticatedAdminLandingBuilderIdRoute,
     AuthenticatedAdminLandingPagesIdRoute:
       AuthenticatedAdminLandingPagesIdRoute,
     AuthenticatedAdminLandingBuilderIndexRoute:
