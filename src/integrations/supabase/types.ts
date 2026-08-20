@@ -7210,6 +7210,195 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_integrations: {
+        Row: {
+          access_token_encrypted: string | null
+          ai_auto_reply: boolean
+          app_secret_encrypted: string | null
+          connected_at: string | null
+          conversation_history: boolean
+          created_at: string
+          delivery_failures: number
+          display_name: string | null
+          faq_reply: boolean
+          human_takeover: boolean
+          id: string
+          last_error: string | null
+          last_verified_at: string | null
+          last_webhook_at: string | null
+          last_webhook_error: string | null
+          last_webhook_type: string | null
+          order_detection: boolean
+          permissions: Json
+          phone_number: string | null
+          phone_number_id: string | null
+          product_recommendation: boolean
+          quality_rating: string | null
+          status: string
+          store_id: string
+          updated_at: string
+          verify_token: string
+          waba_id: string | null
+        }
+        Insert: {
+          access_token_encrypted?: string | null
+          ai_auto_reply?: boolean
+          app_secret_encrypted?: string | null
+          connected_at?: string | null
+          conversation_history?: boolean
+          created_at?: string
+          delivery_failures?: number
+          display_name?: string | null
+          faq_reply?: boolean
+          human_takeover?: boolean
+          id?: string
+          last_error?: string | null
+          last_verified_at?: string | null
+          last_webhook_at?: string | null
+          last_webhook_error?: string | null
+          last_webhook_type?: string | null
+          order_detection?: boolean
+          permissions?: Json
+          phone_number?: string | null
+          phone_number_id?: string | null
+          product_recommendation?: boolean
+          quality_rating?: string | null
+          status?: string
+          store_id: string
+          updated_at?: string
+          verify_token?: string
+          waba_id?: string | null
+        }
+        Update: {
+          access_token_encrypted?: string | null
+          ai_auto_reply?: boolean
+          app_secret_encrypted?: string | null
+          connected_at?: string | null
+          conversation_history?: boolean
+          created_at?: string
+          delivery_failures?: number
+          display_name?: string | null
+          faq_reply?: boolean
+          human_takeover?: boolean
+          id?: string
+          last_error?: string | null
+          last_verified_at?: string | null
+          last_webhook_at?: string | null
+          last_webhook_error?: string | null
+          last_webhook_type?: string | null
+          order_detection?: boolean
+          permissions?: Json
+          phone_number?: string | null
+          phone_number_id?: string | null
+          product_recommendation?: boolean
+          quality_rating?: string | null
+          status?: string
+          store_id?: string
+          updated_at?: string
+          verify_token?: string
+          waba_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_integrations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_templates: {
+        Row: {
+          body_preview: string | null
+          category: string | null
+          created_at: string
+          id: string
+          language: string
+          name: string
+          status: string
+          store_id: string
+          synced_at: string
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          body_preview?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          language?: string
+          name: string
+          status?: string
+          store_id: string
+          synced_at?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body_preview?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          language?: string
+          name?: string
+          status?: string
+          store_id?: string
+          synced_at?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_templates_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_webhook_events: {
+        Row: {
+          error: string | null
+          event_type: string
+          external_id: string | null
+          id: string
+          payload: Json | null
+          phone_number_id: string | null
+          received_at: string
+          store_id: string | null
+        }
+        Insert: {
+          error?: string | null
+          event_type: string
+          external_id?: string | null
+          id?: string
+          payload?: Json | null
+          phone_number_id?: string | null
+          received_at?: string
+          store_id?: string | null
+        }
+        Update: {
+          error?: string | null
+          event_type?: string
+          external_id?: string | null
+          id?: string
+          payload?: Json | null
+          phone_number_id?: string | null
+          received_at?: string
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_webhook_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
