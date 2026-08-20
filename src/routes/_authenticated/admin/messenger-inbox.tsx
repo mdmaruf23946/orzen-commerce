@@ -567,6 +567,7 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
                 }}
               />
               <Button
+                className="bg-messenger text-messenger-foreground hover:bg-messenger/90"
                 disabled={(!text.trim() && !quickReplies.length) || send.isPending}
                 onClick={() =>
                   send.mutate({
