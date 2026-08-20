@@ -211,6 +211,7 @@ function WhatsappPage() {
         <div className="flex flex-wrap gap-2">
           <Button
             size="sm"
+            className="bg-whatsapp text-whatsapp-foreground hover:bg-whatsapp/90"
             disabled={busy === "connect" || !form.phone_number_id}
             onClick={() =>
               run(
@@ -233,7 +234,7 @@ function WhatsappPage() {
           </Button>
           {d.connected && (
             <>
-              <Button size="sm" variant="outline" disabled={busy === "test"} onClick={() => run("test", () => test(), "Connection is healthy")}>
+              <Button size="sm" variant="outline" className="border-whatsapp/40 text-whatsapp-deep hover:bg-whatsapp/10 dark:text-whatsapp" disabled={busy === "test"} onClick={() => run("test", () => test(), "Connection is healthy")}>
                 {busy === "test" ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1 h-4 w-4" />}
                 Test connection
               </Button>
@@ -326,6 +327,7 @@ function WhatsappPage() {
             />
             <Button
               size="sm"
+              className="bg-whatsapp text-whatsapp-foreground hover:bg-whatsapp/90"
               disabled={busy === "sendtest" || testTo.trim().length < 6}
               onClick={() => run("sendtest", () => sendTest({ data: { to: testTo.trim() } }), "Test message sent")}
             >
