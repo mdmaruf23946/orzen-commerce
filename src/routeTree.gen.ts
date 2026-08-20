@@ -23,6 +23,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LpSlugRouteImport } from './routes/lp.$slug'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as StoreSlugRouteRouteImport } from './routes/store/$slug/route'
@@ -229,6 +230,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LpSlugRoute = LpSlugRouteImport.update({
+  id: '/lp/$slug',
+  path: '/lp/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Char91DotwellKnownChar93OauthProtectedResourceRoute =
@@ -1048,6 +1054,7 @@ export interface FileRoutesByFullPath {
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/lp/$slug': typeof LpSlugRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
   '/owner/communication': typeof AuthenticatedOwnerCommunicationRouteRouteWithChildren
   '/owner/notification-center': typeof AuthenticatedOwnerNotificationCenterRouteRouteWithChildren
@@ -1198,6 +1205,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/lp/$slug': typeof LpSlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/.well-known/orzen-domain-verification/$token': typeof DotwellKnownOrzenDomainVerificationTokenRoute
@@ -1348,6 +1356,7 @@ export interface FileRoutesById {
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/lp/$slug': typeof LpSlugRoute
   '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
   '/_authenticated/owner/communication': typeof AuthenticatedOwnerCommunicationRouteRouteWithChildren
   '/_authenticated/owner/notification-center': typeof AuthenticatedOwnerNotificationCenterRouteRouteWithChildren
@@ -1503,6 +1512,7 @@ export interface FileRouteTypes {
     | '/store/$slug'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/lp/$slug'
     | '/admin/billing'
     | '/owner/communication'
     | '/owner/notification-center'
@@ -1653,6 +1663,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/lp/$slug'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/.well-known/orzen-domain-verification/$token'
@@ -1802,6 +1813,7 @@ export interface FileRouteTypes {
     | '/store/$slug'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/lp/$slug'
     | '/_authenticated/admin/billing'
     | '/_authenticated/owner/communication'
     | '/_authenticated/owner/notification-center'
@@ -1955,6 +1967,7 @@ export interface RootRouteChildren {
   StoreSlugRouteRoute: typeof StoreSlugRouteRouteWithChildren
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  LpSlugRoute: typeof LpSlugRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   DotwellKnownOrzenDomainVerificationTokenRoute: typeof DotwellKnownOrzenDomainVerificationTokenRoute
@@ -2075,6 +2088,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lp/$slug': {
+      id: '/lp/$slug'
+      path: '/lp/$slug'
+      fullPath: '/lp/$slug'
+      preLoaderRoute: typeof LpSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/.well-known/oauth-protected-resource': {
@@ -3448,6 +3468,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  LpSlugRoute: LpSlugRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   DotwellKnownOrzenDomainVerificationTokenRoute:
