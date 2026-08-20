@@ -69,9 +69,9 @@ export default {
       // clean root URLs by rewriting the path internally (browser URL is kept).
       let workRequest = request;
       if (isRewritablePath(url.pathname)) {
-        const tenant = await resolveTenant(url.hostname, envRecord);
+        const tenant = await resolveHostTarget(url.hostname, envRecord);
         if (tenant) {
-          // Non-primary host → 301 to the store's canonical hostname.
+          // Non-primary host → 301 to the canonical hostname.
           const primary = tenant.primaryHostname;
           if (primary && primary !== url.hostname.toLowerCase()) {
             const canonical = new URL(url.toString());
@@ -81,11 +81,17 @@ export default {
             return Response.redirect(canonical.toString(), 301);
           }
           const rewritten = new URL(url.toString());
-          const suffix = url.pathname === "/" ? "" : url.pathname.replace(/\/$/, "");
-          rewritten.pathname = `/store/${tenant.slug}${suffix}`;
+          if (tenant.kind === "landing") {
+            // A landing-page host only ever serves that one page.
+            rewritten.pathname = `/lp/${tenant.slug}`;
+          } else {
+            const suffix = url.pathname === "/" ? "" : url.pathname.replace(/\/$/, "");
+            rewritten.pathname = `/store/${tenant.slug}${suffix}`;
+          }
           workRequest = new Request(rewritten.toString(), request);
         }
       }
+
 
 
       const handler = await getServerEntry();
