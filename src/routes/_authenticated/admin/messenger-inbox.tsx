@@ -33,6 +33,7 @@ import {
   searchStoreProducts,
 } from "@/lib/messenger-inbox.functions";
 import { compressImage } from "@/lib/compress-image";
+import { MessengerMark } from "@/components/admin/brand/MessengerMark";
 
 export const Route = createFileRoute("/_authenticated/admin/messenger-inbox")({
   component: MessengerInbox,
@@ -139,13 +140,16 @@ function MessengerInbox() {
 
   return (
     <div className={cn("space-y-4", selectedId && "max-md:flex max-md:h-[calc(100dvh-3.5rem-1rem-70px)] max-md:flex-col max-md:overflow-hidden max-md:space-y-0")}>
-      <div className={cn(selectedId && "max-md:hidden")}>
+      <div className={cn("flex items-center gap-3 rounded-xl border border-messenger/20 bg-messenger/5 p-3", selectedId && "max-md:hidden")}>
+        <MessengerMark size={40} />
+        <div className="min-w-0">
         <h1 className="text-2xl font-semibold">Messenger Inbox</h1>
         <p className="text-sm text-muted-foreground">
           Total {stats.data?.total ?? 0} · Unread {stats.data?.unread ?? 0} · Today {stats.data?.today ?? 0} ·
           AI {stats.data?.ai_replied ?? 0} · Human {stats.data?.human_replied ?? 0} · Failed{" "}
           {stats.data?.failed ?? 0}
         </p>
+        </div>
       </div>
 
       <div className={cn("grid min-h-0 grid-cols-1 gap-4 md:h-[calc(100vh-180px)] md:grid-cols-[320px_1fr]", selectedId && "max-md:flex-1 max-md:overflow-hidden")}>
@@ -173,7 +177,7 @@ function MessengerInbox() {
                   onClick={() => setFilter(f.id)}
                   className={cn(
                     "rounded-full px-3 py-1 text-xs border",
-                    filter === f.id ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                    filter === f.id ? "bg-messenger text-messenger-foreground" : "hover:bg-messenger/10",
                   )}
                 >
                   {f.label}
@@ -191,7 +195,7 @@ function MessengerInbox() {
                   onClick={() => setSelectedId(c.id)}
                   className={cn(
                     "flex w-full items-start gap-3 border-b p-3 text-left hover:bg-muted/50",
-                    selectedId === c.id && "bg-muted",
+                    selectedId === c.id && "bg-messenger/10 ring-1 ring-inset ring-messenger/30",
                   )}
                 >
                   {profile.profile_pic ? (
@@ -472,7 +476,7 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
                       out
                         ? failed
                           ? "bg-destructive/10 text-destructive"
-                          : "bg-primary text-primary-foreground"
+                          : "bg-messenger text-messenger-foreground"
                         : "bg-muted",
                     )}
                   >
