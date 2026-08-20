@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Package, Tags, ShoppingBag, Users, Image as ImageIcon,
   Settings, CreditCard, LogOut, Menu, Megaphone, Truck, Palette,
   Search as SearchIcon, PackageOpen, Wallet, Bell, ClipboardList, Bot,
-  MessageSquare, Boxes, Ticket, RotateCcw, BarChart3, FileUp, Globe,
+  MessageSquare, MessageCircle, Boxes, Ticket, RotateCcw, BarChart3, FileUp, Globe,
   Radar, ShieldCheck, FileText, Sparkles, AlertTriangle, UserCog,
   ChevronDown, ChevronsLeft, ChevronsRight, Moon, Sun, ExternalLink, X,
 } from "lucide-react";
