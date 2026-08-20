@@ -55,7 +55,7 @@ export default {
         ...(typeof process !== "undefined" ? (process.env as Record<string, string | undefined>) : {}),
         ...((env ?? {}) as Record<string, string | undefined>),
       };
-      const { getRoutingHosts, isRewritablePath, resolveTenant } = await getTenantHost();
+      const { getRoutingHosts, isRewritablePath, resolveHostTarget } = await getTenantHost();
       const hosts = await getRoutingHosts(envRecord);
       const rootDomain = hosts.rootDomain;
 
