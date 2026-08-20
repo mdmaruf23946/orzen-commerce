@@ -83,7 +83,7 @@ export function buildSystemPrompt(
   store: any,
   agent: any,
   opts?: {
-    channel?: "web" | "messenger";
+    channel?: "web" | "messenger" | "whatsapp";
     settings?: GlobalAiSettings | null;
     state?: AgentState | null;
     focus?: FocusProduct | null;
@@ -98,6 +98,8 @@ export function buildSystemPrompt(
   const displayTools =
     channel === "web"
       ? "showProducts (multiple) or showProduct (one) — the web chat renders rich cards inline"
+      : channel === "whatsapp"
+      ? "sendProductCard (one product at a time) so WhatsApp shows the photo, price, stock and a Buy now / View site button"
       : "sendProductCarousel (multiple) or sendProductCard (one) so Messenger shows the image, price, stock and buy button";
   const k = (agent.knowledge ?? {}) as Record<string, any>;
   const supported = (settings?.supported_languages ?? []).filter(Boolean);
