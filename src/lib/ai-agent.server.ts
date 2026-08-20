@@ -35,7 +35,10 @@ export type AgentContext = {
   psid?: string; // Messenger PSID
   pageToken?: string; // decrypted page access token
   siteOrigin?: string; // e.g. https://mystore.orzen.top
-  channel?: "web" | "messenger"; // controls which display tools are registered
+  channel?: "web" | "messenger" | "whatsapp"; // controls which display tools are registered
+  waTo?: string; // customer WhatsApp number (wa_id)
+  waPhoneNumberId?: string; // store's WhatsApp Cloud API phone number id
+  waToken?: string; // decrypted WhatsApp access token
   focusProductId?: string | null; // server-resolved product for this turn (see resolveFocusProduct)
 };
 
