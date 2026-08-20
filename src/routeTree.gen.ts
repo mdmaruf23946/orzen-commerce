@@ -124,6 +124,7 @@ import { Route as AuthenticatedOwnerNotificationCenterIndexRouteImport } from '.
 import { Route as AuthenticatedOwnerCommunicationIndexRouteImport } from './routes/_authenticated/owner/communication.index'
 import { Route as AuthenticatedAdminSettingsIndexRouteImport } from './routes/_authenticated/admin/settings.index'
 import { Route as AuthenticatedAdminLandingPagesIndexRouteImport } from './routes/_authenticated/admin/landing-pages.index'
+import { Route as AuthenticatedAdminLandingBuilderIndexRouteImport } from './routes/_authenticated/admin/landing-builder.index'
 import { Route as AuthenticatedAdminBillingIndexRouteImport } from './routes/_authenticated/admin/billing.index'
 import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
 import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/order.$orderId'
@@ -814,6 +815,12 @@ const AuthenticatedAdminLandingPagesIndexRoute =
     path: '/landing-pages/',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminLandingBuilderIndexRoute =
+  AuthenticatedAdminLandingBuilderIndexRouteImport.update({
+    id: '/landing-builder/',
+    path: '/landing-builder/',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminBillingIndexRoute =
   AuthenticatedAdminBillingIndexRouteImport.update({
     id: '/',
@@ -1182,6 +1189,7 @@ export interface FileRoutesByFullPath {
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
+  '/admin/landing-builder/': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/admin/settings/': typeof AuthenticatedAdminSettingsIndexRoute
   '/owner/communication/': typeof AuthenticatedOwnerCommunicationIndexRoute
@@ -1329,6 +1337,7 @@ export interface FileRoutesByTo {
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing': typeof AuthenticatedAdminBillingIndexRoute
+  '/admin/landing-builder': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/admin/landing-pages': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsIndexRoute
   '/owner/communication': typeof AuthenticatedOwnerCommunicationIndexRoute
@@ -1486,6 +1495,7 @@ export interface FileRoutesById {
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/_authenticated/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
+  '/_authenticated/admin/landing-builder/': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/_authenticated/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/_authenticated/admin/settings/': typeof AuthenticatedAdminSettingsIndexRoute
   '/_authenticated/owner/communication/': typeof AuthenticatedOwnerCommunicationIndexRoute
@@ -1643,6 +1653,7 @@ export interface FileRouteTypes {
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/admin/billing/'
+    | '/admin/landing-builder/'
     | '/admin/landing-pages/'
     | '/admin/settings/'
     | '/owner/communication/'
@@ -1790,6 +1801,7 @@ export interface FileRouteTypes {
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/admin/billing'
+    | '/admin/landing-builder'
     | '/admin/landing-pages'
     | '/admin/settings'
     | '/owner/communication'
@@ -1946,6 +1958,7 @@ export interface FileRouteTypes {
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/_authenticated/admin/billing/'
+    | '/_authenticated/admin/landing-builder/'
     | '/_authenticated/admin/landing-pages/'
     | '/_authenticated/admin/settings/'
     | '/_authenticated/owner/communication/'
@@ -2810,6 +2823,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminLandingPagesIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/landing-builder/': {
+      id: '/_authenticated/admin/landing-builder/'
+      path: '/landing-builder'
+      fullPath: '/admin/landing-builder/'
+      preLoaderRoute: typeof AuthenticatedAdminLandingBuilderIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/billing/': {
       id: '/_authenticated/admin/billing/'
       path: '/'
@@ -3175,6 +3195,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminInvoiceOrderIdRoute: typeof AuthenticatedAdminInvoiceOrderIdRoute
   AuthenticatedAdminLandingPagesIdRoute: typeof AuthenticatedAdminLandingPagesIdRoute
+  AuthenticatedAdminLandingBuilderIndexRoute: typeof AuthenticatedAdminLandingBuilderIndexRoute
   AuthenticatedAdminLandingPagesIndexRoute: typeof AuthenticatedAdminLandingPagesIndexRoute
 }
 
@@ -3234,6 +3255,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
       AuthenticatedAdminInvoiceOrderIdRoute,
     AuthenticatedAdminLandingPagesIdRoute:
       AuthenticatedAdminLandingPagesIdRoute,
+    AuthenticatedAdminLandingBuilderIndexRoute:
+      AuthenticatedAdminLandingBuilderIndexRoute,
     AuthenticatedAdminLandingPagesIndexRoute:
       AuthenticatedAdminLandingPagesIndexRoute,
   }
