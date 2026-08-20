@@ -131,10 +131,8 @@ function WhatsappPage() {
 
   return (
     <div className="max-w-3xl space-y-5">
-      <header className="flex flex-wrap items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
-          <MessageCircle className="h-5 w-5" />
-        </div>
+      <header className="flex flex-wrap items-center gap-3 rounded-xl border border-whatsapp/20 bg-whatsapp/5 p-3">
+        <WhatsAppMark size={40} />
         <div className="min-w-0 flex-1">
           <h1 className="text-xl font-semibold sm:text-2xl">WhatsApp Integration</h1>
           <p className="text-sm text-muted-foreground">
