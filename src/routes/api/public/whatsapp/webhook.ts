@@ -363,7 +363,7 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
 
               // AI reply gate — a human takeover silences the agent.
               if (((conv as any).handoff_mode ?? "ai") !== "ai") continue;
-              if ((integ as any).ai_auto_reply === false) continue;
+              if ((integ as any).human_takeover || (integ as any).ai_auto_reply === false) continue;
 
               // "Buy now" button
               if (buttonPayload && /^BUY_[0-9a-f-]{36}$/i.test(buttonPayload)) {
