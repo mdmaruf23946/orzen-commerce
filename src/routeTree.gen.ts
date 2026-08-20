@@ -134,6 +134,7 @@ import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/e
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
 import { Route as ApiPublicTiktokTrackRouteImport } from './routes/api/public/tiktok/track'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
+import { Route as ApiPublicLpOrderRouteImport } from './routes/api/public/lp.order'
 import { Route as ApiPublicGa4TrackRouteImport } from './routes/api/public/ga4/track'
 import { Route as ApiPublicFbCapiTrackRouteImport } from './routes/api/public/fb-capi/track'
 import { Route as ApiPublicCronSyncParcelsRouteImport } from './routes/api/public/cron/sync-parcels'
@@ -868,6 +869,11 @@ const ApiPublicMessengerWebhookRoute =
     path: '/api/public/messenger/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicLpOrderRoute = ApiPublicLpOrderRouteImport.update({
+  id: '/api/public/lp/order',
+  path: '/api/public/lp/order',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicGa4TrackRoute = ApiPublicGa4TrackRouteImport.update({
   id: '/api/public/ga4/track',
   path: '/api/public/ga4/track',
@@ -1165,6 +1171,7 @@ export interface FileRoutesByFullPath {
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
+  '/api/public/lp/order': typeof ApiPublicLpOrderRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -1311,6 +1318,7 @@ export interface FileRoutesByTo {
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
+  '/api/public/lp/order': typeof ApiPublicLpOrderRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -1467,6 +1475,7 @@ export interface FileRoutesById {
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
+  '/api/public/lp/order': typeof ApiPublicLpOrderRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -1623,6 +1632,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/sync-parcels'
     | '/api/public/fb-capi/track'
     | '/api/public/ga4/track'
+    | '/api/public/lp/order'
     | '/api/public/messenger/webhook'
     | '/api/public/tiktok/track'
     | '/api/public/whatsapp/webhook'
@@ -1769,6 +1779,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/sync-parcels'
     | '/api/public/fb-capi/track'
     | '/api/public/ga4/track'
+    | '/api/public/lp/order'
     | '/api/public/messenger/webhook'
     | '/api/public/tiktok/track'
     | '/api/public/whatsapp/webhook'
@@ -1924,6 +1935,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/sync-parcels'
     | '/api/public/fb-capi/track'
     | '/api/public/ga4/track'
+    | '/api/public/lp/order'
     | '/api/public/messenger/webhook'
     | '/api/public/tiktok/track'
     | '/api/public/whatsapp/webhook'
@@ -1978,6 +1990,7 @@ export interface RootRouteChildren {
   ApiPublicCronSyncParcelsRoute: typeof ApiPublicCronSyncParcelsRoute
   ApiPublicFbCapiTrackRoute: typeof ApiPublicFbCapiTrackRoute
   ApiPublicGa4TrackRoute: typeof ApiPublicGa4TrackRoute
+  ApiPublicLpOrderRoute: typeof ApiPublicLpOrderRoute
   ApiPublicMessengerWebhookRoute: typeof ApiPublicMessengerWebhookRoute
   ApiPublicTiktokTrackRoute: typeof ApiPublicTiktokTrackRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
@@ -2867,6 +2880,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMessengerWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/lp/order': {
+      id: '/api/public/lp/order'
+      path: '/api/public/lp/order'
+      fullPath: '/api/public/lp/order'
+      preLoaderRoute: typeof ApiPublicLpOrderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/ga4/track': {
       id: '/api/public/ga4/track'
       path: '/api/public/ga4/track'
@@ -3481,6 +3501,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicCronSyncParcelsRoute: ApiPublicCronSyncParcelsRoute,
   ApiPublicFbCapiTrackRoute: ApiPublicFbCapiTrackRoute,
   ApiPublicGa4TrackRoute: ApiPublicGa4TrackRoute,
+  ApiPublicLpOrderRoute: ApiPublicLpOrderRoute,
   ApiPublicMessengerWebhookRoute: ApiPublicMessengerWebhookRoute,
   ApiPublicTiktokTrackRoute: ApiPublicTiktokTrackRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
