@@ -41,7 +41,7 @@ const AI_FLAGS: { key: string; label: string; hint: string }[] = [
 
 function StatusPill({ status }: { status: string }) {
   const map: Record<string, string> = {
-    connected: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+    connected: "bg-whatsapp/10 text-whatsapp-deep border-whatsapp/30 dark:text-whatsapp",
     error: "bg-destructive/10 text-destructive border-destructive/20",
     connecting: "bg-amber-500/10 text-amber-600 border-amber-500/20",
   };
