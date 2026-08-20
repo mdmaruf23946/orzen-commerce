@@ -489,8 +489,8 @@ export const removeLandingDomain = createServerFn({ method: "POST" })
     if (!row) throw new Error("Not found");
     if (row.cf_hostname_id && process.env["CF_API_TOKEN"] && process.env["CF_ZONE_ID"]) {
       try {
-        const { deleteCustomHostname } = await import("./cloudflare-ssl.server");
-        await deleteCustomHostname(row.cf_hostname_id);
+        const { detachCustomHostname } = await import("./cloudflare-ssl.server");
+        await detachCustomHostname(row.cf_hostname_id);
       } catch {
         /* keep going — the DB row must still be removed */
       }
