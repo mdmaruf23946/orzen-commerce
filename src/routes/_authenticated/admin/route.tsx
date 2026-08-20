@@ -75,7 +75,9 @@ const links: LinkDef[] = [
   { to: "/admin/product-defaults", label: "Product Defaults", icon: ClipboardList },
   { to: "/admin/domains", label: "Domains", icon: Globe },
   { to: "/admin/dns-check", label: "DNS Checker", icon: Radar },
-  { to: "/admin/landing-pages", label: "Landing Pages", icon: ExternalLink, badgeKey: "landing_pages" },
+  { to: "/admin/landing-builder", label: "Landing Pages", icon: LayoutTemplate },
+  { to: "/admin/landing-pages", label: "Landing Page Integrations", icon: ExternalLink, badgeKey: "landing_pages" },
+
   { to: "/admin/import-export", label: "Import / Export", icon: FileUp },
   { to: "/admin/invoice-templates", label: "Invoice Templates", icon: FileText },
   { to: "/admin/subscription", label: "My Subscription", icon: CreditCard },
