@@ -12,6 +12,7 @@ import {
   clearWhatsappLastError, listWhatsappTemplates, syncWhatsappTemplates,
   listWhatsappWebhookEvents, getWhatsappAnalytics,
 } from "@/lib/whatsapp.functions";
+import { WhatsAppMark } from "@/components/admin/brand/WhatsAppMark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
