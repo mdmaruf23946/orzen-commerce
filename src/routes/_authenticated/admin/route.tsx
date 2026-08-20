@@ -8,7 +8,7 @@ import {
   Search as SearchIcon, PackageOpen, Wallet, Bell, ClipboardList, Bot,
   MessageSquare, MessageCircle, Boxes, Ticket, RotateCcw, BarChart3, FileUp, Globe,
   Radar, ShieldCheck, FileText, Sparkles, AlertTriangle, UserCog,
-  ChevronDown, ChevronsLeft, ChevronsRight, Moon, Sun, ExternalLink, X,
+  ChevronDown, ChevronsLeft, ChevronsRight, Moon, Sun, ExternalLink, LayoutTemplate, X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { amIOwner } from "@/lib/owner.functions";
@@ -104,7 +104,7 @@ const groupDefs: { label: string; paths: string[] }[] = [
   { label: "AI & Automation", paths: ["/admin/ai-agent", "/admin/ai-recommendations", "/admin/handoff-queue", "/admin/low-stock", "/admin/messenger", "/admin/messenger-inbox", "/admin/whatsapp", "/admin/whatsapp-inbox"] },
   { label: "Marketing", paths: ["/admin/marketing", "/admin/coupons", "/admin/seo", "/admin/banners", "/admin/notifications"] },
   { label: "Finance", paths: ["/admin/payment-gateway", "/admin/finance", "/admin/analytics"] },
-  { label: "Operations", paths: ["/admin/delivery", "/admin/couriers", "/admin/landing-pages"] },
+  { label: "Operations", paths: ["/admin/delivery", "/admin/couriers", "/admin/landing-builder", "/admin/landing-pages"] },
   { label: "System", paths: ["/admin/theme", "/admin/legal", "/admin/invoice-templates", "/admin/domains", "/admin/dns-check", "/admin/import-export"] },
   { label: "Account", paths: ["/admin/subscription", "/admin/billing", "/admin/settings"] },
 ];
