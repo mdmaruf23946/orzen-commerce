@@ -16,6 +16,7 @@ import {
   listMessengerRecentPsids,
   clearMessengerLastError,
 } from "@/lib/ai.functions";
+import { MessengerMark } from "@/components/admin/brand/MessengerMark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -258,7 +259,7 @@ function AdminMessenger() {
   }, [d.token_expires_at]);
 
   const statusPill = connected ? (
-    <Badge className="bg-emerald-600 hover:bg-emerald-600">Connected</Badge>
+    <Badge className="bg-messenger text-messenger-foreground hover:bg-messenger/90">Connected</Badge>
   ) : d.status === "error" ? (
     <Badge variant="destructive">Error</Badge>
   ) : (
@@ -266,18 +267,21 @@ function AdminMessenger() {
   );
 
   const webhookPill = d.last_verified_at ? (
-    <Badge className="bg-emerald-600 hover:bg-emerald-600">Verified</Badge>
+    <Badge className="bg-messenger text-messenger-foreground hover:bg-messenger/90">Verified</Badge>
   ) : (
     <Badge variant="secondary">Unverified</Badge>
   );
 
   return (
     <div className="mx-auto max-w-5xl space-y-4 p-3 sm:p-6">
-      <div>
-        <h1 className="text-xl font-semibold sm:text-2xl">Messenger Integration</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Connect your Facebook Page so the AI agent can reply to Messenger chats automatically.
-        </p>
+      <div className="flex items-center gap-3 rounded-xl border border-messenger/20 bg-messenger/5 p-3">
+        <MessengerMark size={44} />
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold sm:text-2xl">Messenger Integration</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Connect your Facebook Page so the AI agent can reply to Messenger chats automatically.
+          </p>
+        </div>
       </div>
 
       {/* Dashboard */}
@@ -288,7 +292,7 @@ function AdminMessenger() {
               <img
                 src={d.page_picture_url}
                 alt=""
-                className="h-14 w-14 rounded-full border object-cover"
+                className="h-14 w-14 rounded-full object-cover ring-2 ring-messenger/60 ring-offset-2 ring-offset-card"
               />
             ) : (
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-lg font-semibold">
@@ -475,7 +479,7 @@ function AdminMessenger() {
             <Button
               type="submit"
               disabled={busy || !privacyValid || !termsValid}
-              className="flex-1 sm:flex-none"
+              className="flex-1 bg-messenger text-messenger-foreground hover:bg-messenger/90 sm:flex-none"
             >
               {busy ? "Saving…" : connected ? "Save changes" : "Connect"}
             </Button>
@@ -523,7 +527,7 @@ function AdminMessenger() {
             </div>
           </Field>
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={onVerify} disabled={busy || !d.verify_token}>
+            <Button size="sm" className="bg-messenger text-messenger-foreground hover:bg-messenger/90" onClick={onVerify} disabled={busy || !d.verify_token}>
               Verify Webhook
             </Button>
             <Button size="sm" variant="outline" onClick={onRegenerate} disabled={busy}>
@@ -655,7 +659,7 @@ function AdminMessenger() {
               className="w-full rounded-md border bg-background px-3 py-2 text-sm"
             />
           </Field>
-          <Button onClick={onSendTest} disabled={busy || !connected} className="w-full sm:w-auto">
+          <Button onClick={onSendTest} disabled={busy || !connected} className="w-full bg-messenger text-messenger-foreground hover:bg-messenger/90 sm:w-auto">
             Send
           </Button>
           <p className="text-xs text-muted-foreground">
