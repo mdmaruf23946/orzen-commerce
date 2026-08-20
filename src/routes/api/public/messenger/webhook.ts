@@ -565,8 +565,10 @@ async function finalizePendingMessengerOrder(opts: {
     };
   });
 
-  const confirmation = [
-    renderConfirmation(flowCfg.confirmation_message, {
+  const template = String(flowCfg.confirmation_message ?? "");
+  const uses = (key: string) => new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, "i").test(template);
+  const lines = [
+    renderConfirmation(template, {
       product: product.name,
       qty,
       total: `৳${total.toFixed(0)}`,
@@ -575,11 +577,13 @@ async function finalizePendingMessengerOrder(opts: {
       payment_method: String(slot.payment_method ?? "").toUpperCase(),
       invoice_no: order.invoice_no || order.id,
     }),
-    `অর্ডার নম্বর: ${order.invoice_no || order.id}`,
-    `প্রোডাক্ট: ${product.name} × ${qty}`,
-    `মোট: ৳${total.toFixed(0)}`,
-    `পেমেন্ট: ${String(slot.payment_method).toUpperCase()}`,
-  ].join("\n");
+  ];
+  // Only add the summary lines the admin's own template doesn't already cover.
+  if (!uses("invoice_no")) lines.push(`অর্ডার নম্বর: ${order.invoice_no || order.id}`);
+  if (!uses("product") && !uses("qty")) lines.push(`প্রোডাক্ট: ${product.name} × ${qty}`);
+  if (!uses("total")) lines.push(`মোট: ৳${total.toFixed(0)}`);
+  if (!uses("payment_method")) lines.push(`পেমেন্ট: ${String(slot.payment_method).toUpperCase()}`);
+  const confirmation = lines.filter(Boolean).join("\n");
   await sendAndLogText(sb, token, psid, conversationId, confirmation);
   return true;
 }
