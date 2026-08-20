@@ -23,6 +23,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LpSlugRouteImport } from './routes/lp.$slug'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as StoreSlugRouteRouteImport } from './routes/store/$slug/route'
@@ -123,6 +124,7 @@ import { Route as AuthenticatedOwnerNotificationCenterIndexRouteImport } from '.
 import { Route as AuthenticatedOwnerCommunicationIndexRouteImport } from './routes/_authenticated/owner/communication.index'
 import { Route as AuthenticatedAdminSettingsIndexRouteImport } from './routes/_authenticated/admin/settings.index'
 import { Route as AuthenticatedAdminLandingPagesIndexRouteImport } from './routes/_authenticated/admin/landing-pages.index'
+import { Route as AuthenticatedAdminLandingBuilderIndexRouteImport } from './routes/_authenticated/admin/landing-builder.index'
 import { Route as AuthenticatedAdminBillingIndexRouteImport } from './routes/_authenticated/admin/billing.index'
 import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
 import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/order.$orderId'
@@ -133,6 +135,7 @@ import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/e
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
 import { Route as ApiPublicTiktokTrackRouteImport } from './routes/api/public/tiktok/track'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
+import { Route as ApiPublicLpOrderRouteImport } from './routes/api/public/lp.order'
 import { Route as ApiPublicGa4TrackRouteImport } from './routes/api/public/ga4/track'
 import { Route as ApiPublicFbCapiTrackRouteImport } from './routes/api/public/fb-capi/track'
 import { Route as ApiPublicCronSyncParcelsRouteImport } from './routes/api/public/cron/sync-parcels'
@@ -229,6 +232,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LpSlugRoute = LpSlugRouteImport.update({
+  id: '/lp/$slug',
+  path: '/lp/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Char91DotwellKnownChar93OauthProtectedResourceRoute =
@@ -807,6 +815,12 @@ const AuthenticatedAdminLandingPagesIndexRoute =
     path: '/landing-pages/',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminLandingBuilderIndexRoute =
+  AuthenticatedAdminLandingBuilderIndexRouteImport.update({
+    id: '/landing-builder/',
+    path: '/landing-builder/',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminBillingIndexRoute =
   AuthenticatedAdminBillingIndexRouteImport.update({
     id: '/',
@@ -862,6 +876,11 @@ const ApiPublicMessengerWebhookRoute =
     path: '/api/public/messenger/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicLpOrderRoute = ApiPublicLpOrderRouteImport.update({
+  id: '/api/public/lp/order',
+  path: '/api/public/lp/order',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicGa4TrackRoute = ApiPublicGa4TrackRouteImport.update({
   id: '/api/public/ga4/track',
   path: '/api/public/ga4/track',
@@ -1048,6 +1067,7 @@ export interface FileRoutesByFullPath {
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/lp/$slug': typeof LpSlugRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
   '/owner/communication': typeof AuthenticatedOwnerCommunicationRouteRouteWithChildren
   '/owner/notification-center': typeof AuthenticatedOwnerNotificationCenterRouteRouteWithChildren
@@ -1158,6 +1178,7 @@ export interface FileRoutesByFullPath {
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
+  '/api/public/lp/order': typeof ApiPublicLpOrderRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -1168,6 +1189,7 @@ export interface FileRoutesByFullPath {
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
+  '/admin/landing-builder/': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/admin/settings/': typeof AuthenticatedAdminSettingsIndexRoute
   '/owner/communication/': typeof AuthenticatedOwnerCommunicationIndexRoute
@@ -1198,6 +1220,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/lp/$slug': typeof LpSlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/.well-known/orzen-domain-verification/$token': typeof DotwellKnownOrzenDomainVerificationTokenRoute
@@ -1303,6 +1326,7 @@ export interface FileRoutesByTo {
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
+  '/api/public/lp/order': typeof ApiPublicLpOrderRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -1313,6 +1337,7 @@ export interface FileRoutesByTo {
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing': typeof AuthenticatedAdminBillingIndexRoute
+  '/admin/landing-builder': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/admin/landing-pages': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsIndexRoute
   '/owner/communication': typeof AuthenticatedOwnerCommunicationIndexRoute
@@ -1348,6 +1373,7 @@ export interface FileRoutesById {
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/lp/$slug': typeof LpSlugRoute
   '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
   '/_authenticated/owner/communication': typeof AuthenticatedOwnerCommunicationRouteRouteWithChildren
   '/_authenticated/owner/notification-center': typeof AuthenticatedOwnerNotificationCenterRouteRouteWithChildren
@@ -1458,6 +1484,7 @@ export interface FileRoutesById {
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
+  '/api/public/lp/order': typeof ApiPublicLpOrderRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -1468,6 +1495,7 @@ export interface FileRoutesById {
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/_authenticated/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
+  '/_authenticated/admin/landing-builder/': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/_authenticated/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/_authenticated/admin/settings/': typeof AuthenticatedAdminSettingsIndexRoute
   '/_authenticated/owner/communication/': typeof AuthenticatedOwnerCommunicationIndexRoute
@@ -1503,6 +1531,7 @@ export interface FileRouteTypes {
     | '/store/$slug'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/lp/$slug'
     | '/admin/billing'
     | '/owner/communication'
     | '/owner/notification-center'
@@ -1613,6 +1642,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/sync-parcels'
     | '/api/public/fb-capi/track'
     | '/api/public/ga4/track'
+    | '/api/public/lp/order'
     | '/api/public/messenger/webhook'
     | '/api/public/tiktok/track'
     | '/api/public/whatsapp/webhook'
@@ -1623,6 +1653,7 @@ export interface FileRouteTypes {
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/admin/billing/'
+    | '/admin/landing-builder/'
     | '/admin/landing-pages/'
     | '/admin/settings/'
     | '/owner/communication/'
@@ -1653,6 +1684,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/lp/$slug'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/.well-known/orzen-domain-verification/$token'
@@ -1758,6 +1790,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/sync-parcels'
     | '/api/public/fb-capi/track'
     | '/api/public/ga4/track'
+    | '/api/public/lp/order'
     | '/api/public/messenger/webhook'
     | '/api/public/tiktok/track'
     | '/api/public/whatsapp/webhook'
@@ -1768,6 +1801,7 @@ export interface FileRouteTypes {
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/admin/billing'
+    | '/admin/landing-builder'
     | '/admin/landing-pages'
     | '/admin/settings'
     | '/owner/communication'
@@ -1802,6 +1836,7 @@ export interface FileRouteTypes {
     | '/store/$slug'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/lp/$slug'
     | '/_authenticated/admin/billing'
     | '/_authenticated/owner/communication'
     | '/_authenticated/owner/notification-center'
@@ -1912,6 +1947,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/sync-parcels'
     | '/api/public/fb-capi/track'
     | '/api/public/ga4/track'
+    | '/api/public/lp/order'
     | '/api/public/messenger/webhook'
     | '/api/public/tiktok/track'
     | '/api/public/whatsapp/webhook'
@@ -1922,6 +1958,7 @@ export interface FileRouteTypes {
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/_authenticated/admin/billing/'
+    | '/_authenticated/admin/landing-builder/'
     | '/_authenticated/admin/landing-pages/'
     | '/_authenticated/admin/settings/'
     | '/_authenticated/owner/communication/'
@@ -1955,6 +1992,7 @@ export interface RootRouteChildren {
   StoreSlugRouteRoute: typeof StoreSlugRouteRouteWithChildren
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  LpSlugRoute: typeof LpSlugRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   DotwellKnownOrzenDomainVerificationTokenRoute: typeof DotwellKnownOrzenDomainVerificationTokenRoute
@@ -1965,6 +2003,7 @@ export interface RootRouteChildren {
   ApiPublicCronSyncParcelsRoute: typeof ApiPublicCronSyncParcelsRoute
   ApiPublicFbCapiTrackRoute: typeof ApiPublicFbCapiTrackRoute
   ApiPublicGa4TrackRoute: typeof ApiPublicGa4TrackRoute
+  ApiPublicLpOrderRoute: typeof ApiPublicLpOrderRoute
   ApiPublicMessengerWebhookRoute: typeof ApiPublicMessengerWebhookRoute
   ApiPublicTiktokTrackRoute: typeof ApiPublicTiktokTrackRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
@@ -2075,6 +2114,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lp/$slug': {
+      id: '/lp/$slug'
+      path: '/lp/$slug'
+      fullPath: '/lp/$slug'
+      preLoaderRoute: typeof LpSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/.well-known/oauth-protected-resource': {
@@ -2777,6 +2823,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminLandingPagesIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/landing-builder/': {
+      id: '/_authenticated/admin/landing-builder/'
+      path: '/landing-builder'
+      fullPath: '/admin/landing-builder/'
+      preLoaderRoute: typeof AuthenticatedAdminLandingBuilderIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/billing/': {
       id: '/_authenticated/admin/billing/'
       path: '/'
@@ -2845,6 +2898,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/messenger/webhook'
       fullPath: '/api/public/messenger/webhook'
       preLoaderRoute: typeof ApiPublicMessengerWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/lp/order': {
+      id: '/api/public/lp/order'
+      path: '/api/public/lp/order'
+      fullPath: '/api/public/lp/order'
+      preLoaderRoute: typeof ApiPublicLpOrderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/ga4/track': {
@@ -3135,6 +3195,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminInvoiceOrderIdRoute: typeof AuthenticatedAdminInvoiceOrderIdRoute
   AuthenticatedAdminLandingPagesIdRoute: typeof AuthenticatedAdminLandingPagesIdRoute
+  AuthenticatedAdminLandingBuilderIndexRoute: typeof AuthenticatedAdminLandingBuilderIndexRoute
   AuthenticatedAdminLandingPagesIndexRoute: typeof AuthenticatedAdminLandingPagesIndexRoute
 }
 
@@ -3194,6 +3255,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
       AuthenticatedAdminInvoiceOrderIdRoute,
     AuthenticatedAdminLandingPagesIdRoute:
       AuthenticatedAdminLandingPagesIdRoute,
+    AuthenticatedAdminLandingBuilderIndexRoute:
+      AuthenticatedAdminLandingBuilderIndexRoute,
     AuthenticatedAdminLandingPagesIndexRoute:
       AuthenticatedAdminLandingPagesIndexRoute,
   }
@@ -3448,6 +3511,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  LpSlugRoute: LpSlugRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   DotwellKnownOrzenDomainVerificationTokenRoute:
@@ -3460,6 +3524,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicCronSyncParcelsRoute: ApiPublicCronSyncParcelsRoute,
   ApiPublicFbCapiTrackRoute: ApiPublicFbCapiTrackRoute,
   ApiPublicGa4TrackRoute: ApiPublicGa4TrackRoute,
+  ApiPublicLpOrderRoute: ApiPublicLpOrderRoute,
   ApiPublicMessengerWebhookRoute: ApiPublicMessengerWebhookRoute,
   ApiPublicTiktokTrackRoute: ApiPublicTiktokTrackRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
