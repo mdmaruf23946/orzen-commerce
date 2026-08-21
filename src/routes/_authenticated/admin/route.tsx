@@ -7,7 +7,7 @@ import {
   Settings, CreditCard, LogOut, Menu, Megaphone, Truck, Palette,
   Search as SearchIcon, PackageOpen, Wallet, Bell, ClipboardList, Bot,
   MessageSquare, MessageCircle, Boxes, Ticket, RotateCcw, BarChart3, FileUp, Globe,
-  Radar, ShieldCheck, FileText, Sparkles, AlertTriangle, UserCog,
+  Radar, ShieldCheck, FileText, PhoneCall, Sparkles, AlertTriangle, UserCog,
   ChevronDown, ChevronsLeft, ChevronsRight, Moon, Sun, ExternalLink, LayoutTemplate, X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,6 +50,7 @@ const links: LinkDef[] = [
   { to: "/admin/customers", label: "Customers", icon: Users, badgeKey: "customers" },
   { to: "/admin/customers-accounts", label: "Customer Accounts", icon: Users, badgeKey: "customers" },
   { to: "/admin/duplicate-protection", label: "Duplicate Protection", icon: ShieldCheck, badgeKey: "duplicate_protection" },
+  { to: "/admin/call-center", label: "Manual Call Center", icon: PhoneCall },
   { to: "/admin/returns", label: "Returns", icon: RotateCcw, badgeKey: "returns" },
   { to: "/admin/coupons", label: "Coupons", icon: Ticket },
   { to: "/admin/finance", label: "Finance", icon: Wallet },
@@ -101,6 +102,7 @@ const groupDefs: { label: string; paths: string[] }[] = [
   { label: "Orders", paths: ["/admin/orders", "/admin/courier-orders", "/admin/returns"] },
   { label: "Products", paths: ["/admin/products", "/admin/categories", "/admin/inventory", "/admin/product-defaults"] },
   { label: "Customers", paths: ["/admin/customers", "/admin/customers-accounts", "/admin/duplicate-protection"] },
+  { label: "Call Center", paths: ["/admin/call-center"] },
   { label: "AI & Automation", paths: ["/admin/ai-agent", "/admin/ai-recommendations", "/admin/handoff-queue", "/admin/low-stock", "/admin/messenger", "/admin/messenger-inbox", "/admin/whatsapp", "/admin/whatsapp-inbox"] },
   { label: "Marketing", paths: ["/admin/marketing", "/admin/coupons", "/admin/seo", "/admin/banners", "/admin/notifications"] },
   { label: "Finance", paths: ["/admin/payment-gateway", "/admin/finance", "/admin/analytics"] },
