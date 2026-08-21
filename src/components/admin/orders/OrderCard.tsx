@@ -1,8 +1,9 @@
 // Premium order card + shared badges for the Store Admin → Orders screen.
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { CallButton } from "@/components/admin/calls/CallButton";
 import {
-  Eye, Printer, Truck, Phone, MessageCircle, Copy, MoreHorizontal,
+  Eye, Printer, Truck, MessageCircle, Copy, MoreHorizontal,
   ImageOff, ChevronDown, ShieldCheck, MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -233,12 +234,13 @@ export function OrderCard({ order, onView, onFraud, onStatus, selected, onSelect
         >
           <Truck className="h-3.5 w-3.5" /> Send to Courier
         </Link>
-        <a
-          href={`tel:${order.phone}`}
-          className="inline-flex h-8 items-center gap-1 rounded-lg border px-2.5 text-xs transition-colors duration-150 hover:bg-muted"
-        >
-          <Phone className="h-3.5 w-3.5" /> Call
-        </a>
+        <CallButton
+          phone={order.phone}
+          customerName={order.customer_name}
+          orderId={order.id}
+          variant="outline"
+          label="Call"
+        />
         <a
           href={waLink(order.phone)}
           target="_blank"
