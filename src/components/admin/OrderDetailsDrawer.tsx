@@ -221,6 +221,12 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                 <CustomerStats phone={order.phone} enabled={open} />
               </Section>
 
+              {/* Calls */}
+              <Section icon={Phone} title="Calls">
+                <OrderCallsPanel orderId={orderId} phone={order.phone} customerName={order.customer_name} enabled={open} />
+              </Section>
+
+
 
               {/* Order info */}
               <Section icon={ScrollText} title="Order">
