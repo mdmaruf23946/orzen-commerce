@@ -108,6 +108,7 @@ import { Route as AuthenticatedAdminCouriersRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminCourierOrdersRouteImport } from './routes/_authenticated/admin/courier-orders'
 import { Route as AuthenticatedAdminCouponsRouteImport } from './routes/_authenticated/admin/coupons'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
+import { Route as AuthenticatedAdminCallCenterRouteImport } from './routes/_authenticated/admin/call-center'
 import { Route as AuthenticatedAdminBannersRouteImport } from './routes/_authenticated/admin/banners'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin/analytics'
 import { Route as AuthenticatedAdminAiRecommendationsRouteImport } from './routes/_authenticated/admin/ai-recommendations'
@@ -722,6 +723,12 @@ const AuthenticatedAdminCategoriesRoute =
     path: '/categories',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminCallCenterRoute =
+  AuthenticatedAdminCallCenterRouteImport.update({
+    id: '/call-center',
+    path: '/call-center',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminBannersRoute =
   AuthenticatedAdminBannersRouteImport.update({
     id: '/banners',
@@ -1093,6 +1100,7 @@ export interface FileRoutesByFullPath {
   '/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
+  '/admin/call-center': typeof AuthenticatedAdminCallCenterRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/admin/courier-orders': typeof AuthenticatedAdminCourierOrdersRoute
@@ -1244,6 +1252,7 @@ export interface FileRoutesByTo {
   '/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
+  '/admin/call-center': typeof AuthenticatedAdminCallCenterRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/admin/courier-orders': typeof AuthenticatedAdminCourierOrdersRoute
@@ -1403,6 +1412,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/banners': typeof AuthenticatedAdminBannersRoute
+  '/_authenticated/admin/call-center': typeof AuthenticatedAdminCallCenterRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/_authenticated/admin/courier-orders': typeof AuthenticatedAdminCourierOrdersRoute
@@ -1563,6 +1573,7 @@ export interface FileRouteTypes {
     | '/admin/ai-recommendations'
     | '/admin/analytics'
     | '/admin/banners'
+    | '/admin/call-center'
     | '/admin/categories'
     | '/admin/coupons'
     | '/admin/courier-orders'
@@ -1714,6 +1725,7 @@ export interface FileRouteTypes {
     | '/admin/ai-recommendations'
     | '/admin/analytics'
     | '/admin/banners'
+    | '/admin/call-center'
     | '/admin/categories'
     | '/admin/coupons'
     | '/admin/courier-orders'
@@ -1872,6 +1884,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/ai-recommendations'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/banners'
+    | '/_authenticated/admin/call-center'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/coupons'
     | '/_authenticated/admin/courier-orders'
@@ -2738,6 +2751,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCategoriesRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/call-center': {
+      id: '/_authenticated/admin/call-center'
+      path: '/call-center'
+      fullPath: '/admin/call-center'
+      preLoaderRoute: typeof AuthenticatedAdminCallCenterRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/banners': {
       id: '/_authenticated/admin/banners'
       path: '/banners'
@@ -3198,6 +3218,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminAiRecommendationsRoute: typeof AuthenticatedAdminAiRecommendationsRoute
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
   AuthenticatedAdminBannersRoute: typeof AuthenticatedAdminBannersRoute
+  AuthenticatedAdminCallCenterRoute: typeof AuthenticatedAdminCallCenterRoute
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminCouponsRoute: typeof AuthenticatedAdminCouponsRoute
   AuthenticatedAdminCourierOrdersRoute: typeof AuthenticatedAdminCourierOrdersRoute
@@ -3250,6 +3271,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
       AuthenticatedAdminAiRecommendationsRoute,
     AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
     AuthenticatedAdminBannersRoute: AuthenticatedAdminBannersRoute,
+    AuthenticatedAdminCallCenterRoute: AuthenticatedAdminCallCenterRoute,
     AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
     AuthenticatedAdminCouponsRoute: AuthenticatedAdminCouponsRoute,
     AuthenticatedAdminCourierOrdersRoute: AuthenticatedAdminCourierOrdersRoute,
