@@ -18,6 +18,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { FraudCheckModal, RiskBadge } from "@/components/admin/FraudCheckModal";
 import { ServiceWorkflowPanel } from "@/components/admin/service/ServiceWorkflowPanel";
 import { SubscriptionOrderPanel } from "@/components/admin/subscriptions/SubscriptionOrderPanel";
+import { CallButton } from "@/components/admin/calls/CallButton";
+import { CallHistoryList } from "@/components/admin/calls/CallHistoryList";
+import { getCallsForOrder } from "@/lib/call-center.functions";
 
 import { toast } from "sonner";
 
@@ -220,6 +223,12 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                 </div>
                 <CustomerStats phone={order.phone} enabled={open} />
               </Section>
+
+              {/* Calls */}
+              <Section icon={Phone} title="Calls">
+                <OrderCallsPanel orderId={orderId} phone={order.phone} customerName={order.customer_name} enabled={open} />
+              </Section>
+
 
 
               {/* Order info */}
@@ -468,6 +477,24 @@ function CustomerStats({ phone, enabled }: { phone: string; enabled: boolean }) 
           value={`৳${Number(data.lifetime).toLocaleString("en-BD")} · since ${new Date(data.since).toLocaleDateString()}`}
         />
       </div>
+    </div>
+  );
+}
+
+/** Compact call block: one-click call + this order's call history. */
+function OrderCallsPanel({
+  orderId, phone, customerName, enabled,
+}: { orderId: string; phone: string; customerName?: string | null; enabled: boolean }) {
+  const listFn = useServerFn(getCallsForOrder);
+  const { data } = useQuery({
+    queryKey: ["order-calls", orderId],
+    queryFn: () => listFn({ data: { orderId } }),
+    enabled: enabled && !!orderId,
+  });
+  return (
+    <div className="space-y-2">
+      <CallButton phone={phone} customerName={customerName} orderId={orderId} />
+      <CallHistoryList calls={(data ?? []) as any} empty="No calls for this order yet" />
     </div>
   );
 }

@@ -13,6 +13,9 @@ import { getCustomerProfile } from "@/lib/customers-admin.functions";
 import { upsertCustomerNote, getCustomerNote } from "@/lib/business.functions";
 import { taka } from "@/lib/order-display";
 import { Ban, CheckCircle2, MapPin, Phone, Mail, Clock } from "lucide-react";
+import { CallButton } from "@/components/admin/calls/CallButton";
+import { CallHistoryList } from "@/components/admin/calls/CallHistoryList";
+import { getCallsForPhone } from "@/lib/call-center.functions";
 
 const TAG_PRESETS = ["Trusted Customer", "Frequent Buyer", "High Return Rate", "Call Before Delivery", "VIP"];
 
@@ -47,6 +50,15 @@ export function CustomerProfileSheet({
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               {data.phone && <a className="inline-flex items-center gap-1 hover:underline" href={`tel:${data.phone}`}><Phone className="h-3 w-3" />{data.phone}</a>}
               {data.email && <a className="inline-flex items-center gap-1 hover:underline" href={`mailto:${data.email}`}><Mail className="h-3 w-3" />{data.email}</a>}
+              {data.phone && (
+                <CallButton
+                  phone={data.phone}
+                  customerName={data.name}
+                  customerId={data.account?.id ?? null}
+                  variant="outline"
+                  label="Call Customer"
+                />
+              )}
               {data.account && (
                 <Button
                   size="sm"
@@ -100,6 +112,9 @@ export function CustomerProfileSheet({
                   <Row k="Purchase frequency" v={data.analytics.frequencyDays ? `every ~${data.analytics.frequencyDays} days` : "—"} />
                   <Row k="Favourite categories" v={data.analytics.favCategories.map((c) => c.label).join(", ") || "—"} />
                   <Row k="Favourite products" v={data.analytics.favProducts.map((c) => c.label).join(", ") || "—"} />
+                </Section>
+                <Section title="Call history">
+                  <CustomerCalls phone={data.phone} />
                 </Section>
               </TabsContent>
 
@@ -271,4 +286,16 @@ function Row({ k, v }: { k: string; v: string }) {
 }
 function Empty({ text }: { text: string }) {
   return <p className="py-10 text-center text-sm text-muted-foreground">{text}</p>;
+}
+
+/** Recent calls with this customer, matched by phone. */
+function CustomerCalls({ phone }: { phone: string | null | undefined }) {
+  const listFn = useServerFn(getCallsForPhone);
+  const { data } = useQuery({
+    queryKey: ["phone-calls", phone],
+    queryFn: () => listFn({ data: { phone: phone! } }),
+    enabled: !!phone,
+  });
+  if (!phone) return <div className="text-xs text-muted-foreground">No phone number on file</div>;
+  return <CallHistoryList calls={(data ?? []) as any} />;
 }
