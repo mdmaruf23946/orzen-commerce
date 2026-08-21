@@ -637,6 +637,144 @@ export type Database = {
           },
         ]
       }
+      call_provider_settings: {
+        Row: {
+          caller_id: string | null
+          created_at: string
+          credentials_encrypted: string | null
+          credentials_preview: string | null
+          id: string
+          is_active: boolean
+          last_error: string | null
+          provider: string
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          caller_id?: string | null
+          created_at?: string
+          credentials_encrypted?: string | null
+          credentials_preview?: string | null
+          id?: string
+          is_active?: boolean
+          last_error?: string | null
+          provider?: string
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          caller_id?: string | null
+          created_at?: string
+          credentials_encrypted?: string | null
+          credentials_preview?: string | null
+          id?: string
+          is_active?: boolean
+          last_error?: string | null
+          provider?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_provider_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calls: {
+        Row: {
+          agent_email: string | null
+          agent_id: string | null
+          created_at: string
+          customer_id: string | null
+          customer_name: string | null
+          direction: string
+          duration_sec: number
+          ended_at: string | null
+          id: string
+          note: string | null
+          order_id: string | null
+          phone: string
+          provider: string
+          provider_call_sid: string | null
+          result: string | null
+          started_at: string
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          agent_email?: string | null
+          agent_id?: string | null
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string | null
+          direction?: string
+          duration_sec?: number
+          ended_at?: string | null
+          id?: string
+          note?: string | null
+          order_id?: string | null
+          phone: string
+          provider?: string
+          provider_call_sid?: string | null
+          result?: string | null
+          started_at?: string
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          agent_email?: string | null
+          agent_id?: string | null
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string | null
+          direction?: string
+          duration_sec?: number
+          ended_at?: string | null
+          id?: string
+          note?: string | null
+          order_id?: string | null
+          phone?: string
+          provider?: string
+          provider_call_sid?: string | null
+          result?: string | null
+          started_at?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calls_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "store_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calls_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calls_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
