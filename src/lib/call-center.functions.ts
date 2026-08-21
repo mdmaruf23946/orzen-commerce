@@ -370,7 +370,7 @@ export const updateCallOutcome = createServerFn({ method: "POST" })
 
     const { error } = await context.supabase
       .from("calls")
-      .update(patch)
+      .update(patch as never)
       .eq("id", data.callId)
       .eq("store_id", storeId);
     if (error) throw new Error(error.message);
