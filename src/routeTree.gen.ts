@@ -108,6 +108,7 @@ import { Route as AuthenticatedAdminCouriersRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminCourierOrdersRouteImport } from './routes/_authenticated/admin/courier-orders'
 import { Route as AuthenticatedAdminCouponsRouteImport } from './routes/_authenticated/admin/coupons'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
+import { Route as AuthenticatedAdminCallCenterRouteImport } from './routes/_authenticated/admin/call-center'
 import { Route as AuthenticatedAdminBannersRouteImport } from './routes/_authenticated/admin/banners'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin/analytics'
 import { Route as AuthenticatedAdminAiRecommendationsRouteImport } from './routes/_authenticated/admin/ai-recommendations'
@@ -159,6 +160,7 @@ import { Route as AuthenticatedAdminInvoiceOrderIdRouteImport } from './routes/_
 import { Route as AuthenticatedAdminBillingReturnRouteImport } from './routes/_authenticated/admin/billing.return'
 import { Route as ApiPublicSubscriptionPayWebhookProviderRouteImport } from './routes/api/public/subscription-pay/webhook.$provider'
 import { Route as ApiPublicLandingPagesConnectionIdOrdersRouteImport } from './routes/api/public/landing-pages/$connectionId/orders'
+import { Route as ApiPublicCallsTwilioStatusStoreRouteImport } from './routes/api/public/calls/twilio-status.$store'
 import { Route as AuthenticatedOwnerCommunicationHistoryIdRouteImport } from './routes/_authenticated/owner/communication.history.$id'
 import { Route as AuthenticatedAdminBillingCheckoutPackageIdRouteImport } from './routes/_authenticated/admin/billing.checkout.$packageId'
 import { Route as ApiPublicStorePaymentsWebhookStoreProviderRouteImport } from './routes/api/public/store-payments/webhook.$store.$provider'
@@ -721,6 +723,12 @@ const AuthenticatedAdminCategoriesRoute =
     path: '/categories',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminCallCenterRoute =
+  AuthenticatedAdminCallCenterRouteImport.update({
+    id: '/call-center',
+    path: '/call-center',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminBannersRoute =
   AuthenticatedAdminBannersRouteImport.update({
     id: '/banners',
@@ -1018,6 +1026,12 @@ const ApiPublicLandingPagesConnectionIdOrdersRoute =
     path: '/api/public/landing-pages/$connectionId/orders',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicCallsTwilioStatusStoreRoute =
+  ApiPublicCallsTwilioStatusStoreRouteImport.update({
+    id: '/api/public/calls/twilio-status/$store',
+    path: '/api/public/calls/twilio-status/$store',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedOwnerCommunicationHistoryIdRoute =
   AuthenticatedOwnerCommunicationHistoryIdRouteImport.update({
     id: '/$id',
@@ -1086,6 +1100,7 @@ export interface FileRoutesByFullPath {
   '/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
+  '/admin/call-center': typeof AuthenticatedAdminCallCenterRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/admin/courier-orders': typeof AuthenticatedAdminCourierOrdersRoute
@@ -1205,6 +1220,7 @@ export interface FileRoutesByFullPath {
   '/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
   '/owner/communication/history/$id': typeof AuthenticatedOwnerCommunicationHistoryIdRoute
+  '/api/public/calls/twilio-status/$store': typeof ApiPublicCallsTwilioStatusStoreRoute
   '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
   '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
@@ -1236,6 +1252,7 @@ export interface FileRoutesByTo {
   '/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
+  '/admin/call-center': typeof AuthenticatedAdminCallCenterRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/admin/courier-orders': typeof AuthenticatedAdminCourierOrdersRoute
@@ -1354,6 +1371,7 @@ export interface FileRoutesByTo {
   '/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
   '/owner/communication/history/$id': typeof AuthenticatedOwnerCommunicationHistoryIdRoute
+  '/api/public/calls/twilio-status/$store': typeof ApiPublicCallsTwilioStatusStoreRoute
   '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
   '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
@@ -1394,6 +1412,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/banners': typeof AuthenticatedAdminBannersRoute
+  '/_authenticated/admin/call-center': typeof AuthenticatedAdminCallCenterRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/_authenticated/admin/courier-orders': typeof AuthenticatedAdminCourierOrdersRoute
@@ -1513,6 +1532,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/_authenticated/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
   '/_authenticated/owner/communication/history/$id': typeof AuthenticatedOwnerCommunicationHistoryIdRoute
+  '/api/public/calls/twilio-status/$store': typeof ApiPublicCallsTwilioStatusStoreRoute
   '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
   '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
@@ -1553,6 +1573,7 @@ export interface FileRouteTypes {
     | '/admin/ai-recommendations'
     | '/admin/analytics'
     | '/admin/banners'
+    | '/admin/call-center'
     | '/admin/categories'
     | '/admin/coupons'
     | '/admin/courier-orders'
@@ -1672,6 +1693,7 @@ export interface FileRouteTypes {
     | '/owner/subscription-pay/'
     | '/admin/billing/checkout/$packageId'
     | '/owner/communication/history/$id'
+    | '/api/public/calls/twilio-status/$store'
     | '/api/public/landing-pages/$connectionId/orders'
     | '/api/public/subscription-pay/webhook/$provider'
     | '/api/public/landing-pages/$connectionId/api/orders'
@@ -1703,6 +1725,7 @@ export interface FileRouteTypes {
     | '/admin/ai-recommendations'
     | '/admin/analytics'
     | '/admin/banners'
+    | '/admin/call-center'
     | '/admin/categories'
     | '/admin/coupons'
     | '/admin/courier-orders'
@@ -1821,6 +1844,7 @@ export interface FileRouteTypes {
     | '/owner/subscription-pay'
     | '/admin/billing/checkout/$packageId'
     | '/owner/communication/history/$id'
+    | '/api/public/calls/twilio-status/$store'
     | '/api/public/landing-pages/$connectionId/orders'
     | '/api/public/subscription-pay/webhook/$provider'
     | '/api/public/landing-pages/$connectionId/api/orders'
@@ -1860,6 +1884,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/ai-recommendations'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/banners'
+    | '/_authenticated/admin/call-center'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/coupons'
     | '/_authenticated/admin/courier-orders'
@@ -1979,6 +2004,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/subscription-pay/'
     | '/_authenticated/admin/billing/checkout/$packageId'
     | '/_authenticated/owner/communication/history/$id'
+    | '/api/public/calls/twilio-status/$store'
     | '/api/public/landing-pages/$connectionId/orders'
     | '/api/public/subscription-pay/webhook/$provider'
     | '/api/public/landing-pages/$connectionId/api/orders'
@@ -2021,6 +2047,7 @@ export interface RootRouteChildren {
   ApiPublicTiktokTrackRoute: typeof ApiPublicTiktokTrackRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
+  ApiPublicCallsTwilioStatusStoreRoute: typeof ApiPublicCallsTwilioStatusStoreRoute
   ApiPublicLandingPagesConnectionIdOrdersRoute: typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   ApiPublicSubscriptionPayWebhookProviderRoute: typeof ApiPublicSubscriptionPayWebhookProviderRoute
   ApiPublicLandingPagesConnectionIdApiOrdersRoute: typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
@@ -2724,6 +2751,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCategoriesRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/call-center': {
+      id: '/_authenticated/admin/call-center'
+      path: '/call-center'
+      fullPath: '/admin/call-center'
+      preLoaderRoute: typeof AuthenticatedAdminCallCenterRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/banners': {
       id: '/_authenticated/admin/banners'
       path: '/banners'
@@ -3081,6 +3115,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicLandingPagesConnectionIdOrdersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/calls/twilio-status/$store': {
+      id: '/api/public/calls/twilio-status/$store'
+      path: '/api/public/calls/twilio-status/$store'
+      fullPath: '/api/public/calls/twilio-status/$store'
+      preLoaderRoute: typeof ApiPublicCallsTwilioStatusStoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/owner/communication/history/$id': {
       id: '/_authenticated/owner/communication/history/$id'
       path: '/$id'
@@ -3177,6 +3218,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminAiRecommendationsRoute: typeof AuthenticatedAdminAiRecommendationsRoute
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
   AuthenticatedAdminBannersRoute: typeof AuthenticatedAdminBannersRoute
+  AuthenticatedAdminCallCenterRoute: typeof AuthenticatedAdminCallCenterRoute
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminCouponsRoute: typeof AuthenticatedAdminCouponsRoute
   AuthenticatedAdminCourierOrdersRoute: typeof AuthenticatedAdminCourierOrdersRoute
@@ -3229,6 +3271,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
       AuthenticatedAdminAiRecommendationsRoute,
     AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
     AuthenticatedAdminBannersRoute: AuthenticatedAdminBannersRoute,
+    AuthenticatedAdminCallCenterRoute: AuthenticatedAdminCallCenterRoute,
     AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
     AuthenticatedAdminCouponsRoute: AuthenticatedAdminCouponsRoute,
     AuthenticatedAdminCourierOrdersRoute: AuthenticatedAdminCourierOrdersRoute,
@@ -3552,6 +3595,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicTiktokTrackRoute: ApiPublicTiktokTrackRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
+  ApiPublicCallsTwilioStatusStoreRoute: ApiPublicCallsTwilioStatusStoreRoute,
   ApiPublicLandingPagesConnectionIdOrdersRoute:
     ApiPublicLandingPagesConnectionIdOrdersRoute,
   ApiPublicSubscriptionPayWebhookProviderRoute:

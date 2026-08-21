@@ -104,7 +104,7 @@ export const saveCallProvider = createServerFn({ method: "POST" })
 
     const { error } = await context.supabase
       .from("call_provider_settings")
-      .upsert(patch, { onConflict: "store_id" });
+      .upsert(patch as never, { onConflict: "store_id" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -296,7 +296,7 @@ export const startCall = createServerFn({ method: "POST" })
 
     const { data: created, error } = await context.supabase
       .from("calls")
-      .insert(insert)
+      .insert(insert as never)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -370,7 +370,7 @@ export const updateCallOutcome = createServerFn({ method: "POST" })
 
     const { error } = await context.supabase
       .from("calls")
-      .update(patch)
+      .update(patch as never)
       .eq("id", data.callId)
       .eq("store_id", storeId);
     if (error) throw new Error(error.message);
