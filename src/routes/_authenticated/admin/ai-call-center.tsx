@@ -81,7 +81,7 @@ function StoreAiCallCenter() {
       <AdminPageHeader
         title="AI Call Center"
         description="Your AI voice agent confirms orders and answers customer calls."
-        actions={
+        action={
           s.selection?.activated_at ? (
             <label className="flex items-center gap-2 text-xs">
               {live ? "Live" : "Paused"}
