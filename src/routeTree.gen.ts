@@ -143,6 +143,7 @@ import { Route as ApiPublicCronSyncParcelsRouteImport } from './routes/api/publi
 import { Route as ApiPublicCronSubscriptionRenewalsRouteImport } from './routes/api/public/cron/subscription-renewals'
 import { Route as ApiPublicCronNotifyOrdersRouteImport } from './routes/api/public/cron/notify-orders'
 import { Route as ApiPublicAiCallsWebhookRouteImport } from './routes/api/public/ai-calls/webhook'
+import { Route as ApiPublicAiCallsToolRouteImport } from './routes/api/public/ai-calls/tool'
 import { Route as AuthenticatedOwnerSubscriptionPayProvidersRouteImport } from './routes/_authenticated/owner/subscription-pay.providers'
 import { Route as AuthenticatedOwnerNotificationCenterTemplatesRouteImport } from './routes/_authenticated/owner/notification-center.templates'
 import { Route as AuthenticatedOwnerNotificationCenterComposeRouteImport } from './routes/_authenticated/owner/notification-center.compose'
@@ -924,6 +925,11 @@ const ApiPublicAiCallsWebhookRoute = ApiPublicAiCallsWebhookRouteImport.update({
   path: '/api/public/ai-calls/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAiCallsToolRoute = ApiPublicAiCallsToolRouteImport.update({
+  id: '/api/public/ai-calls/tool',
+  path: '/api/public/ai-calls/tool',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedOwnerSubscriptionPayProvidersRoute =
   AuthenticatedOwnerSubscriptionPayProvidersRouteImport.update({
     id: '/providers',
@@ -1202,6 +1208,7 @@ export interface FileRoutesByFullPath {
   '/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
   '/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
@@ -1354,6 +1361,7 @@ export interface FileRoutesByTo {
   '/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
   '/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
@@ -1516,6 +1524,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
   '/_authenticated/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/_authenticated/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
@@ -1678,6 +1687,7 @@ export interface FileRouteTypes {
     | '/owner/notification-center/compose'
     | '/owner/notification-center/templates'
     | '/owner/subscription-pay/providers'
+    | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
     | '/api/public/cron/notify-orders'
     | '/api/public/cron/subscription-renewals'
@@ -1830,6 +1840,7 @@ export interface FileRouteTypes {
     | '/owner/notification-center/compose'
     | '/owner/notification-center/templates'
     | '/owner/subscription-pay/providers'
+    | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
     | '/api/public/cron/notify-orders'
     | '/api/public/cron/subscription-renewals'
@@ -1991,6 +2002,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/notification-center/compose'
     | '/_authenticated/owner/notification-center/templates'
     | '/_authenticated/owner/subscription-pay/providers'
+    | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
     | '/api/public/cron/notify-orders'
     | '/api/public/cron/subscription-renewals'
@@ -2049,6 +2061,7 @@ export interface RootRouteChildren {
   DotwellKnownOrzenDomainVerificationTokenRoute: typeof DotwellKnownOrzenDomainVerificationTokenRoute
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiImgSplatRoute: typeof ApiImgSplatRoute
+  ApiPublicAiCallsToolRoute: typeof ApiPublicAiCallsToolRoute
   ApiPublicAiCallsWebhookRoute: typeof ApiPublicAiCallsWebhookRoute
   ApiPublicCronNotifyOrdersRoute: typeof ApiPublicCronNotifyOrdersRoute
   ApiPublicCronSubscriptionRenewalsRoute: typeof ApiPublicCronSubscriptionRenewalsRoute
@@ -3009,6 +3022,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicAiCallsWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/ai-calls/tool': {
+      id: '/api/public/ai-calls/tool'
+      path: '/api/public/ai-calls/tool'
+      fullPath: '/api/public/ai-calls/tool'
+      preLoaderRoute: typeof ApiPublicAiCallsToolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/owner/subscription-pay/providers': {
       id: '/_authenticated/owner/subscription-pay/providers'
       path: '/providers'
@@ -3604,6 +3624,7 @@ const rootRouteChildren: RootRouteChildren = {
     DotwellKnownOrzenDomainVerificationTokenRoute,
   ApiAiChatRoute: ApiAiChatRoute,
   ApiImgSplatRoute: ApiImgSplatRoute,
+  ApiPublicAiCallsToolRoute: ApiPublicAiCallsToolRoute,
   ApiPublicAiCallsWebhookRoute: ApiPublicAiCallsWebhookRoute,
   ApiPublicCronNotifyOrdersRoute: ApiPublicCronNotifyOrdersRoute,
   ApiPublicCronSubscriptionRenewalsRoute:
