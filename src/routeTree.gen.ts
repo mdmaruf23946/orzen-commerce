@@ -113,6 +113,7 @@ import { Route as AuthenticatedAdminCallCenterRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminBannersRouteImport } from './routes/_authenticated/admin/banners'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin/analytics'
 import { Route as AuthenticatedAdminAiRecommendationsRouteImport } from './routes/_authenticated/admin/ai-recommendations'
+import { Route as AuthenticatedAdminAiCallCenterRouteImport } from './routes/_authenticated/admin/ai-call-center'
 import { Route as AuthenticatedAdminAiAgentRouteImport } from './routes/_authenticated/admin/ai-agent'
 import { Route as DotwellKnownOrzenDomainVerificationTokenRouteImport } from './routes/[.]well-known.orzen-domain-verification.$token'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
@@ -757,6 +758,12 @@ const AuthenticatedAdminAiRecommendationsRoute =
     path: '/ai-recommendations',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminAiCallCenterRoute =
+  AuthenticatedAdminAiCallCenterRouteImport.update({
+    id: '/ai-call-center',
+    path: '/ai-call-center',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminAiAgentRoute =
   AuthenticatedAdminAiAgentRouteImport.update({
     id: '/ai-agent',
@@ -1122,6 +1129,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/.well-known/orzen-domain-verification/$token': typeof DotwellKnownOrzenDomainVerificationTokenRoute
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
+  '/admin/ai-call-center': typeof AuthenticatedAdminAiCallCenterRoute
   '/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
@@ -1278,6 +1286,7 @@ export interface FileRoutesByTo {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/.well-known/orzen-domain-verification/$token': typeof DotwellKnownOrzenDomainVerificationTokenRoute
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
+  '/admin/ai-call-center': typeof AuthenticatedAdminAiCallCenterRoute
   '/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
@@ -1442,6 +1451,7 @@ export interface FileRoutesById {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/.well-known/orzen-domain-verification/$token': typeof DotwellKnownOrzenDomainVerificationTokenRoute
   '/_authenticated/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
+  '/_authenticated/admin/ai-call-center': typeof AuthenticatedAdminAiCallCenterRoute
   '/_authenticated/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/banners': typeof AuthenticatedAdminBannersRoute
@@ -1607,6 +1617,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/.well-known/orzen-domain-verification/$token'
     | '/admin/ai-agent'
+    | '/admin/ai-call-center'
     | '/admin/ai-recommendations'
     | '/admin/analytics'
     | '/admin/banners'
@@ -1763,6 +1774,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/.well-known/orzen-domain-verification/$token'
     | '/admin/ai-agent'
+    | '/admin/ai-call-center'
     | '/admin/ai-recommendations'
     | '/admin/analytics'
     | '/admin/banners'
@@ -1926,6 +1938,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/.well-known/orzen-domain-verification/$token'
     | '/_authenticated/admin/ai-agent'
+    | '/_authenticated/admin/ai-call-center'
     | '/_authenticated/admin/ai-recommendations'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/banners'
@@ -2838,6 +2851,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAiRecommendationsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/ai-call-center': {
+      id: '/_authenticated/admin/ai-call-center'
+      path: '/ai-call-center'
+      fullPath: '/admin/ai-call-center'
+      preLoaderRoute: typeof AuthenticatedAdminAiCallCenterRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/ai-agent': {
       id: '/_authenticated/admin/ai-agent'
       path: '/ai-agent'
@@ -3295,6 +3315,7 @@ const AuthenticatedAdminSettingsRouteWithChildren =
 interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminBillingRouteRoute: typeof AuthenticatedAdminBillingRouteRouteWithChildren
   AuthenticatedAdminAiAgentRoute: typeof AuthenticatedAdminAiAgentRoute
+  AuthenticatedAdminAiCallCenterRoute: typeof AuthenticatedAdminAiCallCenterRoute
   AuthenticatedAdminAiRecommendationsRoute: typeof AuthenticatedAdminAiRecommendationsRoute
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
   AuthenticatedAdminBannersRoute: typeof AuthenticatedAdminBannersRoute
@@ -3347,6 +3368,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminBillingRouteRoute:
       AuthenticatedAdminBillingRouteRouteWithChildren,
     AuthenticatedAdminAiAgentRoute: AuthenticatedAdminAiAgentRoute,
+    AuthenticatedAdminAiCallCenterRoute: AuthenticatedAdminAiCallCenterRoute,
     AuthenticatedAdminAiRecommendationsRoute:
       AuthenticatedAdminAiRecommendationsRoute,
     AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
