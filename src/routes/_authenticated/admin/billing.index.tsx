@@ -231,7 +231,7 @@ function BillingPage() {
 
         {(subStatus === "expired" || subStatus === "cancelled") && (
           <div className="mt-2 rounded-md bg-red-50 p-2 text-[11px] text-red-900 sm:mt-3 sm:rounded-lg sm:p-3 sm:text-sm dark:bg-red-950/30 dark:text-red-200">
-            Your subscription has expired. Upgrade to restore full access.
+            Your subscription has expired. The Free plan is active now — renew to restore full access.
           </div>
         )}
       </div>
