@@ -4,6 +4,8 @@ export const FEATURE_KEYS = [
   "ai_messenger",
   "ai_product_builder",
   "ai_call_center",
+  "call_center",
+  "landing_pages",
   "pixel",
   "courier",
   "inventory",
@@ -26,6 +28,8 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   ai_messenger: "AI Messenger",
   ai_product_builder: "AI Product Builder",
   ai_call_center: "AI Call Center",
+  call_center: "Manual Call Center",
+  landing_pages: "Landing Pages",
   pixel: "Facebook Pixel & Tracking",
   courier: "Courier Integration",
   inventory: "Inventory Management",
@@ -40,6 +44,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   custom_domain: "Custom Domain",
   fraud_checker: "Fraud Checker",
 };
+
 
 export type PackageRow = {
   is_trial?: boolean | null;
