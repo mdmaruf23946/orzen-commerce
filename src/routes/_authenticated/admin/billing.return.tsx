@@ -9,7 +9,7 @@ import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { verifyAndActivateSubscription } from "@/lib/subscription-pay/pay.functions";
 import { Button } from "@/components/ui/button";
 
-const search = z.object({ invoice: z.string(), val_id: z.string().optional() });
+const search = z.object({ invoice: z.string().optional(), val_id: z.string().optional() });
 
 export const Route = createFileRoute("/_authenticated/admin/billing/return")({
   head: () => ({
