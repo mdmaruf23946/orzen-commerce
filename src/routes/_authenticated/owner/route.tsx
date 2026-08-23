@@ -38,6 +38,7 @@ const groups: NavGroup[] = [
   { label: "AI", links: [
     { to: "/owner/ai", label: "AI Control", icon: Sparkles },
     { to: "/owner/ai-usage", label: "AI Usage", icon: BarChart3 },
+    { to: "/owner/ai-call-center", label: "AI Call Center", icon: PhoneCall },
   ]},
   { label: "Integrations", links: [
     { to: "/owner/couriers", label: "Couriers", icon: Truck },
