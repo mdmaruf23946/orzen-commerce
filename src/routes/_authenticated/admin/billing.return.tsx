@@ -44,7 +44,20 @@ function ReturnPage() {
   return (
     <div className="mx-auto max-w-md p-6">
       <div className="rounded-2xl border bg-card p-6 text-center shadow-sm">
-        {isLoading ? (
+        {missingRef ? (
+          <>
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-amber-100 text-amber-700">
+              <XCircle className="h-8 w-8" />
+            </div>
+            <h1 className="mt-3 text-lg font-semibold">No payment reference</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              This page opens automatically after a payment. Open Billing &amp; Plans to check your subscription status.
+            </p>
+            <Link to="/admin/billing" search={{} as never}>
+              <Button variant="outline" className="mt-4 w-full">Back to plans</Button>
+            </Link>
+          </>
+        ) : isLoading ? (
           <>
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-muted-foreground" />
             <h1 className="mt-3 text-lg font-semibold">Verifying your payment…</h1>
