@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -19,7 +20,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/_authenticated/admin/landing-pages/$id")({
   head: () => ({ meta: [{ title: "Landing page connection — Store Admin" }] }),
-  component: Detail,
+  component: () => (
+    <FeatureGate feature="landing_pages">
+      <Detail />
+    </FeatureGate>
+  ),
 });
 
 function Detail() {
