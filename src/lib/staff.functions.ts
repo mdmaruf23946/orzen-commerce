@@ -2,7 +2,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { assertPlan, assertLimit } from "@/lib/plan-guard";
+import { assertPlan, assertLimit, resolveEffectivePlan } from "@/lib/plan-guard";
 
 const STAFF_ROLES = ["manager", "agent", "viewer"] as const;
 const STAFF_STATUS = ["invited", "active", "suspended"] as const;
