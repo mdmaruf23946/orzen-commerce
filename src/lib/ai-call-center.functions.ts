@@ -590,7 +590,10 @@ export const listStoreAiCallCenters = createServerFn({ method: "GET" })
     await assertOwner(context.supabase, context.userId);
     const sb = context.supabase;
     const [{ data: stores }, { data: settings }, { data: numbers }, { data: calls }] = await Promise.all([
-      sb.from("stores").select("id,name,slug").order("name"),
+      sb
+        .from("stores")
+        .select("id,name,slug,subscription_status,subscription_packages(name,is_trial,features)")
+        .order("name"),
       sb.from("store_ai_call_settings").select("*"),
       sb.from("ai_phone_numbers").select("id,phone_number,store_id"),
       sb.from("ai_calls").select("store_id,duration_sec"),
@@ -604,7 +607,11 @@ export const listStoreAiCallCenters = createServerFn({ method: "GET" })
         store_id: s.id,
         name: s.name,
         slug: s.slug,
-        feature_enabled: !!st?.feature_enabled,
+        plan_name: (s.subscription_packages as any)?.name ?? null,
+        feature_enabled:
+          !["expired", "suspended", "cancelled"].includes(s.subscription_status ?? "active") &&
+          ((s.subscription_packages as any)?.is_trial === true ||
+            (s.subscription_packages as any)?.features?.ai_call_center === true),
         is_active: !!st?.is_active,
         phone_number: st?.phone_number_id ? (numById.get(st.phone_number_id) ?? null) : null,
         agent_id: st?.agent_id ?? null,
