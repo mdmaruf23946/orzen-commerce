@@ -66,6 +66,10 @@ const links: LinkDef[] = [
   { to: "/admin/delivery", label: "Delivery", icon: PackageOpen, badgeKey: "delivery" },
   { to: "/admin/couriers", label: "Couriers", icon: Truck, badgeKey: "delivery" },
   { to: "/admin/parcels", label: "Courier Parcels", icon: PackageOpen, badgeKey: "delivery" },
+  { to: "/admin/payment-gateway", label: "Payment Gateway", icon: CreditCard, badgeKey: "payment_gateway" },
+  { to: "/admin/staff", label: "Staff", icon: UserCog },
+  { to: "/admin/support", label: "Support", icon: MessageSquare },
+
 
   
   { to: "/admin/ai-agent", label: "AI Sales Agent", icon: Bot },
