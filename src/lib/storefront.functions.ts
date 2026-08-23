@@ -810,13 +810,19 @@ export const placeOrder = createServerFn({ method: "POST" })
     const sb = supabaseAdmin;
     const { data: store } = await sb
       .from("stores")
-      .select("id,status,delivery,require_customer_login,payments_config,subscription_packages(order_limit)")
+      .select(
+        "id,status,subscription_status,delivery,require_customer_login,payments_config,subscription_packages(order_limit)",
+      )
       .eq("id", data.storeId)
       .maybeSingle();
     if (!store || store.status !== "active") throw new Error("Store unavailable");
 
     // Plan order limit (per calendar month). 0 / null means unlimited.
-    const orderLimit = Number((store as any)?.subscription_packages?.order_limit ?? 0);
+    // An expired / suspended plan falls back to the Free plan's limit.
+    const { resolveEffectivePlan } = await import("@/lib/plan-guard");
+    const plan = await resolveEffectivePlan(sb, store as any);
+    const orderLimit = Number((plan as any)?.order_limit ?? 0);
+
     if (orderLimit > 0) {
       const monthStart = new Date();
       monthStart.setUTCDate(1);
