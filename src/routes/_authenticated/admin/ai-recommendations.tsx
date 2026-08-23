@@ -14,6 +14,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/_authenticated/admin/ai-recommendations")({
+  head: () => ({
+    meta: [
+      { title: "AI Recommendations — ORZEN Store Admin" },
+      { name: "description", content: "Review AI-generated product recommendations for your store." },
+      { property: "og:title", content: "AI Recommendations — ORZEN Store Admin" },
+      { property: "og:description", content: "Review AI-generated product recommendations for your store." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: AiRecommendationsPage,
 });
 

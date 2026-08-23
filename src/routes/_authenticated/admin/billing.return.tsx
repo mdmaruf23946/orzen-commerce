@@ -12,6 +12,17 @@ import { Button } from "@/components/ui/button";
 const search = z.object({ invoice: z.string(), val_id: z.string().optional() });
 
 export const Route = createFileRoute("/_authenticated/admin/billing/return")({
+  head: () => ({
+    meta: [
+      { title: "Payment Result — ORZEN Store Admin" },
+      { name: "description", content: "Subscription payment confirmation." },
+      { property: "og:title", content: "Payment Result — ORZEN Store Admin" },
+      { property: "og:description", content: "Subscription payment confirmation." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   validateSearch: search,
   component: ReturnPage,
 });

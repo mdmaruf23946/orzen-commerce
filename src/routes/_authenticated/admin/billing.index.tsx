@@ -15,6 +15,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/admin/billing/")({
+  head: () => ({
+    meta: [
+      { title: "Billing & Plans — ORZEN Store Admin" },
+      { name: "description", content: "Compare subscription plans, upgrade and view payment history." },
+      { property: "og:title", content: "Billing & Plans — ORZEN Store Admin" },
+      { property: "og:description", content: "Compare subscription plans, upgrade and view payment history." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   validateSearch: (s: Record<string, unknown>) => ({
     highlight: typeof s.highlight === "string" ? s.highlight : undefined,
     plan: typeof s.plan === "string" ? s.plan : undefined,

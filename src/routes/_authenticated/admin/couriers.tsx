@@ -14,6 +14,17 @@ import {
 } from "@/components/admin/couriers/providers";
 
 export const Route = createFileRoute("/_authenticated/admin/couriers")({
+  head: () => ({
+    meta: [
+      { title: "Couriers — ORZEN Store Admin" },
+      { name: "description", content: "Connect and configure courier providers for delivery." },
+      { property: "og:title", content: "Couriers — ORZEN Store Admin" },
+      { property: "og:description", content: "Connect and configure courier providers for delivery." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: () => (
     <FeatureGate feature="courier">
       <CouriersPage />

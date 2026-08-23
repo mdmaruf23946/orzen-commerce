@@ -65,6 +65,17 @@ import { getBrand } from "@/components/admin/payments/providers";
 import { WebhookEventsPanel } from "@/components/admin/payments/WebhookEventsPanel";
 
 export const Route = createFileRoute("/_authenticated/admin/payment-gateway")({
+  head: () => ({
+    meta: [
+      { title: "Payment Gateway — ORZEN Store Admin" },
+      { name: "description", content: "Configure payment providers and webhooks for your store." },
+      { property: "og:title", content: "Payment Gateway — ORZEN Store Admin" },
+      { property: "og:description", content: "Configure payment providers and webhooks for your store." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: PaymentGatewayPage,
 });
 

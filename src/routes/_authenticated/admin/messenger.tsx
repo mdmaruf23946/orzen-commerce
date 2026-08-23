@@ -24,6 +24,17 @@ import { Badge } from "@/components/ui/badge";
 import { Copy, Eye, EyeOff, RefreshCcw, CheckCircle2, XCircle, AlertTriangle, ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/messenger")({
+  head: () => ({
+    meta: [
+      { title: "Messenger Integration — ORZEN Store Admin" },
+      { name: "description", content: "Connect Facebook Messenger and configure the AI sales flow." },
+      { property: "og:title", content: "Messenger Integration — ORZEN Store Admin" },
+      { property: "og:description", content: "Connect Facebook Messenger and configure the AI sales flow." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: () => (
     <FeatureGate feature="ai_messenger">
       <AdminMessenger />

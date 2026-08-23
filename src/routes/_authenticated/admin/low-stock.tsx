@@ -9,6 +9,17 @@ import { listLowStockAlerts, resolveLowStockAlert } from "@/lib/ai-review.functi
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/admin/low-stock")({
+  head: () => ({
+    meta: [
+      { title: "Low Stock Alerts — ORZEN Store Admin" },
+      { name: "description", content: "Products running low on inventory." },
+      { property: "og:title", content: "Low Stock Alerts — ORZEN Store Admin" },
+      { property: "og:description", content: "Products running low on inventory." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: LowStockPage,
 });
 

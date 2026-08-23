@@ -24,6 +24,17 @@ import { useProductTypeScope } from "@/lib/product-type-scope";
 import { AdminToolbar } from "@/components/admin/page/AdminToolbar";
 
 export const Route = createFileRoute("/_authenticated/admin/banners")({
+  head: () => ({
+    meta: [
+      { title: "Banners — ORZEN Store Admin" },
+      { name: "description", content: "Manage storefront banners and promotional slides." },
+      { property: "og:title", content: "Banners — ORZEN Store Admin" },
+      { property: "og:description", content: "Manage storefront banners and promotional slides." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: BannersPage,
 });
 

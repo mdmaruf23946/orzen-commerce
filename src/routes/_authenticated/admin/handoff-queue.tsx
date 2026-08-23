@@ -7,6 +7,17 @@ import { listHandoffQueue, returnConversationToAi } from "@/lib/ai-review.functi
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/admin/handoff-queue")({
+  head: () => ({
+    meta: [
+      { title: "Handoff Queue — ORZEN Store Admin" },
+      { name: "description", content: "Conversations waiting for a human agent." },
+      { property: "og:title", content: "Handoff Queue — ORZEN Store Admin" },
+      { property: "og:description", content: "Conversations waiting for a human agent." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: HandoffQueuePage,
 });
 

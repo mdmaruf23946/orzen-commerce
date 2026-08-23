@@ -18,6 +18,17 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/product-defaults")({
+  head: () => ({
+    meta: [
+      { title: "Product Defaults — ORZEN Store Admin" },
+      { name: "description", content: "Default values applied to new products." },
+      { property: "og:title", content: "Product Defaults — ORZEN Store Admin" },
+      { property: "og:description", content: "Default values applied to new products." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: ProductDefaultsPage,
 });
 

@@ -30,6 +30,17 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/customers")({
+  head: () => ({
+    meta: [
+      { title: "Customers — ORZEN Store Admin" },
+      { name: "description", content: "View customer profiles, orders and notes." },
+      { property: "og:title", content: "Customers — ORZEN Store Admin" },
+      { property: "og:description", content: "View customer profiles, orders and notes." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: CustomersPage,
 });
 
