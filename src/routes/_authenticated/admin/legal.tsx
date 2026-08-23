@@ -26,6 +26,17 @@ const PAGES = [
 ] as const;
 
 export const Route = createFileRoute("/_authenticated/admin/legal")({
+  head: () => ({
+    meta: [
+      { title: "Legal & Info Pages — ORZEN Store Admin" },
+      { name: "description", content: "Edit your store's policy and information pages." },
+      { property: "og:title", content: "Legal & Info Pages — ORZEN Store Admin" },
+      { property: "og:description", content: "Edit your store's policy and information pages." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: LegalPageAdmin,
 });
 

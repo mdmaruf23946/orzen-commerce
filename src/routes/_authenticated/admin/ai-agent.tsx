@@ -15,6 +15,17 @@ import { normalizeOrderFlow, type OrderFlowConfig } from "@/lib/messenger-order-
 import { AGENT_DEFAULTS, type AgentForm, type AgentSources, type KnowledgeSummary } from "@/components/admin/ai-agent/types";
 
 export const Route = createFileRoute("/_authenticated/admin/ai-agent")({
+  head: () => ({
+    meta: [
+      { title: "AI Sales Agent — ORZEN Store Admin" },
+      { name: "description", content: "Configure your store's AI sales agent, knowledge base and behaviour." },
+      { property: "og:title", content: "AI Sales Agent — ORZEN Store Admin" },
+      { property: "og:description", content: "Configure your store's AI sales agent, knowledge base and behaviour." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: () => (
     <FeatureGate feature="ai_agent">
       <AdminAgent />

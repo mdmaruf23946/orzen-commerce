@@ -38,6 +38,17 @@ import {
 } from "@/components/admin/settings/shared";
 
 export const Route = createFileRoute("/_authenticated/admin/settings/information")({
+  head: () => ({
+    meta: [
+      { title: "Store Information — ORZEN Store Admin" },
+      { name: "description", content: "Store identity, contact details and branding." },
+      { property: "og:title", content: "Store Information — ORZEN Store Admin" },
+      { property: "og:description", content: "Store identity, contact details and branding." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: StoreInformationPage,
 });
 

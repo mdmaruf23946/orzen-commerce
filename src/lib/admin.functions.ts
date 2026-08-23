@@ -2,7 +2,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { assertPlan } from "@/lib/plan-guard";
+import { assertPlan, assertLimit } from "@/lib/plan-guard";
 import {
   fetchTemplate,
   templateStoreFields,
@@ -446,6 +446,8 @@ export const upsertProduct = createServerFn({ method: "POST" })
       if (error) throw new Error(error.message);
       return { id: data.id };
     }
+    // New product → enforce the plan's product limit.
+    await assertLimit(supabase, userId, "product");
     const slug = slugify(data.name) + "-" + Math.random().toString(36).slice(2, 6);
     const { data: created, error } = await supabase
       .from("products")

@@ -15,6 +15,17 @@ import { ManualReturnWizard } from "@/components/admin/returns/ManualReturnWizar
 import { KIND_LABEL, STATUS_LABEL } from "@/lib/returns-pricing";
 
 export const Route = createFileRoute("/_authenticated/admin/returns")({
+  head: () => ({
+    meta: [
+      { title: "Returns & Exchanges — ORZEN Store Admin" },
+      { name: "description", content: "Handle customer return and exchange requests." },
+      { property: "og:title", content: "Returns & Exchanges — ORZEN Store Admin" },
+      { property: "og:description", content: "Handle customer return and exchange requests." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: () => (
     <FeatureGate feature="returns">
       <ReturnsPage />

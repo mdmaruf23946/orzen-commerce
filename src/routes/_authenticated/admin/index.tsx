@@ -18,6 +18,17 @@ import { cn } from "@/lib/utils";
 import { QuickOrderSheet } from "@/components/admin/quick-order/QuickOrderSheet";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
+  head: () => ({
+    meta: [
+      { title: "Dashboard — ORZEN Store Admin" },
+      { name: "description", content: "Your store overview: orders, revenue and quick actions." },
+      { property: "og:title", content: "Dashboard — ORZEN Store Admin" },
+      { property: "og:description", content: "Your store overview: orders, revenue and quick actions." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: Dashboard,
 });
 

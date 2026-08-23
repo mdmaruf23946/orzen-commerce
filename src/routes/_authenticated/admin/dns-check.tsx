@@ -8,7 +8,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export const Route = createFileRoute("/_authenticated/admin/dns-check")({ component: Page });
+export const Route = createFileRoute("/_authenticated/admin/dns-check")({
+  component: Page,
+  head: () => ({
+    meta: [
+      { title: "DNS Checker — ORZEN Store Admin" },
+      { name: "description", content: "Verify DNS records for your store domain." },
+      { property: "og:title", content: "DNS Checker — ORZEN Store Admin" },
+      { property: "og:description", content: "Verify DNS records for your store domain." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
+});
 
 function StatusRow({ ok, label, detail }: { ok: boolean; label: string; detail?: string }) {
   return (

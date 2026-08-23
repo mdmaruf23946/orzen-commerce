@@ -6804,6 +6804,62 @@ export type Database = {
           },
         ]
       }
+      store_staff: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          invited_at: string
+          joined_at: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          role: string
+          status: string
+          store_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          invited_at?: string
+          joined_at?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          role?: string
+          status?: string
+          store_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          invited_at?: string
+          joined_at?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          role?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_staff_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_subscription_events: {
         Row: {
           actor: string

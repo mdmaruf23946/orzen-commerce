@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -36,7 +37,11 @@ import { compressImage } from "@/lib/compress-image";
 import { MessengerMark } from "@/components/admin/brand/MessengerMark";
 
 export const Route = createFileRoute("/_authenticated/admin/messenger-inbox")({
-  component: MessengerInbox,
+  component: () => (
+    <FeatureGate feature="ai_messenger">
+      <MessengerInbox />
+    </FeatureGate>
+  ),
   head: () => ({
     meta: [{ title: "Messenger Inbox — Store Admin" }],
   }),

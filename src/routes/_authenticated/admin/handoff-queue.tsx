@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -7,7 +8,22 @@ import { listHandoffQueue, returnConversationToAi } from "@/lib/ai-review.functi
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/admin/handoff-queue")({
-  component: HandoffQueuePage,
+  head: () => ({
+    meta: [
+      { title: "Handoff Queue — ORZEN Store Admin" },
+      { name: "description", content: "Conversations waiting for a human agent." },
+      { property: "og:title", content: "Handoff Queue — ORZEN Store Admin" },
+      { property: "og:description", content: "Conversations waiting for a human agent." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
+  component: () => (
+    <FeatureGate feature="ai_agent">
+      <HandoffQueuePage />
+    </FeatureGate>
+  ),
 });
 
 function HandoffQueuePage() {

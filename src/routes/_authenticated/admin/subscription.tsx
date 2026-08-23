@@ -4,6 +4,17 @@ import { useServerFn } from "@tanstack/react-start";
 import { mySubscription } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/subscription")({
+  head: () => ({
+    meta: [
+      { title: "My Subscription — ORZEN Store Admin" },
+      { name: "description", content: "Your current Orzen plan and renewal details." },
+      { property: "og:title", content: "My Subscription — ORZEN Store Admin" },
+      { property: "og:description", content: "Your current Orzen plan and renewal details." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: SubscriptionPage,
 });
 

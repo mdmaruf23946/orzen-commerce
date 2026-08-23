@@ -7,7 +7,20 @@ import { listMyNotifications, markNotificationRead, markAllNotificationsRead } f
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_authenticated/admin/inbox")({ component: Inbox });
+export const Route = createFileRoute("/_authenticated/admin/inbox")({
+  component: Inbox,
+  head: () => ({
+    meta: [
+      { title: "Notifications Inbox — ORZEN Store Admin" },
+      { name: "description", content: "Your store notifications and alerts." },
+      { property: "og:title", content: "Notifications Inbox — ORZEN Store Admin" },
+      { property: "og:description", content: "Your store notifications and alerts." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
+});
 
 const priorityColor: Record<string, string> = {
   urgent: "border-l-red-500",

@@ -42,6 +42,8 @@ type LinkDef = {
 
 const links: LinkDef[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/admin/inbox", label: "Notifications Inbox", icon: Bell, badgeKey: "notifications" },
+
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag, badgeKey: "orders" },
   { to: "/admin/courier-orders", label: "Courier Orders", icon: Truck, badgeKey: "delivery" },
   { to: "/admin/products", label: "Products", icon: Package },
@@ -63,7 +65,12 @@ const links: LinkDef[] = [
   { to: "/admin/legal", label: "Legal & Info Pages", icon: FileText },
   { to: "/admin/delivery", label: "Delivery", icon: PackageOpen, badgeKey: "delivery" },
   { to: "/admin/couriers", label: "Couriers", icon: Truck, badgeKey: "delivery" },
+  { to: "/admin/parcels", label: "Courier Parcels", icon: PackageOpen, badgeKey: "delivery" },
   { to: "/admin/payment-gateway", label: "Payment Gateway", icon: CreditCard, badgeKey: "payment_gateway" },
+  { to: "/admin/staff", label: "Staff", icon: UserCog },
+  { to: "/admin/support", label: "Support", icon: MessageSquare },
+
+
   
   { to: "/admin/ai-agent", label: "AI Sales Agent", icon: Bot },
   { to: "/admin/ai-recommendations", label: "AI Recommendations", icon: Sparkles, badgeKey: "ai_recommendations" },
@@ -99,7 +106,7 @@ const links: LinkDef[] = [
 
 
 const groupDefs: { label: string; paths: string[] }[] = [
-  { label: "Main", paths: ["/admin"] },
+  { label: "Main", paths: ["/admin", "/admin/inbox"] },
   { label: "Orders", paths: ["/admin/orders", "/admin/courier-orders", "/admin/returns"] },
   { label: "Products", paths: ["/admin/products", "/admin/categories", "/admin/inventory", "/admin/product-defaults"] },
   { label: "Customers", paths: ["/admin/customers", "/admin/customers-accounts", "/admin/duplicate-protection"] },
@@ -107,10 +114,11 @@ const groupDefs: { label: string; paths: string[] }[] = [
   { label: "AI & Automation", paths: ["/admin/ai-agent", "/admin/ai-recommendations", "/admin/handoff-queue", "/admin/low-stock", "/admin/messenger", "/admin/messenger-inbox", "/admin/whatsapp", "/admin/whatsapp-inbox"] },
   { label: "Marketing", paths: ["/admin/marketing", "/admin/coupons", "/admin/seo", "/admin/banners", "/admin/notifications"] },
   { label: "Finance", paths: ["/admin/payment-gateway", "/admin/finance", "/admin/analytics"] },
-  { label: "Operations", paths: ["/admin/delivery", "/admin/couriers", "/admin/landing-builder", "/admin/landing-pages"] },
-  { label: "System", paths: ["/admin/theme", "/admin/legal", "/admin/invoice-templates", "/admin/domains", "/admin/dns-check", "/admin/import-export"] },
-  { label: "Account", paths: ["/admin/subscription", "/admin/billing", "/admin/settings"] },
+  { label: "Operations", paths: ["/admin/delivery", "/admin/couriers", "/admin/parcels", "/admin/landing-builder", "/admin/landing-pages"] },
+  { label: "System", paths: ["/admin/theme", "/admin/legal", "/admin/invoice-templates", "/admin/domains", "/admin/dns-check", "/admin/import-export", "/admin/staff"] },
+  { label: "Account", paths: ["/admin/subscription", "/admin/billing", "/admin/support", "/admin/settings"] },
 ];
+
 
 function buildGroups(query: string) {
   const q = query.trim().toLowerCase();

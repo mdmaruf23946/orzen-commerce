@@ -15,6 +15,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Search, User } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/customers-accounts")({
+  head: () => ({
+    meta: [
+      { title: "Customer Accounts — ORZEN Store Admin" },
+      { name: "description", content: "Manage registered storefront customer accounts." },
+      { property: "og:title", content: "Customer Accounts — ORZEN Store Admin" },
+      { property: "og:description", content: "Manage registered storefront customer accounts." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: CustomerAccountsPage,
 });
 

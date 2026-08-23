@@ -18,6 +18,17 @@ import { useProductTypeScope } from "@/lib/product-type-scope";
 import { AdminToolbar } from "@/components/admin/page/AdminToolbar";
 
 export const Route = createFileRoute("/_authenticated/admin/coupons")({
+  head: () => ({
+    meta: [
+      { title: "Coupons — ORZEN Store Admin" },
+      { name: "description", content: "Create and manage discount coupons for your store." },
+      { property: "og:title", content: "Coupons — ORZEN Store Admin" },
+      { property: "og:description", content: "Create and manage discount coupons for your store." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: () => <FeatureGate feature="coupons"><CouponsPage /></FeatureGate>,
 });
 

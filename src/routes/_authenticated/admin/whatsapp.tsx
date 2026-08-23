@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
@@ -19,7 +20,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/_authenticated/admin/whatsapp")({
-  component: WhatsappPage,
+  component: () => (
+    <FeatureGate feature="ai_messenger">
+      <WhatsappPage />
+    </FeatureGate>
+  ),
   head: () => ({
     meta: [
       { title: "WhatsApp Integration | ORZEN Store Admin" },

@@ -24,6 +24,17 @@ const searchSchema = z.object({
 });
 
 export const Route = createFileRoute("/_authenticated/admin/billing/checkout/$packageId")({
+  head: () => ({
+    meta: [
+      { title: "Plan Checkout — ORZEN Store Admin" },
+      { name: "description", content: "Complete your subscription plan purchase." },
+      { property: "og:title", content: "Plan Checkout — ORZEN Store Admin" },
+      { property: "og:description", content: "Complete your subscription plan purchase." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   validateSearch: searchSchema,
   component: CheckoutPage,
 });

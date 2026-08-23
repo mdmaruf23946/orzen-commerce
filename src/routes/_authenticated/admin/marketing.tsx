@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useState } from "react";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
 import { FacebookTab } from "@/components/admin/marketing/FacebookTab";
@@ -6,7 +7,22 @@ import { GoogleTab } from "@/components/admin/marketing/GoogleTab";
 import { TiktokTab } from "@/components/admin/marketing/TiktokTab";
 
 export const Route = createFileRoute("/_authenticated/admin/marketing")({
-  component: MarketingPage,
+  head: () => ({
+    meta: [
+      { title: "Marketing & Tracking — ORZEN Store Admin" },
+      { name: "description", content: "Facebook, Google and TikTok tracking for your store." },
+      { property: "og:title", content: "Marketing & Tracking — ORZEN Store Admin" },
+      { property: "og:description", content: "Facebook, Google and TikTok tracking for your store." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
+  component: () => (
+    <FeatureGate feature="pixel">
+      <MarketingPage />
+    </FeatureGate>
+  ),
 });
 
 const TABS = [

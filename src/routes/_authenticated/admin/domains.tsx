@@ -30,7 +30,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 
-export const Route = createFileRoute("/_authenticated/admin/domains")({ component: Page });
+export const Route = createFileRoute("/_authenticated/admin/domains")({
+  component: Page,
+  head: () => ({
+    meta: [
+      { title: "Domains — ORZEN Store Admin" },
+      { name: "description", content: "Manage your store subdomain and custom domains." },
+      { property: "og:title", content: "Domains — ORZEN Store Admin" },
+      { property: "og:description", content: "Manage your store subdomain and custom domains." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
+});
 
 const STATUS_STYLE: Record<string, string> = {
   pending: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200",

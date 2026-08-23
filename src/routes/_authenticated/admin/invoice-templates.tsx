@@ -1,8 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { InvoiceTemplatesManager } from "@/components/invoice/InvoiceTemplatesManager";
+import { FeatureGate } from "@/components/admin/FeatureGate";
 
 export const Route = createFileRoute("/_authenticated/admin/invoice-templates")({
-  component: () => <InvoiceTemplatesManager scope="store" />,
+  component: () => (
+    <FeatureGate feature="invoice">
+      <InvoiceTemplatesManager scope="store" />
+    </FeatureGate>
+  ),
+
   head: () => ({
     meta: [
       { title: "Invoice Templates — ORZEN Store Admin" },

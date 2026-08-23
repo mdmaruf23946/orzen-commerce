@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -14,7 +15,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/_authenticated/admin/ai-recommendations")({
-  component: AiRecommendationsPage,
+  head: () => ({
+    meta: [
+      { title: "AI Recommendations — ORZEN Store Admin" },
+      { name: "description", content: "Review AI-generated product recommendations for your store." },
+      { property: "og:title", content: "AI Recommendations — ORZEN Store Admin" },
+      { property: "og:description", content: "Review AI-generated product recommendations for your store." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
+  component: () => (
+    <FeatureGate feature="ai_agent">
+      <AiRecommendationsPage />
+    </FeatureGate>
+  ),
 });
 
 function AiRecommendationsPage() {
