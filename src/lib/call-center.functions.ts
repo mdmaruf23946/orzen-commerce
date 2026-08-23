@@ -194,31 +194,62 @@ export const listCalls = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => FilterSchema.parse(d ?? {}))
   .handler(async ({ data, context }) => {
     const storeId = await storeIdOrThrow(context.supabase, context.userId);
-    let q = context.supabase
-      .from("calls")
-      .select(SELECT)
-      .eq("store_id", storeId)
-      .order("created_at", { ascending: false })
-      .limit(data.limit);
 
-    if (data.filter === "today") q = q.gte("created_at", todayStart());
-    else if (data.filter === "answered") q = q.in("status", ["answered", "completed"]);
-    else if (data.filter === "missed") q = q.eq("status", "missed");
-    else if (data.filter === "failed") q = q.eq("status", "failed");
-    else if (data.filter === "no_answer") q = q.eq("status", "no_answer");
+    function baseQuery() {
+      let q = context.supabase
+        .from("calls")
+        .select(SELECT)
+        .eq("store_id", storeId)
+        .order("created_at", { ascending: false })
+        .limit(data.limit);
+
+      if (data.filter === "today") q = q.gte("created_at", todayStart());
+      else if (data.filter === "answered") q = q.in("status", ["answered", "completed"]);
+      else if (data.filter === "missed") q = q.eq("status", "missed");
+      else if (data.filter === "failed") q = q.eq("status", "failed");
+      else if (data.filter === "no_answer") q = q.eq("status", "no_answer");
+      return q;
+    }
 
     const s = data.search.trim();
-    if (s) q = q.or(`customer_name.ilike.%${s}%,phone.ilike.%${s}%`);
+    let rows: any[] = [];
 
-    const { data: rows, error } = await q;
-    if (error) throw new Error(error.message);
-    let out = (rows ?? []).map(shape);
     if (s) {
-      const lower = s.toLowerCase();
-      const matchesInvoice = out.filter((r) => (r.invoice_no ?? "").toLowerCase().includes(lower));
-      if (!out.length && matchesInvoice.length) out = matchesInvoice;
+      const [contactRes, orderRes] = await Promise.all([
+        baseQuery().or(`customer_name.ilike.%${s}%,phone.ilike.%${s}%`),
+        context.supabase
+          .from("orders")
+          .select("id")
+          .eq("store_id", storeId)
+          .ilike("invoice_no", `%${s}%`)
+          .limit(50),
+      ]);
+
+      if (contactRes.error) throw new Error(contactRes.error.message);
+      if (orderRes.error) throw new Error(orderRes.error.message);
+
+      const contactRows = (contactRes.data ?? []) as any[];
+      const orderIds = (orderRes.data ?? []).map((o: any) => o.id);
+
+      let invoiceRows: any[] = [];
+      if (orderIds.length) {
+        const { data: invRows, error: invError } = await baseQuery().in("order_id", orderIds);
+        if (invError) throw new Error(invError.message);
+        invoiceRows = invRows ?? [];
+      }
+
+      const seen = new Set<string>();
+      rows = [...contactRows, ...invoiceRows]
+        .filter((r) => !seen.has(r.id) && (seen.add(r.id), true))
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, data.limit);
+    } else {
+      const { data: allRows, error } = await baseQuery();
+      if (error) throw new Error(error.message);
+      rows = allRows ?? [];
     }
-    return out;
+
+    return rows.map(shape);
   });
 
 export const getCallsForOrder = createServerFn({ method: "GET" })
