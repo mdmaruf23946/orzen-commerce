@@ -142,6 +142,7 @@ import { Route as ApiPublicFbCapiTrackRouteImport } from './routes/api/public/fb
 import { Route as ApiPublicCronSyncParcelsRouteImport } from './routes/api/public/cron/sync-parcels'
 import { Route as ApiPublicCronSubscriptionRenewalsRouteImport } from './routes/api/public/cron/subscription-renewals'
 import { Route as ApiPublicCronNotifyOrdersRouteImport } from './routes/api/public/cron/notify-orders'
+import { Route as ApiPublicCronAiCallsRouteImport } from './routes/api/public/cron/ai-calls'
 import { Route as ApiPublicAiCallsWebhookRouteImport } from './routes/api/public/ai-calls/webhook'
 import { Route as ApiPublicAiCallsToolRouteImport } from './routes/api/public/ai-calls/tool'
 import { Route as AuthenticatedOwnerSubscriptionPayProvidersRouteImport } from './routes/_authenticated/owner/subscription-pay.providers'
@@ -920,6 +921,11 @@ const ApiPublicCronNotifyOrdersRoute =
     path: '/api/public/cron/notify-orders',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicCronAiCallsRoute = ApiPublicCronAiCallsRouteImport.update({
+  id: '/api/public/cron/ai-calls',
+  path: '/api/public/cron/ai-calls',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicAiCallsWebhookRoute = ApiPublicAiCallsWebhookRouteImport.update({
   id: '/api/public/ai-calls/webhook',
   path: '/api/public/ai-calls/webhook',
@@ -1210,6 +1216,7 @@ export interface FileRoutesByFullPath {
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
+  '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
@@ -1363,6 +1370,7 @@ export interface FileRoutesByTo {
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
+  '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
@@ -1526,6 +1534,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
+  '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
@@ -1689,6 +1698,7 @@ export interface FileRouteTypes {
     | '/owner/subscription-pay/providers'
     | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
+    | '/api/public/cron/ai-calls'
     | '/api/public/cron/notify-orders'
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
@@ -1842,6 +1852,7 @@ export interface FileRouteTypes {
     | '/owner/subscription-pay/providers'
     | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
+    | '/api/public/cron/ai-calls'
     | '/api/public/cron/notify-orders'
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
@@ -2004,6 +2015,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/subscription-pay/providers'
     | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
+    | '/api/public/cron/ai-calls'
     | '/api/public/cron/notify-orders'
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
@@ -2063,6 +2075,7 @@ export interface RootRouteChildren {
   ApiImgSplatRoute: typeof ApiImgSplatRoute
   ApiPublicAiCallsToolRoute: typeof ApiPublicAiCallsToolRoute
   ApiPublicAiCallsWebhookRoute: typeof ApiPublicAiCallsWebhookRoute
+  ApiPublicCronAiCallsRoute: typeof ApiPublicCronAiCallsRoute
   ApiPublicCronNotifyOrdersRoute: typeof ApiPublicCronNotifyOrdersRoute
   ApiPublicCronSubscriptionRenewalsRoute: typeof ApiPublicCronSubscriptionRenewalsRoute
   ApiPublicCronSyncParcelsRoute: typeof ApiPublicCronSyncParcelsRoute
@@ -3015,6 +3028,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronNotifyOrdersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cron/ai-calls': {
+      id: '/api/public/cron/ai-calls'
+      path: '/api/public/cron/ai-calls'
+      fullPath: '/api/public/cron/ai-calls'
+      preLoaderRoute: typeof ApiPublicCronAiCallsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/ai-calls/webhook': {
       id: '/api/public/ai-calls/webhook'
       path: '/api/public/ai-calls/webhook'
@@ -3626,6 +3646,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiImgSplatRoute: ApiImgSplatRoute,
   ApiPublicAiCallsToolRoute: ApiPublicAiCallsToolRoute,
   ApiPublicAiCallsWebhookRoute: ApiPublicAiCallsWebhookRoute,
+  ApiPublicCronAiCallsRoute: ApiPublicCronAiCallsRoute,
   ApiPublicCronNotifyOrdersRoute: ApiPublicCronNotifyOrdersRoute,
   ApiPublicCronSubscriptionRenewalsRoute:
     ApiPublicCronSubscriptionRenewalsRoute,
