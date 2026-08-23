@@ -117,9 +117,10 @@ export async function assertLimit(
     .maybeSingle();
   if (!store) throw new Error("No store found for this account");
 
-  const pkg = (store as any).subscription_packages;
+  const pkg = await resolveEffectivePlan(supabase, store as any);
   const limit = pkg ? Number(pkg[LIMIT_COLUMN[kind]] ?? 0) : 0;
   if (!pkg || !limit || limit <= 0) return (store as any).id;
+
 
   const storeId = (store as any).id as string;
   let used = 0;
