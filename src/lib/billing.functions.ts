@@ -91,6 +91,20 @@ export const myBillingStatus = createServerFn({ method: "GET" })
     const store = storeRaw as any;
     if (!store) return { store: null, payments: [], notifications: [], days_left: 0 };
 
+    // When the paid plan has lapsed the store keeps running on the Free plan.
+    if (["expired", "suspended", "cancelled"].includes(store.subscription_status ?? "active")) {
+      const { data: freePkg } = await supabase
+        .from("subscription_packages")
+        .select(PUBLIC_FIELDS)
+        .eq("is_active", true)
+        .eq("is_trial", false)
+        .eq("plan_tier", "free")
+        .limit(1)
+        .maybeSingle();
+      store.free_package = freePkg ?? null;
+    }
+
+
     const [{ data: payments }, { data: notifications }] = await Promise.all([
       supabase
         .from("payments")

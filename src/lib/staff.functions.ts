@@ -2,7 +2,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { assertPlan, assertLimit } from "@/lib/plan-guard";
+import { assertPlan, assertLimit, resolveEffectivePlan } from "@/lib/plan-guard";
 
 const STAFF_ROLES = ["manager", "agent", "viewer"] as const;
 const STAFF_STATUS = ["invited", "active", "suspended"] as const;
@@ -29,11 +29,13 @@ export const listStaff = createServerFn({ method: "GET" })
         .order("created_at", { ascending: false }),
       context.supabase
         .from("stores")
-        .select("subscription_packages(staff_limit,is_trial)")
+        .select("subscription_status, subscription_packages(staff_limit,is_trial)")
         .eq("id", sid)
         .maybeSingle(),
     ]);
-    const limit = Number((store as any)?.subscription_packages?.staff_limit ?? 0);
+    const plan = await resolveEffectivePlan(context.supabase, store as any);
+    const limit = Number((plan as any)?.staff_limit ?? 0);
+
     return { rows: rows ?? [], limit, used: (rows ?? []).length };
   });
 

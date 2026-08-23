@@ -2,8 +2,39 @@
 // Import into server function handlers so gated features can't be
 // invoked by calling the RPC directly (bypassing the client-side UI gate).
 import type { FeatureKey } from "@/lib/features";
+import { INACTIVE_STATUSES } from "@/lib/features";
 
-const READ_ONLY_STATUSES = new Set(["expired", "suspended", "cancelled"]);
+const INACTIVE = new Set<string>(INACTIVE_STATUSES as readonly string[]);
+
+export const FREE_PLAN_FIELDS =
+  "is_trial, features, product_limit, order_limit, staff_limit, storage_mb";
+
+/** The active Free plan every store falls back to when its paid plan lapses. */
+export async function loadFreePlan(supabase: any): Promise<any | null> {
+  const { data } = await supabase
+    .from("subscription_packages")
+    .select(FREE_PLAN_FIELDS)
+    .eq("is_active", true)
+    .eq("is_trial", false)
+    .eq("plan_tier", "free")
+    .order("price", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return data ?? null;
+}
+
+/**
+ * Returns the plan whose access actually applies: the store's own plan while
+ * the subscription is active, otherwise the Free plan.
+ */
+export async function resolveEffectivePlan(
+  supabase: any,
+  store: { subscription_status?: string | null; subscription_packages?: any },
+): Promise<any | null> {
+  const status = store?.subscription_status ?? "active";
+  if (!INACTIVE.has(status)) return store?.subscription_packages ?? null;
+  return await loadFreePlan(supabase);
+}
 
 type MinimalStore = {
   id: string;
@@ -23,9 +54,9 @@ async function loadStoreForUser(supabase: any, userId: string): Promise<MinimalS
 }
 
 /**
- * Ensures the current user's store has an active subscription and (optionally)
- * that the given feature is included in the active plan. Returns the store id
- * for convenience. Throws a user-facing Error when access is denied.
+ * Ensures the given feature is included in the plan that currently applies.
+ * An expired / suspended / cancelled subscription drops the store to the Free
+ * plan instead of locking it entirely. Returns the store id for convenience.
  */
 export async function assertPlan(
   supabase: any,
@@ -35,25 +66,23 @@ export async function assertPlan(
   const store = await loadStoreForUser(supabase, userId);
   if (!store) throw new Error("No store found for this account");
 
-  const status = store.subscription_status ?? "active";
-  if (READ_ONLY_STATUSES.has(status)) {
-    throw new Error(
-      "Your subscription is not active. Please renew your plan to continue.",
-    );
-  }
+  const expired = INACTIVE.has(store.subscription_status ?? "active");
 
   if (feature) {
-    const pkg = store.subscription_packages;
+    const pkg = await resolveEffectivePlan(supabase, store);
     const allowed = !!pkg && (pkg.is_trial === true || pkg.features?.[feature] === true);
     if (!allowed) {
       throw new Error(
-        "This feature is not included in your current plan. Please upgrade to continue.",
+        expired
+          ? "আপনার সাবস্ক্রিপশন মেয়াদোত্তীর্ণ — এখন ফ্রি প্ল্যান চালু আছে। এই ফিচারটি ব্যবহার করতে প্ল্যান রিনিউ করুন।"
+          : "This feature is not included in your current plan. Please upgrade to continue.",
       );
     }
   }
 
   return store.id;
 }
+
 
 type LimitKind = "product" | "order" | "staff";
 
@@ -88,9 +117,10 @@ export async function assertLimit(
     .maybeSingle();
   if (!store) throw new Error("No store found for this account");
 
-  const pkg = (store as any).subscription_packages;
+  const pkg = await resolveEffectivePlan(supabase, store as any);
   const limit = pkg ? Number(pkg[LIMIT_COLUMN[kind]] ?? 0) : 0;
   if (!pkg || !limit || limit <= 0) return (store as any).id;
+
 
   const storeId = (store as any).id as string;
   let used = 0;

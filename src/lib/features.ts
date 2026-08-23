@@ -54,20 +54,42 @@ export type PackageRow = {
 export type StoreWithPackage = {
   subscription_status?: string | null;
   subscription_packages?: PackageRow;
+  /** Free plan the store falls back to while its paid plan is not active. */
+  free_package?: PackageRow;
 } | null | undefined;
 
+/** Statuses where the paid plan no longer applies — the store drops to Free. */
+export const INACTIVE_STATUSES = ["expired", "suspended", "cancelled"] as const;
+
+export function isSubscriptionInactive(store: StoreWithPackage): boolean {
+  const s = store?.subscription_status ?? "active";
+  return (INACTIVE_STATUSES as readonly string[]).includes(s);
+}
+
+/**
+ * The plan whose limits/features actually apply right now.
+ * When the paid subscription has expired (or was suspended/cancelled) the
+ * store keeps working, but only with the Free plan's access.
+ */
+export function effectivePackage(store: StoreWithPackage): PackageRow {
+  if (!store) return null;
+  if (isSubscriptionInactive(store)) return store.free_package ?? null;
+  return store.subscription_packages ?? null;
+}
+
 export function hasFeature(store: StoreWithPackage, key: FeatureKey): boolean {
-  const pkg = store?.subscription_packages;
+  const pkg = effectivePackage(store);
   if (!pkg) return false;
   // Trial unlocks everything
   if (pkg.is_trial) return true;
   return !!pkg.features?.[key];
 }
 
+/** Kept for the expired/suspended warning banner — the plan itself is downgraded. */
 export function isReadOnly(store: StoreWithPackage): boolean {
-  const s = store?.subscription_status ?? "active";
-  return s === "expired" || s === "suspended" || s === "cancelled";
+  return isSubscriptionInactive(store);
 }
+
 
 export const BILLING_CYCLES = [
   { value: "monthly", label: "Monthly", days: 30 },
