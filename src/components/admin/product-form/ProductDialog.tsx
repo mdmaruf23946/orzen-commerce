@@ -1036,7 +1036,7 @@ export function ProductDialog({
           onApplyName={setName}
           onApplyShortDesc={setShortDesc}
           onApplyDescription={setDescription}
-          onApplySeo={(v) => setSeo({ ...seo, ...v })}
+          onApplySeo={(v: Record<string, string | undefined>) => setSeo({ ...seo, ...v })}
         />
       ),
     },
