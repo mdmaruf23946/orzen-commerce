@@ -12,6 +12,20 @@ async function storeIdOrThrow(supabase: any, userId: string) {
   return id as string;
 }
 
+/** AI Call Center access is granted by the store's subscription plan. */
+async function planAllowsAiCalls(supabase: any, storeId: string) {
+  const { data } = await supabase
+    .from("stores")
+    .select("subscription_status, subscription_packages(is_trial, features)")
+    .eq("id", storeId)
+    .maybeSingle();
+  const status = (data as any)?.subscription_status ?? "active";
+  if (["expired", "suspended", "cancelled"].includes(status)) return false;
+  const pkg = (data as any)?.subscription_packages;
+  if (!pkg) return false;
+  return pkg.is_trial === true || pkg.features?.ai_call_center === true;
+}
+
 /** Everything the setup wizard needs: status plus the approved choices. */
 export const getStoreAiCallSetup = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -38,7 +52,7 @@ export const getStoreAiCallSetup = createServerFn({ method: "GET" })
     const s: any = settings;
     return {
       storeId,
-      feature_enabled: !!s?.feature_enabled,
+      feature_enabled: await planAllowsAiCalls(sb, storeId),
       is_active: !!s?.is_active,
       selection: s
         ? {
@@ -76,13 +90,8 @@ export const activateStoreAiCallCenter = createServerFn({ method: "POST" })
     const sb = context.supabase;
     const storeId = await storeIdOrThrow(sb, context.userId);
 
-    const { data: settings } = await sb
-      .from("store_ai_call_settings")
-      .select("feature_enabled")
-      .eq("store_id", storeId)
-      .maybeSingle();
-    if (!(settings as any)?.feature_enabled) {
-      throw new Error("AI Call Center is not enabled for this store yet.");
+    if (!(await planAllowsAiCalls(sb, storeId))) {
+      throw new Error("AI Call Center is not included in your current plan. Please upgrade to continue.");
     }
 
     // The chosen number must be one made available to this store.

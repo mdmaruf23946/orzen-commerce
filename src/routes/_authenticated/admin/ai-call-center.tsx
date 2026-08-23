@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -66,11 +66,16 @@ function StoreAiCallCenter() {
         <AdminPageHeader title="AI Call Center" description="AI voice agents that confirm orders and answer customer calls." />
         <div className="rounded-2xl border bg-card p-8 text-center">
           <Lock className="mx-auto h-8 w-8 text-muted-foreground" />
-          <h2 className="mt-3 text-base font-semibold">AI Calling is not enabled for your store yet</h2>
+          <h2 className="mt-3 text-base font-semibold">AI Call Center is not included in your plan</h2>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            This feature is activated by the platform team. Once it is switched on you can pick a phone number, a voice
+            Upgrade your subscription to unlock AI voice calling. After upgrading you can pick a phone number, a voice
             and a tone, and your AI agent starts calling customers to confirm orders.
           </p>
+          <Button asChild className="mt-4">
+            <Link to="/admin/billing" search={{ highlight: "ai_call_center" } as any}>
+              আপডেট করুন
+            </Link>
+          </Button>
         </div>
       </div>
     );
