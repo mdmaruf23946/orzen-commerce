@@ -1022,19 +1022,23 @@ export function ProductDialog({
     },
     {
       id: "ai",
-      label: "AI (Coming Soon)",
+      label: "AI Assist",
       content: (
-        <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">These will be enabled in a future update.</p>
-          {["AI Product Description", "AI Image Enhancement", "AI Background Removal", "AI SEO Generation"].map((l) => (
-            <label key={l} className="flex items-center gap-2 opacity-60">
-              <Switch disabled />
-              <span className="text-sm">{l}</span>
-            </label>
-          ))}
-        </div>
+        <AiAssistTab
+          productType={resolvedType}
+          name={name}
+          brand={brand}
+          categoryName={categories.find((c) => c.id === categoryId)?.name ?? ""}
+          images={[image, ...gallery].filter(Boolean) as string[]}
+          currentDescription={description}
+          onApplyName={setName}
+          onApplyShortDesc={setShortDesc}
+          onApplyDescription={setDescription}
+          onApplySeo={(v) => setSeo({ ...seo, ...v })}
+        />
       ),
     },
+
   ];
 
   const digitalTabs = [
