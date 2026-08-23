@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useState } from "react";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
 import { FacebookTab } from "@/components/admin/marketing/FacebookTab";
@@ -17,7 +18,11 @@ export const Route = createFileRoute("/_authenticated/admin/marketing")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: MarketingPage,
+  component: () => (
+    <FeatureGate feature="pixel">
+      <MarketingPage />
+    </FeatureGate>
+  ),
 });
 
 const TABS = [

@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -23,7 +24,11 @@ import {
 } from "@/lib/call-center";
 
 export const Route = createFileRoute("/_authenticated/admin/call-center")({
-  component: CallCenterPage,
+  component: () => (
+    <FeatureGate feature="call_center">
+      <CallCenterPage />
+    </FeatureGate>
+  ),
   head: () => ({
     meta: [
       { title: "Manual Call Center | Store Admin" },

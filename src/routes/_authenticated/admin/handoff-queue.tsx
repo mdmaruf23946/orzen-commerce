@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -18,7 +19,11 @@ export const Route = createFileRoute("/_authenticated/admin/handoff-queue")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: HandoffQueuePage,
+  component: () => (
+    <FeatureGate feature="ai_agent">
+      <HandoffQueuePage />
+    </FeatureGate>
+  ),
 });
 
 function HandoffQueuePage() {

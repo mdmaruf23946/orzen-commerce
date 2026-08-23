@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -30,7 +31,11 @@ export const Route = createFileRoute("/_authenticated/admin/landing-builder/")({
       { property: "og:description", content: "Build standalone product landing pages with their own URL and order form." },
     ],
   }),
-  component: LandingPagesList,
+  component: () => (
+    <FeatureGate feature="landing_pages">
+      <LandingPagesList />
+    </FeatureGate>
+  ),
 });
 
 function LandingPagesList() {

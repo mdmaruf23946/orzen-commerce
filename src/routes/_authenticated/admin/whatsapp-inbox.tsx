@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
@@ -16,7 +17,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/whatsapp-inbox")({
-  component: WhatsappInboxPage,
+  component: () => (
+    <FeatureGate feature="ai_messenger">
+      <WhatsappInboxPage />
+    </FeatureGate>
+  ),
   head: () => ({
     meta: [
       { title: "WhatsApp Inbox | ORZEN Store Admin" },
