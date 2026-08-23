@@ -42,6 +42,8 @@ type LinkDef = {
 
 const links: LinkDef[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/admin/inbox", label: "Notifications Inbox", icon: Bell, badgeKey: "notifications" },
+
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag, badgeKey: "orders" },
   { to: "/admin/courier-orders", label: "Courier Orders", icon: Truck, badgeKey: "delivery" },
   { to: "/admin/products", label: "Products", icon: Package },
