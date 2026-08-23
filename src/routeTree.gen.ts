@@ -71,6 +71,7 @@ import { Route as AuthenticatedOwnerBackupsRouteImport } from './routes/_authent
 import { Route as AuthenticatedOwnerAuditRouteImport } from './routes/_authenticated/owner/audit'
 import { Route as AuthenticatedOwnerApiRouteImport } from './routes/_authenticated/owner/api'
 import { Route as AuthenticatedOwnerAiUsageRouteImport } from './routes/_authenticated/owner/ai-usage'
+import { Route as AuthenticatedOwnerAiCallCenterRouteImport } from './routes/_authenticated/owner/ai-call-center'
 import { Route as AuthenticatedOwnerAiRouteImport } from './routes/_authenticated/owner/ai'
 import { Route as AuthenticatedOwnerAdsRouteImport } from './routes/_authenticated/owner/ads'
 import { Route as AuthenticatedAdminWhatsappInboxRouteImport } from './routes/_authenticated/admin/whatsapp-inbox'
@@ -112,6 +113,7 @@ import { Route as AuthenticatedAdminCallCenterRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminBannersRouteImport } from './routes/_authenticated/admin/banners'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin/analytics'
 import { Route as AuthenticatedAdminAiRecommendationsRouteImport } from './routes/_authenticated/admin/ai-recommendations'
+import { Route as AuthenticatedAdminAiCallCenterRouteImport } from './routes/_authenticated/admin/ai-call-center'
 import { Route as AuthenticatedAdminAiAgentRouteImport } from './routes/_authenticated/admin/ai-agent'
 import { Route as DotwellKnownOrzenDomainVerificationTokenRouteImport } from './routes/[.]well-known.orzen-domain-verification.$token'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
@@ -142,6 +144,9 @@ import { Route as ApiPublicFbCapiTrackRouteImport } from './routes/api/public/fb
 import { Route as ApiPublicCronSyncParcelsRouteImport } from './routes/api/public/cron/sync-parcels'
 import { Route as ApiPublicCronSubscriptionRenewalsRouteImport } from './routes/api/public/cron/subscription-renewals'
 import { Route as ApiPublicCronNotifyOrdersRouteImport } from './routes/api/public/cron/notify-orders'
+import { Route as ApiPublicCronAiCallsRouteImport } from './routes/api/public/cron/ai-calls'
+import { Route as ApiPublicAiCallsWebhookRouteImport } from './routes/api/public/ai-calls/webhook'
+import { Route as ApiPublicAiCallsToolRouteImport } from './routes/api/public/ai-calls/tool'
 import { Route as AuthenticatedOwnerSubscriptionPayProvidersRouteImport } from './routes/_authenticated/owner/subscription-pay.providers'
 import { Route as AuthenticatedOwnerNotificationCenterTemplatesRouteImport } from './routes/_authenticated/owner/notification-center.templates'
 import { Route as AuthenticatedOwnerNotificationCenterComposeRouteImport } from './routes/_authenticated/owner/notification-center.compose'
@@ -507,6 +512,12 @@ const AuthenticatedOwnerAiUsageRoute =
     path: '/ai-usage',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
+const AuthenticatedOwnerAiCallCenterRoute =
+  AuthenticatedOwnerAiCallCenterRouteImport.update({
+    id: '/ai-call-center',
+    path: '/ai-call-center',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
 const AuthenticatedOwnerAiRoute = AuthenticatedOwnerAiRouteImport.update({
   id: '/ai',
   path: '/ai',
@@ -747,6 +758,12 @@ const AuthenticatedAdminAiRecommendationsRoute =
     path: '/ai-recommendations',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminAiCallCenterRoute =
+  AuthenticatedAdminAiCallCenterRouteImport.update({
+    id: '/ai-call-center',
+    path: '/ai-call-center',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminAiAgentRoute =
   AuthenticatedAdminAiAgentRouteImport.update({
     id: '/ai-agent',
@@ -918,6 +935,21 @@ const ApiPublicCronNotifyOrdersRoute =
     path: '/api/public/cron/notify-orders',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicCronAiCallsRoute = ApiPublicCronAiCallsRouteImport.update({
+  id: '/api/public/cron/ai-calls',
+  path: '/api/public/cron/ai-calls',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicAiCallsWebhookRoute = ApiPublicAiCallsWebhookRouteImport.update({
+  id: '/api/public/ai-calls/webhook',
+  path: '/api/public/ai-calls/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicAiCallsToolRoute = ApiPublicAiCallsToolRouteImport.update({
+  id: '/api/public/ai-calls/tool',
+  path: '/api/public/ai-calls/tool',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedOwnerSubscriptionPayProvidersRoute =
   AuthenticatedOwnerSubscriptionPayProvidersRouteImport.update({
     id: '/providers',
@@ -1097,6 +1129,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/.well-known/orzen-domain-verification/$token': typeof DotwellKnownOrzenDomainVerificationTokenRoute
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
+  '/admin/ai-call-center': typeof AuthenticatedAdminAiCallCenterRoute
   '/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
@@ -1138,6 +1171,7 @@ export interface FileRoutesByFullPath {
   '/admin/whatsapp-inbox': typeof AuthenticatedAdminWhatsappInboxRoute
   '/owner/ads': typeof AuthenticatedOwnerAdsRoute
   '/owner/ai': typeof AuthenticatedOwnerAiRoute
+  '/owner/ai-call-center': typeof AuthenticatedOwnerAiCallCenterRoute
   '/owner/ai-usage': typeof AuthenticatedOwnerAiUsageRoute
   '/owner/api': typeof AuthenticatedOwnerApiRoute
   '/owner/audit': typeof AuthenticatedOwnerAuditRoute
@@ -1196,6 +1230,9 @@ export interface FileRoutesByFullPath {
   '/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
   '/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
+  '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
+  '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
@@ -1249,6 +1286,7 @@ export interface FileRoutesByTo {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/.well-known/orzen-domain-verification/$token': typeof DotwellKnownOrzenDomainVerificationTokenRoute
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
+  '/admin/ai-call-center': typeof AuthenticatedAdminAiCallCenterRoute
   '/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
@@ -1289,6 +1327,7 @@ export interface FileRoutesByTo {
   '/admin/whatsapp-inbox': typeof AuthenticatedAdminWhatsappInboxRoute
   '/owner/ads': typeof AuthenticatedOwnerAdsRoute
   '/owner/ai': typeof AuthenticatedOwnerAiRoute
+  '/owner/ai-call-center': typeof AuthenticatedOwnerAiCallCenterRoute
   '/owner/ai-usage': typeof AuthenticatedOwnerAiUsageRoute
   '/owner/api': typeof AuthenticatedOwnerApiRoute
   '/owner/audit': typeof AuthenticatedOwnerAuditRoute
@@ -1347,6 +1386,9 @@ export interface FileRoutesByTo {
   '/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
   '/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
+  '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
+  '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
@@ -1409,6 +1451,7 @@ export interface FileRoutesById {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/.well-known/orzen-domain-verification/$token': typeof DotwellKnownOrzenDomainVerificationTokenRoute
   '/_authenticated/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
+  '/_authenticated/admin/ai-call-center': typeof AuthenticatedAdminAiCallCenterRoute
   '/_authenticated/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/banners': typeof AuthenticatedAdminBannersRoute
@@ -1450,6 +1493,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/whatsapp-inbox': typeof AuthenticatedAdminWhatsappInboxRoute
   '/_authenticated/owner/ads': typeof AuthenticatedOwnerAdsRoute
   '/_authenticated/owner/ai': typeof AuthenticatedOwnerAiRoute
+  '/_authenticated/owner/ai-call-center': typeof AuthenticatedOwnerAiCallCenterRoute
   '/_authenticated/owner/ai-usage': typeof AuthenticatedOwnerAiUsageRoute
   '/_authenticated/owner/api': typeof AuthenticatedOwnerApiRoute
   '/_authenticated/owner/audit': typeof AuthenticatedOwnerAuditRoute
@@ -1508,6 +1552,9 @@ export interface FileRoutesById {
   '/_authenticated/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
   '/_authenticated/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/_authenticated/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
+  '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
+  '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
@@ -1570,6 +1617,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/.well-known/orzen-domain-verification/$token'
     | '/admin/ai-agent'
+    | '/admin/ai-call-center'
     | '/admin/ai-recommendations'
     | '/admin/analytics'
     | '/admin/banners'
@@ -1611,6 +1659,7 @@ export interface FileRouteTypes {
     | '/admin/whatsapp-inbox'
     | '/owner/ads'
     | '/owner/ai'
+    | '/owner/ai-call-center'
     | '/owner/ai-usage'
     | '/owner/api'
     | '/owner/audit'
@@ -1669,6 +1718,9 @@ export interface FileRouteTypes {
     | '/owner/notification-center/compose'
     | '/owner/notification-center/templates'
     | '/owner/subscription-pay/providers'
+    | '/api/public/ai-calls/tool'
+    | '/api/public/ai-calls/webhook'
+    | '/api/public/cron/ai-calls'
     | '/api/public/cron/notify-orders'
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
@@ -1722,6 +1774,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/.well-known/orzen-domain-verification/$token'
     | '/admin/ai-agent'
+    | '/admin/ai-call-center'
     | '/admin/ai-recommendations'
     | '/admin/analytics'
     | '/admin/banners'
@@ -1762,6 +1815,7 @@ export interface FileRouteTypes {
     | '/admin/whatsapp-inbox'
     | '/owner/ads'
     | '/owner/ai'
+    | '/owner/ai-call-center'
     | '/owner/ai-usage'
     | '/owner/api'
     | '/owner/audit'
@@ -1820,6 +1874,9 @@ export interface FileRouteTypes {
     | '/owner/notification-center/compose'
     | '/owner/notification-center/templates'
     | '/owner/subscription-pay/providers'
+    | '/api/public/ai-calls/tool'
+    | '/api/public/ai-calls/webhook'
+    | '/api/public/cron/ai-calls'
     | '/api/public/cron/notify-orders'
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
@@ -1881,6 +1938,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/.well-known/orzen-domain-verification/$token'
     | '/_authenticated/admin/ai-agent'
+    | '/_authenticated/admin/ai-call-center'
     | '/_authenticated/admin/ai-recommendations'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/banners'
@@ -1922,6 +1980,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/whatsapp-inbox'
     | '/_authenticated/owner/ads'
     | '/_authenticated/owner/ai'
+    | '/_authenticated/owner/ai-call-center'
     | '/_authenticated/owner/ai-usage'
     | '/_authenticated/owner/api'
     | '/_authenticated/owner/audit'
@@ -1980,6 +2039,9 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/notification-center/compose'
     | '/_authenticated/owner/notification-center/templates'
     | '/_authenticated/owner/subscription-pay/providers'
+    | '/api/public/ai-calls/tool'
+    | '/api/public/ai-calls/webhook'
+    | '/api/public/cron/ai-calls'
     | '/api/public/cron/notify-orders'
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
@@ -2037,6 +2099,9 @@ export interface RootRouteChildren {
   DotwellKnownOrzenDomainVerificationTokenRoute: typeof DotwellKnownOrzenDomainVerificationTokenRoute
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiImgSplatRoute: typeof ApiImgSplatRoute
+  ApiPublicAiCallsToolRoute: typeof ApiPublicAiCallsToolRoute
+  ApiPublicAiCallsWebhookRoute: typeof ApiPublicAiCallsWebhookRoute
+  ApiPublicCronAiCallsRoute: typeof ApiPublicCronAiCallsRoute
   ApiPublicCronNotifyOrdersRoute: typeof ApiPublicCronNotifyOrdersRoute
   ApiPublicCronSubscriptionRenewalsRoute: typeof ApiPublicCronSubscriptionRenewalsRoute
   ApiPublicCronSyncParcelsRoute: typeof ApiPublicCronSyncParcelsRoute
@@ -2492,6 +2557,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerAiUsageRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
+    '/_authenticated/owner/ai-call-center': {
+      id: '/_authenticated/owner/ai-call-center'
+      path: '/ai-call-center'
+      fullPath: '/owner/ai-call-center'
+      preLoaderRoute: typeof AuthenticatedOwnerAiCallCenterRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
     '/_authenticated/owner/ai': {
       id: '/_authenticated/owner/ai'
       path: '/ai'
@@ -2779,6 +2851,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAiRecommendationsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/ai-call-center': {
+      id: '/_authenticated/admin/ai-call-center'
+      path: '/ai-call-center'
+      fullPath: '/admin/ai-call-center'
+      preLoaderRoute: typeof AuthenticatedAdminAiCallCenterRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/ai-agent': {
       id: '/_authenticated/admin/ai-agent'
       path: '/ai-agent'
@@ -2987,6 +3066,27 @@ declare module '@tanstack/react-router' {
       path: '/api/public/cron/notify-orders'
       fullPath: '/api/public/cron/notify-orders'
       preLoaderRoute: typeof ApiPublicCronNotifyOrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/cron/ai-calls': {
+      id: '/api/public/cron/ai-calls'
+      path: '/api/public/cron/ai-calls'
+      fullPath: '/api/public/cron/ai-calls'
+      preLoaderRoute: typeof ApiPublicCronAiCallsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/ai-calls/webhook': {
+      id: '/api/public/ai-calls/webhook'
+      path: '/api/public/ai-calls/webhook'
+      fullPath: '/api/public/ai-calls/webhook'
+      preLoaderRoute: typeof ApiPublicAiCallsWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/ai-calls/tool': {
+      id: '/api/public/ai-calls/tool'
+      path: '/api/public/ai-calls/tool'
+      fullPath: '/api/public/ai-calls/tool'
+      preLoaderRoute: typeof ApiPublicAiCallsToolRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/owner/subscription-pay/providers': {
@@ -3215,6 +3315,7 @@ const AuthenticatedAdminSettingsRouteWithChildren =
 interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminBillingRouteRoute: typeof AuthenticatedAdminBillingRouteRouteWithChildren
   AuthenticatedAdminAiAgentRoute: typeof AuthenticatedAdminAiAgentRoute
+  AuthenticatedAdminAiCallCenterRoute: typeof AuthenticatedAdminAiCallCenterRoute
   AuthenticatedAdminAiRecommendationsRoute: typeof AuthenticatedAdminAiRecommendationsRoute
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
   AuthenticatedAdminBannersRoute: typeof AuthenticatedAdminBannersRoute
@@ -3267,6 +3368,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminBillingRouteRoute:
       AuthenticatedAdminBillingRouteRouteWithChildren,
     AuthenticatedAdminAiAgentRoute: AuthenticatedAdminAiAgentRoute,
+    AuthenticatedAdminAiCallCenterRoute: AuthenticatedAdminAiCallCenterRoute,
     AuthenticatedAdminAiRecommendationsRoute:
       AuthenticatedAdminAiRecommendationsRoute,
     AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
@@ -3422,6 +3524,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerSubscriptionPayRouteRoute: typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
   AuthenticatedOwnerAdsRoute: typeof AuthenticatedOwnerAdsRoute
   AuthenticatedOwnerAiRoute: typeof AuthenticatedOwnerAiRoute
+  AuthenticatedOwnerAiCallCenterRoute: typeof AuthenticatedOwnerAiCallCenterRoute
   AuthenticatedOwnerAiUsageRoute: typeof AuthenticatedOwnerAiUsageRoute
   AuthenticatedOwnerApiRoute: typeof AuthenticatedOwnerApiRoute
   AuthenticatedOwnerAuditRoute: typeof AuthenticatedOwnerAuditRoute
@@ -3468,6 +3571,7 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
       AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren,
     AuthenticatedOwnerAdsRoute: AuthenticatedOwnerAdsRoute,
     AuthenticatedOwnerAiRoute: AuthenticatedOwnerAiRoute,
+    AuthenticatedOwnerAiCallCenterRoute: AuthenticatedOwnerAiCallCenterRoute,
     AuthenticatedOwnerAiUsageRoute: AuthenticatedOwnerAiUsageRoute,
     AuthenticatedOwnerApiRoute: AuthenticatedOwnerApiRoute,
     AuthenticatedOwnerAuditRoute: AuthenticatedOwnerAuditRoute,
@@ -3584,6 +3688,9 @@ const rootRouteChildren: RootRouteChildren = {
     DotwellKnownOrzenDomainVerificationTokenRoute,
   ApiAiChatRoute: ApiAiChatRoute,
   ApiImgSplatRoute: ApiImgSplatRoute,
+  ApiPublicAiCallsToolRoute: ApiPublicAiCallsToolRoute,
+  ApiPublicAiCallsWebhookRoute: ApiPublicAiCallsWebhookRoute,
+  ApiPublicCronAiCallsRoute: ApiPublicCronAiCallsRoute,
   ApiPublicCronNotifyOrdersRoute: ApiPublicCronNotifyOrdersRoute,
   ApiPublicCronSubscriptionRenewalsRoute:
     ApiPublicCronSubscriptionRenewalsRoute,

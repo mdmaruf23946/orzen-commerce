@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Store as StoreIcon, Package, LogOut, Menu, ArrowLeft, ShieldCheck,
   Sparkles, Wallet, Users, CreditCard, Activity, Truck, Megaphone, ToggleLeft, Settings,
   UserCog, BarChart3, LifeBuoy, Bell, FileText, KeyRound, Webhook, Terminal, HardDrive,
-  ChevronDown, ChevronRight, Globe, Palette,
+  ChevronDown, ChevronRight, Globe, Palette, PhoneCall,
 } from "lucide-react";
 import { amIOwner } from "@/lib/owner.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +38,7 @@ const groups: NavGroup[] = [
   { label: "AI", links: [
     { to: "/owner/ai", label: "AI Control", icon: Sparkles },
     { to: "/owner/ai-usage", label: "AI Usage", icon: BarChart3 },
+    { to: "/owner/ai-call-center", label: "AI Call Center", icon: PhoneCall },
   ]},
   { label: "Integrations", links: [
     { to: "/owner/couriers", label: "Couriers", icon: Truck },

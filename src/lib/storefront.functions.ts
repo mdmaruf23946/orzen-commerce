@@ -1301,6 +1301,12 @@ export const placeOrder = createServerFn({ method: "POST" })
       }
     } catch { /* non-fatal */ }
 
+    // Queue an AI order-confirmation call when the store has AI calling running.
+    try {
+      const { enqueueOrderConfirmationCall } = await import("@/lib/ai-call-provision.server");
+      await enqueueOrderConfirmationCall(sb, data.storeId, order.id);
+    } catch { /* non-fatal */ }
+
     return { orderId: order.id, warning: warned ? DUPLICATE_MESSAGE : null };
   });
 
