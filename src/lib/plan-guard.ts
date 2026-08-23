@@ -54,3 +54,76 @@ export async function assertPlan(
 
   return store.id;
 }
+
+type LimitKind = "product" | "order" | "staff";
+
+const LIMIT_COLUMN: Record<LimitKind, string> = {
+  product: "product_limit",
+  order: "order_limit",
+  staff: "staff_limit",
+};
+
+const LIMIT_LABEL: Record<LimitKind, string> = {
+  product: "পণ্য",
+  order: "অর্ডার",
+  staff: "স্টাফ",
+};
+
+/**
+ * Enforces a numeric plan limit (products / orders / staff).
+ * A missing, null or <= 0 limit means "unlimited".
+ * Returns the store id so callers can reuse it.
+ */
+export async function assertLimit(
+  supabase: any,
+  userId: string,
+  kind: LimitKind,
+): Promise<string> {
+  const { data: store } = await supabase
+    .from("stores")
+    .select(
+      "id, subscription_status, subscription_packages(is_trial, product_limit, order_limit, staff_limit)",
+    )
+    .eq("owner_user_id", userId)
+    .maybeSingle();
+  if (!store) throw new Error("No store found for this account");
+
+  const pkg = (store as any).subscription_packages;
+  const limit = pkg ? Number(pkg[LIMIT_COLUMN[kind]] ?? 0) : 0;
+  if (!pkg || !limit || limit <= 0) return (store as any).id;
+
+  const storeId = (store as any).id as string;
+  let used = 0;
+
+  if (kind === "product") {
+    const { count } = await supabase
+      .from("products")
+      .select("id", { count: "exact", head: true })
+      .eq("store_id", storeId);
+    used = count ?? 0;
+  } else if (kind === "staff") {
+    const { count } = await supabase
+      .from("store_staff")
+      .select("id", { count: "exact", head: true })
+      .eq("store_id", storeId);
+    used = count ?? 0;
+  } else {
+    // Orders are counted for the current calendar month.
+    const start = new Date();
+    start.setUTCDate(1);
+    start.setUTCHours(0, 0, 0, 0);
+    const { count } = await supabase
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("store_id", storeId)
+      .gte("created_at", start.toISOString());
+    used = count ?? 0;
+  }
+
+  if (used >= limit) {
+    throw new Error(
+      `আপনার প্ল্যানের ${LIMIT_LABEL[kind]} সীমা (${limit}) শেষ হয়ে গেছে। আরও যোগ করতে Billing & Plans থেকে প্ল্যান আপগ্রেড করুন।`,
+    );
+  }
+  return storeId;
+}
