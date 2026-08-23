@@ -106,7 +106,7 @@ const links: LinkDef[] = [
 
 
 const groupDefs: { label: string; paths: string[] }[] = [
-  { label: "Main", paths: ["/admin"] },
+  { label: "Main", paths: ["/admin", "/admin/inbox"] },
   { label: "Orders", paths: ["/admin/orders", "/admin/courier-orders", "/admin/returns"] },
   { label: "Products", paths: ["/admin/products", "/admin/categories", "/admin/inventory", "/admin/product-defaults"] },
   { label: "Customers", paths: ["/admin/customers", "/admin/customers-accounts", "/admin/duplicate-protection"] },
@@ -114,10 +114,11 @@ const groupDefs: { label: string; paths: string[] }[] = [
   { label: "AI & Automation", paths: ["/admin/ai-agent", "/admin/ai-recommendations", "/admin/handoff-queue", "/admin/low-stock", "/admin/messenger", "/admin/messenger-inbox", "/admin/whatsapp", "/admin/whatsapp-inbox"] },
   { label: "Marketing", paths: ["/admin/marketing", "/admin/coupons", "/admin/seo", "/admin/banners", "/admin/notifications"] },
   { label: "Finance", paths: ["/admin/payment-gateway", "/admin/finance", "/admin/analytics"] },
-  { label: "Operations", paths: ["/admin/delivery", "/admin/couriers", "/admin/landing-builder", "/admin/landing-pages"] },
-  { label: "System", paths: ["/admin/theme", "/admin/legal", "/admin/invoice-templates", "/admin/domains", "/admin/dns-check", "/admin/import-export"] },
-  { label: "Account", paths: ["/admin/subscription", "/admin/billing", "/admin/settings"] },
+  { label: "Operations", paths: ["/admin/delivery", "/admin/couriers", "/admin/parcels", "/admin/landing-builder", "/admin/landing-pages"] },
+  { label: "System", paths: ["/admin/theme", "/admin/legal", "/admin/invoice-templates", "/admin/domains", "/admin/dns-check", "/admin/import-export", "/admin/staff"] },
+  { label: "Account", paths: ["/admin/subscription", "/admin/billing", "/admin/support", "/admin/settings"] },
 ];
+
 
 function buildGroups(query: string) {
   const q = query.trim().toLowerCase();
