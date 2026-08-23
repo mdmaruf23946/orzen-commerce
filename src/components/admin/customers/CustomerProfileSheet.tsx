@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCustomerProfile } from "@/lib/customers-admin.functions";
 import { upsertCustomerNote, getCustomerNote } from "@/lib/business.functions";
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { taka } from "@/lib/order-display";
 import { Ban, CheckCircle2, MapPin, Phone, Mail, Clock } from "lucide-react";
 import { CallButton } from "@/components/admin/calls/CallButton";
@@ -192,7 +193,9 @@ export function CustomerProfileSheet({
               </TabsContent>
 
               <TabsContent value="notes" className="mt-0">
-                <NotesPanel phone={data.phone} initial={data.note} />
+                <FeatureGate feature="customer_notes">
+                  <NotesPanel phone={data.phone} initial={data.note} />
+                </FeatureGate>
               </TabsContent>
             </div>
           </Tabs>
