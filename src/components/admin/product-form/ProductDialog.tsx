@@ -26,6 +26,8 @@ import { Progress } from "@/components/ui/progress";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { GalleryUploader } from "@/components/admin/GalleryUploader";
 import { DigitalFilesUploader, type DigitalFile } from "./DigitalFilesUploader";
+import { AiAssistTab } from "./AiAssistTab";
+
 
 
 const RichTextEditor = lazy(() => import("./RichTextEditor"));
