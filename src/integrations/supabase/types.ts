@@ -177,6 +177,468 @@ export type Database = {
           },
         ]
       }
+      ai_call_agents: {
+        Row: {
+          created_at: string
+          elevenlabs_agent_id: string | null
+          gender: string
+          id: string
+          inbound_enabled: boolean
+          instructions: string | null
+          is_template: boolean
+          knowledge: string | null
+          language: string
+          last_error: string | null
+          name: string
+          outbound_enabled: boolean
+          personality: string | null
+          status: string
+          store_id: string | null
+          tone_id: string | null
+          tool_secret: string | null
+          tools: Json
+          updated_at: string
+          voice_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          elevenlabs_agent_id?: string | null
+          gender?: string
+          id?: string
+          inbound_enabled?: boolean
+          instructions?: string | null
+          is_template?: boolean
+          knowledge?: string | null
+          language?: string
+          last_error?: string | null
+          name: string
+          outbound_enabled?: boolean
+          personality?: string | null
+          status?: string
+          store_id?: string | null
+          tone_id?: string | null
+          tool_secret?: string | null
+          tools?: Json
+          updated_at?: string
+          voice_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          elevenlabs_agent_id?: string | null
+          gender?: string
+          id?: string
+          inbound_enabled?: boolean
+          instructions?: string | null
+          is_template?: boolean
+          knowledge?: string | null
+          language?: string
+          last_error?: string | null
+          name?: string
+          outbound_enabled?: boolean
+          personality?: string | null
+          status?: string
+          store_id?: string | null
+          tone_id?: string | null
+          tool_secret?: string | null
+          tools?: Json
+          updated_at?: string
+          voice_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_call_agents_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_agents_tone_id_fkey"
+            columns: ["tone_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_tones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_agents_voice_id_fkey"
+            columns: ["voice_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_voices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_call_config: {
+        Row: {
+          behavior: Json
+          business: Json
+          calling_region: string
+          created_at: string
+          default_agent_id: string | null
+          default_caller_id: string | null
+          default_gender: string
+          default_instructions: string | null
+          default_language: string
+          default_tone_id: string | null
+          default_voice_id: string | null
+          elevenlabs_credentials: string | null
+          elevenlabs_last_error: string | null
+          elevenlabs_preview: string | null
+          elevenlabs_status: string
+          id: string
+          rules: Json
+          tools: Json
+          twilio_credentials: string | null
+          twilio_last_error: string | null
+          twilio_preview: string | null
+          twilio_status: string
+          updated_at: string
+        }
+        Insert: {
+          behavior?: Json
+          business?: Json
+          calling_region?: string
+          created_at?: string
+          default_agent_id?: string | null
+          default_caller_id?: string | null
+          default_gender?: string
+          default_instructions?: string | null
+          default_language?: string
+          default_tone_id?: string | null
+          default_voice_id?: string | null
+          elevenlabs_credentials?: string | null
+          elevenlabs_last_error?: string | null
+          elevenlabs_preview?: string | null
+          elevenlabs_status?: string
+          id?: string
+          rules?: Json
+          tools?: Json
+          twilio_credentials?: string | null
+          twilio_last_error?: string | null
+          twilio_preview?: string | null
+          twilio_status?: string
+          updated_at?: string
+        }
+        Update: {
+          behavior?: Json
+          business?: Json
+          calling_region?: string
+          created_at?: string
+          default_agent_id?: string | null
+          default_caller_id?: string | null
+          default_gender?: string
+          default_instructions?: string | null
+          default_language?: string
+          default_tone_id?: string | null
+          default_voice_id?: string | null
+          elevenlabs_credentials?: string | null
+          elevenlabs_last_error?: string | null
+          elevenlabs_preview?: string | null
+          elevenlabs_status?: string
+          id?: string
+          rules?: Json
+          tools?: Json
+          twilio_credentials?: string | null
+          twilio_last_error?: string | null
+          twilio_preview?: string | null
+          twilio_status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_call_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          customer_name: string | null
+          id: string
+          last_error: string | null
+          order_id: string | null
+          phone: string
+          purpose: string
+          run_after: string
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          customer_name?: string | null
+          id?: string
+          last_error?: string | null
+          order_id?: string | null
+          phone: string
+          purpose?: string
+          run_after?: string
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          customer_name?: string | null
+          id?: string
+          last_error?: string | null
+          order_id?: string | null
+          phone?: string
+          purpose?: string
+          run_after?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_call_queue_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_call_tones: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          instructions: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          instructions?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          instructions?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_call_transcripts: {
+        Row: {
+          call_id: string
+          created_at: string
+          id: string
+          message: string
+          role: string
+          seq: number
+          store_id: string
+        }
+        Insert: {
+          call_id: string
+          created_at?: string
+          id?: string
+          message: string
+          role: string
+          seq?: number
+          store_id: string
+        }
+        Update: {
+          call_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          role?: string
+          seq?: number
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_call_transcripts_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "ai_calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_transcripts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_call_voices: {
+        Row: {
+          accent: string | null
+          created_at: string
+          description: string | null
+          elevenlabs_voice_id: string
+          gender: string
+          id: string
+          is_active: boolean
+          language: string
+          name: string
+          preview_url: string | null
+          sort_order: number
+          speed: number
+          tone: string | null
+          updated_at: string
+        }
+        Insert: {
+          accent?: string | null
+          created_at?: string
+          description?: string | null
+          elevenlabs_voice_id: string
+          gender?: string
+          id?: string
+          is_active?: boolean
+          language?: string
+          name: string
+          preview_url?: string | null
+          sort_order?: number
+          speed?: number
+          tone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accent?: string | null
+          created_at?: string
+          description?: string | null
+          elevenlabs_voice_id?: string
+          gender?: string
+          id?: string
+          is_active?: boolean
+          language?: string
+          name?: string
+          preview_url?: string | null
+          sort_order?: number
+          speed?: number
+          tone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_calls: {
+        Row: {
+          agent_id: string | null
+          attempt: number
+          conversation_id: string | null
+          cost: number
+          created_at: string
+          customer_id: string | null
+          customer_name: string | null
+          direction: string
+          duration_sec: number
+          ended_at: string | null
+          id: string
+          order_id: string | null
+          phone: string
+          phone_number_id: string | null
+          provider_call_sid: string | null
+          recording_url: string | null
+          result: string | null
+          started_at: string | null
+          status: string
+          store_id: string
+          summary: string | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id?: string | null
+          attempt?: number
+          conversation_id?: string | null
+          cost?: number
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string | null
+          direction?: string
+          duration_sec?: number
+          ended_at?: string | null
+          id?: string
+          order_id?: string | null
+          phone: string
+          phone_number_id?: string | null
+          provider_call_sid?: string | null
+          recording_url?: string | null
+          result?: string | null
+          started_at?: string | null
+          status?: string
+          store_id: string
+          summary?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string | null
+          attempt?: number
+          conversation_id?: string | null
+          cost?: number
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string | null
+          direction?: string
+          duration_sec?: number
+          ended_at?: string | null
+          id?: string
+          order_id?: string | null
+          phone?: string
+          phone_number_id?: string | null
+          provider_call_sid?: string | null
+          recording_url?: string | null
+          result?: string | null
+          started_at?: string | null
+          status?: string
+          store_id?: string
+          summary?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_calls_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_calls_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_calls_phone_number_id_fkey"
+            columns: ["phone_number_id"]
+            isOneToOne: false
+            referencedRelation: "ai_phone_numbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_calls_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_conversations: {
         Row: {
           address: string | null
@@ -366,6 +828,81 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_phone_numbers: {
+        Row: {
+          agent_id: string | null
+          available_to_store: boolean
+          calls_count: number
+          country: string
+          created_at: string
+          elevenlabs_phone_id: string | null
+          id: string
+          inbound_enabled: boolean
+          label: string | null
+          minutes_used: number
+          outbound_enabled: boolean
+          phone_number: string
+          provider: string
+          provider_sid: string | null
+          status: string
+          store_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id?: string | null
+          available_to_store?: boolean
+          calls_count?: number
+          country?: string
+          created_at?: string
+          elevenlabs_phone_id?: string | null
+          id?: string
+          inbound_enabled?: boolean
+          label?: string | null
+          minutes_used?: number
+          outbound_enabled?: boolean
+          phone_number: string
+          provider?: string
+          provider_sid?: string | null
+          status?: string
+          store_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string | null
+          available_to_store?: boolean
+          calls_count?: number
+          country?: string
+          created_at?: string
+          elevenlabs_phone_id?: string | null
+          id?: string
+          inbound_enabled?: boolean
+          label?: string | null
+          minutes_used?: number
+          outbound_enabled?: boolean
+          phone_number?: string
+          provider?: string
+          provider_sid?: string | null
+          status?: string
+          store_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_phone_numbers_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_phone_numbers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -5254,6 +5791,96 @@ export type Database = {
           },
         ]
       }
+      store_ai_call_settings: {
+        Row: {
+          activated_at: string | null
+          agent_id: string | null
+          auto_confirm_orders: boolean
+          created_at: string
+          feature_enabled: boolean
+          gender: string
+          inbound_enabled: boolean
+          is_active: boolean
+          last_error: string | null
+          outbound_enabled: boolean
+          phone_number_id: string | null
+          store_id: string
+          tone_id: string | null
+          updated_at: string
+          voice_id: string | null
+        }
+        Insert: {
+          activated_at?: string | null
+          agent_id?: string | null
+          auto_confirm_orders?: boolean
+          created_at?: string
+          feature_enabled?: boolean
+          gender?: string
+          inbound_enabled?: boolean
+          is_active?: boolean
+          last_error?: string | null
+          outbound_enabled?: boolean
+          phone_number_id?: string | null
+          store_id: string
+          tone_id?: string | null
+          updated_at?: string
+          voice_id?: string | null
+        }
+        Update: {
+          activated_at?: string | null
+          agent_id?: string | null
+          auto_confirm_orders?: boolean
+          created_at?: string
+          feature_enabled?: boolean
+          gender?: string
+          inbound_enabled?: boolean
+          is_active?: boolean
+          last_error?: string | null
+          outbound_enabled?: boolean
+          phone_number_id?: string | null
+          store_id?: string
+          tone_id?: string | null
+          updated_at?: string
+          voice_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_ai_call_settings_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_ai_call_settings_phone_number_id_fkey"
+            columns: ["phone_number_id"]
+            isOneToOne: false
+            referencedRelation: "ai_phone_numbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_ai_call_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_ai_call_settings_tone_id_fkey"
+            columns: ["tone_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_tones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_ai_call_settings_voice_id_fkey"
+            columns: ["voice_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_voices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_ai_config: {
         Row: {
           created_at: string
@@ -7895,6 +8522,15 @@ export type Database = {
       is_slug_taken: { Args: { _slug: string }; Returns: boolean }
       is_store_active: { Args: { _store_id: string }; Returns: boolean }
       is_store_owner: { Args: { _store_id: string }; Returns: boolean }
+      list_ai_call_tones_public: {
+        Args: never
+        Returns: {
+          description: string
+          id: string
+          name: string
+          sort_order: number
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
