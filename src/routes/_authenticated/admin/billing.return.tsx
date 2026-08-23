@@ -33,11 +33,13 @@ function ReturnPage() {
   const verifyFn = useServerFn(verifyAndActivateSubscription);
   const { data, isLoading, error } = useQuery({
     queryKey: ["subPay", "verify", invoice, val_id],
-    queryFn: () => verifyFn({ data: { invoice_no: invoice, provider_payload: val_id ? { val_id } : {} } }),
+    queryFn: () => verifyFn({ data: { invoice_no: invoice!, provider_payload: val_id ? { val_id } : {} } }),
+    enabled: !!invoice,
     retry: false,
   });
 
   const paid = data?.status === "paid";
+  const missingRef = !invoice;
 
   return (
     <div className="mx-auto max-w-md p-6">
