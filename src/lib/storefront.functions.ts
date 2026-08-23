@@ -810,10 +810,26 @@ export const placeOrder = createServerFn({ method: "POST" })
     const sb = supabaseAdmin;
     const { data: store } = await sb
       .from("stores")
-      .select("id,status,delivery,require_customer_login,payments_config")
+      .select("id,status,delivery,require_customer_login,payments_config,subscription_packages(order_limit)")
       .eq("id", data.storeId)
       .maybeSingle();
     if (!store || store.status !== "active") throw new Error("Store unavailable");
+
+    // Plan order limit (per calendar month). 0 / null means unlimited.
+    const orderLimit = Number((store as any)?.subscription_packages?.order_limit ?? 0);
+    if (orderLimit > 0) {
+      const monthStart = new Date();
+      monthStart.setUTCDate(1);
+      monthStart.setUTCHours(0, 0, 0, 0);
+      const { count } = await sb
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("store_id", data.storeId)
+        .gte("created_at", monthStart.toISOString());
+      if ((count ?? 0) >= orderLimit) {
+        throw new Error("This store cannot accept new orders right now. Please try again later.");
+      }
+    }
 
     // Resolve logged-in customer (if any) and enforce store's login rule.
     let customerId: string | null = null;
