@@ -29,11 +29,13 @@ export const listStaff = createServerFn({ method: "GET" })
         .order("created_at", { ascending: false }),
       context.supabase
         .from("stores")
-        .select("subscription_packages(staff_limit,is_trial)")
+        .select("subscription_status, subscription_packages(staff_limit,is_trial)")
         .eq("id", sid)
         .maybeSingle(),
     ]);
-    const limit = Number((store as any)?.subscription_packages?.staff_limit ?? 0);
+    const plan = await resolveEffectivePlan(context.supabase, store as any);
+    const limit = Number((plan as any)?.staff_limit ?? 0);
+
     return { rows: rows ?? [], limit, used: (rows ?? []).length };
   });
 

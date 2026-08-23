@@ -19,12 +19,12 @@ async function planAllowsAiCalls(supabase: any, storeId: string) {
     .select("subscription_status, subscription_packages(is_trial, features)")
     .eq("id", storeId)
     .maybeSingle();
-  const status = (data as any)?.subscription_status ?? "active";
-  if (["expired", "suspended", "cancelled"].includes(status)) return false;
-  const pkg = (data as any)?.subscription_packages;
+  const { resolveEffectivePlan } = await import("@/lib/plan-guard");
+  const pkg = await resolveEffectivePlan(supabase, data as any);
   if (!pkg) return false;
   return pkg.is_trial === true || pkg.features?.ai_call_center === true;
 }
+
 
 /** Everything the setup wizard needs: status plus the approved choices. */
 export const getStoreAiCallSetup = createServerFn({ method: "GET" })
