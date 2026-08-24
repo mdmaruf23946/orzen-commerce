@@ -109,7 +109,10 @@ export const saveInvoiceTemplate = createServerFn({ method: "POST" })
     if (data.category !== undefined) row.category = data.category;
     if (data.is_hidden !== undefined) row.is_hidden = data.is_hidden;
     if (data.page_size !== undefined) row.page_size = data.page_size;
+    // A store editing its own copy detaches it from the global master template.
+    if (data.scope === "store") row.sync_with_global = false;
     if (data.id) {
+
       // snapshot the previous state so it can be restored later
       const { data: prev } = await sb
         .from("invoice_templates")
