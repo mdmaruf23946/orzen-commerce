@@ -68,6 +68,7 @@ export default {
       // Multi-tenant: serve store subdomains and verified custom domains at
       // clean root URLs by rewriting the path internally (browser URL is kept).
       let workRequest = request;
+      let injectedTenant: { kind: string; slug: string } | null = null;
       if (isRewritablePath(url.pathname)) {
         const tenant = await resolveHostTarget(url.hostname, envRecord);
         if (tenant) {
