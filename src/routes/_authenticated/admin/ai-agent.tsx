@@ -105,11 +105,31 @@ function AdminAgent() {
       </div>
 
       <Tabs defaultValue="general">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="knowledge">Knowledge</TabsTrigger>
-          <TabsTrigger value="behavior">Behavior</TabsTrigger>
-          <TabsTrigger value="ordering">Ordering</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 gap-2 rounded-xl bg-muted p-2 sm:grid-cols-4">
+          <TabsTrigger
+            value="general"
+            className="h-auto rounded-lg px-3 py-2.5 text-xs font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm sm:text-sm"
+          >
+            General
+          </TabsTrigger>
+          <TabsTrigger
+            value="knowledge"
+            className="h-auto rounded-lg px-3 py-2.5 text-xs font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm sm:text-sm"
+          >
+            Knowledge
+          </TabsTrigger>
+          <TabsTrigger
+            value="behavior"
+            className="h-auto rounded-lg px-3 py-2.5 text-xs font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm sm:text-sm"
+          >
+            Behavior
+          </TabsTrigger>
+          <TabsTrigger
+            value="ordering"
+            className="h-auto rounded-lg px-3 py-2.5 text-xs font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm sm:text-sm"
+          >
+            Ordering
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="mt-4">
