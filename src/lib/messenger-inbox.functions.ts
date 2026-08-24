@@ -740,3 +740,72 @@ export const searchStoreProducts = createServerFn({ method: "POST" })
     const { data: rows } = await q;
     return rows ?? [];
   });
+
+// ---------- Live Facebook profiles (name + picture) ----------
+// Meta's stored `profile_pic` CDN URLs are signed and expire after a while, so
+// cached values eventually 403. We re-fetch the profile from the Graph API on
+// demand and persist the fresh name/picture back on the conversation.
+export const refreshMessengerProfiles = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ ids: z.array(z.string().uuid()).max(60).optional() }).parse(d ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    const storeId = await getOwnedStoreId(context.supabase, context.userId);
+    let token: string;
+    let admin: any;
+    try {
+      const ctx = await loadPageContext(storeId);
+      token = ctx.token;
+      admin = ctx.admin;
+    } catch {
+      return [] as { id: string; name: string | null; profile_pic: string | null }[];
+    }
+
+    let q = admin
+      .from("ai_conversations")
+      .select("id,external_id,psid_profile,customer_name")
+      .eq("store_id", storeId)
+      .eq("channel", "messenger")
+      .not("external_id", "is", null)
+      .order("last_message_at", { ascending: false, nullsFirst: false })
+      .limit(60);
+    if (data.ids?.length) q = q.in("id", data.ids);
+    const { data: rows } = await q;
+
+    const out: { id: string; name: string | null; profile_pic: string | null }[] = [];
+    const list = (rows ?? []) as any[];
+    const CONCURRENCY = 5;
+    for (let i = 0; i < list.length; i += CONCURRENCY) {
+      const chunk = list.slice(i, i + CONCURRENCY);
+      await Promise.all(
+        chunk.map(async (row) => {
+          try {
+            const r = await fetch(
+              `https://graph.facebook.com/v19.0/${encodeURIComponent(row.external_id)}?fields=first_name,last_name,name,profile_pic&access_token=${encodeURIComponent(token)}`,
+            );
+            if (!r.ok) return;
+            const p = (await r.json()) as Record<string, any>;
+            const name =
+              (p.name as string | undefined) ||
+              [p.first_name, p.last_name].filter(Boolean).join(" ") ||
+              null;
+            const pic = (p.profile_pic as string | undefined) || null;
+            if (!name && !pic) return;
+            const merged = { ...((row.psid_profile ?? {}) as Record<string, any>), ...p };
+            await admin
+              .from("ai_conversations")
+              .update({
+                psid_profile: merged,
+                ...(name ? { customer_name: name } : {}),
+              })
+              .eq("id", row.id);
+            out.push({ id: row.id, name, profile_pic: pic });
+          } catch {
+            /* ignore individual failures */
+          }
+        }),
+      );
+    }
+    return out;
+  });

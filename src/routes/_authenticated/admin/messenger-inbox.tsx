@@ -32,6 +32,7 @@ import {
   upsertSavedReply,
   deleteSavedReply,
   searchStoreProducts,
+  refreshMessengerProfiles,
 } from "@/lib/messenger-inbox.functions";
 import { compressImage } from "@/lib/compress-image";
 import { MessengerMark } from "@/components/admin/brand/MessengerMark";
@@ -90,6 +91,44 @@ function beep() {
     o.start();
     o.stop(audioCtx.currentTime + 0.16);
   } catch { /* noop */ }
+}
+
+function MessengerInbox() {
+function displayName(c: any) {
+  const p = c?.psid_profile ?? {};
+  return (
+    c?.customer_name ||
+    p.name ||
+    [p.first_name, p.last_name].filter(Boolean).join(" ") ||
+    (c?.external_id ? `PSID ${String(c.external_id).slice(-6)}` : "Unknown")
+  );
+}
+
+/** Facebook profile picture with graceful fallback (CDN links can expire). */
+function FbAvatar({ src, name, size = 40 }: { src?: string | null; name: string; size?: number }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [src]);
+  const initial = (name || "?").trim().charAt(0).toUpperCase();
+  if (!src || failed) {
+    return (
+      <div
+        className="flex shrink-0 items-center justify-center rounded-full bg-messenger/10 text-sm font-semibold text-messenger"
+        style={{ width: size, height: size }}
+      >
+        {initial && initial !== "P" ? initial : <UserIcon className="h-4 w-4" />}
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={name}
+      referrerPolicy="no-referrer"
+      onError={() => setFailed(true)}
+      className="shrink-0 rounded-full object-cover"
+      style={{ width: size, height: size }}
+    />
+  );
 }
 
 function MessengerInbox() {
