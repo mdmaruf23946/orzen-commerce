@@ -231,7 +231,7 @@ function MessengerInbox() {
                 className="pl-8 h-9"
               />
             </div>
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap items-center gap-1">
               {filters.map((f) => (
                 <button
                   key={f.id}
@@ -244,6 +244,16 @@ function MessengerInbox() {
                   {f.label}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => void manualRefreshProfiles()}
+                disabled={refreshingProfiles}
+                title="Refresh profile photos & names"
+                className="ml-auto flex items-center gap-1 rounded-full border px-3 py-1 text-xs hover:bg-messenger/10 disabled:opacity-60"
+              >
+                <RefreshCw className={cn("h-3 w-3", refreshingProfiles && "animate-spin")} />
+                Refresh profiles
+              </button>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">
