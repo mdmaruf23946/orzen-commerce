@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -151,7 +152,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function PlatformFavicon() {
   const { data } = usePlatformBranding();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const pathname = useRouterState({ select: (st: any) => st.location.pathname });
   const isTenant = pathname.startsWith("/store/") || pathname.startsWith("/lp/");
   useEffect(() => {
     if (typeof document === "undefined") return;
