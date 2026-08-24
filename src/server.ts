@@ -90,14 +90,29 @@ export default {
             rewritten.pathname = `/store/${tenant.slug}${suffix}`;
           }
           workRequest = new Request(rewritten.toString(), request);
+          injectedTenant = { kind: tenant.kind, slug: tenant.slug };
         }
       }
 
-
-
       const handler = await getServerEntry();
       const response = await handler.fetch(workRequest, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      const normalized = await normalizeCatastrophicSsrResponse(response);
+
+      // Tell the client router which tenant this host serves, so it keeps
+      // rendering the storefront instead of hydrating the platform landing page.
+      if (injectedTenant && (normalized.headers.get("content-type") ?? "").includes("text/html")) {
+        const script = `<script>window.__ORZEN_TENANT__=${JSON.stringify(
+          injectedTenant,
+        )};window.__ORZEN_ROOT_DOMAIN__=${JSON.stringify(rootDomain)};</script>`;
+        const html = await normalized.text();
+        const patched = html.includes("<head>")
+          ? html.replace("<head>", `<head>${script}`)
+          : `${script}${html}`;
+        const headers = new Headers(normalized.headers);
+        headers.delete("content-length");
+        return new Response(patched, { status: normalized.status, headers });
+      }
+      return normalized;
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
