@@ -1660,7 +1660,15 @@ async function currentStoreId(context: any) {
 
 export const adminListCustomerAccounts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ search: z.string().max(120).optional() }).parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        search: z.string().max(120).optional(),
+        status: z.enum(["all", "active", "disabled"]).default("all"),
+        sort: z.enum(["newest", "orders", "spend"]).default("newest"),
+      })
+      .parse(d ?? {}),
+  )
   .handler(async ({ data, context }) => {
     const storeId = await currentStoreId(context);
     let q = context.supabase
@@ -1669,29 +1677,42 @@ export const adminListCustomerAccounts = createServerFn({ method: "POST" })
       .eq("store_id", storeId)
       .order("created_at", { ascending: false })
       .limit(500);
+    if (data.status === "active") q = q.eq("is_active", true);
+    if (data.status === "disabled") q = q.eq("is_active", false);
     if (data.search && data.search.trim()) {
       const s = data.search.trim();
       q = q.or(`full_name.ilike.%${s}%,email.ilike.%${s}%,phone.ilike.%${s}%`);
     }
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    // attach order counts
+    // attach order counts + spend + last order
     const ids = (rows ?? []).map((r) => r.id);
-    let counts: Record<string, number> = {};
+    const stats: Record<string, { count: number; spend: number; last: string | null }> = {};
     if (ids.length > 0) {
       const { data: os } = await context.supabase
         .from("orders")
-        .select("customer_id")
+        .select("customer_id,total,subtotal,created_at,status")
         .eq("store_id", storeId)
         .in("customer_id", ids);
-      counts = {};
-      for (const o of os ?? []) {
-        const cid = (o as any).customer_id as string;
-        counts[cid] = (counts[cid] ?? 0) + 1;
+      for (const o of (os ?? []) as any[]) {
+        const cid = o.customer_id as string;
+        const s = (stats[cid] ??= { count: 0, spend: 0, last: null });
+        s.count += 1;
+        if (o.status !== "cancelled") s.spend += Number(o.total ?? o.subtotal ?? 0);
+        if (!s.last || o.created_at > s.last) s.last = o.created_at;
       }
     }
-    return (rows ?? []).map((r) => ({ ...r, order_count: counts[r.id] ?? 0 }));
+    const mapped = (rows ?? []).map((r) => ({
+      ...r,
+      order_count: stats[r.id]?.count ?? 0,
+      total_spent: stats[r.id]?.spend ?? 0,
+      last_order_at: stats[r.id]?.last ?? null,
+    }));
+    if (data.sort === "orders") mapped.sort((a, b) => b.order_count - a.order_count);
+    if (data.sort === "spend") mapped.sort((a, b) => b.total_spent - a.total_spent);
+    return mapped;
   });
+
 
 export const adminGetCustomerAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -1707,7 +1728,7 @@ export const adminGetCustomerAccount = createServerFn({ method: "POST" })
     if (!row) throw new Error("Not found");
     const { data: orders } = await context.supabase
       .from("orders")
-      .select("id,invoice_no,status,subtotal,created_at")
+      .select("id,invoice_no,status,payment_status,payment_method,total,subtotal,created_at")
       .eq("store_id", storeId)
       .eq("customer_id", data.customerId)
       .order("created_at", { ascending: false })
@@ -1717,7 +1738,18 @@ export const adminGetCustomerAccount = createServerFn({ method: "POST" })
       .select("id,label,name,phone,address,area,is_default")
       .eq("store_id", storeId)
       .eq("customer_id", data.customerId);
-    return { ...row, orders: orders ?? [], addresses: addresses ?? [] };
+    const list = (orders ?? []) as any[];
+    const paid = list.filter((o) => o.status !== "cancelled");
+    const spend = paid.reduce((s, o) => s + Number(o.total ?? o.subtotal ?? 0), 0);
+    const stats = {
+      order_count: list.length,
+      total_spent: spend,
+      avg_order_value: paid.length ? spend / paid.length : 0,
+      first_order_at: list.length ? list[list.length - 1].created_at : null,
+      last_order_at: list.length ? list[0].created_at : null,
+    };
+    return { ...row, orders: list, addresses: addresses ?? [], stats };
+
   });
 
 export const adminSetCustomerActive = createServerFn({ method: "POST" })
