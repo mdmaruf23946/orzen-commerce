@@ -167,6 +167,7 @@ import { Route as AuthenticatedAdminLandingBuilderIdRouteImport } from './routes
 import { Route as AuthenticatedAdminInvoiceOrderIdRouteImport } from './routes/_authenticated/admin/invoice.$orderId'
 import { Route as AuthenticatedAdminFacebookPostsRouteImport } from './routes/_authenticated/admin/facebook.posts'
 import { Route as AuthenticatedAdminFacebookComposeRouteImport } from './routes/_authenticated/admin/facebook.compose'
+import { Route as AuthenticatedAdminFacebookCommentsRouteImport } from './routes/_authenticated/admin/facebook.comments'
 import { Route as AuthenticatedAdminBillingReturnRouteImport } from './routes/_authenticated/admin/billing.return'
 import { Route as ApiPublicSubscriptionPayWebhookProviderRouteImport } from './routes/api/public/subscription-pay/webhook.$provider'
 import { Route as ApiPublicLandingPagesConnectionIdOrdersRouteImport } from './routes/api/public/landing-pages/$connectionId/orders'
@@ -1074,6 +1075,12 @@ const AuthenticatedAdminFacebookComposeRoute =
     path: '/compose',
     getParentRoute: () => AuthenticatedAdminFacebookRouteRoute,
   } as any)
+const AuthenticatedAdminFacebookCommentsRoute =
+  AuthenticatedAdminFacebookCommentsRouteImport.update({
+    id: '/comments',
+    path: '/comments',
+    getParentRoute: () => AuthenticatedAdminFacebookRouteRoute,
+  } as any)
 const AuthenticatedAdminBillingReturnRoute =
   AuthenticatedAdminBillingReturnRouteImport.update({
     id: '/return',
@@ -1251,6 +1258,7 @@ export interface FileRoutesByFullPath {
   '/owner/': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
+  '/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
   '/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
   '/admin/facebook/posts': typeof AuthenticatedAdminFacebookPostsRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
@@ -1411,6 +1419,7 @@ export interface FileRoutesByTo {
   '/owner': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug': typeof StoreSlugIndexRoute
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
+  '/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
   '/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
   '/admin/facebook/posts': typeof AuthenticatedAdminFacebookPostsRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
@@ -1582,6 +1591,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
   '/_authenticated/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
+  '/_authenticated/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
   '/_authenticated/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
   '/_authenticated/admin/facebook/posts': typeof AuthenticatedAdminFacebookPostsRoute
   '/_authenticated/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
@@ -1753,6 +1763,7 @@ export interface FileRouteTypes {
     | '/owner/'
     | '/store/$slug/'
     | '/admin/billing/return'
+    | '/admin/facebook/comments'
     | '/admin/facebook/compose'
     | '/admin/facebook/posts'
     | '/admin/invoice/$orderId'
@@ -1913,6 +1924,7 @@ export interface FileRouteTypes {
     | '/owner'
     | '/store/$slug'
     | '/admin/billing/return'
+    | '/admin/facebook/comments'
     | '/admin/facebook/compose'
     | '/admin/facebook/posts'
     | '/admin/invoice/$orderId'
@@ -2083,6 +2095,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/'
     | '/store/$slug/'
     | '/_authenticated/admin/billing/return'
+    | '/_authenticated/admin/facebook/comments'
     | '/_authenticated/admin/facebook/compose'
     | '/_authenticated/admin/facebook/posts'
     | '/_authenticated/admin/invoice/$orderId'
@@ -3291,6 +3304,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminFacebookComposeRouteImport
       parentRoute: typeof AuthenticatedAdminFacebookRouteRoute
     }
+    '/_authenticated/admin/facebook/comments': {
+      id: '/_authenticated/admin/facebook/comments'
+      path: '/comments'
+      fullPath: '/admin/facebook/comments'
+      preLoaderRoute: typeof AuthenticatedAdminFacebookCommentsRouteImport
+      parentRoute: typeof AuthenticatedAdminFacebookRouteRoute
+    }
     '/_authenticated/admin/billing/return': {
       id: '/_authenticated/admin/billing/return'
       path: '/return'
@@ -3384,6 +3404,7 @@ const AuthenticatedAdminBillingRouteRouteWithChildren =
   )
 
 interface AuthenticatedAdminFacebookRouteRouteChildren {
+  AuthenticatedAdminFacebookCommentsRoute: typeof AuthenticatedAdminFacebookCommentsRoute
   AuthenticatedAdminFacebookComposeRoute: typeof AuthenticatedAdminFacebookComposeRoute
   AuthenticatedAdminFacebookPostsRoute: typeof AuthenticatedAdminFacebookPostsRoute
   AuthenticatedAdminFacebookIndexRoute: typeof AuthenticatedAdminFacebookIndexRoute
@@ -3391,6 +3412,8 @@ interface AuthenticatedAdminFacebookRouteRouteChildren {
 
 const AuthenticatedAdminFacebookRouteRouteChildren: AuthenticatedAdminFacebookRouteRouteChildren =
   {
+    AuthenticatedAdminFacebookCommentsRoute:
+      AuthenticatedAdminFacebookCommentsRoute,
     AuthenticatedAdminFacebookComposeRoute:
       AuthenticatedAdminFacebookComposeRoute,
     AuthenticatedAdminFacebookPostsRoute: AuthenticatedAdminFacebookPostsRoute,
