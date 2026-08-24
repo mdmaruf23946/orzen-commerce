@@ -32,7 +32,7 @@ export async function analyzeComments(supabase: any, storeId: string, commentIds
     supabase.from("facebook_ai_settings").select("*").eq("store_id", storeId).maybeSingle(),
     supabase
       .from("facebook_comments")
-      .select("comment_id, message, author_name, post_excerpt")
+      .select("comment_id, message, author_id, author_name, post_excerpt")
       .eq("store_id", storeId)
       .in("comment_id", commentIds),
     supabase.from("stores").select("name, description").eq("id", storeId).maybeSingle(),
@@ -126,7 +126,7 @@ export async function analyzeComments(supabase: any, storeId: string, commentIds
   if (proposals.length) {
     await supabase
       .from("facebook_moderation_queue")
-      .upsert(proposals, { onConflict: "store_id,comment_id,action", ignoreDuplicates: false });
+      .upsert(proposals, { onConflict: "store_id,comment_id,action", ignoreDuplicates: true });
   }
 
   return { ok: true, analyzed: results.length, queued: proposals.length, results };
