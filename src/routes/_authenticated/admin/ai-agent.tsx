@@ -132,16 +132,16 @@ function AdminAgent() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="general" className="mt-4">
+        <TabsContent value="general" className="mt-6">
           <GeneralTab form={form} set={set} />
         </TabsContent>
-        <TabsContent value="knowledge" className="mt-4">
+        <TabsContent value="knowledge" className="mt-6">
           <KnowledgeTab form={form} setSource={setSource} setK={setK} summary={summary} />
         </TabsContent>
-        <TabsContent value="behavior" className="mt-4">
+        <TabsContent value="behavior" className="mt-6">
           <BehaviorTab form={form} set={set} />
         </TabsContent>
-        <TabsContent value="ordering" className="mt-4">
+        <TabsContent value="ordering" className="mt-6">
           <OrderingTab form={form} setOrderFlow={setOrderFlow} paymentMethods={paymentMethods} />
         </TabsContent>
       </Tabs>
