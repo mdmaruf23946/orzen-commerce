@@ -1045,7 +1045,7 @@ async function fetchPsidProfile(token: string, psid: string) {
     );
     if (!r.ok) return null;
     const j = (await r.json()) as Record<string, any>;
-    return { ...j, fetched_at: new Date().toISOString() };
+    return { ...j, fetched_at: new Date().toISOString() } as Record<string, any>;
   } catch {
     return null;
   }
@@ -1224,7 +1224,9 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
               if (!conv) {
                 const profile = token ? await fetchPsidProfile(token, senderId) : null;
                 const name = profile
-                  ? [profile.first_name, profile.last_name].filter(Boolean).join(" ") || null
+                  ? (profile["name"] as string | undefined) ||
+                    [profile["first_name"], profile["last_name"]].filter(Boolean).join(" ") ||
+                    null
                   : null;
                 const { data: created } = await sb
                   .from("ai_conversations")
@@ -1238,10 +1240,7 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                   .select("id,psid_profile,unread_count,handoff_mode")
                   .single();
                 conv = created;
-              } else if (
-                token &&
-                (!conv.psid_profile || Object.keys(conv.psid_profile as any).length === 0)
-              ) {
+              } else if (token && profileIsStale(conv.psid_profile as any)) {
                 const profile = await fetchPsidProfile(token, senderId);
                 if (profile) {
                   await sb
@@ -1249,7 +1248,9 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                     .update({
                       psid_profile: profile,
                       customer_name:
-                        [profile.first_name, profile.last_name].filter(Boolean).join(" ") || null,
+                        (profile["name"] as string | undefined) ||
+                        [profile["first_name"], profile["last_name"]].filter(Boolean).join(" ") ||
+                        null,
                     })
                     .eq("id", conv.id);
                 }
