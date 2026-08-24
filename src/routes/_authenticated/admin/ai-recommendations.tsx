@@ -101,9 +101,9 @@ function AiRecommendationsPage() {
             No products blacklisted.
           </div>
         ) : (
-          <ul className="grid gap-3">
+          <ul className="grid min-w-0 gap-3">
             {(blacklist as any[]).map((b) => (
-              <li key={b.id} className="flex items-center gap-3 rounded-xl border bg-card p-3">
+              <li key={b.id} className="flex min-w-0 items-center gap-3 overflow-hidden rounded-xl border bg-card p-3">
                 <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-muted">
                   {b.products?.primary_image_url && (
                     <img src={imgSrc(b.products.primary_image_url) ?? undefined} alt="" className="h-full w-full object-cover" />
@@ -133,20 +133,20 @@ function AiRecommendationsPage() {
             No recommendations logged yet. Once the AI suggests products, they will appear here.
           </div>
         ) : (
-          <ul className="grid gap-3">
+          <ul className="grid min-w-0 gap-3">
             {(recs as any[]).map((r) => {
               const blocked = blockedIds.has(r.product_id);
               const product = r.products ?? {};
               const src = imgSrc(product.primary_image_url);
               return (
-                <li key={r.id} className="rounded-xl border bg-card p-3">
+                <li key={r.id} className="min-w-0 overflow-hidden rounded-xl border bg-card p-2.5 sm:p-3">
                   {/* Top row: image + product info + blocked badge */}
                   <div className="flex items-start gap-3">
-                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
+                    <div className="h-12 w-12 shrink-0 sm:h-14 sm:w-14 overflow-hidden rounded-lg bg-muted">
                       {src && <img src={src} alt="" className="h-full w-full object-cover" />}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold leading-tight">{product.name ?? "Deleted product"}</p>
+                      <p className="truncate text-[13px] font-semibold leading-tight sm:text-sm">{product.name ?? "Deleted product"}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                         <span className="font-medium text-foreground">৳{Number(product.price ?? 0).toFixed(0)}</span>
                         <span>·</span>
@@ -183,12 +183,12 @@ function AiRecommendationsPage() {
 
                   {/* Action row */}
                   {!blocked && (
-                    <div className="mt-2.5 flex items-center gap-2">
+                    <div className="mt-2.5 flex min-w-0 items-center gap-2">
                       <Input
                         placeholder="Reason (optional)"
                         value={reason[r.product_id] ?? ""}
                         onChange={(e) => setReason((s) => ({ ...s, [r.product_id]: e.target.value }))}
-                        className="h-9 flex-1 bg-background text-xs"
+                        className="h-9 w-full min-w-0 flex-1 bg-background text-xs"
                       />
                       <Button size="sm" variant="outline" className="h-9 shrink-0 gap-1 text-xs" onClick={() => block(r.product_id)}>
                         <ShieldOff className="h-3.5 w-3.5" /> Block
