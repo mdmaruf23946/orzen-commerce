@@ -105,7 +105,7 @@ function AdminAgent() {
       </div>
 
       <Tabs defaultValue="general">
-        <TabsList className="grid w-full grid-cols-1 gap-3 rounded-2xl bg-muted p-2.5 sm:grid-cols-4">
+        <TabsList className="grid h-auto w-full grid-cols-1 gap-3 rounded-2xl bg-muted p-2.5 sm:grid-cols-4">
           <TabsTrigger
             value="general"
             className="h-auto rounded-xl px-4 py-3 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
