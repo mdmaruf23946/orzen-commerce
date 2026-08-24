@@ -29,6 +29,8 @@ import { useCustomerSession } from "@/lib/customer-session";
 import { SearchBar } from "@/components/storefront/SearchBar";
 import { MobileDrawer } from "@/components/storefront/MobileDrawer";
 import { BottomNav } from "@/components/storefront/BottomNav";
+import { StoreBranding } from "@/components/storefront/StoreBranding";
+import { resolveStoreIcon, resolveStoreFavicon } from "@/lib/store-icon";
 
 export const storeQuery = (slug: string) =>
   queryOptions({
@@ -127,6 +129,12 @@ function StoreLayout() {
   return (
     <StoreThemeProvider theme={resolved ?? DEFAULT_THEME}>
     <StoreUIProvider>
+      <StoreBranding
+        name={store.name}
+        iconUrl={resolveStoreIcon(s)}
+        faviconUrl={resolveStoreFavicon(s)}
+        themeColor={s.primary_color ?? null}
+      />
       {!isPreview && <TrackingScripts marketing={s.marketing} slug={slug} />}
       {resolved && <ThemeStyle theme={resolved} />}
       <div
@@ -138,7 +146,7 @@ function StoreLayout() {
           slug={slug}
           storeId={store.id}
           name={store.name}
-          logoUrl={(store as any).icon_url || store.logo_url}
+          logoUrl={resolveStoreIcon(store as any)}
           showSearch={!isAccount && !isCheckoutFlow}
         />
         <main

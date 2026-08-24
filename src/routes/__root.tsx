@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -151,8 +152,12 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function PlatformFavicon() {
   const { data } = usePlatformBranding();
+  const pathname = useRouterState({ select: (st: any) => st.location.pathname });
+  const isTenant = pathname.startsWith("/store/") || pathname.startsWith("/lp/");
   useEffect(() => {
     if (typeof document === "undefined") return;
+    // Storefronts/landing pages own their favicon (see StoreBranding).
+    if (isTenant) return;
     const favicon = data?.assets?.favicon?.url;
     const apple = data?.assets?.appIcon192?.url ?? favicon;
     if (favicon) {
