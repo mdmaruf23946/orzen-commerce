@@ -144,6 +144,7 @@ import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/publ
 import { Route as ApiPublicLpOrderRouteImport } from './routes/api/public/lp.order'
 import { Route as ApiPublicGa4TrackRouteImport } from './routes/api/public/ga4/track'
 import { Route as ApiPublicFbCapiTrackRouteImport } from './routes/api/public/fb-capi/track'
+import { Route as ApiPublicFacebookWebhookRouteImport } from './routes/api/public/facebook/webhook'
 import { Route as ApiPublicCronSyncParcelsRouteImport } from './routes/api/public/cron/sync-parcels'
 import { Route as ApiPublicCronSubscriptionRenewalsRouteImport } from './routes/api/public/cron/subscription-renewals'
 import { Route as ApiPublicCronNotifyOrdersRouteImport } from './routes/api/public/cron/notify-orders'
@@ -941,6 +942,12 @@ const ApiPublicFbCapiTrackRoute = ApiPublicFbCapiTrackRouteImport.update({
   path: '/api/public/fb-capi/track',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicFacebookWebhookRoute =
+  ApiPublicFacebookWebhookRouteImport.update({
+    id: '/api/public/facebook/webhook',
+    path: '/api/public/facebook/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicCronSyncParcelsRoute =
   ApiPublicCronSyncParcelsRouteImport.update({
     id: '/api/public/cron/sync-parcels',
@@ -1290,6 +1297,7 @@ export interface FileRoutesByFullPath {
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
+  '/api/public/facebook/webhook': typeof ApiPublicFacebookWebhookRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
   '/api/public/lp/order': typeof ApiPublicLpOrderRoute
@@ -1452,6 +1460,7 @@ export interface FileRoutesByTo {
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
+  '/api/public/facebook/webhook': typeof ApiPublicFacebookWebhookRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
   '/api/public/lp/order': typeof ApiPublicLpOrderRoute
@@ -1625,6 +1634,7 @@ export interface FileRoutesById {
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
+  '/api/public/facebook/webhook': typeof ApiPublicFacebookWebhookRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
   '/api/public/lp/order': typeof ApiPublicLpOrderRoute
@@ -1798,6 +1808,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/notify-orders'
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
+    | '/api/public/facebook/webhook'
     | '/api/public/fb-capi/track'
     | '/api/public/ga4/track'
     | '/api/public/lp/order'
@@ -1960,6 +1971,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/notify-orders'
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
+    | '/api/public/facebook/webhook'
     | '/api/public/fb-capi/track'
     | '/api/public/ga4/track'
     | '/api/public/lp/order'
@@ -2132,6 +2144,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/notify-orders'
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
+    | '/api/public/facebook/webhook'
     | '/api/public/fb-capi/track'
     | '/api/public/ga4/track'
     | '/api/public/lp/order'
@@ -2193,6 +2206,7 @@ export interface RootRouteChildren {
   ApiPublicCronNotifyOrdersRoute: typeof ApiPublicCronNotifyOrdersRoute
   ApiPublicCronSubscriptionRenewalsRoute: typeof ApiPublicCronSubscriptionRenewalsRoute
   ApiPublicCronSyncParcelsRoute: typeof ApiPublicCronSyncParcelsRoute
+  ApiPublicFacebookWebhookRoute: typeof ApiPublicFacebookWebhookRoute
   ApiPublicFbCapiTrackRoute: typeof ApiPublicFbCapiTrackRoute
   ApiPublicGa4TrackRoute: typeof ApiPublicGa4TrackRoute
   ApiPublicLpOrderRoute: typeof ApiPublicLpOrderRoute
@@ -3156,6 +3170,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicFbCapiTrackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/facebook/webhook': {
+      id: '/api/public/facebook/webhook'
+      path: '/api/public/facebook/webhook'
+      fullPath: '/api/public/facebook/webhook'
+      preLoaderRoute: typeof ApiPublicFacebookWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/cron/sync-parcels': {
       id: '/api/public/cron/sync-parcels'
       path: '/api/public/cron/sync-parcels'
@@ -3862,6 +3883,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicCronSubscriptionRenewalsRoute:
     ApiPublicCronSubscriptionRenewalsRoute,
   ApiPublicCronSyncParcelsRoute: ApiPublicCronSyncParcelsRoute,
+  ApiPublicFacebookWebhookRoute: ApiPublicFacebookWebhookRoute,
   ApiPublicFbCapiTrackRoute: ApiPublicFbCapiTrackRoute,
   ApiPublicGa4TrackRoute: ApiPublicGa4TrackRoute,
   ApiPublicLpOrderRoute: ApiPublicLpOrderRoute,
