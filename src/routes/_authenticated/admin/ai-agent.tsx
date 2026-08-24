@@ -105,28 +105,28 @@ function AdminAgent() {
       </div>
 
       <Tabs defaultValue="general">
-        <TabsList className="grid h-auto w-full grid-cols-1 gap-3 rounded-2xl bg-muted p-2.5 sm:grid-cols-4">
+        <TabsList className="flex w-full snap-x flex-nowrap gap-2 overflow-x-auto rounded-2xl bg-muted p-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-4 sm:overflow-visible">
           <TabsTrigger
             value="general"
-            className="h-auto rounded-xl px-4 py-3 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            className="h-auto shrink-0 flex-1 basis-0 snap-start rounded-xl px-3 py-3 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
           >
             General
           </TabsTrigger>
           <TabsTrigger
             value="knowledge"
-            className="h-auto rounded-xl px-4 py-3 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            className="h-auto shrink-0 flex-1 basis-0 snap-start rounded-xl px-3 py-3 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
           >
             Knowledge
           </TabsTrigger>
           <TabsTrigger
             value="behavior"
-            className="h-auto rounded-xl px-4 py-3 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            className="h-auto shrink-0 flex-1 basis-0 snap-start rounded-xl px-3 py-3 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
           >
             Behavior
           </TabsTrigger>
           <TabsTrigger
             value="ordering"
-            className="h-auto rounded-xl px-4 py-3 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            className="h-auto shrink-0 flex-1 basis-0 snap-start rounded-xl px-3 py-3 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
           >
             Ordering
           </TabsTrigger>
