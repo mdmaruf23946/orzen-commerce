@@ -115,7 +115,7 @@ export function getBrowserTenant(): TenantInfo | null {
 }
 
 /** Storefront paths that are platform routes at the root but tenant routes here. */
-const TENANT_ONLY_PATHS = ["/auth", "/sitemap.xml", "/robots.txt"];
+const TENANT_ONLY_PATHS = ["/auth", "/sitemap.xml"];
 
 function isRewritable(pathname: string): boolean {
   if (RESERVED_PREFIXES.some((p) => pathname === p.replace(/\/$/, "") || pathname.startsWith(p))) {
