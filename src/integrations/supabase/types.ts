@@ -2590,6 +2590,248 @@ export type Database = {
           },
         ]
       }
+      facebook_ai_settings: {
+        Row: {
+          allow_keywords: string[]
+          auto_hide_spam: boolean
+          auto_reply_safe: boolean
+          created_at: string
+          custom_instructions: string | null
+          deny_keywords: string[]
+          enabled: boolean
+          id: string
+          language: string
+          mode: string
+          store_id: string
+          suggest_messenger_handoff: boolean
+          tone: string
+          updated_at: string
+        }
+        Insert: {
+          allow_keywords?: string[]
+          auto_hide_spam?: boolean
+          auto_reply_safe?: boolean
+          created_at?: string
+          custom_instructions?: string | null
+          deny_keywords?: string[]
+          enabled?: boolean
+          id?: string
+          language?: string
+          mode?: string
+          store_id: string
+          suggest_messenger_handoff?: boolean
+          tone?: string
+          updated_at?: string
+        }
+        Update: {
+          allow_keywords?: string[]
+          auto_hide_spam?: boolean
+          auto_reply_safe?: boolean
+          created_at?: string
+          custom_instructions?: string | null
+          deny_keywords?: string[]
+          enabled?: boolean
+          id?: string
+          language?: string
+          mode?: string
+          store_id?: string
+          suggest_messenger_handoff?: boolean
+          tone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facebook_ai_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      facebook_comments: {
+        Row: {
+          ai_category: string | null
+          ai_status: string
+          ai_suggestion: string | null
+          author_id: string | null
+          author_name: string | null
+          comment_created_at: string | null
+          comment_id: string
+          created_at: string
+          hidden: boolean
+          id: string
+          message: string | null
+          post_excerpt: string | null
+          post_id: string | null
+          replied: boolean
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          ai_category?: string | null
+          ai_status?: string
+          ai_suggestion?: string | null
+          author_id?: string | null
+          author_name?: string | null
+          comment_created_at?: string | null
+          comment_id: string
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          message?: string | null
+          post_excerpt?: string | null
+          post_id?: string | null
+          replied?: boolean
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          ai_category?: string | null
+          ai_status?: string
+          ai_suggestion?: string | null
+          author_id?: string | null
+          author_name?: string | null
+          comment_created_at?: string | null
+          comment_id?: string
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          message?: string | null
+          post_excerpt?: string | null
+          post_id?: string | null
+          replied?: boolean
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facebook_comments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      facebook_page_integrations: {
+        Row: {
+          app_id: string | null
+          app_secret_encrypted: string | null
+          connected_at: string | null
+          created_at: string
+          id: string
+          last_error: string | null
+          last_verified_at: string | null
+          page_access_token_encrypted: string | null
+          page_id: string | null
+          page_name: string | null
+          page_picture_url: string | null
+          permissions: Json
+          status: string
+          store_id: string
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          app_id?: string | null
+          app_secret_encrypted?: string | null
+          connected_at?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          last_verified_at?: string | null
+          page_access_token_encrypted?: string | null
+          page_id?: string | null
+          page_name?: string | null
+          page_picture_url?: string | null
+          permissions?: Json
+          status?: string
+          store_id: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          app_id?: string | null
+          app_secret_encrypted?: string | null
+          connected_at?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          last_verified_at?: string | null
+          page_access_token_encrypted?: string | null
+          page_id?: string | null
+          page_name?: string | null
+          page_picture_url?: string | null
+          permissions?: Json
+          status?: string
+          store_id?: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facebook_page_integrations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      facebook_posts: {
+        Row: {
+          created_at: string
+          error: string | null
+          fb_post_id: string | null
+          id: string
+          link_url: string | null
+          media_type: string
+          media_url: string | null
+          message: string | null
+          published_at: string | null
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          fb_post_id?: string | null
+          id?: string
+          link_url?: string | null
+          media_type?: string
+          media_url?: string | null
+          message?: string | null
+          published_at?: string | null
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          fb_post_id?: string | null
+          id?: string
+          link_url?: string | null
+          media_type?: string
+          media_url?: string | null
+          message?: string | null
+          published_at?: string | null
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facebook_posts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feedback: {
         Row: {
           created_at: string
