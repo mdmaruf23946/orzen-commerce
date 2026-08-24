@@ -443,7 +443,11 @@ export const getMessengerIntegration = createServerFn({ method: "GET" })
       webhook_url: webhookUrl,
       page_id: row.page_id,
       page_name: row.page_name,
-      page_picture_url: row.page_picture_url,
+      // Graph CDN URLs (scontent...) expire after a while, so always hand the UI
+      // the stable public picture endpoint for the page.
+      page_picture_url: row.page_id
+        ? `https://graph.facebook.com/v19.0/${encodeURIComponent(row.page_id)}/picture?type=large`
+        : row.page_picture_url,
       app_id: row.app_id,
       has_app_secret: !!row.app_secret_encrypted,
       has_token: !!(row.page_access_token_encrypted || row.page_access_token),
