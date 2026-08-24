@@ -7,7 +7,8 @@ import {
   ExternalLink, FileText, Heart, Loader2, MessageSquare, PenSquare, RefreshCw, Send, Share2, Trash2,
 } from "lucide-react";
 import {
-  getFacebookPage, listFacebookPosts, syncFacebookPosts, publishFacebookDraft, deleteFacebookPost,
+  getFacebookPage, listFacebookPosts, listFacebookDrafts, publishFacebookPost, deleteFacebookPost,
+  deleteFacebookDraft,
 } from "@/lib/facebook-page.functions";
 import { Button } from "@/components/ui/button";
 import { Section, NotConnected, EmptyState, formatWhen, FB_BLUE } from "@/components/admin/facebook/ui";
@@ -33,45 +34,33 @@ function PostsPage() {
   const qc = useQueryClient();
   const pageFn = useServerFn(getFacebookPage);
   const listFn = useServerFn(listFacebookPosts);
-  const syncFn = useServerFn(syncFacebookPosts);
-  const publishFn = useServerFn(publishFacebookDraft);
-  const deleteFn = useServerFn(deleteFacebookPost);
+  const draftsFn = useServerFn(listFacebookDrafts);
+  const publishFn = useServerFn(publishFacebookPost);
+  const deletePostFn = useServerFn(deleteFacebookPost);
+  const deleteDraftFn = useServerFn(deleteFacebookDraft);
 
   const [tab, setTab] = useState<"published" | "draft">("published");
-  const [syncing, setSyncing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const { data: page } = useQuery({ queryKey: ["fbpage", "overview"], queryFn: () => pageFn() });
-  const { data, isLoading } = useQuery({
-    queryKey: ["fbpage", "posts", tab],
-    queryFn: () => listFn({ data: { status: tab } }),
+  const posts = useQuery({
+    queryKey: ["fbpage", "posts"],
+    queryFn: () => listFn({ data: {} }),
+    enabled: tab === "published",
+  });
+  const drafts = useQuery({
+    queryKey: ["fbpage", "drafts"],
+    queryFn: () => draftsFn(),
+    enabled: tab === "draft",
   });
 
   if (page && !page.connected) return <NotConnected />;
 
-  async function sync() {
-    setSyncing(true);
-    try {
-      const r: any = await syncFn();
-      toast.success(`Synced ${r.count ?? 0} posts from Facebook`);
-      qc.invalidateQueries({ queryKey: ["fbpage"] });
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setSyncing(false);
-    }
-  }
-
-  async function run(id: string, action: "publish" | "delete") {
+  async function act(id: string, fn: () => Promise<unknown>, msg: string) {
     setBusyId(id);
     try {
-      if (action === "publish") {
-        await publishFn({ data: { id } });
-        toast.success("Draft published");
-      } else {
-        await deleteFn({ data: { id } });
-        toast.success("Post deleted");
-      }
+      await fn();
+      toast.success(msg);
       qc.invalidateQueries({ queryKey: ["fbpage"] });
     } catch (e) {
       toast.error((e as Error).message);
@@ -80,110 +69,154 @@ function PostsPage() {
     }
   }
 
-  const posts = data?.posts ?? [];
+  const loading = tab === "published" ? posts.isLoading : drafts.isLoading;
+  const items = tab === "published" ? posts.data?.posts ?? [] : drafts.data?.drafts ?? [];
 
   return (
-    <div className="space-y-4">
-      <Section
-        title="Posts"
-        description="Engagement numbers come straight from your page."
-        action={
-          <div className="flex w-full gap-2 sm:w-auto">
-            <Button variant="outline" size="sm" onClick={sync} disabled={syncing} className="flex-1 sm:flex-none">
-              {syncing ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1.5 h-4 w-4" />}
-              Sync
-            </Button>
-            <Button asChild size="sm" className="flex-1 sm:flex-none" style={{ backgroundColor: FB_BLUE }}>
-              <Link to="/admin/facebook/compose">
-                <PenSquare className="mr-1.5 h-4 w-4" /> New post
-              </Link>
-            </Button>
-          </div>
-        }
-      >
-        <div className="mb-3 flex gap-1 rounded-xl border bg-muted/40 p-1">
-          {(["published", "draft"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTab(t)}
-              className={`min-h-9 flex-1 rounded-lg px-3 text-xs font-medium capitalize transition-colors ${
-                tab === t ? "bg-white text-foreground shadow-sm dark:bg-background" : "hover:bg-background/60"
-              }`}
-            >
-              {t === "published" ? "Published" : "Drafts"}
-            </button>
-          ))}
+    <Section
+      title="Posts"
+      description="Engagement numbers come straight from your page."
+      action={
+        <div className="flex w-full gap-2 sm:w-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => (tab === "published" ? posts.refetch() : drafts.refetch())}
+            className="flex-1 sm:flex-none"
+          >
+            <RefreshCw className="mr-1.5 h-4 w-4" /> Refresh
+          </Button>
+          <Button asChild size="sm" className="flex-1 sm:flex-none" style={{ backgroundColor: FB_BLUE }}>
+            <Link to="/admin/facebook/compose">
+              <PenSquare className="mr-1.5 h-4 w-4" /> New post
+            </Link>
+          </Button>
         </div>
+      }
+    >
+      <div className="mb-3 flex gap-1 rounded-xl border bg-muted/40 p-1">
+        {(["published", "draft"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTab(t)}
+            className={`min-h-9 flex-1 rounded-lg px-3 text-xs font-medium transition-colors ${
+              tab === t ? "bg-white text-foreground shadow-sm dark:bg-background" : "hover:bg-background/60"
+            }`}
+          >
+            {t === "published" ? "Published" : "Drafts"}
+          </button>
+        ))}
+      </div>
 
-        {isLoading ? (
-          <div className="h-32 animate-pulse rounded-xl bg-muted/40" />
-        ) : posts.length === 0 ? (
-          <EmptyState
-            icon={<FileText className="h-6 w-6 text-muted-foreground" />}
-            title={tab === "published" ? "No posts yet" : "No drafts saved"}
-            hint={tab === "published" ? "Press Sync to pull existing posts from your page." : "Save a draft from Create Post."}
-          />
-        ) : (
-          <ul className="space-y-2">
-            {posts.map((p: any) => (
-              <li key={p.id} className="rounded-xl border bg-background p-3">
-                <div className="flex gap-3">
-                  {p.media_url && p.media_type === "image" && (
-                    <img src={p.media_url} alt="" className="h-16 w-16 shrink-0 rounded-lg border object-cover" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="line-clamp-3 whitespace-pre-wrap text-sm">{p.message || "(no text)"}</p>
-                    <div className="mt-1 text-[11px] text-muted-foreground">
-                      {p.status === "draft" ? `Saved ${formatWhen(p.created_at)}` : `Posted ${formatWhen(p.published_at)}`}
-                    </div>
-                    {p.status === "published" && (
-                      <div className="mt-1.5 flex flex-wrap gap-3 text-[11px] text-muted-foreground">
-                        <span className="inline-flex items-center gap-1"><Heart className="h-3 w-3" /> {p.reactions ?? 0}</span>
-                        <span className="inline-flex items-center gap-1"><MessageSquare className="h-3 w-3" /> {p.comments_count ?? 0}</span>
-                        <span className="inline-flex items-center gap-1"><Share2 className="h-3 w-3" /> {p.shares ?? 0}</span>
-                      </div>
-                    )}
+      {tab === "published" && posts.data?.missing && (
+        <p className="mb-2 text-xs text-muted-foreground">
+          Your page token is missing the {posts.data.missing} permission, so posts cannot be listed.
+        </p>
+      )}
+
+      {loading ? (
+        <div className="h-32 animate-pulse rounded-xl bg-muted/40" />
+      ) : items.length === 0 ? (
+        <EmptyState
+          icon={<FileText className="h-6 w-6 text-muted-foreground" />}
+          title={tab === "published" ? "No posts yet" : "No drafts saved"}
+          hint={tab === "published" ? "Publish your first post from Create Post." : "Save a draft from Create Post."}
+        />
+      ) : (
+        <ul className="space-y-2">
+          {items.map((p: any) => (
+            <li key={p.id} className="rounded-xl border bg-background p-3">
+              <div className="flex gap-3">
+                {(p.image || (p.media_type === "image" && p.media_url)) && (
+                  <img
+                    src={p.image ?? p.media_url}
+                    alt=""
+                    className="h-16 w-16 shrink-0 rounded-lg border object-cover"
+                  />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-3 whitespace-pre-wrap text-sm">{p.message || "(no text)"}</p>
+                  <div className="mt-1 text-[11px] text-muted-foreground">
+                    {tab === "draft" ? `Saved ${formatWhen(p.created_at)}` : formatWhen(p.created_time)}
                   </div>
+                  {tab === "published" && (
+                    <div className="mt-1.5 flex flex-wrap gap-3 text-[11px] text-muted-foreground">
+                      <span className="inline-flex items-center gap-1"><Heart className="h-3 w-3" /> {p.reactions ?? 0}</span>
+                      <span className="inline-flex items-center gap-1"><MessageSquare className="h-3 w-3" /> {p.comments ?? 0}</span>
+                      <span className="inline-flex items-center gap-1"><Share2 className="h-3 w-3" /> {p.shares ?? 0}</span>
+                    </div>
+                  )}
                 </div>
+              </div>
 
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {p.status === "draft" ? (
-                    <Button size="sm" onClick={() => run(p.id, "publish")} disabled={busyId === p.id} style={{ backgroundColor: FB_BLUE }}>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {tab === "draft" ? (
+                  <>
+                    <Button
+                      size="sm"
+                      disabled={busyId === p.id}
+                      style={{ backgroundColor: FB_BLUE }}
+                      onClick={() =>
+                        act(
+                          p.id,
+                          () =>
+                            publishFn({
+                              data: {
+                                draft_id: p.id,
+                                message: p.message ?? "",
+                                media_url: p.media_url,
+                                media_type: p.media_type ?? "text",
+                                link_url: p.link_url,
+                              },
+                            }),
+                          "Draft published",
+                        )
+                      }
+                    >
                       {busyId === p.id ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Send className="mr-1.5 h-4 w-4" />}
                       Publish
                     </Button>
-                  ) : (
-                    <>
-                      {p.permalink_url && (
-                        <Button asChild size="sm" variant="outline">
-                          <a href={p.permalink_url} target="_blank" rel="noreferrer">
-                            <ExternalLink className="mr-1.5 h-4 w-4" /> View
-                          </a>
-                        </Button>
-                      )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive hover:bg-destructive/10"
+                      disabled={busyId === p.id}
+                      onClick={() => act(p.id, () => deleteDraftFn({ data: { id: p.id } }), "Draft deleted")}
+                    >
+                      <Trash2 className="mr-1.5 h-4 w-4" /> Delete
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    {p.permalink_url && (
                       <Button asChild size="sm" variant="outline">
-                        <Link to="/admin/facebook/comments" search={{ post: p.post_id }}>
-                          <MessageSquare className="mr-1.5 h-4 w-4" /> Comments
-                        </Link>
+                        <a href={p.permalink_url} target="_blank" rel="noreferrer">
+                          <ExternalLink className="mr-1.5 h-4 w-4" /> View
+                        </a>
                       </Button>
-                    </>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-destructive hover:bg-destructive/10"
-                    onClick={() => run(p.id, "delete")}
-                    disabled={busyId === p.id}
-                  >
-                    <Trash2 className="mr-1.5 h-4 w-4" /> Delete
-                  </Button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Section>
-    </div>
+                    )}
+                    <Button asChild size="sm" variant="outline">
+                      <Link to="/admin/facebook/comments" search={{ post: p.id }}>
+                        <MessageSquare className="mr-1.5 h-4 w-4" /> Comments
+                      </Link>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive hover:bg-destructive/10"
+                      disabled={busyId === p.id}
+                      onClick={() => act(p.id, () => deletePostFn({ data: { post_id: p.id } }), "Post deleted")}
+                    >
+                      <Trash2 className="mr-1.5 h-4 w-4" /> Delete
+                    </Button>
+                  </>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Section>
   );
 }
