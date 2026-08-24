@@ -2714,6 +2714,68 @@ export type Database = {
           },
         ]
       }
+      facebook_moderation_queue: {
+        Row: {
+          action: string
+          author_id: string | null
+          author_name: string | null
+          category: string | null
+          comment_id: string
+          created_at: string
+          decided_at: string | null
+          error: string | null
+          id: string
+          message: string | null
+          reason: string | null
+          status: string
+          store_id: string
+          suggestion: string | null
+          updated_at: string
+        }
+        Insert: {
+          action: string
+          author_id?: string | null
+          author_name?: string | null
+          category?: string | null
+          comment_id: string
+          created_at?: string
+          decided_at?: string | null
+          error?: string | null
+          id?: string
+          message?: string | null
+          reason?: string | null
+          status?: string
+          store_id: string
+          suggestion?: string | null
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          author_id?: string | null
+          author_name?: string | null
+          category?: string | null
+          comment_id?: string
+          created_at?: string
+          decided_at?: string | null
+          error?: string | null
+          id?: string
+          message?: string | null
+          reason?: string | null
+          status?: string
+          store_id?: string
+          suggestion?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facebook_moderation_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       facebook_page_integrations: {
         Row: {
           app_id: string | null
@@ -2723,6 +2785,7 @@ export type Database = {
           id: string
           last_error: string | null
           last_verified_at: string | null
+          last_webhook_at: string | null
           page_access_token_encrypted: string | null
           page_id: string | null
           page_name: string | null
@@ -2732,6 +2795,8 @@ export type Database = {
           store_id: string
           token_expires_at: string | null
           updated_at: string
+          verify_token: string | null
+          webhook_enabled: boolean
         }
         Insert: {
           app_id?: string | null
@@ -2741,6 +2806,7 @@ export type Database = {
           id?: string
           last_error?: string | null
           last_verified_at?: string | null
+          last_webhook_at?: string | null
           page_access_token_encrypted?: string | null
           page_id?: string | null
           page_name?: string | null
@@ -2750,6 +2816,8 @@ export type Database = {
           store_id: string
           token_expires_at?: string | null
           updated_at?: string
+          verify_token?: string | null
+          webhook_enabled?: boolean
         }
         Update: {
           app_id?: string | null
@@ -2759,6 +2827,7 @@ export type Database = {
           id?: string
           last_error?: string | null
           last_verified_at?: string | null
+          last_webhook_at?: string | null
           page_access_token_encrypted?: string | null
           page_id?: string | null
           page_name?: string | null
@@ -2768,6 +2837,8 @@ export type Database = {
           store_id?: string
           token_expires_at?: string | null
           updated_at?: string
+          verify_token?: string | null
+          webhook_enabled?: boolean
         }
         Relationships: [
           {
