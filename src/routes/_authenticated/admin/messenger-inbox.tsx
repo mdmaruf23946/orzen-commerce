@@ -231,7 +231,7 @@ function MessengerInbox() {
           <div className="flex-1 overflow-y-auto">
             {(conversations.data ?? []).map((c: any) => {
               const profile = c.psid_profile ?? {};
-              const name = c.customer_name || profile.first_name || `PSID ${c.external_id?.slice(-6)}`;
+              const name = displayName(c);
               return (
                 <button
                   key={c.id}
@@ -241,17 +241,7 @@ function MessengerInbox() {
                     selectedId === c.id && "bg-messenger/10 ring-1 ring-inset ring-messenger/30",
                   )}
                 >
-                  {profile.profile_pic ? (
-                    <img
-                      src={profile.profile_pic}
-                      alt=""
-                      className="h-10 w-10 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                      <UserIcon className="h-5 w-5" />
-                    </div>
-                  )}
+                  <FbAvatar src={profile.profile_pic} name={name} size={40} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate text-sm font-medium">{name}</span>
