@@ -941,19 +941,24 @@ export function buildTools(ctx: AgentContext) {
             return { product: p, score };
           });
         const hasMeaningfulTerms = terms.length > 0;
-        let ranked = scored;
-        if (hasMeaningfulTerms) {
-          const matches = scored.filter((row) => row.score >= 25);
-          ranked = matches.length ? matches : scored;
-        }
+        const matches = scored.filter((row) => row.score >= 25);
+        const noMatch = hasMeaningfulTerms && matches.length === 0;
+        // When the query matches nothing, never pass off unrelated products as
+        // "recommendations" — return a small suggestion list instead and don't log it.
+        const ranked = noMatch ? scored : (hasMeaningfulTerms ? matches : scored);
         ranked.sort((a, b) => b.score - a.score);
-        const filtered = ranked.slice(0, input.limit ?? 6).map((row) => row.product);
-        await logRecommendations("searchProducts", filtered, input.query);
+        const filtered = ranked.slice(0, noMatch ? 3 : (input.limit ?? 6)).map((row) => row.product);
+        if (!noMatch) await logRecommendations("searchProducts", filtered, input.query);
         return {
           products: filtered.map((p: any) => productSummary(ctx, p, cats.get(p.category_id))),
           query_terms: terms,
-          fallback_used: hasMeaningfulTerms && !scored.some((row) => row.score >= 25),
+          fallback_used: noMatch,
+          no_match: noMatch,
+          note: noMatch
+            ? "No product matched the customer's query. Tell the customer this item is not available and only offer these as optional alternatives — do not claim they match the request."
+            : undefined,
         };
+
       },
     }),
 
