@@ -13,19 +13,26 @@ export const getFacebookPage = createServerFn({ method: "GET" })
     const { capabilities, pagePicture, FB_PAGE_SCOPES, loadPageContext } = await import("@/lib/facebook-page.server");
     const { row } = await loadPageContext(context.supabase, storeId);
 
-    const [{ count: draftCount }, { count: pendingComments }, { data: ai }] = await Promise.all([
-      context.supabase
-        .from("facebook_posts")
-        .select("id", { count: "exact", head: true })
-        .eq("store_id", storeId)
-        .eq("status", "draft"),
-      context.supabase
-        .from("facebook_comments")
-        .select("id", { count: "exact", head: true })
-        .eq("store_id", storeId)
-        .eq("replied", false),
-      context.supabase.from("facebook_ai_settings").select("enabled, mode").eq("store_id", storeId).maybeSingle(),
-    ]);
+    const [{ count: draftCount }, { count: pendingComments }, { data: ai }, { count: pendingModeration }] =
+      await Promise.all([
+        context.supabase
+          .from("facebook_posts")
+          .select("id", { count: "exact", head: true })
+          .eq("store_id", storeId)
+          .eq("status", "draft"),
+        context.supabase
+          .from("facebook_comments")
+          .select("id", { count: "exact", head: true })
+          .eq("store_id", storeId)
+          .eq("replied", false),
+        context.supabase.from("facebook_ai_settings").select("enabled, mode").eq("store_id", storeId).maybeSingle(),
+        context.supabase
+          .from("facebook_moderation_queue")
+          .select("id", { count: "exact", head: true })
+          .eq("store_id", storeId)
+          .eq("status", "pending"),
+      ]);
+
 
     // Does the store have a Messenger page connected we could import from?
     const { data: msg } = await context.supabase
@@ -51,8 +58,16 @@ export const getFacebookPage = createServerFn({ method: "GET" })
       scopes: FB_PAGE_SCOPES,
       drafts: draftCount ?? 0,
       unanswered_comments: pendingComments ?? 0,
+      pending_moderation: pendingModeration ?? 0,
+      webhook: {
+        enabled: row?.webhook_enabled !== false,
+        verify_token: (row?.verify_token ?? null) as string | null,
+        last_webhook_at: (row?.last_webhook_at ?? null) as string | null,
+        callback_url: `${(process.env["PUBLIC_SITE_ORIGIN"] || "https://orzen.top").replace(/\/$/, "")}/api/public/facebook/webhook`,
+      },
       ai_enabled: !!ai?.enabled,
       ai_mode: ai?.mode ?? "suggest",
+
       messenger_page: msg?.status === "connected" && msg?.page_id
         ? { page_id: msg.page_id, page_name: msg.page_name }
         : null,
@@ -109,6 +124,7 @@ export const connectFacebookPage = createServerFn({ method: "POST" })
           : (row?.app_secret_encrypted ?? null),
         permissions,
         token_expires_at: expiresAt,
+        verify_token: row?.verify_token ?? crypto.randomUUID().replace(/-/g, ""),
         status: "connected",
         connected_at: new Date().toISOString(),
         last_verified_at: new Date().toISOString(),
@@ -181,6 +197,7 @@ export const importMessengerPageCredentials = createServerFn({ method: "POST" })
         app_secret_encrypted: appSecret ? encryptJSON(appSecret) : null,
         permissions,
         token_expires_at: expiresAt,
+        verify_token: crypto.randomUUID().replace(/-/g, ""),
         status: "connected",
         connected_at: new Date().toISOString(),
         last_verified_at: new Date().toISOString(),
@@ -247,7 +264,16 @@ export const disconnectFacebookPage = createServerFn({ method: "POST" })
 
 export const listFacebookPosts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ after: z.string().trim().max(500).optional().nullable() }).optional().parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        after: z.string().trim().max(500).optional().nullable(),
+        q: z.string().trim().max(120).optional().nullable(),
+        limit: z.number().int().optional().nullable(),
+      })
+      .optional()
+      .parse(d),
+  )
   .handler(async ({ context, data }) => {
     const storeId = await assertPlan(context.supabase, context.userId, "facebook_page");
     const { loadPageContext, capabilities, graphGet } = await import("@/lib/facebook-page.server");
@@ -260,11 +286,31 @@ export const listFacebookPosts = createServerFn({ method: "POST" })
     const fields =
       "id,message,created_time,permalink_url,full_picture,attachments{media_type,type,media,target,url}," +
       "comments.summary(true).limit(0),reactions.summary(true).limit(0),shares";
-    const j: any = await graphGet(`/${encodeURIComponent(row.page_id)}/posts`, token, {
-      fields,
-      limit: "15",
-      after: data?.after ?? undefined,
-    });
+    const pageSize = Math.min(Math.max(data?.limit ?? 10, 5), 25);
+    const needle = (data?.q ?? "").trim().toLowerCase();
+
+    // Graph has no text search on a page feed, so when the owner searches we
+    // keep paging (bounded) and filter locally until the page is filled.
+    const collected: any[] = [];
+    let cursor = data?.after ?? undefined;
+    let rounds = 0;
+    let next: string | null = null;
+    do {
+      const j: any = await graphGet(`/${encodeURIComponent(row.page_id)}/posts`, token, {
+        fields,
+        limit: String(needle ? 25 : pageSize),
+        after: cursor,
+      });
+      const batch = (j?.data ?? []) as any[];
+      collected.push(...(needle ? batch.filter((p) => String(p.message ?? "").toLowerCase().includes(needle)) : batch));
+      next = j?.paging?.cursors?.after ?? null;
+      cursor = next ?? undefined;
+      rounds += 1;
+      if (!needle || !next) break;
+    } while (collected.length < pageSize && rounds < 5);
+
+    const j: any = { data: collected.slice(0, pageSize), paging: { cursors: { after: next } } };
+
 
     const posts = (j?.data ?? []).map((p: any) => {
       const a = p?.attachments?.data?.[0];
@@ -280,7 +326,7 @@ export const listFacebookPosts = createServerFn({ method: "POST" })
         shares: p?.shares?.count ?? 0,
       };
     });
-    return { connected: true, posts, next: j?.paging?.cursors?.after ?? null };
+    return { connected: true, posts, next: j?.paging?.cursors?.after ?? null, capabilities: caps };
   });
 
 export const deleteFacebookPost = createServerFn({ method: "POST" })
@@ -503,6 +549,8 @@ export const listFacebookComments = createServerFn({ method: "POST" })
         filter: z.enum(["all", "unanswered", "flagged", "hidden"]).default("all"),
         post_id: z.string().trim().max(120).optional().nullable(),
         q: z.string().trim().max(120).optional().nullable(),
+        page: z.number().int().optional().nullable(),
+        page_size: z.number().int().optional().nullable(),
       })
       .optional()
       .parse(d),
@@ -512,12 +560,16 @@ export const listFacebookComments = createServerFn({ method: "POST" })
     const { loadPageContext, capabilities, userPicture } = await import("@/lib/facebook-page.server");
     const { row } = await loadPageContext(context.supabase, storeId);
 
+    const pageSize = Math.min(Math.max(data?.page_size ?? 15, 5), 50);
+    const page = Math.max(data?.page ?? 1, 1);
+    const from = (page - 1) * pageSize;
+
     let q = context.supabase
       .from("facebook_comments")
-      .select("*")
+      .select("*", { count: "exact" })
       .eq("store_id", storeId)
       .order("comment_created_at", { ascending: false, nullsFirst: false })
-      .limit(100);
+      .range(from, from + pageSize - 1);
 
     const filter = data?.filter ?? "all";
     if (filter === "unanswered") q = q.eq("replied", false).eq("hidden", false);
@@ -526,18 +578,25 @@ export const listFacebookComments = createServerFn({ method: "POST" })
     if (data?.post_id) q = q.eq("post_id", data.post_id);
     if (data?.q) q = q.ilike("message", `%${data.q}%`);
 
-    const { data: rows, error } = await q;
+    const { data: rows, error, count } = await q;
     if (error) throw new Error(error.message);
 
+    const total = count ?? 0;
     return {
       connected: row?.status === "connected",
       capabilities: capabilities(row?.permissions as string[]),
+      page,
+      page_size: pageSize,
+      total,
+      total_pages: Math.max(1, Math.ceil(total / pageSize)),
+      last_webhook_at: (row?.last_webhook_at ?? null) as string | null,
       comments: (rows ?? []).map((c: any) => ({
         ...c,
         author_picture: c.author_id ? userPicture(c.author_id) : null,
       })),
     };
   });
+
 
 export const replyFacebookComment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -686,4 +745,148 @@ export const analyzeFacebookComments = createServerFn({ method: "POST" })
     const storeId = await assertPlan(context.supabase, context.userId, "facebook_page");
     const { analyzeComments } = await import("@/lib/facebook-ai.server");
     return await analyzeComments(context.supabase, storeId, data.comment_ids);
+  });
+
+// ---------------------------------------------------------------------------
+// AI moderation approval workflow
+// AI never deletes, hides or blocks by itself — it queues a proposal here and
+// the store owner approves or rejects it.
+// ---------------------------------------------------------------------------
+
+export const listFacebookModeration = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({ status: z.enum(["pending", "approved", "rejected", "failed", "all"]).default("pending") })
+      .optional()
+      .parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const storeId = await assertPlan(context.supabase, context.userId, "facebook_page");
+    const { loadPageContext, capabilities, userPicture } = await import("@/lib/facebook-page.server");
+    const { row } = await loadPageContext(context.supabase, storeId);
+
+    let q = context.supabase
+      .from("facebook_moderation_queue")
+      .select("*")
+      .eq("store_id", storeId)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    const status = data?.status ?? "pending";
+    if (status !== "all") q = q.eq("status", status);
+
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+
+    return {
+      connected: row?.status === "connected",
+      capabilities: capabilities(row?.permissions as string[]),
+      items: (rows ?? []).map((r: any) => ({
+        ...r,
+        author_picture: r.author_id ? userPicture(r.author_id) : null,
+      })),
+    };
+  });
+
+export const decideFacebookModeration = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        decision: z.enum(["approve", "reject"]),
+        message: z.string().trim().max(2000).optional().nullable(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const storeId = await assertPlan(context.supabase, context.userId, "facebook_page");
+    const { data: item, error } = await context.supabase
+      .from("facebook_moderation_queue")
+      .select("*")
+      .eq("id", data.id)
+      .eq("store_id", storeId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!item) throw new Error("This moderation request no longer exists.");
+    if ((item as any).status !== "pending") throw new Error("This request has already been decided.");
+
+    if (data.decision === "reject") {
+      await context.supabase
+        .from("facebook_moderation_queue")
+        .update({ status: "rejected", decided_at: new Date().toISOString() })
+        .eq("id", data.id)
+        .eq("store_id", storeId);
+      return { ok: true, status: "rejected" as const };
+    }
+
+    const { loadPageContext, requireCapability, graphPost, graphDelete } = await import(
+      "@/lib/facebook-page.server"
+    );
+    const { row, token } = await loadPageContext(context.supabase, storeId);
+    const action = String((item as any).action);
+    const commentId = String((item as any).comment_id);
+
+    try {
+      if (action === "hide") {
+        requireCapability(row, "hide_comment");
+        await graphPost(`/${encodeURIComponent(commentId)}`, token!, { is_hidden: "true" });
+        await context.supabase
+          .from("facebook_comments")
+          .update({ hidden: true })
+          .eq("store_id", storeId)
+          .eq("comment_id", commentId);
+      } else if (action === "delete") {
+        requireCapability(row, "delete_comment");
+        await graphDelete(`/${encodeURIComponent(commentId)}`, token!);
+        await context.supabase
+          .from("facebook_comments")
+          .delete()
+          .eq("store_id", storeId)
+          .eq("comment_id", commentId);
+      } else if (action === "block") {
+        requireCapability(row, "block_user");
+        const userId = (item as any).author_id;
+        if (!userId) throw new Error("This comment has no author to block.");
+        await graphPost(`/${encodeURIComponent(row.page_id)}/blocked`, token!, { user: String(userId) });
+      } else if (action === "reply") {
+        requireCapability(row, "reply_comment");
+        const text = (data.message ?? (item as any).suggestion ?? "").trim();
+        if (!text) throw new Error("Write a reply before approving.");
+        await graphPost(`/${encodeURIComponent(commentId)}/comments`, token!, { message: text });
+        await context.supabase
+          .from("facebook_comments")
+          .update({ replied: true, ai_status: "done" })
+          .eq("store_id", storeId)
+          .eq("comment_id", commentId);
+      } else {
+        throw new Error(`Unsupported moderation action: ${action}`);
+      }
+    } catch (e) {
+      await context.supabase
+        .from("facebook_moderation_queue")
+        .update({ status: "failed", error: (e as Error).message, decided_at: new Date().toISOString() })
+        .eq("id", data.id)
+        .eq("store_id", storeId);
+      throw e;
+    }
+
+    await context.supabase
+      .from("facebook_moderation_queue")
+      .update({ status: "approved", error: null, decided_at: new Date().toISOString() })
+      .eq("id", data.id)
+      .eq("store_id", storeId);
+    return { ok: true, status: "approved" as const };
+  });
+
+export const clearFacebookModeration = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const storeId = await assertPlan(context.supabase, context.userId, "facebook_page");
+    await context.supabase
+      .from("facebook_moderation_queue")
+      .delete()
+      .eq("store_id", storeId)
+      .neq("status", "pending");
+    return { ok: true };
   });

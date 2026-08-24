@@ -91,3 +91,43 @@ export function formatWhen(iso?: string | null) {
   const d = new Date(iso);
   return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
+
+/**
+ * Small status chip shown next to every Facebook action, so the owner can see
+ * at a glance whether Meta actually allows that action with the current token.
+ */
+export function CapBadge({ ok, scope, className }: { ok: boolean; scope: string; className?: string }) {
+  return (
+    <span
+      title={ok ? `Allowed by ${scope}` : `Your page token is missing ${scope}`}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium",
+        ok
+          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600"
+          : "border-amber-500/20 bg-amber-500/10 text-amber-600",
+        className,
+      )}
+    >
+      <span className={cn("h-1.5 w-1.5 rounded-full", ok ? "bg-emerald-500" : "bg-amber-500")} />
+      {ok ? "Ready" : `Needs ${scope.replace("pages_", "")}`}
+    </span>
+  );
+}
+
+/** Wraps an action button with its capability chip underneath. */
+export function CapAction({
+  ok,
+  scope,
+  children,
+}: {
+  ok: boolean;
+  scope: string;
+  children: ReactNode;
+}) {
+  return (
+    <span className="inline-flex flex-col items-start gap-1">
+      {children}
+      <CapBadge ok={ok} scope={scope} />
+    </span>
+  );
+}
