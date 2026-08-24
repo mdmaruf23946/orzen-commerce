@@ -1691,14 +1691,16 @@ export const adminListCustomerAccounts = createServerFn({ method: "POST" })
     if (ids.length > 0) {
       const { data: os } = await context.supabase
         .from("orders")
-        .select("customer_id,total,subtotal,created_at,status")
+        .select("customer_id,subtotal,delivery_amount,discount_amount,created_at,status")
         .eq("store_id", storeId)
         .in("customer_id", ids);
       for (const o of (os ?? []) as any[]) {
         const cid = o.customer_id as string;
         const s = (stats[cid] ??= { count: 0, spend: 0, last: null });
         s.count += 1;
-        if (o.status !== "cancelled") s.spend += Number(o.total ?? o.subtotal ?? 0);
+        if (o.status !== "cancelled")
+          s.spend +=
+            Number(o.subtotal ?? 0) + Number(o.delivery_amount ?? 0) - Number(o.discount_amount ?? 0);
         if (!s.last || o.created_at > s.last) s.last = o.created_at;
       }
     }
@@ -1728,7 +1730,7 @@ export const adminGetCustomerAccount = createServerFn({ method: "POST" })
     if (!row) throw new Error("Not found");
     const { data: orders } = await context.supabase
       .from("orders")
-      .select("id,invoice_no,status,payment_status,payment_method,total,subtotal,created_at")
+      .select("id,invoice_no,status,payment_status,payment_method,subtotal,delivery_amount,discount_amount,created_at")
       .eq("store_id", storeId)
       .eq("customer_id", data.customerId)
       .order("created_at", { ascending: false })
@@ -1740,7 +1742,11 @@ export const adminGetCustomerAccount = createServerFn({ method: "POST" })
       .eq("customer_id", data.customerId);
     const list = (orders ?? []) as any[];
     const paid = list.filter((o) => o.status !== "cancelled");
-    const spend = paid.reduce((s, o) => s + Number(o.total ?? o.subtotal ?? 0), 0);
+    const spend = paid.reduce(
+      (s, o) =>
+        s + Number(o.subtotal ?? 0) + Number(o.delivery_amount ?? 0) - Number(o.discount_amount ?? 0),
+      0,
+    );
     const stats = {
       order_count: list.length,
       total_spent: spend,
