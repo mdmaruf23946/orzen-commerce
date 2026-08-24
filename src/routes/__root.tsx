@@ -213,6 +213,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <PlatformFavicon />
+      <PlatformInstallPrompt />
       <Outlet />
       <Toaster richColors position="top-center" />
     </QueryClientProvider>
