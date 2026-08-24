@@ -748,7 +748,12 @@ export const searchStoreProducts = createServerFn({ method: "POST" })
 export const refreshMessengerProfiles = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ ids: z.array(z.string().uuid()).max(60).optional() }).parse(d ?? {}),
+    z
+      .object({
+        ids: z.array(z.string().uuid()).max(60).optional(),
+        force: z.boolean().optional(),
+      })
+      .parse(d ?? {}),
   )
   .handler(async ({ data, context }) => {
     const storeId = await getOwnedStoreId(context.supabase, context.userId);
@@ -774,7 +779,29 @@ export const refreshMessengerProfiles = createServerFn({ method: "POST" })
     const { data: rows } = await q;
 
     const out: { id: string; name: string | null; profile_pic: string | null }[] = [];
-    const list = (rows ?? []) as any[];
+    const all = (rows ?? []) as any[];
+
+    // Cache: skip conversations whose profile was fetched less than 6h ago,
+    // unless the caller explicitly forces a refresh. Cached rows are still
+    // returned so the UI keeps showing name/picture without extra API calls.
+    const TTL = 6 * 60 * 60 * 1000;
+    const now = Date.now();
+    const list: any[] = [];
+    for (const row of all) {
+      const prof = (row.psid_profile ?? {}) as Record<string, any>;
+      const at = prof['fetched_at'] ? Date.parse(String(prof['fetched_at'])) : 0;
+      const fresh = at > 0 && now - at < TTL;
+      if (!data.force && fresh) {
+        out.push({
+          id: row.id,
+          name: (row.customer_name as string | null) ?? (prof['name'] as string) ?? null,
+          profile_pic: (prof['profile_pic'] as string) ?? null,
+        });
+        continue;
+      }
+      list.push(row);
+    }
+
     const CONCURRENCY = 5;
     for (let i = 0; i < list.length; i += CONCURRENCY) {
       const chunk = list.slice(i, i + CONCURRENCY);
@@ -792,7 +819,11 @@ export const refreshMessengerProfiles = createServerFn({ method: "POST" })
               null;
             const pic = (p.profile_pic as string | undefined) || null;
             if (!name && !pic) return;
-            const merged = { ...((row.psid_profile ?? {}) as Record<string, any>), ...p };
+            const merged = {
+              ...((row.psid_profile ?? {}) as Record<string, any>),
+              ...p,
+              fetched_at: new Date().toISOString(),
+            };
             await admin
               .from("ai_conversations")
               .update({
