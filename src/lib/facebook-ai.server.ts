@@ -80,6 +80,9 @@ export async function analyzeComments(supabase: any, storeId: string, commentIds
       suggestion: typeof r.suggestion === "string" ? r.suggestion.slice(0, 1500) : "",
     }));
 
+  const byId = new Map<string, any>((comments ?? []).map((c: any) => [c.comment_id, c]));
+  const proposals: any[] = [];
+
   for (const r of results) {
     await supabase
       .from("facebook_comments")
@@ -90,7 +93,41 @@ export async function analyzeComments(supabase: any, storeId: string, commentIds
       })
       .eq("store_id", storeId)
       .eq("comment_id", r.comment_id);
+
+    // Destructive actions are never executed by the AI — they are queued for
+    // the owner to approve on the Moderation tab.
+    const src = byId.get(r.comment_id) ?? {};
+    const base = {
+      store_id: storeId,
+      comment_id: r.comment_id,
+      author_id: src.author_id ?? null,
+      author_name: src.author_name ?? null,
+      message: src.message ?? null,
+      category: r.category,
+      status: "pending",
+    };
+    if (r.category === "spam") {
+      proposals.push({ ...base, action: "hide", reason: "AI flagged this comment as spam." });
+    } else if (r.category === "abusive") {
+      proposals.push({ ...base, action: "delete", reason: "AI flagged this comment as abusive." });
+      if (src.author_id) {
+        proposals.push({ ...base, action: "block", reason: "Repeat abusive commenter — block suggested." });
+      }
+    } else if (r.suggestion) {
+      proposals.push({
+        ...base,
+        action: "reply",
+        reason: "AI drafted a public reply for your approval.",
+        suggestion: r.suggestion,
+      });
+    }
   }
 
-  return { ok: true, analyzed: results.length, results };
+  if (proposals.length) {
+    await supabase
+      .from("facebook_moderation_queue")
+      .upsert(proposals, { onConflict: "store_id,comment_id,action", ignoreDuplicates: false });
+  }
+
+  return { ok: true, analyzed: results.length, queued: proposals.length, results };
 }
