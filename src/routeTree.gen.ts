@@ -122,6 +122,7 @@ import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.
 import { Route as AuthenticatedOwnerSubscriptionPayRouteRouteImport } from './routes/_authenticated/owner/subscription-pay.route'
 import { Route as AuthenticatedOwnerNotificationCenterRouteRouteImport } from './routes/_authenticated/owner/notification-center.route'
 import { Route as AuthenticatedOwnerCommunicationRouteRouteImport } from './routes/_authenticated/owner/communication.route'
+import { Route as AuthenticatedAdminFacebookRouteRouteImport } from './routes/_authenticated/admin/facebook.route'
 import { Route as AuthenticatedAdminBillingRouteRouteImport } from './routes/_authenticated/admin/billing.route'
 import { Route as AuthenticatedOwnerSubscriptionPayIndexRouteImport } from './routes/_authenticated/owner/subscription-pay.index'
 import { Route as AuthenticatedOwnerNotificationCenterIndexRouteImport } from './routes/_authenticated/owner/notification-center.index'
@@ -129,6 +130,7 @@ import { Route as AuthenticatedOwnerCommunicationIndexRouteImport } from './rout
 import { Route as AuthenticatedAdminSettingsIndexRouteImport } from './routes/_authenticated/admin/settings.index'
 import { Route as AuthenticatedAdminLandingPagesIndexRouteImport } from './routes/_authenticated/admin/landing-pages.index'
 import { Route as AuthenticatedAdminLandingBuilderIndexRouteImport } from './routes/_authenticated/admin/landing-builder.index'
+import { Route as AuthenticatedAdminFacebookIndexRouteImport } from './routes/_authenticated/admin/facebook.index'
 import { Route as AuthenticatedAdminBillingIndexRouteImport } from './routes/_authenticated/admin/billing.index'
 import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
 import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/order.$orderId'
@@ -163,6 +165,9 @@ import { Route as AuthenticatedAdminSettingsConfigurationRouteImport } from './r
 import { Route as AuthenticatedAdminLandingPagesIdRouteImport } from './routes/_authenticated/admin/landing-pages.$id'
 import { Route as AuthenticatedAdminLandingBuilderIdRouteImport } from './routes/_authenticated/admin/landing-builder.$id'
 import { Route as AuthenticatedAdminInvoiceOrderIdRouteImport } from './routes/_authenticated/admin/invoice.$orderId'
+import { Route as AuthenticatedAdminFacebookPostsRouteImport } from './routes/_authenticated/admin/facebook.posts'
+import { Route as AuthenticatedAdminFacebookComposeRouteImport } from './routes/_authenticated/admin/facebook.compose'
+import { Route as AuthenticatedAdminFacebookCommentsRouteImport } from './routes/_authenticated/admin/facebook.comments'
 import { Route as AuthenticatedAdminBillingReturnRouteImport } from './routes/_authenticated/admin/billing.return'
 import { Route as ApiPublicSubscriptionPayWebhookProviderRouteImport } from './routes/api/public/subscription-pay/webhook.$provider'
 import { Route as ApiPublicLandingPagesConnectionIdOrdersRouteImport } from './routes/api/public/landing-pages/$connectionId/orders'
@@ -811,6 +816,12 @@ const AuthenticatedOwnerCommunicationRouteRoute =
     path: '/communication',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
+const AuthenticatedAdminFacebookRouteRoute =
+  AuthenticatedAdminFacebookRouteRouteImport.update({
+    id: '/facebook',
+    path: '/facebook',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminBillingRouteRoute =
   AuthenticatedAdminBillingRouteRouteImport.update({
     id: '/billing',
@@ -852,6 +863,12 @@ const AuthenticatedAdminLandingBuilderIndexRoute =
     id: '/landing-builder/',
     path: '/landing-builder/',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminFacebookIndexRoute =
+  AuthenticatedAdminFacebookIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAdminFacebookRouteRoute,
   } as any)
 const AuthenticatedAdminBillingIndexRoute =
   AuthenticatedAdminBillingIndexRouteImport.update({
@@ -1046,6 +1063,24 @@ const AuthenticatedAdminInvoiceOrderIdRoute =
     path: '/invoice/$orderId',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminFacebookPostsRoute =
+  AuthenticatedAdminFacebookPostsRouteImport.update({
+    id: '/posts',
+    path: '/posts',
+    getParentRoute: () => AuthenticatedAdminFacebookRouteRoute,
+  } as any)
+const AuthenticatedAdminFacebookComposeRoute =
+  AuthenticatedAdminFacebookComposeRouteImport.update({
+    id: '/compose',
+    path: '/compose',
+    getParentRoute: () => AuthenticatedAdminFacebookRouteRoute,
+  } as any)
+const AuthenticatedAdminFacebookCommentsRoute =
+  AuthenticatedAdminFacebookCommentsRouteImport.update({
+    id: '/comments',
+    path: '/comments',
+    getParentRoute: () => AuthenticatedAdminFacebookRouteRoute,
+  } as any)
 const AuthenticatedAdminBillingReturnRoute =
   AuthenticatedAdminBillingReturnRouteImport.update({
     id: '/return',
@@ -1128,6 +1163,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/lp/$slug': typeof LpSlugRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
+  '/admin/facebook': typeof AuthenticatedAdminFacebookRouteRouteWithChildren
   '/owner/communication': typeof AuthenticatedOwnerCommunicationRouteRouteWithChildren
   '/owner/notification-center': typeof AuthenticatedOwnerNotificationCenterRouteRouteWithChildren
   '/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
@@ -1222,6 +1258,9 @@ export interface FileRoutesByFullPath {
   '/owner/': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
+  '/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
+  '/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
+  '/admin/facebook/posts': typeof AuthenticatedAdminFacebookPostsRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/admin/landing-builder/$id': typeof AuthenticatedAdminLandingBuilderIdRoute
   '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
@@ -1256,6 +1295,7 @@ export interface FileRoutesByFullPath {
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
+  '/admin/facebook/': typeof AuthenticatedAdminFacebookIndexRoute
   '/admin/landing-builder/': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/admin/settings/': typeof AuthenticatedAdminSettingsIndexRoute
@@ -1379,6 +1419,9 @@ export interface FileRoutesByTo {
   '/owner': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug': typeof StoreSlugIndexRoute
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
+  '/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
+  '/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
+  '/admin/facebook/posts': typeof AuthenticatedAdminFacebookPostsRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/admin/landing-builder/$id': typeof AuthenticatedAdminLandingBuilderIdRoute
   '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
@@ -1413,6 +1456,7 @@ export interface FileRoutesByTo {
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/billing': typeof AuthenticatedAdminBillingIndexRoute
+  '/admin/facebook': typeof AuthenticatedAdminFacebookIndexRoute
   '/admin/landing-builder': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/admin/landing-pages': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsIndexRoute
@@ -1452,6 +1496,7 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/lp/$slug': typeof LpSlugRoute
   '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
+  '/_authenticated/admin/facebook': typeof AuthenticatedAdminFacebookRouteRouteWithChildren
   '/_authenticated/owner/communication': typeof AuthenticatedOwnerCommunicationRouteRouteWithChildren
   '/_authenticated/owner/notification-center': typeof AuthenticatedOwnerNotificationCenterRouteRouteWithChildren
   '/_authenticated/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
@@ -1546,6 +1591,9 @@ export interface FileRoutesById {
   '/_authenticated/owner/': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
   '/_authenticated/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
+  '/_authenticated/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
+  '/_authenticated/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
+  '/_authenticated/admin/facebook/posts': typeof AuthenticatedAdminFacebookPostsRoute
   '/_authenticated/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/_authenticated/admin/landing-builder/$id': typeof AuthenticatedAdminLandingBuilderIdRoute
   '/_authenticated/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
@@ -1580,6 +1628,7 @@ export interface FileRoutesById {
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/_authenticated/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
+  '/_authenticated/admin/facebook/': typeof AuthenticatedAdminFacebookIndexRoute
   '/_authenticated/admin/landing-builder/': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/_authenticated/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/_authenticated/admin/settings/': typeof AuthenticatedAdminSettingsIndexRoute
@@ -1619,6 +1668,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/lp/$slug'
     | '/admin/billing'
+    | '/admin/facebook'
     | '/owner/communication'
     | '/owner/notification-center'
     | '/owner/subscription-pay'
@@ -1713,6 +1763,9 @@ export interface FileRouteTypes {
     | '/owner/'
     | '/store/$slug/'
     | '/admin/billing/return'
+    | '/admin/facebook/comments'
+    | '/admin/facebook/compose'
+    | '/admin/facebook/posts'
     | '/admin/invoice/$orderId'
     | '/admin/landing-builder/$id'
     | '/admin/landing-pages/$id'
@@ -1747,6 +1800,7 @@ export interface FileRouteTypes {
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/admin/billing/'
+    | '/admin/facebook/'
     | '/admin/landing-builder/'
     | '/admin/landing-pages/'
     | '/admin/settings/'
@@ -1870,6 +1924,9 @@ export interface FileRouteTypes {
     | '/owner'
     | '/store/$slug'
     | '/admin/billing/return'
+    | '/admin/facebook/comments'
+    | '/admin/facebook/compose'
+    | '/admin/facebook/posts'
     | '/admin/invoice/$orderId'
     | '/admin/landing-builder/$id'
     | '/admin/landing-pages/$id'
@@ -1904,6 +1961,7 @@ export interface FileRouteTypes {
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/admin/billing'
+    | '/admin/facebook'
     | '/admin/landing-builder'
     | '/admin/landing-pages'
     | '/admin/settings'
@@ -1942,6 +2000,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/lp/$slug'
     | '/_authenticated/admin/billing'
+    | '/_authenticated/admin/facebook'
     | '/_authenticated/owner/communication'
     | '/_authenticated/owner/notification-center'
     | '/_authenticated/owner/subscription-pay'
@@ -2036,6 +2095,9 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/'
     | '/store/$slug/'
     | '/_authenticated/admin/billing/return'
+    | '/_authenticated/admin/facebook/comments'
+    | '/_authenticated/admin/facebook/compose'
+    | '/_authenticated/admin/facebook/posts'
     | '/_authenticated/admin/invoice/$orderId'
     | '/_authenticated/admin/landing-builder/$id'
     | '/_authenticated/admin/landing-pages/$id'
@@ -2070,6 +2132,7 @@ export interface FileRouteTypes {
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
     | '/_authenticated/admin/billing/'
+    | '/_authenticated/admin/facebook/'
     | '/_authenticated/admin/landing-builder/'
     | '/_authenticated/admin/landing-pages/'
     | '/_authenticated/admin/settings/'
@@ -2926,6 +2989,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerCommunicationRouteRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
+    '/_authenticated/admin/facebook': {
+      id: '/_authenticated/admin/facebook'
+      path: '/facebook'
+      fullPath: '/admin/facebook'
+      preLoaderRoute: typeof AuthenticatedAdminFacebookRouteRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/billing': {
       id: '/_authenticated/admin/billing'
       path: '/billing'
@@ -2974,6 +3044,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/landing-builder/'
       preLoaderRoute: typeof AuthenticatedAdminLandingBuilderIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/facebook/': {
+      id: '/_authenticated/admin/facebook/'
+      path: '/'
+      fullPath: '/admin/facebook/'
+      preLoaderRoute: typeof AuthenticatedAdminFacebookIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminFacebookRouteRoute
     }
     '/_authenticated/admin/billing/': {
       id: '/_authenticated/admin/billing/'
@@ -3213,6 +3290,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminInvoiceOrderIdRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/facebook/posts': {
+      id: '/_authenticated/admin/facebook/posts'
+      path: '/posts'
+      fullPath: '/admin/facebook/posts'
+      preLoaderRoute: typeof AuthenticatedAdminFacebookPostsRouteImport
+      parentRoute: typeof AuthenticatedAdminFacebookRouteRoute
+    }
+    '/_authenticated/admin/facebook/compose': {
+      id: '/_authenticated/admin/facebook/compose'
+      path: '/compose'
+      fullPath: '/admin/facebook/compose'
+      preLoaderRoute: typeof AuthenticatedAdminFacebookComposeRouteImport
+      parentRoute: typeof AuthenticatedAdminFacebookRouteRoute
+    }
+    '/_authenticated/admin/facebook/comments': {
+      id: '/_authenticated/admin/facebook/comments'
+      path: '/comments'
+      fullPath: '/admin/facebook/comments'
+      preLoaderRoute: typeof AuthenticatedAdminFacebookCommentsRouteImport
+      parentRoute: typeof AuthenticatedAdminFacebookRouteRoute
+    }
     '/_authenticated/admin/billing/return': {
       id: '/_authenticated/admin/billing/return'
       path: '/return'
@@ -3305,6 +3403,28 @@ const AuthenticatedAdminBillingRouteRouteWithChildren =
     AuthenticatedAdminBillingRouteRouteChildren,
   )
 
+interface AuthenticatedAdminFacebookRouteRouteChildren {
+  AuthenticatedAdminFacebookCommentsRoute: typeof AuthenticatedAdminFacebookCommentsRoute
+  AuthenticatedAdminFacebookComposeRoute: typeof AuthenticatedAdminFacebookComposeRoute
+  AuthenticatedAdminFacebookPostsRoute: typeof AuthenticatedAdminFacebookPostsRoute
+  AuthenticatedAdminFacebookIndexRoute: typeof AuthenticatedAdminFacebookIndexRoute
+}
+
+const AuthenticatedAdminFacebookRouteRouteChildren: AuthenticatedAdminFacebookRouteRouteChildren =
+  {
+    AuthenticatedAdminFacebookCommentsRoute:
+      AuthenticatedAdminFacebookCommentsRoute,
+    AuthenticatedAdminFacebookComposeRoute:
+      AuthenticatedAdminFacebookComposeRoute,
+    AuthenticatedAdminFacebookPostsRoute: AuthenticatedAdminFacebookPostsRoute,
+    AuthenticatedAdminFacebookIndexRoute: AuthenticatedAdminFacebookIndexRoute,
+  }
+
+const AuthenticatedAdminFacebookRouteRouteWithChildren =
+  AuthenticatedAdminFacebookRouteRoute._addFileChildren(
+    AuthenticatedAdminFacebookRouteRouteChildren,
+  )
+
 interface AuthenticatedAdminSettingsRouteChildren {
   AuthenticatedAdminSettingsConfigurationRoute: typeof AuthenticatedAdminSettingsConfigurationRoute
   AuthenticatedAdminSettingsInformationRoute: typeof AuthenticatedAdminSettingsInformationRoute
@@ -3333,6 +3453,7 @@ const AuthenticatedAdminSettingsRouteWithChildren =
 
 interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminBillingRouteRoute: typeof AuthenticatedAdminBillingRouteRouteWithChildren
+  AuthenticatedAdminFacebookRouteRoute: typeof AuthenticatedAdminFacebookRouteRouteWithChildren
   AuthenticatedAdminAiAgentRoute: typeof AuthenticatedAdminAiAgentRoute
   AuthenticatedAdminAiCallCenterRoute: typeof AuthenticatedAdminAiCallCenterRoute
   AuthenticatedAdminAiRecommendationsRoute: typeof AuthenticatedAdminAiRecommendationsRoute
@@ -3387,6 +3508,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
   {
     AuthenticatedAdminBillingRouteRoute:
       AuthenticatedAdminBillingRouteRouteWithChildren,
+    AuthenticatedAdminFacebookRouteRoute:
+      AuthenticatedAdminFacebookRouteRouteWithChildren,
     AuthenticatedAdminAiAgentRoute: AuthenticatedAdminAiAgentRoute,
     AuthenticatedAdminAiCallCenterRoute: AuthenticatedAdminAiCallCenterRoute,
     AuthenticatedAdminAiRecommendationsRoute:
