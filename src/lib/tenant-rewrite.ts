@@ -50,28 +50,83 @@ export function subdomainSlug(hostname: string, root = rootDomain()): string | n
   return label;
 }
 
+/** True when the host is the platform itself (root, www, preview sandboxes). */
+export function isPlatformHostname(hostname: string, root = rootDomain()): boolean {
+  const host = hostname.toLowerCase().replace(/:\d+$/, "");
+  if (!host || host === "localhost" || host.startsWith("127.0.0.1") || host.startsWith("[")) {
+    return true;
+  }
+  if (EPHEMERAL_SUFFIXES.some((s) => host.endsWith(s))) return true;
+  if (host === root || host === `www.${root}`) return true;
+  // Any other label under the platform root is a store subdomain unless reserved.
+  if (host.endsWith(`.${root}`)) return subdomainSlug(host, root) === null;
+  return false;
+}
+
+const CACHE_PREFIX = "orzen:tenant:";
+
+function readCachedTenant(host: string): TenantInfo | null {
+  try {
+    const raw = window.sessionStorage.getItem(CACHE_PREFIX + host);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as TenantInfo;
+    return parsed?.slug && (parsed.kind === "store" || parsed.kind === "landing") ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedTenant(host: string, tenant: TenantInfo): void {
+  try {
+    window.sessionStorage.setItem(CACHE_PREFIX + host, JSON.stringify(tenant));
+  } catch {
+    /* storage unavailable — non-fatal */
+  }
+}
+
 /**
- * Tenant for the current browser host: the value injected by the Worker (which
- * also covers verified custom domains), otherwise a wildcard subdomain parse.
+ * Tenant for the current browser host. Covers both wildcard subdomains
+ * (`abdullah.orzen.top`) and fully custom domains mapped in Cloudflare — the
+ * Worker injects the resolved tenant for those, and we cache it per host so a
+ * client-side navigation or a cached HTML shell keeps the storefront frame.
  */
 export function getBrowserTenant(): TenantInfo | null {
   if (typeof window === "undefined") return null;
+  const host = window.location.hostname.toLowerCase().replace(/:\d+$/, "");
+
   const injected = (window as unknown as { __ORZEN_TENANT__?: TenantInfo }).__ORZEN_TENANT__;
   if (injected?.slug && (injected.kind === "store" || injected.kind === "landing")) {
+    writeCachedTenant(host, injected);
     return injected;
   }
-  const slug = subdomainSlug(window.location.hostname);
-  return slug ? { kind: "store", slug } : null;
+
+  // Wildcard subdomain: parseable without any server hint.
+  const slug = subdomainSlug(host);
+  if (slug) {
+    const tenant: TenantInfo = { kind: "store", slug };
+    writeCachedTenant(host, tenant);
+    return tenant;
+  }
+
+  // Fully custom domain: no hint in this document, but the host is not the
+  // platform, so reuse the tenant resolved earlier on this same host.
+  if (!isPlatformHostname(host)) return readCachedTenant(host);
+  return null;
 }
+
+/** Storefront paths that are platform routes at the root but tenant routes here. */
+const TENANT_ONLY_PATHS = ["/auth", "/sitemap.xml"];
 
 function isRewritable(pathname: string): boolean {
   if (RESERVED_PREFIXES.some((p) => pathname === p.replace(/\/$/, "") || pathname.startsWith(p))) {
     return false;
   }
+  if (TENANT_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
   const last = pathname.split("/").pop() ?? "";
-  if (last.includes(".") && !pathname.startsWith("/auth")) return false;
+  if (last.includes(".")) return false;
   return true;
 }
+
 
 /**
  * Router rewrite pair for the current tenant host, or undefined on the
