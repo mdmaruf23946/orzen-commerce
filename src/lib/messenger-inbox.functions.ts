@@ -748,7 +748,12 @@ export const searchStoreProducts = createServerFn({ method: "POST" })
 export const refreshMessengerProfiles = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ ids: z.array(z.string().uuid()).max(60).optional() }).parse(d ?? {}),
+    z
+      .object({
+        ids: z.array(z.string().uuid()).max(60).optional(),
+        force: z.boolean().optional(),
+      })
+      .parse(d ?? {}),
   )
   .handler(async ({ data, context }) => {
     const storeId = await getOwnedStoreId(context.supabase, context.userId);
