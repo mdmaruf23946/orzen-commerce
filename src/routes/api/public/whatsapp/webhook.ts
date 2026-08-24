@@ -254,15 +254,18 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
             if (!integ) continue;
 
             const appSecret = await decrypt((integ as any).app_secret_encrypted);
-            if (appSecret && !verifySignature(raw, signature, appSecret)) {
+            if (!appSecret || !verifySignature(raw, signature, appSecret)) {
               await sb.from("whatsapp_webhook_events").insert({
                 store_id: (integ as any).store_id,
                 phone_number_id: phoneNumberId,
                 event_type: "invalid_signature",
-                error: "Signature verification failed",
+                error: appSecret
+                  ? "Signature verification failed"
+                  : "No app secret configured — unsigned webhook rejected",
               } as any);
               return new Response("Invalid signature", { status: 401 });
             }
+
 
             const storeId = (integ as any).store_id as string;
             const token = await decrypt((integ as any).access_token_encrypted);

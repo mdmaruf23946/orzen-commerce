@@ -204,14 +204,19 @@ function WhatsappPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">App secret</Label>
+            <Label className="text-xs">App secret (required)</Label>
             <Input
               type="password"
               value={form.app_secret}
               onChange={(e) => setForm({ ...form, app_secret: e.target.value })}
-              placeholder={d.has_app_secret ? "•••••••• (saved)" : "Used to verify webhooks"}
+              placeholder={d.has_app_secret ? "•••••••• (saved)" : "Required to verify webhooks"}
             />
+            <p className="text-[11px] text-muted-foreground">
+              Without the app secret we cannot verify that incoming messages really come from WhatsApp, so they are
+              rejected.
+            </p>
           </div>
+
         </div>
         <div className="flex flex-wrap gap-2">
           <Button

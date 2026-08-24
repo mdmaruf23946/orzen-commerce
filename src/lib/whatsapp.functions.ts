@@ -141,6 +141,10 @@ export const connectWhatsapp = createServerFn({ method: "POST" })
     const { storeId, row } = await loadRow(context);
     const token = data.access_token ? data.access_token : await decrypt(row?.access_token_encrypted ?? null);
     if (!token) throw new Error("Access token is required");
+    // The app secret is mandatory: without it inbound webhooks cannot be verified.
+    const secret = data.app_secret ? data.app_secret : await decrypt(row?.app_secret_encrypted ?? null);
+    if (!secret) throw new Error("App secret is required so incoming WhatsApp webhooks can be verified");
+
 
     // Another store must not claim the same phone number id.
     const { data: clash } = await context.supabase
