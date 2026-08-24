@@ -56,6 +56,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { BrandMark } from "@/components/admin/payments/BrandMark";
 import { CustomGatewaySection } from "@/components/admin/payments/CustomGatewaySection";
