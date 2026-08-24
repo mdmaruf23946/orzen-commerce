@@ -89,6 +89,7 @@ const links: LinkDef[] = [
       { to: "/admin/facebook/posts", label: "Posts" },
       { to: "/admin/facebook/comments", label: "Comments" },
       { to: "/admin/facebook/compose", label: "Create Post" },
+      { to: "/admin/facebook/moderation", label: "Moderation" },
       { to: "/admin/facebook/settings", label: "Page Settings" },
     ],
   },
