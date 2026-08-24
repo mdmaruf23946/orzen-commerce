@@ -3140,6 +3140,7 @@ export type Database = {
           sort_order: number
           source_template_id: string | null
           store_id: string | null
+          sync_with_global: boolean
           updated_at: string
         }
         Insert: {
@@ -3158,6 +3159,7 @@ export type Database = {
           sort_order?: number
           source_template_id?: string | null
           store_id?: string | null
+          sync_with_global?: boolean
           updated_at?: string
         }
         Update: {
@@ -3176,6 +3178,7 @@ export type Database = {
           sort_order?: number
           source_template_id?: string | null
           store_id?: string | null
+          sync_with_global?: boolean
           updated_at?: string
         }
         Relationships: [

@@ -1,0 +1,1 @@
+ALTER TABLE public.invoice_templates ADD COLUMN IF NOT EXISTS sync_with_global boolean NOT NULL DEFAULT true;
