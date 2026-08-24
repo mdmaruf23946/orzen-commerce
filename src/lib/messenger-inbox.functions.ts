@@ -819,7 +819,11 @@ export const refreshMessengerProfiles = createServerFn({ method: "POST" })
               null;
             const pic = (p.profile_pic as string | undefined) || null;
             if (!name && !pic) return;
-            const merged = { ...((row.psid_profile ?? {}) as Record<string, any>), ...p };
+            const merged = {
+              ...((row.psid_profile ?? {}) as Record<string, any>),
+              ...p,
+              fetched_at: new Date().toISOString(),
+            };
             await admin
               .from("ai_conversations")
               .update({
