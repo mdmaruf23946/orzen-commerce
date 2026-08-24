@@ -137,3 +137,45 @@ export async function inferScopes(pageId: string, token: string): Promise<string
     return [];
   }
 }
+
+/** Loads the store's Facebook Page row plus a decrypted page token. */
+export async function loadPageContext(supabase: any, storeId: string) {
+  const { data } = await supabase
+    .from("facebook_page_integrations")
+    .select("*")
+    .eq("store_id", storeId)
+    .maybeSingle();
+  if (!data) return { row: null as any, token: null as string | null };
+  let token: string | null = null;
+  if (data.page_access_token_encrypted) {
+    try {
+      const { decryptJSON } = await import("@/lib/crypto/credentials.server");
+      token = decryptJSON<string>(data.page_access_token_encrypted);
+    } catch {
+      token = null;
+    }
+  }
+  return { row: data, token };
+}
+
+/** Throws a friendly error when the page isn't connected or the capability is missing. */
+export function requireCapability(row: any, cap: Capability) {
+  if (!row || row.status !== "connected") throw new Error("Facebook Page is not connected.");
+  const caps = capabilities(row.permissions as string[]);
+  if (!caps[cap]) {
+    throw new Error(
+      `This action requires the "${CAPABILITY_SCOPE[cap]}" permission on your Facebook Page. Reconnect the page after granting it.`,
+    );
+  }
+}
+
+export function attachmentOf(post: any): { type: string; url: string | null; thumb: string | null; target: string | null } {
+  const a = post?.attachments?.data?.[0] ?? post?.full_picture ? post?.attachments?.data?.[0] : null;
+  const media = a?.media ?? null;
+  return {
+    type: a?.type ?? (post?.full_picture ? "photo" : "status"),
+    url: post?.full_picture ?? media?.image?.src ?? null,
+    thumb: media?.image?.src ?? post?.full_picture ?? null,
+    target: a?.target?.url ?? a?.url ?? null,
+  };
+}
