@@ -93,7 +93,6 @@ function beep() {
   } catch { /* noop */ }
 }
 
-function MessengerInbox() {
 function displayName(c: any) {
   const p = c?.psid_profile ?? {};
   return (
