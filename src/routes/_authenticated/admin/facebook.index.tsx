@@ -129,7 +129,7 @@ function PageOverview() {
 
       <Section title="Comments" description="Reply, moderate and hand conversations to Messenger.">
         <Button asChild variant="outline" size="sm">
-          <Link to="/admin/facebook/comments">
+          <Link to="/admin/facebook/comments" search={{ post: undefined }}>
             <MessageSquare className="mr-1.5 h-4 w-4" /> Open comments
           </Link>
         </Button>
