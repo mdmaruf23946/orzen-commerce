@@ -1041,13 +1041,22 @@ async function decryptToken(enc: string | null | undefined): Promise<string | nu
 async function fetchPsidProfile(token: string, psid: string) {
   try {
     const r = await fetch(
-      `https://graph.facebook.com/v19.0/${encodeURIComponent(psid)}?fields=first_name,last_name,profile_pic,locale,timezone&access_token=${encodeURIComponent(token)}`,
+      `https://graph.facebook.com/v19.0/${encodeURIComponent(psid)}?fields=first_name,last_name,name,profile_pic,locale,timezone&access_token=${encodeURIComponent(token)}`,
     );
     if (!r.ok) return null;
-    return await r.json();
+    const j = (await r.json()) as Record<string, any>;
+    return { ...j, fetched_at: new Date().toISOString() } as Record<string, any>;
   } catch {
     return null;
   }
+}
+
+/** Profile pictures are signed CDN links that expire — refresh every few hours. */
+function profileIsStale(profile: any) {
+  if (!profile || Object.keys(profile).length === 0) return true;
+  const at = profile.fetched_at ? Date.parse(profile.fetched_at) : NaN;
+  if (Number.isNaN(at)) return true;
+  return Date.now() - at > 6 * 60 * 60 * 1000;
 }
 
 type IncomingContent = {
@@ -1215,7 +1224,9 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
               if (!conv) {
                 const profile = token ? await fetchPsidProfile(token, senderId) : null;
                 const name = profile
-                  ? [profile.first_name, profile.last_name].filter(Boolean).join(" ") || null
+                  ? (profile["name"] as string | undefined) ||
+                    [profile["first_name"], profile["last_name"]].filter(Boolean).join(" ") ||
+                    null
                   : null;
                 const { data: created } = await sb
                   .from("ai_conversations")
@@ -1229,10 +1240,7 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                   .select("id,psid_profile,unread_count,handoff_mode")
                   .single();
                 conv = created;
-              } else if (
-                token &&
-                (!conv.psid_profile || Object.keys(conv.psid_profile as any).length === 0)
-              ) {
+              } else if (token && profileIsStale(conv.psid_profile as any)) {
                 const profile = await fetchPsidProfile(token, senderId);
                 if (profile) {
                   await sb
@@ -1240,7 +1248,9 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                     .update({
                       psid_profile: profile,
                       customer_name:
-                        [profile.first_name, profile.last_name].filter(Boolean).join(" ") || null,
+                        (profile["name"] as string | undefined) ||
+                        [profile["first_name"], profile["last_name"]].filter(Boolean).join(" ") ||
+                        null,
                     })
                     .eq("id", conv.id);
                 }

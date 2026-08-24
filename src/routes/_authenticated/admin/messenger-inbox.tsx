@@ -93,7 +93,6 @@ function beep() {
   } catch { /* noop */ }
 }
 
-function MessengerInbox() {
 function displayName(c: any) {
   const p = c?.psid_profile ?? {};
   return (
@@ -146,6 +145,24 @@ function MessengerInbox() {
     refetchInterval: 15_000,
   });
   const stats = useQuery({ queryKey: ["mi", "stats"], queryFn: () => statsFn(), refetchInterval: 30_000 });
+
+  // Facebook profile pictures are signed CDN links that expire, and display
+  // names can change — re-sync them from the Graph API periodically.
+  const refreshProfilesFn = useServerFn(refreshMessengerProfiles);
+  useQuery({
+    queryKey: ["mi", "profiles-sync"],
+    queryFn: async () => {
+      const res = await refreshProfilesFn({ data: {} });
+      if (res.length) {
+        qc.invalidateQueries({ queryKey: ["mi", "conversations"] });
+        qc.invalidateQueries({ queryKey: ["mi", "conv"] });
+      }
+      return res;
+    },
+    refetchInterval: 10 * 60_000,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
 
   useEffect(() => {
     const ch = supabase
@@ -232,7 +249,7 @@ function MessengerInbox() {
           <div className="flex-1 overflow-y-auto">
             {(conversations.data ?? []).map((c: any) => {
               const profile = c.psid_profile ?? {};
-              const name = c.customer_name || profile.first_name || `PSID ${c.external_id?.slice(-6)}`;
+              const name = displayName(c);
               return (
                 <button
                   key={c.id}
@@ -242,17 +259,7 @@ function MessengerInbox() {
                     selectedId === c.id && "bg-messenger/10 ring-1 ring-inset ring-messenger/30",
                   )}
                 >
-                  {profile.profile_pic ? (
-                    <img
-                      src={profile.profile_pic}
-                      alt=""
-                      className="h-10 w-10 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                      <UserIcon className="h-5 w-5" />
-                    </div>
-                  )}
+                  <FbAvatar src={profile.profile_pic} name={name} size={40} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate text-sm font-medium">{name}</span>
@@ -411,7 +418,7 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
   const c = conv.data?.conv as any;
   const storeId: string | undefined = c?.store_id;
   const profile = c?.psid_profile ?? {};
-  const name = c?.customer_name || profile.first_name || `PSID ${c?.external_id?.slice(-6)}`;
+  const name = displayName(c);
   const mode = c?.handoff_mode ?? "ai";
 
   async function handleUpload(file: File) {
@@ -473,13 +480,7 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="relative shrink-0">
-          {profile.profile_pic ? (
-            <img src={profile.profile_pic} alt="" className="h-9 w-9 rounded-full object-cover" />
-          ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
-              <UserIcon className="h-4 w-4" />
-            </div>
-          )}
+          <FbAvatar src={profile.profile_pic} name={name} size={36} />
           {typeof (profile as any).is_online === "boolean" && (
             <span
               className={cn(
