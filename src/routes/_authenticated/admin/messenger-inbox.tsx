@@ -480,13 +480,7 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="relative shrink-0">
-          {profile.profile_pic ? (
-            <img src={profile.profile_pic} alt="" className="h-9 w-9 rounded-full object-cover" />
-          ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
-              <UserIcon className="h-4 w-4" />
-            </div>
-          )}
+          <FbAvatar src={profile.profile_pic} name={name} size={36} />
           {typeof (profile as any).is_online === "boolean" && (
             <span
               className={cn(
