@@ -165,6 +165,7 @@ import { Route as AuthenticatedAdminSettingsConfigurationRouteImport } from './r
 import { Route as AuthenticatedAdminLandingPagesIdRouteImport } from './routes/_authenticated/admin/landing-pages.$id'
 import { Route as AuthenticatedAdminLandingBuilderIdRouteImport } from './routes/_authenticated/admin/landing-builder.$id'
 import { Route as AuthenticatedAdminInvoiceOrderIdRouteImport } from './routes/_authenticated/admin/invoice.$orderId'
+import { Route as AuthenticatedAdminFacebookSettingsRouteImport } from './routes/_authenticated/admin/facebook.settings'
 import { Route as AuthenticatedAdminFacebookPostsRouteImport } from './routes/_authenticated/admin/facebook.posts'
 import { Route as AuthenticatedAdminFacebookComposeRouteImport } from './routes/_authenticated/admin/facebook.compose'
 import { Route as AuthenticatedAdminFacebookCommentsRouteImport } from './routes/_authenticated/admin/facebook.comments'
@@ -1063,6 +1064,12 @@ const AuthenticatedAdminInvoiceOrderIdRoute =
     path: '/invoice/$orderId',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminFacebookSettingsRoute =
+  AuthenticatedAdminFacebookSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedAdminFacebookRouteRoute,
+  } as any)
 const AuthenticatedAdminFacebookPostsRoute =
   AuthenticatedAdminFacebookPostsRouteImport.update({
     id: '/posts',
@@ -1261,6 +1268,7 @@ export interface FileRoutesByFullPath {
   '/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
   '/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
   '/admin/facebook/posts': typeof AuthenticatedAdminFacebookPostsRoute
+  '/admin/facebook/settings': typeof AuthenticatedAdminFacebookSettingsRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/admin/landing-builder/$id': typeof AuthenticatedAdminLandingBuilderIdRoute
   '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
@@ -1422,6 +1430,7 @@ export interface FileRoutesByTo {
   '/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
   '/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
   '/admin/facebook/posts': typeof AuthenticatedAdminFacebookPostsRoute
+  '/admin/facebook/settings': typeof AuthenticatedAdminFacebookSettingsRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/admin/landing-builder/$id': typeof AuthenticatedAdminLandingBuilderIdRoute
   '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
@@ -1594,6 +1603,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
   '/_authenticated/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
   '/_authenticated/admin/facebook/posts': typeof AuthenticatedAdminFacebookPostsRoute
+  '/_authenticated/admin/facebook/settings': typeof AuthenticatedAdminFacebookSettingsRoute
   '/_authenticated/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/_authenticated/admin/landing-builder/$id': typeof AuthenticatedAdminLandingBuilderIdRoute
   '/_authenticated/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
@@ -1766,6 +1776,7 @@ export interface FileRouteTypes {
     | '/admin/facebook/comments'
     | '/admin/facebook/compose'
     | '/admin/facebook/posts'
+    | '/admin/facebook/settings'
     | '/admin/invoice/$orderId'
     | '/admin/landing-builder/$id'
     | '/admin/landing-pages/$id'
@@ -1927,6 +1938,7 @@ export interface FileRouteTypes {
     | '/admin/facebook/comments'
     | '/admin/facebook/compose'
     | '/admin/facebook/posts'
+    | '/admin/facebook/settings'
     | '/admin/invoice/$orderId'
     | '/admin/landing-builder/$id'
     | '/admin/landing-pages/$id'
@@ -2098,6 +2110,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/facebook/comments'
     | '/_authenticated/admin/facebook/compose'
     | '/_authenticated/admin/facebook/posts'
+    | '/_authenticated/admin/facebook/settings'
     | '/_authenticated/admin/invoice/$orderId'
     | '/_authenticated/admin/landing-builder/$id'
     | '/_authenticated/admin/landing-pages/$id'
@@ -3290,6 +3303,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminInvoiceOrderIdRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/facebook/settings': {
+      id: '/_authenticated/admin/facebook/settings'
+      path: '/settings'
+      fullPath: '/admin/facebook/settings'
+      preLoaderRoute: typeof AuthenticatedAdminFacebookSettingsRouteImport
+      parentRoute: typeof AuthenticatedAdminFacebookRouteRoute
+    }
     '/_authenticated/admin/facebook/posts': {
       id: '/_authenticated/admin/facebook/posts'
       path: '/posts'
@@ -3407,6 +3427,7 @@ interface AuthenticatedAdminFacebookRouteRouteChildren {
   AuthenticatedAdminFacebookCommentsRoute: typeof AuthenticatedAdminFacebookCommentsRoute
   AuthenticatedAdminFacebookComposeRoute: typeof AuthenticatedAdminFacebookComposeRoute
   AuthenticatedAdminFacebookPostsRoute: typeof AuthenticatedAdminFacebookPostsRoute
+  AuthenticatedAdminFacebookSettingsRoute: typeof AuthenticatedAdminFacebookSettingsRoute
   AuthenticatedAdminFacebookIndexRoute: typeof AuthenticatedAdminFacebookIndexRoute
 }
 
@@ -3417,6 +3438,8 @@ const AuthenticatedAdminFacebookRouteRouteChildren: AuthenticatedAdminFacebookRo
     AuthenticatedAdminFacebookComposeRoute:
       AuthenticatedAdminFacebookComposeRoute,
     AuthenticatedAdminFacebookPostsRoute: AuthenticatedAdminFacebookPostsRoute,
+    AuthenticatedAdminFacebookSettingsRoute:
+      AuthenticatedAdminFacebookSettingsRoute,
     AuthenticatedAdminFacebookIndexRoute: AuthenticatedAdminFacebookIndexRoute,
   }
 
