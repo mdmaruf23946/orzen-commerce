@@ -21,5 +21,7 @@ export default defineConfig({
   },
   vite: {
     plugins: [mcpPlugin()],
+    // Allow tenant hostnames (subdomains + custom domains) to be tested in dev.
+    server: { allowedHosts: true },
   },
 });
