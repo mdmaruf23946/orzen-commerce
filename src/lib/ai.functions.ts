@@ -550,7 +550,9 @@ export const connectMessenger = createServerFn({ method: "POST" })
       app_secret_encrypted: data.app_secret ? encryptJSON(data.app_secret) : row?.app_secret_encrypted ?? null,
       verify_token,
       page_name: pageName,
-      page_picture_url: picture,
+      page_picture_url:
+        `https://graph.facebook.com/v19.0/${encodeURIComponent(data.page_id)}/picture?type=large` ||
+        picture,
       permissions,
       token_expires_at: expiresAt,
       status: "connected",
