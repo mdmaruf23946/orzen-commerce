@@ -109,7 +109,10 @@ export const saveInvoiceTemplate = createServerFn({ method: "POST" })
     if (data.category !== undefined) row.category = data.category;
     if (data.is_hidden !== undefined) row.is_hidden = data.is_hidden;
     if (data.page_size !== undefined) row.page_size = data.page_size;
+    // A store editing its own copy detaches it from the global master template.
+    if (data.scope === "store") row.sync_with_global = false;
     if (data.id) {
+
       // snapshot the previous state so it can be restored later
       const { data: prev } = await sb
         .from("invoice_templates")
@@ -293,6 +296,38 @@ export const getInvoicePayload = createServerFn({ method: "GET" })
         .maybeSingle();
       template = t;
     }
+
+    // Live sync: a store copy that has never been customized always renders the
+    // latest design of its global master template (edited in the owner panel).
+    if (template?.source_template_id && template.sync_with_global !== false) {
+      const { data: master } = await sb
+        .from("invoice_templates")
+        .select("canvas,brand,page_size")
+        .eq("id", template.source_template_id)
+        .eq("scope", "global")
+        .maybeSingle();
+      if (master) {
+        template = {
+          ...template,
+          canvas: master.canvas,
+          brand: master.brand,
+          page_size: master.page_size ?? template.page_size,
+        };
+      }
+    }
+
+    // QR blocks are no longer supported on invoices.
+    if (Array.isArray((template?.canvas as any)?.elements)) {
+      template = {
+        ...template,
+        canvas: {
+          ...template.canvas,
+          elements: (template.canvas.elements as any[]).filter((e) => e?.type !== "qr"),
+        },
+      };
+    }
+
+
 
     const list = (items ?? []).map((it: any) => ({
       name: it.name_snapshot,
