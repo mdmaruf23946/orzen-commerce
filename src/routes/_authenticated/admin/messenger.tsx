@@ -76,6 +76,7 @@ function AdminMessenger() {
   const [testMessage, setTestMessage] = useState("");
   const [log, setLog] = useState<LogEntry[]>([]);
   const [diag, setDiag] = useState<any | null>(null);
+  const [picErr, setPicErr] = useState(false);
   const fetchRecentPsids = useServerFn(listMessengerRecentPsids);
   const { data: recentPsids, refetch: refetchPsids } = useQuery({
     queryKey: ["admin", "messenger", "recent-psids"],
