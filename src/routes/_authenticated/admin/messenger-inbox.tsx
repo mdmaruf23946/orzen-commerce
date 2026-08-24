@@ -164,6 +164,23 @@ function MessengerInbox() {
     retry: false,
   });
 
+  const [refreshingProfiles, setRefreshingProfiles] = useState(false);
+  const manualRefreshProfiles = async () => {
+    if (refreshingProfiles) return;
+    setRefreshingProfiles(true);
+    try {
+      const res = await refreshProfilesFn({ data: { force: true } });
+      qc.invalidateQueries({ queryKey: ["mi", "conversations"] });
+      qc.invalidateQueries({ queryKey: ["mi", "conv"] });
+      qc.setQueryData(["mi", "profiles-sync"], res);
+      toast.success("Profiles refreshed");
+    } catch {
+      toast.error("Could not refresh profiles");
+    } finally {
+      setRefreshingProfiles(false);
+    }
+  };
+
   useEffect(() => {
     const ch = supabase
       .channel("mi-conversations")
