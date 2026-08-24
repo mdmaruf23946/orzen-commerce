@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Download, Loader2, Plug, PlugZap, RefreshCw, Save, Sparkles } from "lucide-react";
 import {
   getFacebookPage, connectFacebookPage, importMessengerPageCredentials, reverifyFacebookPage,
+  setFacebookWebhookEnabled,
   disconnectFacebookPage, getFacebookAiSettings, saveFacebookAiSettings,
 } from "@/lib/facebook-page.functions";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,7 @@ function SettingsPage() {
   const importFn = useServerFn(importMessengerPageCredentials);
   const verifyFn = useServerFn(reverifyFacebookPage);
   const disconnectFn = useServerFn(disconnectFacebookPage);
+  const webhookFn = useServerFn(setFacebookWebhookEnabled);
   const aiGet = useServerFn(getFacebookAiSettings);
   const aiSave = useServerFn(saveFacebookAiSettings);
 
@@ -220,6 +222,37 @@ function SettingsPage() {
         )}
       </Section>
 
+      {page?.connected && page.webhook && (
+        <Section
+          title="Live sync (webhook)"
+          description="Paste these into your Meta app so new posts and comments appear here without pressing Sync."
+        >
+          <div className="space-y-3">
+            <Field label="Callback URL" value={page.webhook.callback_url} />
+            <Field label="Verify token" value={page.webhook.verify_token ?? "—"} />
+            <p className="text-[11px] text-muted-foreground">
+              In your Meta app: Webhooks → Page → subscribe to the <b>feed</b> field, then paste the URL and token above.
+              {page.webhook.last_webhook_at
+                ? ` Last event received ${formatWhen(page.webhook.last_webhook_at)}.`
+                : " No events received yet."}
+            </p>
+            <Toggle
+              label="Live sync enabled"
+              hint="Turn off to ignore incoming Facebook events."
+              checked={page.webhook.enabled}
+              onChange={async (v) => {
+                try {
+                  await webhookFn({ data: { enabled: v } });
+                  qc.invalidateQueries({ queryKey: ["fbpage"] });
+                } catch (e) {
+                  toast.error((e as Error).message);
+                }
+              }}
+            />
+          </div>
+        </Section>
+      )}
+
       {form && (
         <Section
           title="AI comment management"
@@ -363,6 +396,28 @@ function SelectField({
           </option>
         ))}
       </select>
+    </div>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border bg-muted/30 p-2.5">
+      <div className="text-[11px] font-medium text-muted-foreground">{label}</div>
+      <div className="mt-1 flex items-center gap-2">
+        <code className="min-w-0 flex-1 break-all text-xs">{value}</code>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            navigator.clipboard.writeText(value);
+            toast.success("Copied");
+          }}
+        >
+          Copy
+        </Button>
+      </div>
     </div>
   );
 }

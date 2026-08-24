@@ -890,3 +890,17 @@ export const clearFacebookModeration = createServerFn({ method: "POST" })
       .neq("status", "pending");
     return { ok: true };
   });
+
+/** Turn live webhook syncing on or off for this page. */
+export const setFacebookWebhookEnabled = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ enabled: z.boolean() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const storeId = await assertPlan(context.supabase, context.userId, "facebook_page");
+    const { error } = await context.supabase
+      .from("facebook_page_integrations")
+      .update({ webhook_enabled: data.enabled } as any)
+      .eq("store_id", storeId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
