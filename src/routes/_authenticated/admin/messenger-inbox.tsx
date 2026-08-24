@@ -146,6 +146,24 @@ function MessengerInbox() {
   });
   const stats = useQuery({ queryKey: ["mi", "stats"], queryFn: () => statsFn(), refetchInterval: 30_000 });
 
+  // Facebook profile pictures are signed CDN links that expire, and display
+  // names can change — re-sync them from the Graph API periodically.
+  const refreshProfilesFn = useServerFn(refreshMessengerProfiles);
+  useQuery({
+    queryKey: ["mi", "profiles-sync"],
+    queryFn: async () => {
+      const res = await refreshProfilesFn({ data: {} });
+      if (res.length) {
+        qc.invalidateQueries({ queryKey: ["mi", "conversations"] });
+        qc.invalidateQueries({ queryKey: ["mi", "conv"] });
+      }
+      return res;
+    },
+    refetchInterval: 10 * 60_000,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+
   useEffect(() => {
     const ch = supabase
       .channel("mi-conversations")
