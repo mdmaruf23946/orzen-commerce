@@ -299,10 +299,12 @@ function AdminMessenger() {
       <div className="rounded-xl border bg-card p-3 sm:p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="flex items-center gap-3">
-            {d.page_picture_url ? (
+            {d.page_picture_url && !picErr ? (
               <img
                 src={d.page_picture_url}
                 alt=""
+                referrerPolicy="no-referrer"
+                onError={() => setPicErr(true)}
                 className="h-14 w-14 rounded-full object-cover ring-2 ring-messenger/60 ring-offset-2 ring-offset-card"
               />
             ) : (
