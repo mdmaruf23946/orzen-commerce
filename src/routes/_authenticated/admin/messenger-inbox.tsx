@@ -418,7 +418,7 @@ function ChatPane({ conversationId, onBack }: { conversationId: string; onBack: 
   const c = conv.data?.conv as any;
   const storeId: string | undefined = c?.store_id;
   const profile = c?.psid_profile ?? {};
-  const name = c?.customer_name || profile.first_name || `PSID ${c?.external_id?.slice(-6)}`;
+  const name = displayName(c);
   const mode = c?.handoff_mode ?? "ai";
 
   async function handleUpload(file: File) {
