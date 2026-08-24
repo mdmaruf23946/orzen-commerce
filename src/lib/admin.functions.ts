@@ -1728,7 +1728,7 @@ export const adminGetCustomerAccount = createServerFn({ method: "POST" })
     if (!row) throw new Error("Not found");
     const { data: orders } = await context.supabase
       .from("orders")
-      .select("id,invoice_no,status,subtotal,created_at")
+      .select("id,invoice_no,status,payment_status,payment_method,total,subtotal,created_at")
       .eq("store_id", storeId)
       .eq("customer_id", data.customerId)
       .order("created_at", { ascending: false })
@@ -1738,7 +1738,18 @@ export const adminGetCustomerAccount = createServerFn({ method: "POST" })
       .select("id,label,name,phone,address,area,is_default")
       .eq("store_id", storeId)
       .eq("customer_id", data.customerId);
-    return { ...row, orders: orders ?? [], addresses: addresses ?? [] };
+    const list = (orders ?? []) as any[];
+    const paid = list.filter((o) => o.status !== "cancelled");
+    const spend = paid.reduce((s, o) => s + Number(o.total ?? o.subtotal ?? 0), 0);
+    const stats = {
+      order_count: list.length,
+      total_spent: spend,
+      avg_order_value: paid.length ? spend / paid.length : 0,
+      first_order_at: list.length ? list[list.length - 1].created_at : null,
+      last_order_at: list.length ? list[0].created_at : null,
+    };
+    return { ...row, orders: list, addresses: addresses ?? [], stats };
+
   });
 
 export const adminSetCustomerActive = createServerFn({ method: "POST" })
