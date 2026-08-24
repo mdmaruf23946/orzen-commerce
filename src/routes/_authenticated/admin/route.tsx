@@ -80,6 +80,18 @@ const links: LinkDef[] = [
   { to: "/admin/messenger-inbox", label: "Messenger Inbox", icon: MessageSquare, badgeKey: "messenger" },
   { to: "/admin/whatsapp", label: "WhatsApp Integration", icon: MessageCircle },
   { to: "/admin/whatsapp-inbox", label: "WhatsApp Inbox", icon: MessageCircle },
+  {
+    to: "/admin/facebook",
+    label: "Facebook Page",
+    icon: Globe,
+    children: [
+      { to: "/admin/facebook", label: "Page Overview" },
+      { to: "/admin/facebook/posts", label: "Posts" },
+      { to: "/admin/facebook/comments", label: "Comments" },
+      { to: "/admin/facebook/compose", label: "Create Post" },
+      { to: "/admin/facebook/settings", label: "Page Settings" },
+    ],
+  },
   { to: "/admin/notifications", label: "Notifications", icon: Bell, badgeKey: "notifications" },
   { to: "/admin/product-defaults", label: "Product Defaults", icon: ClipboardList },
   { to: "/admin/domains", label: "Domains", icon: Globe },
