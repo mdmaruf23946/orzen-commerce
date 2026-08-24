@@ -168,6 +168,7 @@ import { Route as AuthenticatedAdminLandingBuilderIdRouteImport } from './routes
 import { Route as AuthenticatedAdminInvoiceOrderIdRouteImport } from './routes/_authenticated/admin/invoice.$orderId'
 import { Route as AuthenticatedAdminFacebookSettingsRouteImport } from './routes/_authenticated/admin/facebook.settings'
 import { Route as AuthenticatedAdminFacebookPostsRouteImport } from './routes/_authenticated/admin/facebook.posts'
+import { Route as AuthenticatedAdminFacebookModerationRouteImport } from './routes/_authenticated/admin/facebook.moderation'
 import { Route as AuthenticatedAdminFacebookComposeRouteImport } from './routes/_authenticated/admin/facebook.compose'
 import { Route as AuthenticatedAdminFacebookCommentsRouteImport } from './routes/_authenticated/admin/facebook.comments'
 import { Route as AuthenticatedAdminBillingReturnRouteImport } from './routes/_authenticated/admin/billing.return'
@@ -1083,6 +1084,12 @@ const AuthenticatedAdminFacebookPostsRoute =
     path: '/posts',
     getParentRoute: () => AuthenticatedAdminFacebookRouteRoute,
   } as any)
+const AuthenticatedAdminFacebookModerationRoute =
+  AuthenticatedAdminFacebookModerationRouteImport.update({
+    id: '/moderation',
+    path: '/moderation',
+    getParentRoute: () => AuthenticatedAdminFacebookRouteRoute,
+  } as any)
 const AuthenticatedAdminFacebookComposeRoute =
   AuthenticatedAdminFacebookComposeRouteImport.update({
     id: '/compose',
@@ -1274,6 +1281,7 @@ export interface FileRoutesByFullPath {
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
   '/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
+  '/admin/facebook/moderation': typeof AuthenticatedAdminFacebookModerationRoute
   '/admin/facebook/posts': typeof AuthenticatedAdminFacebookPostsRoute
   '/admin/facebook/settings': typeof AuthenticatedAdminFacebookSettingsRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
@@ -1437,6 +1445,7 @@ export interface FileRoutesByTo {
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
   '/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
+  '/admin/facebook/moderation': typeof AuthenticatedAdminFacebookModerationRoute
   '/admin/facebook/posts': typeof AuthenticatedAdminFacebookPostsRoute
   '/admin/facebook/settings': typeof AuthenticatedAdminFacebookSettingsRoute
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
@@ -1611,6 +1620,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/_authenticated/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
   '/_authenticated/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
+  '/_authenticated/admin/facebook/moderation': typeof AuthenticatedAdminFacebookModerationRoute
   '/_authenticated/admin/facebook/posts': typeof AuthenticatedAdminFacebookPostsRoute
   '/_authenticated/admin/facebook/settings': typeof AuthenticatedAdminFacebookSettingsRoute
   '/_authenticated/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
@@ -1785,6 +1795,7 @@ export interface FileRouteTypes {
     | '/admin/billing/return'
     | '/admin/facebook/comments'
     | '/admin/facebook/compose'
+    | '/admin/facebook/moderation'
     | '/admin/facebook/posts'
     | '/admin/facebook/settings'
     | '/admin/invoice/$orderId'
@@ -1948,6 +1959,7 @@ export interface FileRouteTypes {
     | '/admin/billing/return'
     | '/admin/facebook/comments'
     | '/admin/facebook/compose'
+    | '/admin/facebook/moderation'
     | '/admin/facebook/posts'
     | '/admin/facebook/settings'
     | '/admin/invoice/$orderId'
@@ -2121,6 +2133,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/billing/return'
     | '/_authenticated/admin/facebook/comments'
     | '/_authenticated/admin/facebook/compose'
+    | '/_authenticated/admin/facebook/moderation'
     | '/_authenticated/admin/facebook/posts'
     | '/_authenticated/admin/facebook/settings'
     | '/_authenticated/admin/invoice/$orderId'
@@ -3338,6 +3351,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminFacebookPostsRouteImport
       parentRoute: typeof AuthenticatedAdminFacebookRouteRoute
     }
+    '/_authenticated/admin/facebook/moderation': {
+      id: '/_authenticated/admin/facebook/moderation'
+      path: '/moderation'
+      fullPath: '/admin/facebook/moderation'
+      preLoaderRoute: typeof AuthenticatedAdminFacebookModerationRouteImport
+      parentRoute: typeof AuthenticatedAdminFacebookRouteRoute
+    }
     '/_authenticated/admin/facebook/compose': {
       id: '/_authenticated/admin/facebook/compose'
       path: '/compose'
@@ -3447,6 +3467,7 @@ const AuthenticatedAdminBillingRouteRouteWithChildren =
 interface AuthenticatedAdminFacebookRouteRouteChildren {
   AuthenticatedAdminFacebookCommentsRoute: typeof AuthenticatedAdminFacebookCommentsRoute
   AuthenticatedAdminFacebookComposeRoute: typeof AuthenticatedAdminFacebookComposeRoute
+  AuthenticatedAdminFacebookModerationRoute: typeof AuthenticatedAdminFacebookModerationRoute
   AuthenticatedAdminFacebookPostsRoute: typeof AuthenticatedAdminFacebookPostsRoute
   AuthenticatedAdminFacebookSettingsRoute: typeof AuthenticatedAdminFacebookSettingsRoute
   AuthenticatedAdminFacebookIndexRoute: typeof AuthenticatedAdminFacebookIndexRoute
@@ -3458,6 +3479,8 @@ const AuthenticatedAdminFacebookRouteRouteChildren: AuthenticatedAdminFacebookRo
       AuthenticatedAdminFacebookCommentsRoute,
     AuthenticatedAdminFacebookComposeRoute:
       AuthenticatedAdminFacebookComposeRoute,
+    AuthenticatedAdminFacebookModerationRoute:
+      AuthenticatedAdminFacebookModerationRoute,
     AuthenticatedAdminFacebookPostsRoute: AuthenticatedAdminFacebookPostsRoute,
     AuthenticatedAdminFacebookSettingsRoute:
       AuthenticatedAdminFacebookSettingsRoute,
