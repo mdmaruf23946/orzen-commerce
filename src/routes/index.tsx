@@ -942,29 +942,35 @@ function BrowserFrame({ children }: { children: React.ReactNode }) {
   );
 }
 
-function PhoneFrame({ children }: { children: React.ReactNode }) {
+function PhoneFrame({ children, bare = false }: { children: React.ReactNode; bare?: boolean }) {
   return (
     <div className="mx-auto w-[248px] max-w-full sm:w-[272px]">
       <div className="relative rounded-[2.6rem] border-[9px] border-[color:var(--orzen-navy)] bg-[color:var(--orzen-navy)] shadow-[var(--shadow-lift)]">
         <div className="relative aspect-[9/19.5] overflow-hidden rounded-[2rem] bg-white">
-          {/* status bar */}
-          <div className="flex items-center justify-between px-4 pt-2 text-[9px] font-semibold text-[color:var(--orzen-navy)]">
-            <span>9:41</span>
-            <span className="flex items-center gap-1">
-              <span className="flex items-end gap-[1px]">
-                <i className="block h-1 w-[2px] rounded-sm bg-current" />
-                <i className="block h-1.5 w-[2px] rounded-sm bg-current" />
-                <i className="block h-2 w-[2px] rounded-sm bg-current" />
-              </span>
-              <span>5G</span>
-              <span className="inline-block h-2 w-4 rounded-[3px] border border-current p-[1px]">
-                <span className="block h-full w-3/4 rounded-[1px] bg-current" />
-              </span>
-            </span>
-          </div>
+          {bare ? (
+            <div className="h-full w-full overflow-hidden">{children}</div>
+          ) : (
+            <>
+              {/* status bar */}
+              <div className="flex items-center justify-between px-4 pt-2 text-[9px] font-semibold text-[color:var(--orzen-navy)]">
+                <span>9:41</span>
+                <span className="flex items-center gap-1">
+                  <span className="flex items-end gap-[1px]">
+                    <i className="block h-1 w-[2px] rounded-sm bg-current" />
+                    <i className="block h-1.5 w-[2px] rounded-sm bg-current" />
+                    <i className="block h-2 w-[2px] rounded-sm bg-current" />
+                  </span>
+                  <span>5G</span>
+                  <span className="inline-block h-2 w-4 rounded-[3px] border border-current p-[1px]">
+                    <span className="block h-full w-3/4 rounded-[1px] bg-current" />
+                  </span>
+                </span>
+              </div>
+              <div className="h-[calc(100%-1.5rem)] overflow-hidden px-3 pt-2">{children}</div>
+            </>
+          )}
           {/* dynamic island */}
           <div className="absolute left-1/2 top-1.5 h-4 w-16 -translate-x-1/2 rounded-full bg-[color:var(--orzen-navy)]" />
-          <div className="h-[calc(100%-1.5rem)] overflow-hidden px-3 pt-2">{children}</div>
         </div>
       </div>
     </div>
