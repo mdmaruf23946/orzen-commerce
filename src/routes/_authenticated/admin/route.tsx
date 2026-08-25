@@ -24,6 +24,8 @@ import { useBadgeCounts, useMarkSeen } from "@/lib/use-badge-counts";
 import { getMyStore } from "@/lib/admin.functions";
 import { resolveStoreIcon } from "@/lib/store-icon";
 import { recoverFromChunkError } from "@/lib/chunk-recovery";
+import { StoreAccessProvider, useStoreAccess } from "@/lib/use-store-access";
+import { sectionForPath } from "@/lib/panel-sections";
 
 
 type BadgeKey =
