@@ -99,7 +99,49 @@ export const Route = createFileRoute("/")({
 /* -------------------------------------------------------------------------- */
 
 function Landing() {
+  const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+
+  // Persistent session check: signed-in visitors go straight to the admin dashboard.
+  useEffect(() => {
+    let active = true;
+    let unsub: (() => void) | undefined;
+
+    import("@/integrations/supabase/client").then(async ({ supabase }) => {
+      const { data } = await supabase.auth.getUser();
+      if (!active) return;
+      if (data.user) {
+        navigate({ to: "/admin", replace: true });
+        return;
+      }
+      setChecking(false);
+      const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+        if (!active) return;
+        if (event === "SIGNED_IN" && session?.user) {
+          navigate({ to: "/admin", replace: true });
+        }
+      });
+      unsub = () => sub.subscription.unsubscribe();
+    }).catch(() => {
+      if (active) setChecking(false);
+    });
+
+    return () => {
+      active = false;
+      unsub?.();
+    };
+  }, [navigate]);
+
+  if (checking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-slate-600" />
+      </div>
+    );
+  }
+
   return (
+
     <div className="min-h-screen bg-white text-[color:var(--orzen-navy)] overflow-x-hidden">
       <Header />
       <main>
