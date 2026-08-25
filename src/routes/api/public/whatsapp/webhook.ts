@@ -254,17 +254,27 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
             if (!integ) continue;
 
             const appSecret = await decrypt((integ as any).app_secret_encrypted);
-            if (!appSecret || !verifySignature(raw, signature, appSecret)) {
+            if (appSecret) {
+              if (!verifySignature(raw, signature, appSecret)) {
+                await sb.from("whatsapp_webhook_events").insert({
+                  store_id: (integ as any).store_id,
+                  phone_number_id: phoneNumberId,
+                  event_type: "invalid_signature",
+                  error: "Signature verification failed",
+                } as any);
+                return new Response("Invalid signature", { status: 401 });
+              }
+            } else {
+              // Legacy integrations connected before the app secret became required:
+              // keep delivering messages, but record a warning so the admin can fix it.
               await sb.from("whatsapp_webhook_events").insert({
                 store_id: (integ as any).store_id,
                 phone_number_id: phoneNumberId,
-                event_type: "invalid_signature",
-                error: appSecret
-                  ? "Signature verification failed"
-                  : "No app secret configured — unsigned webhook rejected",
+                event_type: "unverified_webhook",
+                error: "No app secret configured — webhook accepted without signature verification",
               } as any);
-              return new Response("Invalid signature", { status: 401 });
             }
+
 
 
             const storeId = (integ as any).store_id as string;
