@@ -431,14 +431,19 @@ function CategoryTile({
     <button
       type="button"
       onClick={onClick}
-      className="group flex w-20 shrink-0 snap-start flex-col items-center gap-1.5 sm:w-auto"
+      className="group flex w-full min-w-0 flex-col items-center gap-1.5"
     >
       <div
-        className="grid aspect-square w-16 place-items-center overflow-hidden rounded-2xl bg-neutral-100 ring-2 transition-all sm:w-full"
+        className="aspect-square w-full overflow-hidden rounded-2xl bg-neutral-100 transition-all"
         style={{ boxShadow: `inset 0 0 0 2px ${ring}` }}
       >
         {image ? (
-          <img src={image} alt={label} loading="lazy" className="h-full w-full object-cover" />
+          <img
+            src={image}
+            alt={label}
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
         ) : (
           <span
             className="grid h-full w-full place-items-center text-lg font-bold text-neutral-400"
@@ -454,6 +459,7 @@ function CategoryTile({
         {label}
       </span>
     </button>
+
   );
 }
 
