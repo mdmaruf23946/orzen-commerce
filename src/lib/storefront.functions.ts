@@ -475,8 +475,8 @@ export const listBestSellingProducts = createServerFn({ method: "GET" })
     if (pErr) throw new Error(pErr.message);
     const order = new Map(topIds.map((id: string, i: number) => [id, i]));
     return (products ?? [])
-      .map((p) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }))
-      .sort((a, b) => (order.get(a.id)! - order.get(b.id)!));
+      .map((p: any) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }))
+      .sort((a: any, b: any) => (order.get(a.id)! - order.get(b.id)!));
   });
 
 
@@ -641,7 +641,7 @@ export const listProductsByIds = createServerFn({ method: "GET" })
       .in("id", data.ids)
       .neq("status", "draft");
     if (error) throw new Error(error.message);
-    return (rows ?? []).map((p) => {
+    return (rows ?? []).map((p: any) => {
       const dg = ((p.meta ?? {}) as any)?.digital ?? {};
       const sv = ((p.meta ?? {}) as any)?.service ?? {};
       const sub = ((p.meta ?? {}) as any)?.subscription ?? {};
@@ -857,7 +857,7 @@ export const placeOrder = createServerFn({ method: "POST" })
       .in("id", ids)
       .eq("store_id", data.storeId);
     if (pErr) throw new Error(pErr.message);
-    const byId = new Map(products?.map((p) => [p.id, p]) ?? []);
+    const byId = new Map<string, any>((products ?? []).map((p: any) => [p.id, p]));
 
     const isDigitalProduct = (p: any) => p?.product_type === "digital";
     const hasDigital = data.items.some((i) => isDigitalProduct(byId.get(i.productId)));

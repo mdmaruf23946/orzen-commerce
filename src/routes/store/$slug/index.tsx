@@ -133,7 +133,7 @@ function StoreHome() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return products.filter((p) => {
+    return products.filter((p: any) => {
       const cid = (p as any).category_id as string | null;
       if (activeSubId) {
         if (cid !== activeSubId) return false;

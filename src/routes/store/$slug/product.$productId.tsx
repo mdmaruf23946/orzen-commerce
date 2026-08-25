@@ -203,7 +203,7 @@ function ProductPage() {
   });
   const recentSorted = useMemo(() => {
     if (!recentQ.data) return [];
-    const map = new Map(recentQ.data.map((p) => [p.id, p]));
+    const map = new Map(recentQ.data.map((p: any) => [p.id, p]));
     return recentIds.map((id) => map.get(id)).filter(Boolean) as any[];
   }, [recentQ.data, recentIds]);
 
