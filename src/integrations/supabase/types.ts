@@ -5967,6 +5967,69 @@ export type Database = {
           },
         ]
       }
+      staff_activity_log: {
+        Row: {
+          action: string
+          actor_kind: string
+          actor_name: string
+          actor_staff_id: string | null
+          actor_user_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          meta: Json
+          section: string
+          store_id: string
+          summary: string
+        }
+        Insert: {
+          action: string
+          actor_kind?: string
+          actor_name?: string
+          actor_staff_id?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          meta?: Json
+          section?: string
+          store_id: string
+          summary: string
+        }
+        Update: {
+          action?: string
+          actor_kind?: string
+          actor_name?: string
+          actor_staff_id?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          meta?: Json
+          section?: string
+          store_id?: string
+          summary?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_activity_log_actor_staff_id_fkey"
+            columns: ["actor_staff_id"]
+            isOneToOne: false
+            referencedRelation: "store_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_activity_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_movements: {
         Row: {
           created_at: string
@@ -7123,12 +7186,17 @@ export type Database = {
       store_staff: {
         Row: {
           created_at: string
+          created_by: string | null
           email: string | null
+          employee_code: string | null
           id: string
           invited_at: string
           joined_at: string | null
+          last_login_at: string | null
+          must_change_password: boolean
           name: string
           notes: string | null
+          permissions: Json
           phone: string | null
           role: string
           status: string
@@ -7138,12 +7206,17 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           email?: string | null
+          employee_code?: string | null
           id?: string
           invited_at?: string
           joined_at?: string | null
+          last_login_at?: string | null
+          must_change_password?: boolean
           name: string
           notes?: string | null
+          permissions?: Json
           phone?: string | null
           role?: string
           status?: string
@@ -7153,12 +7226,17 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           email?: string | null
+          employee_code?: string | null
           id?: string
           invited_at?: string
           joined_at?: string | null
+          last_login_at?: string | null
+          must_change_password?: boolean
           name?: string
           notes?: string | null
+          permissions?: Json
           phone?: string | null
           role?: string
           status?: string
@@ -8890,9 +8968,11 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_store_access: { Args: { _store_id: string }; Returns: boolean }
       is_landing_slug_taken: { Args: { _slug: string }; Returns: boolean }
       is_slug_taken: { Args: { _slug: string }; Returns: boolean }
       is_store_active: { Args: { _store_id: string }; Returns: boolean }
+      is_store_employee: { Args: { _store_id: string }; Returns: boolean }
       is_store_owner: { Args: { _store_id: string }; Returns: boolean }
       list_ai_call_tones_public: {
         Args: never
@@ -8928,6 +9008,7 @@ export type Database = {
       }
       resolve_domain: { Args: { _host: string }; Returns: Json }
       resolve_host_kind: { Args: { _host: string }; Returns: Json }
+      staff_store_id: { Args: { _user_id: string }; Returns: string }
       validate_coupon: {
         Args: { _code: string; _store_id: string; _subtotal: number }
         Returns: Json
