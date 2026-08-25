@@ -156,7 +156,7 @@ function Landing() {
 
     <div className="min-h-screen bg-white text-[color:var(--orzen-navy)] overflow-x-hidden">
       <Header />
-      <main>
+      <main className="pt-16">
         <Hero />
         <TrustBar />
         <Features />
