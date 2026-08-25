@@ -308,38 +308,8 @@ function Section({
   );
 }
 
-function MainCategoryBar({
-  mains,
-  counts,
-  totalCount,
-  activeMainId,
-  onSelect,
-}: {
-  mains: { id: string; name: string }[];
-  counts: Map<string, number>;
-  totalCount: number;
-  activeMainId: string | null;
-  onSelect: (id: string | null) => void;
-}) {
-  return (
-    <div className="-mx-4 hidden overflow-x-auto px-4 pb-1 md:block [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <div className="flex items-center gap-2">
-        <Pill active={activeMainId === null} onClick={() => onSelect(null)}>
-          All ({totalCount})
-        </Pill>
-        {mains.map((c) => (
-          <Pill
-            key={c.id}
-            active={activeMainId === c.id}
-            onClick={() => onSelect(c.id)}
-          >
-            {c.name} ({counts.get(c.id) ?? 0})
-          </Pill>
-        ))}
-      </div>
-    </div>
-  );
-}
+
+
 
 function SubcategoryBar({
   subs,
