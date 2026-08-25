@@ -24,6 +24,8 @@ import { useBadgeCounts, useMarkSeen } from "@/lib/use-badge-counts";
 import { getMyStore } from "@/lib/admin.functions";
 import { resolveStoreIcon } from "@/lib/store-icon";
 import { recoverFromChunkError } from "@/lib/chunk-recovery";
+import { StoreAccessProvider, useStoreAccess } from "@/lib/use-store-access";
+import { sectionForPath } from "@/lib/panel-sections";
 
 
 type BadgeKey =
@@ -266,11 +268,26 @@ function AdminLayout() {
   }
 
   async function signOut() {
+    const wasEmployee = access.isEmployee;
     await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
+    navigate({ to: wasEmployee ? "/employee-login" : "/auth", replace: true });
   }
 
-  const groups = useMemo(() => buildGroups(search), [search]);
+  const access = useStoreAccess();
+  const canSee = useMemo(
+    () => (path: string) => {
+      if (!access.isEmployee) return true;
+      const section = sectionForPath(path);
+      if (!section) return false;
+      return access.can(section.key, "view");
+    },
+    [access],
+  );
+  const groups = useMemo(() => buildGroups(search, canSee), [search, canSee]);
+
+  const currentSection = sectionForPath(currentPath);
+  const pageAllowed =
+    !access.isEmployee || (!!currentSection && access.can(currentSection.key, "view"));
 
   const asideWidth = collapsed ? "md:w-[72px]" : "md:w-64";
 
@@ -537,8 +554,20 @@ function AdminLayout() {
           </header>
 
           <main className="min-w-0 flex-1 overflow-x-hidden p-4 pb-[70px] md:p-6 md:pb-8 lg:p-8">
-            <SubscriptionStatusBanner />
-            <Outlet />
+            {!access.isEmployee && <SubscriptionStatusBanner />}
+            {access.loading ? (
+              <div className="h-40 animate-pulse rounded-2xl bg-muted/40" />
+            ) : pageAllowed ? (
+              <Outlet />
+            ) : (
+              <div className="mx-auto max-w-md rounded-2xl border bg-card p-8 text-center">
+                <ShieldCheck className="mx-auto h-8 w-8 text-muted-foreground" />
+                <h2 className="mt-3 text-base font-semibold">No access to this section</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Your account doesn't have permission for this page. Ask the store owner to grant access.
+                </p>
+              </div>
+            )}
           </main>
         </div>
       </div>
