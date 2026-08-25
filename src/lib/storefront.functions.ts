@@ -442,7 +442,8 @@ export const listStoreProducts = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ storeId: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     const sb = publicClient();
-    const { data: products, error } = await (sb.from("storefront_products") as any)
+    const { data: products, error } = await (sb as any)
+      .from("storefront_products")
       .select(PRODUCT_CARD_COLS)
       .eq("store_id", data.storeId)
       .neq("status", "draft")
