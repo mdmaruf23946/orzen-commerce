@@ -979,67 +979,8 @@ function Kpi({ label, v }: { label: string; v: string }) {
 
 
 /* -------------------------------------------------------------------------- */
-/* Templates                                                                   */
 /* -------------------------------------------------------------------------- */
 
-const TEMPLATES = [
-  { name: "Nova Fashion", cat: "Fashion", from: "#111827", to: "#2563eb" },
-  { name: "Voltronics", cat: "Electronics", from: "#0f172a", to: "#0ea5e9" },
-  { name: "Casa Mode", cat: "Furniture", from: "#78350f", to: "#f59e0b" },
-  { name: "Bloom Beauty", cat: "Cosmetics", from: "#831843", to: "#f472b6" },
-  { name: "PageOne", cat: "Books", from: "#134e4a", to: "#14b8a6" },
-  { name: "Foodly", cat: "Food", from: "#7f1d1d", to: "#f97316" },
-  { name: "PixelVault", cat: "Digital Products", from: "#312e81", to: "#8b5cf6" },
-];
-
-function Templates() {
-  return (
-    <section id="templates" className="scroll-mt-24 py-20 md:py-28">
-      <div className="mx-auto max-w-7xl px-5 md:px-8">
-        <SectionHeader
-          eyebrow="Marketplace"
-          title="Premium themes for every niche"
-          subtitle="Launch with a professionally designed template — one click and it's yours to customize."
-        />
-        <div className="-mx-5 mt-12 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-3 xl:grid-cols-4">
-          {TEMPLATES.map((t) => (
-            <div
-              key={t.name}
-              className="group snap-start w-72 shrink-0 overflow-hidden rounded-2xl border border-[color:var(--orzen-border)] bg-white transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-soft)] sm:w-auto"
-            >
-              <div
-                className="relative h-44 overflow-hidden"
-                style={{ background: `linear-gradient(135deg, ${t.from}, ${t.to})` }}
-              >
-                <div className="absolute inset-x-4 top-4 flex items-center justify-between text-white/90">
-                  <span className="text-xs font-bold">{t.name}</span>
-                  <ShoppingBag className="h-4 w-4" />
-                </div>
-                <div className="absolute inset-x-4 bottom-4 grid grid-cols-3 gap-1.5">
-                  <div className="h-12 rounded-md bg-white/85" />
-                  <div className="h-12 rounded-md bg-white/70" />
-                  <div className="h-12 rounded-md bg-white/50" />
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-4">
-                <div>
-                  <p className="text-sm font-bold">{t.name}</p>
-                  <p className="text-xs text-[color:var(--orzen-muted)]">{t.cat}</p>
-                </div>
-                <Link
-                  to="/auth"
-                  className="rounded-full border border-[color:var(--orzen-navy)] px-3 py-1.5 text-xs font-semibold text-[color:var(--orzen-navy)] hover:bg-[color:var(--orzen-navy)] hover:text-white"
-                >
-                  Use Template
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
 /* -------------------------------------------------------------------------- */
 /* Why ORZEN                                                                   */
