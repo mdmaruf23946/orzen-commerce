@@ -4661,6 +4661,36 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_footer: {
+        Row: {
+          bottom_note: string | null
+          columns: Json
+          contact: Json
+          description: string | null
+          id: string
+          socials: Json
+          updated_at: string
+        }
+        Insert: {
+          bottom_note?: string | null
+          columns?: Json
+          contact?: Json
+          description?: string | null
+          id?: string
+          socials?: Json
+          updated_at?: string
+        }
+        Update: {
+          bottom_note?: string | null
+          columns?: Json
+          contact?: Json
+          description?: string | null
+          id?: string
+          socials?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_notices: {
         Row: {
           body: string | null
@@ -8891,6 +8921,7 @@ export type Database = {
       get_messenger_daily_stats: { Args: { _store_id: string }; Returns: Json }
       get_my_active_ads: { Args: never; Returns: Json }
       get_platform_branding: { Args: never; Returns: Json }
+      get_platform_footer: { Args: never; Returns: Json }
       get_public_courier_providers: {
         Args: never
         Returns: {
