@@ -399,7 +399,7 @@ function CategoryStrip({
   onSelect: (id: string | null) => void;
 }) {
   return (
-    <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-6 sm:gap-4 sm:overflow-visible sm:px-0 md:grid-cols-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="grid grid-cols-4 gap-3 sm:grid-cols-6 sm:gap-4 md:grid-cols-8">
       <CategoryTile label="All" active={active === null} onClick={() => onSelect(null)} />
       {categories.map((c) => (
         <CategoryTile
@@ -413,6 +413,7 @@ function CategoryStrip({
     </div>
   );
 }
+
 
 function CategoryTile({
   label,
