@@ -51,6 +51,9 @@ import { LangProvider, useLang } from "@/lib/i18n";
 import { FAQ_COPY, FEATURE_COPY, STEP_COPY, WHY_COPY } from "@/lib/landing-copy";
 import { SiteFooter } from "@/components/landing/SiteFooter";
 import { TestimonialsMarquee } from "@/components/landing/TestimonialsMarquee";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getPublicShowcase, type ShowcaseRow } from "@/lib/showcase.functions";
 
 export const Route = createFileRoute("/")({
   // If the request host is a store subdomain or a verified custom domain,
@@ -836,6 +839,17 @@ type DashKey = (typeof DASHBOARDS)[number]["key"];
 function DashboardShowcase() {
   const { t } = useLang();
   const [active, setActive] = useState<DashKey>("admin");
+  const fetchShowcase = useServerFn(getPublicShowcase);
+  const { data: showcase } = useQuery({
+    queryKey: ["platform", "showcase"],
+    queryFn: () => fetchShowcase(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const current = ((showcase as ShowcaseRow[]) ?? []).find((r) => r.key === active);
+  const desktopUrl = current?.desktop_url || null;
+  const mobileUrl = current?.mobile_url || null;
+  const label = DASHBOARDS.find((d) => d.key === active)?.label ?? "ORZEN";
+
   return (
     <section className="bg-[color:var(--orzen-slate-50)] py-10 md:py-12">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
@@ -865,12 +879,30 @@ function DashboardShowcase() {
         <div className="mt-10 grid gap-8 lg:grid-cols-[1.55fr_1fr] lg:items-center">
           <SwapFade k={active}>
             <BrowserFrame>
-              <DesktopMock kind={active} />
+              {desktopUrl ? (
+                <img
+                  src={desktopUrl}
+                  alt={`${label} — desktop preview`}
+                  loading="lazy"
+                  className="block w-full object-cover object-top"
+                />
+              ) : (
+                <DesktopMock kind={active} />
+              )}
             </BrowserFrame>
           </SwapFade>
           <SwapFade k={active}>
-            <PhoneFrame>
-              <MobileMock kind={active} />
+            <PhoneFrame bare={!!mobileUrl}>
+              {mobileUrl ? (
+                <img
+                  src={mobileUrl}
+                  alt={`${label} — mobile preview`}
+                  loading="lazy"
+                  className="h-full w-full object-cover object-top"
+                />
+              ) : (
+                <MobileMock kind={active} />
+              )}
             </PhoneFrame>
           </SwapFade>
         </div>
