@@ -51,6 +51,9 @@ import { LangProvider, useLang } from "@/lib/i18n";
 import { FAQ_COPY, FEATURE_COPY, STEP_COPY, WHY_COPY } from "@/lib/landing-copy";
 import { SiteFooter } from "@/components/landing/SiteFooter";
 import { TestimonialsMarquee } from "@/components/landing/TestimonialsMarquee";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getPublicShowcase, type ShowcaseRow } from "@/lib/showcase.functions";
 
 export const Route = createFileRoute("/")({
   // If the request host is a store subdomain or a verified custom domain,
