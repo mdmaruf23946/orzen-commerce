@@ -156,7 +156,7 @@ function Landing() {
 
     <div className="min-h-screen bg-white text-[color:var(--orzen-navy)] overflow-x-hidden">
       <Header />
-      <main>
+      <main className="pt-16">
         <Hero />
         <TrustBar />
         <Features />
@@ -197,10 +197,10 @@ function Header() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full transition-all",
+        "fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300",
         scrolled
-          ? "bg-white/85 backdrop-blur-md border-b border-[color:var(--orzen-border)]"
-          : "bg-white/70 backdrop-blur-sm border-b border-transparent"
+          ? "bg-background/80 backdrop-blur-md border-b border-border/50 shadow-sm"
+          : "bg-background/60 backdrop-blur-sm border-b border-transparent"
       )}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 md:px-8">
@@ -297,7 +297,7 @@ function Hero() {
         <div className="absolute -top-32 left-1/2 h-[520px] w-[720px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(37,99,235,0.10),transparent)]" />
         <div className="absolute top-40 -right-24 h-72 w-72 rounded-full bg-[radial-gradient(closest-side,rgba(17,24,39,0.06),transparent)]" />
       </div>
-      <div className="mx-auto grid max-w-7xl gap-12 px-5 pt-10 pb-16 md:px-8 md:pt-16 md:pb-24 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:pt-20">
+      <div className="mx-auto grid max-w-7xl gap-12 px-5 pt-6 pb-16 md:px-8 md:pt-10 md:pb-24 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:pt-12">
         <div className="orzen-fade-up">
           <span className="inline-flex items-center gap-2 rounded-full border border-[color:var(--orzen-border)] bg-white px-3 py-1 text-xs font-semibold text-[color:var(--orzen-muted)]">
             <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--orzen-success)]" />
