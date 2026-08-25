@@ -102,6 +102,7 @@ import { Route as AuthenticatedAdminInboxRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminImportExportRouteImport } from './routes/_authenticated/admin/import-export'
 import { Route as AuthenticatedAdminHandoffQueueRouteImport } from './routes/_authenticated/admin/handoff-queue'
 import { Route as AuthenticatedAdminFinanceRouteImport } from './routes/_authenticated/admin/finance'
+import { Route as AuthenticatedAdminEmployeesRouteImport } from './routes/_authenticated/admin/employees'
 import { Route as AuthenticatedAdminDuplicateProtectionRouteImport } from './routes/_authenticated/admin/duplicate-protection'
 import { Route as AuthenticatedAdminDomainsRouteImport } from './routes/_authenticated/admin/domains'
 import { Route as AuthenticatedAdminDnsCheckRouteImport } from './routes/_authenticated/admin/dns-check'
@@ -700,6 +701,12 @@ const AuthenticatedAdminFinanceRoute =
     path: '/finance',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminEmployeesRoute =
+  AuthenticatedAdminEmployeesRouteImport.update({
+    id: '/employees',
+    path: '/employees',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminDuplicateProtectionRoute =
   AuthenticatedAdminDuplicateProtectionRouteImport.update({
     id: '/duplicate-protection',
@@ -1221,6 +1228,7 @@ export interface FileRoutesByFullPath {
   '/admin/dns-check': typeof AuthenticatedAdminDnsCheckRoute
   '/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/admin/duplicate-protection': typeof AuthenticatedAdminDuplicateProtectionRoute
+  '/admin/employees': typeof AuthenticatedAdminEmployeesRoute
   '/admin/finance': typeof AuthenticatedAdminFinanceRoute
   '/admin/handoff-queue': typeof AuthenticatedAdminHandoffQueueRoute
   '/admin/import-export': typeof AuthenticatedAdminImportExportRoute
@@ -1388,6 +1396,7 @@ export interface FileRoutesByTo {
   '/admin/dns-check': typeof AuthenticatedAdminDnsCheckRoute
   '/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/admin/duplicate-protection': typeof AuthenticatedAdminDuplicateProtectionRoute
+  '/admin/employees': typeof AuthenticatedAdminEmployeesRoute
   '/admin/finance': typeof AuthenticatedAdminFinanceRoute
   '/admin/handoff-queue': typeof AuthenticatedAdminHandoffQueueRoute
   '/admin/import-export': typeof AuthenticatedAdminImportExportRoute
@@ -1564,6 +1573,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/dns-check': typeof AuthenticatedAdminDnsCheckRoute
   '/_authenticated/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/_authenticated/admin/duplicate-protection': typeof AuthenticatedAdminDuplicateProtectionRoute
+  '/_authenticated/admin/employees': typeof AuthenticatedAdminEmployeesRoute
   '/_authenticated/admin/finance': typeof AuthenticatedAdminFinanceRoute
   '/_authenticated/admin/handoff-queue': typeof AuthenticatedAdminHandoffQueueRoute
   '/_authenticated/admin/import-export': typeof AuthenticatedAdminImportExportRoute
@@ -1741,6 +1751,7 @@ export interface FileRouteTypes {
     | '/admin/dns-check'
     | '/admin/domains'
     | '/admin/duplicate-protection'
+    | '/admin/employees'
     | '/admin/finance'
     | '/admin/handoff-queue'
     | '/admin/import-export'
@@ -1908,6 +1919,7 @@ export interface FileRouteTypes {
     | '/admin/dns-check'
     | '/admin/domains'
     | '/admin/duplicate-protection'
+    | '/admin/employees'
     | '/admin/finance'
     | '/admin/handoff-queue'
     | '/admin/import-export'
@@ -2083,6 +2095,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/dns-check'
     | '/_authenticated/admin/domains'
     | '/_authenticated/admin/duplicate-protection'
+    | '/_authenticated/admin/employees'
     | '/_authenticated/admin/finance'
     | '/_authenticated/admin/handoff-queue'
     | '/_authenticated/admin/import-export'
@@ -2915,6 +2928,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminFinanceRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/employees': {
+      id: '/_authenticated/admin/employees'
+      path: '/employees'
+      fullPath: '/admin/employees'
+      preLoaderRoute: typeof AuthenticatedAdminEmployeesRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/duplicate-protection': {
       id: '/_authenticated/admin/duplicate-protection'
       path: '/duplicate-protection'
@@ -3577,6 +3597,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminDnsCheckRoute: typeof AuthenticatedAdminDnsCheckRoute
   AuthenticatedAdminDomainsRoute: typeof AuthenticatedAdminDomainsRoute
   AuthenticatedAdminDuplicateProtectionRoute: typeof AuthenticatedAdminDuplicateProtectionRoute
+  AuthenticatedAdminEmployeesRoute: typeof AuthenticatedAdminEmployeesRoute
   AuthenticatedAdminFinanceRoute: typeof AuthenticatedAdminFinanceRoute
   AuthenticatedAdminHandoffQueueRoute: typeof AuthenticatedAdminHandoffQueueRoute
   AuthenticatedAdminImportExportRoute: typeof AuthenticatedAdminImportExportRoute
@@ -3636,6 +3657,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminDomainsRoute: AuthenticatedAdminDomainsRoute,
     AuthenticatedAdminDuplicateProtectionRoute:
       AuthenticatedAdminDuplicateProtectionRoute,
+    AuthenticatedAdminEmployeesRoute: AuthenticatedAdminEmployeesRoute,
     AuthenticatedAdminFinanceRoute: AuthenticatedAdminFinanceRoute,
     AuthenticatedAdminHandoffQueueRoute: AuthenticatedAdminHandoffQueueRoute,
     AuthenticatedAdminImportExportRoute: AuthenticatedAdminImportExportRoute,
