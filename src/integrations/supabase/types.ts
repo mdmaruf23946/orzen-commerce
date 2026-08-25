@@ -4796,6 +4796,48 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_reviews: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          is_visible: boolean
+          name: string
+          rating: number
+          review: string
+          sort_order: number
+          store_name: string
+          tone: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          name: string
+          rating?: number
+          review?: string
+          sort_order?: number
+          store_name?: string
+          tone?: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          name?: string
+          rating?: number
+          review?: string
+          sort_order?: number
+          store_name?: string
+          tone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           id: number
