@@ -443,7 +443,7 @@ export const listStoreProducts = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const sb = publicClient();
     const { data: products, error } = await sb
-      .from("products")
+      .from("storefront_products")
       .select(PRODUCT_CARD_COLS)
       .eq("store_id", data.storeId)
       .neq("status", "draft")
@@ -466,7 +466,7 @@ export const listBestSellingProducts = createServerFn({ method: "GET" })
     const topIds = (rows ?? []).map((r: any) => r.product_id).filter(Boolean);
     if (topIds.length === 0) return [];
     const { data: products, error: pErr } = await sb
-      .from("products")
+      .from("storefront_products")
       .select(PRODUCT_CARD_COLS)
 
       .in("id", topIds)
@@ -510,7 +510,7 @@ export const getProduct = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const sb = publicClient();
     const { data: p, error } = await sb
-      .from("products")
+      .from("storefront_products")
       .select(
         "id,name,slug,description,short_description,price,old_price,stock,status,primary_image_url,gallery,store_id,brand,sku,category_id,features,specifications,video_url,warranty,return_policy,meta,product_type,total_sold,rating,created_at,updated_at",
       )
@@ -599,7 +599,7 @@ export const listRelatedProducts = createServerFn({ method: "GET" })
     let rows: any[] = [];
     if (data.categoryId) {
       const { data: cat } = await sb
-        .from("products")
+        .from("storefront_products")
         .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id,product_type")
         .eq("store_id", data.storeId)
         .eq("category_id", data.categoryId)
@@ -613,7 +613,7 @@ export const listRelatedProducts = createServerFn({ method: "GET" })
       const need = limit - rows.length;
       const have = new Set(rows.map((r) => r.id));
       const { data: extra } = await sb
-        .from("products")
+        .from("storefront_products")
         .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id,product_type")
         .eq("store_id", data.storeId)
         .neq("id", data.excludeId)
@@ -635,7 +635,7 @@ export const listProductsByIds = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const sb = publicClient();
     const { data: rows, error } = await sb
-      .from("products")
+      .from("storefront_products")
       .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id,product_type,meta")
       .eq("store_id", data.storeId)
       .in("id", data.ids)
@@ -852,7 +852,7 @@ export const placeOrder = createServerFn({ method: "POST" })
 
     const ids = data.items.map((i) => i.productId);
     const { data: products, error: pErr } = await sb
-      .from("products")
+      .from("storefront_products")
       .select("id,name,price,stock,status,product_type,meta")
       .in("id", ids)
       .eq("store_id", data.storeId);
