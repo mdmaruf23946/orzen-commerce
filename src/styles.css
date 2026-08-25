@@ -212,6 +212,12 @@
   0%, 100% { opacity: 0.3; }
   50% { opacity: 1; }
 }
+@keyframes orzen-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+
 
 @utility orzen-float {
   animation: orzen-float 4s ease-in-out infinite;
