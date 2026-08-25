@@ -47,6 +47,8 @@ import { cn } from "@/lib/utils";
 import { resolveHost } from "@/lib/domains.functions";
 import { BrandMark } from "@/lib/platform-branding";
 
+import { SiteFooter } from "@/components/landing/SiteFooter";
+
 export const Route = createFileRoute("/")({
   // If the request host is a store subdomain or a verified custom domain,
   // route the visitor directly into the storefront instead of the landing.
@@ -166,7 +168,7 @@ function Landing() {
         <FAQ />
         <FinalCTA />
       </main>
-      <Footer />
+      <SiteFooter />
     </div>
   );
 }
@@ -1829,94 +1831,3 @@ function FinalCTA() {
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Footer                                                                      */
-/* -------------------------------------------------------------------------- */
-
-function Footer() {
-  const cols = [
-    {
-      title: "Product",
-      links: [
-        { label: "Features", href: "#features" },
-        { label: "AI", href: "#ai" },
-      ],
-    },
-    {
-      title: "Company",
-      links: [
-        { label: "Blog", href: "#" },
-        { label: "Support", href: "#contact" },
-        { label: "Contact", href: "#contact" },
-      ],
-    },
-    {
-      title: "Legal",
-      links: [
-        { label: "Privacy Policy", href: "#" },
-        { label: "Terms", href: "#" },
-      ],
-    },
-  ];
-  return (
-    <footer id="contact" className="scroll-mt-24 border-t border-[color:var(--orzen-border)] bg-white">
-      <div className="mx-auto max-w-7xl px-5 py-14 md:px-8">
-        <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
-          <div>
-            <div className="flex items-center gap-2">
-              <BrandMark
-                placement="footer"
-                fallbackText="ORZEN"
-                className="text-lg font-extrabold tracking-tight"
-              />
-            </div>
-            <p className="mt-4 max-w-sm text-sm text-[color:var(--orzen-muted)]">
-              An all-in-one eCommerce SaaS built for Bangladesh — store builder, AI sales agent,
-              couriers, analytics and payments in one platform.
-            </p>
-            <div className="mt-5 flex gap-2">
-              {[
-                { icon: Facebook, label: "Facebook" },
-                { icon: Linkedin, label: "LinkedIn" },
-                { icon: Youtube, label: "YouTube" },
-                { icon: Mail, label: "Email" },
-              ].map((s) => (
-                <a
-                  key={s.label}
-                  href="#"
-                  aria-label={s.label}
-                  className="grid h-9 w-9 place-items-center rounded-lg border border-[color:var(--orzen-border)] text-[color:var(--orzen-muted)] hover:border-[color:var(--orzen-navy)] hover:text-[color:var(--orzen-navy)]"
-                >
-                  <s.icon className="h-4 w-4" />
-                </a>
-              ))}
-            </div>
-          </div>
-          {cols.map((c) => (
-            <div key={c.title}>
-              <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--orzen-navy)]">
-                {c.title}
-              </p>
-              <ul className="mt-4 space-y-2.5 text-sm">
-                {c.links.map((l) => (
-                  <li key={l.label}>
-                    <a
-                      href={l.href}
-                      className="text-[color:var(--orzen-muted)] hover:text-[color:var(--orzen-navy)]"
-                    >
-                      {l.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-        <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-[color:var(--orzen-border)] pt-6 text-xs text-[color:var(--orzen-muted)] sm:flex-row sm:items-center">
-          <p>© {new Date().getFullYear()} ORZEN. All rights reserved.</p>
-          <p>Made with care in Dhaka.</p>
-        </div>
-      </div>
-    </footer>
-  );
-}
