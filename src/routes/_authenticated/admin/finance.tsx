@@ -15,22 +15,15 @@ import { categoryLabel, downloadCsv, iso, money, rangeFor, type RangeKey } from 
 export const Route = createFileRoute("/_authenticated/admin/finance")({
   head: () => ({
     meta: [
-      { title: "Business Finance | ORZEN Merchant Panel" },
+      { title: "Business Finance — ORZEN Merchant Panel" },
       { name: "description", content: "Track store sales, expenses, profit and COD receivable with date-range reporting." },
+      { property: "og:title", content: "Business Finance — ORZEN Merchant Panel" },
+      { property: "og:description", content: "Track store sales, expenses, profit and COD receivable with date-range reporting." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
     ],
-  }),
-  component: FinancePage,
-});
-
-function FinancePage() {
-  const list = useServerFn(listExpenses);
-  const add = useServerFn(addExpense);
-  const del = useServerFn(deleteExpense);
-  const sumFn = useServerFn(financeSummary);
-  const qc = useQueryClient();
-
-  const [rangeKey, setRangeKey] = useState<RangeKey>("month");
-  const [custom, setCustom] = useState({ from: iso(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), to: iso(new Date()) });
+  }),), to: iso(new Date()) });
   const range = useMemo(() => rangeFor(rangeKey, custom), [rangeKey, custom]);
   const [editing, setEditing] = useState<ExpenseRow | null>(null);
 

@@ -14,19 +14,15 @@ import { ExportDialog } from "@/components/admin/import-export/ExportDialog";
 export const Route = createFileRoute("/_authenticated/admin/import-export")({
   head: () => ({
     meta: [
-      { title: "Import & Export Products — Admin" },
+      { title: "Import & Export Products — ORZEN Merchant Panel" },
       { name: "description", content: "Bulk import and export your product catalog via CSV, Excel, or Google Sheets." },
+      { property: "og:title", content: "Import & Export Products — ORZEN Merchant Panel" },
+      { property: "og:description", content: "Bulk import and export your product catalog via CSV, Excel, or Google Sheets." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
     ],
-  }),
-  component: () => (
-    <FeatureGate feature="import_export">
-      <ImportExportPage />
-    </FeatureGate>
-  ),
-});
-
-function timeAgo(iso: string) {
-  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  }), - new Date(iso).getTime()) / 1000);
   if (s < 60) return `${s}s ago`;
   const m = Math.floor(s / 60); if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60); if (h < 24) return `${h}h ago`;

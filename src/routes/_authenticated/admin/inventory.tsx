@@ -19,33 +19,15 @@ export const Route = createFileRoute("/_authenticated/admin/inventory")({
   ),
   head: () => ({
     meta: [
-      { title: "Inventory · Merchant Panel" },
-      {
-        name: "description",
-        content: "Stock, downloads, service capacity and subscriber analytics in one dynamic inventory page.",
-      },
+      { title: "Inventory — ORZEN Merchant Panel" },
+      { name: "description", content: "Stock, downloads, service capacity and subscriber analytics in one dynamic inventory page." },
+      { property: "og:title", content: "Inventory — ORZEN Merchant Panel" },
+      { property: "og:description", content: "Stock, downloads, service capacity and subscriber analytics in one dynamic inventory page." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
     ],
-  }),
-});
-
-const DESCRIPTIONS: Record<ProductTypeOnly, string> = {
-  physical: "Stock levels, value, alerts and every stock movement.",
-  digital: "Sales, downloads, licenses and file versions.",
-  service: "Capacity, bookings and service order flow.",
-  subscription: "Subscribers, renewals and recurring revenue.",
-};
-
-function InventoryPage() {
-  const { scope, setScope, activeType } = useProductTypeScope();
-  const type: ProductTypeOnly = scope === "all" ? activeType : scope;
-  const [q, setQ] = useState("");
-
-  return (
-    <div className="space-y-4">
-      <AdminPageHeader title="Inventory" description={DESCRIPTIONS[type]} />
-
-      <TypeFilterTabs
-        tabs={PRODUCT_TYPES.map((t) => ({ key: t, label: PRODUCT_TYPE_LABEL[t] }))}
+  }), => ({ key: t, label: PRODUCT_TYPE_LABEL[t] }))}
         value={type}
         onChange={(k) => setScope(k)}
       />

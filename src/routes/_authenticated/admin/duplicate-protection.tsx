@@ -26,82 +26,17 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/admin/duplicate-protection")({
-  head: () => ({ meta: [{ title: "Duplicate Order Protection" }] }),
-  component: Page,
-});
-
-function Page() {
-  return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Duplicate Order Protection</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Prevent duplicate orders based on configurable rules. Works independently per store.
-        </p>
-      </div>
-      <Tabs defaultValue="settings" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-          <TabsTrigger value="blocked">Blocked</TabsTrigger>
-          <TabsTrigger value="lists">Whitelist &amp; Exclude</TabsTrigger>
-        </TabsList>
-        <TabsContent value="settings" className="mt-4"><SettingsTab /></TabsContent>
-        <TabsContent value="blocked" className="mt-4"><BlockedTab /></TabsContent>
-        <TabsContent value="lists" className="mt-4"><ListsTab /></TabsContent>
-      </Tabs>
-    </div>
-  );
-}
-
-function SettingsTab() {
-  const get = useServerFn(getDuplicateSettings);
-  const save = useServerFn(updateDuplicateSettings);
-  const qc = useQueryClient();
-  const { data } = useQuery({ queryKey: ["dp-settings"], queryFn: () => get() });
-  const [form, setForm] = useState<any>(null);
-  const s = form ?? data;
-  if (!s) return <div className="text-sm text-muted-foreground">Loading…</div>;
-  function set<K extends string>(k: K, v: any) { setForm({ ...s, [k]: v }); }
-  async function onSave() {
-    try {
-      await save({ data: {
-        enabled: !!s.enabled, mode: s.mode, period_days: Number(s.period_days),
-        rule_phone: !!s.rule_phone, rule_product: !!s.rule_product,
-        rule_fingerprint: !!s.rule_fingerprint, rule_device: !!s.rule_device,
-        rule_customer: !!s.rule_customer, match_logic: s.match_logic,
-        rule_psid: !!s.rule_psid,
-        messenger_enabled: s.messenger_enabled !== false,
-        messenger_custom_reply: s.messenger_custom_reply ?? null,
-      } as any });
-      qc.invalidateQueries({ queryKey: ["dp-settings"] });
-      toast.success("Saved");
-    } catch (e) { toast.error((e as Error).message); }
-  }
-  return (
-    <div className="space-y-4 rounded-xl border bg-card p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="font-medium">Enable duplicate protection</div>
-          <div className="text-xs text-muted-foreground">Master switch for this store.</div>
-        </div>
-        <Switch checked={!!s.enabled} onCheckedChange={(v) => set("enabled", v)} />
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label>Action</Label>
-          <Select value={s.mode} onValueChange={(v) => set("mode", v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="block">Block automatically</SelectItem>
-              <SelectItem value="warn">Allow with warning</SelectItem>
-              <SelectItem value="off">Disabled</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <Label>Protection period</Label>
-          <Select value={String(s.period_days)} onValueChange={(v) => set("period_days", Number(v))}>
+  head: () => ({
+    meta: [
+      { title: "Duplicate Order Protection — ORZEN Merchant Panel" },
+      { name: "description", content: "Block repeated or fraudulent duplicate orders automatically." },
+      { property: "og:title", content: "Duplicate Order Protection — ORZEN Merchant Panel" },
+      { property: "og:description", content: "Block repeated or fraudulent duplicate orders automatically." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               {[1,3,7,15,30].map((n) => <SelectItem key={n} value={String(n)}>{n} days</SelectItem>)}

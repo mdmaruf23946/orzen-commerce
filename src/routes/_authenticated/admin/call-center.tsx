@@ -31,39 +31,15 @@ export const Route = createFileRoute("/_authenticated/admin/call-center")({
   ),
   head: () => ({
     meta: [
-      { title: "Manual Call Center | Merchant Panel" },
+      { title: "Manual Call Center — ORZEN Merchant Panel" },
       { name: "description", content: "Call customers in one click, track call status and log call results next to your orders." },
+      { property: "og:title", content: "Manual Call Center — ORZEN Merchant Panel" },
+      { property: "og:description", content: "Call customers in one click, track call status and log call results next to your orders." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
     ],
-  }),
-});
-
-const FILTERS = [
-  { key: "all", label: "All" },
-  { key: "today", label: "Today" },
-  { key: "answered", label: "Answered" },
-  { key: "missed", label: "Missed" },
-  { key: "failed", label: "Failed" },
-  { key: "no_answer", label: "No Answer" },
-] as const;
-
-function CallCenterPage() {
-  const [filter, setFilter] = useState<(typeof FILTERS)[number]["key"]>("all");
-  const [search, setSearch] = useState("");
-
-  const overviewFn = useServerFn(getCallCenterOverview);
-  const listFn = useServerFn(listCalls);
-
-  const overview = useQuery({
-    queryKey: ["call-center", "overview"],
-    queryFn: () => overviewFn(),
-  });
-
-  const calls = useQuery({
-    queryKey: ["calls", filter, search],
-    queryFn: () => listFn({ data: { filter, search, limit: 50 } }),
-    refetchInterval: (q) => {
-      const rows = (q.state.data ?? []) as CallRow[];
-      return rows.some((r) => LIVE_STATUSES.includes(r.status)) ? 5000 : false;
+  }), => LIVE_STATUSES.includes(r.status)) ? 5000 : false;
     },
   });
 
