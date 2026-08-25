@@ -525,7 +525,55 @@ function StoreHeader({
   );
 }
 
+function HeaderCategoryBar({
+  mains,
+  counts,
+  totalCount,
+}: {
+  mains: { id: string; name: string }[];
+  counts: Map<string, number>;
+  totalCount: number;
+}) {
+  const { activeMainId, selectMain } = useStoreUI();
+  const item = (active: boolean) =>
+    `shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-[13px] font-medium transition-colors ${
+      active ? "text-white" : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+    }`;
+  return (
+    <nav className="border-b border-black/5 bg-white/95 backdrop-blur">
+      <div
+        className="mx-auto flex items-center gap-1 overflow-x-auto px-3 py-1.5 sm:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={{ maxWidth: "var(--store-container, 64rem)" }}
+      >
+        <button
+          type="button"
+          onClick={() => selectMain(null, "header")}
+          className={item(activeMainId === null)}
+          style={activeMainId === null ? { backgroundColor: "var(--store-btn-bg, #0f172a)" } : undefined}
+        >
+          All ({totalCount})
+        </button>
+        {mains.map((c) => {
+          const active = activeMainId === c.id;
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => selectMain(c.id, "header")}
+              className={item(active)}
+              style={active ? { backgroundColor: "var(--store-btn-bg, #0f172a)" } : undefined}
+            >
+              {c.name} ({counts.get(c.id) ?? 0})
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
 function StoreFooter({
+
   store,
 }: {
   store: {
