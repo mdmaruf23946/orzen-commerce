@@ -202,15 +202,7 @@ function StoreHome() {
 
   return (
     <div className="theme-sections flex flex-col gap-8">
-      {mainCategories.length > 0 && (
-        <MainCategoryBar
-          mains={mainCategories as any}
-          counts={countsByMain}
-          totalCount={products.length}
-          activeMainId={activeMainId}
-          onSelect={(id) => selectMain(id, "header")}
-        />
-      )}
+
 
       {!isFiltering && source === "header" && activeMainId && activeSubs.length > 0 && (
         <SubcategoryBar
