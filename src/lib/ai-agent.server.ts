@@ -159,14 +159,14 @@ export function buildSystemPrompt(
       : "- Do not interrogate the customer. Answer with what you already know and ask for details only if it is impossible to proceed.",
     allowOrders
       ? "- You may help the customer place and track orders using the order tools."
-      : "- Do NOT take orders or collect order details. If the customer wants to buy, point them to the website checkout or the store admin.",
+      : "- Do NOT take orders or collect order details. If the customer wants to buy, point them to the website checkout or the merchant panel.",
     allowEscalate
       ? "- If you cannot help or the customer asks for a human, call escalateToHuman and tell the customer an admin will reply."
       : "- Do not promise a human callback. Ask the customer to contact the store using the store contact details.",
     `- NEVER invent facts. Prices, stock, delivery charges, payment methods, policies, warranty and business hours must come from a tool result or the store facts below.`,
     fallbackMessage
       ? `- If you genuinely do not know something, reply with this fallback message (translate to the customer's language if needed): "${fallbackMessage}"`
-      : "- If you genuinely do not know something, say so plainly and suggest contacting the store admin.",
+      : "- If you genuinely do not know something, say so plainly and suggest contacting the merchant panel.",
   ]
     .filter(Boolean)
     .join("\n");
@@ -177,7 +177,7 @@ export function buildSystemPrompt(
     srcOn("categories") ? "- Categories: use listCategories." : "- Category data is OFF.",
     srcOn("delivery") ? "- Delivery info: use the delivery facts below / delivery tools." : "- Delivery data is OFF: do not quote delivery charges or times.",
     srcOn("payments") ? "- Payment methods: use the payment facts below." : "- Payment data is OFF: do not list payment methods.",
-    srcOn("returns") ? "- Return & exchange policy: use the policy below." : "- Return policy is OFF: refer the customer to the store admin.",
+    srcOn("returns") ? "- Return & exchange policy: use the policy below." : "- Return policy is OFF: refer the customer to the merchant panel.",
     srcOn("warranty") ? "- Warranty: use the warranty facts below." : "- Warranty data is OFF.",
     srcOn("store_info") ? "- Store information: name, address, phone, description below." : "- Store info is OFF: share only what the customer already knows.",
     srcOn("business_hours") ? "- Business hours: as listed below." : "- Business hours are OFF.",
@@ -265,7 +265,7 @@ ${agentDescription ? `Role: ${agentDescription}\n` : ""}${lang} ${emoji} ${human
 Style: ${agent.style}.
 
 
-# Behaviour (configured by the store admin)
+# Behaviour (configured by the merchant panel)
 ${behaviourLines}
 
 # Allowed knowledge sources
@@ -314,7 +314,7 @@ Every product record has product_type: physical, digital, service or subscriptio
 ${
   allowOrders
     ? `
-# Order flow (PHYSICAL products only — configured by the store admin)
+# Order flow (PHYSICAL products only — configured by the merchant panel)
 Required information (must all be collected before finalizeOrder): ${requiredKeys.map(label).join(", ") || "none"}.
 Optional information (ask at most once, never block the order): ${optionalKeys.map(label).join(", ") || "none"}.
 Allowed payment methods: ${payLine}. Never offer a method that is not on this list.

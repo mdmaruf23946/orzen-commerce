@@ -65,7 +65,7 @@ export const inventoryMovements = createServerFn({ method: "GET" })
       created_at: r.created_at,
       qty_before: r.qty_before,
       qty_after: r.qty_after,
-      by: r.created_by ? "Store admin" : "System",
+      by: r.created_by ? "Merchant panel" : "System",
     }));
   });
 

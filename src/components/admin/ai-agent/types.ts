@@ -48,7 +48,7 @@ export const AGENT_DEFAULTS: AgentForm = {
   agent_name: "Sales Assistant",
   description: "",
   welcome_message: "Hi! How can I help you today?",
-  fallback_message: "দুঃখিত, এই তথ্যটি আমার কাছে নেই। আপনি চাইলে আমি স্টোর অ্যাডমিনকে জানিয়ে দিতে পারি।",
+  fallback_message: "দুঃখিত, এই তথ্যটি আমার কাছে নেই। আপনি চাইলে আমি মার্চেন্ট প্যানেলকে জানিয়ে দিতে পারি।",
   product_recommendations: true,
   order_assistance: true,
   language: "both",

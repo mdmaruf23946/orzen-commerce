@@ -830,7 +830,7 @@ export const createManualReturn = createServerFn({ method: "POST" })
       })) as any,
     );
 
-    await log(sb, ret, "requested", data.reason ?? "Created by store admin");
+    await log(sb, ret, "requested", data.reason ?? "Created by merchant panel");
     const { notifyReturnStatus } = await import("@/lib/returns-notify.server");
     await notifyReturnStatus(sb, ret, "requested", data.reason ?? null, {
       notifyCustomer: normalizeAutoWorkflow((settings as any)?.auto_workflow).notify_customer !== false,
