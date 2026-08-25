@@ -553,8 +553,20 @@ function AdminLayout() {
           </header>
 
           <main className="min-w-0 flex-1 overflow-x-hidden p-4 pb-[70px] md:p-6 md:pb-8 lg:p-8">
-            <SubscriptionStatusBanner />
-            <Outlet />
+            {!access.isEmployee && <SubscriptionStatusBanner />}
+            {access.loading ? (
+              <div className="h-40 animate-pulse rounded-2xl bg-muted/40" />
+            ) : pageAllowed ? (
+              <Outlet />
+            ) : (
+              <div className="mx-auto max-w-md rounded-2xl border bg-card p-8 text-center">
+                <ShieldCheck className="mx-auto h-8 w-8 text-muted-foreground" />
+                <h2 className="mt-3 text-base font-semibold">No access to this section</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Your account doesn't have permission for this page. Ask the store owner to grant access.
+                </p>
+              </div>
+            )}
           </main>
         </div>
       </div>
