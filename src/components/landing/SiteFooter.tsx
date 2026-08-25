@@ -5,6 +5,15 @@ import {
 } from "lucide-react";
 import { getFooterSettings, FOOTER_FALLBACK, type FooterSettings } from "@/lib/footer.functions";
 import { BrandMark } from "@/lib/platform-branding";
+import { useLang } from "@/lib/i18n";
+
+const COLUMN_BN: Record<string, string> = {
+  product: "প্রোডাক্ট",
+  company: "কোম্পানি",
+  legal: "লিগ্যাল",
+  resources: "রিসোর্স",
+  support: "সাপোর্ট",
+};
 
 const BRAND: Record<string, { icon: any; color: string; label: string }> = {
   facebook: { icon: Facebook, color: "#1877F2", label: "Facebook" },
@@ -20,6 +29,9 @@ const BRAND: Record<string, { icon: any; color: string; label: string }> = {
 };
 
 export function SiteFooter() {
+  const { lang, t } = useLang();
+  const localizeTitle = (title?: string) =>
+    lang === "bn" ? COLUMN_BN[(title ?? "").toLowerCase().trim()] ?? title : title;
   const fetchFooter = useServerFn(getFooterSettings);
   const { data } = useQuery({
     queryKey: ["platform", "footer"],
@@ -71,7 +83,7 @@ export function SiteFooter() {
 
           {otherColumns.map((c) => (
             <div key={c.title} className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--orzen-navy)]">{c.title}</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--orzen-navy)]">{localizeTitle(c.title)}</p>
               <ul className="mt-2 space-y-1.5 text-sm">
                 {(c.links ?? []).map((l) => (
                   <li key={l.label}>
@@ -89,7 +101,7 @@ export function SiteFooter() {
 
           {(contact.email || contact.phone || contact.address) && (
             <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--orzen-navy)]">Contact</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--orzen-navy)]">{t("footer_contact")}</p>
               <ul className="mt-2 space-y-1.5 text-sm text-[color:var(--orzen-muted)]">
                 {contact.email && (
                   <li className="flex items-start gap-2">
@@ -119,7 +131,7 @@ export function SiteFooter() {
 
           {legalColumn && (
             <div key={legalColumn.title} className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--orzen-navy)]">{legalColumn.title}</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--orzen-navy)]">{localizeTitle(legalColumn.title)}</p>
               <ul className="mt-2 space-y-1.5 text-sm">
                 {(legalColumn.links ?? []).map((l) => (
                   <li key={l.label}>
@@ -137,7 +149,7 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-[color:var(--orzen-border)] pt-4 text-xs text-[color:var(--orzen-muted)]">
-          <p>© {new Date().getFullYear()} ORZEN. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} ORZEN. {t("footer_rights")}</p>
           <p>{f.bottom_note}</p>
         </div>
       </div>

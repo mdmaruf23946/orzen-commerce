@@ -47,6 +47,8 @@ import { cn } from "@/lib/utils";
 import { resolveHost } from "@/lib/domains.functions";
 import { BrandMark } from "@/lib/platform-branding";
 
+import { LangProvider, useLang } from "@/lib/i18n";
+import { FAQ_COPY, FEATURE_COPY, STEP_COPY, WHY_COPY } from "@/lib/landing-copy";
 import { SiteFooter } from "@/components/landing/SiteFooter";
 import { TestimonialsMarquee } from "@/components/landing/TestimonialsMarquee";
 
@@ -154,7 +156,7 @@ function Landing() {
   if (authState === "loading" || authState === "authed") return <AuthSplash />;
 
   return (
-
+    <LangProvider>
     <div className="min-h-screen bg-white text-[color:var(--orzen-navy)] overflow-x-hidden">
       <Header />
       <main className="pt-16">
@@ -171,6 +173,7 @@ function Landing() {
       </main>
       <SiteFooter />
     </div>
+    </LangProvider>
   );
 }
 
@@ -180,13 +183,45 @@ function Landing() {
 /* -------------------------------------------------------------------------- */
 
 const NAV = [
-  { label: "Features", href: "#features" },
-  { label: "AI", href: "#ai" },
-  { label: "FAQ", href: "#faq" },
-  { label: "Contact", href: "#contact" },
-];
+  { key: "nav_features", href: "#features" },
+  { key: "nav_ai", href: "#ai" },
+  { key: "nav_faq", href: "#faq" },
+  { key: "nav_contact", href: "#contact" },
+] as const;
+
+function LanguageSwitcher({ className }: { className?: string }) {
+  const { lang, setLang, t } = useLang();
+  return (
+    <div
+      role="group"
+      aria-label={t("lang_label")}
+      className={cn(
+        "inline-flex items-center rounded-full border border-[color:var(--orzen-border)] bg-white p-0.5",
+        className,
+      )}
+    >
+      {(["en", "bn"] as const).map((l) => (
+        <button
+          key={l}
+          type="button"
+          onClick={() => setLang(l)}
+          aria-pressed={lang === l}
+          className={cn(
+            "rounded-full px-3 py-1 text-xs font-semibold transition-colors",
+            lang === l
+              ? "bg-[color:var(--orzen-navy)] text-white"
+              : "text-[color:var(--orzen-muted)] hover:text-[color:var(--orzen-navy)]",
+          )}
+        >
+          {l === "en" ? "EN" : "বাংলা"}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function Header() {
+  const { t } = useLang();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   useEffect(() => {
@@ -219,31 +254,35 @@ function Header() {
               href={n.href}
               className="text-sm font-medium text-[color:var(--orzen-muted)] hover:text-[color:var(--orzen-navy)] transition-colors"
             >
-              {n.label}
+              {t(n.key)}
             </a>
           ))}
         </nav>
         <div className="hidden lg:flex items-center gap-3">
+          <LanguageSwitcher />
           <Link
             to="/auth"
             className="text-sm font-medium text-[color:var(--orzen-navy)] hover:text-[color:var(--orzen-blue)]"
           >
-            Sign In
+            {t("sign_in")}
           </Link>
           <Link
             to="/auth"
             className="inline-flex items-center gap-1.5 rounded-full bg-[color:var(--orzen-blue)] px-4 py-2 text-sm font-semibold text-white shadow-[var(--shadow-soft)] hover:bg-[color:var(--orzen-blue-600)] transition"
           >
-            Create Store <ArrowRight className="h-4 w-4" />
+            {t("create_store")} <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
+        <div className="flex items-center gap-2 lg:hidden">
+          <LanguageSwitcher />
         <button
-          className="lg:hidden inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[color:var(--orzen-border)]"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[color:var(--orzen-border)]"
           onClick={() => setOpen((v) => !v)}
           aria-label="Toggle menu"
         >
           {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
+        </div>
       </div>
       {open && (
         <div className="lg:hidden border-t border-[color:var(--orzen-border)] bg-white">
@@ -255,7 +294,7 @@ function Header() {
                 onClick={() => setOpen(false)}
                 className="block rounded-lg px-3 py-2.5 text-sm font-medium text-[color:var(--orzen-navy)] hover:bg-[color:var(--orzen-slate-50)]"
               >
-                {n.label}
+                {t(n.key)}
               </a>
             ))}
             <div className="pt-2 grid grid-cols-2 gap-2">
@@ -263,13 +302,13 @@ function Header() {
                 to="/auth"
                 className="rounded-lg border border-[color:var(--orzen-border)] px-3 py-2.5 text-center text-sm font-semibold"
               >
-                Sign In
+                {t("sign_in")}
               </Link>
               <Link
                 to="/auth"
                 className="rounded-lg bg-[color:var(--orzen-blue)] px-3 py-2.5 text-center text-sm font-semibold text-white"
               >
-                Create Store
+                {t("create_store")}
               </Link>
             </div>
           </div>
@@ -292,6 +331,7 @@ function LogoMark() {
 /* -------------------------------------------------------------------------- */
 
 function Hero() {
+  const { t } = useLang();
   return (
     <section id="top" className="relative">
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
@@ -302,40 +342,38 @@ function Hero() {
         <div className="orzen-fade-up">
           <span className="inline-flex items-center gap-2 rounded-full border border-[color:var(--orzen-border)] bg-white px-3 py-1 text-xs font-semibold text-[color:var(--orzen-muted)]">
             <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--orzen-success)]" />
-            Trusted by 1,000+ store owners
+            {t("hero_badge")}
           </span>
           <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
-            Create Your Online Store <br className="hidden sm:block" />
-            <span className="text-[color:var(--orzen-blue)]">in Minutes.</span>
+            {t("hero_title_1")} <br className="hidden sm:block" />
+            <span className="text-[color:var(--orzen-blue)]">{t("hero_title_2")}</span>
           </h1>
           <p className="mt-5 max-w-xl text-base text-[color:var(--orzen-muted)] sm:text-lg">
-            Everything you need to launch and grow your eCommerce business — store builder, AI sales
-            agent, Messenger automation, courier integration, Facebook Pixel, analytics, payments and
-            inventory — all in one platform.
+            {t("hero_sub")}
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
               to="/auth"
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[color:var(--orzen-blue)] px-6 py-3.5 text-sm font-semibold text-white shadow-[var(--shadow-soft)] hover:bg-[color:var(--orzen-blue-600)] sm:w-auto"
             >
-              Create Free Store <ArrowRight className="h-4 w-4" />
+              {t("hero_cta_primary")} <ArrowRight className="h-4 w-4" />
             </Link>
             <a
               href="#ai"
               className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[color:var(--orzen-border)] bg-white px-6 py-3.5 text-sm font-semibold text-[color:var(--orzen-navy)] hover:border-[color:var(--orzen-navy)] sm:w-auto"
             >
-              <Play className="h-4 w-4" /> Watch Demo
+              <Play className="h-4 w-4" /> {t("hero_cta_secondary")}
             </a>
           </div>
           <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-[color:var(--orzen-muted)]">
             <span className="inline-flex items-center gap-1.5">
-              <Check className="h-4 w-4 text-[color:var(--orzen-success)]" /> No credit card required
+              <Check className="h-4 w-4 text-[color:var(--orzen-success)]" /> {t("hero_point_1")}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Check className="h-4 w-4 text-[color:var(--orzen-success)]" /> Free forever plan
+              <Check className="h-4 w-4 text-[color:var(--orzen-success)]" /> {t("hero_point_2")}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Check className="h-4 w-4 text-[color:var(--orzen-success)]" /> Setup in 3 minutes
+              <Check className="h-4 w-4 text-[color:var(--orzen-success)]" /> {t("hero_point_3")}
             </span>
           </div>
         </div>
@@ -485,11 +523,12 @@ function MiniStat({ label, value, tone }: { label: string; value: string; tone: 
 
 function TrustBar() {
   const { ref, visible } = useReveal();
+  const { t } = useLang();
   const stats = [
-    { end: 1000, suffix: "+", label: "Stores Created" },
-    { end: 50000, suffix: "+", label: "Orders Processed" },
-    { end: 99, suffix: ".9%", label: "Uptime" },
-    { end: 24, suffix: "/7", label: "Platform Monitoring" },
+    { end: 1000, suffix: "+", label: t("stat_stores") },
+    { end: 50000, suffix: "+", label: t("stat_orders") },
+    { end: 99, suffix: ".9%", label: t("stat_uptime") },
+    { end: 24, suffix: "/7", label: t("stat_monitoring") },
   ];
   return (
     <section ref={ref} className="border-y border-[color:var(--orzen-border)] bg-[color:var(--orzen-slate-50)]">
@@ -562,16 +601,17 @@ const FEATURES = [
 ];
 
 function Features() {
+  const { t, pick } = useLang();
   return (
     <section id="features" className="scroll-mt-24 py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <SectionHeader
-          eyebrow="Platform"
-          title="Everything you need to sell online"
-          subtitle="12 production-grade modules built into every store — no plugins, no add-ons, no slowdowns."
+          eyebrow={t("features_eyebrow")}
+          title={t("features_title")}
+          subtitle={t("features_sub")}
         />
         <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((f) => (
+          {FEATURES.map((f, fi) => (
             <div
               key={f.title}
               className="group flex h-full items-start gap-4 rounded-2xl border border-[color:var(--orzen-border)] bg-white p-6 transition-all hover:-translate-y-1 hover:border-[color:var(--orzen-navy)]/20 hover:shadow-[var(--shadow-soft)]"
@@ -580,8 +620,8 @@ function Features() {
                 <f.icon className="h-5 w-5" />
               </span>
               <div className="min-w-0 flex-1">
-                <h3 className="text-base font-bold leading-snug">{f.title}</h3>
-                <p className="mt-1.5 text-sm text-[color:var(--orzen-muted)]">{f.desc}</p>
+                <h3 className="text-base font-bold leading-snug">{pick(FEATURE_COPY[fi]!.title)}</h3>
+                <p className="mt-1.5 text-sm text-[color:var(--orzen-muted)]">{pick(FEATURE_COPY[fi]!.desc)}</p>
               </div>
             </div>
           ))}
@@ -596,22 +636,23 @@ function Features() {
 /* -------------------------------------------------------------------------- */
 
 function AIShowcase() {
+  const { t } = useLang();
   const points = [
-    "Replies to customers instantly, in Bangla or English",
-    "Answers product questions using your catalog",
-    "Collects name, address and phone naturally",
-    "Confirms orders and hands off to your team",
-    "Works 24/7 — never sleeps, never forgets",
-    "Connects Messenger, Store Chat and WhatsApp (soon)",
+    t("ai_point_1"),
+    t("ai_point_2"),
+    t("ai_point_3"),
+    t("ai_point_4"),
+    t("ai_point_5"),
+    t("ai_point_6"),
   ];
   return (
     <section id="ai" className="scroll-mt-24 bg-[color:var(--orzen-slate-50)] py-20 md:py-28">
       <div className="mx-auto grid max-w-7xl gap-12 px-5 md:px-8 lg:grid-cols-2 lg:items-center lg:gap-16">
         <div>
           <SectionHeader
-            eyebrow="AI Sales Agent"
-            title="An always-on salesperson trained on your store"
-            subtitle="Turn every message into a confirmed order. ORZEN's AI handles pre-sales, objections and checkout — before your team even opens the app."
+            eyebrow={t("ai_eyebrow")}
+            title={t("ai_title")}
+            subtitle={t("ai_sub")}
             align="left"
           />
           <ul className="mt-8 space-y-3">
@@ -627,7 +668,7 @@ function AIShowcase() {
               to="/auth"
               className="inline-flex items-center gap-2 rounded-full bg-[color:var(--orzen-navy)] px-6 py-3 text-sm font-semibold text-white hover:opacity-90"
             >
-              Try AI Demo <ArrowRight className="h-4 w-4" />
+              {t("ai_cta")} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -729,13 +770,14 @@ const STEPS = [
 ];
 
 function Workflow() {
+  const { t, pick } = useLang();
   return (
     <section className="py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <SectionHeader
-          eyebrow="How it works"
-          title="From signup to first sale in an afternoon"
-          subtitle="A guided path from first login to scaling — every step handled inside ORZEN."
+          eyebrow={t("workflow_eyebrow")}
+          title={t("workflow_title")}
+          subtitle={t("workflow_sub")}
         />
         <div className="relative mx-auto mt-14 max-w-3xl">
           <div
@@ -757,12 +799,14 @@ function Workflow() {
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="text-[11px] font-bold uppercase tracking-wider text-[color:var(--orzen-blue)]">
-                        Step {i + 1}
+                        {t("workflow_step")} {i + 1}
                       </p>
                       <h3 className="mt-0.5 text-base font-bold leading-snug sm:text-lg">
-                        {s.title}
+                        {pick(STEP_COPY[i]!.title)}
                       </h3>
-                      <p className="mt-1.5 text-sm text-[color:var(--orzen-muted)]">{s.desc}</p>
+                      <p className="mt-1.5 text-sm text-[color:var(--orzen-muted)]">
+                        {pick(STEP_COPY[i]!.desc)}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -790,14 +834,15 @@ const DASHBOARDS = [
 type DashKey = (typeof DASHBOARDS)[number]["key"];
 
 function DashboardShowcase() {
+  const { t } = useLang();
   const [active, setActive] = useState<DashKey>("admin");
   return (
     <section className="bg-[color:var(--orzen-slate-50)] py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <SectionHeader
-          eyebrow="Product"
-          title="Every surface, built with the same care"
-          subtitle="Admin, storefront, owner panel and AI console — one design language, zero learning curve."
+          eyebrow={t("product_eyebrow")}
+          title={t("product_title")}
+          subtitle={t("product_sub")}
         />
         <div className="-mx-5 mt-8 flex snap-x snap-mandatory gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:flex-wrap sm:justify-center sm:overflow-visible sm:px-0">
           {DASHBOARDS.map((d) => (
@@ -1604,12 +1649,13 @@ const WHY = [
 ];
 
 function WhyOrzen() {
+  const { t, pick } = useLang();
   return (
     <section className="bg-[color:var(--orzen-slate-50)] py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
-        <SectionHeader eyebrow="Why ORZEN" title="Built for the way you actually sell" />
+        <SectionHeader eyebrow={t("why_eyebrow")} title={t("why_title")} />
         <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {WHY.map((w) => (
+          {WHY.map((w, wi) => (
             <div
               key={w.title}
               className="flex h-full items-start gap-4 rounded-2xl border border-[color:var(--orzen-border)] bg-white p-6 transition hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]"
@@ -1618,8 +1664,8 @@ function WhyOrzen() {
                 <w.icon className="h-5 w-5" />
               </span>
               <div className="min-w-0 flex-1">
-                <h3 className="text-base font-bold leading-snug">{w.title}</h3>
-                <p className="mt-1.5 text-sm text-[color:var(--orzen-muted)]">{w.desc}</p>
+                <h3 className="text-base font-bold leading-snug">{pick(WHY_COPY[wi]!.title)}</h3>
+                <p className="mt-1.5 text-sm text-[color:var(--orzen-muted)]">{pick(WHY_COPY[wi]!.desc)}</p>
               </div>
             </div>
           ))}
@@ -1634,10 +1680,11 @@ function WhyOrzen() {
 /* -------------------------------------------------------------------------- */
 
 function Testimonials() {
+  const { t } = useLang();
   return (
     <section className="py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
-        <SectionHeader eyebrow="Customers" title="Loved by store owners across Bangladesh" />
+        <SectionHeader eyebrow={t("testimonials_eyebrow")} title={t("testimonials_title")} />
       </div>
       <TestimonialsMarquee />
     </section>
@@ -1667,26 +1714,44 @@ const FAQS = [
 ];
 
 function FAQ() {
+  const { t, pick } = useLang();
+  const [showAll, setShowAll] = useState(false);
+  const visible = showAll ? FAQ_COPY : FAQ_COPY.slice(0, 6);
   return (
     <section id="faq" className="scroll-mt-24 bg-[color:var(--orzen-slate-50)] py-20 md:py-28">
-      <div className="mx-auto max-w-3xl px-5 md:px-8">
-        <SectionHeader eyebrow="FAQ" title="Everything you wanted to know" />
-        <Accordion type="single" collapsible className="mt-10 space-y-2">
-          {FAQS.map((f, i) => (
+      <div className="mx-auto max-w-5xl px-5 md:px-8">
+        <SectionHeader eyebrow={t("faq_eyebrow")} title={t("faq_title")} />
+        <Accordion
+          type="single"
+          collapsible
+          className="mt-10 grid grid-cols-1 gap-2 md:grid-cols-2 md:gap-3"
+        >
+          {visible.map((f, i) => (
             <AccordionItem
               key={i}
               value={`f-${i}`}
-              className="rounded-xl border border-[color:var(--orzen-border)] bg-white px-4"
+              className="h-fit rounded-xl border border-[color:var(--orzen-border)] bg-white px-4"
             >
               <AccordionTrigger className="text-left text-sm font-semibold hover:no-underline">
-                {f.q}
+                {pick(f.q)}
               </AccordionTrigger>
               <AccordionContent className="text-sm text-[color:var(--orzen-muted)]">
-                {f.a}
+                {pick(f.a)}
               </AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
+        {FAQ_COPY.length > 6 && (
+          <div className="mt-6 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setShowAll((v) => !v)}
+              className="inline-flex items-center gap-2 rounded-full border border-[color:var(--orzen-border)] bg-white px-6 py-2.5 text-sm font-semibold text-[color:var(--orzen-navy)] transition hover:border-[color:var(--orzen-navy)]"
+            >
+              {showAll ? t("faq_show_less") : t("faq_view_all")}
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -1697,6 +1762,7 @@ function FAQ() {
 /* -------------------------------------------------------------------------- */
 
 function FinalCTA() {
+  const { t } = useLang();
   return (
     <section className="px-5 py-16 md:px-8 md:py-24">
       <div className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-[color:var(--orzen-navy)] px-6 py-16 text-center text-white shadow-[var(--shadow-lift)] sm:px-12 sm:py-20">
@@ -1709,26 +1775,26 @@ function FinalCTA() {
         />
         <div className="relative">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-semibold">
-            <ShieldCheck className="h-3.5 w-3.5" /> Free forever plan · No credit card
+            <ShieldCheck className="h-3.5 w-3.5" /> {t("cta_badge")}
           </span>
           <h2 className="mt-5 text-3xl font-extrabold tracking-tight sm:text-5xl">
-            Ready to Launch Your Store?
+            {t("cta_title")}
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-sm text-white/70 sm:text-base">
-            Start building today with ORZEN — everything you need to sell, in one platform.
+            {t("cta_sub")}
           </p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
               to="/auth"
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[color:var(--orzen-blue)] px-6 py-3.5 text-sm font-semibold text-white hover:bg-[color:var(--orzen-blue-600)] sm:w-auto"
             >
-              Create Store Free <ArrowRight className="h-4 w-4" />
+              {t("cta_primary")} <ArrowRight className="h-4 w-4" />
             </Link>
             <a
               href="#features"
               className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/30 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white hover:bg-white/10 sm:w-auto"
             >
-              Explore Features
+              {t("cta_secondary")}
             </a>
           </div>
         </div>
