@@ -340,30 +340,6 @@ function SubcategoryBar({
   );
 }
 
-function Pill({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors duration-200 ${
-        active
-          ? "text-white"
-          : "border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50"
-      }`}
-      style={active ? { backgroundColor: "var(--store-btn-bg, #7c3aed)" } : undefined}
-    >
-      {children}
-    </button>
-  );
-}
 
 function SubPill({
   active,
