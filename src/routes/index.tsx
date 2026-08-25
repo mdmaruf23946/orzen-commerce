@@ -1,4 +1,4 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
@@ -100,7 +100,6 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   const navigate = useNavigate();
-  const [checking, setChecking] = useState(true);
 
   // Persistent session check: signed-in visitors go straight to the admin dashboard.
   useEffect(() => {
@@ -114,7 +113,6 @@ function Landing() {
         navigate({ to: "/admin", replace: true });
         return;
       }
-      setChecking(false);
       const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
         if (!active) return;
         if (event === "SIGNED_IN" && session?.user) {
@@ -122,23 +120,13 @@ function Landing() {
         }
       });
       unsub = () => sub.subscription.unsubscribe();
-    }).catch(() => {
-      if (active) setChecking(false);
-    });
+    }).catch(() => {});
 
     return () => {
       active = false;
       unsub?.();
     };
   }, [navigate]);
-
-  if (checking) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-slate-600" />
-      </div>
-    );
-  }
 
   return (
 
