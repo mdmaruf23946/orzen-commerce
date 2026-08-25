@@ -49,6 +49,7 @@ import { Route as AuthenticatedOwnerSubscriptionsRouteImport } from './routes/_a
 import { Route as AuthenticatedOwnerSubscriptionCouponsRouteImport } from './routes/_authenticated/owner/subscription-coupons'
 import { Route as AuthenticatedOwnerStoresRouteImport } from './routes/_authenticated/owner/stores'
 import { Route as AuthenticatedOwnerStoreTemplateRouteImport } from './routes/_authenticated/owner/store-template'
+import { Route as AuthenticatedOwnerReviewsRouteImport } from './routes/_authenticated/owner/reviews'
 import { Route as AuthenticatedOwnerReportsRouteImport } from './routes/_authenticated/owner/reports'
 import { Route as AuthenticatedOwnerPlatformBrandingRouteImport } from './routes/_authenticated/owner/platform-branding'
 import { Route as AuthenticatedOwnerPlanFeaturesRouteImport } from './routes/_authenticated/owner/plan-features'
@@ -394,6 +395,12 @@ const AuthenticatedOwnerStoreTemplateRoute =
   AuthenticatedOwnerStoreTemplateRouteImport.update({
     id: '/store-template',
     path: '/store-template',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerReviewsRoute =
+  AuthenticatedOwnerReviewsRouteImport.update({
+    id: '/reviews',
+    path: '/reviews',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
 const AuthenticatedOwnerReportsRoute =
@@ -1298,6 +1305,7 @@ export interface FileRoutesByFullPath {
   '/owner/plan-features': typeof AuthenticatedOwnerPlanFeaturesRoute
   '/owner/platform-branding': typeof AuthenticatedOwnerPlatformBrandingRoute
   '/owner/reports': typeof AuthenticatedOwnerReportsRoute
+  '/owner/reviews': typeof AuthenticatedOwnerReviewsRoute
   '/owner/store-template': typeof AuthenticatedOwnerStoreTemplateRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
   '/owner/subscription-coupons': typeof AuthenticatedOwnerSubscriptionCouponsRoute
@@ -1467,6 +1475,7 @@ export interface FileRoutesByTo {
   '/owner/plan-features': typeof AuthenticatedOwnerPlanFeaturesRoute
   '/owner/platform-branding': typeof AuthenticatedOwnerPlatformBrandingRoute
   '/owner/reports': typeof AuthenticatedOwnerReportsRoute
+  '/owner/reviews': typeof AuthenticatedOwnerReviewsRoute
   '/owner/store-template': typeof AuthenticatedOwnerStoreTemplateRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
   '/owner/subscription-coupons': typeof AuthenticatedOwnerSubscriptionCouponsRoute
@@ -1647,6 +1656,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/plan-features': typeof AuthenticatedOwnerPlanFeaturesRoute
   '/_authenticated/owner/platform-branding': typeof AuthenticatedOwnerPlatformBrandingRoute
   '/_authenticated/owner/reports': typeof AuthenticatedOwnerReportsRoute
+  '/_authenticated/owner/reviews': typeof AuthenticatedOwnerReviewsRoute
   '/_authenticated/owner/store-template': typeof AuthenticatedOwnerStoreTemplateRoute
   '/_authenticated/owner/stores': typeof AuthenticatedOwnerStoresRoute
   '/_authenticated/owner/subscription-coupons': typeof AuthenticatedOwnerSubscriptionCouponsRoute
@@ -1827,6 +1837,7 @@ export interface FileRouteTypes {
     | '/owner/plan-features'
     | '/owner/platform-branding'
     | '/owner/reports'
+    | '/owner/reviews'
     | '/owner/store-template'
     | '/owner/stores'
     | '/owner/subscription-coupons'
@@ -1996,6 +2007,7 @@ export interface FileRouteTypes {
     | '/owner/plan-features'
     | '/owner/platform-branding'
     | '/owner/reports'
+    | '/owner/reviews'
     | '/owner/store-template'
     | '/owner/stores'
     | '/owner/subscription-coupons'
@@ -2175,6 +2187,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/plan-features'
     | '/_authenticated/owner/platform-branding'
     | '/_authenticated/owner/reports'
+    | '/_authenticated/owner/reviews'
     | '/_authenticated/owner/store-template'
     | '/_authenticated/owner/stores'
     | '/_authenticated/owner/subscription-coupons'
@@ -2581,6 +2594,13 @@ declare module '@tanstack/react-router' {
       path: '/store-template'
       fullPath: '/owner/store-template'
       preLoaderRoute: typeof AuthenticatedOwnerStoreTemplateRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/reviews': {
+      id: '/_authenticated/owner/reviews'
+      path: '/reviews'
+      fullPath: '/owner/reviews'
+      preLoaderRoute: typeof AuthenticatedOwnerReviewsRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/owner/reports': {
@@ -3865,6 +3885,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerPlanFeaturesRoute: typeof AuthenticatedOwnerPlanFeaturesRoute
   AuthenticatedOwnerPlatformBrandingRoute: typeof AuthenticatedOwnerPlatformBrandingRoute
   AuthenticatedOwnerReportsRoute: typeof AuthenticatedOwnerReportsRoute
+  AuthenticatedOwnerReviewsRoute: typeof AuthenticatedOwnerReviewsRoute
   AuthenticatedOwnerStoreTemplateRoute: typeof AuthenticatedOwnerStoreTemplateRoute
   AuthenticatedOwnerStoresRoute: typeof AuthenticatedOwnerStoresRoute
   AuthenticatedOwnerSubscriptionCouponsRoute: typeof AuthenticatedOwnerSubscriptionCouponsRoute
@@ -3918,6 +3939,7 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerPlatformBrandingRoute:
       AuthenticatedOwnerPlatformBrandingRoute,
     AuthenticatedOwnerReportsRoute: AuthenticatedOwnerReportsRoute,
+    AuthenticatedOwnerReviewsRoute: AuthenticatedOwnerReviewsRoute,
     AuthenticatedOwnerStoreTemplateRoute: AuthenticatedOwnerStoreTemplateRoute,
     AuthenticatedOwnerStoresRoute: AuthenticatedOwnerStoresRoute,
     AuthenticatedOwnerSubscriptionCouponsRoute:
