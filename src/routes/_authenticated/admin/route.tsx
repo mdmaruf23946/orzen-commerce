@@ -136,10 +136,10 @@ const groupDefs: { label: string; paths: string[] }[] = [
 ];
 
 
-function buildGroups(query: string) {
+function buildGroups(query: string, canSee: (path: string) => boolean) {
   const q = query.trim().toLowerCase();
   const used = new Set<string>();
-  const visible = links;
+  const visible = links.filter((l) => canSee(l.to));
   const byPath = new Map(visible.map((l) => [l.to, l]));
   const groups = groupDefs.map((g) => {
     const items: LinkDef[] = [];
@@ -158,7 +158,11 @@ function buildGroups(query: string) {
 }
 
 export const Route = createFileRoute("/_authenticated/admin")({
-  component: AdminLayout,
+  component: () => (
+    <StoreAccessProvider>
+      <AdminLayout />
+    </StoreAccessProvider>
+  ),
   errorComponent: AdminErrorComponent,
 });
 
