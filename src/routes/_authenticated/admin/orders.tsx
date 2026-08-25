@@ -33,9 +33,9 @@ import { isPhysical } from "@/lib/orders-bulk";
 export const Route = createFileRoute("/_authenticated/admin/orders")({
   head: () => ({
     meta: [
-      { title: "Orders — ORZEN Store Admin" },
+      { title: "Orders — ORZEN Merchant Panel" },
       { name: "description", content: "Manage, track and fulfil every store order from one premium dashboard." },
-      { property: "og:title", content: "Orders — ORZEN Store Admin" },
+      { property: "og:title", content: "Orders — ORZEN Merchant Panel" },
       { property: "og:description", content: "Manage, track and fulfil every store order from one premium dashboard." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

@@ -14,7 +14,7 @@ function Layout() {
   const { pathname } = useLocation();
   return (
     <div>
-      <OwnerPageHeader title="Notification Center" description="Send announcements and updates to store admins via Email and In-App." />
+      <OwnerPageHeader title="Notification Center" description="Send announcements and updates to merchants via Email and In-App." />
       <div className="mb-4 flex flex-wrap gap-1 border-b">
         {tabs.map((t) => {
           const active = t.exact ? pathname === t.to : pathname.startsWith(t.to);

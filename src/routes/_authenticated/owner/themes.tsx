@@ -65,7 +65,7 @@ function OwnerThemes() {
         <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Store Themes</h1>
           <p className="text-sm text-muted-foreground">
-            Themes published here appear in every store admin's Theme Customization page.
+            Themes published here appear in every merchant's Theme Customization page.
           </p>
         </div>
         <Button size="sm" onClick={() => openEditor(null)}>

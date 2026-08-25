@@ -18,12 +18,12 @@ export const Route = createFileRoute("/_authenticated/admin/facebook/moderation"
   component: ModerationPage,
   head: () => ({
     meta: [
-      { title: "Facebook Moderation Approvals | ORZEN Store Admin" },
+      { title: "Facebook Moderation Approvals | ORZEN Merchant Panel" },
       {
         name: "description",
         content: "Review and approve AI-suggested Facebook comment replies, hides, deletions and blocks before they run.",
       },
-      { property: "og:title", content: "Facebook Moderation Approvals | ORZEN Store Admin" },
+      { property: "og:title", content: "Facebook Moderation Approvals | ORZEN Merchant Panel" },
       { property: "og:description", content: "Nothing is deleted or blocked on your page until you approve it." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

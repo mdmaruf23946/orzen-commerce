@@ -30,9 +30,9 @@ import { Insights, ProfitPanel } from "@/components/admin/analytics/ProfitPanel"
 export const Route = createFileRoute("/_authenticated/admin/analytics")({
   head: () => ({
     meta: [
-      { title: "Analytics — ORZEN Store Admin" },
+      { title: "Analytics — ORZEN Merchant Panel" },
       { name: "description", content: "Track sales, traffic and conversion performance for your store." },
-      { property: "og:title", content: "Analytics — ORZEN Store Admin" },
+      { property: "og:title", content: "Analytics — ORZEN Merchant Panel" },
       { property: "og:description", content: "Track sales, traffic and conversion performance for your store." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

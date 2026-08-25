@@ -34,9 +34,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export const Route = createFileRoute("/_authenticated/admin/landing-builder/$id")({
   head: () => ({
     meta: [
-      { title: "Edit landing page — Store Admin" },
+      { title: "Edit landing page — Merchant Panel" },
       { name: "description", content: "Edit landing page content, order form, theme and domains." },
-      { property: "og:title", content: "Edit landing page — Store Admin" },
+      { property: "og:title", content: "Edit landing page — Merchant Panel" },
       { property: "og:description", content: "Edit landing page content, order form, theme and domains." },
     ],
   }),

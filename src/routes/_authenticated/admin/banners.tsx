@@ -26,9 +26,9 @@ import { AdminToolbar } from "@/components/admin/page/AdminToolbar";
 export const Route = createFileRoute("/_authenticated/admin/banners")({
   head: () => ({
     meta: [
-      { title: "Banners — ORZEN Store Admin" },
+      { title: "Banners — ORZEN Merchant Panel" },
       { name: "description", content: "Manage storefront banners and promotional slides." },
-      { property: "og:title", content: "Banners — ORZEN Store Admin" },
+      { property: "og:title", content: "Banners — ORZEN Merchant Panel" },
       { property: "og:description", content: "Manage storefront banners and promotional slides." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

@@ -1,4 +1,4 @@
-// Premium order card + shared badges for the Store Admin → Orders screen.
+// Premium order card + shared badges for the Merchant Panel → Orders screen.
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { CallButton } from "@/components/admin/calls/CallButton";

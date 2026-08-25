@@ -25,9 +25,9 @@ import {
 export const Route = createFileRoute("/_authenticated/admin/landing-builder/")({
   head: () => ({
     meta: [
-      { title: "Landing Pages — Store Admin" },
+      { title: "Landing Pages — Merchant Panel" },
       { name: "description", content: "Build standalone product landing pages with their own URL and order form." },
-      { property: "og:title", content: "Landing Pages — Store Admin" },
+      { property: "og:title", content: "Landing Pages — Merchant Panel" },
       { property: "og:description", content: "Build standalone product landing pages with their own URL and order form." },
     ],
   }),

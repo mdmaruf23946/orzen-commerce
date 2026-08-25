@@ -101,7 +101,7 @@ function AdsPage() {
     <div className="space-y-6">
       <OwnerPageHeader
         title="Advertisement Management"
-        description="Centralized control of Adsterra / provider ads shown inside the Store Admin panel for eligible plans."
+        description="Centralized control of Adsterra / provider ads shown inside the Merchant Panel for eligible plans."
       />
 
       {/* Stats */}

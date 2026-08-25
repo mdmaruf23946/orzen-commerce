@@ -5,9 +5,9 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 export const Route = createFileRoute("/_authenticated/admin/settings/subscription")({
   head: () => ({
     meta: [
-      { title: "Subscription Settings — ORZEN Store Admin" },
+      { title: "Subscription Settings — ORZEN Merchant Panel" },
       { name: "description", content: "Storefront subscription product settings." },
-      { property: "og:title", content: "Subscription Settings — ORZEN Store Admin" },
+      { property: "og:title", content: "Subscription Settings — ORZEN Merchant Panel" },
       { property: "og:description", content: "Storefront subscription product settings." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

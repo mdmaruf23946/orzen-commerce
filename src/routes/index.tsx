@@ -779,7 +779,7 @@ function Workflow() {
 /* -------------------------------------------------------------------------- */
 
 const DASHBOARDS = [
-  { key: "admin", label: "Store Admin" },
+  { key: "admin", label: "Merchant Panel" },
   { key: "store", label: "Customer Store" },
   { key: "owner", label: "Owner Panel" },
   { key: "ai", label: "AI Dashboard" },

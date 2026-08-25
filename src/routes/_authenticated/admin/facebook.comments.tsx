@@ -26,12 +26,12 @@ export const Route = createFileRoute("/_authenticated/admin/facebook/comments")(
   component: CommentsPage,
   head: () => ({
     meta: [
-      { title: "Facebook Comments | ORZEN Store Admin" },
+      { title: "Facebook Comments | ORZEN Merchant Panel" },
       {
         name: "description",
         content: "Search, reply, hide, delete and moderate Facebook Page comments, with AI categories and suggested replies.",
       },
-      { property: "og:title", content: "Facebook Comments | ORZEN Store Admin" },
+      { property: "og:title", content: "Facebook Comments | ORZEN Merchant Panel" },
       { property: "og:description", content: "Moderate Facebook Page comments and hand conversations to Messenger." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

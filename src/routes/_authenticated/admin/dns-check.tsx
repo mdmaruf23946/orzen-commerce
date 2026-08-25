@@ -12,9 +12,9 @@ export const Route = createFileRoute("/_authenticated/admin/dns-check")({
   component: Page,
   head: () => ({
     meta: [
-      { title: "DNS Checker — ORZEN Store Admin" },
+      { title: "DNS Checker — ORZEN Merchant Panel" },
       { name: "description", content: "Verify DNS records for your store domain." },
-      { property: "og:title", content: "DNS Checker — ORZEN Store Admin" },
+      { property: "og:title", content: "DNS Checker — ORZEN Merchant Panel" },
       { property: "og:description", content: "Verify DNS records for your store domain." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

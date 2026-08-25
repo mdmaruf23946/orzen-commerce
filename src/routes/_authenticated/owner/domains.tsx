@@ -158,7 +158,7 @@ function Page() {
               <div>
                 <Label>System login host</Label>
                 <Input value={f.login_host} onChange={(e) => setF({ ...f, login_host: e.target.value })} placeholder="admin.orzen.top" />
-                <p className="mt-1 text-xs text-muted-foreground">Store admins log in here. Never changes per store.</p>
+                <p className="mt-1 text-xs text-muted-foreground">Merchants log in here. Never changes per store.</p>
               </div>
               <div>
                 <Label>Custom-domain CNAME target</Label>

@@ -20,9 +20,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/admin/product-defaults")({
   head: () => ({
     meta: [
-      { title: "Product Defaults — ORZEN Store Admin" },
+      { title: "Product Defaults — ORZEN Merchant Panel" },
       { name: "description", content: "Default values applied to new products." },
-      { property: "og:title", content: "Product Defaults — ORZEN Store Admin" },
+      { property: "og:title", content: "Product Defaults — ORZEN Merchant Panel" },
       { property: "og:description", content: "Default values applied to new products." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

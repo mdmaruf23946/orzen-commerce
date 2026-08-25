@@ -16,9 +16,9 @@ import {
 export const Route = createFileRoute("/_authenticated/admin/couriers")({
   head: () => ({
     meta: [
-      { title: "Couriers — ORZEN Store Admin" },
+      { title: "Couriers — ORZEN Merchant Panel" },
       { name: "description", content: "Connect and configure courier providers for delivery." },
-      { property: "og:title", content: "Couriers — ORZEN Store Admin" },
+      { property: "og:title", content: "Couriers — ORZEN Merchant Panel" },
       { property: "og:description", content: "Connect and configure courier providers for delivery." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

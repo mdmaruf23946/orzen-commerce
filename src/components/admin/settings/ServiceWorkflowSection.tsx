@@ -1,4 +1,4 @@
-// Store Admin → Settings → Service workflow.
+// Merchant Panel → Settings → Service workflow.
 // Controls which service stages are visible to clients, revisions, cancel policy
 // and the support channels shown on the service order page.
 import { useEffect, useState } from "react";

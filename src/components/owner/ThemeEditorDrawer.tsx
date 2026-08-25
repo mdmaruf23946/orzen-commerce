@@ -189,7 +189,7 @@ export function ThemeEditorDrawer({
         <SheetHeader className="border-b p-4">
           <SheetTitle>{theme?.id ? "Edit theme" : "New theme"}</SheetTitle>
           <SheetDescription>
-            Author the full design token set. Locked groups can never be changed by store admins.
+            Author the full design token set. Locked groups can never be changed by merchants.
           </SheetDescription>
         </SheetHeader>
 
@@ -284,7 +284,7 @@ export function ThemeEditorDrawer({
                 rows={2}
                 value={meta.description}
                 onChange={(e) => setMeta((m) => ({ ...m, description: e.target.value }))}
-                placeholder="Short description shown in the store admin catalog"
+                placeholder="Short description shown in the merchant catalog"
               />
             </div>
           </div>
@@ -491,10 +491,10 @@ export function ThemeEditorDrawer({
             </AccordionItem>
 
             <AccordionItem value="locks">
-              <AccordionTrigger className="text-sm">Store admin locks</AccordionTrigger>
+              <AccordionTrigger className="text-sm">Merchant locks</AccordionTrigger>
               <AccordionContent className="space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  Locked groups are re-sanitized server-side, so store admins can never override them.
+                  Locked groups are re-sanitized server-side, so merchants can never override them.
                 </p>
                 {LOCK_GROUPS.map((g) => {
                   const locked = locks[g.key] === true || Array.isArray(locks[g.key]);

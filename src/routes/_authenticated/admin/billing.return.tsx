@@ -14,9 +14,9 @@ const search = z.object({ invoice: z.string().optional(), val_id: z.string().opt
 export const Route = createFileRoute("/_authenticated/admin/billing/return")({
   head: () => ({
     meta: [
-      { title: "Payment Result — ORZEN Store Admin" },
+      { title: "Payment Result — ORZEN Merchant Panel" },
       { name: "description", content: "Subscription payment confirmation." },
-      { property: "og:title", content: "Payment Result — ORZEN Store Admin" },
+      { property: "og:title", content: "Payment Result — ORZEN Merchant Panel" },
       { property: "og:description", content: "Subscription payment confirmation." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

@@ -18,9 +18,9 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/_authenticated/admin/notifications")({
   head: () => ({
     meta: [
-      { title: "Notification Settings — ORZEN Store Admin" },
+      { title: "Notification Settings — ORZEN Merchant Panel" },
       { name: "description", content: "WhatsApp, email and SMS notification channels and events." },
-      { property: "og:title", content: "Notification Settings — ORZEN Store Admin" },
+      { property: "og:title", content: "Notification Settings — ORZEN Merchant Panel" },
       { property: "og:description", content: "WhatsApp, email and SMS notification channels and events." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

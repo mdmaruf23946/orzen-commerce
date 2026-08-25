@@ -26,9 +26,9 @@ import { Copy, Eye, EyeOff, RefreshCcw, CheckCircle2, XCircle, AlertTriangle, Ex
 export const Route = createFileRoute("/_authenticated/admin/messenger")({
   head: () => ({
     meta: [
-      { title: "Messenger Integration — ORZEN Store Admin" },
+      { title: "Messenger Integration — ORZEN Merchant Panel" },
       { name: "description", content: "Connect Facebook Messenger and configure the AI sales flow." },
-      { property: "og:title", content: "Messenger Integration — ORZEN Store Admin" },
+      { property: "og:title", content: "Messenger Integration — ORZEN Merchant Panel" },
       { property: "og:description", content: "Connect Facebook Messenger and configure the AI sales flow." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

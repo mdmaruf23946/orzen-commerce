@@ -34,9 +34,9 @@ export const Route = createFileRoute("/_authenticated/admin/domains")({
   component: Page,
   head: () => ({
     meta: [
-      { title: "Domains — ORZEN Store Admin" },
+      { title: "Domains — ORZEN Merchant Panel" },
       { name: "description", content: "Manage your store subdomain and custom domains." },
-      { property: "og:title", content: "Domains — ORZEN Store Admin" },
+      { property: "og:title", content: "Domains — ORZEN Merchant Panel" },
       { property: "og:description", content: "Manage your store subdomain and custom domains." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

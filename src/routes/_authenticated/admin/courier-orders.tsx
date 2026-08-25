@@ -39,13 +39,13 @@ export const Route = createFileRoute("/_authenticated/admin/courier-orders")({
   }),
   head: () => ({
     meta: [
-      { title: "Courier Orders · ORZEN Store Admin" },
+      { title: "Courier Orders · ORZEN Merchant Panel" },
       {
         name: "description",
         content:
           "Send confirmed orders to your connected courier, track parcels, sync delivery status and print labels.",
       },
-      { property: "og:title", content: "Courier Orders · ORZEN Store Admin" },
+      { property: "og:title", content: "Courier Orders · ORZEN Merchant Panel" },
       {
         property: "og:description",
         content: "Central parcel operations for every connected courier.",

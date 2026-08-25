@@ -21,9 +21,9 @@ export const Route = createFileRoute("/_authenticated/admin/staff")({
   component: StaffPage,
   head: () => ({
     meta: [
-      { title: "Staff Management — ORZEN Store Admin" },
+      { title: "Staff Management — ORZEN Merchant Panel" },
       { name: "description", content: "Invite and manage staff members who help run your ORZEN store." },
-      { property: "og:title", content: "Staff Management — ORZEN Store Admin" },
+      { property: "og:title", content: "Staff Management — ORZEN Merchant Panel" },
       { property: "og:description", content: "Invite and manage staff members who help run your ORZEN store." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

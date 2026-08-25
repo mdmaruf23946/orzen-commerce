@@ -256,7 +256,7 @@ function NotesPanel({ phone, initial }: { phone: string; initial: { tags: string
       </div>
       <div>
         <div className="text-xs font-semibold uppercase text-muted-foreground">Private note</div>
-        <Textarea rows={5} value={note} onChange={(e) => setNote(e.target.value)} className="mt-2" placeholder="Visible to store admins only" />
+        <Textarea rows={5} value={note} onChange={(e) => setNote(e.target.value)} className="mt-2" placeholder="Visible to merchants only" />
       </div>
       <Button onClick={submit} disabled={saving} className="w-full">{saving ? "Saving…" : "Save notes"}</Button>
     </div>

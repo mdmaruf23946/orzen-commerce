@@ -157,7 +157,7 @@ export function InvoiceTemplatesManager({ scope }: { scope: "global" | "store" }
     );
   }
 
-  // ---- Store Admin: pick a design + manage global invoice information ----
+  // ---- Merchant Panel: pick a design + manage global invoice information ----
   if (scope === "store") {
     const own = templates.filter((t) => t.scope === "store");
     const active = own.find((t) => t.is_default) ?? null;

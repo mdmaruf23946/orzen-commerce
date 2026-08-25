@@ -11,9 +11,9 @@ export const Route = createFileRoute("/_authenticated/admin/invoice-templates")(
 
   head: () => ({
     meta: [
-      { title: "Invoice Templates — ORZEN Store Admin" },
+      { title: "Invoice Templates — ORZEN Merchant Panel" },
       { name: "description", content: "Customize and manage invoice templates for your ORZEN store." },
-      { property: "og:title", content: "Invoice Templates — ORZEN Store Admin" },
+      { property: "og:title", content: "Invoice Templates — ORZEN Merchant Panel" },
       { property: "og:description", content: "Customize and manage invoice templates for your ORZEN store." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

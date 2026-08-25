@@ -6,9 +6,9 @@ import { ServiceWorkflowSection } from "@/components/admin/settings/ServiceWorkf
 export const Route = createFileRoute("/_authenticated/admin/settings/workflow")({
   head: () => ({
     meta: [
-      { title: "Order & Workflow — ORZEN Store Admin" },
+      { title: "Order & Workflow — ORZEN Merchant Panel" },
       { name: "description", content: "Order confirmation and service workflow settings." },
-      { property: "og:title", content: "Order & Workflow — ORZEN Store Admin" },
+      { property: "og:title", content: "Order & Workflow — ORZEN Merchant Panel" },
       { property: "og:description", content: "Order confirmation and service workflow settings." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

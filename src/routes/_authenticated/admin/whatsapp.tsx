@@ -27,9 +27,9 @@ export const Route = createFileRoute("/_authenticated/admin/whatsapp")({
   ),
   head: () => ({
     meta: [
-      { title: "WhatsApp Integration | ORZEN Store Admin" },
+      { title: "WhatsApp Integration | ORZEN Merchant Panel" },
       { name: "description", content: "Connect WhatsApp Cloud API to your store and let the AI sales agent reply to customers automatically." },
-      { property: "og:title", content: "WhatsApp Integration | ORZEN Store Admin" },
+      { property: "og:title", content: "WhatsApp Integration | ORZEN Merchant Panel" },
       { property: "og:description", content: "Connect WhatsApp Cloud API and manage AI auto-replies for your store." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

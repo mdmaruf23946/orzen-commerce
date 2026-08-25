@@ -11,9 +11,9 @@ export const Route = createFileRoute("/_authenticated/admin/inbox")({
   component: Inbox,
   head: () => ({
     meta: [
-      { title: "Notifications Inbox — ORZEN Store Admin" },
+      { title: "Notifications Inbox — ORZEN Merchant Panel" },
       { name: "description", content: "Your store notifications and alerts." },
-      { property: "og:title", content: "Notifications Inbox — ORZEN Store Admin" },
+      { property: "og:title", content: "Notifications Inbox — ORZEN Merchant Panel" },
       { property: "og:description", content: "Your store notifications and alerts." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
