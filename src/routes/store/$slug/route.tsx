@@ -493,12 +493,22 @@ function StoreHeader({
 
       {/* Mobile-only search band below header */}
       {showSearch && theme.header.search && theme.header.search_position !== "hidden" && (
-        <div
-          className={`${theme.header.sticky ? "sticky top-12" : ""} z-20 border-b border-black/5 bg-white/95 px-3 py-2 backdrop-blur md:hidden`}
-        >
+        <div className="border-b border-black/5 bg-white/95 px-3 py-2 backdrop-blur md:hidden">
           <SearchBar />
         </div>
       )}
+
+      {/* Text-only category bar, anchored inside the sticky header frame */}
+      {showSearch && mainCategories.length > 0 && (
+        <HeaderCategoryBar
+          mains={mainCategories as any}
+          counts={countsByMain}
+          totalCount={(products as any[]).length}
+        />
+      )}
+      </div>
+
+
 
 
       <MobileDrawer
