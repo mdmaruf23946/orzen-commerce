@@ -83,7 +83,7 @@ export function SiteFooter() {
 
           {otherColumns.map((c) => (
             <div key={c.title} className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--orzen-navy)]">{c.title}</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--orzen-navy)]">{localizeTitle(c.title)}</p>
               <ul className="mt-2 space-y-1.5 text-sm">
                 {(c.links ?? []).map((l) => (
                   <li key={l.label}>
