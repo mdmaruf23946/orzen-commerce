@@ -119,6 +119,7 @@ import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminAiRecommendationsRouteImport } from './routes/_authenticated/admin/ai-recommendations'
 import { Route as AuthenticatedAdminAiCallCenterRouteImport } from './routes/_authenticated/admin/ai-call-center'
 import { Route as AuthenticatedAdminAiAgentRouteImport } from './routes/_authenticated/admin/ai-agent'
+import { Route as AuthenticatedAdminActivityRouteImport } from './routes/_authenticated/admin/activity'
 import { Route as DotwellKnownOrzenDomainVerificationTokenRouteImport } from './routes/[.]well-known.orzen-domain-verification.$token'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -803,6 +804,12 @@ const AuthenticatedAdminAiAgentRoute =
     path: '/ai-agent',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminActivityRoute =
+  AuthenticatedAdminActivityRouteImport.update({
+    id: '/activity',
+    path: '/activity',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const DotwellKnownOrzenDomainVerificationTokenRoute =
   DotwellKnownOrzenDomainVerificationTokenRouteImport.update({
     id: '/.well-known/orzen-domain-verification/$token',
@@ -1212,6 +1219,7 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/.well-known/orzen-domain-verification/$token': typeof DotwellKnownOrzenDomainVerificationTokenRoute
+  '/admin/activity': typeof AuthenticatedAdminActivityRoute
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/admin/ai-call-center': typeof AuthenticatedAdminAiCallCenterRoute
   '/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
@@ -1380,6 +1388,7 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/.well-known/orzen-domain-verification/$token': typeof DotwellKnownOrzenDomainVerificationTokenRoute
+  '/admin/activity': typeof AuthenticatedAdminActivityRoute
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/admin/ai-call-center': typeof AuthenticatedAdminAiCallCenterRoute
   '/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
@@ -1557,6 +1566,7 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/.well-known/orzen-domain-verification/$token': typeof DotwellKnownOrzenDomainVerificationTokenRoute
+  '/_authenticated/admin/activity': typeof AuthenticatedAdminActivityRoute
   '/_authenticated/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/_authenticated/admin/ai-call-center': typeof AuthenticatedAdminAiCallCenterRoute
   '/_authenticated/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
@@ -1735,6 +1745,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/.well-known/orzen-domain-verification/$token'
+    | '/admin/activity'
     | '/admin/ai-agent'
     | '/admin/ai-call-center'
     | '/admin/ai-recommendations'
@@ -1903,6 +1914,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/.well-known/orzen-domain-verification/$token'
+    | '/admin/activity'
     | '/admin/ai-agent'
     | '/admin/ai-call-center'
     | '/admin/ai-recommendations'
@@ -2079,6 +2091,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/.well-known/orzen-domain-verification/$token'
+    | '/_authenticated/admin/activity'
     | '/_authenticated/admin/ai-agent'
     | '/_authenticated/admin/ai-call-center'
     | '/_authenticated/admin/ai-recommendations'
@@ -3047,6 +3060,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAiAgentRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/activity': {
+      id: '/_authenticated/admin/activity'
+      path: '/activity'
+      fullPath: '/admin/activity'
+      preLoaderRoute: typeof AuthenticatedAdminActivityRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/.well-known/orzen-domain-verification/$token': {
       id: '/.well-known/orzen-domain-verification/$token'
       path: '/.well-known/orzen-domain-verification/$token'
@@ -3581,6 +3601,7 @@ const AuthenticatedAdminSettingsRouteWithChildren =
 interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminBillingRouteRoute: typeof AuthenticatedAdminBillingRouteRouteWithChildren
   AuthenticatedAdminFacebookRouteRoute: typeof AuthenticatedAdminFacebookRouteRouteWithChildren
+  AuthenticatedAdminActivityRoute: typeof AuthenticatedAdminActivityRoute
   AuthenticatedAdminAiAgentRoute: typeof AuthenticatedAdminAiAgentRoute
   AuthenticatedAdminAiCallCenterRoute: typeof AuthenticatedAdminAiCallCenterRoute
   AuthenticatedAdminAiRecommendationsRoute: typeof AuthenticatedAdminAiRecommendationsRoute
@@ -3638,6 +3659,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
       AuthenticatedAdminBillingRouteRouteWithChildren,
     AuthenticatedAdminFacebookRouteRoute:
       AuthenticatedAdminFacebookRouteRouteWithChildren,
+    AuthenticatedAdminActivityRoute: AuthenticatedAdminActivityRoute,
     AuthenticatedAdminAiAgentRoute: AuthenticatedAdminAiAgentRoute,
     AuthenticatedAdminAiCallCenterRoute: AuthenticatedAdminAiCallCenterRoute,
     AuthenticatedAdminAiRecommendationsRoute:
