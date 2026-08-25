@@ -380,7 +380,7 @@ function CourierEditor({
             rows={2}
             value={c.description ?? ""}
             onChange={(e) => setC({ ...c, description: e.target.value })}
-            placeholder="Short tagline shown next to the logo in store admin cards."
+            placeholder="Short tagline shown next to the logo in merchant cards."
           />
         </div>
 
@@ -559,7 +559,7 @@ function CourierBrandAssetsPage() {
     <div>
       <OwnerPageHeader
         title="Courier Brand Assets"
-        description="Centrally manage every courier's logo, colors, links and status. Store admins automatically inherit these values and cannot edit branding."
+        description="Centrally manage every courier's logo, colors, links and status. Merchants automatically inherit these values and cannot edit branding."
       />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">

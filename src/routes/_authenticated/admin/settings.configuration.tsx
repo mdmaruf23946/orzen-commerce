@@ -23,9 +23,9 @@ import {
 export const Route = createFileRoute("/_authenticated/admin/settings/configuration")({
   head: () => ({
     meta: [
-      { title: "Store Configuration — ORZEN Store Admin" },
+      { title: "Store Configuration — ORZEN Merchant Panel" },
       { name: "description", content: "Customer login, localisation and invoice numbering." },
-      { property: "og:title", content: "Store Configuration — ORZEN Store Admin" },
+      { property: "og:title", content: "Store Configuration — ORZEN Merchant Panel" },
       { property: "og:description", content: "Customer login, localisation and invoice numbering." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

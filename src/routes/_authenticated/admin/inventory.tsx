@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_authenticated/admin/inventory")({
   ),
   head: () => ({
     meta: [
-      { title: "Inventory · Store Admin" },
+      { title: "Inventory · Merchant Panel" },
       {
         name: "description",
         content: "Stock, downloads, service capacity and subscriber analytics in one dynamic inventory page.",

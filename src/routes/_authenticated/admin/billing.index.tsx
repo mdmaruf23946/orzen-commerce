@@ -17,9 +17,9 @@ import { Badge } from "@/components/ui/badge";
 export const Route = createFileRoute("/_authenticated/admin/billing/")({
   head: () => ({
     meta: [
-      { title: "Billing & Plans — ORZEN Store Admin" },
+      { title: "Billing & Plans — ORZEN Merchant Panel" },
       { name: "description", content: "Compare subscription plans, upgrade and view payment history." },
-      { property: "og:title", content: "Billing & Plans — ORZEN Store Admin" },
+      { property: "og:title", content: "Billing & Plans — ORZEN Merchant Panel" },
       { property: "og:description", content: "Compare subscription plans, upgrade and view payment history." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

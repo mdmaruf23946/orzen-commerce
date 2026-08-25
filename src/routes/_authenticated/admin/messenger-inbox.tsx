@@ -44,7 +44,7 @@ export const Route = createFileRoute("/_authenticated/admin/messenger-inbox")({
     </FeatureGate>
   ),
   head: () => ({
-    meta: [{ title: "Messenger Inbox — Store Admin" }],
+    meta: [{ title: "Messenger Inbox — Merchant Panel" }],
   }),
 });
 

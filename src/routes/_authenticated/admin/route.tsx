@@ -278,7 +278,7 @@ function AdminLayout() {
           <Menu className="h-5 w-5 shrink-0" />
           <span className="flex min-w-0 flex-col items-start leading-tight">
             <StoreBrandMark compact />
-            <span className="text-[11px] font-normal text-muted-foreground">Store Admin</span>
+            <span className="text-[11px] font-normal text-muted-foreground">Merchant Panel</span>
           </span>
         </button>
         <button
@@ -303,7 +303,7 @@ function AdminLayout() {
             {(!collapsed || open) ? (
               <div className="flex min-w-0 flex-col leading-tight">
                 <StoreBrandMark />
-                <span className="mt-1 truncate text-[12px] text-muted-foreground">Store Admin</span>
+                <span className="mt-1 truncate text-[12px] text-muted-foreground">Merchant Panel</span>
               </div>
             ) : (
               <StoreBrandMark iconOnly />

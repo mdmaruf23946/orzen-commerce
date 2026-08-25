@@ -9,9 +9,9 @@ import { TiktokTab } from "@/components/admin/marketing/TiktokTab";
 export const Route = createFileRoute("/_authenticated/admin/marketing")({
   head: () => ({
     meta: [
-      { title: "Marketing & Tracking — ORZEN Store Admin" },
+      { title: "Marketing & Tracking — ORZEN Merchant Panel" },
       { name: "description", content: "Facebook, Google and TikTok tracking for your store." },
-      { property: "og:title", content: "Marketing & Tracking — ORZEN Store Admin" },
+      { property: "og:title", content: "Marketing & Tracking — ORZEN Merchant Panel" },
       { property: "og:description", content: "Facebook, Google and TikTok tracking for your store." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

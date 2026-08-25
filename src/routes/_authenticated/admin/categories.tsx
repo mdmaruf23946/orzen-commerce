@@ -27,9 +27,9 @@ import { AdminToolbar } from "@/components/admin/page/AdminToolbar";
 export const Route = createFileRoute("/_authenticated/admin/categories")({
   head: () => ({
     meta: [
-      { title: "Categories — ORZEN Store Admin" },
+      { title: "Categories — ORZEN Merchant Panel" },
       { name: "description", content: "Organise your catalogue into categories and subcategories." },
-      { property: "og:title", content: "Categories — ORZEN Store Admin" },
+      { property: "og:title", content: "Categories — ORZEN Merchant Panel" },
       { property: "og:description", content: "Organise your catalogue into categories and subcategories." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

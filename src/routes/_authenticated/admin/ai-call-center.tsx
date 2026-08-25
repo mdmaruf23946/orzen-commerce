@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authenticated/admin/ai-call-center")({
   component: StoreAiCallCenter,
   head: () => ({
     meta: [
-      { title: "AI Call Center | Store Admin" },
+      { title: "AI Call Center | Merchant Panel" },
       { name: "description", content: "Let an AI voice agent confirm your orders by phone and answer customer calls around the clock." },
     ],
   }),

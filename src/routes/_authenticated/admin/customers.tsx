@@ -32,9 +32,9 @@ import {
 export const Route = createFileRoute("/_authenticated/admin/customers")({
   head: () => ({
     meta: [
-      { title: "Customers — ORZEN Store Admin" },
+      { title: "Customers — ORZEN Merchant Panel" },
       { name: "description", content: "View customer profiles, orders and notes." },
-      { property: "og:title", content: "Customers — ORZEN Store Admin" },
+      { property: "og:title", content: "Customers — ORZEN Merchant Panel" },
       { property: "og:description", content: "View customer profiles, orders and notes." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

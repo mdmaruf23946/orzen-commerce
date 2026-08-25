@@ -17,9 +17,9 @@ import type { SeoOverview } from "@/components/admin/seo/shared";
 export const Route = createFileRoute("/_authenticated/admin/seo")({
   head: () => ({
     meta: [
-      { title: "SEO Settings — ORZEN Store Admin" },
+      { title: "SEO Settings — ORZEN Merchant Panel" },
       { name: "description", content: "Manage meta tags, sitemap and search visibility." },
-      { property: "og:title", content: "SEO Settings — ORZEN Store Admin" },
+      { property: "og:title", content: "SEO Settings — ORZEN Merchant Panel" },
       { property: "og:description", content: "Manage meta tags, sitemap and search visibility." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

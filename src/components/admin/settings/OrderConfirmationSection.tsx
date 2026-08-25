@@ -1,4 +1,4 @@
-// Store Admin → Settings → Order Confirmation.
+// Merchant Panel → Settings → Order Confirmation.
 // Controls whether digital / service / subscription orders confirm
 // automatically after payment or wait for manual approval.
 // Physical orders are intentionally absent — their workflow is unchanged.

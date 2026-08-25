@@ -1,4 +1,4 @@
-// Store Admin → Order details drawer → Service workflow panel.
+// Merchant Panel → Order details drawer → Service workflow panel.
 // Only rendered for order_type = "service". Nothing courier/shipping related here.
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";

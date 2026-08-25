@@ -13,9 +13,9 @@ import { DEFAULT_BRAND, EMPTY_CANVAS } from "@/lib/invoice-template/types";
 export const Route = createFileRoute("/_authenticated/admin/invoice/$orderId")({
   head: () => ({
     meta: [
-      { title: "Invoice — ORZEN Store Admin" },
+      { title: "Invoice — ORZEN Merchant Panel" },
       { name: "description", content: "Printable invoice for this order." },
-      { property: "og:title", content: "Invoice — ORZEN Store Admin" },
+      { property: "og:title", content: "Invoice — ORZEN Merchant Panel" },
       { property: "og:description", content: "Printable invoice for this order." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

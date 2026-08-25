@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/_authenticated/admin/landing-pages/$id")({
-  head: () => ({ meta: [{ title: "Landing page connection — Store Admin" }] }),
+  head: () => ({ meta: [{ title: "Landing page connection — Merchant Panel" }] }),
   component: () => (
     <FeatureGate feature="landing_pages">
       <Detail />

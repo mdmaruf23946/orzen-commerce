@@ -18,9 +18,9 @@ import { Search, User, Download, Phone, Mail, MessageCircle, Copy } from "lucide
 export const Route = createFileRoute("/_authenticated/admin/customers-accounts")({
   head: () => ({
     meta: [
-      { title: "Customer Accounts — ORZEN Store Admin" },
+      { title: "Customer Accounts — ORZEN Merchant Panel" },
       { name: "description", content: "Manage registered storefront customer accounts." },
-      { property: "og:title", content: "Customer Accounts — ORZEN Store Admin" },
+      { property: "og:title", content: "Customer Accounts — ORZEN Merchant Panel" },
       { property: "og:description", content: "Manage registered storefront customer accounts." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

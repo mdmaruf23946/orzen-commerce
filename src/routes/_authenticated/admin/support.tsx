@@ -22,9 +22,9 @@ export const Route = createFileRoute("/_authenticated/admin/support")({
   component: SupportPage,
   head: () => ({
     meta: [
-      { title: "Support — ORZEN Store Admin" },
+      { title: "Support — ORZEN Merchant Panel" },
       { name: "description", content: "Open a support ticket and chat with the ORZEN platform team about your store." },
-      { property: "og:title", content: "Support — ORZEN Store Admin" },
+      { property: "og:title", content: "Support — ORZEN Merchant Panel" },
       { property: "og:description", content: "Open a support ticket and chat with the ORZEN platform team about your store." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

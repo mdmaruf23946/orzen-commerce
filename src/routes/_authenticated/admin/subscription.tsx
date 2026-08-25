@@ -6,9 +6,9 @@ import { mySubscription } from "@/lib/admin.functions";
 export const Route = createFileRoute("/_authenticated/admin/subscription")({
   head: () => ({
     meta: [
-      { title: "My Subscription — ORZEN Store Admin" },
+      { title: "My Subscription — ORZEN Merchant Panel" },
       { name: "description", content: "Your current Orzen plan and renewal details." },
-      { property: "og:title", content: "My Subscription — ORZEN Store Admin" },
+      { property: "og:title", content: "My Subscription — ORZEN Merchant Panel" },
       { property: "og:description", content: "Your current Orzen plan and renewal details." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

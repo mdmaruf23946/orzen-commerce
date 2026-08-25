@@ -40,9 +40,9 @@ import {
 export const Route = createFileRoute("/_authenticated/admin/settings/information")({
   head: () => ({
     meta: [
-      { title: "Store Information — ORZEN Store Admin" },
+      { title: "Store Information — ORZEN Merchant Panel" },
       { name: "description", content: "Store identity, contact details and branding." },
-      { property: "og:title", content: "Store Information — ORZEN Store Admin" },
+      { property: "og:title", content: "Store Information — ORZEN Merchant Panel" },
       { property: "og:description", content: "Store identity, contact details and branding." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -174,7 +174,7 @@ function StoreInformationPage() {
 
           <div className="grid gap-3 sm:grid-cols-3">
             <IconPreviewCard
-              label="Store Admin"
+              label="Merchant Panel"
               iconPath={form.icon_url}
               storeName={form.name || "Your Store"}
               subtitle="Store"

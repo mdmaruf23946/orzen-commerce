@@ -33,7 +33,7 @@ export type PlacementKey = (typeof PLACEMENT_KEYS)[number];
 
 export const PLACEMENT_LABELS: Record<PlacementKey, string> = {
   winner_header: "Winner Admin Header",
-  store_header: "Store Admin Header",
+  store_header: "Merchant Panel Header",
   sidebar: "Sidebar",
   mobile_header: "Mobile Header",
   website_header: "Website Header",

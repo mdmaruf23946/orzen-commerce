@@ -37,7 +37,7 @@ export const Route = createFileRoute("/_authenticated/admin/products")({
   component: ProductsPage,
   head: () => ({
     meta: [
-      { title: "Products · Store Admin" },
+      { title: "Products · Merchant Panel" },
       { name: "description", content: "Manage physical, digital, service and subscription products in one place." },
     ],
   }),

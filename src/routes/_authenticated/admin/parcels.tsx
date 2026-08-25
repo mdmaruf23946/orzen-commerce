@@ -67,13 +67,13 @@ export const Route = createFileRoute("/_authenticated/admin/parcels")({
   }),
   head: () => ({
     meta: [
-      { title: "Courier Parcels · ORZEN Store Admin" },
+      { title: "Courier Parcels · ORZEN Merchant Panel" },
       {
         name: "description",
         content:
           "Create courier parcels, sync delivery status, print labels and manage pickups from one place.",
       },
-      { property: "og:title", content: "Courier Parcels · ORZEN Store Admin" },
+      { property: "og:title", content: "Courier Parcels · ORZEN Merchant Panel" },
       {
         property: "og:description",
         content: "Unified parcel management for every connected courier.",

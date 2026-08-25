@@ -17,9 +17,9 @@ import { AGENT_DEFAULTS, type AgentForm, type AgentSources, type KnowledgeSummar
 export const Route = createFileRoute("/_authenticated/admin/ai-agent")({
   head: () => ({
     meta: [
-      { title: "AI Sales Agent — ORZEN Store Admin" },
+      { title: "AI Sales Agent — ORZEN Merchant Panel" },
       { name: "description", content: "Configure your store's AI sales agent, knowledge base and behaviour." },
-      { property: "og:title", content: "AI Sales Agent — ORZEN Store Admin" },
+      { property: "og:title", content: "AI Sales Agent — ORZEN Merchant Panel" },
       { property: "og:description", content: "Configure your store's AI sales agent, knowledge base and behaviour." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

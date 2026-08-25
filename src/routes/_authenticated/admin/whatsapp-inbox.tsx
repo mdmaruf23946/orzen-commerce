@@ -24,9 +24,9 @@ export const Route = createFileRoute("/_authenticated/admin/whatsapp-inbox")({
   ),
   head: () => ({
     meta: [
-      { title: "WhatsApp Inbox | ORZEN Store Admin" },
+      { title: "WhatsApp Inbox | ORZEN Merchant Panel" },
       { name: "description", content: "Read and reply to WhatsApp conversations, hand over from AI to a human, and send approved templates." },
-      { property: "og:title", content: "WhatsApp Inbox | ORZEN Store Admin" },
+      { property: "og:title", content: "WhatsApp Inbox | ORZEN Merchant Panel" },
       { property: "og:description", content: "Manage every WhatsApp conversation with your customers in one inbox." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

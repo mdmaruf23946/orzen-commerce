@@ -20,12 +20,12 @@ export const Route = createFileRoute("/_authenticated/admin/facebook/settings")(
   component: SettingsPage,
   head: () => ({
     meta: [
-      { title: "Facebook Page Settings | ORZEN Store Admin" },
+      { title: "Facebook Page Settings | ORZEN Merchant Panel" },
       {
         name: "description",
         content: "Connect your Facebook Page, import Messenger credentials and configure AI comment management for your store.",
       },
-      { property: "og:title", content: "Facebook Page Settings | ORZEN Store Admin" },
+      { property: "og:title", content: "Facebook Page Settings | ORZEN Merchant Panel" },
       { property: "og:description", content: "Facebook Page connection and AI comment moderation settings." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

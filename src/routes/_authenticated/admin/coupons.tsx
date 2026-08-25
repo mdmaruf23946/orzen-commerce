@@ -20,9 +20,9 @@ import { AdminToolbar } from "@/components/admin/page/AdminToolbar";
 export const Route = createFileRoute("/_authenticated/admin/coupons")({
   head: () => ({
     meta: [
-      { title: "Coupons — ORZEN Store Admin" },
+      { title: "Coupons — ORZEN Merchant Panel" },
       { name: "description", content: "Create and manage discount coupons for your store." },
-      { property: "og:title", content: "Coupons — ORZEN Store Admin" },
+      { property: "og:title", content: "Coupons — ORZEN Merchant Panel" },
       { property: "og:description", content: "Create and manage discount coupons for your store." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

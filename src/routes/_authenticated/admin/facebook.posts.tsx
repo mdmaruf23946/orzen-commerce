@@ -20,12 +20,12 @@ export const Route = createFileRoute("/_authenticated/admin/facebook/posts")({
   component: PostsPage,
   head: () => ({
     meta: [
-      { title: "Facebook Posts | ORZEN Store Admin" },
+      { title: "Facebook Posts | ORZEN Merchant Panel" },
       {
         name: "description",
         content: "Search published Facebook Page posts with reactions, comments and shares, and manage your saved drafts.",
       },
-      { property: "og:title", content: "Facebook Posts | ORZEN Store Admin" },
+      { property: "og:title", content: "Facebook Posts | ORZEN Merchant Panel" },
       { property: "og:description", content: "Published posts, engagement data and drafts for your Facebook Page." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

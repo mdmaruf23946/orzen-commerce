@@ -31,7 +31,7 @@ export const Route = createFileRoute("/_authenticated/admin/call-center")({
   ),
   head: () => ({
     meta: [
-      { title: "Manual Call Center | Store Admin" },
+      { title: "Manual Call Center | Merchant Panel" },
       { name: "description", content: "Call customers in one click, track call status and log call results next to your orders." },
     ],
   }),

@@ -17,13 +17,13 @@ export const Route = createFileRoute("/_authenticated/admin/facebook/compose")({
   component: ComposePage,
   head: () => ({
     meta: [
-      { title: "Create Facebook Post | ORZEN Store Admin" },
+      { title: "Create Facebook Post | ORZEN Merchant Panel" },
       {
         name: "description",
-        content: "Write, preview and publish a Facebook Page post with text, image, video or link — without leaving your store admin.",
+        content: "Write, preview and publish a Facebook Page post with text, image, video or link — without leaving your merchant.",
       },
-      { property: "og:title", content: "Create Facebook Post | ORZEN Store Admin" },
-      { property: "og:description", content: "Compose and publish Facebook Page posts from ORZEN Store Admin." },
+      { property: "og:title", content: "Create Facebook Post | ORZEN Merchant Panel" },
+      { property: "og:description", content: "Compose and publish Facebook Page posts from ORZEN Merchant Panel." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
