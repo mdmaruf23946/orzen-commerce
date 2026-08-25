@@ -48,6 +48,7 @@ import { resolveHost } from "@/lib/domains.functions";
 import { BrandMark } from "@/lib/platform-branding";
 
 import { SiteFooter } from "@/components/landing/SiteFooter";
+import { TestimonialsMarquee } from "@/components/landing/TestimonialsMarquee";
 
 export const Route = createFileRoute("/")({
   // If the request host is a store subdomain or a verified custom domain,
@@ -1632,108 +1633,13 @@ function WhyOrzen() {
 /* Testimonials                                                                */
 /* -------------------------------------------------------------------------- */
 
-const REVIEWS = [
-  {
-    name: "Rafiul Islam",
-    store: "Nova Fashion",
-    initials: "RI",
-    tone: "#2563eb",
-    review:
-      "We tripled orders in 8 weeks. The AI handles 70% of customer chats — my team finally sleeps.",
-  },
-  {
-    name: "Nusrat Jahan",
-    store: "Deshi Basket",
-    initials: "NJ",
-    tone: "#16a34a",
-    review:
-      "Setup took a Sunday afternoon. Courier booking with Pathao inside ORZEN saved us 4 hours a day.",
-  },
-  {
-    name: "Sabbir Hossain",
-    store: "Techmart BD",
-    initials: "SH",
-    tone: "#f59e0b",
-    review: "Pixel + retargeting is baked in. Our Facebook ROAS jumped from 2.1x to 5.4x.",
-  },
-  {
-    name: "Ayesha Rahman",
-    store: "Bloom Beauty",
-    initials: "AR",
-    tone: "#db2777",
-    review: "The themes are beautiful. Customers keep asking who designed our store.",
-  },
-  {
-    name: "Tanvir Ahmed",
-    store: "Voltronics",
-    initials: "TA",
-    tone: "#0ea5e9",
-    review: "Inventory, invoices, analytics — one login. I stopped juggling five tabs.",
-  },
-  {
-    name: "Mahi Chowdhury",
-    store: "Foodly",
-    initials: "MC",
-    tone: "#dc2626",
-    review: "Messenger AI confirms orders overnight. Morning routine: just print labels.",
-  },
-];
-
 function Testimonials() {
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setI((v) => (v + 1) % REVIEWS.length), 4500);
-    return () => clearInterval(t);
-  }, []);
   return (
     <section className="py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <SectionHeader eyebrow="Customers" title="Loved by store owners across Bangladesh" />
-        <div className="mt-12 overflow-hidden">
-          <div
-            className="flex transition-transform duration-700 ease-out"
-            style={{ transform: `translateX(calc(-${i} * (100% / 3)))` }}
-          >
-            {REVIEWS.concat(REVIEWS.slice(0, 3)).map((r, idx) => (
-              <div key={idx} className="w-full shrink-0 px-2 sm:w-1/2 lg:w-1/3">
-                <div className="h-full rounded-2xl border border-[color:var(--orzen-border)] bg-white p-6 shadow-[var(--shadow-soft)]">
-                  <div className="flex items-center gap-3">
-                    <span
-                      className="grid h-11 w-11 place-items-center rounded-full text-sm font-bold text-white"
-                      style={{ background: r.tone }}
-                    >
-                      {r.initials}
-                    </span>
-                    <div>
-                      <p className="text-sm font-bold">{r.name}</p>
-                      <p className="text-xs text-[color:var(--orzen-muted)]">{r.store}</p>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex gap-0.5 text-[color:var(--orzen-warning)]">
-                    {Array.from({ length: 5 }).map((_, k) => (
-                      <Star key={k} className="h-4 w-4 fill-current" />
-                    ))}
-                  </div>
-                  <p className="mt-3 text-sm text-[color:var(--orzen-navy)]">{r.review}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="mt-6 flex justify-center gap-1.5">
-          {REVIEWS.map((_, k) => (
-            <button
-              key={k}
-              onClick={() => setI(k)}
-              className={cn(
-                "h-1.5 rounded-full transition-all",
-                k === i ? "w-6 bg-[color:var(--orzen-navy)]" : "w-1.5 bg-[color:var(--orzen-border)]"
-              )}
-              aria-label={`Show review ${k + 1}`}
-            />
-          ))}
-        </div>
       </div>
+      <TestimonialsMarquee />
     </section>
   );
 }

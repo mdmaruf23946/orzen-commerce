@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Store as StoreIcon, Package, LogOut, Menu, ArrowLeft, ShieldCheck,
   Sparkles, Wallet, Users, CreditCard, Activity, Truck, Megaphone, ToggleLeft, Settings,
   UserCog, BarChart3, LifeBuoy, Bell, FileText, KeyRound, Webhook, Terminal, HardDrive,
-  ChevronDown, ChevronRight, Globe, Palette, PhoneCall,
+  ChevronDown, ChevronRight, Globe, Palette, PhoneCall, Star,
 } from "lucide-react";
 import { amIOwner } from "@/lib/owner.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,6 +59,8 @@ const groups: NavGroup[] = [
     { to: "/owner/fraud", label: "Fraud Checker", icon: ShieldCheck },
     { to: "/owner/system", label: "System Settings", icon: Settings },
     { to: "/owner/footer", label: "Footer Settings", icon: Settings },
+    { to: "/owner/reviews", label: "Reviews & Testimonials", icon: Star },
+
     { to: "/owner/domains", label: "Domains", icon: Globe },
     { to: "/owner/users", label: "Users", icon: UserCog },
     { to: "/owner/audit", label: "Role Audit", icon: ShieldCheck },
