@@ -442,14 +442,13 @@ export const listStoreProducts = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ storeId: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     const sb = publicClient();
-    const { data: products, error } = await sb
-      .from("storefront_products" as any)
+    const { data: products, error } = await (sb.from("storefront_products") as any)
       .select(PRODUCT_CARD_COLS)
       .eq("store_id", data.storeId)
       .neq("status", "draft")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return (products ?? []).map((p) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }));
+    return (products ?? []).map((p: any) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }));
   });
 
 
