@@ -22,7 +22,16 @@ export const Route = createFileRoute("/_authenticated/admin/import-export")({
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
-  }), - new Date(iso).getTime()) / 1000);
+  }),
+  component: () => (
+    <FeatureGate feature="import_export">
+      <ImportExportPage />
+    </FeatureGate>
+  ),
+});
+
+function timeAgo(iso: string) {
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
   if (s < 60) return `${s}s ago`;
   const m = Math.floor(s / 60); if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60); if (h < 24) return `${h}h ago`;

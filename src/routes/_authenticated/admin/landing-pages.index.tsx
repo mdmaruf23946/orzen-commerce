@@ -33,7 +33,99 @@ export const Route = createFileRoute("/_authenticated/admin/landing-pages/")({
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
-  }), => (
+  }),
+  component: () => (
+    <FeatureGate feature="landing_pages">
+      <LandingPagesIndex />
+    </FeatureGate>
+  ),
+});
+
+const PLATFORMS = [
+  "custom", "wordpress", "woocommerce", "shopify", "webflow", "wix",
+  "custom_php", "custom_react", "universal", "other",
+] as const;
+
+const STATUS_DOT: Record<string, string> = {
+  active: "bg-green-500",
+  paused: "bg-slate-400",
+  pending: "bg-amber-500",
+  failed: "bg-red-500",
+};
+
+function LandingPagesIndex() {
+  const list = useServerFn(listLandingPageConnections);
+  const stats = useServerFn(landingPageStats);
+  const del = useServerFn(deleteLandingPageConnection);
+  const upd = useServerFn(updateLandingPageConnection);
+  const test = useServerFn(sendLandingPageTestOrder);
+  const qc = useQueryClient();
+
+  const { data: conns = [], isLoading } = useQuery({
+    queryKey: ["landing-pages", "list"],
+    queryFn: () => list(),
+  });
+  const { data: s } = useQuery({
+    queryKey: ["landing-pages", "stats"],
+    queryFn: () => stats(),
+  });
+
+  const [wizOpen, setWizOpen] = useState(false);
+  const [credsShown, setCredsShown] = useState<null | { id: string; api_key: string; webhook_secret: string }>(null);
+
+  function refresh() {
+    qc.invalidateQueries({ queryKey: ["landing-pages"] });
+  }
+
+  async function toggleStatus(c: any) {
+    await upd({ data: { id: c.id, status: c.status === "active" ? "paused" : "active" } });
+    toast.success(c.status === "active" ? "Paused" : "Resumed");
+    refresh();
+  }
+
+  async function remove(id: string) {
+    if (!confirm("Delete this landing page connection? Its orders remain, but the integration will stop receiving new ones.")) return;
+    await del({ data: { id } });
+    toast.success("Connection deleted");
+    refresh();
+  }
+
+  async function sendTest(id: string) {
+    try {
+      const r = await test({ data: { id } });
+      if ((r as any)?.body?.ok) toast.success("Test order created");
+      else toast.error((r as any)?.body?.error ?? "Test failed");
+      refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  }
+
+  const cards: Array<{ label: string; value: string | number }> = [
+    { label: "Connected", value: s?.connected ?? 0 },
+    { label: "Active", value: s?.active ?? 0 },
+    { label: "Orders received", value: s?.orders_received ?? 0 },
+    { label: "Orders today", value: s?.orders_today ?? 0 },
+    { label: "Failed (24h)", value: s?.failed_24h ?? 0 },
+    { label: "Last order", value: s?.last_order_at ? new Date(s.last_order_at).toLocaleString() : "—" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Landing Page Integrations</h1>
+          <p className="text-sm text-muted-foreground">
+            Connect external landing pages and automatically receive their orders in your Merchant Panel.
+          </p>
+        </div>
+        <Button onClick={() => setWizOpen(true)} className="gap-1.5">
+          <Plus className="h-4 w-4" /> Connect Landing Page
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {cards.map((c) => (
           <div key={c.label} className="rounded-xl border bg-card p-3">
             <div className="text-[11px] uppercase text-muted-foreground">{c.label}</div>
             <div className="mt-1 truncate text-lg font-semibold">{c.value}</div>

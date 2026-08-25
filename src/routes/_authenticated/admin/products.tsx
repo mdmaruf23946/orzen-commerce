@@ -45,7 +45,75 @@ export const Route = createFileRoute("/_authenticated/admin/products")({
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
-  }), => (tab === "all" ? true : productTypeOf(p) === tab));
+  }),
+});
+
+type Product = Awaited<ReturnType<typeof listMyProducts>>[number];
+type TabKey = ProductTypeScope;
+
+const TYPES: ProductType[] = ["physical", "digital", "service", "subscription"];
+const TYPE_LABEL: Record<ProductType, string> = {
+  physical: "Physical",
+  digital: "Digital",
+  service: "Service",
+  subscription: "Subscription",
+};
+
+const selectCls =
+  "h-10 rounded-md border border-input bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+function ProductsPage() {
+  const list = useServerFn(listMyProducts);
+  const save = useServerFn(upsertProduct);
+  const del = useServerFn(deleteProduct);
+  const bulkUpd = useServerFn(bulkUpdateProducts);
+  const bulkDel = useServerFn(bulkDeleteProducts);
+  const storeFn = useServerFn(getMyStore);
+  const catsFn = useServerFn(listMyCategories);
+  const countsFn = useServerFn(typeScopeCounts);
+  const qc = useQueryClient();
+  const { scope, setScope, filter, activeType: scopeType } = useProductTypeScope();
+  const tab = scope;
+  const { data: products } = useQuery({
+    queryKey: ["admin", "products", filter ?? "all"],
+    queryFn: () => list({ data: { product_type: filter } } as any),
+  });
+  const { data: store } = useQuery({ queryKey: ["admin", "store"], queryFn: () => storeFn() });
+  const { data: categories } = useQuery({
+    queryKey: ["admin", "categories", filter ?? "all"],
+    queryFn: () => catsFn({ data: { product_type: filter } } as any),
+  });
+  const { data: typeCounts } = useQuery({
+    queryKey: ["admin", "counts", "products"],
+    queryFn: () => countsFn({ data: { entity: "products" } }),
+  });
+
+  const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [sort, setSort] = useState<"newest" | "name" | "price_asc" | "price_desc">("newest");
+  const [editing, setEditing] = useState<Product | null>(null);
+  const [open, setOpen] = useState(false);
+  const [newType, setNewType] = useState<ProductType>("physical");
+  const [aiOpen, setAiOpen] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkAction, setBulkAction] = useState<"" | "delete" | "category" | "price" | "stock" | "status">("");
+  const [bulkValue, setBulkValue] = useState<any>("");
+
+  const all = (products ?? []) as any[];
+  const catName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of categories ?? []) m.set(c.id, c.name);
+    return m;
+  }, [categories]);
+
+  const counts = typeCounts ?? { all: all.length, physical: 0, digital: 0, service: 0, subscription: 0 };
+
+  const tabs = useMemo(() => scopeTabs(counts as Record<string, number>), [counts]);
+
+  const filtered = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    let rows = all.filter((p) => (tab === "all" ? true : productTypeOf(p) === tab));
     if (term) {
       rows = rows.filter((p) => {
         const cat = p.category_id ? (catName.get(p.category_id) ?? "") : "";

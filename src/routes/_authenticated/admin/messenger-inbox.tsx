@@ -53,7 +53,61 @@ export const Route = createFileRoute("/_authenticated/admin/messenger-inbox")({
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
-  }),.slice(-6)}` : "Unknown")
+  }),
+});
+
+type Filter = "all" | "unread" | "ai" | "human" | "orders";
+type LeadStatus = "interested" | "pending" | "ready" | "ordered" | "cancelled" | null;
+const EMOJIS = ["😀","😁","😂","🤣","😊","😍","🥰","😘","😎","🤩","🙌","👍","👎","🙏","👏","🔥","✨","💯","❤️","💔","😢","😭","😡","🤔","😴","🎉","🎁","🛒","💰","📦","✅","❌","⏰","📞","💬"];
+const LEAD_OPTIONS: { v: Exclude<LeadStatus, null>; label: string; tone: string }[] = [
+  { v: "interested", label: "Interested", tone: "bg-blue-100 text-blue-700" },
+  { v: "pending", label: "Pending", tone: "bg-amber-100 text-amber-700" },
+  { v: "ready", label: "Ready to order", tone: "bg-violet-100 text-violet-700" },
+  { v: "ordered", label: "Ordered", tone: "bg-emerald-100 text-emerald-700" },
+  { v: "cancelled", label: "Cancelled", tone: "bg-rose-100 text-rose-700" },
+];
+
+function timeShort(iso?: string | null) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  if (diff < 60_000) return "now";
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h`;
+  return d.toLocaleDateString();
+}
+
+// Public HTTPS URL for Meta — served by /api/img/$ (bucket-agnostic proxy).
+function toPublicUrl(path: string) {
+  if (path.startsWith("http")) return path;
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  return `${origin}/api/img/${path}`;
+}
+
+// Tiny notification beep — no asset needed.
+let audioCtx: AudioContext | null = null;
+function beep() {
+  try {
+    if (typeof window === "undefined") return;
+    audioCtx = audioCtx || new (window.AudioContext || (window as any).webkitAudioContext)();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = "sine";
+    o.frequency.value = 880;
+    g.gain.value = 0.05;
+    o.connect(g).connect(audioCtx.destination);
+    o.start();
+    o.stop(audioCtx.currentTime + 0.16);
+  } catch { /* noop */ }
+}
+
+function displayName(c: any) {
+  const p = c?.psid_profile ?? {};
+  return (
+    c?.customer_name ||
+    p.name ||
+    [p.first_name, p.last_name].filter(Boolean).join(" ") ||
+    (c?.external_id ? `PSID ${String(c.external_id).slice(-6)}` : "Unknown")
   );
 }
 

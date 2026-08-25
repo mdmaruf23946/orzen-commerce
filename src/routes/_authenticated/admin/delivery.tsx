@@ -26,8 +26,7 @@ import {
 import { Pencil, Trash2, Plus, MapPin, Star } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/delivery")({
-  head: () => ({
-    meta: [
+  head: () => ({ meta: [
       { title: "Delivery Zones — ORZEN Merchant Panel" },
       { name: "description", content: "Set up delivery zones and shipping charges for your store." },
       { property: "og:title", content: "Delivery Zones — ORZEN Merchant Panel" },
@@ -35,8 +34,44 @@ export const Route = createFileRoute("/_authenticated/admin/delivery")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
-    ],
-  }),);
+    ] }),
+  component: DeliveryPage,
+});
+
+type Zone = {
+  id: string;
+  name: string;
+  charge: number;
+  eta: string | null;
+  is_active: boolean;
+  is_default: boolean;
+  sort_order: number;
+  courier_code: string | null;
+};
+
+function DeliveryPage() {
+  const qc = useQueryClient();
+  const fetchStore = useServerFn(getMyStore);
+  const saveDelivery = useServerFn(updateDelivery);
+  const listZones = useServerFn(listDeliveryZones);
+  const createZone = useServerFn(createDeliveryZone);
+  const updateZone = useServerFn(updateDeliveryZone);
+  const deleteZone = useServerFn(deleteDeliveryZone);
+  const setDefault = useServerFn(setDefaultDeliveryZone);
+
+  const { data: store } = useQuery({ queryKey: ["admin", "store"], queryFn: () => fetchStore() });
+  const { data: zones = [], isLoading } = useQuery({
+    queryKey: ["admin", "delivery-zones"],
+    queryFn: () => listZones() as Promise<Zone[]>,
+  });
+
+  const [freeMin, setFreeMin] = useState(0);
+  const [cod, setCod] = useState(true);
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  useEffect(() => {
+    const d = (store as any)?.delivery ?? {};
+    setFreeMin(Number(d.free_min ?? 0));
     setCod(d.cod_enabled !== false);
   }, [store]);
 

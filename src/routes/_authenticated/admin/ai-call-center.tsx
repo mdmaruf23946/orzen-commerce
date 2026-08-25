@@ -28,7 +28,76 @@ export const Route = createFileRoute("/_authenticated/admin/ai-call-center")({
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
-  }), => {
+  }),
+});
+
+function StoreAiCallCenter() {
+  const qc = useQueryClient();
+  const setupFn = useServerFn(getStoreAiCallSetup);
+  const overviewFn = useServerFn(storeAiCallOverview);
+  const listFn = useServerFn(listStoreAiCalls);
+  const activeFn = useServerFn(setStoreAiCallActive);
+  const prefsFn = useServerFn(updateStoreAiCallPrefs);
+
+  const setup = useQuery({ queryKey: ["store-ai-call", "setup"], queryFn: () => setupFn() });
+  const [direction, setDirection] = useState<"all" | "inbound" | "outbound">("all");
+  const [search, setSearch] = useState("");
+
+  const s: any = setup.data;
+  const live = !!s?.is_active;
+
+  const overview = useQuery({
+    queryKey: ["store-ai-call", "overview"],
+    queryFn: () => overviewFn(),
+    enabled: live,
+  });
+  const calls = useQuery({
+    queryKey: ["store-ai-call", "calls", direction, search],
+    queryFn: () => listFn({ data: { direction, search, limit: 30 } }),
+    enabled: live,
+  });
+
+  async function refresh() {
+    await qc.invalidateQueries({ queryKey: ["store-ai-call"] });
+  }
+
+  if (setup.isLoading) {
+    return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
+  }
+
+  if (!s?.feature_enabled) {
+    return (
+      <div className="space-y-4">
+        <AdminPageHeader title="AI Call Center" description="AI voice agents that confirm orders and answer customer calls." />
+        <div className="rounded-2xl border bg-card p-8 text-center">
+          <Lock className="mx-auto h-8 w-8 text-muted-foreground" />
+          <h2 className="mt-3 text-base font-semibold">AI Call Center is not included in your plan</h2>
+          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+            Upgrade your subscription to unlock AI voice calling. After upgrading you can pick a phone number, a voice
+            and a tone, and your AI agent starts calling customers to confirm orders.
+          </p>
+          <Button asChild className="mt-4">
+            <Link to="/admin/billing" search={{ highlight: "ai_call_center" } as any}>
+              আপডেট করুন
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <AdminPageHeader
+        title="AI Call Center"
+        description="Your AI voice agent confirms orders and answers customer calls."
+        action={
+          s.selection?.activated_at ? (
+            <label className="flex items-center gap-2 text-xs">
+              {live ? "Live" : "Paused"}
+              <Switch
+                checked={live}
+                onCheckedChange={async (v) => {
                   await activeFn({ data: { active: v } });
                   await refresh();
                   toast.success(v ? "AI calling resumed" : "AI calling paused");

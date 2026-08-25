@@ -19,8 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/_authenticated/admin/landing-pages/$id")({
-  head: () => ({
-    meta: [
+  head: () => ({ meta: [
       { title: "Landing Page Connection — ORZEN Merchant Panel" },
       { name: "description", content: "Configure an external landing page connection for your store." },
       { property: "og:title", content: "Landing Page Connection — ORZEN Merchant Panel" },
@@ -28,8 +27,124 @@ export const Route = createFileRoute("/_authenticated/admin/landing-pages/$id")(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
-    ],
-  }), => (
+    ] }),
+  component: () => (
+    <FeatureGate feature="landing_pages">
+      <Detail />
+    </FeatureGate>
+  ),
+});
+
+function Detail() {
+  const { id } = Route.useParams();
+  const getFn = useServerFn(getLandingPageConnection);
+  const logsFn = useServerFn(listLandingPageLogs);
+  const rotSec = useServerFn(rotateLandingPageWebhookSecret);
+  const rotKey = useServerFn(rotateLandingPageApiKey);
+  const testFn = useServerFn(sendLandingPageTestOrder);
+  const updFn = useServerFn(updateLandingPageConnection);
+  const qc = useQueryClient();
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["landing-page", id],
+    queryFn: () => getFn({ data: { id } }),
+  });
+  const { data: logs = [] } = useQuery({
+    queryKey: ["landing-page", id, "logs"],
+    queryFn: () => logsFn({ data: { id, limit: 100 } }),
+  });
+
+  const [newSecret, setNewSecret] = useState<string | null>(null);
+  const [newKey, setNewKey] = useState<string | null>(null);
+
+  if (isLoading || !data) return <div className="p-10 text-sm text-muted-foreground">Loading…</div>;
+
+  const conn = data.connection as any;
+  const base = typeof window !== "undefined" ? window.location.origin : "";
+  const webhookUrl = `${base}/api/public/landing-pages/${id}/orders`;
+  const apiUrl = `${base}/api/public/landing-pages/${id}/api/orders`;
+  const embedUrl = `${base}/api/public/landing-pages/${id}/embed/orders`;
+
+  function copy(v: string) { navigator.clipboard.writeText(v).then(() => toast.success("Copied")); }
+
+  async function rotateSecret() {
+    if (!confirm("Rotate webhook secret? The old one will stop working immediately.")) return;
+    const r = await rotSec({ data: { id } });
+    setNewSecret((r as any).webhook_secret);
+    qc.invalidateQueries({ queryKey: ["landing-page", id] });
+  }
+  async function rotateKey() {
+    if (!confirm("Rotate API key? The old one will stop working immediately.")) return;
+    const r = await rotKey({ data: { id } });
+    setNewKey((r as any).api_key);
+    qc.invalidateQueries({ queryKey: ["landing-page", id] });
+  }
+  async function sendTest() {
+    try {
+      const r = await testFn({ data: { id } });
+      const body = (r as any)?.body;
+      if (body?.ok) toast.success(body.duplicate ? "Duplicate — order already exists" : "Test order created");
+      else toast.error(body?.error ?? "Test failed");
+      qc.invalidateQueries({ queryKey: ["landing-page", id, "logs"] });
+    } catch (e) { toast.error((e as Error).message); }
+  }
+
+  async function toggleStatus() {
+    await updFn({ data: { id, status: conn.status === "active" ? "paused" : "active" } });
+    qc.invalidateQueries({ queryKey: ["landing-page", id] });
+  }
+
+  const shownRows = [
+    { label: "Webhook URL", value: webhookUrl },
+    { label: "API URL", value: apiUrl },
+    { label: "Embed URL", value: embedUrl },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <Link to="/admin/landing-pages"><Button variant="outline" size="sm"><ArrowLeft className="h-4 w-4" /></Button></Link>
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-semibold">{conn.name}</h1>
+          <div className="text-xs text-muted-foreground">
+            {conn.platform} · {conn.method} · {conn.status}
+          </div>
+        </div>
+        <div className="ml-auto flex gap-2">
+          <Button variant="outline" size="sm" onClick={sendTest}><Send className="mr-1 h-3 w-3" /> Test order</Button>
+          <Button variant="outline" size="sm" onClick={toggleStatus}>
+            {conn.status === "active" ? "Pause" : "Resume"}
+          </Button>
+        </div>
+      </div>
+
+      <Tabs defaultValue="overview">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="config">Configuration</TabsTrigger>
+          <TabsTrigger value="logs">Logs</TabsTrigger>
+          <TabsTrigger value="docs">Documentation</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-3 pt-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Stat label="Orders received" value={conn.orders_received ?? 0} />
+            <Stat label="Failed" value={conn.failed_count ?? 0} />
+            <Stat label="Last order" value={conn.last_order_at ? new Date(conn.last_order_at).toLocaleString() : "—"} />
+            <Stat label="Created" value={new Date(conn.created_at).toLocaleDateString()} />
+          </div>
+          {conn.last_error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+              Last error: {conn.last_error}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="config" className="space-y-4 pt-4">
+          <div className="rounded-xl border bg-card p-4">
+            <div className="mb-3 text-sm font-semibold">Endpoints</div>
+            <div className="space-y-2">
+              {shownRows.map((row) => (
                 <div key={row.label}>
                   <Label className="text-xs">{row.label}</Label>
                   <div className="flex gap-2">

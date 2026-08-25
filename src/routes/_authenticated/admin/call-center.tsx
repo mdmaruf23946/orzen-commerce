@@ -39,7 +39,36 @@ export const Route = createFileRoute("/_authenticated/admin/call-center")({
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
-  }), => LIVE_STATUSES.includes(r.status)) ? 5000 : false;
+  }),
+});
+
+const FILTERS = [
+  { key: "all", label: "All" },
+  { key: "today", label: "Today" },
+  { key: "answered", label: "Answered" },
+  { key: "missed", label: "Missed" },
+  { key: "failed", label: "Failed" },
+  { key: "no_answer", label: "No Answer" },
+] as const;
+
+function CallCenterPage() {
+  const [filter, setFilter] = useState<(typeof FILTERS)[number]["key"]>("all");
+  const [search, setSearch] = useState("");
+
+  const overviewFn = useServerFn(getCallCenterOverview);
+  const listFn = useServerFn(listCalls);
+
+  const overview = useQuery({
+    queryKey: ["call-center", "overview"],
+    queryFn: () => overviewFn(),
+  });
+
+  const calls = useQuery({
+    queryKey: ["calls", filter, search],
+    queryFn: () => listFn({ data: { filter, search, limit: 50 } }),
+    refetchInterval: (q) => {
+      const rows = (q.state.data ?? []) as CallRow[];
+      return rows.some((r) => LIVE_STATUSES.includes(r.status)) ? 5000 : false;
     },
   });
 

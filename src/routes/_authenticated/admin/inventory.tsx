@@ -27,7 +27,27 @@ export const Route = createFileRoute("/_authenticated/admin/inventory")({
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
-  }), => ({ key: t, label: PRODUCT_TYPE_LABEL[t] }))}
+  }),
+});
+
+const DESCRIPTIONS: Record<ProductTypeOnly, string> = {
+  physical: "Stock levels, value, alerts and every stock movement.",
+  digital: "Sales, downloads, licenses and file versions.",
+  service: "Capacity, bookings and service order flow.",
+  subscription: "Subscribers, renewals and recurring revenue.",
+};
+
+function InventoryPage() {
+  const { scope, setScope, activeType } = useProductTypeScope();
+  const type: ProductTypeOnly = scope === "all" ? activeType : scope;
+  const [q, setQ] = useState("");
+
+  return (
+    <div className="space-y-4">
+      <AdminPageHeader title="Inventory" description={DESCRIPTIONS[type]} />
+
+      <TypeFilterTabs
+        tabs={PRODUCT_TYPES.map((t) => ({ key: t, label: PRODUCT_TYPE_LABEL[t] }))}
         value={type}
         onChange={(k) => setScope(k)}
       />
