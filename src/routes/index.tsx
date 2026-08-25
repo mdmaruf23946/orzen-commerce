@@ -197,10 +197,10 @@ function Header() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full transition-all",
+        "fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300",
         scrolled
-          ? "bg-white/85 backdrop-blur-md border-b border-[color:var(--orzen-border)]"
-          : "bg-white/70 backdrop-blur-sm border-b border-transparent"
+          ? "bg-background/80 backdrop-blur-md border-b border-border/50 shadow-sm"
+          : "bg-background/60 backdrop-blur-sm border-b border-transparent"
       )}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 md:px-8">
