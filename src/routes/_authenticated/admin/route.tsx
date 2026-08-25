@@ -268,8 +268,9 @@ function AdminLayout() {
   }
 
   async function signOut() {
+    const wasEmployee = access.isEmployee;
     await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
+    navigate({ to: wasEmployee ? "/employee-login" : "/auth", replace: true });
   }
 
   const access = useStoreAccess();
