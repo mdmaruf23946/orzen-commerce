@@ -332,16 +332,23 @@ function StoreHeader({
     };
   }, [slug]);
 
+  const mainCategories = useMemo(
+    () => (categories as any[]).filter((c) => !c.parent_id),
+    [categories],
+  );
+
   return (
     <>
+      <div className={`${theme.header.sticky ? "sticky top-0" : ""} z-40 bg-background`}>
       <header
-        className={`${theme.header.sticky ? "sticky top-0" : ""} z-30 border-b border-black/5 backdrop-blur-md`}
+        className={`border-b border-black/5 backdrop-blur-md`}
         style={{
           backgroundColor: theme.header.transparent
             ? "transparent"
             : "var(--store-header-bg, rgba(255,255,255,0.9))",
         }}
       >
+
         <div className="mx-auto px-3 sm:px-6" style={{ maxWidth: "var(--store-container, 64rem)" }}>
           {/* Mobile compact header */}
 
