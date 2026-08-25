@@ -1,8 +1,5 @@
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
-
-const useIsomorphicLayoutEffect =
-  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+import { useEffect, useMemo, useState } from "react";
 
 import {
   ArrowRight,
@@ -102,50 +99,32 @@ export const Route = createFileRoute("/")({
 /* Page                                                                        */
 /* -------------------------------------------------------------------------- */
 
-function hasStoredSession() {
-  if (typeof window === "undefined") return false;
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && /^sb-.*-auth-token$/.test(k) && localStorage.getItem(k)) return true;
-    }
-  } catch {
-    /* storage blocked */
-  }
-  return false;
-}
-
 function AuthSplash() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white">
-      <div className="flex flex-col items-center gap-4">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[color:var(--orzen-navy)]/20 border-t-[color:var(--orzen-navy)]" />
-        <p className="text-sm text-[color:var(--orzen-navy)]/60">Loading…</p>
-      </div>
-    </div>
+    <div
+      className="min-h-screen bg-background"
+      role="status"
+      aria-label="Checking your session"
+    />
   );
 }
 
 function Landing() {
   const navigate = useNavigate();
-  // "anon" during SSR so crawlers still get the full landing markup.
-  const [authState, setAuthState] = useState<"loading" | "anon" | "authed">("anon");
+  // Start unresolved on both the server and browser. This guarantees that the
+  // landing DOM is never rendered before the persisted session is checked.
+  const [authState, setAuthState] = useState<"loading" | "anon" | "authed">("loading");
 
-  // Runs before the browser paints the hydrated tree: if a session token exists
-  // locally, swap to the splash immediately so the landing never flashes.
-  useIsomorphicLayoutEffect(() => {
-    if (hasStoredSession()) setAuthState("loading");
-  }, []);
-
-  // Persistent session check: signed-in visitors go straight to the admin dashboard.
   useEffect(() => {
     let active = true;
     let unsub: (() => void) | undefined;
 
     import("@/integrations/supabase/client").then(async ({ supabase }) => {
-      const { data } = await supabase.auth.getUser();
+      // getSession reads the persisted, auto-refreshed session locally and avoids
+      // waiting for a network user lookup before redirecting.
+      const { data } = await supabase.auth.getSession();
       if (!active) return;
-      if (data.user) {
+      if (data.session) {
         setAuthState("authed");
         navigate({ to: "/admin", replace: true });
         return;
@@ -169,7 +148,7 @@ function Landing() {
     };
   }, [navigate]);
 
-  if (authState !== "anon") return <AuthSplash />;
+  if (authState === "loading" || authState === "authed") return <AuthSplash />;
 
   return (
 
