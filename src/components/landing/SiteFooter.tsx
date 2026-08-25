@@ -28,11 +28,13 @@ export function SiteFooter() {
   });
   const f: FooterSettings = (data as FooterSettings) ?? FOOTER_FALLBACK;
   const contact = f.contact ?? {};
+  const legalColumn = f.columns?.find((c) => c.title?.toLowerCase().trim() === "legal");
+  const otherColumns = f.columns?.filter((c) => c.title?.toLowerCase().trim() !== "legal") ?? [];
 
   return (
     <footer id="contact" className="scroll-mt-24 border-t border-[color:var(--orzen-border)] bg-white">
-      <div className="mx-auto max-w-7xl px-5 py-10 md:px-8 md:py-12">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-4 md:gap-8">
+      <div className="mx-auto max-w-7xl px-5 py-8 md:px-8 md:py-10">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-6 md:grid-cols-5 md:gap-8">
           <div className="col-span-2 md:col-span-1">
             <BrandMark placement="footer" fallbackText="ORZEN" className="text-lg font-extrabold tracking-tight" />
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-[color:var(--orzen-muted)]">
@@ -67,10 +69,10 @@ export function SiteFooter() {
             </div>
           </div>
 
-          {(f.columns ?? []).map((c) => (
+          {otherColumns.map((c) => (
             <div key={c.title} className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--orzen-navy)]">{c.title}</p>
-              <ul className="mt-3 space-y-2 text-sm">
+              <ul className="mt-2 space-y-1.5 text-sm">
                 {(c.links ?? []).map((l) => (
                   <li key={l.label}>
                     <a
@@ -86,9 +88,9 @@ export function SiteFooter() {
           ))}
 
           {(contact.email || contact.phone || contact.address) && (
-            <div className="col-span-2 min-w-0 md:col-span-1">
+            <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--orzen-navy)]">Contact</p>
-              <ul className="mt-3 space-y-2 text-sm text-[color:var(--orzen-muted)]">
+              <ul className="mt-2 space-y-1.5 text-sm text-[color:var(--orzen-muted)]">
                 {contact.email && (
                   <li className="flex items-start gap-2">
                     <Mail className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "#6D28D9" }} />
@@ -114,9 +116,27 @@ export function SiteFooter() {
               </ul>
             </div>
           )}
+
+          {legalColumn && (
+            <div key={legalColumn.title} className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--orzen-navy)]">{legalColumn.title}</p>
+              <ul className="mt-2 space-y-1.5 text-sm">
+                {(legalColumn.links ?? []).map((l) => (
+                  <li key={l.label}>
+                    <a
+                      href={l.href || "#"}
+                      className="text-[color:var(--orzen-muted)] transition-colors hover:text-[color:var(--orzen-navy)]"
+                    >
+                      {l.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
-        <div className="mt-8 flex flex-col items-start justify-between gap-2 border-t border-[color:var(--orzen-border)] pt-5 text-xs text-[color:var(--orzen-muted)] sm:flex-row sm:items-center">
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-[color:var(--orzen-border)] pt-4 text-xs text-[color:var(--orzen-muted)]">
           <p>© {new Date().getFullYear()} ORZEN. All rights reserved.</p>
           <p>{f.bottom_note}</p>
         </div>
