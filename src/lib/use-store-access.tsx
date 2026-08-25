@@ -2,7 +2,15 @@ import { createContext, useContext, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMyAccess } from "@/lib/employees.functions";
-import { allows, type PermissionMap, type StaffInfoLike } from "@/lib/panel-access-types";
+import { allows, type PermissionMap } from "@/lib/panel-sections";
+
+type StaffInfoLike = {
+  id: string;
+  name: string;
+  role: string;
+  employee_code: string | null;
+  must_change_password: boolean;
+};
 
 export type AccessState = {
   loading: boolean;
