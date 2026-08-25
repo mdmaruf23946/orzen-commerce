@@ -4919,6 +4919,30 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_showcase: {
+        Row: {
+          created_at: string
+          desktop_url: string | null
+          key: string
+          mobile_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          desktop_url?: string | null
+          key: string
+          mobile_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          desktop_url?: string | null
+          key?: string
+          mobile_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_import_export_history: {
         Row: {
           created_at: string
