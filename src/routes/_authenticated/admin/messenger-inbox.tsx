@@ -44,7 +44,15 @@ export const Route = createFileRoute("/_authenticated/admin/messenger-inbox")({
     </FeatureGate>
   ),
   head: () => ({
-    meta: [{ title: "Messenger Inbox — Merchant Panel" }],
+    meta: [
+      { title: "Messenger Inbox — ORZEN Merchant Panel" },
+      { name: "description", content: "Reply to Messenger conversations and manage AI handoffs." },
+      { property: "og:title", content: "Messenger Inbox — ORZEN Merchant Panel" },
+      { property: "og:description", content: "Reply to Messenger conversations and manage AI handoffs." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
   }),
 });
 

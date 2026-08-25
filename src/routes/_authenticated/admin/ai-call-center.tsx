@@ -20,8 +20,13 @@ export const Route = createFileRoute("/_authenticated/admin/ai-call-center")({
   component: StoreAiCallCenter,
   head: () => ({
     meta: [
-      { title: "AI Call Center | Merchant Panel" },
+      { title: "AI Call Center — ORZEN Merchant Panel" },
       { name: "description", content: "Let an AI voice agent confirm your orders by phone and answer customer calls around the clock." },
+      { property: "og:title", content: "AI Call Center — ORZEN Merchant Panel" },
+      { property: "og:description", content: "Let an AI voice agent confirm your orders by phone and answer customer calls around the clock." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
     ],
   }),
 });

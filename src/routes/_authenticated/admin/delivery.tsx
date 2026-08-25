@@ -26,7 +26,15 @@ import {
 import { Pencil, Trash2, Plus, MapPin, Star } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/delivery")({
-  head: () => ({ meta: [{ title: "Delivery Zones" }] }),
+  head: () => ({ meta: [
+      { title: "Delivery Zones — ORZEN Merchant Panel" },
+      { name: "description", content: "Set up delivery zones and shipping charges for your store." },
+      { property: "og:title", content: "Delivery Zones — ORZEN Merchant Panel" },
+      { property: "og:description", content: "Set up delivery zones and shipping charges for your store." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ] }),
   component: DeliveryPage,
 });
 

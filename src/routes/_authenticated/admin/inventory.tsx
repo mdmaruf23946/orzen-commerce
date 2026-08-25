@@ -19,11 +19,13 @@ export const Route = createFileRoute("/_authenticated/admin/inventory")({
   ),
   head: () => ({
     meta: [
-      { title: "Inventory · Merchant Panel" },
-      {
-        name: "description",
-        content: "Stock, downloads, service capacity and subscriber analytics in one dynamic inventory page.",
-      },
+      { title: "Inventory — ORZEN Merchant Panel" },
+      { name: "description", content: "Stock, downloads, service capacity and subscriber analytics in one dynamic inventory page." },
+      { property: "og:title", content: "Inventory — ORZEN Merchant Panel" },
+      { property: "og:description", content: "Stock, downloads, service capacity and subscriber analytics in one dynamic inventory page." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
     ],
   }),
 });

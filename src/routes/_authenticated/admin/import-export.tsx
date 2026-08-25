@@ -14,8 +14,13 @@ import { ExportDialog } from "@/components/admin/import-export/ExportDialog";
 export const Route = createFileRoute("/_authenticated/admin/import-export")({
   head: () => ({
     meta: [
-      { title: "Import & Export Products — Admin" },
+      { title: "Import & Export Products — ORZEN Merchant Panel" },
       { name: "description", content: "Bulk import and export your product catalog via CSV, Excel, or Google Sheets." },
+      { property: "og:title", content: "Import & Export Products — ORZEN Merchant Panel" },
+      { property: "og:description", content: "Bulk import and export your product catalog via CSV, Excel, or Google Sheets." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
     ],
   }),
   component: () => (

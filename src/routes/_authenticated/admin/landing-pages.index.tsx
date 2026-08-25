@@ -25,8 +25,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export const Route = createFileRoute("/_authenticated/admin/landing-pages/")({
   head: () => ({
     meta: [
-      { title: "Landing Page Integrations — Merchant Panel" },
+      { title: "Landing Page Integrations — ORZEN Merchant Panel" },
       { name: "description", content: "Connect external landing pages and receive orders automatically." },
+      { property: "og:title", content: "Landing Page Integrations — ORZEN Merchant Panel" },
+      { property: "og:description", content: "Connect external landing pages and receive orders automatically." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
     ],
   }),
   component: () => (

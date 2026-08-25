@@ -37,8 +37,13 @@ export const Route = createFileRoute("/_authenticated/admin/products")({
   component: ProductsPage,
   head: () => ({
     meta: [
-      { title: "Products · Merchant Panel" },
+      { title: "Products — ORZEN Merchant Panel" },
       { name: "description", content: "Manage physical, digital, service and subscription products in one place." },
+      { property: "og:title", content: "Products — ORZEN Merchant Panel" },
+      { property: "og:description", content: "Manage physical, digital, service and subscription products in one place." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
     ],
   }),
 });

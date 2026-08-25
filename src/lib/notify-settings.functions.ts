@@ -103,7 +103,7 @@ export const testNotificationChannel = createServerFn({ method: "POST" })
     );
     const settings: any = await loadSettings(context.supabase, storeId);
     const ch = settings[data.channel] ?? {};
-    const text = "Test notification from your store admin panel. Notifications are working.";
+    const text = "Test notification from your Merchant Panel. Notifications are working.";
 
     let error: string | null = null;
     try {

@@ -19,7 +19,15 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/_authenticated/admin/landing-pages/$id")({
-  head: () => ({ meta: [{ title: "Landing page connection — Merchant Panel" }] }),
+  head: () => ({ meta: [
+      { title: "Landing Page Connection — ORZEN Merchant Panel" },
+      { name: "description", content: "Configure an external landing page connection for your store." },
+      { property: "og:title", content: "Landing Page Connection — ORZEN Merchant Panel" },
+      { property: "og:description", content: "Configure an external landing page connection for your store." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ] }),
   component: () => (
     <FeatureGate feature="landing_pages">
       <Detail />

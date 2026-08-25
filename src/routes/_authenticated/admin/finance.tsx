@@ -15,8 +15,13 @@ import { categoryLabel, downloadCsv, iso, money, rangeFor, type RangeKey } from 
 export const Route = createFileRoute("/_authenticated/admin/finance")({
   head: () => ({
     meta: [
-      { title: "Business Finance | ORZEN Merchant Panel" },
+      { title: "Business Finance — ORZEN Merchant Panel" },
       { name: "description", content: "Track store sales, expenses, profit and COD receivable with date-range reporting." },
+      { property: "og:title", content: "Business Finance — ORZEN Merchant Panel" },
+      { property: "og:description", content: "Track store sales, expenses, profit and COD receivable with date-range reporting." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
     ],
   }),
   component: FinancePage,

@@ -31,8 +31,13 @@ export const Route = createFileRoute("/_authenticated/admin/call-center")({
   ),
   head: () => ({
     meta: [
-      { title: "Manual Call Center | Merchant Panel" },
+      { title: "Manual Call Center — ORZEN Merchant Panel" },
       { name: "description", content: "Call customers in one click, track call status and log call results next to your orders." },
+      { property: "og:title", content: "Manual Call Center — ORZEN Merchant Panel" },
+      { property: "og:description", content: "Call customers in one click, track call status and log call results next to your orders." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
     ],
   }),
 });

@@ -26,7 +26,15 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/admin/duplicate-protection")({
-  head: () => ({ meta: [{ title: "Duplicate Order Protection" }] }),
+  head: () => ({ meta: [
+      { title: "Duplicate Order Protection — ORZEN Merchant Panel" },
+      { name: "description", content: "Block repeated or fraudulent duplicate orders automatically." },
+      { property: "og:title", content: "Duplicate Order Protection — ORZEN Merchant Panel" },
+      { property: "og:description", content: "Block repeated or fraudulent duplicate orders automatically." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ] }),
   component: Page,
 });
 
