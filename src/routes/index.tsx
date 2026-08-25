@@ -1,5 +1,9 @@
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
 import {
   ArrowRight,
   Bot,
@@ -98,8 +102,40 @@ export const Route = createFileRoute("/")({
 /* Page                                                                        */
 /* -------------------------------------------------------------------------- */
 
+function hasStoredSession() {
+  if (typeof window === "undefined") return false;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && /^sb-.*-auth-token$/.test(k) && localStorage.getItem(k)) return true;
+    }
+  } catch {
+    /* storage blocked */
+  }
+  return false;
+}
+
+function AuthSplash() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-white">
+      <div className="flex flex-col items-center gap-4">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[color:var(--orzen-navy)]/20 border-t-[color:var(--orzen-navy)]" />
+        <p className="text-sm text-[color:var(--orzen-navy)]/60">Loading…</p>
+      </div>
+    </div>
+  );
+}
+
 function Landing() {
   const navigate = useNavigate();
+  // "anon" during SSR so crawlers still get the full landing markup.
+  const [authState, setAuthState] = useState<"loading" | "anon" | "authed">("anon");
+
+  // Runs before the browser paints the hydrated tree: if a session token exists
+  // locally, swap to the splash immediately so the landing never flashes.
+  useIsomorphicLayoutEffect(() => {
+    if (hasStoredSession()) setAuthState("loading");
+  }, []);
 
   // Persistent session check: signed-in visitors go straight to the admin dashboard.
   useEffect(() => {
@@ -110,23 +146,30 @@ function Landing() {
       const { data } = await supabase.auth.getUser();
       if (!active) return;
       if (data.user) {
+        setAuthState("authed");
         navigate({ to: "/admin", replace: true });
         return;
       }
+      setAuthState("anon");
       const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
         if (!active) return;
         if (event === "SIGNED_IN" && session?.user) {
+          setAuthState("authed");
           navigate({ to: "/admin", replace: true });
         }
       });
       unsub = () => sub.subscription.unsubscribe();
-    }).catch(() => {});
+    }).catch(() => {
+      if (active) setAuthState("anon");
+    });
 
     return () => {
       active = false;
       unsub?.();
     };
   }, [navigate]);
+
+  if (authState !== "anon") return <AuthSplash />;
 
   return (
 
@@ -149,6 +192,7 @@ function Landing() {
     </div>
   );
 }
+
 
 /* -------------------------------------------------------------------------- */
 /* Header                                                                      */
