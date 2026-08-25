@@ -786,8 +786,10 @@ const DASHBOARDS = [
   { key: "analytics", label: "Analytics" },
 ] as const;
 
+type DashKey = (typeof DASHBOARDS)[number]["key"];
+
 function DashboardShowcase() {
-  const [active, setActive] = useState<(typeof DASHBOARDS)[number]["key"]>("admin");
+  const [active, setActive] = useState<DashKey>("admin");
   return (
     <section className="bg-[color:var(--orzen-slate-50)] py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
@@ -796,250 +798,794 @@ function DashboardShowcase() {
           title="Every surface, built with the same care"
           subtitle="Admin, storefront, owner panel and AI console — one design language, zero learning curve."
         />
-        <div className="mt-8 flex flex-wrap justify-center gap-2">
+        <div className="-mx-5 mt-8 flex snap-x snap-mandatory gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:flex-wrap sm:justify-center sm:overflow-visible sm:px-0">
           {DASHBOARDS.map((d) => (
             <button
               key={d.key}
               onClick={() => setActive(d.key)}
+              aria-pressed={active === d.key}
               className={cn(
-                "rounded-full px-4 py-2 text-xs font-semibold transition-colors sm:text-sm",
+                "shrink-0 snap-start rounded-full px-4 py-2 text-xs font-semibold transition-all duration-200 sm:text-sm",
                 active === d.key
-                  ? "bg-[color:var(--orzen-navy)] text-white"
-                  : "bg-white border border-[color:var(--orzen-border)] text-[color:var(--orzen-navy)] hover:border-[color:var(--orzen-navy)]"
+                  ? "bg-[color:var(--orzen-navy)] text-white shadow-[var(--shadow-soft)]"
+                  : "border border-[color:var(--orzen-border)] bg-white text-[color:var(--orzen-navy)] hover:border-[color:var(--orzen-navy)] hover:-translate-y-0.5"
               )}
             >
               {d.label}
             </button>
           ))}
         </div>
-        <div className="mt-10 grid gap-6 lg:grid-cols-[1.6fr_1fr] lg:items-center">
-          <BrowserFrame>
-            <DashboardMock kind={active} />
-          </BrowserFrame>
-          <PhoneFrame>
-            <DashboardMock kind={active} compact />
-          </PhoneFrame>
+
+        <div className="mt-10 grid gap-8 lg:grid-cols-[1.55fr_1fr] lg:items-center">
+          <SwapFade k={active}>
+            <BrowserFrame>
+              <DesktopMock kind={active} />
+            </BrowserFrame>
+          </SwapFade>
+          <SwapFade k={active}>
+            <PhoneFrame>
+              <MobileMock kind={active} />
+            </PhoneFrame>
+          </SwapFade>
         </div>
       </div>
     </section>
   );
 }
 
+function SwapFade({ k, children }: { k: string; children: React.ReactNode }) {
+  return (
+    <div key={k} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+      {children}
+    </div>
+  );
+}
+
+/* ------------------------------- frames ---------------------------------- */
+
 function BrowserFrame({ children }: { children: React.ReactNode }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-[color:var(--orzen-border)] bg-white shadow-[var(--shadow-lift)]">
-      <div className="flex items-center gap-1.5 border-b border-[color:var(--orzen-border)] px-4 py-2.5">
+      <div className="flex items-center gap-1.5 border-b border-[color:var(--orzen-border)] bg-[color:var(--orzen-slate-50)] px-4 py-2.5">
         <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
         <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
         <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-        <span className="ml-3 text-[11px] text-[color:var(--orzen-muted)]">app.orzen.top</span>
+        <span className="mx-auto flex items-center gap-1.5 rounded-md border border-[color:var(--orzen-border)] bg-white px-3 py-1 text-[10px] text-[color:var(--orzen-muted)]">
+          <ShieldCheck className="h-3 w-3 text-[color:var(--orzen-success)]" />
+          app.orzen.top
+        </span>
       </div>
-      <div className="p-4 sm:p-6">{children}</div>
+      <div className="bg-[color:var(--orzen-slate-50)] p-2 sm:p-3">
+        <div className="overflow-hidden rounded-xl border border-[color:var(--orzen-border)] bg-white">
+          {children}
+        </div>
+      </div>
     </div>
   );
 }
 
 function PhoneFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto w-[260px] shrink-0 rounded-[2.2rem] border-[10px] border-[color:var(--orzen-navy)] bg-[color:var(--orzen-navy)] shadow-[var(--shadow-lift)]">
-      <div className="relative overflow-hidden rounded-[1.6rem] bg-white">
-        <div className="absolute left-1/2 top-1 h-4 w-16 -translate-x-1/2 rounded-full bg-[color:var(--orzen-navy)]" />
-        <div className="pt-6 p-3">{children}</div>
+    <div className="mx-auto w-[248px] max-w-full sm:w-[272px]">
+      <div className="relative rounded-[2.6rem] border-[9px] border-[color:var(--orzen-navy)] bg-[color:var(--orzen-navy)] shadow-[var(--shadow-lift)]">
+        <div className="relative aspect-[9/19.5] overflow-hidden rounded-[2rem] bg-white">
+          {/* status bar */}
+          <div className="flex items-center justify-between px-4 pt-2 text-[9px] font-semibold text-[color:var(--orzen-navy)]">
+            <span>9:41</span>
+            <span className="flex items-center gap-1">
+              <span className="flex items-end gap-[1px]">
+                <i className="block h-1 w-[2px] rounded-sm bg-current" />
+                <i className="block h-1.5 w-[2px] rounded-sm bg-current" />
+                <i className="block h-2 w-[2px] rounded-sm bg-current" />
+              </span>
+              <span>5G</span>
+              <span className="inline-block h-2 w-4 rounded-[3px] border border-current p-[1px]">
+                <span className="block h-full w-3/4 rounded-[1px] bg-current" />
+              </span>
+            </span>
+          </div>
+          {/* dynamic island */}
+          <div className="absolute left-1/2 top-1.5 h-4 w-16 -translate-x-1/2 rounded-full bg-[color:var(--orzen-navy)]" />
+          <div className="h-[calc(100%-1.5rem)] overflow-hidden px-3 pt-2">{children}</div>
+        </div>
       </div>
     </div>
   );
 }
 
-function DashboardMock({ kind, compact = false }: { kind: (typeof DASHBOARDS)[number]["key"]; compact?: boolean }) {
-  const scale = compact ? "text-[10px]" : "text-xs";
-  if (kind === "store") {
-    return (
-      <div className={cn(scale, "space-y-3")}>
+/* ------------------------------- pieces ---------------------------------- */
+
+function Kpi({ label, v, delta }: { label: string; v: string; delta?: string }) {
+  return (
+    <div className="rounded-lg border border-[color:var(--orzen-border)] bg-white p-2.5">
+      <p className="text-[9px] font-semibold uppercase tracking-wider text-[color:var(--orzen-muted)]">
+        {label}
+      </p>
+      <p className="mt-0.5 text-sm font-bold leading-none">{v}</p>
+      {delta && (
+        <p className="mt-1 flex items-center gap-0.5 text-[9px] font-semibold text-[color:var(--orzen-success)]">
+          <TrendingUp className="h-2.5 w-2.5" />
+          {delta}
+        </p>
+      )}
+    </div>
+  );
+}
+
+const AREA_POINTS = [38, 52, 44, 66, 58, 74, 62, 86, 78, 92, 84, 98];
+
+function AreaChart({ height = 96 }: { height?: number }) {
+  const pts = AREA_POINTS.map((v, i) => `${(i / (AREA_POINTS.length - 1)) * 100},${100 - v}`).join(" ");
+  return (
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ height }} className="w-full">
+      <defs>
+        <linearGradient id="orzen-area" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--orzen-blue)" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="var(--orzen-blue)" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon points={`0,100 ${pts} 100,100`} fill="url(#orzen-area)" />
+      <polyline
+        points={pts}
+        fill="none"
+        stroke="var(--orzen-blue)"
+        strokeWidth="2"
+        vectorEffect="non-scaling-stroke"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function StatusPill({ tone, children }: { tone: "green" | "amber" | "blue"; children: React.ReactNode }) {
+  const map = {
+    green: "bg-[color:var(--orzen-success)]/10 text-[color:var(--orzen-success)]",
+    amber: "bg-amber-500/10 text-amber-600",
+    blue: "bg-[color:var(--orzen-blue)]/10 text-[color:var(--orzen-blue)]",
+  } as const;
+  return (
+    <span className={cn("rounded-full px-2 py-0.5 text-[9px] font-semibold", map[tone])}>{children}</span>
+  );
+}
+
+const ORDERS_ROWS = [
+  { id: "#4821", name: "Rafiul Islam", tone: "green" as const, status: "Delivered", amt: "৳ 3,290", date: "25 Aug" },
+  { id: "#4820", name: "Nusrat Jahan", tone: "blue" as const, status: "Shipped", amt: "৳ 1,890", date: "25 Aug" },
+  { id: "#4819", name: "Sabbir Ahmed", tone: "amber" as const, status: "Pending", amt: "৳ 720", date: "24 Aug" },
+  { id: "#4818", name: "Tanjila Akter", tone: "green" as const, status: "Delivered", amt: "৳ 2,450", date: "24 Aug" },
+];
+
+const SIDEBAR = [
+  { icon: BarChart3, label: "Dashboard" },
+  { icon: Package, label: "Orders" },
+  { icon: Boxes, label: "Products" },
+  { icon: Users, label: "Customers" },
+  { icon: Bot, label: "AI Agent" },
+  { icon: Truck, label: "Courier" },
+];
+
+/* ------------------------------ desktop ---------------------------------- */
+
+function DesktopMock({ kind }: { kind: DashKey }) {
+  if (kind === "store") return <DesktopStore />;
+  if (kind === "owner") return <DesktopOwner />;
+  if (kind === "ai") return <DesktopAI />;
+  if (kind === "analytics") return <DesktopAnalytics />;
+  return <DesktopAdmin />;
+}
+
+function AppChrome({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-[104px_1fr] text-[11px] sm:grid-cols-[132px_1fr]">
+      <aside className="border-r border-[color:var(--orzen-border)] bg-[color:var(--orzen-slate-50)] p-2.5">
+        <div className="flex items-center gap-1.5 px-1 pb-3">
+          <span className="grid h-5 w-5 place-items-center rounded-md bg-[color:var(--orzen-navy)] text-[9px] font-black text-white">
+            O
+          </span>
+          <span className="text-[10px] font-bold">ORZEN</span>
+        </div>
+        <div className="space-y-0.5">
+          {SIDEBAR.map((s, i) => (
+            <div
+              key={s.label}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-2 py-1.5",
+                i === 0
+                  ? "bg-[color:var(--orzen-navy)] font-semibold text-white"
+                  : "text-[color:var(--orzen-muted)]"
+              )}
+            >
+              <s.icon className="h-3 w-3 shrink-0" />
+              <span className="truncate text-[10px]">{s.label}</span>
+            </div>
+          ))}
+        </div>
+      </aside>
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 border-b border-[color:var(--orzen-border)] px-3 py-2">
+          <p className="text-[11px] font-bold">{title}</p>
+          <span className="ml-auto hidden items-center gap-1 rounded-md border border-[color:var(--orzen-border)] px-2 py-1 text-[9px] text-[color:var(--orzen-muted)] sm:flex">
+            <Search className="h-2.5 w-2.5" />
+            Search orders, products…
+          </span>
+          <span className="grid h-5 w-5 place-items-center rounded-full bg-[color:var(--orzen-blue)]/15 text-[9px] font-bold text-[color:var(--orzen-blue)]">
+            MA
+          </span>
+        </div>
+        <div className="p-3">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function DesktopAdmin() {
+  return (
+    <AppChrome title="Dashboard">
+      <div className="grid grid-cols-4 gap-2">
+        <Kpi label="Revenue" v="৳ 84,120" delta="+12.4%" />
+        <Kpi label="Orders" v="127" delta="+8.1%" />
+        <Kpi label="AOV" v="৳ 662" delta="+3.2%" />
+        <Kpi label="Conversion" v="3.8%" delta="+0.6%" />
+      </div>
+      <div className="mt-2 rounded-lg border border-[color:var(--orzen-border)] p-2.5">
         <div className="flex items-center justify-between">
-          <p className="font-bold">Nova Fashion</p>
+          <p className="text-[10px] font-bold">Revenue · last 12 weeks</p>
+          <span className="text-[9px] text-[color:var(--orzen-muted)]">৳ 6.4L total</span>
+        </div>
+        <AreaChart height={78} />
+      </div>
+      <div className="mt-2 overflow-hidden rounded-lg border border-[color:var(--orzen-border)]">
+        <div className="grid grid-cols-[52px_1fr_66px_60px_44px] gap-2 border-b border-[color:var(--orzen-border)] bg-[color:var(--orzen-slate-50)] px-2.5 py-1.5 text-[9px] font-semibold uppercase tracking-wide text-[color:var(--orzen-muted)]">
+          <span>Order</span>
+          <span>Customer</span>
+          <span>Status</span>
+          <span className="text-right">Amount</span>
+          <span className="text-right">Date</span>
+        </div>
+        {ORDERS_ROWS.map((o) => (
+          <div
+            key={o.id}
+            className="grid grid-cols-[52px_1fr_66px_60px_44px] items-center gap-2 border-b border-[color:var(--orzen-border)] px-2.5 py-1.5 text-[10px] last:border-0"
+          >
+            <span className="font-semibold">{o.id}</span>
+            <span className="truncate">{o.name}</span>
+            <span><StatusPill tone={o.tone}>{o.status}</StatusPill></span>
+            <span className="text-right font-semibold tabular-nums">{o.amt}</span>
+            <span className="text-right text-[color:var(--orzen-muted)]">{o.date}</span>
+          </div>
+        ))}
+      </div>
+    </AppChrome>
+  );
+}
+
+const PRODUCTS = [
+  { name: "Linen Kurta", price: "৳ 1,290", old: "৳ 1,690", off: "-24%" },
+  { name: "Denim Jacket", price: "৳ 2,450", old: "৳ 2,990", off: "-18%" },
+  { name: "Leather Bag", price: "৳ 3,150", old: "৳ 3,800", off: "-17%" },
+  { name: "Sneakers Pro", price: "৳ 2,790", old: "৳ 3,250", off: "-14%" },
+];
+
+function ProductCardMock({ p, big = false }: { p: (typeof PRODUCTS)[number]; big?: boolean }) {
+  return (
+    <div className="overflow-hidden rounded-lg border border-[color:var(--orzen-border)] bg-white">
+      <div className={cn("relative bg-gradient-to-br from-[color:var(--orzen-slate-100)] to-[color:var(--orzen-slate-50)]", big ? "h-20" : "h-16")}>
+        <span className="absolute left-1.5 top-1.5 rounded bg-[color:var(--orzen-navy)] px-1 py-0.5 text-[8px] font-bold text-white">
+          {p.off}
+        </span>
+      </div>
+      <div className="p-1.5">
+        <p className="truncate text-[10px] font-semibold">{p.name}</p>
+        <div className="mt-0.5 flex items-center gap-1">
+          <span className="text-[10px] font-bold text-[color:var(--orzen-blue)]">{p.price}</span>
+          <span className="text-[8px] text-[color:var(--orzen-muted)] line-through">{p.old}</span>
+        </div>
+        <div className="mt-0.5 flex items-center gap-0.5 text-amber-500">
+          {[0, 1, 2, 3, 4].map((s) => (
+            <Star key={s} className="h-2 w-2" fill="currentColor" />
+          ))}
+          <span className="ml-0.5 text-[8px] text-[color:var(--orzen-muted)]">(42)</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DesktopStore() {
+  return (
+    <div className="text-[11px]">
+      <div className="flex items-center gap-2 border-b border-[color:var(--orzen-border)] px-3 py-2">
+        <span className="grid h-5 w-5 place-items-center rounded-md bg-[color:var(--orzen-navy)] text-[9px] font-black text-white">
+          N
+        </span>
+        <span className="text-[11px] font-bold">Nova Fashion</span>
+        <span className="ml-3 hidden gap-3 text-[10px] text-[color:var(--orzen-muted)] sm:flex">
+          <span>New in</span>
+          <span>Men</span>
+          <span>Women</span>
+          <span>Sale</span>
+        </span>
+        <span className="relative ml-auto">
           <ShoppingBag className="h-4 w-4" />
+          <span className="absolute -right-1.5 -top-1.5 grid h-3 w-3 place-items-center rounded-full bg-[color:var(--orzen-blue)] text-[7px] font-bold text-white">
+            3
+          </span>
+        </span>
+      </div>
+      <div className="p-3">
+        <div className="flex items-center justify-between overflow-hidden rounded-lg bg-gradient-to-r from-[color:var(--orzen-navy)] to-[color:var(--orzen-blue)] p-4 text-white">
+          <div>
+            <p className="text-[9px] font-semibold uppercase tracking-widest opacity-80">Eid Collection</p>
+            <p className="mt-1 text-base font-black leading-tight">Up to 40% off</p>
+            <span className="mt-2 inline-block rounded-full bg-white px-3 py-1 text-[9px] font-bold text-[color:var(--orzen-navy)]">
+              Shop now
+            </span>
+          </div>
+          <div className="hidden h-16 w-24 rounded-lg bg-white/15 sm:block" />
         </div>
-        <div className="h-24 rounded-xl bg-gradient-to-br from-[color:var(--orzen-navy)] to-[color:var(--orzen-blue)]" />
-        <div className="grid grid-cols-2 gap-2">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="space-y-1.5">
-              <div className="h-20 rounded-lg bg-[color:var(--orzen-slate-100)]" />
-              <p className="font-semibold">Product {i + 1}</p>
-              <p className="text-[color:var(--orzen-blue)] font-bold">৳ {(i + 1) * 490}</p>
+        <div className="mt-2 flex gap-1.5">
+          {["All", "Kurta", "Shoes", "Bags", "Accessories"].map((c, i) => (
+            <span
+              key={c}
+              className={cn(
+                "rounded-full px-2 py-0.5 text-[9px] font-semibold",
+                i === 0
+                  ? "bg-[color:var(--orzen-navy)] text-white"
+                  : "border border-[color:var(--orzen-border)] text-[color:var(--orzen-muted)]"
+              )}
+            >
+              {c}
+            </span>
+          ))}
+        </div>
+        <div className="mt-2 grid grid-cols-4 gap-2">
+          {PRODUCTS.map((p) => (
+            <ProductCardMock key={p.name} p={p} big />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const TOP_STORES = [
+  { n: "Nova Fashion", r: "৳ 8.4L", g: "+18%" },
+  { n: "Deshi Basket", r: "৳ 6.1L", g: "+14%" },
+  { n: "Techmart BD", r: "৳ 5.7L", g: "+11%" },
+  { n: "Bloom Beauty", r: "৳ 4.2L", g: "+9%" },
+];
+
+function DesktopOwner() {
+  return (
+    <AppChrome title="Platform overview">
+      <div className="grid grid-cols-4 gap-2">
+        <Kpi label="Stores" v="1,024" delta="+42" />
+        <Kpi label="MRR" v="৳ 4.2M" delta="+9.3%" />
+        <Kpi label="Active users" v="18.7k" delta="+5.1%" />
+        <Kpi label="Churn" v="1.4%" />
+      </div>
+      <div className="mt-2 grid grid-cols-[1.3fr_1fr] gap-2">
+        <div className="rounded-lg border border-[color:var(--orzen-border)] p-2.5">
+          <p className="text-[10px] font-bold">Platform growth</p>
+          <AreaChart height={82} />
+        </div>
+        <div className="rounded-lg border border-[color:var(--orzen-border)] p-2.5">
+          <p className="text-[10px] font-bold">Top stores</p>
+          <div className="mt-1 space-y-1">
+            {TOP_STORES.map((s, i) => (
+              <div key={s.n} className="flex items-center gap-1.5 text-[10px]">
+                <span className="grid h-4 w-4 place-items-center rounded bg-[color:var(--orzen-slate-100)] text-[8px] font-bold">
+                  {i + 1}
+                </span>
+                <span className="min-w-0 flex-1 truncate">{s.n}</span>
+                <span className="font-semibold tabular-nums">{s.r}</span>
+                <StatusPill tone="green">{s.g}</StatusPill>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="mt-2 rounded-lg border border-[color:var(--orzen-border)] p-2.5">
+        <p className="text-[10px] font-bold">Recent signups</p>
+        <div className="mt-1 grid grid-cols-3 gap-2 text-[10px]">
+          {["Rangpur Crafts", "Green Grocer", "Urban Ride"].map((n) => (
+            <div key={n} className="flex items-center gap-1.5 rounded-md bg-[color:var(--orzen-slate-50)] px-2 py-1.5">
+              <Store className="h-3 w-3 text-[color:var(--orzen-blue)]" />
+              <span className="truncate">{n}</span>
             </div>
           ))}
         </div>
       </div>
-    );
-  }
-  if (kind === "owner") {
-    return (
-      <div className={cn(scale, "space-y-3")}>
-        <p className="font-bold">Platform Overview</p>
-        <div className="grid grid-cols-3 gap-2">
-          <Kpi label="Stores" v="1,024" />
-          <Kpi label="MRR" v="৳ 4.2M" />
-          <Kpi label="Users" v="18.7k" />
-        </div>
-        <div className="rounded-xl border border-[color:var(--orzen-border)] p-2.5">
-          <p className="font-semibold">Top stores</p>
-          {["Nova Fashion", "Deshi Basket", "Techmart BD"].map((n, i) => (
-            <div key={n} className="flex items-center justify-between border-t border-[color:var(--orzen-border)] py-1.5 first:border-0">
-              <span>{n}</span>
-              <span className="text-[color:var(--orzen-success)] font-semibold">+{18 - i * 4}%</span>
+    </AppChrome>
+  );
+}
+
+function Meter({ label, v, pct }: { label: string; v: string; pct: number }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between text-[9px]">
+        <span className="text-[color:var(--orzen-muted)]">{label}</span>
+        <span className="font-semibold">{v}</span>
+      </div>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[color:var(--orzen-slate-100)]">
+        <div className="h-full rounded-full bg-[color:var(--orzen-blue)]" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function ChatLine({ side, text }: { side: "left" | "right"; text: string }) {
+  return (
+    <div className={cn("flex", side === "right" ? "justify-end" : "justify-start")}>
+      <span
+        className={cn(
+          "max-w-[85%] rounded-xl px-2.5 py-1.5 text-[10px] leading-snug",
+          side === "right"
+            ? "rounded-br-sm bg-[color:var(--orzen-navy)] text-white"
+            : "rounded-bl-sm bg-[color:var(--orzen-slate-100)]"
+        )}
+      >
+        {text}
+      </span>
+    </div>
+  );
+}
+
+function DesktopAI() {
+  return (
+    <AppChrome title="AI control center">
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { n: "Sales Agent", d: "Messenger + Web" },
+          { n: "WhatsApp Bot", d: "Cloud API" },
+          { n: "Product Q&A", d: "Storefront" },
+        ].map((a) => (
+          <div key={a.n} className="rounded-lg border border-[color:var(--orzen-border)] p-2.5">
+            <div className="flex items-center gap-1.5">
+              <Bot className="h-3 w-3 text-[color:var(--orzen-blue)]" />
+              <span className="text-[10px] font-bold">{a.n}</span>
+              <span className="ml-auto"><StatusPill tone="green">Live</StatusPill></span>
             </div>
+            <p className="mt-1 text-[9px] text-[color:var(--orzen-muted)]">{a.d}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 grid grid-cols-[1.2fr_1fr] gap-2">
+        <div className="rounded-lg border border-[color:var(--orzen-border)] p-2.5">
+          <p className="text-[10px] font-bold">Live conversation</p>
+          <div className="mt-1.5 space-y-1.5">
+            <ChatLine side="left" text="এই কুর্তাটা কি XL সাইজে আছে?" />
+            <ChatLine side="right" text="জি, XL স্টকে আছে — ৳1,290, ক্যাশ অন ডেলিভারি।" />
+            <ChatLine side="left" text="ঠিক আছে, অর্ডার করতে চাই।" />
+            <ChatLine side="right" text="নাম ও ঠিকানা দিন, আমি অর্ডারটি কনফার্ম করে দিচ্ছি ✅" />
+          </div>
+        </div>
+        <div className="space-y-2 rounded-lg border border-[color:var(--orzen-border)] p-2.5">
+          <p className="text-[10px] font-bold">Usage · 30 days</p>
+          <Meter label="Requests" v="182k" pct={72} />
+          <Meter label="Tokens" v="14.2M" pct={58} />
+          <Meter label="Auto-resolved" v="87%" pct={87} />
+          <div className="rounded-md bg-[color:var(--orzen-slate-50)] p-2 text-[9px] text-[color:var(--orzen-muted)]">
+            Avg reply time <span className="font-bold text-[color:var(--orzen-navy)]">1.2s</span>
+          </div>
+        </div>
+      </div>
+    </AppChrome>
+  );
+}
+
+const FUNNEL = [
+  { label: "Sessions", v: "12,480", pct: 100 },
+  { label: "Product views", v: "7,910", pct: 63 },
+  { label: "Add to cart", v: "2,140", pct: 27 },
+  { label: "Checkout", v: "912", pct: 12 },
+  { label: "Orders", v: "474", pct: 6 },
+];
+
+const SOURCES = [
+  { n: "Facebook", pct: 46 },
+  { n: "Direct", pct: 24 },
+  { n: "Google", pct: 18 },
+  { n: "Messenger", pct: 12 },
+];
+
+function DesktopAnalytics() {
+  return (
+    <AppChrome title="Analytics">
+      <div className="grid grid-cols-4 gap-2">
+        <Kpi label="Sessions" v="12.4k" delta="+7.8%" />
+        <Kpi label="Conversion" v="3.8%" delta="+0.4%" />
+        <Kpi label="AOV" v="৳ 892" delta="+2.1%" />
+        <Kpi label="Repeat rate" v="31%" delta="+4.0%" />
+      </div>
+      <div className="mt-2 grid grid-cols-[1.2fr_1fr] gap-2">
+        <div className="rounded-lg border border-[color:var(--orzen-border)] p-2.5">
+          <p className="text-[10px] font-bold">Conversion funnel</p>
+          <div className="mt-1.5 space-y-1">
+            {FUNNEL.map((f) => (
+              <div key={f.label} className="flex items-center gap-2 text-[9px]">
+                <span className="w-20 shrink-0 text-[color:var(--orzen-muted)]">{f.label}</span>
+                <span className="h-3 flex-1 overflow-hidden rounded-sm bg-[color:var(--orzen-slate-100)]">
+                  <span
+                    className="block h-full rounded-sm bg-gradient-to-r from-[color:var(--orzen-navy)] to-[color:var(--orzen-blue)]"
+                    style={{ width: `${f.pct}%` }}
+                  />
+                </span>
+                <span className="w-12 text-right font-semibold tabular-nums">{f.v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-2 rounded-lg border border-[color:var(--orzen-border)] p-2.5">
+          <p className="text-[10px] font-bold">Traffic sources</p>
+          {SOURCES.map((s) => (
+            <Meter key={s.n} label={s.n} v={`${s.pct}%`} pct={s.pct} />
           ))}
         </div>
       </div>
-    );
-  }
-  if (kind === "ai") {
-    return (
-      <div className={cn(scale, "space-y-3")}>
-        <p className="font-bold">AI Control Center</p>
-        <div className="grid grid-cols-2 gap-2">
-          <Kpi label="Requests 30d" v="182k" />
-          <Kpi label="Tokens" v="14.2M" />
+      <div className="mt-2 rounded-lg border border-[color:var(--orzen-border)] p-2.5">
+        <p className="text-[10px] font-bold">Orders per day</p>
+        <div className="mt-1.5 flex h-14 items-end gap-1">
+          {[40, 62, 48, 70, 55, 82, 68, 90, 72, 84, 76, 95, 66, 88].map((h, i) => (
+            <span key={i} className="flex-1 rounded-t bg-[color:var(--orzen-blue)]/80" style={{ height: `${h}%` }} />
+          ))}
         </div>
-        <div className="space-y-1.5 rounded-xl border border-[color:var(--orzen-border)] p-2.5">
-          {["Sales Agent", "Messenger Bot", "Product Q&A"].map((n, i) => (
-            <div key={n} className="flex items-center justify-between">
-              <span>{n}</span>
-              <span className="rounded-full bg-[color:var(--orzen-success)]/10 px-2 py-0.5 text-[color:var(--orzen-success)] font-semibold">
-                Active
+      </div>
+    </AppChrome>
+  );
+}
+
+/* ------------------------------- mobile ---------------------------------- */
+
+function MobileMock({ kind }: { kind: DashKey }) {
+  if (kind === "store") return <MobileStore />;
+  if (kind === "owner") return <MobileOwner />;
+  if (kind === "ai") return <MobileAI />;
+  if (kind === "analytics") return <MobileAnalytics />;
+  return <MobileAdmin />;
+}
+
+function MobileShell({
+  title,
+  tabs,
+  children,
+}: {
+  title: string;
+  tabs: { icon: typeof Bot; label: string }[];
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex items-center gap-2 pb-2">
+        <span className="grid h-6 w-6 place-items-center rounded-lg bg-[color:var(--orzen-navy)] text-[9px] font-black text-white">
+          O
+        </span>
+        <p className="text-[11px] font-bold">{title}</p>
+        <span className="ml-auto grid h-6 w-6 place-items-center rounded-full bg-[color:var(--orzen-slate-100)]">
+          <User className="h-3 w-3 text-[color:var(--orzen-muted)]" />
+        </span>
+      </div>
+      <div className="min-h-0 flex-1 space-y-2 overflow-hidden">{children}</div>
+      <div className="mt-2 flex items-center justify-between rounded-xl border border-[color:var(--orzen-border)] bg-white px-2 py-1.5">
+        {tabs.map((t, i) => (
+          <span
+            key={t.label}
+            className={cn(
+              "flex flex-1 flex-col items-center gap-0.5 text-[8px] font-semibold",
+              i === 0 ? "text-[color:var(--orzen-navy)]" : "text-[color:var(--orzen-muted)]"
+            )}
+          >
+            <t.icon className="h-3.5 w-3.5" />
+            {t.label}
+          </span>
+        ))}
+      </div>
+      <div className="mx-auto mt-1.5 mb-1 h-1 w-16 rounded-full bg-[color:var(--orzen-slate-100)]" />
+    </div>
+  );
+}
+
+const ADMIN_TABS = [
+  { icon: BarChart3, label: "Home" },
+  { icon: Package, label: "Orders" },
+  { icon: Boxes, label: "Products" },
+  { icon: Bot, label: "AI" },
+];
+
+function MobileAdmin() {
+  return (
+    <MobileShell title="Merchant Panel" tabs={ADMIN_TABS}>
+      <div className="rounded-xl bg-gradient-to-br from-[color:var(--orzen-navy)] to-[color:var(--orzen-blue)] p-3 text-white">
+        <p className="text-[9px] uppercase tracking-widest opacity-80">Today&apos;s revenue</p>
+        <p className="mt-0.5 text-xl font-black leading-none">৳ 84,120</p>
+        <p className="mt-1 flex items-center gap-1 text-[9px] font-semibold opacity-90">
+          <TrendingUp className="h-3 w-3" /> +12.4% vs yesterday
+        </p>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <Kpi label="Orders" v="127" delta="+8%" />
+        <Kpi label="AOV" v="৳ 662" delta="+3%" />
+      </div>
+      <div className="rounded-xl border border-[color:var(--orzen-border)] p-2.5">
+        <p className="text-[10px] font-bold">Recent orders</p>
+        <div className="mt-1 space-y-1.5">
+          {ORDERS_ROWS.slice(0, 3).map((o) => (
+            <div key={o.id} className="flex items-center gap-1.5 text-[10px]">
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[color:var(--orzen-slate-100)]">
+                <Package className="h-3 w-3 text-[color:var(--orzen-muted)]" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-semibold">{o.name}</span>
+                <span className="block text-[9px] text-[color:var(--orzen-muted)]">{o.id}</span>
+              </span>
+              <span className="text-right">
+                <span className="block font-bold tabular-nums">{o.amt}</span>
+                <StatusPill tone={o.tone}>{o.status}</StatusPill>
               </span>
             </div>
           ))}
         </div>
       </div>
-    );
-  }
-  if (kind === "analytics") {
-    return (
-      <div className={cn(scale, "space-y-3")}>
-        <p className="font-bold">Analytics</p>
-        <div className="grid grid-cols-3 gap-2">
-          <Kpi label="Sessions" v="12.4k" />
-          <Kpi label="Conv." v="3.8%" />
-          <Kpi label="AOV" v="৳ 892" />
-        </div>
-        <div className="flex h-24 items-end gap-1.5 rounded-xl border border-[color:var(--orzen-border)] p-2.5">
-          {[40, 62, 48, 70, 55, 82, 68, 90, 72, 84, 76, 95].map((h, i) => (
-            <div key={i} className="flex-1 rounded-t bg-[color:var(--orzen-blue)]" style={{ height: `${h}%` }} />
-          ))}
-        </div>
-      </div>
-    );
-  }
-  // admin
-  return (
-    <div className={cn(scale, "grid grid-cols-[80px_1fr] gap-3")}>
-      <div className="space-y-1 rounded-xl bg-[color:var(--orzen-slate-50)] p-2">
-        {["Home", "Orders", "Products", "AI", "Settings"].map((i, idx) => (
-          <div
-            key={i}
-            className={cn(
-              "rounded-md px-2 py-1.5",
-              idx === 0
-                ? "bg-[color:var(--orzen-navy)] text-white font-semibold"
-                : "text-[color:var(--orzen-muted)]"
-            )}
-          >
-            {i}
-          </div>
-        ))}
-      </div>
-      <div className="space-y-2">
-        <div className="grid grid-cols-3 gap-2">
-          <Kpi label="Revenue" v="৳ 84k" />
-          <Kpi label="Orders" v="127" />
-          <Kpi label="AOV" v="৳ 662" />
-        </div>
-        <div className="rounded-xl border border-[color:var(--orzen-border)] p-2.5">
-          <p className="font-semibold">Recent orders</p>
-          {["#4821 · Rafi · ৳ 3,290", "#4820 · Nusrat · ৳ 1,890", "#4819 · Sabbir · ৳ 720"].map((r) => (
-            <div key={r} className="border-t border-[color:var(--orzen-border)] py-1.5 first:border-0">
-              {r}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+    </MobileShell>
   );
 }
 
-function Kpi({ label, v }: { label: string; v: string }) {
-  return (
-    <div className="rounded-lg bg-[color:var(--orzen-slate-50)] p-2">
-      <p className="text-[10px] uppercase tracking-wider text-[color:var(--orzen-muted)]">{label}</p>
-      <p className="font-bold">{v}</p>
-    </div>
-  );
-}
-
-
-/* -------------------------------------------------------------------------- */
-/* Templates                                                                   */
-/* -------------------------------------------------------------------------- */
-
-const TEMPLATES = [
-  { name: "Nova Fashion", cat: "Fashion", from: "#111827", to: "#2563eb" },
-  { name: "Voltronics", cat: "Electronics", from: "#0f172a", to: "#0ea5e9" },
-  { name: "Casa Mode", cat: "Furniture", from: "#78350f", to: "#f59e0b" },
-  { name: "Bloom Beauty", cat: "Cosmetics", from: "#831843", to: "#f472b6" },
-  { name: "PageOne", cat: "Books", from: "#134e4a", to: "#14b8a6" },
-  { name: "Foodly", cat: "Food", from: "#7f1d1d", to: "#f97316" },
-  { name: "PixelVault", cat: "Digital Products", from: "#312e81", to: "#8b5cf6" },
+const STORE_TABS = [
+  { icon: Store, label: "Shop" },
+  { icon: Search, label: "Search" },
+  { icon: ShoppingBag, label: "Cart" },
+  { icon: User, label: "Account" },
 ];
 
-function Templates() {
+function MobileStore() {
   return (
-    <section id="templates" className="scroll-mt-24 py-20 md:py-28">
-      <div className="mx-auto max-w-7xl px-5 md:px-8">
-        <SectionHeader
-          eyebrow="Marketplace"
-          title="Premium themes for every niche"
-          subtitle="Launch with a professionally designed template — one click and it's yours to customize."
-        />
-        <div className="-mx-5 mt-12 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-3 xl:grid-cols-4">
-          {TEMPLATES.map((t) => (
-            <div
-              key={t.name}
-              className="group snap-start w-72 shrink-0 overflow-hidden rounded-2xl border border-[color:var(--orzen-border)] bg-white transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-soft)] sm:w-auto"
-            >
-              <div
-                className="relative h-44 overflow-hidden"
-                style={{ background: `linear-gradient(135deg, ${t.from}, ${t.to})` }}
-              >
-                <div className="absolute inset-x-4 top-4 flex items-center justify-between text-white/90">
-                  <span className="text-xs font-bold">{t.name}</span>
-                  <ShoppingBag className="h-4 w-4" />
-                </div>
-                <div className="absolute inset-x-4 bottom-4 grid grid-cols-3 gap-1.5">
-                  <div className="h-12 rounded-md bg-white/85" />
-                  <div className="h-12 rounded-md bg-white/70" />
-                  <div className="h-12 rounded-md bg-white/50" />
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-4">
-                <div>
-                  <p className="text-sm font-bold">{t.name}</p>
-                  <p className="text-xs text-[color:var(--orzen-muted)]">{t.cat}</p>
-                </div>
-                <Link
-                  to="/auth"
-                  className="rounded-full border border-[color:var(--orzen-navy)] px-3 py-1.5 text-xs font-semibold text-[color:var(--orzen-navy)] hover:bg-[color:var(--orzen-navy)] hover:text-white"
-                >
-                  Use Template
-                </Link>
-              </div>
+    <MobileShell title="Nova Fashion" tabs={STORE_TABS}>
+      <div className="flex items-center gap-1.5 rounded-full border border-[color:var(--orzen-border)] px-2.5 py-1.5 text-[9px] text-[color:var(--orzen-muted)]">
+        <Search className="h-3 w-3" /> Search products
+      </div>
+      <div className="rounded-xl bg-gradient-to-r from-[color:var(--orzen-navy)] to-[color:var(--orzen-blue)] p-3 text-white">
+        <p className="text-[8px] uppercase tracking-widest opacity-80">Eid collection</p>
+        <p className="mt-0.5 text-sm font-black">Up to 40% off</p>
+        <span className="mt-1.5 inline-block rounded-full bg-white px-2.5 py-1 text-[8px] font-bold text-[color:var(--orzen-navy)]">
+          Shop now
+        </span>
+      </div>
+      <div className="flex gap-1.5 overflow-hidden">
+        {["All", "Kurta", "Shoes", "Bags"].map((c, i) => (
+          <span
+            key={c}
+            className={cn(
+              "shrink-0 rounded-full px-2 py-0.5 text-[8px] font-semibold",
+              i === 0
+                ? "bg-[color:var(--orzen-navy)] text-white"
+                : "border border-[color:var(--orzen-border)] text-[color:var(--orzen-muted)]"
+            )}
+          >
+            {c}
+          </span>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {PRODUCTS.slice(0, 4).map((p) => (
+          <ProductCardMock key={p.name} p={p} />
+        ))}
+      </div>
+    </MobileShell>
+  );
+}
+
+const OWNER_TABS = [
+  { icon: BarChart3, label: "Home" },
+  { icon: Store, label: "Stores" },
+  { icon: Wallet, label: "Billing" },
+  { icon: Users, label: "Users" },
+];
+
+function MobileOwner() {
+  return (
+    <MobileShell title="Owner Panel" tabs={OWNER_TABS}>
+      <div className="grid grid-cols-2 gap-2">
+        <Kpi label="Stores" v="1,024" delta="+42" />
+        <Kpi label="MRR" v="৳ 4.2M" delta="+9%" />
+      </div>
+      <div className="rounded-xl border border-[color:var(--orzen-border)] p-2.5">
+        <p className="text-[10px] font-bold">Growth</p>
+        <AreaChart height={64} />
+      </div>
+      <div className="rounded-xl border border-[color:var(--orzen-border)] p-2.5">
+        <p className="text-[10px] font-bold">Top stores</p>
+        <div className="mt-1 space-y-1.5">
+          {TOP_STORES.slice(0, 3).map((s, i) => (
+            <div key={s.n} className="flex items-center gap-1.5 text-[10px]">
+              <span className="grid h-4 w-4 place-items-center rounded bg-[color:var(--orzen-slate-100)] text-[8px] font-bold">
+                {i + 1}
+              </span>
+              <span className="min-w-0 flex-1 truncate">{s.n}</span>
+              <StatusPill tone="green">{s.g}</StatusPill>
             </div>
           ))}
         </div>
       </div>
-    </section>
+    </MobileShell>
   );
 }
+
+const AI_TABS = [
+  { icon: MessageCircle, label: "Inbox" },
+  { icon: Bot, label: "Agents" },
+  { icon: FileText, label: "Logs" },
+  { icon: BarChart3, label: "Usage" },
+];
+
+function MobileAI() {
+  return (
+    <MobileShell title="AI Assistant" tabs={AI_TABS}>
+      <div className="flex items-center gap-1.5 rounded-xl border border-[color:var(--orzen-border)] p-2">
+        <Bot className="h-3.5 w-3.5 text-[color:var(--orzen-blue)]" />
+        <span className="text-[10px] font-bold">Sales Agent</span>
+        <span className="ml-auto"><StatusPill tone="green">Live</StatusPill></span>
+      </div>
+      <div className="space-y-1.5 rounded-xl border border-[color:var(--orzen-border)] p-2.5">
+        <ChatLine side="left" text="এই কুর্তাটা XL আছে?" />
+        <ChatLine side="right" text="জি আছে — ৳1,290, ক্যাশ অন ডেলিভারি।" />
+        <ChatLine side="left" text="অর্ডার করতে চাই।" />
+        <ChatLine side="right" text="নাম ও ঠিকানা দিন ✅" />
+      </div>
+      <div className="space-y-1.5 rounded-xl border border-[color:var(--orzen-border)] p-2.5">
+        <Meter label="Requests" v="182k" pct={72} />
+        <Meter label="Auto-resolved" v="87%" pct={87} />
+      </div>
+    </MobileShell>
+  );
+}
+
+const ANALYTICS_TABS = [
+  { icon: BarChart3, label: "Report" },
+  { icon: TrendingUp, label: "Trends" },
+  { icon: Users, label: "Audience" },
+  { icon: Tag, label: "Products" },
+];
+
+function MobileAnalytics() {
+  return (
+    <MobileShell title="Analytics" tabs={ANALYTICS_TABS}>
+      <div className="grid grid-cols-2 gap-2">
+        <Kpi label="Sessions" v="12.4k" delta="+7.8%" />
+        <Kpi label="Conv." v="3.8%" delta="+0.4%" />
+      </div>
+      <div className="rounded-xl border border-[color:var(--orzen-border)] p-2.5">
+        <p className="text-[10px] font-bold">Funnel</p>
+        <div className="mt-1 space-y-1">
+          {FUNNEL.map((f) => (
+            <div key={f.label} className="flex items-center gap-1.5 text-[8px]">
+              <span className="w-14 shrink-0 text-[color:var(--orzen-muted)]">{f.label}</span>
+              <span className="h-2.5 flex-1 overflow-hidden rounded-sm bg-[color:var(--orzen-slate-100)]">
+                <span
+                  className="block h-full rounded-sm bg-gradient-to-r from-[color:var(--orzen-navy)] to-[color:var(--orzen-blue)]"
+                  style={{ width: `${f.pct}%` }}
+                />
+              </span>
+              <span className="w-9 text-right font-semibold tabular-nums">{f.v}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="rounded-xl border border-[color:var(--orzen-border)] p-2.5">
+        <p className="text-[10px] font-bold">Orders per day</p>
+        <div className="mt-1 flex h-12 items-end gap-1">
+          {[40, 62, 48, 70, 55, 82, 68, 90, 72, 84].map((h, i) => (
+            <span key={i} className="flex-1 rounded-t bg-[color:var(--orzen-blue)]/80" style={{ height: `${h}%` }} />
+          ))}
+        </div>
+      </div>
+    </MobileShell>
+  );
+}
+
+
+
+
 
 /* -------------------------------------------------------------------------- */
 /* Why ORZEN                                                                   */
