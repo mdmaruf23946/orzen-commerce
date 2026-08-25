@@ -272,7 +272,21 @@ function AdminLayout() {
     navigate({ to: "/auth", replace: true });
   }
 
-  const groups = useMemo(() => buildGroups(search), [search]);
+  const access = useStoreAccess();
+  const canSee = useMemo(
+    () => (path: string) => {
+      if (!access.isEmployee) return true;
+      const section = sectionForPath(path);
+      if (!section) return false;
+      return access.can(section.key, "view");
+    },
+    [access],
+  );
+  const groups = useMemo(() => buildGroups(search, canSee), [search, canSee]);
+
+  const currentSection = sectionForPath(currentPath);
+  const pageAllowed =
+    !access.isEmployee || (!!currentSection && access.can(currentSection.key, "view"));
 
   const asideWidth = collapsed ? "md:w-[72px]" : "md:w-64";
 
