@@ -58,6 +58,7 @@ const groups: NavGroup[] = [
     { to: "/owner/features", label: "Feature Flags", icon: ToggleLeft },
     { to: "/owner/fraud", label: "Fraud Checker", icon: ShieldCheck },
     { to: "/owner/system", label: "System Settings", icon: Settings },
+    { to: "/owner/footer", label: "Footer Settings", icon: Settings },
     { to: "/owner/domains", label: "Domains", icon: Globe },
     { to: "/owner/users", label: "Users", icon: UserCog },
     { to: "/owner/audit", label: "Role Audit", icon: ShieldCheck },
