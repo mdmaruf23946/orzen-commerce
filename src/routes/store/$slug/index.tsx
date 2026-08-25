@@ -105,17 +105,8 @@ function StoreHome() {
     return m;
   }, [categories]);
 
-  const countsByMain = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const p of products) {
-      const cid = (p as any).category_id as string | null;
-      if (!cid) continue;
-      const parent = catParentMap.get(cid);
-      const mainId = parent ?? cid;
-      m.set(mainId, (m.get(mainId) ?? 0) + 1);
-    }
-    return m;
-  }, [products, catParentMap]);
+
+
 
   const activeSubs = activeMainId ? (subsByParent.get(activeMainId) as any) ?? [] : [];
 
