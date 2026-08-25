@@ -338,7 +338,7 @@ function Hero() {
         <div className="absolute -top-32 left-1/2 h-[520px] w-[720px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(37,99,235,0.10),transparent)]" />
         <div className="absolute top-40 -right-24 h-72 w-72 rounded-full bg-[radial-gradient(closest-side,rgba(17,24,39,0.06),transparent)]" />
       </div>
-      <div className="mx-auto grid max-w-7xl gap-12 px-5 pt-6 pb-16 md:px-8 md:pt-10 md:pb-24 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:pt-12">
+      <div className="mx-auto grid max-w-7xl gap-12 px-5 pt-6 pb-10 md:px-8 md:pt-10 md:pb-12 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:pt-12">
         <div className="orzen-fade-up">
           <span className="inline-flex items-center gap-2 rounded-full border border-[color:var(--orzen-border)] bg-white px-3 py-1 text-xs font-semibold text-[color:var(--orzen-muted)]">
             <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--orzen-success)]" />
@@ -603,7 +603,7 @@ const FEATURES = [
 function Features() {
   const { t, pick } = useLang();
   return (
-    <section id="features" className="scroll-mt-24 py-20 md:py-28">
+    <section id="features" className="scroll-mt-24 py-10 md:py-12">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <SectionHeader
           eyebrow={t("features_eyebrow")}
@@ -646,14 +646,14 @@ function AIShowcase() {
     t("ai_point_6"),
   ];
   return (
-    <section id="ai" className="scroll-mt-24 bg-[color:var(--orzen-slate-50)] py-20 md:py-28">
+    <section id="ai" className="scroll-mt-24 bg-[color:var(--orzen-slate-50)] py-10 md:py-12">
       <div className="mx-auto grid max-w-7xl gap-12 px-5 md:px-8 lg:grid-cols-2 lg:items-center lg:gap-16">
         <div>
           <SectionHeader
             eyebrow={t("ai_eyebrow")}
             title={t("ai_title")}
             subtitle={t("ai_sub")}
-            align="left"
+            align="center"
           />
           <ul className="mt-8 space-y-3">
             {points.map((p) => (
@@ -772,7 +772,7 @@ const STEPS = [
 function Workflow() {
   const { t, pick } = useLang();
   return (
-    <section className="py-20 md:py-28">
+    <section className="py-10 md:py-12">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <SectionHeader
           eyebrow={t("workflow_eyebrow")}
@@ -837,7 +837,7 @@ function DashboardShowcase() {
   const { t } = useLang();
   const [active, setActive] = useState<DashKey>("admin");
   return (
-    <section className="bg-[color:var(--orzen-slate-50)] py-20 md:py-28">
+    <section className="bg-[color:var(--orzen-slate-50)] py-10 md:py-12">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <SectionHeader
           eyebrow={t("product_eyebrow")}
@@ -1651,7 +1651,7 @@ const WHY = [
 function WhyOrzen() {
   const { t, pick } = useLang();
   return (
-    <section className="bg-[color:var(--orzen-slate-50)] py-20 md:py-28">
+    <section className="bg-[color:var(--orzen-slate-50)] py-10 md:py-12">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <SectionHeader eyebrow={t("why_eyebrow")} title={t("why_title")} />
         <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -1682,7 +1682,7 @@ function WhyOrzen() {
 function Testimonials() {
   const { t } = useLang();
   return (
-    <section className="py-20 md:py-28">
+    <section className="py-10 md:py-12">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <SectionHeader eyebrow={t("testimonials_eyebrow")} title={t("testimonials_title")} />
       </div>
@@ -1718,7 +1718,7 @@ function FAQ() {
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? FAQ_COPY : FAQ_COPY.slice(0, 6);
   return (
-    <section id="faq" className="scroll-mt-24 bg-[color:var(--orzen-slate-50)] py-20 md:py-28">
+    <section id="faq" className="scroll-mt-24 bg-[color:var(--orzen-slate-50)] py-10 md:py-12">
       <div className="mx-auto max-w-5xl px-5 md:px-8">
         <SectionHeader eyebrow={t("faq_eyebrow")} title={t("faq_title")} />
         <Accordion
@@ -1764,8 +1764,8 @@ function FAQ() {
 function FinalCTA() {
   const { t } = useLang();
   return (
-    <section className="px-5 py-16 md:px-8 md:py-24">
-      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-[color:var(--orzen-navy)] px-6 py-16 text-center text-white shadow-[var(--shadow-lift)] sm:px-12 sm:py-20">
+    <section className="px-5 py-10 md:px-8 md:py-12">
+      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-[color:var(--orzen-navy)] px-6 py-10 text-center text-white shadow-[var(--shadow-lift)] sm:px-12 sm:py-12">
         <div
           className="pointer-events-none absolute inset-0 opacity-40"
           style={{
