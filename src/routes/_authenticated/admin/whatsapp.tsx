@@ -204,20 +204,26 @@ function WhatsappPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">App secret (required)</Label>
+            <Label className="text-xs">App secret (recommended)</Label>
             <Input
               type="password"
               value={form.app_secret}
               onChange={(e) => setForm({ ...form, app_secret: e.target.value })}
-              placeholder={d.has_app_secret ? "•••••••• (saved)" : "Required to verify webhooks"}
+              placeholder={d.has_app_secret ? "•••••••• (saved)" : "Used to verify webhooks"}
             />
             <p className="text-[11px] text-muted-foreground">
-              Without the app secret we cannot verify that incoming messages really come from WhatsApp, so they are
-              rejected.
+              The app secret lets us verify that incoming messages really come from WhatsApp.
             </p>
           </div>
 
         </div>
+        {d.connected && !d.has_app_secret ? (
+          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-700 dark:text-amber-300">
+            No app secret saved. Messages still arrive, but they are not signature-verified. Add your Meta app secret
+            above and save to secure this connection.
+          </div>
+        ) : null}
+
         <div className="flex flex-wrap gap-2">
           <Button
             size="sm"
