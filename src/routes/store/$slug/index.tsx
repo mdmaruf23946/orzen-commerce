@@ -105,17 +105,8 @@ function StoreHome() {
     return m;
   }, [categories]);
 
-  const countsByMain = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const p of products) {
-      const cid = (p as any).category_id as string | null;
-      if (!cid) continue;
-      const parent = catParentMap.get(cid);
-      const mainId = parent ?? cid;
-      m.set(mainId, (m.get(mainId) ?? 0) + 1);
-    }
-    return m;
-  }, [products, catParentMap]);
+
+
 
   const activeSubs = activeMainId ? (subsByParent.get(activeMainId) as any) ?? [] : [];
 
@@ -202,15 +193,7 @@ function StoreHome() {
 
   return (
     <div className="theme-sections flex flex-col gap-8">
-      {mainCategories.length > 0 && (
-        <MainCategoryBar
-          mains={mainCategories as any}
-          counts={countsByMain}
-          totalCount={products.length}
-          activeMainId={activeMainId}
-          onSelect={(id) => selectMain(id, "header")}
-        />
-      )}
+
 
       {!isFiltering && source === "header" && activeMainId && activeSubs.length > 0 && (
         <SubcategoryBar
@@ -316,38 +299,8 @@ function Section({
   );
 }
 
-function MainCategoryBar({
-  mains,
-  counts,
-  totalCount,
-  activeMainId,
-  onSelect,
-}: {
-  mains: { id: string; name: string }[];
-  counts: Map<string, number>;
-  totalCount: number;
-  activeMainId: string | null;
-  onSelect: (id: string | null) => void;
-}) {
-  return (
-    <div className="-mx-4 hidden overflow-x-auto px-4 pb-1 md:block [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <div className="flex items-center gap-2">
-        <Pill active={activeMainId === null} onClick={() => onSelect(null)}>
-          All ({totalCount})
-        </Pill>
-        {mains.map((c) => (
-          <Pill
-            key={c.id}
-            active={activeMainId === c.id}
-            onClick={() => onSelect(c.id)}
-          >
-            {c.name} ({counts.get(c.id) ?? 0})
-          </Pill>
-        ))}
-      </div>
-    </div>
-  );
-}
+
+
 
 function SubcategoryBar({
   subs,
@@ -378,30 +331,6 @@ function SubcategoryBar({
   );
 }
 
-function Pill({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors duration-200 ${
-        active
-          ? "text-white"
-          : "border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50"
-      }`}
-      style={active ? { backgroundColor: "var(--store-btn-bg, #7c3aed)" } : undefined}
-    >
-      {children}
-    </button>
-  );
-}
 
 function SubPill({
   active,
@@ -437,7 +366,7 @@ function CategoryStrip({
   onSelect: (id: string | null) => void;
 }) {
   return (
-    <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-6 sm:gap-4 sm:overflow-visible sm:px-0 md:grid-cols-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="grid grid-cols-4 gap-3 sm:grid-cols-6 sm:gap-4 md:grid-cols-8">
       <CategoryTile label="All" active={active === null} onClick={() => onSelect(null)} />
       {categories.map((c) => (
         <CategoryTile
@@ -451,6 +380,7 @@ function CategoryStrip({
     </div>
   );
 }
+
 
 function CategoryTile({
   label,
@@ -468,14 +398,19 @@ function CategoryTile({
     <button
       type="button"
       onClick={onClick}
-      className="group flex w-20 shrink-0 snap-start flex-col items-center gap-1.5 sm:w-auto"
+      className="group flex w-full min-w-0 flex-col items-center gap-1.5"
     >
       <div
-        className="grid aspect-square w-16 place-items-center overflow-hidden rounded-2xl bg-neutral-100 ring-2 transition-all sm:w-full"
+        className="aspect-square w-full overflow-hidden rounded-2xl bg-neutral-100 transition-all"
         style={{ boxShadow: `inset 0 0 0 2px ${ring}` }}
       >
         {image ? (
-          <img src={image} alt={label} loading="lazy" className="h-full w-full object-cover" />
+          <img
+            src={image}
+            alt={label}
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
         ) : (
           <span
             className="grid h-full w-full place-items-center text-lg font-bold text-neutral-400"
@@ -491,6 +426,7 @@ function CategoryTile({
         {label}
       </span>
     </button>
+
   );
 }
 
