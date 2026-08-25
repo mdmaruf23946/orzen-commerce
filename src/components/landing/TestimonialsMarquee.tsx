@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Star } from "lucide-react";
@@ -51,13 +52,22 @@ function ReviewCard({ r }: { r: PlatformReview }) {
 }
 
 function Row({ items, reverse }: { items: PlatformReview[]; reverse?: boolean }) {
+  const [held, setHeld] = useState(false);
   if (!items.length) return null;
   const loop = items.concat(items);
   return (
-    <div className="group flex overflow-hidden py-2">
+    <div
+      className="group flex overflow-hidden py-2"
+      onTouchStart={() => setHeld(true)}
+      onTouchEnd={() => setHeld(false)}
+      onTouchCancel={() => setHeld(false)}
+    >
       <div
         className="flex w-max animate-[orzen-marquee_46s_linear_infinite] group-hover:[animation-play-state:paused] motion-reduce:animate-none"
-        style={reverse ? { animationDirection: "reverse" } : undefined}
+        style={{
+          ...(reverse ? { animationDirection: "reverse" as const } : null),
+          ...(held ? { animationPlayState: "paused" as const } : null),
+        }}
       >
         {loop.map((r, i) => (
           <ReviewCard key={`${r.id}-${i}`} r={r} />
