@@ -161,7 +161,6 @@ function Landing() {
         <AIShowcase />
         <Workflow />
         <DashboardShowcase />
-        <Templates />
         <WhyOrzen />
         <Testimonials />
         <FAQ />
@@ -179,7 +178,6 @@ function Landing() {
 
 const NAV = [
   { label: "Features", href: "#features" },
-  { label: "Templates", href: "#templates" },
   { label: "AI", href: "#ai" },
   { label: "FAQ", href: "#faq" },
   { label: "Contact", href: "#contact" },
@@ -1841,7 +1839,6 @@ function Footer() {
       title: "Product",
       links: [
         { label: "Features", href: "#features" },
-        { label: "Templates", href: "#templates" },
         { label: "AI", href: "#ai" },
       ],
     },
