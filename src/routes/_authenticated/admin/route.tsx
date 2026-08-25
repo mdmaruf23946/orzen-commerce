@@ -131,7 +131,7 @@ const groupDefs: { label: string; paths: string[] }[] = [
   { label: "Marketing", paths: ["/admin/marketing", "/admin/coupons", "/admin/seo", "/admin/banners", "/admin/notifications"] },
   { label: "Finance", paths: ["/admin/payment-gateway", "/admin/finance", "/admin/analytics"] },
   { label: "Operations", paths: ["/admin/delivery", "/admin/couriers", "/admin/parcels", "/admin/landing-builder", "/admin/landing-pages"] },
-  { label: "System", paths: ["/admin/theme", "/admin/legal", "/admin/invoice-templates", "/admin/domains", "/admin/dns-check", "/admin/import-export", "/admin/staff"] },
+  { label: "System", paths: ["/admin/theme", "/admin/legal", "/admin/invoice-templates", "/admin/domains", "/admin/dns-check", "/admin/import-export", "/admin/staff", "/admin/employees", "/admin/activity"] },
   { label: "Account", paths: ["/admin/subscription", "/admin/billing", "/admin/support", "/admin/settings"] },
 ];
 
