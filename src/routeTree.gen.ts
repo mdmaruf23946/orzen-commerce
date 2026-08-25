@@ -102,6 +102,7 @@ import { Route as AuthenticatedAdminInboxRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminImportExportRouteImport } from './routes/_authenticated/admin/import-export'
 import { Route as AuthenticatedAdminHandoffQueueRouteImport } from './routes/_authenticated/admin/handoff-queue'
 import { Route as AuthenticatedAdminFinanceRouteImport } from './routes/_authenticated/admin/finance'
+import { Route as AuthenticatedAdminEmployeesRouteImport } from './routes/_authenticated/admin/employees'
 import { Route as AuthenticatedAdminDuplicateProtectionRouteImport } from './routes/_authenticated/admin/duplicate-protection'
 import { Route as AuthenticatedAdminDomainsRouteImport } from './routes/_authenticated/admin/domains'
 import { Route as AuthenticatedAdminDnsCheckRouteImport } from './routes/_authenticated/admin/dns-check'
@@ -118,6 +119,7 @@ import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminAiRecommendationsRouteImport } from './routes/_authenticated/admin/ai-recommendations'
 import { Route as AuthenticatedAdminAiCallCenterRouteImport } from './routes/_authenticated/admin/ai-call-center'
 import { Route as AuthenticatedAdminAiAgentRouteImport } from './routes/_authenticated/admin/ai-agent'
+import { Route as AuthenticatedAdminActivityRouteImport } from './routes/_authenticated/admin/activity'
 import { Route as DotwellKnownOrzenDomainVerificationTokenRouteImport } from './routes/[.]well-known.orzen-domain-verification.$token'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -700,6 +702,12 @@ const AuthenticatedAdminFinanceRoute =
     path: '/finance',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminEmployeesRoute =
+  AuthenticatedAdminEmployeesRouteImport.update({
+    id: '/employees',
+    path: '/employees',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminDuplicateProtectionRoute =
   AuthenticatedAdminDuplicateProtectionRouteImport.update({
     id: '/duplicate-protection',
@@ -794,6 +802,12 @@ const AuthenticatedAdminAiAgentRoute =
   AuthenticatedAdminAiAgentRouteImport.update({
     id: '/ai-agent',
     path: '/ai-agent',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminActivityRoute =
+  AuthenticatedAdminActivityRouteImport.update({
+    id: '/activity',
+    path: '/activity',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const DotwellKnownOrzenDomainVerificationTokenRoute =
@@ -1205,6 +1219,7 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/.well-known/orzen-domain-verification/$token': typeof DotwellKnownOrzenDomainVerificationTokenRoute
+  '/admin/activity': typeof AuthenticatedAdminActivityRoute
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/admin/ai-call-center': typeof AuthenticatedAdminAiCallCenterRoute
   '/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
@@ -1221,6 +1236,7 @@ export interface FileRoutesByFullPath {
   '/admin/dns-check': typeof AuthenticatedAdminDnsCheckRoute
   '/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/admin/duplicate-protection': typeof AuthenticatedAdminDuplicateProtectionRoute
+  '/admin/employees': typeof AuthenticatedAdminEmployeesRoute
   '/admin/finance': typeof AuthenticatedAdminFinanceRoute
   '/admin/handoff-queue': typeof AuthenticatedAdminHandoffQueueRoute
   '/admin/import-export': typeof AuthenticatedAdminImportExportRoute
@@ -1372,6 +1388,7 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/.well-known/orzen-domain-verification/$token': typeof DotwellKnownOrzenDomainVerificationTokenRoute
+  '/admin/activity': typeof AuthenticatedAdminActivityRoute
   '/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/admin/ai-call-center': typeof AuthenticatedAdminAiCallCenterRoute
   '/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
@@ -1388,6 +1405,7 @@ export interface FileRoutesByTo {
   '/admin/dns-check': typeof AuthenticatedAdminDnsCheckRoute
   '/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/admin/duplicate-protection': typeof AuthenticatedAdminDuplicateProtectionRoute
+  '/admin/employees': typeof AuthenticatedAdminEmployeesRoute
   '/admin/finance': typeof AuthenticatedAdminFinanceRoute
   '/admin/handoff-queue': typeof AuthenticatedAdminHandoffQueueRoute
   '/admin/import-export': typeof AuthenticatedAdminImportExportRoute
@@ -1548,6 +1566,7 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/.well-known/orzen-domain-verification/$token': typeof DotwellKnownOrzenDomainVerificationTokenRoute
+  '/_authenticated/admin/activity': typeof AuthenticatedAdminActivityRoute
   '/_authenticated/admin/ai-agent': typeof AuthenticatedAdminAiAgentRoute
   '/_authenticated/admin/ai-call-center': typeof AuthenticatedAdminAiCallCenterRoute
   '/_authenticated/admin/ai-recommendations': typeof AuthenticatedAdminAiRecommendationsRoute
@@ -1564,6 +1583,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/dns-check': typeof AuthenticatedAdminDnsCheckRoute
   '/_authenticated/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/_authenticated/admin/duplicate-protection': typeof AuthenticatedAdminDuplicateProtectionRoute
+  '/_authenticated/admin/employees': typeof AuthenticatedAdminEmployeesRoute
   '/_authenticated/admin/finance': typeof AuthenticatedAdminFinanceRoute
   '/_authenticated/admin/handoff-queue': typeof AuthenticatedAdminHandoffQueueRoute
   '/_authenticated/admin/import-export': typeof AuthenticatedAdminImportExportRoute
@@ -1725,6 +1745,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/.well-known/orzen-domain-verification/$token'
+    | '/admin/activity'
     | '/admin/ai-agent'
     | '/admin/ai-call-center'
     | '/admin/ai-recommendations'
@@ -1741,6 +1762,7 @@ export interface FileRouteTypes {
     | '/admin/dns-check'
     | '/admin/domains'
     | '/admin/duplicate-protection'
+    | '/admin/employees'
     | '/admin/finance'
     | '/admin/handoff-queue'
     | '/admin/import-export'
@@ -1892,6 +1914,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/.well-known/orzen-domain-verification/$token'
+    | '/admin/activity'
     | '/admin/ai-agent'
     | '/admin/ai-call-center'
     | '/admin/ai-recommendations'
@@ -1908,6 +1931,7 @@ export interface FileRouteTypes {
     | '/admin/dns-check'
     | '/admin/domains'
     | '/admin/duplicate-protection'
+    | '/admin/employees'
     | '/admin/finance'
     | '/admin/handoff-queue'
     | '/admin/import-export'
@@ -2067,6 +2091,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/.well-known/orzen-domain-verification/$token'
+    | '/_authenticated/admin/activity'
     | '/_authenticated/admin/ai-agent'
     | '/_authenticated/admin/ai-call-center'
     | '/_authenticated/admin/ai-recommendations'
@@ -2083,6 +2108,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/dns-check'
     | '/_authenticated/admin/domains'
     | '/_authenticated/admin/duplicate-protection'
+    | '/_authenticated/admin/employees'
     | '/_authenticated/admin/finance'
     | '/_authenticated/admin/handoff-queue'
     | '/_authenticated/admin/import-export'
@@ -2915,6 +2941,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminFinanceRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/employees': {
+      id: '/_authenticated/admin/employees'
+      path: '/employees'
+      fullPath: '/admin/employees'
+      preLoaderRoute: typeof AuthenticatedAdminEmployeesRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/duplicate-protection': {
       id: '/_authenticated/admin/duplicate-protection'
       path: '/duplicate-protection'
@@ -3025,6 +3058,13 @@ declare module '@tanstack/react-router' {
       path: '/ai-agent'
       fullPath: '/admin/ai-agent'
       preLoaderRoute: typeof AuthenticatedAdminAiAgentRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/activity': {
+      id: '/_authenticated/admin/activity'
+      path: '/activity'
+      fullPath: '/admin/activity'
+      preLoaderRoute: typeof AuthenticatedAdminActivityRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/.well-known/orzen-domain-verification/$token': {
@@ -3561,6 +3601,7 @@ const AuthenticatedAdminSettingsRouteWithChildren =
 interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminBillingRouteRoute: typeof AuthenticatedAdminBillingRouteRouteWithChildren
   AuthenticatedAdminFacebookRouteRoute: typeof AuthenticatedAdminFacebookRouteRouteWithChildren
+  AuthenticatedAdminActivityRoute: typeof AuthenticatedAdminActivityRoute
   AuthenticatedAdminAiAgentRoute: typeof AuthenticatedAdminAiAgentRoute
   AuthenticatedAdminAiCallCenterRoute: typeof AuthenticatedAdminAiCallCenterRoute
   AuthenticatedAdminAiRecommendationsRoute: typeof AuthenticatedAdminAiRecommendationsRoute
@@ -3577,6 +3618,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminDnsCheckRoute: typeof AuthenticatedAdminDnsCheckRoute
   AuthenticatedAdminDomainsRoute: typeof AuthenticatedAdminDomainsRoute
   AuthenticatedAdminDuplicateProtectionRoute: typeof AuthenticatedAdminDuplicateProtectionRoute
+  AuthenticatedAdminEmployeesRoute: typeof AuthenticatedAdminEmployeesRoute
   AuthenticatedAdminFinanceRoute: typeof AuthenticatedAdminFinanceRoute
   AuthenticatedAdminHandoffQueueRoute: typeof AuthenticatedAdminHandoffQueueRoute
   AuthenticatedAdminImportExportRoute: typeof AuthenticatedAdminImportExportRoute
@@ -3617,6 +3659,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
       AuthenticatedAdminBillingRouteRouteWithChildren,
     AuthenticatedAdminFacebookRouteRoute:
       AuthenticatedAdminFacebookRouteRouteWithChildren,
+    AuthenticatedAdminActivityRoute: AuthenticatedAdminActivityRoute,
     AuthenticatedAdminAiAgentRoute: AuthenticatedAdminAiAgentRoute,
     AuthenticatedAdminAiCallCenterRoute: AuthenticatedAdminAiCallCenterRoute,
     AuthenticatedAdminAiRecommendationsRoute:
@@ -3636,6 +3679,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminDomainsRoute: AuthenticatedAdminDomainsRoute,
     AuthenticatedAdminDuplicateProtectionRoute:
       AuthenticatedAdminDuplicateProtectionRoute,
+    AuthenticatedAdminEmployeesRoute: AuthenticatedAdminEmployeesRoute,
     AuthenticatedAdminFinanceRoute: AuthenticatedAdminFinanceRoute,
     AuthenticatedAdminHandoffQueueRoute: AuthenticatedAdminHandoffQueueRoute,
     AuthenticatedAdminImportExportRoute: AuthenticatedAdminImportExportRoute,

@@ -68,6 +68,8 @@ const links: LinkDef[] = [
   { to: "/admin/parcels", label: "Courier Parcels", icon: PackageOpen, badgeKey: "delivery" },
   { to: "/admin/payment-gateway", label: "Payment Gateway", icon: CreditCard, badgeKey: "payment_gateway" },
   { to: "/admin/staff", label: "Staff", icon: UserCog },
+  { to: "/admin/employees", label: "Employees & Team", icon: UserCog },
+  { to: "/admin/activity", label: "Activity Log", icon: ClipboardList },
   { to: "/admin/support", label: "Support", icon: MessageSquare },
 
 
@@ -129,15 +131,15 @@ const groupDefs: { label: string; paths: string[] }[] = [
   { label: "Marketing", paths: ["/admin/marketing", "/admin/coupons", "/admin/seo", "/admin/banners", "/admin/notifications"] },
   { label: "Finance", paths: ["/admin/payment-gateway", "/admin/finance", "/admin/analytics"] },
   { label: "Operations", paths: ["/admin/delivery", "/admin/couriers", "/admin/parcels", "/admin/landing-builder", "/admin/landing-pages"] },
-  { label: "System", paths: ["/admin/theme", "/admin/legal", "/admin/invoice-templates", "/admin/domains", "/admin/dns-check", "/admin/import-export", "/admin/staff"] },
+  { label: "System", paths: ["/admin/theme", "/admin/legal", "/admin/invoice-templates", "/admin/domains", "/admin/dns-check", "/admin/import-export", "/admin/staff", "/admin/employees", "/admin/activity"] },
   { label: "Account", paths: ["/admin/subscription", "/admin/billing", "/admin/support", "/admin/settings"] },
 ];
 
 
-function buildGroups(query: string) {
+function buildGroups(query: string, canSee: (path: string) => boolean) {
   const q = query.trim().toLowerCase();
   const used = new Set<string>();
-  const visible = links;
+  const visible = links.filter((l) => canSee(l.to));
   const byPath = new Map(visible.map((l) => [l.to, l]));
   const groups = groupDefs.map((g) => {
     const items: LinkDef[] = [];
@@ -156,7 +158,11 @@ function buildGroups(query: string) {
 }
 
 export const Route = createFileRoute("/_authenticated/admin")({
-  component: AdminLayout,
+  component: () => (
+    <StoreAccessProvider>
+      <AdminLayout />
+    </StoreAccessProvider>
+  ),
   errorComponent: AdminErrorComponent,
 });
 
