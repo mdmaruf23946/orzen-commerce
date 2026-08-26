@@ -10,6 +10,7 @@ import {
   getStoreBySlug,
 } from "@/lib/storefront.functions";
 import { useStoreUI } from "@/lib/store-ui";
+import { useStoreT } from "@/lib/store-i18n";
 import { useStoreTheme } from "@/lib/theme/context";
 import { ProductCard } from "@/components/storefront/ProductCard";
 
@@ -71,6 +72,7 @@ export const Route = createFileRoute("/store/$slug/")({
 const PAGE_SIZE = 12;
 
 function StoreHome() {
+  const { t } = useStoreT();
   const { slug } = Route.useParams();
   const { data: store } = useSuspenseQuery(storeQuery(slug));
   if (!store) return null;
@@ -161,7 +163,7 @@ function StoreHome() {
       on.featured && !isFiltering && featured.length > 0 ? (
         <Section
           key="featured"
-          title="Featured Products"
+          title={t("home.featuredProducts")}
           icon={<Sparkles className="h-4 w-4 text-amber-500" />}
           onViewAll={() => selectMain(null, null)}
         >
@@ -172,7 +174,7 @@ function StoreHome() {
       on.best_sellers && !isFiltering && bestSelling.length > 0 ? (
         <Section
           key="best_sellers"
-          title="Best Selling"
+          title={t("home.bestSelling")}
           icon={<Flame className="h-4 w-4 text-rose-500" />}
           onViewAll={() => selectMain(null, null)}
         >
@@ -183,7 +185,7 @@ function StoreHome() {
       on.new_arrival && !isFiltering && newArrivals.length > 0 ? (
         <Section
           key="new_arrival"
-          title="New Arrivals"
+          title={t("home.newArrivals")}
           icon={<Sparkles className="h-4 w-4 text-sky-500" />}
           onViewAll={() => selectMain(null, null)}
         >
@@ -211,7 +213,7 @@ function StoreHome() {
         <div className="flex items-center gap-2">
           <Grid3x3 className="h-4 w-4 text-neutral-500" />
           <h2 className="text-lg font-bold tracking-tight text-neutral-900 sm:text-xl">
-            {isFiltering ? "Results" : "All Products"}
+            {isFiltering ? t("home.results") : t("home.allProducts")}
           </h2>
           <span className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-600">
             {filtered.length}
@@ -222,12 +224,12 @@ function StoreHome() {
           isFiltering ? (
             <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-neutral-200 bg-white p-10 text-center">
               <SearchX className="h-8 w-8 text-neutral-400" />
-              <p className="text-sm font-semibold text-neutral-800">No products found.</p>
-              <p className="text-xs text-neutral-500">Try another keyword or category.</p>
+              <p className="text-sm font-semibold text-neutral-800">{t("home.noProductsFound")}</p>
+              <p className="text-xs text-neutral-500">{t("home.tryAnotherKeyword")}</p>
             </div>
           ) : (
             <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-10 text-center text-sm text-neutral-500">
-              No products yet.
+              {t("home.noProductsYet")}
             </div>
           )
         ) : (
@@ -240,7 +242,7 @@ function StoreHome() {
                   onClick={() => setPageSize((n) => n + PAGE_SIZE)}
                   className="rounded-full border border-neutral-200 bg-white px-6 py-2.5 text-sm font-semibold text-neutral-800 shadow-sm transition-colors hover:bg-neutral-50"
                 >
-                  Load more
+                  {t("home.loadMore")}
                 </button>
               </div>
             )}
@@ -278,6 +280,7 @@ function Section({
   onViewAll?: () => void;
   children: React.ReactNode;
 }) {
+  const { t } = useStoreT();
   return (
     <section className="space-y-3 sm:space-y-4">
       <div className="flex items-center justify-between gap-3">
@@ -291,7 +294,7 @@ function Section({
             onClick={onViewAll}
             className="flex shrink-0 items-center gap-0.5 text-xs font-semibold text-neutral-600 hover:text-neutral-900"
           >
-            View all <ChevronRight className="h-3.5 w-3.5" />
+            {t("home.viewAll")} <ChevronRight className="h-3.5 w-3.5" />
           </button>
         )}
       </div>
@@ -312,11 +315,12 @@ function SubcategoryBar({
   activeSubId: string | null;
   onSelect: (id: string | null) => void;
 }) {
+  const { t } = useStoreT();
   return (
     <div className="-mx-4 hidden overflow-x-auto px-4 md:block [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <div className="flex items-center gap-2">
         <SubPill active={activeSubId === null} onClick={() => onSelect(null)}>
-          All
+          {t("home.categoryAll")}
         </SubPill>
         {subs.map((s) => (
           <SubPill
@@ -371,6 +375,7 @@ function CategoryStrip({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showRight, setShowRight] = useState(true);
   const [showLeft, setShowLeft] = useState(false);
+  const { t } = useStoreT();
 
   const updateHints = () => {
     const el = scrollRef.current;
@@ -400,7 +405,7 @@ function CategoryStrip({
       >
         <div className="w-20 shrink-0 snap-start sm:w-auto">
           <CategoryTile
-            label="All"
+            label={t("home.categoryAll")}
             image={allImage ?? null}
             active={active === null}
             onClick={() => onSelect(null)}
@@ -500,6 +505,7 @@ function BannerCarousel({
   const startX = useRef<number | null>(null);
   const deltaX = useRef(0);
   const paused = useRef(false);
+  const { t } = useStoreT();
 
   useEffect(() => {
     if (banners.length <= 1) return;
@@ -573,7 +579,7 @@ function BannerCarousel({
               key={i}
               type="button"
               onClick={() => setIdx(i)}
-              aria-label={`Banner ${i + 1}`}
+              aria-label={t("home.banner", { n: i + 1 })}
               className={`h-1.5 rounded-full transition-all ${
                 i === idx ? "w-6 bg-white" : "w-1.5 bg-white/60"
               }`}

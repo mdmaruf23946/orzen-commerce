@@ -236,6 +236,9 @@ export const updateMyStore = createServerFn({ method: "POST" })
         language: z.string().trim().min(2).max(8).optional(),
         timezone: z.string().trim().max(60).optional(),
         allow_guest_checkout: z.boolean().optional(),
+        storefront_lang_switcher: z.boolean().optional(),
+        storefront_default_lang: z.enum(["en", "bn"]).optional(),
+
         icon_url: z.string().max(500).optional().nullable(),
         favicon_url: z.string().max(500).optional().nullable(),
         custom_favicon_url: z.string().max(500).optional().nullable(),

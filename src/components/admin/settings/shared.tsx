@@ -133,6 +133,8 @@ export function useStoreForm() {
           language: form.language || "en",
           timezone: form.timezone || "Asia/Dhaka",
           allow_guest_checkout: !!form.allow_guest_checkout,
+          storefront_lang_switcher: form.storefront_lang_switcher !== false,
+          storefront_default_lang: form.storefront_default_lang === "bn" ? "bn" : "en",
         },
       });
       await qc.invalidateQueries({ queryKey: ["admin", "store"] });
