@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.tg_staff_activity_actor_guard() FROM PUBLIC, anon, authenticated;

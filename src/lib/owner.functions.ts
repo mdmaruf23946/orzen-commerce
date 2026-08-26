@@ -202,7 +202,7 @@ export const grantRole = createServerFn({ method: "POST" })
       .from("user_roles")
       .insert({ user_id: target.id, role: data.role });
     if (error && !error.message.toLowerCase().includes("duplicate")) throw new Error(error.message);
-    await context.supabase.from("role_audit_log").insert({
+    await supabaseAdmin.from("role_audit_log").insert({
       actor_user_id: context.userId,
       actor_email: (context.claims.email as string | undefined) ?? null,
       target_user_id: target.id,
@@ -229,7 +229,7 @@ export const revokeRole = createServerFn({ method: "POST" })
       .eq("user_id", data.targetUserId)
       .eq("role", data.role);
     if (error) throw new Error(error.message);
-    await context.supabase.from("role_audit_log").insert({
+    await supabaseAdmin.from("role_audit_log").insert({
       actor_user_id: context.userId,
       actor_email: (context.claims.email as string | undefined) ?? null,
       target_user_id: data.targetUserId,
