@@ -67,7 +67,7 @@ function SideRotator({ items, delay }: { items: HeroBanner[]; delay: number }) {
                 alt=""
                 loading="lazy"
                 decoding="async"
-                className="h-full w-full select-none object-contain"
+                className="h-full w-full select-none object-cover"
               />
             </BannerLink>
           </div>
