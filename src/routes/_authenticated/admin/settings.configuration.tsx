@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Users, Globe } from "lucide-react";
+import { Users, Globe, Languages } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
   adminGetRequireCustomerLogin,
@@ -137,6 +137,44 @@ function StoreConfigurationPage() {
               </select>
             </Field>
           </div>
+        </Section>
+
+        <Section
+          icon={Languages}
+          title="Storefront Language"
+          description="English / Bangla language options for your storefront."
+        >
+          <label className="flex items-start justify-between gap-3 rounded-lg border p-3">
+            <div className="min-w-0">
+              <div className="text-sm font-medium">Language switcher</div>
+              <div className="text-xs text-muted-foreground">
+                Show an EN / বাংলা switcher in the storefront header so shoppers can choose.
+              </div>
+            </div>
+            <Switch
+              checked={form.storefront_lang_switcher !== false}
+              onCheckedChange={(v) => set("storefront_lang_switcher", v)}
+            />
+          </label>
+          <Field
+            label="Default storefront language"
+            htmlFor="sf-lang"
+            hint={
+              form.storefront_lang_switcher !== false
+                ? "Shoppers start with this language and can switch."
+                : "The storefront always uses this language."
+            }
+          >
+            <select
+              id="sf-lang"
+              value={form.storefront_default_lang === "bn" ? "bn" : "en"}
+              onChange={(e) => set("storefront_default_lang", e.target.value)}
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="en">English</option>
+              <option value="bn">বাংলা (Bangla)</option>
+            </select>
+          </Field>
         </Section>
 
         <InvoiceNumberingSection />
