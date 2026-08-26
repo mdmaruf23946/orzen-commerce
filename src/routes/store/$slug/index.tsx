@@ -365,24 +365,73 @@ function CategoryStrip({
   active: string | null;
   onSelect: (id: string | null) => void;
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showRight, setShowRight] = useState(true);
+  const [showLeft, setShowLeft] = useState(false);
+
+  const updateHints = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    setShowLeft(el.scrollLeft > 4);
+    setShowRight(el.scrollLeft < max - 4);
+  };
+
+  useEffect(() => {
+    updateHints();
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", updateHints, { passive: true });
+    window.addEventListener("resize", updateHints);
+    return () => {
+      el.removeEventListener("scroll", updateHints);
+      window.removeEventListener("resize", updateHints);
+    };
+  }, [categories.length]);
+
   return (
-    <div className="flex flex-nowrap gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-6 sm:gap-4 md:grid-cols-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x">
-      <div className="w-20 shrink-0 snap-start sm:w-auto">
-        <CategoryTile label="All" active={active === null} onClick={() => onSelect(null)} />
-      </div>
-      {categories.map((c) => (
-        <div key={c.id} className="w-20 shrink-0 snap-start sm:w-auto">
-          <CategoryTile
-            label={c.name}
-            image={c.image_url ?? null}
-            active={active === c.id}
-            onClick={() => onSelect(c.id)}
-          />
+    <div className="relative">
+      <div
+        ref={scrollRef}
+        className="flex flex-nowrap gap-3 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory sm:grid sm:grid-cols-6 sm:gap-4 md:grid-cols-8"
+      >
+        <div className="w-20 shrink-0 snap-start sm:w-auto">
+          <CategoryTile label="All" active={active === null} onClick={() => onSelect(null)} />
         </div>
-      ))}
+        {categories.map((c) => (
+          <div key={c.id} className="w-20 shrink-0 snap-start sm:w-auto">
+            <CategoryTile
+              label={c.name}
+              image={c.image_url ?? null}
+              active={active === c.id}
+              onClick={() => onSelect(c.id)}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Mobile swipe hint */}
+      <div
+        className={`pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-white via-white/80 to-transparent transition-opacity duration-300 sm:hidden ${
+          showRight ? "opacity-100" : "opacity-0"
+        }`}
+      />
+      <div
+        className={`pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-white via-white/80 to-transparent transition-opacity duration-300 sm:hidden ${
+          showLeft ? "opacity-100" : "opacity-0"
+        }`}
+      />
+      <div
+        className={`pointer-events-none absolute bottom-2 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-neutral-400 shadow-sm transition-opacity duration-300 sm:hidden ${
+          showRight ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        <ChevronRight className="h-3.5 w-3.5" />
+      </div>
     </div>
   );
 }
+
 
 
 function CategoryTile({
