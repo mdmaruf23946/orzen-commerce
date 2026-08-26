@@ -2,15 +2,12 @@
 // delivery emails and the audit log. Every function is scoped to the
 // signed-in owner's store.
 import { createServerFn } from "@tanstack/react-start";
+import { myStoreRow } from "@/lib/store-access";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
 async function myStoreId(supabase: any, userId: string): Promise<string | null> {
-  const { data } = await supabase
-    .from("stores")
-    .select("id")
-    .eq("owner_user_id", userId)
-    .maybeSingle();
+  const data = await myStoreRow(supabase, userId, "id");
   return data?.id ?? null;
 }
 

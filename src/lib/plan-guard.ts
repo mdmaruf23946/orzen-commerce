@@ -2,6 +2,7 @@
 // Import into server function handlers so gated features can't be
 // invoked by calling the RPC directly (bypassing the client-side UI gate).
 import type { FeatureKey } from "@/lib/features";
+import { myStoreRow } from "@/lib/store-access";
 import { INACTIVE_STATUSES } from "@/lib/features";
 
 const INACTIVE = new Set<string>(INACTIVE_STATUSES as readonly string[]);
@@ -45,11 +46,7 @@ type MinimalStore = {
 };
 
 async function loadStoreForUser(supabase: any, userId: string): Promise<MinimalStore | null> {
-  const { data } = await supabase
-    .from("stores")
-    .select("id, subscription_status, subscription_packages(is_trial, features)")
-    .eq("owner_user_id", userId)
-    .maybeSingle();
+  const data = await myStoreRow(supabase, userId, "id, subscription_status, subscription_packages(is_trial, features)");
   return (data as MinimalStore | null) ?? null;
 }
 
@@ -108,13 +105,7 @@ export async function assertLimit(
   userId: string,
   kind: LimitKind,
 ): Promise<string> {
-  const { data: store } = await supabase
-    .from("stores")
-    .select(
-      "id, subscription_status, subscription_packages(is_trial, product_limit, order_limit, staff_limit)",
-    )
-    .eq("owner_user_id", userId)
-    .maybeSingle();
+  const store = await myStoreRow(supabase, userId, "id, subscription_status, subscription_packages(is_trial, product_limit, order_limit, staff_limit)");
   if (!store) throw new Error("No store found for this account");
 
   const pkg = await resolveEffectivePlan(supabase, store as any);

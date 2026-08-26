@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { myStoreRow } from "@/lib/store-access";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -46,11 +47,7 @@ function preview(s: PreviewInput, seq: number) {
 }
 
 async function getOwnedStoreId(supabase: any, userId: string) {
-  const { data, error } = await supabase
-    .from("stores")
-    .select("id")
-    .eq("owner_user_id", userId)
-    .maybeSingle();
+  const data = await myStoreRow(supabase, userId, "id");
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Store not found");
   return data.id as string;

@@ -1,5 +1,6 @@
 // Admin server functions for the Duplicate Order Protection feature.
 import { createServerFn } from "@tanstack/react-start";
+import { myStoreRow } from "@/lib/store-access";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
@@ -10,11 +11,7 @@ async function assertOwnsStore(supabase: any, storeId: string) {
 }
 
 async function resolveMyStoreId(supabase: any, userId: string) {
-  const { data, error } = await supabase
-    .from("stores")
-    .select("id")
-    .eq("owner_user_id", userId)
-    .maybeSingle();
+  const data = await myStoreRow(supabase, userId, "id");
   if (error) throw new Error(error.message);
   if (!data) throw new Error("No store");
   return data.id as string;

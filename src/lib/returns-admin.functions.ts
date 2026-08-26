@@ -3,6 +3,7 @@
 // auditable history. Inventory, replacement orders, courier and refunds are all
 // driven from here so the merchant only clicks one button per stage.
 import { createServerFn } from "@tanstack/react-start";
+import { myStoreRow } from "@/lib/store-access";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertPlan } from "@/lib/plan-guard";
@@ -14,11 +15,7 @@ import {
 } from "@/lib/returns-pricing";
 
 async function myStoreId(supabase: any, userId: string): Promise<string | null> {
-  const { data } = await supabase
-    .from("stores")
-    .select("id")
-    .eq("owner_user_id", userId)
-    .maybeSingle();
+  const data = await myStoreRow(supabase, userId, "id");
   return (data as any)?.id ?? null;
 }
 

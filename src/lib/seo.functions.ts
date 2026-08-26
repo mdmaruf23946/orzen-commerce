@@ -1,6 +1,7 @@
 // SEO server functions: request origin for the storefront head, and the
 // admin overview (store URL + automatic-SEO context + health counts).
 import { createServerFn } from "@tanstack/react-start";
+import { myStoreRow } from "@/lib/store-access";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -19,11 +20,7 @@ export const getMySeoOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase
-      .from("stores")
-      .select("id, slug, name, description, logo_url, icon_url, favicon_url, custom_favicon_url, use_icon_as_favicon, phone, email, address, seo")
-      .eq("owner_user_id", userId)
-      .maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id, slug, name, description, logo_url, icon_url, favicon_url, custom_favicon_url, use_icon_as_favicon, phone, email, address, seo");
     if (!store) throw new Error("No store found for this account");
 
     const [{ data: cats }, { count: productCount }, { data: domains }, { data: pSettings }] =

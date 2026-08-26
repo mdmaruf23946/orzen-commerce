@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { myStoreRow } from "@/lib/store-access";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const FEATURES = [
@@ -60,11 +61,7 @@ export const getAdminBadgeCounts = createServerFn({ method: "POST" })
   .handler(async ({ context }): Promise<{ store_id: string | null; counts: BadgeCounts }> => {
     const { supabase, userId } = context;
 
-    const { data: store } = await supabase
-      .from("stores")
-      .select("id")
-      .eq("owner_user_id", userId)
-      .maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id");
     const storeId = store?.id ?? null;
     const empty: BadgeCounts = {
       orders: 0, returns: 0, customers: 0, messenger: 0, handoff: 0,

@@ -1,5 +1,6 @@
 // Store-scoped notification settings: read, per-channel save, per-channel test.
 import { createServerFn } from "@tanstack/react-start";
+import { myStoreRow } from "@/lib/store-access";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
@@ -38,11 +39,7 @@ const SaveSchema = z.discriminatedUnion("channel", [
 ]);
 
 async function myStoreId(supabase: any, userId: string): Promise<string> {
-  const { data, error } = await supabase
-    .from("stores")
-    .select("id")
-    .eq("owner_user_id", userId)
-    .maybeSingle();
+  const data = await myStoreRow(supabase, userId, "id");
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Store not found");
   return data.id as string;

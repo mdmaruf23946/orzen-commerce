@@ -1,5 +1,6 @@
 // Invoice template CRUD + invoice payload resolution + email sharing.
 import { createServerFn } from "@tanstack/react-start";
+import { myStoreRow } from "@/lib/store-access";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { enqueueEmail } from "@/lib/emails.server";
@@ -34,7 +35,7 @@ const canvasSchema = z.object({
 const brandSchema = z.record(z.string(), z.any());
 
 async function myStoreId(supabase: any, userId: string): Promise<string | null> {
-  const { data } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+  const data = await myStoreRow(supabase, userId, "id");
   return data?.id ?? null;
 }
 

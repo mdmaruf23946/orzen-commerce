@@ -1,5 +1,6 @@
 // Server-only aggregation helpers for the store admin customer CRM.
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { myStoreRow } from "@/lib/store-access";
 
 export type AnyClient = SupabaseClient<any, any, any>;
 
@@ -18,11 +19,7 @@ export function customerKey(phone?: string | null, email?: string | null) {
 }
 
 export async function ownerStoreId(supabase: AnyClient, userId: string) {
-  const { data } = await supabase
-    .from("stores")
-    .select("id")
-    .eq("owner_user_id", userId)
-    .maybeSingle();
+  const data = await myStoreRow(supabase, userId, "id");
   return (data?.id as string | undefined) ?? null;
 }
 

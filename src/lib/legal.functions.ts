@@ -1,5 +1,6 @@
 // Legal & Business Information Generator — server functions.
 import { createServerFn } from "@tanstack/react-start";
+import { myStoreRow } from "@/lib/store-access";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -18,7 +19,7 @@ const infoSchema = z.object({
 });
 
 async function getStoreForOwner(supabase: any, userId: string) {
-  const { data } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+  const data = await myStoreRow(supabase, userId, "id");
   if (!data) throw new Error("Store not found");
   return data.id as string;
 }

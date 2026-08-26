@@ -2,6 +2,7 @@
 // customises whitelisted options. Every store-side write is sanitized against
 // the selected theme's locks server-side, so the UI gate cannot be bypassed.
 import { createServerFn } from "@tanstack/react-start";
+import { myStoreRow } from "@/lib/store-access";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { sanitizeOverrides, THEME_CATEGORIES } from "@/lib/theme/definition";
@@ -12,11 +13,7 @@ async function ownerOnly(supabase: any, userId: string) {
 }
 
 async function myStore(supabase: any, userId: string) {
-  const { data } = await supabase
-    .from("stores")
-    .select("id, slug, theme_id, theme_overrides, theme_draft")
-    .eq("owner_user_id", userId)
-    .maybeSingle();
+  const data = await myStoreRow(supabase, userId, "id, slug, theme_id, theme_overrides, theme_draft");
   if (!data) throw new Error("No store found for this account");
   return data as any;
 }

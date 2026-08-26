@@ -1,11 +1,12 @@
 // Store-owner (admin) server functions for the Subscription Billing system.
 import { createServerFn } from "@tanstack/react-start";
+import { myStoreRow } from "@/lib/store-access";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { CYCLES } from "@/lib/subscriptions";
 import { z } from "zod";
 
 async function storeIdOf(sb: any, userId: string) {
-  const { data } = await sb.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+  const data = await myStoreRow(sb, userId, "id");
   return (data as any)?.id ?? null;
 }
 
