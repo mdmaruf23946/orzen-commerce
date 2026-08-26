@@ -8,6 +8,9 @@ import { toast } from "sonner";
 import { writeOrderContact } from "@/lib/order-proof";
 import { getStoreBySlug, listStoreOnlineGateways, startOnlineCheckout, placeOrder, validateCoupon, getStoreDeliveryZones, listProductsByIds } from "@/lib/storefront.functions";
 import { readCart, readSelection, removeSelected, type CartItem } from "@/lib/cart";
+import { reconcileStoredCart, type CartNotice } from "@/lib/cart-reconcile";
+import { CartNotices } from "@/components/storefront/CartNotices";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
