@@ -19,6 +19,7 @@ import { useCustomerSession } from "@/lib/customer-session";
 import { computeFingerprint, getDeviceId } from "@/lib/fingerprint";
 import { LICENSE_LABELS, formatBytes, type LicenseType } from "@/lib/digital";
 import { Download, ShieldCheck, Sparkles, Loader2, Lock } from "lucide-react";
+import { useStoreT } from "@/lib/store-i18n";
 
 export type DigitalCartInfo = Record<
   string,
@@ -38,6 +39,7 @@ type Props = {
  * the payment is confirmed.
  */
 export function DigitalCheckout({ slug, store, items, info }: Props) {
+  const { t } = useStoreT();
   const navigate = useNavigate();
   const place = useServerFn(placeOrder);
   const startPay = useServerFn(startOnlineCheckout);
@@ -95,7 +97,7 @@ export function DigitalCheckout({ slug, store, items, info }: Props) {
         setCoupon(null);
       } else {
         setCoupon({ code: res.code, discount: res.discount });
-        toast.success("Coupon applied");
+        toast.success(t("checkout.couponApplied"));
       }
     } catch (err) {
       toast.error((err as Error).message);
@@ -107,11 +109,11 @@ export function DigitalCheckout({ slug, store, items, info }: Props) {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!agreeDigital || !agreeTerms) {
-      toast.error("Please accept both confirmations to continue");
+      toast.error(t("checkout.digital.acceptBoth"));
       return;
     }
     if (total > 0 && !method) {
-      toast.error("Choose a payment method");
+      toast.error(t("checkout.choosePaymentMethod"));
       return;
     }
     setStage("creating");
@@ -152,7 +154,7 @@ export function DigitalCheckout({ slug, store, items, info }: Props) {
           window.location.href = pay.redirect_url;
           return;
         }
-        throw new Error("Payment could not be started. Please try another payment method.");
+        throw new Error(t("checkout.paymentStartFailed"));
       }
 
       removeSelected(slug, items.map((i) => i.productId));
@@ -168,10 +170,10 @@ export function DigitalCheckout({ slug, store, items, info }: Props) {
       <div className="mx-auto max-w-sm py-20 text-center">
         <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
         <h2 className="mt-4 text-lg font-semibold">
-          {stage === "creating" ? "Securing your purchase…" : "Opening secure payment…"}
+          {stage === "creating" ? t("checkout.digital.securing") : t("checkout.digital.openingPayment")}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Please don't close or refresh this page.
+          {t("checkout.dontCloseRefresh")}
         </p>
       </div>
     );
@@ -181,21 +183,21 @@ export function DigitalCheckout({ slug, store, items, info }: Props) {
     <form onSubmit={submit} className="grid gap-6 sm:grid-cols-5">
       <div className="sm:col-span-3 space-y-6">
         <div>
-          <h1 className="text-xl font-semibold">Secure digital checkout</h1>
+          <h1 className="text-xl font-semibold">{t("checkout.digital.title")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Instant access after payment — nothing will be shipped.
+            {t("checkout.digital.subtitle")}
           </p>
         </div>
 
         <div className="space-y-4 rounded-xl border bg-card p-4">
-          <h2 className="text-sm font-semibold">Customer information</h2>
+          <h2 className="text-sm font-semibold">{t("checkout.customerInfo")}</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="d-name">Full name *</Label>
+              <Label htmlFor="d-name">{t("common.fullName")} *</Label>
               <Input id="d-name" required value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="d-email">Email address *</Label>
+              <Label htmlFor="d-email">{t("checkout.emailAddress")}</Label>
               <Input
                 id="d-email"
                 type="email"
@@ -205,37 +207,36 @@ export function DigitalCheckout({ slug, store, items, info }: Props) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="d-phone">Phone number *</Label>
+              <Label htmlFor="d-phone">{t("checkout.phoneNumber")}</Label>
               <Input id="d-phone" required value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="d-country">Country (optional)</Label>
+              <Label htmlFor="d-country">{t("checkout.countryOptional")}</Label>
               <Input id="d-country" value={country} onChange={(e) => setCountry(e.target.value)} />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="d-company">Company name (optional)</Label>
+              <Label htmlFor="d-company">{t("checkout.companyNameOptional")}</Label>
               <Input id="d-company" value={company} onChange={(e) => setCompany(e.target.value)} />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="d-notes">Order note (optional)</Label>
+              <Label htmlFor="d-notes">{t("checkout.orderNote")}</Label>
               <Textarea id="d-notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
             </div>
           </div>
           <p className="rounded-md bg-muted/50 p-2 text-xs text-muted-foreground">
-            Your download links and license keys are sent to this email address.
+            {t("checkout.digital.emailNotice")}
           </p>
         </div>
 
         <div className="rounded-xl border bg-card p-4">
-          <h2 className="text-sm font-semibold">Payment method</h2>
+          <h2 className="text-sm font-semibold">{t("checkout.paymentMethod")}</h2>
           {total === 0 ? (
             <p className="mt-2 text-sm text-muted-foreground">
-              This order is free — no payment required.
+              {t("checkout.digital.freeOrder")}
             </p>
           ) : gateways.length === 0 ? (
             <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-              This store has no online payment gateway connected yet. Digital products cannot be
-              paid for on delivery, so checkout is unavailable right now.
+              {t("checkout.digital.noGateway")}
             </div>
           ) : (
             <div className="mt-3 grid gap-2">
@@ -258,7 +259,7 @@ export function DigitalCheckout({ slug, store, items, info }: Props) {
                   <span className="flex-1">
                     <span className="block text-sm font-medium">{g.label}</span>
                     <span className="block text-xs text-muted-foreground">
-                      {g.sandbox ? "Pay online (test mode)" : "Pay online securely"}
+                      {g.sandbox ? t("checkout.payOnlineTest") : t("checkout.payOnlineSecure")}
                     </span>
                   </span>
                 </label>
@@ -266,7 +267,7 @@ export function DigitalCheckout({ slug, store, items, info }: Props) {
             </div>
           )}
           <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Lock className="h-3 w-3" /> Cash on Delivery is not available for digital products.
+            <Lock className="h-3 w-3" /> {t("checkout.digital.noCod")}
           </p>
         </div>
 
@@ -277,7 +278,7 @@ export function DigitalCheckout({ slug, store, items, info }: Props) {
               onCheckedChange={(v) => setAgreeDigital(v === true)}
               className="mt-0.5"
             />
-            <span>I understand this is a digital product. No physical shipment will be delivered.</span>
+            <span>{t("checkout.digital.agreeDigital")}</span>
           </label>
           <label className="flex items-start gap-3 text-sm">
             <Checkbox
@@ -286,9 +287,9 @@ export function DigitalCheckout({ slug, store, items, info }: Props) {
               className="mt-0.5"
             />
             <span>
-              I agree to the{" "}
+              {t("checkout.digital.agreeTermsPrefix")}{" "}
               <Link to="/terms" className="underline">
-                Terms &amp; Conditions
+                {t("footer.terms")}
               </Link>
               .
             </span>
@@ -298,7 +299,7 @@ export function DigitalCheckout({ slug, store, items, info }: Props) {
 
       <aside className="sm:col-span-2">
         <div className="sticky top-20 rounded-xl border bg-card p-4">
-          <h2 className="text-sm font-semibold">Order summary</h2>
+          <h2 className="text-sm font-semibold">{t("checkout.orderSummary")}</h2>
           <ul className="mt-3 space-y-3">
             {items.map((i) => {
               const d = info[i.productId] ?? null;
@@ -322,7 +323,7 @@ export function DigitalCheckout({ slug, store, items, info }: Props) {
                       {LICENSE_LABELS[(d?.license_type ?? "personal") as LicenseType]}
                       {d?.total_size ? ` · ${formatBytes(d.total_size)}` : ""}
                     </p>
-                    <p className="text-xs text-muted-foreground">Qty {i.qty}</p>
+                    <p className="text-xs text-muted-foreground">{t("checkout.digital.qty", { n: i.qty })}</p>
                   </div>
                   <span className="text-sm">৳{(i.qty * i.price).toFixed(0)}</span>
                 </li>
@@ -332,9 +333,9 @@ export function DigitalCheckout({ slug, store, items, info }: Props) {
 
           <div className="mt-3 flex flex-wrap gap-1.5">
             {[
-              { icon: Download, label: "Instant download" },
-              { icon: Sparkles, label: "Digital product" },
-              { icon: ShieldCheck, label: "Secure purchase" },
+              { icon: Download, label: t("checkout.digital.instantDownload") },
+              { icon: Sparkles, label: t("checkout.digital.digitalProduct") },
+              { icon: ShieldCheck, label: t("checkout.securePurchase") },
             ].map(({ icon: Icon, label }) => (
               <span
                 key={label}
@@ -347,7 +348,7 @@ export function DigitalCheckout({ slug, store, items, info }: Props) {
 
           <div className="mt-3 flex gap-2">
             <Input
-              placeholder="Coupon code"
+              placeholder={t("checkout.couponCode")}
               value={couponCode}
               onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
               className="h-9"
@@ -362,7 +363,7 @@ export function DigitalCheckout({ slug, store, items, info }: Props) {
                   setCouponCode("");
                 }}
               >
-                Remove
+                {t("checkout.remove")}
               </Button>
             ) : (
               <Button
@@ -372,28 +373,28 @@ export function DigitalCheckout({ slug, store, items, info }: Props) {
                 onClick={applyCoupon}
                 disabled={applying || !couponCode.trim()}
               >
-                {applying ? "…" : "Apply"}
+                {applying ? t("checkout.applying") : t("checkout.applyCoupon")}
               </Button>
             )}
           </div>
 
           <div className="mt-3 space-y-1 border-t pt-3 text-sm">
             <div className="flex justify-between">
-              <span>Subtotal</span>
+              <span>{t("checkout.subtotal")}</span>
               <span>৳{subtotal.toFixed(0)}</span>
             </div>
             <div className="flex justify-between text-muted-foreground">
-              <span>Shipping</span>
-              <span>Not applicable</span>
+              <span>{t("common.delivery")}</span>
+              <span>{t("checkout.digital.shippingNotApplicable")}</span>
             </div>
             {discount > 0 && (
               <div className="flex justify-between text-emerald-600">
-                <span>Discount ({coupon!.code})</span>
+                <span>{t("checkout.discountWithCode", { code: coupon!.code })}</span>
                 <span>-৳{discount.toFixed(0)}</span>
               </div>
             )}
             <div className="mt-2 flex items-center justify-between border-t pt-2">
-              <span>Total</span>
+              <span>{t("checkout.total")}</span>
               <span className="text-lg font-bold">৳{total.toFixed(0)}</span>
             </div>
           </div>
@@ -404,7 +405,7 @@ export function DigitalCheckout({ slug, store, items, info }: Props) {
             className="mt-4 h-12 w-full"
             style={{ backgroundColor: "var(--primary)", color: "white" }}
           >
-            Complete Purchase
+            {t("checkout.digital.completePurchase")}
           </Button>
         </div>
       </aside>

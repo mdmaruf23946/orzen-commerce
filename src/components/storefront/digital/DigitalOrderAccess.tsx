@@ -9,6 +9,7 @@ import { getOrderDigitalAccess, requestDigitalDownload } from "@/lib/digital.fun
 import { formatBytes, LICENSE_LABELS, type LicenseType } from "@/lib/digital";
 import { getDeviceId } from "@/lib/fingerprint";
 import { readToken } from "@/lib/customer-session";
+import { useStoreT } from "@/lib/store-i18n";
 
 const contactKey = (orderId: string) => `orzen_order_contact__${orderId}`;
 
@@ -36,6 +37,7 @@ export function DigitalOrderAccess({
   slug?: string;
   storeId?: string;
 }) {
+  const { t } = useStoreT();
   const listAccess = useServerFn(getOrderDigitalAccess);
   const requestDl = useServerFn(requestDigitalDownload);
   const [busy, setBusy] = useState<string | null>(null);
@@ -99,7 +101,7 @@ export function DigitalOrderAccess({
   return (
     <div className="mt-4 rounded-xl border bg-card p-4">
       <div className="mb-3 flex items-center gap-2 text-xs uppercase text-muted-foreground">
-        <Download className="h-3 w-3" /> Your downloads
+        <Download className="h-3 w-3" /> {t("digital.yourDownloads")}
       </div>
 
       {!verified && (
@@ -108,21 +110,20 @@ export function DigitalOrderAccess({
           className="mb-4 rounded-lg border bg-muted/30 p-3 space-y-2"
         >
           <p className="flex items-center gap-1.5 text-xs font-medium">
-            <ShieldCheck className="h-3.5 w-3.5" /> Verify it's your order
+            <ShieldCheck className="h-3.5 w-3.5" /> {t("digital.verifyOrder")}
           </p>
           <p className="text-[11px] text-muted-foreground">
-            Enter the phone number or email you used at checkout to unlock license keys and
-            download links.
+            {t("digital.verifyOrderDesc")}
           </p>
           <div className="flex gap-2">
             <Input
               value={contactInput}
               onChange={(e) => setContactInput(e.target.value)}
-              placeholder="Phone or email"
+              placeholder={t("digital.phoneOrEmail")}
               className="h-9"
             />
             <Button type="submit" size="sm" className="h-9">
-              Unlock
+              {t("digital.unlock")}
             </Button>
           </div>
         </form>
@@ -140,7 +141,7 @@ export function DigitalOrderAccess({
                 <div className="min-w-0">
                   <p className="text-sm font-semibold">{it.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {it.version ? `Version ${it.version}` : "Latest version"}
+                    {it.version ? t("digital.versionLabel", { version: it.version }) : t("digital.latestVersion")}
                     {it.license ? ` · ${LICENSE_LABELS[(it.license.type ?? "personal") as LicenseType]}` : ""}
                   </p>
                 </div>
@@ -149,7 +150,7 @@ export function DigitalOrderAccess({
                     locked ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
                   }`}
                 >
-                  {locked ? "Awaiting payment" : "Ready to download"}
+                  {locked ? t("digital.awaitingPayment") : t("digital.readyToDownload")}
                 </span>
               </div>
 
@@ -172,13 +173,13 @@ export function DigitalOrderAccess({
                         disabled={busy === `${it.id}:${f.index}`}
                       >
                         <FileDown className="mr-1 h-3.5 w-3.5" />
-                        {busy === `${it.id}:${f.index}` ? "…" : "Download"}
+                        {busy === `${it.id}:${f.index}` ? "…" : t("digital.download")}
                       </Button>
                     </div>
                   ))}
                   {it.hasExternal && (
                     <Button size="sm" variant="outline" onClick={() => download(it.id, -1)}>
-                      Open external link
+                      {t("digital.openExternalLink")}
                     </Button>
                   )}
                 </div>
@@ -193,7 +194,7 @@ export function DigitalOrderAccess({
                     variant="ghost"
                     onClick={() => {
                       navigator.clipboard.writeText(it.license.key);
-                      toast.success("License copied");
+                      toast.success(t("digital.licenseCopied"));
                     }}
                   >
                     <Copy className="h-3.5 w-3.5" />
@@ -203,13 +204,13 @@ export function DigitalOrderAccess({
 
               <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-muted-foreground">
                 <span>
-                  Downloads: {it.downloadCount}
-                  {it.maxDownloads == null ? " (unlimited)" : ` / ${it.maxDownloads}`}
+                  {t("digital.downloadsCount", { count: it.downloadCount })}
+                  {it.maxDownloads == null ? t("digital.unlimited") : ` / ${it.maxDownloads}`}
                 </span>
-                {remaining != null && <span>Remaining: {remaining}</span>}
+                {remaining != null && <span>{t("digital.remaining", { count: remaining })}</span>}
                 {it.expiresAt && (
                   <span className="inline-flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> Expires {new Date(it.expiresAt).toLocaleDateString()}
+                    <Clock className="h-3 w-3" /> {t("digital.expires", { date: new Date(it.expiresAt).toLocaleDateString() })}
                   </span>
                 )}
               </div>
@@ -218,8 +219,7 @@ export function DigitalOrderAccess({
         })}
       </div>
       <p className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-        <LifeBuoy className="h-3 w-3" /> Download links are personal and expire shortly after being
-        created.
+        <LifeBuoy className="h-3 w-3" /> {t("digital.linksPersonalNote")}
       </p>
     </div>
   );

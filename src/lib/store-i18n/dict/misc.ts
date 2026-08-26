@@ -8,6 +8,17 @@ export const miscDict: Dict = {
   "chat.messenger": { en: "Chat on Messenger", bn: "Messenger-এ চ্যাট করুন" },
   "chat.whatsapp": { en: "Chat on WhatsApp", bn: "WhatsApp-এ চ্যাট করুন" },
   "chat.typing": { en: "Typing…", bn: "লিখছে…" },
+  "chat.aiChatLabel": { en: "AI Chat", bn: "AI চ্যাট" },
+  "chat.openChat": { en: "Open chat", bn: "চ্যাট খুলুন" },
+  "chat.talkToHuman": { en: "Talk to a human", bn: "মানুষের সাথে কথা বলুন" },
+  "chat.waitingForAgent": { en: "Waiting for a human agent…", bn: "এজেন্টের অপেক্ষায়…" },
+  "chat.typeAMessage": { en: "Type a message…", bn: "একটি মেসেজ লিখুন…" },
+  "chat.humanNotified": {
+    en: "A human agent has been notified and will reply shortly.",
+    bn: "একজন এজেন্টকে জানানো হয়েছে, শীঘ্রই উত্তর দেওয়া হবে।",
+  },
+  "chat.inStock": { en: "In stock", bn: "স্টকে আছে" },
+  "chat.outOfStock": { en: "Out of stock", bn: "স্টকে নেই" },
 
   "digital.access": { en: "Your downloads", bn: "আপনার Download" },
   "digital.downloadFile": { en: "Download file", bn: "ফাইল Download করুন" },
