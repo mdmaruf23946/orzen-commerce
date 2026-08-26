@@ -8047,6 +8047,7 @@ export type Database = {
           marketing: Json
           nagad_number: string | null
           name: string
+          name_logo_url: string | null
           notifications: Json
           order_confirmation: Json
           owner_name: string | null
@@ -8109,6 +8110,7 @@ export type Database = {
           marketing?: Json
           nagad_number?: string | null
           name: string
+          name_logo_url?: string | null
           notifications?: Json
           order_confirmation?: Json
           owner_name?: string | null
@@ -8171,6 +8173,7 @@ export type Database = {
           marketing?: Json
           nagad_number?: string | null
           name?: string
+          name_logo_url?: string | null
           notifications?: Json
           order_confirmation?: Json
           owner_name?: string | null
