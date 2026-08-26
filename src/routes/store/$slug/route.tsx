@@ -128,8 +128,14 @@ function StoreLayout() {
 
   return (
     <StoreThemeProvider theme={resolved ?? DEFAULT_THEME}>
+    <StoreLangProvider
+      storeId={store.id}
+      defaultLang={s.storefront_default_lang ?? "en"}
+      switcherEnabled={s.storefront_lang_switcher !== false}
+    >
     <StoreUIProvider>
       <StoreBranding
+
         name={store.name}
         iconUrl={resolveStoreIcon(s)}
         faviconUrl={resolveStoreFavicon(s)}
