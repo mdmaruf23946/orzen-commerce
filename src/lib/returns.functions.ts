@@ -231,11 +231,29 @@ export const createMyReturnRequest = createServerFn({ method: "POST" })
     const storeId = await resolveStore(data.storeSlug);
     const sb = await admin();
 
+    // --- Ownership first: never read order lines or accept uploads for an
+    // order that does not belong to the caller's session. ---
+    const { data: cust } = await sb.rpc("customer_from_token" as any, {
+      _token: data.token,
+      _store_id: storeId,
+    } as any);
+    const customerId = (cust as any)?.id as string | undefined;
+    if (!customerId) throw new Error("Please sign in");
+    const { data: ownOrder } = await sb
+      .from("orders")
+      .select("id")
+      .eq("id", data.orderId)
+      .eq("store_id", storeId)
+      .eq("customer_id", customerId)
+      .maybeSingle();
+    if (!ownOrder) throw new Error("Order not found");
+
     // --- Re-validate the requested lines against the real order ---
     const { data: items } = await sb
       .from("order_items")
       .select("id,product_id,name_snapshot,price_snapshot,qty")
       .eq("order_id", data.orderId);
+
     const byId = new Map(((items ?? []) as any[]).map((i) => [i.id, i]));
     const lines: ReturnLine[] = [];
     for (const l of data.lines) {

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle2, Truck, Package, Clock, Download, ReceiptText, ShoppingBag } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -16,13 +16,22 @@ import { ReturnStages } from "@/components/storefront/order/ReturnStages";
 import { OrderActions } from "@/components/storefront/order/OrderActions";
 import { paymentStatusLabel } from "@/lib/order-display";
 import { useStoreT } from "@/lib/store-i18n";
+import { useCustomerSession } from "@/lib/customer-session";
+import { readOrderContact } from "@/lib/order-proof";
 
 
 
-const orderQuery = (orderId: string) =>
+const orderQuery = (orderId: string, proof?: { token?: string | null; contact?: string | null }) =>
   queryOptions({
-    queryKey: ["order", orderId],
-    queryFn: () => getOrder({ data: { orderId } }),
+    queryKey: ["order", orderId, proof?.token ?? "", proof?.contact ?? ""],
+    queryFn: () =>
+      getOrder({
+        data: {
+          orderId,
+          ...(proof?.token ? { token: proof.token } : {}),
+          ...(proof?.contact ? { contact: proof.contact } : {}),
+        },
+      }),
     refetchInterval: 30_000,
   });
 
@@ -64,7 +73,10 @@ const STAGE_ORDER = [
 function OrderConfirmation() {
   const { t } = useStoreT();
   const { slug, orderId } = Route.useParams();
-  const { data: order } = useSuspenseQuery(orderQuery(orderId));
+  const { token } = useCustomerSession(slug);
+  const [contact, setContact] = useState<string | null>(null);
+  useEffect(() => setContact(readOrderContact(orderId)), [orderId]);
+  const { data: order } = useSuspenseQuery(orderQuery(orderId, { token, contact }));
   const qc = useQueryClient();
   const verifyPay = useServerFn(verifyOrderPayment);
   const listDigital = useServerFn(getOrderDigitalAccess);
@@ -296,7 +308,7 @@ function OrderConfirmation() {
       <ReturnRequestBlock order={order} slug={slug} />
 
 
-      <PaymentTimeline orderId={order.id} refreshKey={String((order as any).payment_status ?? "")} />
+      <PaymentTimeline orderId={order.id} token={token} contact={contact} refreshKey={String((order as any).payment_status ?? "")} />
 
       <OrderActions order={order} slug={slug} />
 

@@ -6490,6 +6490,41 @@ export type Database = {
           },
         ]
       }
+      store_auth_attempts: {
+        Row: {
+          created_at: string
+          id: string
+          identifier: string
+          ip: string | null
+          ok: boolean
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          identifier: string
+          ip?: string | null
+          ok?: boolean
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          identifier?: string
+          ip?: string | null
+          ok?: boolean
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_auth_attempts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_customer_addresses: {
         Row: {
           address: string
@@ -6572,6 +6607,51 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: true
             referencedRelation: "store_customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_customer_reset_tokens: {
+        Row: {
+          created_at: string
+          customer_id: string
+          expires_at: string
+          id: string
+          store_id: string
+          token_hash: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          expires_at: string
+          id?: string
+          store_id: string
+          token_hash: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          expires_at?: string
+          id?: string
+          store_id?: string
+          token_hash?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_customer_reset_tokens_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "store_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_customer_reset_tokens_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -9177,6 +9257,14 @@ export type Database = {
         Returns: Json
       }
       customer_logout: { Args: { _token: string }; Returns: undefined }
+      customer_request_password_reset: {
+        Args: { _identifier: string; _store_id: string }
+        Returns: Json
+      }
+      customer_reset_password: {
+        Args: { _new: string; _store_id: string; _token: string }
+        Returns: Json
+      }
       customer_signup: {
         Args: {
           _email: string

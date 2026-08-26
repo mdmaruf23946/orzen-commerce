@@ -71,6 +71,21 @@ export const loginCustomer = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const storeId = await resolveStore(data.storeSlug);
     const sb = await admin();
+    const ident = data.identifier.trim().toLowerCase();
+
+    // --- Throttle: 8 failed attempts per identifier per 15 minutes ---
+    const since = new Date(Date.now() - 15 * 60_000).toISOString();
+    const { count } = await sb
+      .from("store_auth_attempts")
+      .select("id", { count: "exact", head: true })
+      .eq("store_id", storeId)
+      .eq("identifier", ident)
+      .eq("ok", false)
+      .gte("created_at", since);
+    if ((count ?? 0) >= 8) {
+      throw new Error("Too many failed attempts. Please try again in a few minutes.");
+    }
+
     const { data: res, error } = await sb.rpc("customer_login", {
       _store_id: storeId,
       _identifier: data.identifier,
@@ -78,11 +93,80 @@ export const loginCustomer = createServerFn({ method: "POST" })
       _ua: null,
       _ip: null,
     } as any);
-    if (error) throw new Error(error.message);
     const r = res as any;
-    if (!r?.ok) throw new Error(r?.error ?? "Login failed");
+    const ok = !error && !!r?.ok;
+    await sb.from("store_auth_attempts").insert({ store_id: storeId, identifier: ident, ok } as any);
+    if (error) throw new Error(error.message);
+    if (!ok) throw new Error(r?.error ?? "Login failed");
     return { token: r.token as string, customer: r.customer };
   });
+
+export const requestCustomerPasswordReset = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z.object({ storeSlug: slugSchema, identifier: z.string().trim().min(3).max(255) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const storeId = await resolveStore(data.storeSlug);
+    const sb = await admin();
+    const { data: store } = await sb
+      .from("stores")
+      .select("name,slug")
+      .eq("id", storeId)
+      .maybeSingle();
+
+    const { data: res } = await sb.rpc("customer_request_password_reset" as any, {
+      _store_id: storeId,
+      _identifier: data.identifier,
+    } as any);
+    const r = res as any;
+
+    // The RPC always reports success; a token only comes back on a real match.
+    if (r?.token && r?.email) {
+      const link = `${process.env["PUBLIC_SITE_URL"] ?? "https://orzen.top"}/store/${
+        store?.slug ?? data.storeSlug
+      }/auth/reset?token=${r.token}`;
+      const { enqueueEmail } = await import("@/lib/emails.server");
+      await enqueueEmail({
+        to: r.email,
+        template: "customer-password-reset",
+        subject: `Reset your password — ${store?.name ?? "Store"}`,
+        html: `<p>Hi ${r.name ?? "there"},</p><p>Use the link below to set a new password. It expires in 30 minutes.</p><p><a href="${link}">Reset my password</a></p><p>If you did not request this, you can ignore this email.</p>`,
+        payload: { store_id: storeId },
+      });
+      return { ok: true, sentTo: "email" as const };
+    }
+    return { ok: true, sentTo: null };
+  });
+
+export const resetCustomerPassword = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z
+      .object({
+        storeSlug: slugSchema,
+        token: z.string().min(16).max(200),
+        password: z.string().min(6).max(200),
+        confirmPassword: z.string().min(6).max(200),
+      })
+      .refine((v) => v.password === v.confirmPassword, {
+        message: "Passwords do not match",
+        path: ["confirmPassword"],
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const storeId = await resolveStore(data.storeSlug);
+    const sb = await admin();
+    const { data: res, error } = await sb.rpc("customer_reset_password" as any, {
+      _store_id: storeId,
+      _token: data.token,
+      _new: data.password,
+    } as any);
+    if (error) throw new Error(error.message);
+    const r = res as any;
+    if (!r?.ok) throw new Error(r?.error ?? "Reset failed");
+    return { ok: true };
+  });
+
 
 export const logoutCustomer = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ token: tokenSchema }).parse(d))
