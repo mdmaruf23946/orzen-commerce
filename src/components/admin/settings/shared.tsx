@@ -110,6 +110,7 @@ export function useStoreForm() {
           slug: form.slug,
           description: form.description,
           logo_url: form.logo_url,
+          name_logo_url: form.name_logo_url ?? null,
           icon_url: form.icon_url ?? null,
           custom_favicon_url: form.custom_favicon_url ?? null,
           use_icon_as_favicon: form.use_icon_as_favicon !== false,

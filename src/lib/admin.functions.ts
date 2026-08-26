@@ -189,6 +189,7 @@ export const updateMyStore = createServerFn({ method: "POST" })
         slug: z.string().trim().min(2).max(60).regex(/^[a-z0-9-]+$/, "Lowercase letters, numbers, hyphens"),
         description: z.string().trim().max(1000).optional().nullable(),
         logo_url: z.string().max(500).optional().nullable(),
+        name_logo_url: z.string().max(500).optional().nullable(),
         phone: z.string().trim().max(40).optional().nullable(),
         whatsapp: z.string().trim().max(40).optional().nullable(),
         email: z.string().trim().max(200).email().optional().nullable().or(z.literal("")),

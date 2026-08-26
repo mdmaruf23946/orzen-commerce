@@ -84,9 +84,27 @@ function StoreInformationPage() {
 
       <div className="space-y-5">
         <Section icon={StoreIcon} title="Store Identity" description="Logo, name, and brand color.">
-          <Field label="Store logo">
-            <ImageUploader storeId={form.id} value={form.logo_url} onChange={(v) => set("logo_url", v)} />
-          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Store logo" hint="Square logo shown next to your store name.">
+              <ImageUploader storeId={form.id} value={form.logo_url} onChange={(v) => set("logo_url", v)} />
+            </Field>
+            <Field
+              label="Store name logo"
+              hint="Wordmark image shown in the storefront header instead of the text name. Leave empty to show text."
+            >
+              <ImageUploader
+                storeId={form.id}
+                value={form.name_logo_url ?? null}
+                onChange={(v) => set("name_logo_url", v)}
+                label="Upload name logo"
+              />
+              {!form.name_logo_url && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Currently showing the store name as text.
+                </p>
+              )}
+            </Field>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Store name *" htmlFor="s-name">
               <Input id="s-name" required maxLength={120} value={form.name ?? ""} onChange={(e) => set("name", e.target.value)} />

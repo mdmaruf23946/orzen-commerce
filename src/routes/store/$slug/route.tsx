@@ -147,6 +147,7 @@ function StoreLayout() {
           storeId={store.id}
           name={store.name}
           logoUrl={resolveStoreIcon(store as any)}
+          nameLogoUrl={(store as any).name_logo_url ?? null}
           showSearch={!isAccount && !isCheckoutFlow}
         />
         <main
@@ -283,12 +284,14 @@ function StoreHeader({
   storeId,
   name,
   logoUrl,
+  nameLogoUrl,
   showSearch,
 }: {
   slug: string;
   storeId: string;
   name: string;
   logoUrl: string | null;
+  nameLogoUrl?: string | null;
   showSearch: boolean;
 }) {
   const [count, setCount] = useState(0);
@@ -382,7 +385,16 @@ function StoreHeader({
                   {name.charAt(0)}
                 </div>
               )}
-              <span className="truncate text-sm font-semibold text-neutral-900">{name}</span>
+              {nameLogoUrl ? (
+                <img
+                  src={nameLogoUrl}
+                  alt={name}
+                  className="h-7 max-h-7 w-auto max-w-[55vw] shrink object-contain"
+                  loading="eager"
+                />
+              ) : (
+                <span className="truncate text-sm font-semibold text-neutral-900">{name}</span>
+              )}
             </Link>
 
             {theme.header.cart && (
@@ -437,7 +449,16 @@ function StoreHeader({
                   {name.charAt(0)}
                 </div>
               )}
-              <span className="truncate text-base font-semibold">{name}</span>
+              {nameLogoUrl ? (
+                <img
+                  src={nameLogoUrl}
+                  alt={name}
+                  className="h-8 max-h-8 w-auto max-w-[220px] object-contain"
+                  loading="eager"
+                />
+              ) : (
+                <span className="truncate text-base font-semibold">{name}</span>
+              )}
             </Link>
 
             {theme.header.search && theme.header.search_position !== "hidden" && (
