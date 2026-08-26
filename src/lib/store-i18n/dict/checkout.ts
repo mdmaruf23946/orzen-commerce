@@ -240,3 +240,23 @@ export const checkoutDict: Dict = {
   "checkout.confirmOrder": { en: "Confirm Order", bn: "Order কনফার্ম করুন" },
   "checkout.payNow": { en: "Pay now", bn: "এখনই পে করুন" },
 };
+
+  // Missing shared / physical checkout strings
+  "checkout.backToCart": { en: "Back to cart", bn: "কার্টে ফিরে যান" },
+  "checkout.deliveryAreaOptional": { en: "Delivery area (optional)", bn: "ডেলিভারি এলাকা (ঐচ্ছিক)" },
+  "checkout.shipping": { en: "Shipping", bn: "শিপিং" },
+  "checkout.paymentGatewayNotice": {
+    en: "No online payment gateway is configured for this store. Please use one of the manual options below.",
+    bn: "এই স্টোরের জন্য কোনো অনলাইন পেমেন্ট গেটওয়ে কনফিগার করা নেই। অনুগ্রহ করে নিচে দেওয়া ম্যানুয়াল অপশনগুলো ব্যবহার করুন।",
+  },
+  "checkout.digitalEmailNotice": {
+    en: "Your cart contains a digital item — download links are sent to this email.",
+    bn: "আপনার কার্টে একটি ডিজিটাল আইটেম রয়েছে — ডাউনলোড লিংক এই ইমেইলে পাঠানো হবে।",
+  },
+  "checkout.payWhenReceive": { en: "Pay when you receive", bn: "পণ্য হাতে পেয়ে টাকা পরিশোধ করুন" },
+  "checkout.sendTo": { en: "Send to {number}", bn: "{number} নম্বরে পাঠান" },
+  "checkout.bankTransfer": { en: "Bank Transfer", bn: "ব্যাংক ট্রান্সফার" },
+  "checkout.emailOptional": { en: "Email (optional)", bn: "ইমেইল (ঐচ্ছিক)" },
+  "checkout.emailPlaceholder": { en: "you@example.com", bn: "you@example.com" },
+  "checkout.subscription.billing": { en: "billing", bn: "বিলিং" },
+};
