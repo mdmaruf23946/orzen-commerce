@@ -11,6 +11,7 @@ import {
   deleteCategory,
   reorderCategories,
   getMyStore,
+  setAllCategoryImage,
 } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,6 +71,7 @@ function CategoriesPage() {
   const del = useServerFn(deleteCategory);
   const reorder = useServerFn(reorderCategories);
   const storeFn = useServerFn(getMyStore);
+  const saveAllImage = useServerFn(setAllCategoryImage);
   const qc = useQueryClient();
   const { scope, setScope, filter, activeType: scopeType } = useProductTypeScope();
   const { data: categories } = useQuery({
@@ -178,6 +180,28 @@ function CategoriesPage() {
       />
 
       <TypeFilterTabs tabs={TABS} value={tab} onChange={(k) => setScope(k)} />
+
+      {store && (
+        <div className="space-y-2 rounded-xl border bg-card p-4">
+          <Label>"All" category image</Label>
+          <p className="text-xs text-muted-foreground">
+            Shown on the storefront as the first category tile. Square image recommended (512×512).
+          </p>
+          <ImageUploader
+            storeId={store.id}
+            value={(store as any).all_category_image_url ?? null}
+            onChange={async (v) => {
+              try {
+                await saveAllImage({ data: { image_url: v } });
+                qc.invalidateQueries({ queryKey: ["admin", "store"] });
+                toast.success("Saved");
+              } catch (e) {
+                toast.error((e as Error).message);
+              }
+            }}
+          />
+        </div>
+      )}
 
       <AdminToolbar
         value={q}
