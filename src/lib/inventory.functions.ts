@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
 async function myStoreId(supabase: any, userId: string): Promise<string | null> {
-  const data = await myStoreRow(supabase, userId, "id");
+  const data = await myStoreRow(supabase, userId, "id", "inventory");
   return data?.id ?? null;
 }
 

@@ -19,7 +19,7 @@ const infoSchema = z.object({
 });
 
 async function getStoreForOwner(supabase: any, userId: string) {
-  const data = await myStoreRow(supabase, userId, "id");
+  const data = await myStoreRow(supabase, userId, "id", "legal");
   if (!data) throw new Error("Store not found");
   return data.id as string;
 }

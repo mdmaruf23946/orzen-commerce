@@ -1,7 +1,7 @@
 import { myStoreRow } from "@/lib/store-access";
 // Server-only helpers for the Marketing settings module.
 export async function loadOwnerMarketing(supabase: any, userId: string) {
-  const data = await myStoreRow(supabase, userId, "id, slug, marketing");
+  const data = await myStoreRow(supabase, userId, "id, slug, marketing", "marketing");
   return {
     store: data as { id: string; slug: string; marketing: any } | null,
     marketing: (data as any)?.marketing ?? {},

@@ -8,7 +8,7 @@ import { z } from "zod";
 import { assertPlan } from "@/lib/plan-guard";
 
 async function myStoreId(supabase: any, userId: string): Promise<string | null> {
-  const data = await myStoreRow(supabase, userId, "id");
+  const data = await myStoreRow(supabase, userId, "id", "finance");
   return data?.id ?? null;
 }
 

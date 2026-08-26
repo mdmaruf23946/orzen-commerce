@@ -10,7 +10,7 @@ async function assertOwnsStore(supabase: any, storeId: string) {
 }
 
 async function resolveMyStoreId(supabase: any, userId: string) {
-  const data = await myStoreRow(supabase, userId, "id");
+  const data = await myStoreRow(supabase, userId, "id", "duplicate_protection");
   if (!data) throw new Error("No store");
   return data.id as string;
 }

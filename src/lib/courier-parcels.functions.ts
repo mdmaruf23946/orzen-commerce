@@ -651,7 +651,7 @@ export const getParcelLabel = createServerFn({ method: "POST" })
 /* ------------------------------------------------------------------ */
 
 async function getStore(supabase: any, userId: string) {
-  const store = await myStoreRow(supabase, userId, "id, couriers");
+  const store = await myStoreRow(supabase, userId, "id, couriers", "parcels");
   if (!store) throw new Error("No store");
   return store as { id: string; couriers: any };
 }

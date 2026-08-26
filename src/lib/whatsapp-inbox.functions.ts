@@ -6,7 +6,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 async function getOwnedStoreId(supabase: any, userId: string) {
-  const data = await myStoreRow(supabase, userId, "id");
+  const data = await myStoreRow(supabase, userId, "id", "whatsapp_inbox");
   if (!data) throw new Error("Store not found");
   return data.id as string;
 }

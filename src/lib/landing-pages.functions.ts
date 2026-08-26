@@ -22,7 +22,7 @@ async function assertOwnedConnection(
 }
 
 async function myStoreId(supabase: any, userId: string): Promise<string> {
-  const data = await myStoreRow(supabase, userId, "id");
+  const data = await myStoreRow(supabase, userId, "id", "landing_pages");
   if (!data) throw new Error("No store found for current user");
   return data.id;
 }

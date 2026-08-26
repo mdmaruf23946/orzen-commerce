@@ -26,7 +26,7 @@ function normalizeHost(h: string) {
 }
 
 async function requireMyStore(supabase: any, userId: string) {
-  const data = await myStoreRow(supabase, userId, "id, slug, name");
+  const data = await myStoreRow(supabase, userId, "id, slug, name", "landing_builder");
   if (!data) throw new Error("No store found for this account");
   return data as { id: string; slug: string; name: string };
 }

@@ -39,7 +39,7 @@ const SaveSchema = z.discriminatedUnion("channel", [
 ]);
 
 async function myStoreId(supabase: any, userId: string): Promise<string> {
-  const data = await myStoreRow(supabase, userId, "id");
+  const data = await myStoreRow(supabase, userId, "id", "notifications");
   if (!data) throw new Error("Store not found");
   return data.id as string;
 }

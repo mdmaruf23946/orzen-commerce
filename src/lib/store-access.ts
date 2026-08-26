@@ -144,12 +144,28 @@ export async function resolveStoreRef(
   return staff?.store_id ? { id: staff.store_id } : null;
 }
 
-/** Same as resolveStoreRef but selects the requested columns of that store. */
+/**
+ * Same as resolveStoreRef but selects the requested columns of that store.
+ * When `section` is given, an employee must have at least view access to it.
+ */
 export async function myStoreRow(
   supabase: any,
   userId: string,
   columns = "id",
+  section?: string,
 ): Promise<any | null> {
+  if (section) {
+    const access = await resolveStoreAccess(supabase, userId);
+    if (!access.storeId) return null;
+    assertSection(access, section, "view");
+    if (columns === "id") return { id: access.storeId };
+    const { data: row } = await supabase
+      .from("stores")
+      .select(columns)
+      .eq("id", access.storeId)
+      .maybeSingle();
+    return row ?? null;
+  }
   const ref = await resolveStoreRef(supabase, userId);
   if (!ref) return null;
   if (columns === "id") return ref;

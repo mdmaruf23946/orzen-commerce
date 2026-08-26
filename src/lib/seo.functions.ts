@@ -20,7 +20,7 @@ export const getMySeoOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const store = await myStoreRow(supabase, userId, "id, slug, name, description, logo_url, icon_url, favicon_url, custom_favicon_url, use_icon_as_favicon, phone, email, address, seo");
+    const store = await myStoreRow(supabase, userId, "id, slug, name, description, logo_url, icon_url, favicon_url, custom_favicon_url, use_icon_as_favicon, phone, email, address, seo", "seo");
     if (!store) throw new Error("No store found for this account");
 
     const [{ data: cats }, { count: productCount }, { data: domains }, { data: pSettings }] =

@@ -19,7 +19,7 @@ function publicOrigin(): string {
 }
 
 async function getOwnedStoreId(supabase: any, userId: string) {
-  const data = await myStoreRow(supabase, userId, "id");
+  const data = await myStoreRow(supabase, userId, "id", "whatsapp");
   if (!data) throw new Error("Store not found");
   return data.id as string;
 }

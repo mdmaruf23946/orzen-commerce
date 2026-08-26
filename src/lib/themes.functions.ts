@@ -13,7 +13,7 @@ async function ownerOnly(supabase: any, userId: string) {
 }
 
 async function myStore(supabase: any, userId: string) {
-  const data = await myStoreRow(supabase, userId, "id, slug, theme_id, theme_overrides, theme_draft");
+  const data = await myStoreRow(supabase, userId, "id, slug, theme_id, theme_overrides, theme_draft", "theme");
   if (!data) throw new Error("No store found for this account");
   return data as any;
 }

@@ -19,7 +19,7 @@ export function customerKey(phone?: string | null, email?: string | null) {
 }
 
 export async function ownerStoreId(supabase: AnyClient, userId: string) {
-  const data = await myStoreRow(supabase, userId, "id");
+  const data = await myStoreRow(supabase, userId, "id", "customers");
   return (data?.id as string | undefined) ?? null;
 }
 
