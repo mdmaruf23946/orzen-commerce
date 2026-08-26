@@ -545,7 +545,7 @@ function CategoryStrip({
         ref={scrollRef}
         className="flex flex-nowrap gap-3 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory sm:grid sm:grid-cols-6 sm:gap-4 md:grid-cols-8"
       >
-        <div className="w-20 shrink-0 snap-start sm:w-auto">
+        <div className="w-[calc(25%-0.5625rem)] shrink-0 snap-start sm:w-auto">
           <CategoryTile
             label={t("home.categoryAll")}
             image={allImage ?? null}
@@ -554,7 +554,7 @@ function CategoryStrip({
           />
         </div>
         {categories.map((c) => (
-          <div key={c.id} className="w-20 shrink-0 snap-start sm:w-auto">
+          <div key={c.id} className="w-[calc(25%-0.5625rem)] shrink-0 snap-start sm:w-auto">
             <CategoryTile
               label={c.name}
               image={c.image_url ?? null}
@@ -576,13 +576,6 @@ function CategoryStrip({
           showLeft ? "opacity-100" : "opacity-0"
         }`}
       />
-      <div
-        className={`pointer-events-none absolute bottom-2 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-neutral-400 shadow-sm transition-opacity duration-300 sm:hidden ${
-          showRight ? "opacity-100" : "opacity-0"
-        }`}
-      >
-        <ChevronRight className="h-3.5 w-3.5" />
-      </div>
     </div>
   );
 }
