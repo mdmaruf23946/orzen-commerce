@@ -102,9 +102,10 @@ export function useCustomerSession(slug: string) {
   return {
     token,
     customer: query.data ?? null,
-    isLoading: query.isLoading,
+    isLoading: !ready || query.isLoading,
     setSession,
     signOut,
     refresh: () => qc.invalidateQueries({ queryKey: ["customer-session", slug] }),
   };
 }
+
