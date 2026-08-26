@@ -6,7 +6,6 @@ import { z } from "zod";
 
 async function assertOwnsStore(supabase: any, storeId: string) {
   const { data, error } = await supabase.rpc("is_store_owner", { _store_id: storeId });
-  if (error) throw new Error(error.message);
   if (!data) throw new Error("Not authorized for this store");
 }
 
