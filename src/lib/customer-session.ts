@@ -42,12 +42,16 @@ export function useCustomerSession(slug: string) {
   // Start null on both server and first client render so hydration matches;
   // the real token is read after mount.
   const [token, setToken] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
   const qc = useQueryClient();
   const getCurrent = useServerFn(getCurrentCustomer);
   const logoutFn = useServerFn(logoutCustomer);
 
   useEffect(() => {
-    const sync = () => setToken(readToken(slug));
+    const sync = () => {
+      setToken(readToken(slug));
+      setReady(true);
+    };
     sync();
     window.addEventListener("customer-session-changed", sync);
     window.addEventListener("storage", sync);
@@ -56,6 +60,7 @@ export function useCustomerSession(slug: string) {
       window.removeEventListener("storage", sync);
     };
   }, [slug]);
+
 
 
   const query = useQuery({
