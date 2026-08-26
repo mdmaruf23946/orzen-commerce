@@ -1,3 +1,4 @@
+import { StoreErrorState } from "@/components/storefront/StoreErrorState";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -42,7 +43,7 @@ export const Route = createFileRoute("/store/$slug/order/$orderId")({
     if (!order) throw notFound();
     return null;
   },
-  errorComponent: () => <div className="p-6 text-center">Something went wrong.</div>,
+  errorComponent: ({ error }) => <StoreErrorState error={error} scope="storefront:order" />,
   notFoundComponent: () => <div className="p-6 text-center">Order not found</div>,
   component: OrderConfirmation,
 });
