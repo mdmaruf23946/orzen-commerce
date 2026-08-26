@@ -150,7 +150,7 @@ function StoreLayout() {
           showSearch={!isAccount && !isCheckoutFlow}
         />
         <main
-          className="mx-auto px-4 pb-24 pt-4 sm:px-6 md:pb-12"
+          className="mx-auto px-4 pb-24 pt-0 sm:pt-4 sm:px-6 md:pb-12"
           style={{ maxWidth: resolved ? "var(--store-container)" : undefined }}
         >
           <Outlet />
@@ -493,7 +493,7 @@ function StoreHeader({
 
       {/* Mobile-only search band below header */}
       {showSearch && theme.header.search && theme.header.search_position !== "hidden" && (
-        <div className="border-b border-black/5 bg-white/95 px-3 py-2 backdrop-blur md:hidden">
+        <div className="border-b border-black/5 bg-white/95 px-3 py-1 backdrop-blur md:hidden">
           <SearchBar />
         </div>
       )}
@@ -542,7 +542,7 @@ function HeaderCategoryBar({
   return (
     <nav className="border-b border-black/5 bg-white/95 backdrop-blur">
       <div
-        className="mx-auto flex items-center gap-1 overflow-x-auto px-3 py-1.5 sm:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="mx-auto flex items-center gap-1 overflow-x-auto px-3 py-1 sm:py-1.5 sm:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ maxWidth: "var(--store-container, 64rem)" }}
       >
         <button
