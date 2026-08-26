@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { assertPlan, assertLimit } from "@/lib/plan-guard";
+import { myStoreRow } from "@/lib/store-access";
 import {
   fetchTemplate,
   templateStoreFields,
@@ -104,11 +105,7 @@ export const resetStoreToTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase
-      .from("stores")
-      .select("id")
-      .eq("owner_user_id", userId)
-      .maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id");
     if (!store) throw new Error("No store");
     const tpl = await fetchTemplate(supabase);
     if (!tpl) throw new Error("No default template configured");
@@ -168,11 +165,7 @@ export const createMyStoreWithSlug = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: existing } = await supabase
-      .from("stores")
-      .select("*")
-      .eq("owner_user_id", userId)
-      .maybeSingle();
+    const existing = await myStoreRow(supabase, userId, "*");
     if (existing) return existing;
 
     const { data: taken } = await supabase.rpc("is_slug_taken", { _slug: data.slug });
@@ -295,7 +288,7 @@ export const listMyProducts = createServerFn({ method: "GET" })
   )
   .handler(async ({ data: input, context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id");
     if (!store) return [];
     let q = supabase.from("products").select("*").eq("store_id", store.id);
     if (input?.product_type) q = q.eq("product_type", input.product_type);
@@ -414,7 +407,7 @@ export const upsertProduct = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id");
     if (!store) throw new Error("No store");
     const baseFields = {
       name: data.name,
@@ -492,7 +485,7 @@ export const deleteProduct = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id");
     if (!store) throw new Error("No store");
     const { error } = await supabase.from("products").delete().eq("id", data.id).eq("store_id", store.id);
     if (error) throw new Error(error.message);
@@ -504,7 +497,7 @@ export const listMyOrders = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id");
     if (!store) return [];
     const { data, error } = await supabase
       .from("orders")
@@ -527,7 +520,7 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id");
     if (!store) throw new Error("No store");
     const { error } = await supabase
       .from("orders")
@@ -596,7 +589,7 @@ export const setOrderAllowDuplicate = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id");
     if (!store) throw new Error("No store");
     const { error } = await supabase
       .from("orders")
@@ -620,7 +613,7 @@ export const listMyBanners = createServerFn({ method: "GET" })
   )
   .handler(async ({ data: input, context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id");
     if (!store) return [];
     let q = supabase.from("banners").select("*").eq("store_id", store.id);
     if (input?.product_type) q = q.eq("product_type", input.product_type);
@@ -648,7 +641,7 @@ export const addBanner = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object(bannerFields).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id");
     if (!store) throw new Error("No store");
     const type = data.product_type ?? "physical";
     const { count } = await supabase
@@ -679,7 +672,7 @@ export const updateBanner = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid(), ...bannerFields }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id");
     if (!store) throw new Error("No store");
     const { id, campaign_type: _ct, product_type: _pt, ...rest } = data;
     const { error } = await supabase
@@ -705,7 +698,7 @@ export const deleteBanner = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id");
     if (!store) throw new Error("No store");
     const { error } = await supabase.from("banners").delete().eq("id", data.id).eq("store_id", store.id);
     if (error) throw new Error(error.message);
@@ -717,7 +710,7 @@ export const listMyCustomers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id");
     if (!store) return [];
     const { data, error } = await supabase
       .from("orders")
@@ -741,7 +734,7 @@ export const myDashboardStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id");
     if (!store) return { todaySales: 0, totalSales: 0, totalOrders: 0, totalProducts: 0 };
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -766,11 +759,7 @@ export const mySubscription = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase
-      .from("stores")
-      .select("expires_at,package_id, subscription_packages(name,price,duration_days,product_limit)")
-      .eq("owner_user_id", userId)
-      .maybeSingle();
+    const store = await myStoreRow(supabase, userId, "expires_at,package_id, subscription_packages(name,price,duration_days,product_limit)");
     const { data: payments } = await supabase
       .from("payments")
       .select("*")
@@ -789,7 +778,7 @@ export const listMyCategories = createServerFn({ method: "GET" })
   )
   .handler(async ({ data: input, context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id");
     if (!store) return [];
     let q = supabase.from("categories").select("*").eq("store_id", store.id);
     if (input?.product_type === "physical") {
@@ -823,7 +812,7 @@ export const upsertCategory = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id");
     if (!store) throw new Error("No store");
     const patch = {
       name: data.name,
@@ -857,7 +846,7 @@ export const reorderCategories = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ ids: z.array(z.string().uuid()).max(500) }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id");
     if (!store) throw new Error("No store");
     for (let i = 0; i < data.ids.length; i++) {
       const { error } = await supabase
@@ -875,7 +864,7 @@ export const deleteCategory = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id");
     if (!store) throw new Error("No store");
     const { error } = await supabase.from("categories").delete().eq("id", data.id).eq("store_id", store.id);
     if (error) throw new Error(error.message);
@@ -1207,12 +1196,8 @@ export const updateDelivery = createServerFn({ method: "POST" })
 // ---------- Delivery Zones ----------
 
 async function getOwnedStoreId(sb: any, userId: string): Promise<string> {
-  const { data, error } = await sb
-    .from("stores")
-    .select("id")
-    .eq("owner_user_id", userId)
-    .maybeSingle();
-  if (error || !data) throw new Error("Store not found");
+  const data = await myStoreRow(sb, userId, "id");
+  if (!data) throw new Error("Store not found");
   return data.id as string;
 }
 
@@ -1474,11 +1459,7 @@ export const myDashboardOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId, claims } = context;
-    const { data: store } = await supabase
-      .from("stores")
-      .select("id,name,slug,status,subscription_status,expires_at,updated_at,package_id,subscription_packages(name)")
-      .eq("owner_user_id", userId)
-      .maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id,name,slug,status,subscription_status,expires_at,updated_at,package_id,subscription_packages(name)");
 
     const ownerName =
       (claims.user_metadata as { full_name?: string; name?: string } | undefined)?.full_name ??
@@ -1859,7 +1840,7 @@ export const typeScopeCounts = createServerFn({ method: "GET" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id");
     const empty = { all: 0, physical: 0, digital: 0, service: 0, subscription: 0 } as Record<string, number>;
     if (!store) return empty;
     const col = data.entity === "orders" ? "order_type" : "product_type";
@@ -1882,11 +1863,7 @@ export const setAllCategoryImage = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: store } = await supabase
-      .from("stores")
-      .select("id")
-      .eq("owner_user_id", userId)
-      .maybeSingle();
+    const store = await myStoreRow(supabase, userId, "id");
     if (!store) throw new Error("No store");
     const { error } = await (supabase as any)
       .from("stores")

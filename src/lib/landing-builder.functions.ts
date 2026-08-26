@@ -2,6 +2,7 @@
 // Landing pages hold their own content snapshot and their own domains; the
 // source product and the storefront are never modified from here.
 import { createServerFn } from "@tanstack/react-start";
+import { myStoreRow } from "@/lib/store-access";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
@@ -25,11 +26,7 @@ function normalizeHost(h: string) {
 }
 
 async function requireMyStore(supabase: any, userId: string) {
-  const { data } = await supabase
-    .from("stores")
-    .select("id, slug, name")
-    .eq("owner_user_id", userId)
-    .maybeSingle();
+  const data = await myStoreRow(supabase, userId, "id, slug, name", "landing_builder");
   if (!data) throw new Error("No store found for this account");
   return data as { id: string; slug: string; name: string };
 }

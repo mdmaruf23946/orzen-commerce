@@ -1,10 +1,11 @@
 // AI review, low-stock and handoff-queue server functions.
 import { createServerFn } from "@tanstack/react-start";
+import { myStoreRow } from "@/lib/store-access";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 async function myStoreId(supabase: any, userId: string) {
-  const { data } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+  const data = await myStoreRow(supabase, userId, "id", "ai_recommendations");
   return data?.id as string | undefined;
 }
 

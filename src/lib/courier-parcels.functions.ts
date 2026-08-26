@@ -1,6 +1,7 @@
 // Courier parcel management — authenticated store-owner server functions.
 // Frontend is unified; provider differences live in src/lib/couriers/*.server.ts
 import { createServerFn } from "@tanstack/react-start";
+import { myStoreRow } from "@/lib/store-access";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { assertPlan } from "@/lib/plan-guard";
@@ -650,11 +651,7 @@ export const getParcelLabel = createServerFn({ method: "POST" })
 /* ------------------------------------------------------------------ */
 
 async function getStore(supabase: any, userId: string) {
-  const { data: store } = await supabase
-    .from("stores")
-    .select("id, couriers")
-    .eq("owner_user_id", userId)
-    .maybeSingle();
+  const store = await myStoreRow(supabase, userId, "id, couriers", "parcels");
   if (!store) throw new Error("No store");
   return store as { id: string; couriers: any };
 }

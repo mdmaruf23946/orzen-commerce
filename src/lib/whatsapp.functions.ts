@@ -2,6 +2,7 @@
 // Mirrors the Messenger integration functions; every read/write is scoped to
 // the signed-in owner's own store.
 import { createServerFn } from "@tanstack/react-start";
+import { myStoreRow } from "@/lib/store-access";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -18,7 +19,7 @@ function publicOrigin(): string {
 }
 
 async function getOwnedStoreId(supabase: any, userId: string) {
-  const { data } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+  const data = await myStoreRow(supabase, userId, "id", "whatsapp");
   if (!data) throw new Error("Store not found");
   return data.id as string;
 }

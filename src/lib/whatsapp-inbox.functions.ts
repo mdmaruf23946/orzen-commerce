@@ -1,11 +1,12 @@
 // WhatsApp Inbox server functions. Owner-scoped via requireSupabaseAuth.
 // Mirrors src/lib/messenger-inbox.functions.ts, filtered to channel = "whatsapp".
 import { createServerFn } from "@tanstack/react-start";
+import { myStoreRow } from "@/lib/store-access";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 async function getOwnedStoreId(supabase: any, userId: string) {
-  const { data } = await supabase.from("stores").select("id").eq("owner_user_id", userId).maybeSingle();
+  const data = await myStoreRow(supabase, userId, "id", "whatsapp_inbox");
   if (!data) throw new Error("Store not found");
   return data.id as string;
 }

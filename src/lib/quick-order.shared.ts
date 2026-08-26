@@ -5,13 +5,10 @@
 // which turns a helper defined next to `createServerFn` into a ReferenceError
 // as soon as the route chunk loads (the "page didn't load" screen).
 import { z } from "zod";
+import { myStoreRow } from "@/lib/store-access";
 
 export async function myStoreId(supabase: any, userId: string): Promise<string | null> {
-  const { data } = await supabase
-    .from("stores")
-    .select("id")
-    .eq("owner_user_id", userId)
-    .maybeSingle();
+  const data = await myStoreRow(supabase, userId, "id");
   return data?.id ?? null;
 }
 
