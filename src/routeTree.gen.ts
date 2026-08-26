@@ -142,6 +142,7 @@ import { Route as AuthenticatedAdminBillingIndexRouteImport } from './routes/_au
 import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
 import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/order.$orderId'
 import { Route as StoreSlugAuthSignupRouteImport } from './routes/store/$slug/auth.signup'
+import { Route as StoreSlugAuthResetRouteImport } from './routes/store/$slug/auth.reset'
 import { Route as StoreSlugAuthLoginRouteImport } from './routes/store/$slug/auth.login'
 import { Route as StoreSlugAuthForgotRouteImport } from './routes/store/$slug/auth.forgot'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
@@ -942,6 +943,11 @@ const StoreSlugAuthSignupRoute = StoreSlugAuthSignupRouteImport.update({
   path: '/auth/signup',
   getParentRoute: () => StoreSlugRouteRoute,
 } as any)
+const StoreSlugAuthResetRoute = StoreSlugAuthResetRouteImport.update({
+  id: '/auth/reset',
+  path: '/auth/reset',
+  getParentRoute: () => StoreSlugRouteRoute,
+} as any)
 const StoreSlugAuthLoginRoute = StoreSlugAuthLoginRouteImport.update({
   id: '/auth/login',
   path: '/auth/login',
@@ -1369,6 +1375,7 @@ export interface FileRoutesByFullPath {
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
+  '/store/$slug/auth/reset': typeof StoreSlugAuthResetRoute
   '/store/$slug/auth/signup': typeof StoreSlugAuthSignupRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
@@ -1540,6 +1547,7 @@ export interface FileRoutesByTo {
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
+  '/store/$slug/auth/reset': typeof StoreSlugAuthResetRoute
   '/store/$slug/auth/signup': typeof StoreSlugAuthSignupRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
@@ -1722,6 +1730,7 @@ export interface FileRoutesById {
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
+  '/store/$slug/auth/reset': typeof StoreSlugAuthResetRoute
   '/store/$slug/auth/signup': typeof StoreSlugAuthSignupRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
@@ -1904,6 +1913,7 @@ export interface FileRouteTypes {
     | '/lovable/email/queue/process'
     | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
+    | '/store/$slug/auth/reset'
     | '/store/$slug/auth/signup'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
@@ -2075,6 +2085,7 @@ export interface FileRouteTypes {
     | '/lovable/email/queue/process'
     | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
+    | '/store/$slug/auth/reset'
     | '/store/$slug/auth/signup'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
@@ -2256,6 +2267,7 @@ export interface FileRouteTypes {
     | '/lovable/email/queue/process'
     | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
+    | '/store/$slug/auth/reset'
     | '/store/$slug/auth/signup'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
@@ -3260,6 +3272,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreSlugAuthSignupRouteImport
       parentRoute: typeof StoreSlugRouteRoute
     }
+    '/store/$slug/auth/reset': {
+      id: '/store/$slug/auth/reset'
+      path: '/auth/reset'
+      fullPath: '/store/$slug/auth/reset'
+      preLoaderRoute: typeof StoreSlugAuthResetRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
+    }
     '/store/$slug/auth/login': {
       id: '/store/$slug/auth/login'
       path: '/auth/login'
@@ -4001,6 +4020,7 @@ interface StoreSlugRouteRouteChildren {
   StoreSlugIndexRoute: typeof StoreSlugIndexRoute
   StoreSlugAuthForgotRoute: typeof StoreSlugAuthForgotRoute
   StoreSlugAuthLoginRoute: typeof StoreSlugAuthLoginRoute
+  StoreSlugAuthResetRoute: typeof StoreSlugAuthResetRoute
   StoreSlugAuthSignupRoute: typeof StoreSlugAuthSignupRoute
   StoreSlugOrderOrderIdRoute: typeof StoreSlugOrderOrderIdRoute
   StoreSlugProductProductIdRoute: typeof StoreSlugProductProductIdRoute
@@ -4014,6 +4034,7 @@ const StoreSlugRouteRouteChildren: StoreSlugRouteRouteChildren = {
   StoreSlugIndexRoute: StoreSlugIndexRoute,
   StoreSlugAuthForgotRoute: StoreSlugAuthForgotRoute,
   StoreSlugAuthLoginRoute: StoreSlugAuthLoginRoute,
+  StoreSlugAuthResetRoute: StoreSlugAuthResetRoute,
   StoreSlugAuthSignupRoute: StoreSlugAuthSignupRoute,
   StoreSlugOrderOrderIdRoute: StoreSlugOrderOrderIdRoute,
   StoreSlugProductProductIdRoute: StoreSlugProductProductIdRoute,
