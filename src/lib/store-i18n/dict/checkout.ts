@@ -239,9 +239,9 @@ export const checkoutDict: Dict = {
   "checkout.shippingFree": { en: "Free", bn: "ফ্রি" },
   "checkout.confirmOrder": { en: "Confirm Order", bn: "Order কনফার্ম করুন" },
   "checkout.payNow": { en: "Pay now", bn: "এখনই পে করুন" },
-};
 
   // Missing shared / physical checkout strings
+
   "checkout.backToCart": { en: "Back to cart", bn: "কার্টে ফিরে যান" },
   "checkout.deliveryAreaOptional": { en: "Delivery area (optional)", bn: "ডেলিভারি এলাকা (ঐচ্ছিক)" },
   "checkout.shipping": { en: "Shipping", bn: "শিপিং" },
