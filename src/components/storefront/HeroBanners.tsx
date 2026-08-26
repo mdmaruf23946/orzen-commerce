@@ -182,10 +182,18 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
 
       {/* Supporting banners */}
       {hasSide && (
-        <div className={`grid gap-3 ${slots.length > 1 ? "grid-cols-2 lg:grid-cols-1" : "grid-cols-1"}`}>
-          {slots.map((items, i) => (
-            <SideRotator key={i} items={items} delay={5200 + i * 900} />
-          ))}
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
+          {slots.map((items, i) =>
+            items.length > 0 ? (
+              <SideRotator key={i} items={items} delay={5200 + i * 900} />
+            ) : (
+              <div
+                key={i}
+                aria-hidden
+                className="aspect-[16/10] rounded-2xl bg-sf-surface/40 lg:aspect-[16/9]"
+              />
+            ),
+          )}
         </div>
       )}
     </section>
