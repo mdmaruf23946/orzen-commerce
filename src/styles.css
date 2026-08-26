@@ -68,9 +68,29 @@
   --color-messenger: var(--messenger);
   --color-messenger-deep: var(--messenger-deep);
   --color-messenger-foreground: var(--messenger-foreground);
+  /* Storefront (shopper-facing) palette */
+  --color-sf-accent: var(--sf-accent);
+  --color-sf-accent-hover: var(--sf-accent-hover);
+  --color-sf-accent-soft: var(--sf-accent-soft);
+  --color-sf-ink: var(--sf-ink);
+  --color-sf-text: var(--sf-text);
+  --color-sf-muted: var(--sf-muted);
+  --color-sf-surface: var(--sf-surface);
+  --color-sf-line: var(--sf-line);
 }
 
 :root {
+
+  /* Storefront palette — premium orange + charcoal */
+  --sf-accent: #ff4b1f;
+  --sf-accent-hover: #e93f14;
+  --sf-accent-soft: #fff1ec;
+  --sf-ink: #111111;
+  --sf-text: #171717;
+  --sf-muted: #6b7280;
+  --sf-surface: #f7f7f7;
+  --sf-line: #ececec;
+  --sf-shadow: 0 1px 2px rgba(17, 17, 17, 0.04), 0 8px 24px -12px rgba(17, 17, 17, 0.16);
 
   --radius: 0.875rem;
   --background: oklch(0.99 0.005 265);
