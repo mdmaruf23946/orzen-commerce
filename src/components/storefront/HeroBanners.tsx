@@ -51,7 +51,7 @@ function SideRotator({ items, delay }: { items: HeroBanner[]; delay: number }) {
 
   return (
     <div
-      className="aspect-[16/10] overflow-hidden rounded-2xl bg-sf-surface lg:aspect-[16/9]"
+      className="aspect-[16/9] overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl"
       onMouseEnter={() => (paused.current = true)}
       onMouseLeave={() => (paused.current = false)}
     >
@@ -67,7 +67,7 @@ function SideRotator({ items, delay }: { items: HeroBanner[]; delay: number }) {
                 alt=""
                 loading="lazy"
                 decoding="async"
-                className="h-full w-full select-none object-contain"
+                className="h-full w-full select-none object-cover"
               />
             </BannerLink>
           </div>
@@ -130,7 +130,7 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
     >
       {/* Main hero banner */}
       <div
-        className="relative -mx-4 overflow-hidden bg-sf-surface sm:mx-0 sm:rounded-2xl"
+        className="relative overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl"
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
@@ -152,10 +152,10 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
                   loading={i === 0 ? "eager" : "lazy"}
                   fetchPriority={i === 0 ? "high" : "auto"}
                   decoding="async"
-                  className={`w-full select-none object-contain ${
+                  className={`w-full select-none object-cover ${
                     hasSide
-                      ? "aspect-[16/9] sm:aspect-[16/8] lg:aspect-[16/9]"
-                      : "aspect-[16/9] sm:aspect-[16/6] lg:aspect-[16/5]"
+                      ? "aspect-[16/9] lg:aspect-[16/9.6]"
+                      : "aspect-[16/9] lg:aspect-[16/6]"
                   }`}
                 />
               </BannerLink>
@@ -190,7 +190,7 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
               <div
                 key={i}
                 aria-hidden
-                className="aspect-[16/10] rounded-2xl bg-sf-surface/40 lg:aspect-[16/9]"
+                className="aspect-[16/9] rounded-xl bg-sf-surface/40 sm:rounded-2xl"
               />
             ),
           )}
