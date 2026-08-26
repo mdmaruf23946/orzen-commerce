@@ -501,6 +501,8 @@ function StoreHeader({
             </Link>
             )}
 
+            <StoreLangSwitch />
+
             {theme.header.account && (customer ? (
               <Link
                 to="/store/$slug/account"
@@ -516,8 +518,9 @@ function StoreHeader({
                 params={{ slug }}
                 className="flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-medium hover:bg-neutral-100"
               >
-                <User className="h-4 w-4" /> Sign in
+                <User className="h-4 w-4" /> {t("nav.signIn")}
               </Link>
+
             ))}
           </div>
         </div>
