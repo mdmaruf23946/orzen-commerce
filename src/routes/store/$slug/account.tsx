@@ -112,30 +112,15 @@ function AccountPage() {
 
   if (!customer || !token) {
     return (
-      <AccountShell slug={slug} title="My account">
+      <AccountShell>
         <div className="py-10 text-center text-sm text-neutral-500">Loading…</div>
       </AccountShell>
     );
   }
 
-  const titles: Record<Tab, string> = {
-    overview: "My account",
-    profile: "Personal information",
-    orders: "Order history",
-    downloads: "My downloads",
-    services: "Active services",
-    subscriptions: "My subscriptions",
-    addresses: "Saved addresses",
-    wishlist: "Wishlist",
-    password: "Change password",
-    payments: "Payment methods",
-    notifications: "Notifications",
-    privacy: "Privacy & security",
-    support: "Help & support",
-  };
 
   return (
-    <AccountShell slug={slug} title={titles[tab]}>
+    <AccountShell>
       {tab === "overview" ? (
         <Overview
           slug={slug}
