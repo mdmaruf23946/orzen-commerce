@@ -39,6 +39,7 @@ import {
   ShieldCheck,
   LifeBuoy,
 } from "lucide-react";
+import { useStoreT } from "@/lib/store-i18n";
 import { AccountShell } from "@/components/storefront/AccountShell";
 import { MyDownloads } from "@/components/storefront/digital/MyDownloads";
 import { MySubscriptions } from "@/components/storefront/subscription/MySubscriptions";
@@ -87,6 +88,7 @@ export const Route = createFileRoute("/store/$slug/account")({
 });
 
 function AccountPage() {
+  const { t } = useStoreT();
   const { slug } = Route.useParams();
   const navigate = useNavigate();
   const search = Route.useSearch();
@@ -113,7 +115,7 @@ function AccountPage() {
   if (!customer || !token) {
     return (
       <AccountShell>
-        <div className="py-10 text-center text-sm text-neutral-500">Loading…</div>
+        <div className="py-10 text-center text-sm text-neutral-500">{t("common.loading")}</div>
       </AccountShell>
     );
   }
@@ -136,7 +138,7 @@ function AccountPage() {
             onClick={() => setTab("overview")}
             className="text-xs font-medium text-neutral-500 hover:text-neutral-900"
           >
-            ← Back to account
+            {t("account.backToAccount")}
           </button>
           <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-6">
             {tab === "profile" && (
@@ -176,6 +178,7 @@ function Overview({
   onNavigate: (t: Tab) => void;
   onSignOut: () => void;
 }) {
+  const { t } = useStoreT();
   const initials = customer.full_name
     .split(" ")
     .map((s) => s.charAt(0))
@@ -191,13 +194,13 @@ function Overview({
   const counts = (summary as any)?.counts ?? {};
 
   const actions = [
-    { id: "orders", label: "Orders", icon: Package, hint: "Track & history", tone: "text-indigo-600 bg-indigo-50", show: true },
-    { id: "wishlist", label: "Wishlist", icon: Heart, hint: "Saved items", tone: "text-rose-600 bg-rose-50", show: true },
-    { id: "addresses", label: "Addresses", icon: MapPin, hint: "Delivery info", tone: "text-emerald-600 bg-emerald-50", show: true },
-    { id: "services", label: "Active services", icon: Wrench, hint: "In progress", tone: "text-orange-600 bg-orange-50", show: (counts.services ?? 0) > 0 },
-    { id: "subscriptions", label: "Subscriptions", icon: RefreshCw, hint: "Plans & renewals", tone: "text-teal-600 bg-teal-50", show: (counts.subscriptions ?? 0) > 0 },
-    { id: "downloads", label: "Downloads", icon: Download, hint: "Digital files", tone: "text-violet-600 bg-violet-50", show: (counts.downloads ?? 0) > 0 },
-    { id: "profile", label: "Settings", icon: User, hint: "Personal info", tone: "text-amber-600 bg-amber-50", show: true },
+    { id: "orders", label: t("nav.orders"), icon: Package, hint: t("account.ordersHint"), tone: "text-indigo-600 bg-indigo-50", show: true },
+    { id: "wishlist", label: t("nav.wishlist"), icon: Heart, hint: t("account.wishlistHint"), tone: "text-rose-600 bg-rose-50", show: true },
+    { id: "addresses", label: t("account.addresses"), icon: MapPin, hint: t("account.addressesHint"), tone: "text-emerald-600 bg-emerald-50", show: true },
+    { id: "services", label: t("account.activeServices"), icon: Wrench, hint: t("account.servicesHint"), tone: "text-orange-600 bg-orange-50", show: (counts.services ?? 0) > 0 },
+    { id: "subscriptions", label: t("account.subscriptionsLabel"), icon: RefreshCw, hint: t("account.subscriptionsHint"), tone: "text-teal-600 bg-teal-50", show: (counts.subscriptions ?? 0) > 0 },
+    { id: "downloads", label: t("account.downloads"), icon: Download, hint: t("account.downloadsHint"), tone: "text-violet-600 bg-violet-50", show: (counts.downloads ?? 0) > 0 },
+    { id: "profile", label: t("account.settings"), icon: User, hint: t("account.settingsHint"), tone: "text-amber-600 bg-amber-50", show: true },
   ].filter((a) => a.show) as { id: Tab; label: string; icon: any; hint: string; tone: string; show: boolean }[];
 
 
@@ -233,7 +236,7 @@ function Overview({
               )}
             </div>
             <span className="mt-2 inline-flex rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
-              Member
+              {t("account.member")}
             </span>
           </div>
         </div>
@@ -242,7 +245,7 @@ function Overview({
           onClick={() => onNavigate("profile")}
           className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur transition-colors hover:bg-white/25"
         >
-          <Pencil className="h-3.5 w-3.5" /> Edit profile
+          <Pencil className="h-3.5 w-3.5" /> {t("account.editProfile")}
         </button>
       </div>
 
@@ -270,26 +273,26 @@ function Overview({
       <div className="overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm">
         <SettingsRow
           icon={User}
-          label="Personal information"
+          label={t("account.personalInfo")}
           onClick={() => onNavigate("profile")}
         />
         <SettingsRow
           icon={KeyRound}
-          label="Change password"
+          label={t("account.changePassword")}
           onClick={() => onNavigate("password")}
         />
-        <SettingsRow icon={MapPin} label="Saved addresses" onClick={() => onNavigate("addresses")} />
-        <SettingsRow icon={CreditCard} label="Payment methods" onClick={() => onNavigate("payments")} />
-        <SettingsRow icon={Bell} label="Notifications" onClick={() => onNavigate("notifications")} />
-        <SettingsRow icon={ShieldCheck} label="Privacy & security" onClick={() => onNavigate("privacy")} />
-        <SettingsRow icon={LifeBuoy} label="Help & support" onClick={() => onNavigate("support")} />
+        <SettingsRow icon={MapPin} label={t("account.savedAddresses")} onClick={() => onNavigate("addresses")} />
+        <SettingsRow icon={CreditCard} label={t("account.paymentMethods")} onClick={() => onNavigate("payments")} />
+        <SettingsRow icon={Bell} label={t("account.notifications")} onClick={() => onNavigate("notifications")} />
+        <SettingsRow icon={ShieldCheck} label={t("account.privacySecurity")} onClick={() => onNavigate("privacy")} />
+        <SettingsRow icon={LifeBuoy} label={t("account.helpSupport")} onClick={() => onNavigate("support")} />
         <Link
           to="/store/$slug/cart"
           params={{ slug }}
           className="flex items-center gap-3 border-t border-neutral-100 px-4 py-3.5 text-sm hover:bg-neutral-50"
         >
           <Package className="h-4 w-4 text-neutral-500" />
-          <span className="flex-1 text-neutral-800">My cart</span>
+          <span className="flex-1 text-neutral-800">{t("account.myCart")}</span>
           <ChevronRight className="h-4 w-4 text-neutral-400" />
         </Link>
       </div>
@@ -299,7 +302,7 @@ function Overview({
         onClick={onSignOut}
         className="flex w-full items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-white px-4 py-3 text-sm font-semibold text-rose-600 shadow-sm transition-colors hover:bg-rose-50"
       >
-        <LogOut className="h-4 w-4" /> Log out
+        <LogOut className="h-4 w-4" /> {t("account.logout")}
       </button>
     </div>
   );
@@ -338,6 +341,7 @@ function ProfileTab({
   customer: { full_name: string; email: string | null; phone: string | null };
   onSaved: () => void;
 }) {
+  const { t } = useStoreT();
   const update = useServerFn(updateCustomerProfile);
   const [name, setName] = useState(customer.full_name);
   const [email, setEmail] = useState(customer.email ?? "");
@@ -351,7 +355,7 @@ function ProfileTab({
       await update({
         data: { storeSlug: slug, token, fullName: name, email: email || undefined, phone: phone || undefined },
       });
-      toast.success("Profile updated");
+      toast.success(t("account.profileUpdated"));
       onSaved();
     } catch (err) {
       toast.error((err as Error).message);
@@ -363,25 +367,26 @@ function ProfileTab({
   return (
     <form onSubmit={submit} className="space-y-4">
       <div className="space-y-1.5">
-        <Label>Full name</Label>
+        <Label>{t("common.fullName")}</Label>
         <Input value={name} onChange={(e) => setName(e.target.value)} required />
       </div>
       <div className="space-y-1.5">
-        <Label>Email</Label>
+        <Label>{t("common.email")}</Label>
         <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
       <div className="space-y-1.5">
-        <Label>Phone</Label>
+        <Label>{t("common.phone")}</Label>
         <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
       </div>
       <Button type="submit" disabled={saving} className="w-full sm:w-auto">
-        {saving ? "Saving…" : "Save changes"}
+        {saving ? t("common.saving") : t("account.saveChanges")}
       </Button>
     </form>
   );
 }
 
 function OrdersTab({ slug, token }: { slug: string; token: string }) {
+  const { t } = useStoreT();
   const listFn = useServerFn(listCustomerOrders);
   const { data } = useQuery({
     queryKey: ["customer-orders", slug, token],
@@ -391,7 +396,7 @@ function OrdersTab({ slug, token }: { slug: string; token: string }) {
   if (rows.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-neutral-200 p-8 text-center text-sm text-neutral-500">
-        No orders yet.
+        {t("account.noOrders")}
       </div>
     );
   }
@@ -419,6 +424,7 @@ function OrdersTab({ slug, token }: { slug: string; token: string }) {
 }
 
 function AddressesTab({ slug, token }: { slug: string; token: string }) {
+  const { t } = useStoreT();
   const listFn = useServerFn(listCustomerAddresses);
   const upFn = useServerFn(upsertCustomerAddress);
   const delFn = useServerFn(deleteCustomerAddress);
@@ -487,10 +493,10 @@ function AddressesTab({ slug, token }: { slug: string; token: string }) {
             <div className="flex items-start justify-between gap-2">
               <div>
                 <div className="font-semibold text-neutral-900">
-                  {a.label ?? "Address"}{" "}
+                  {a.label ?? t("account.addressPlaceholder")}{" "}
                   {a.is_default && (
                     <span className="ml-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
-                      Default
+                      {t("account.defaultAddress")}
                     </span>
                   )}
                 </div>
@@ -502,7 +508,7 @@ function AddressesTab({ slug, token }: { slug: string; token: string }) {
               <div className="flex flex-col gap-1">
                 {!a.is_default && (
                   <Button size="sm" variant="outline" onClick={() => setDefault(a.id, a)}>
-                    Set default
+                    {t("account.setDefault")}
                   </Button>
                 )}
                 <Button size="sm" variant="ghost" onClick={() => remove(a.id)}>
@@ -514,17 +520,17 @@ function AddressesTab({ slug, token }: { slug: string; token: string }) {
         ))}
         {rows.length === 0 && (
           <li className="rounded-xl border border-dashed border-neutral-200 p-6 text-center text-sm text-neutral-500">
-            No addresses saved.
+            {t("account.noAddressesSaved")}
           </li>
         )}
       </ul>
       <div className="space-y-2 rounded-xl border border-neutral-200 p-3">
-        <div className="text-xs font-semibold uppercase text-neutral-500">Add address</div>
-        <Input placeholder="Label (Home, Office…)" value={label} onChange={(e) => setLabel(e.target.value)} />
-        <Textarea placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
-        <Input placeholder="Area (optional)" value={area} onChange={(e) => setArea(e.target.value)} />
+        <div className="text-xs font-semibold uppercase text-neutral-500">{t("account.addAddress")}</div>
+        <Input placeholder={t("account.addressLabelPlaceholder")} value={label} onChange={(e) => setLabel(e.target.value)} />
+        <Textarea placeholder={t("account.addressPlaceholder")} value={address} onChange={(e) => setAddress(e.target.value)} />
+        <Input placeholder={t("account.areaOptional")} value={area} onChange={(e) => setArea(e.target.value)} />
         <Button size="sm" onClick={add} disabled={!address.trim()}>
-          Add address
+          {t("account.addAddress")}
         </Button>
       </div>
     </div>
@@ -532,6 +538,7 @@ function AddressesTab({ slug, token }: { slug: string; token: string }) {
 }
 
 function WishlistTab({ slug }: { slug: string }) {
+  const { t } = useStoreT();
   const [items, setItems] = useState(() => readWishlist(slug));
   useEffect(() => {
     const sync = () => setItems(readWishlist(slug));
@@ -546,7 +553,7 @@ function WishlistTab({ slug }: { slug: string }) {
   if (items.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-neutral-200 p-8 text-center text-sm text-neutral-500">
-        Your wishlist is empty. Tap the heart on any product to save it here.
+        {t("account.wishlistEmpty")}
       </div>
     );
   }
@@ -577,6 +584,7 @@ function WishlistTab({ slug }: { slug: string }) {
 }
 
 function PasswordTab({ slug, token }: { slug: string; token: string }) {
+  const { t } = useStoreT();
   const changeFn = useServerFn(changeCustomerPassword);
   const [oldPw, setOld] = useState("");
   const [newPw, setNew] = useState("");
@@ -586,7 +594,7 @@ function PasswordTab({ slug, token }: { slug: string; token: string }) {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (newPw !== confirm) {
-      toast.error("Passwords do not match");
+      toast.error(t("account.passwordsNoMatch"));
       return;
     }
     setSaving(true);
@@ -594,7 +602,7 @@ function PasswordTab({ slug, token }: { slug: string; token: string }) {
       await changeFn({
         data: { storeSlug: slug, token, oldPassword: oldPw, newPassword: newPw },
       });
-      toast.success("Password changed");
+      toast.success(t("account.passwordChanged"));
       setOld("");
       setNew("");
       setConfirm("");
@@ -608,15 +616,15 @@ function PasswordTab({ slug, token }: { slug: string; token: string }) {
   return (
     <form onSubmit={submit} className="space-y-3">
       <div className="space-y-1.5">
-        <Label>Current password</Label>
+        <Label>{t("auth.currentPassword")}</Label>
         <Input type="password" required value={oldPw} onChange={(e) => setOld(e.target.value)} />
       </div>
       <div className="space-y-1.5">
-        <Label>New password</Label>
+        <Label>{t("auth.newPassword")}</Label>
         <Input type="password" required minLength={6} value={newPw} onChange={(e) => setNew(e.target.value)} />
       </div>
       <div className="space-y-1.5">
-        <Label>Confirm new password</Label>
+        <Label>{t("account.confirmNewPassword")}</Label>
         <Input
           type="password"
           required
@@ -626,7 +634,7 @@ function PasswordTab({ slug, token }: { slug: string; token: string }) {
         />
       </div>
       <Button type="submit" disabled={saving} className="w-full sm:w-auto">
-        {saving ? "Saving…" : "Change password"}
+        {saving ? t("common.saving") : t("account.changePassword")}
       </Button>
     </form>
   );

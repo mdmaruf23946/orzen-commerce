@@ -1,5 +1,6 @@
 import { useState } from "react";
 import DOMPurify from "isomorphic-dompurify";
+import { useStoreT } from "@/lib/store-i18n";
 import {
   FileArchive, FileText, Code2, Image as ImageIcon, Figma, Palette, Video, Music,
   LayoutTemplate, Type, ShieldCheck, BookOpen, Gift, Check, ChevronDown,
@@ -27,13 +28,14 @@ type PreviewProps = {
 };
 
 export function DigitalPreview({ name, images, videoUrl, pdfUrl, audioUrl, demoUrl }: PreviewProps) {
+  const { t } = useStoreT();
   const [active, setActive] = useState(0);
   const embed = toEmbedUrl(videoUrl);
   const hasAny = images.length > 0 || embed || pdfUrl || audioUrl || demoUrl;
   if (!hasAny) return null;
 
   return (
-    <Section title="Preview" id="preview">
+    <Section title={t("digital.preview")} id="preview">
       <div className="space-y-4">
         {embed && (
           <div className="aspect-video w-full overflow-hidden rounded-xl border bg-muted">
@@ -84,7 +86,7 @@ export function DigitalPreview({ name, images, videoUrl, pdfUrl, audioUrl, demoU
 
         {audioUrl && (
           <div className="rounded-xl border bg-card p-4">
-            <p className="mb-2 text-sm font-medium">Audio sample</p>
+            <p className="mb-2 text-sm font-medium">{t("digital.audioSample")}</p>
             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
             <audio controls src={audioUrl} className="w-full" />
           </div>
@@ -97,7 +99,7 @@ export function DigitalPreview({ name, images, videoUrl, pdfUrl, audioUrl, demoU
             rel="noopener noreferrer nofollow"
             className="inline-flex h-10 items-center rounded-lg border px-4 text-sm font-medium hover:bg-muted"
           >
-            Open live demo ↗
+            {t("digital.openLiveDemo")}
           </a>
         )}
       </div>
@@ -122,9 +124,10 @@ function sanitize(html: string) {
 }
 
 export function DigitalDescription({ html, features }: { html: string | null; features: string[] }) {
+  const { t } = useStoreT();
   if (!html && features.length === 0) return null;
   return (
-    <Section title="Description" id="description">
+    <Section title={t("digital.description")} id="description">
       {html && (
         <div
           className="prose prose-sm max-w-none text-muted-foreground prose-headings:text-foreground prose-strong:text-foreground prose-a:text-primary"
@@ -164,10 +167,11 @@ const INCLUDED_ICONS: Record<string, typeof FileText> = {
 };
 
 export function DigitalIncluded({ ids }: { ids: string[] }) {
+  const { t } = useStoreT();
   const items = INCLUDED_ITEMS.filter((i) => ids.includes(i.id));
   if (items.length === 0) return null;
   return (
-    <Section title="What's included" id="included">
+    <Section title={t("digital.whatsIncluded")} id="included">
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((it) => {
           const Icon = INCLUDED_ICONS[it.id] ?? FileText;
@@ -187,26 +191,27 @@ export function DigitalIncluded({ ids }: { ids: string[] }) {
 
 /* ------------------------------------------------------- system requirements */
 
-const REQ_LABELS: { key: keyof DigitalRequirements; label: string }[] = [
-  { key: "os", label: "Operating system" },
-  { key: "software", label: "Software version" },
-  { key: "browser", label: "Browser support" },
-  { key: "ram", label: "RAM" },
-  { key: "storage", label: "Storage" },
-  { key: "dependencies", label: "Dependencies" },
+const REQ_KEY_MAP: { key: keyof DigitalRequirements; tKey: string }[] = [
+  { key: "os", tKey: "digital.req.os" },
+  { key: "software", tKey: "digital.req.software" },
+  { key: "browser", tKey: "digital.req.browser" },
+  { key: "ram", tKey: "digital.req.ram" },
+  { key: "storage", tKey: "digital.req.storage" },
+  { key: "dependencies", tKey: "digital.req.dependencies" },
 ];
 
 export function DigitalRequirementsTable({ req }: { req: DigitalRequirements }) {
-  const rows = REQ_LABELS.filter(({ key }) => (req?.[key] ?? "").toString().trim() !== "");
+  const { t } = useStoreT();
+  const rows = REQ_KEY_MAP.filter(({ key }) => (req?.[key] ?? "").toString().trim() !== "");
   if (rows.length === 0) return null;
   return (
-    <Section title="System requirements" id="requirements">
+    <Section title={t("digital.systemRequirements")} id="requirements">
       <div className="overflow-hidden rounded-xl border">
         <table className="w-full text-sm">
           <tbody>
-            {rows.map(({ key, label }, i) => (
+            {rows.map(({ key, tKey }, i) => (
               <tr key={key} className={i % 2 ? "bg-muted/40" : ""}>
-                <th className="w-2/5 px-3 py-2 text-left font-medium text-muted-foreground">{label}</th>
+                <th className="w-2/5 px-3 py-2 text-left font-medium text-muted-foreground">{t(tKey)}</th>
                 <td className="px-3 py-2 text-foreground">{req[key]}</td>
               </tr>
             ))}
@@ -220,10 +225,11 @@ export function DigitalRequirementsTable({ req }: { req: DigitalRequirements }) 
 /* ---------------------------------------------------------------- license */
 
 export function DigitalLicense({ type, note }: { type: LicenseType; note?: string | null }) {
+  const { t } = useStoreT();
   const label = LICENSE_LABELS[type] ?? LICENSE_LABELS.personal;
   const desc = LICENSE_DESCRIPTIONS[type] ?? LICENSE_DESCRIPTIONS.personal;
   return (
-    <Section title="License information" id="license">
+    <Section title={t("digital.licenseInfo")} id="license">
       <div className="rounded-xl border bg-card p-4">
         <div className="flex items-center gap-2">
           <ShieldCheck className="h-5 w-5 text-primary" />
@@ -239,10 +245,11 @@ export function DigitalLicense({ type, note }: { type: LicenseType; note?: strin
 /* -------------------------------------------------------------------- faq */
 
 export function DigitalFaqList({ items }: { items: DigitalFaq[] }) {
+  const { t } = useStoreT();
   const rows = (items ?? []).filter((f) => f?.q?.trim());
   if (rows.length === 0) return null;
   return (
-    <Section title="Frequently asked questions" id="faq">
+    <Section title={t("digital.faq")} id="faq">
       <div className="space-y-2">
         {rows.map((f, i) => (
           <details key={i} className="group rounded-xl border bg-card">
@@ -261,9 +268,10 @@ export function DigitalFaqList({ items }: { items: DigitalFaq[] }) {
 /* ---------------------------------------------------------------- changelog */
 
 export function DigitalChangelog({ text, version }: { text?: string | null; version?: string | null }) {
+  const { t } = useStoreT();
   if (!text) return null;
   return (
-    <Section title={version ? `Changelog — v${version}` : "Changelog"} id="changelog">
+    <Section title={version ? t("digital.changelogVersion", { version }) : t("digital.changelog")} id="changelog">
       <pre className="overflow-x-auto whitespace-pre-wrap rounded-xl border bg-card p-4 text-sm text-foreground/80">
         {text}
       </pre>
@@ -288,18 +296,23 @@ export function DigitalFileInfo({
   updatedAt?: string | null;
   platforms: string[];
 }) {
+  const { t } = useStoreT();
   const rows: [string, string][] = [];
-  if (fileCount) rows.push(["Files", `${fileCount} file${fileCount > 1 ? "s" : ""}`]);
+  if (fileCount)
+    rows.push([
+      t("digital.files"),
+      fileCount > 1 ? t("digital.fileCountPlural", { count: fileCount }) : t("digital.fileCount", { count: fileCount }),
+    ]);
   const size = formatBytes(totalSize);
-  if (size) rows.push(["File size", size]);
-  if (fileTypes.length) rows.push(["File types", fileTypes.join(", ").toUpperCase()]);
-  if (version) rows.push(["Version", version]);
-  if (updatedAt) rows.push(["Last updated", new Date(updatedAt).toLocaleDateString()]);
-  if (platforms.length) rows.push(["Compatible with", platforms.join(", ")]);
+  if (size) rows.push([t("digital.fileSize"), size]);
+  if (fileTypes.length) rows.push([t("digital.fileTypes"), fileTypes.join(", ").toUpperCase()]);
+  if (version) rows.push([t("digital.version"), version]);
+  if (updatedAt) rows.push([t("digital.lastUpdated"), new Date(updatedAt).toLocaleDateString()]);
+  if (platforms.length) rows.push([t("digital.compatibleWith"), platforms.join(", ")]);
   if (rows.length === 0) return null;
 
   return (
-    <Section title="File information" id="files">
+    <Section title={t("digital.fileInformation")} id="files">
       <div className="overflow-hidden rounded-xl border">
         <table className="w-full text-sm">
           <tbody>

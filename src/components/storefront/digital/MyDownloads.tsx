@@ -8,12 +8,14 @@ import { getStoreBySlug } from "@/lib/storefront.functions";
 import { listMyDigitalPurchases, requestDigitalDownload } from "@/lib/digital.functions";
 import { formatBytes, LICENSE_LABELS, type LicenseType } from "@/lib/digital";
 import { getDeviceId } from "@/lib/fingerprint";
+import { useStoreT } from "@/lib/store-i18n";
 
 const FILTERS = ["all", "active", "expired"] as const;
 type Filter = (typeof FILTERS)[number];
 
 /** Customer dashboard: every digital item bought from this store. */
 export function MyDownloads({ slug, token }: { slug: string; token: string }) {
+  const { t } = useStoreT();
   const getStore = useServerFn(getStoreBySlug);
   const listMine = useServerFn(listMyDigitalPurchases);
   const requestDl = useServerFn(requestDigitalDownload);
@@ -57,9 +59,9 @@ export function MyDownloads({ slug, token }: { slug: string; token: string }) {
     }
   }
 
-  if (isLoading) return <p className="py-6 text-sm text-neutral-500">Loading…</p>;
+  if (isLoading) return <p className="py-6 text-sm text-neutral-500">{t("digital.myDownloads.loading")}</p>;
   if (!rows.length)
-    return <p className="py-6 text-sm text-neutral-500">You haven't bought any digital products yet.</p>;
+    return <p className="py-6 text-sm text-neutral-500">{t("digital.myDownloads.empty")}</p>;
 
   return (
     <div className="space-y-4">
@@ -73,7 +75,7 @@ export function MyDownloads({ slug, token }: { slug: string; token: string }) {
               filter === f ? "border-primary bg-primary/10" : ""
             }`}
           >
-            {f}
+            {t(`digital.myDownloads.filter.${f}`)}
           </button>
         ))}
       </div>
@@ -91,12 +93,12 @@ export function MyDownloads({ slug, token }: { slug: string; token: string }) {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold">{r.name}</p>
               <p className="text-xs text-muted-foreground">
-                {r.version ? `v${r.version} · ` : ""}
-                Purchased {new Date(r.purchasedAt).toLocaleDateString()}
+                {r.version ? t("digital.myDownloads.versionPrefix", { version: r.version }) : ""}
+                {t("digital.myDownloads.purchased", { date: new Date(r.purchasedAt).toLocaleDateString() })}
               </p>
               <p className="text-xs text-muted-foreground">
-                Downloads: {r.downloadCount}
-                {r.maxDownloads == null ? " (unlimited)" : ` / ${r.maxDownloads}`}
+                {t("digital.downloadsCount", { count: r.downloadCount })}
+                {r.maxDownloads == null ? t("digital.unlimited") : ` / ${r.maxDownloads}`}
                 {r.expiresAt ? (
                   <span className="ml-2 inline-flex items-center gap-1">
                     <Clock className="h-3 w-3" /> {new Date(r.expiresAt).toLocaleDateString()}
@@ -113,7 +115,7 @@ export function MyDownloads({ slug, token }: { slug: string; token: string }) {
                     : "bg-amber-100 text-amber-700"
               }`}
             >
-              {expired(r) ? "Expired" : r.status === "active" ? "Active" : "Locked"}
+              {expired(r) ? t("digital.myDownloads.expired") : r.status === "active" ? t("digital.myDownloads.active") : t("digital.myDownloads.locked")}
             </span>
           </div>
 
@@ -135,13 +137,13 @@ export function MyDownloads({ slug, token }: { slug: string; token: string }) {
                     onClick={() => download(r.id, f.index)}
                     disabled={busy === `${r.id}:${f.index}`}
                   >
-                    {busy === `${r.id}:${f.index}` ? "…" : "Download"}
+                    {busy === `${r.id}:${f.index}` ? "…" : t("digital.download")}
                   </Button>
                 </div>
               ))}
               {r.hasExternal && (
                 <Button size="sm" variant="outline" onClick={() => download(r.id, -1)}>
-                  Open external link
+                  {t("digital.openExternalLink")}
                 </Button>
               )}
             </div>
@@ -159,7 +161,7 @@ export function MyDownloads({ slug, token }: { slug: string; token: string }) {
                 variant="ghost"
                 onClick={() => {
                   navigator.clipboard.writeText(r.license.key);
-                  toast.success("License copied");
+                  toast.success(t("digital.licenseCopied"));
                 }}
               >
                 <Copy className="h-3.5 w-3.5" />

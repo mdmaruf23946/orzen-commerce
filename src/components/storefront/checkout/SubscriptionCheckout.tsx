@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RefreshCw, ShieldCheck, CalendarClock, Sparkles, CheckCircle2, ChevronDown } from "lucide-react";
+import { useStoreT } from "@/lib/store-i18n";
 
 export type SubscriptionCartInfo = Record<string, any | null>;
 
@@ -51,6 +52,7 @@ export function SubscriptionCheckout({
   items: CartItem[];
   info: SubscriptionCartInfo;
 }) {
+  const { t } = useStoreT();
   const navigate = useNavigate();
   const place = useServerFn(placeOrder);
   const listGw = useServerFn(listStoreOnlineGateways);
@@ -164,8 +166,8 @@ export function SubscriptionCheckout({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!agree) return toast.error("Please accept the subscription terms");
-    if (!method) return toast.error("Choose a payment method");
+    if (!agree) return toast.error(t("checkout.subscription.acceptTermsToast"));
+    if (!method) return toast.error(t("checkout.choosePaymentMethod"));
     setSubmitting(true);
     try {
       const [fingerprint, deviceId] = [await computeFingerprint(), getDeviceId()];
@@ -209,7 +211,7 @@ export function SubscriptionCheckout({
         params: { slug, orderId: (res as any).orderId },
       });
     } catch (err: any) {
-      toast.error(err?.message ?? "Could not start the subscription");
+      toast.error(err?.message ?? t("checkout.subscription.startFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -226,21 +228,21 @@ export function SubscriptionCheckout({
     >
       <div className="space-y-3 sm:space-y-4 lg:space-y-5">
         <div>
-          <h1 className="text-lg font-semibold leading-tight sm:text-xl lg:text-2xl">Start your subscription</h1>
+          <h1 className="text-lg font-semibold leading-tight sm:text-xl lg:text-2xl">{t("checkout.subscription.title")}</h1>
           <p className="text-[11px] text-muted-foreground sm:text-sm">
-            Recurring billing · cancel anytime from your account.
+            {t("checkout.subscription.subtitle")}
           </p>
         </div>
 
         <section className="rounded-lg border bg-card p-2.5 sm:p-4">
           <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase text-muted-foreground sm:text-xs">
-            <RefreshCw className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Plan
+            <RefreshCw className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> {t("checkout.subscription.plan")}
           </div>
           <div className="flex items-start justify-between gap-2 sm:gap-3">
             <div className="min-w-0">
               <div className="truncate text-sm font-medium sm:text-base">{item?.name}</div>
               <div className="text-[11px] text-muted-foreground sm:text-xs">
-                {CYCLE_LABEL[cycle] ?? cycle} billing{qty > 1 ? ` · ${qty} licenses` : ""}
+                {CYCLE_LABEL[cycle] ?? cycle} billing{qty > 1 ? ` · ${t("checkout.subscription.licenses", { n: qty })}` : ""}
               </div>
             </div>
             <div className="shrink-0 text-right">
@@ -288,8 +290,11 @@ export function SubscriptionCheckout({
 
           {trialEnabled && trialDays > 0 && (
             <div className="mt-2 flex items-center gap-2 rounded-lg bg-sky-50 p-2 text-[11px] text-sky-800">
-              <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> {trialDays}-day free trial — first charge on{" "}
-              {firstBilling ? new Date(firstBilling).toLocaleDateString() : "—"}
+              <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />{" "}
+              {t("checkout.subscription.trialBanner", {
+                days: trialDays,
+                date: firstBilling ? new Date(firstBilling).toLocaleDateString() : "—",
+              })}
             </div>
           )}
           {(benefits.length > 0 || access.length > 0) && (
@@ -308,43 +313,43 @@ export function SubscriptionCheckout({
 
         <section className="rounded-lg border bg-card p-2.5 sm:p-4">
           <div className="mb-2 text-[11px] font-semibold uppercase text-muted-foreground sm:text-xs">
-            Subscriber details
+            {t("checkout.subscription.subscriberDetails")}
           </div>
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
             <div className="space-y-1">
-              <Label htmlFor="s-name" className="text-xs">Full name</Label>
+              <Label htmlFor="s-name" className="text-xs">{t("common.fullName")}</Label>
               <Input id="s-name" required value={name} onChange={(e) => setName(e.target.value)} className="h-8 text-sm sm:h-10" />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="s-email" className="text-xs">Email (invoices)</Label>
+              <Label htmlFor="s-email" className="text-xs">{t("checkout.subscription.emailInvoices")}</Label>
               <Input id="s-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-8 text-sm sm:h-10" />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="s-phone" className="text-xs">Phone</Label>
+              <Label htmlFor="s-phone" className="text-xs">{t("common.phone")}</Label>
               <Input id="s-phone" required value={phone} onChange={(e) => setPhone(e.target.value)} className="h-8 text-sm sm:h-10" />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="s-country" className="text-xs">Country</Label>
+              <Label htmlFor="s-country" className="text-xs">{t("checkout.subscription.country")}</Label>
               <Input id="s-country" value={country} onChange={(e) => setCountry(e.target.value)} className="h-8 text-sm sm:h-10" />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="s-company" className="text-xs">Company (optional)</Label>
+              <Label htmlFor="s-company" className="text-xs">{t("checkout.subscription.companyOptional")}</Label>
               <Input id="s-company" value={company} onChange={(e) => setCompany(e.target.value)} className="h-8 text-sm sm:h-10" />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="s-vat" className="text-xs">VAT / BIN (optional)</Label>
+              <Label htmlFor="s-vat" className="text-xs">{t("checkout.subscription.vatOptional")}</Label>
               <Input id="s-vat" value={vat} onChange={(e) => setVat(e.target.value)} className="h-8 text-sm sm:h-10" />
             </div>
           </div>
           <div className="mt-2 space-y-1 sm:mt-3">
-            <Label htmlFor="s-notes" className="text-xs">Notes (optional)</Label>
+            <Label htmlFor="s-notes" className="text-xs">{t("checkout.subscription.notesOptional")}</Label>
             <Textarea id="s-notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="text-sm" />
           </div>
         </section>
 
         <section className="rounded-lg border bg-card p-2.5 sm:p-4">
           <div className="mb-2 text-[11px] font-semibold uppercase text-muted-foreground sm:text-xs">
-            Payment method
+            {t("checkout.paymentMethod")}
           </div>
           <div className="grid gap-2">
             {online.map((g: any) => {
@@ -379,13 +384,13 @@ export function SubscriptionCheckout({
                 }`}
               >
                 <input type="radio" name="pm" checked={method === "cod"} onChange={() => setMethod("cod")} />
-                <span className="text-sm">Cash on delivery</span>
+                <span className="text-sm">{t("checkout.subscription.cashOnDelivery")}</span>
               </label>
             )}
           </div>
           {isManual && (
             <div className="mt-2 space-y-1 sm:mt-3">
-              <Label htmlFor="s-txn" className="text-xs">Transaction ID</Label>
+              <Label htmlFor="s-txn" className="text-xs">{t("checkout.transactionId")}</Label>
               <Input id="s-txn" required value={txnId} onChange={(e) => setTxnId(e.target.value)} className="h-8 text-sm sm:h-10" />
             </div>
           )}
@@ -395,19 +400,22 @@ export function SubscriptionCheckout({
           <label className="flex items-start gap-2 text-sm">
             <input type="checkbox" className="mt-1" checked={autoRenew} onChange={(e) => setAutoRenew(e.target.checked)} />
             <span className="text-sm">
-              Auto-renew this subscription
+              {t("checkout.subscription.autoRenew")}
               <span className="block text-[11px] text-muted-foreground sm:text-xs">
-                Renews at {taka(renewalPrice)} every {CYCLE_LABEL[cycle]?.toLowerCase() ?? cycle}.
+                {t("checkout.subscription.renewsAt", {
+                  amount: taka(renewalPrice),
+                  cycle: CYCLE_LABEL[cycle]?.toLowerCase() ?? cycle,
+                })}
               </span>
             </span>
           </label>
           <label className="flex items-start gap-2 text-sm">
             <input type="checkbox" className="mt-1" checked={reminders} onChange={(e) => setReminders(e.target.checked)} />
-            <span className="text-sm">Email me renewal reminders</span>
+            <span className="text-sm">{t("checkout.subscription.emailReminders")}</span>
           </label>
           <label className="flex items-start gap-2 text-sm">
             <input type="checkbox" className="mt-1" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
-            <span className="text-sm">I accept the subscription, cancellation and refund terms</span>
+            <span className="text-sm">{t("checkout.subscription.acceptTerms")}</span>
           </label>
           {(policies.terms || policies.cancellation || policies.refund) && (
             <div>
@@ -416,7 +424,7 @@ export function SubscriptionCheckout({
                 onClick={() => setShowTerms((v) => !v)}
                 className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground sm:text-xs"
               >
-                <ChevronDown className={`h-3 w-3 transition sm:h-3.5 sm:w-3.5 ${showTerms ? "rotate-180" : ""}`} /> Read the terms
+                <ChevronDown className={`h-3 w-3 transition sm:h-3.5 sm:w-3.5 ${showTerms ? "rotate-180" : ""}`} /> {t("checkout.subscription.readTerms")}
               </button>
               {showTerms && (
                 <div className="mt-2 space-y-2 whitespace-pre-wrap rounded-lg bg-muted p-2 text-[11px] text-muted-foreground sm:p-3 sm:text-xs">
@@ -433,33 +441,36 @@ export function SubscriptionCheckout({
       <aside className="mt-3 space-y-3 sm:mt-4 lg:sticky lg:top-20 lg:mt-0 lg:h-fit">
         <div className="rounded-lg border bg-card p-2.5 text-sm sm:p-4">
           <div className="mb-2 text-[11px] font-semibold uppercase text-muted-foreground sm:text-xs">
-            Billing summary
+            {t("checkout.subscription.billingSummary")}
           </div>
           <div className="flex justify-between py-0.5 text-sm">
-            <span className="text-muted-foreground">Plan</span>
+            <span className="text-muted-foreground">{t("checkout.subscription.plan")}</span>
             <span>{taka(summary.plan)}</span>
           </div>
           {summary.setup > 0 && (
             <div className="flex justify-between py-0.5 text-sm">
-              <span className="text-muted-foreground">Setup fee</span>
+              <span className="text-muted-foreground">{t("checkout.subscription.setupFee")}</span>
               <span>{taka(summary.setup)}</span>
             </div>
           )}
           <div className="mt-2 flex justify-between border-t pt-2 text-sm font-semibold">
-            <span>Due today</span>
+            <span>{t("checkout.subscription.dueToday")}</span>
             <span>{trialEnabled && trialDays > 0 ? taka(summary.setup) : taka(summary.total)}</span>
           </div>
           <div className="mt-2 flex items-center gap-1.5 text-[10px] text-muted-foreground sm:text-[11px]">
             <CalendarClock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
             {cycle === "lifetime"
-              ? "One-time payment — never renews"
-              : `Next billing ${firstBilling ? new Date(firstBilling).toLocaleDateString() : "—"} · ${taka(renewalPrice)}`}
+              ? t("checkout.subscription.oneTimeNoRenew")
+              : t("checkout.subscription.nextBilling", {
+                  date: firstBilling ? new Date(firstBilling).toLocaleDateString() : "—",
+                  amount: taka(renewalPrice),
+                })}
           </div>
           <Button type="submit" className="mt-3 h-10 w-full text-sm sm:h-11" disabled={submitting}>
-            {submitting ? "Processing…" : trialEnabled && trialDays > 0 ? "Start free trial" : "Subscribe now"}
+            {submitting ? t("checkout.subscription.processing") : trialEnabled && trialDays > 0 ? t("checkout.subscription.startTrial") : t("checkout.subscription.subscribeNow")}
           </Button>
           <div className="mt-2 flex items-center justify-center gap-1 text-[10px] text-muted-foreground sm:text-[11px]">
-            <ShieldCheck className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Secure checkout · cancel anytime
+            <ShieldCheck className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> {t("checkout.subscription.secureCheckout")}
           </div>
         </div>
       </aside>

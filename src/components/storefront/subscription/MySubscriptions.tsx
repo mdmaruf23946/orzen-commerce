@@ -16,6 +16,7 @@ import {
 import { CYCLE_LABEL, STATUS_LABEL, STATUS_TONE, type SubStatus } from "@/lib/subscriptions";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, CalendarClock, ReceiptText, XCircle } from "lucide-react";
+import { useStoreT } from "@/lib/store-i18n";
 
 const storeQuery = (slug: string) =>
   queryOptions({ queryKey: ["store", slug], queryFn: () => getStoreBySlug({ data: { slug } }) });
@@ -28,6 +29,7 @@ function fmt(v?: string | null) {
 }
 
 export function MySubscriptions({ slug, token }: { slug: string; token: string }) {
+  const { t } = useStoreT();
   const { data: store } = useSuspenseQuery(storeQuery(slug));
   const listFn = useServerFn(listMySubscriptions);
   const cancelFn = useServerFn(cancelMySubscription);
@@ -53,17 +55,17 @@ export function MySubscriptions({ slug, token }: { slug: string; token: string }
       toast.success(msg);
       refresh();
     } catch (e: any) {
-      toast.error(e?.message ?? "Something went wrong");
+      toast.error(e?.message ?? t("sub.genericError"));
     } finally {
       setBusy(null);
     }
   }
 
-  if (isLoading) return <div className="py-8 text-center text-sm text-neutral-500">Loading…</div>;
+  if (isLoading) return <div className="py-8 text-center text-sm text-neutral-500">{t("sub.loading")}</div>;
   if (!subs.length)
     return (
       <div className="py-10 text-center text-sm text-neutral-500">
-        You have no subscriptions yet.
+        {t("sub.empty")}
       </div>
     );
 
@@ -87,31 +89,31 @@ export function MySubscriptions({ slug, token }: { slug: string; token: string }
 
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
               <div>
-                <div className="text-neutral-500">Price</div>
+                <div className="text-neutral-500">{t("sub.price")}</div>
                 <div className="font-medium">{taka(s.price)}</div>
               </div>
               <div>
-                <div className="text-neutral-500">Cycle</div>
+                <div className="text-neutral-500">{t("sub.cycle")}</div>
                 <div className="font-medium">{CYCLE_LABEL[s.billing_cycle as keyof typeof CYCLE_LABEL] ?? s.billing_cycle}</div>
               </div>
               <div>
-                <div className="text-neutral-500">Next billing</div>
+                <div className="text-neutral-500">{t("sub.nextBilling")}</div>
                 <div className="font-medium">{fmt(s.next_billing_date)}</div>
               </div>
               <div>
-                <div className="text-neutral-500">Renews at</div>
+                <div className="text-neutral-500">{t("sub.renewsAt")}</div>
                 <div className="font-medium">{taka(s.renewal_price ?? s.price)}</div>
               </div>
             </div>
 
             {s.trial_ends_at && (
               <div className="mt-2 flex items-center gap-1.5 rounded-lg bg-sky-50 p-2 text-[11px] text-sky-800">
-                <CalendarClock className="h-3.5 w-3.5" /> Trial ends {fmt(s.trial_ends_at)}
+                <CalendarClock className="h-3.5 w-3.5" /> {t("sub.trialEnds", { date: fmt(s.trial_ends_at) })}
               </div>
             )}
             {s.cancel_at_period_end && (
               <div className="mt-2 rounded-lg bg-amber-50 p-2 text-[11px] text-amber-800">
-                Cancels on {fmt(s.current_period_end)} — access stays until then.
+                {t("sub.cancelsOn", { date: fmt(s.current_period_end) })}
               </div>
             )}
 
@@ -125,12 +127,12 @@ export function MySubscriptions({ slug, token }: { slug: string; token: string }
                   run(
                     s.id,
                     () => autoFn({ data: { storeId: (store as any).id, token, subscriptionId: s.id, autoRenew: !s.auto_renew } }),
-                    s.auto_renew ? "Auto-renew turned off" : "Auto-renew turned on",
+                    s.auto_renew ? t("sub.autoRenewOff") : t("sub.autoRenewOn"),
                   )
                 }
               >
                 <RefreshCw className="mr-1 h-3.5 w-3.5" />
-                Auto-renew: {s.auto_renew ? "On" : "Off"}
+                {t("sub.autoRenewLabel", { state: s.auto_renew ? t("sub.on") : t("sub.off") })}
               </Button>
               <Button
                 size="sm"
@@ -141,11 +143,11 @@ export function MySubscriptions({ slug, token }: { slug: string; token: string }
                   run(
                     s.id,
                     () => remFn({ data: { storeId: (store as any).id, token, subscriptionId: s.id, optIn: !s.reminders_opt_in } }),
-                    "Reminder preference saved",
+                    t("sub.remindersSaved"),
                   )
                 }
               >
-                Reminders: {s.reminders_opt_in ? "On" : "Off"}
+                {t("sub.remindersLabel", { state: s.reminders_opt_in ? t("sub.on") : t("sub.off") })}
               </Button>
               {s.billing_cycle !== "lifetime" && !["cancelled", "expired"].includes(status) && (
                 <Button
@@ -156,11 +158,11 @@ export function MySubscriptions({ slug, token }: { slug: string; token: string }
                     run(
                       s.id,
                       () => renewFn({ data: { storeId: (store as any).id, token, subscriptionId: s.id } }),
-                      "Renewal invoice created",
+                      t("sub.renewalCreated"),
                     )
                   }
                 >
-                  Renew now
+                  {t("sub.renewNow")}
                 </Button>
               )}
               {!["cancelled", "expired"].includes(status) && !s.cancel_at_period_end && (
@@ -170,15 +172,15 @@ export function MySubscriptions({ slug, token }: { slug: string; token: string }
                   className="h-8 text-xs text-rose-600"
                   disabled={busy === s.id}
                   onClick={() => {
-                    if (!confirm("Cancel this subscription at the end of the current period?")) return;
+                    if (!confirm(t("sub.cancelConfirm"))) return;
                     run(
                       s.id,
                       () => cancelFn({ data: { storeId: (store as any).id, token, subscriptionId: s.id } }),
-                      "Cancellation scheduled",
+                      t("sub.cancelScheduled"),
                     );
                   }}
                 >
-                  <XCircle className="mr-1 h-3.5 w-3.5" /> Cancel
+                  <XCircle className="mr-1 h-3.5 w-3.5" /> {t("sub.cancel")}
                 </Button>
               )}
               {invoices.length > 0 && (
@@ -188,7 +190,7 @@ export function MySubscriptions({ slug, token }: { slug: string; token: string }
                   className="h-8 text-xs"
                   onClick={() => setOpenId(open ? null : s.id)}
                 >
-                  <ReceiptText className="mr-1 h-3.5 w-3.5" /> Invoices ({invoices.length})
+                  <ReceiptText className="mr-1 h-3.5 w-3.5" /> {t("sub.invoices", { count: invoices.length })}
                 </Button>
               )}
             </div>
