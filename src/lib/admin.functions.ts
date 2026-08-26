@@ -46,8 +46,13 @@ export const getMyStore = createServerFn({ method: "GET" })
         if (!staffStore) throw new Error("Your store could not be found. Contact the store owner.");
         return staffStore;
       }
-      if (access.staff) {
-        // Linked to staff but the account is not active / store missing.
+      // Linked as staff but not active — never create a stray store for them.
+      const { data: anyStaff } = await supabase
+        .from("store_staff")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (anyStaff) {
         throw new Error("Your employee account is not active. Contact the store owner.");
       }
     }
