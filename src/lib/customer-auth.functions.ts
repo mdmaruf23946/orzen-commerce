@@ -49,6 +49,8 @@ export const signupCustomer = createServerFn({ method: "POST" })
       _email: data.email || null,
       _phone: data.phone || null,
       _password: data.password,
+      _ua: null,
+      _ip: null,
     } as any);
     if (error) throw new Error(error.message);
     const r = res as any;
@@ -73,6 +75,8 @@ export const loginCustomer = createServerFn({ method: "POST" })
       _store_id: storeId,
       _identifier: data.identifier,
       _password: data.password,
+      _ua: null,
+      _ip: null,
     } as any);
     if (error) throw new Error(error.message);
     const r = res as any;
@@ -243,7 +247,8 @@ export const upsertCustomerAddress = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
-    return { id: ins!.id };
+    if (!ins) throw new Error("Address could not be saved");
+    return { id: ins.id };
   });
 
 export const deleteCustomerAddress = createServerFn({ method: "POST" })
