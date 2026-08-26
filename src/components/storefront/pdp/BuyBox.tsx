@@ -1,6 +1,7 @@
 import { Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { isStockless } from "@/lib/product-stock";
+import { useStoreT } from "@/lib/store-i18n";
 
 type Props = {
   price: number;
@@ -69,7 +70,7 @@ export function BuyBox({ price, oldPrice, stock, status, productType, qty, setQt
 
       <div className="mt-4 grid grid-cols-2 gap-3">
         <Button type="button" variant="outline" disabled={!inStock} onClick={onAdd} className="h-12">
-          Add to Cart
+          {t("pdp.addToCart")}
         </Button>
         <Button
           type="button"
@@ -78,7 +79,7 @@ export function BuyBox({ price, oldPrice, stock, status, productType, qty, setQt
           className="h-12"
           style={{ backgroundColor: "var(--primary)", color: "white" }}
         >
-          Buy Now
+          {t("pdp.buyNow")}
         </Button>
       </div>
     </div>
