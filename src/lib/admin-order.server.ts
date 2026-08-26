@@ -1,10 +1,7 @@
+import { myStoreRow } from "@/lib/store-access";
 /** Server-only ownership helpers shared by the Orders server functions. */
 export async function getOwnedStoreId(supabase: any, userId: string): Promise<string | null> {
-  const { data } = await supabase
-    .from("stores")
-    .select("id")
-    .eq("owner_user_id", userId)
-    .maybeSingle();
+  const data = await myStoreRow(supabase, userId, "id");
   return data?.id ?? null;
 }
 
