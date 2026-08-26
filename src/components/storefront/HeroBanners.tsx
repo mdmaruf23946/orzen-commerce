@@ -130,7 +130,7 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
     >
       {/* Main hero banner */}
       <div
-        className="relative -mx-4 overflow-hidden bg-sf-surface sm:mx-0 sm:rounded-2xl"
+        className="relative overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl"
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
