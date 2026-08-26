@@ -24,6 +24,9 @@ import {
 import { getStoreAgentPublic } from "@/lib/ai.functions";
 import { cartCount } from "@/lib/cart";
 import { StoreUIProvider, useStoreUI } from "@/lib/store-ui";
+import { StoreLangProvider, useStoreT } from "@/lib/store-i18n";
+import { StoreLangSwitch } from "@/components/storefront/StoreLangSwitch";
+
 import { AIChatLauncher } from "@/components/storefront/AIChatLauncher";
 import { useCustomerSession } from "@/lib/customer-session";
 import { SearchBar } from "@/components/storefront/SearchBar";
