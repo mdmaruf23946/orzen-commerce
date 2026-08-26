@@ -152,11 +152,7 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
                   loading={i === 0 ? "eager" : "lazy"}
                   fetchPriority={i === 0 ? "high" : "auto"}
                   decoding="async"
-                  className={`w-full select-none object-cover ${
-                    hasSide
-                      ? "aspect-[16/9] lg:aspect-[16/9.6]"
-                      : "aspect-[16/9] lg:aspect-[16/6]"
-                  }`}
+                  className="h-auto w-full select-none object-contain"
                 />
               </BannerLink>
             </div>
