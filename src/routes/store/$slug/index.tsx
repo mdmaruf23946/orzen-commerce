@@ -14,6 +14,7 @@ import { useStoreUI } from "@/lib/store-ui";
 import { useStoreT } from "@/lib/store-i18n";
 import { useStoreTheme } from "@/lib/theme/context";
 import { ProductCard } from "@/components/storefront/ProductCard";
+import { HeroBanners } from "@/components/storefront/HeroBanners";
 
 
 const STALE = 5 * 60_000;
