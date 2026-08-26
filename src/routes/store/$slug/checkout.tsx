@@ -374,7 +374,13 @@ function CheckoutPage() {
     <form onSubmit={submit} className="grid gap-6 sm:grid-cols-5">
       <div className="sm:col-span-3">
         <h1 className="text-xl font-semibold">Checkout</h1>
+        {cartNotices.length > 0 && (
+          <div className="mt-4">
+            <CartNotices notices={cartNotices} />
+          </div>
+        )}
         <div className="mt-4 space-y-4 rounded-xl border bg-card p-4">
+
           <div className="space-y-1.5">
             <Label htmlFor="name">Full name</Label>
             <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
