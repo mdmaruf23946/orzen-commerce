@@ -51,7 +51,7 @@ function SideRotator({ items, delay }: { items: HeroBanner[]; delay: number }) {
 
   return (
     <div
-      className="aspect-[16/9] overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl"
+      className="aspect-[16/9] overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl lg:aspect-auto lg:h-full"
       onMouseEnter={() => (paused.current = true)}
       onMouseLeave={() => (paused.current = false)}
     >
@@ -125,12 +125,12 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
 
   return (
     <section
-      className={`grid gap-3 ${hasSide ? "lg:grid-cols-[1.85fr_1fr]" : ""}`}
+      className={`grid items-stretch gap-3 ${hasSide ? "lg:grid-cols-[27fr_10fr]" : ""}`}
       aria-label="Promotions"
     >
       {/* Main hero banner */}
       <div
-        className="relative overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl"
+        className="relative aspect-[16/9] overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl lg:aspect-[47/20]"
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
@@ -139,11 +139,11 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
         onMouseLeave={() => (paused.current = false)}
       >
         <div
-          className="flex transition-transform duration-500 ease-out"
+          className="flex h-full transition-transform duration-500 ease-out"
           style={{ transform: `translateX(-${idx * 100}%)` }}
         >
           {main.map((b, i) => (
-            <div key={b.id} className="w-full flex-shrink-0">
+            <div key={b.id} className="h-full w-full flex-shrink-0">
               <BannerLink banner={b}>
                 <img
                   src={b.image_url}
@@ -152,12 +152,13 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
                   loading={i === 0 ? "eager" : "lazy"}
                   fetchPriority={i === 0 ? "high" : "auto"}
                   decoding="async"
-                  className="h-auto w-full select-none object-contain"
+                  className="h-full w-full select-none object-cover"
                 />
               </BannerLink>
             </div>
           ))}
         </div>
+
 
         {main.length > 1 && (
           <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
@@ -178,7 +179,7 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
 
       {/* Supporting banners */}
       {hasSide && (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-1 lg:grid-rows-2">
           {slots.map((items, i) =>
             items.length > 0 ? (
               <SideRotator key={i} items={items} delay={5200 + i * 900} />
@@ -186,7 +187,7 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
               <div
                 key={i}
                 aria-hidden
-                className="aspect-[16/9] rounded-xl bg-sf-surface/40 sm:rounded-2xl"
+                className="aspect-[16/9] rounded-xl bg-sf-surface/40 sm:rounded-2xl lg:aspect-auto lg:h-full"
               />
             ),
           )}
