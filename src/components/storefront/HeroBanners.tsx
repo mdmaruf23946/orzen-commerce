@@ -125,12 +125,12 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
 
   return (
     <section
-      className={`grid gap-3 ${hasSide ? "lg:grid-cols-[1.85fr_1fr]" : ""}`}
+      className={`grid items-stretch gap-3 ${hasSide ? "lg:grid-cols-[1.85fr_1fr]" : ""}`}
       aria-label="Promotions"
     >
       {/* Main hero banner */}
       <div
-        className="relative overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl"
+        className="relative aspect-[16/9] overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl lg:aspect-auto lg:h-full"
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
@@ -139,11 +139,11 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
         onMouseLeave={() => (paused.current = false)}
       >
         <div
-          className="flex transition-transform duration-500 ease-out"
+          className="flex h-full transition-transform duration-500 ease-out"
           style={{ transform: `translateX(-${idx * 100}%)` }}
         >
           {main.map((b, i) => (
-            <div key={b.id} className="w-full flex-shrink-0">
+            <div key={b.id} className="h-full w-full flex-shrink-0">
               <BannerLink banner={b}>
                 <img
                   src={b.image_url}
@@ -152,12 +152,13 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
                   loading={i === 0 ? "eager" : "lazy"}
                   fetchPriority={i === 0 ? "high" : "auto"}
                   decoding="async"
-                  className="h-auto w-full select-none object-contain"
+                  className="h-full w-full select-none object-cover"
                 />
               </BannerLink>
             </div>
           ))}
         </div>
+
 
         {main.length > 1 && (
           <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
