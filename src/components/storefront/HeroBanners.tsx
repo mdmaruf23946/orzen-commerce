@@ -51,23 +51,23 @@ function SideRotator({ items, delay }: { items: HeroBanner[]; delay: number }) {
 
   return (
     <div
-      className="overflow-hidden rounded-2xl bg-sf-surface"
+      className="aspect-[16/10] overflow-hidden rounded-2xl bg-sf-surface lg:aspect-[16/9]"
       onMouseEnter={() => (paused.current = true)}
       onMouseLeave={() => (paused.current = false)}
     >
       <div
-        className="flex transition-transform duration-500 ease-out"
+        className="flex h-full transition-transform duration-500 ease-out"
         style={{ transform: `translateX(-${idx * 100}%)` }}
       >
         {items.map((b) => (
-          <div key={b.id} className="w-full flex-shrink-0">
+          <div key={b.id} className="h-full w-full flex-shrink-0">
             <BannerLink banner={b}>
               <img
                 src={b.image_url}
                 alt=""
                 loading="lazy"
                 decoding="async"
-                className="aspect-[16/10] w-full select-none object-cover lg:aspect-[16/9]"
+                className="h-full w-full select-none object-contain"
               />
             </BannerLink>
           </div>
