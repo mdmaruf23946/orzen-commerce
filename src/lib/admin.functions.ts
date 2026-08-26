@@ -1845,3 +1845,25 @@ export const typeScopeCounts = createServerFn({ method: "GET" })
     }
     return counts;
   });
+
+// Image shown on the storefront "All" category tile.
+export const setAllCategoryImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ image_url: z.string().max(500).nullable() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: store } = await supabase
+      .from("stores")
+      .select("id")
+      .eq("owner_user_id", userId)
+      .maybeSingle();
+    if (!store) throw new Error("No store");
+    const { error } = await (supabase as any)
+      .from("stores")
+      .update({ all_category_image_url: data.image_url })
+      .eq("id", store.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

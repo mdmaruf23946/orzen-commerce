@@ -29,7 +29,9 @@ export function templateStoreFields(tpl: any) {
   if (!tpl) return {};
   return {
     description: tpl.description ?? null,
+    all_category_image_url: tpl.all_category_image_url ?? null,
     primary_color: tpl.primary_color ?? "#0f172a",
+
     header_color: tpl.header_color ?? null,
     title_bar_color: tpl.title_bar_color ?? null,
     footer_color: tpl.footer_color ?? null,

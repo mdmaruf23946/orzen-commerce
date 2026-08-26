@@ -151,6 +151,7 @@ function StoreHome() {
       on.categories && categories.length > 0 ? (
         <CategoryStrip
           key="categories"
+          allImage={(store as any).all_category_image_url ?? null}
           categories={mainCategories as any}
           active={activeMainId}
           onSelect={(id) => selectMain(id, "icon")}
@@ -358,10 +359,12 @@ function SubPill({
 
 function CategoryStrip({
   categories,
+  allImage,
   active,
   onSelect,
 }: {
   categories: { id: string; name: string; image_url?: string | null }[];
+  allImage?: string | null;
   active: string | null;
   onSelect: (id: string | null) => void;
 }) {
@@ -396,7 +399,12 @@ function CategoryStrip({
         className="flex flex-nowrap gap-3 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory sm:grid sm:grid-cols-6 sm:gap-4 md:grid-cols-8"
       >
         <div className="w-20 shrink-0 snap-start sm:w-auto">
-          <CategoryTile label="All" active={active === null} onClick={() => onSelect(null)} />
+          <CategoryTile
+            label="All"
+            image={allImage ?? null}
+            active={active === null}
+            onClick={() => onSelect(null)}
+          />
         </div>
         {categories.map((c) => (
           <div key={c.id} className="w-20 shrink-0 snap-start sm:w-auto">
