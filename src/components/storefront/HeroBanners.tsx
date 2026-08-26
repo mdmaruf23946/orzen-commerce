@@ -150,7 +150,7 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
                   loading={i === 0 ? "eager" : "lazy"}
                   fetchPriority={i === 0 ? "high" : "auto"}
                   decoding="async"
-                  className={`w-full select-none object-cover ${
+                  className={`w-full select-none object-contain ${
                     hasSide
                       ? "aspect-[16/9] sm:aspect-[16/8] lg:aspect-[16/9]"
                       : "aspect-[16/9] sm:aspect-[16/6] lg:aspect-[16/5]"
