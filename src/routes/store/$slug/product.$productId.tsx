@@ -326,7 +326,7 @@ function ProductPage() {
 
 
 
-      <ReviewsBlock rating={rating} />
+      <ReviewsBlock rating={rating} count={reviewCount} />
 
       <RelatedRail
         title="Related Products"
