@@ -87,6 +87,22 @@ function CheckoutPage() {
     queryKey: ["cartProducts", store?.id, cartIds.join(",")],
     queryFn: () => listByIds({ data: { storeId: store!.id, ids: cartIds } }),
   });
+
+  // Cart prices/stock are snapshots — reconcile with live data before paying.
+  const [cartNotices, setCartNotices] = useState<CartNotice[]>([]);
+  useEffect(() => {
+    if (!(cartProducts as any[]).length) return;
+    const n = reconcileStoredCart(slug, cartProducts as any[]);
+    if (!n.length) return;
+    setCartNotices(n);
+    const all = readCart(slug);
+    const sel = readSelection(slug);
+    setItems(sel.length ? all.filter((i) => sel.includes(i.productId)) : all);
+    // Totals changed, so a previously applied coupon must be re-validated.
+    setCoupon(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartProducts]);
+
   const digitalIds = new Set(
     (cartProducts as any[]).filter((p) => p.product_type === "digital").map((p) => p.id),
   );
