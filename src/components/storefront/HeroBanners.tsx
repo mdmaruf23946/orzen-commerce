@@ -51,7 +51,7 @@ function SideRotator({ items, delay }: { items: HeroBanner[]; delay: number }) {
 
   return (
     <div
-      className="aspect-[16/9] overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl"
+      className="aspect-[16/9] overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl lg:aspect-auto lg:h-full"
       onMouseEnter={() => (paused.current = true)}
       onMouseLeave={() => (paused.current = false)}
     >
@@ -125,12 +125,12 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
 
   return (
     <section
-      className={`grid items-stretch gap-3 ${hasSide ? "lg:grid-cols-[1.85fr_1fr]" : ""}`}
+      className={`grid items-stretch gap-3 ${hasSide ? "lg:grid-cols-[2.7fr_1fr]" : ""}`}
       aria-label="Promotions"
     >
       {/* Main hero banner */}
       <div
-        className="relative aspect-[16/9] overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl lg:aspect-auto lg:h-full"
+        className="relative aspect-[16/9] overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl lg:aspect-[2.35/1]"
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
@@ -179,7 +179,7 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
 
       {/* Supporting banners */}
       {hasSide && (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-1 lg:grid-rows-2">
           {slots.map((items, i) =>
             items.length > 0 ? (
               <SideRotator key={i} items={items} delay={5200 + i * 900} />
@@ -187,7 +187,7 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
               <div
                 key={i}
                 aria-hidden
-                className="aspect-[16/9] rounded-xl bg-sf-surface/40 sm:rounded-2xl"
+                className="aspect-[16/9] rounded-xl bg-sf-surface/40 sm:rounded-2xl lg:aspect-auto lg:h-full"
               />
             ),
           )}
