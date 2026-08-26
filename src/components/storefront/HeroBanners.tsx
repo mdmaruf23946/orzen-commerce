@@ -51,23 +51,23 @@ function SideRotator({ items, delay }: { items: HeroBanner[]; delay: number }) {
 
   return (
     <div
-      className="overflow-hidden rounded-2xl bg-sf-surface"
+      className="aspect-[16/10] overflow-hidden rounded-2xl bg-sf-surface lg:aspect-[16/9]"
       onMouseEnter={() => (paused.current = true)}
       onMouseLeave={() => (paused.current = false)}
     >
       <div
-        className="flex transition-transform duration-500 ease-out"
+        className="flex h-full transition-transform duration-500 ease-out"
         style={{ transform: `translateX(-${idx * 100}%)` }}
       >
         {items.map((b) => (
-          <div key={b.id} className="w-full flex-shrink-0">
+          <div key={b.id} className="h-full w-full flex-shrink-0">
             <BannerLink banner={b}>
               <img
                 src={b.image_url}
                 alt=""
                 loading="lazy"
                 decoding="async"
-                className="aspect-[16/10] w-full select-none object-cover lg:aspect-[16/9]"
+                className="h-full w-full select-none object-contain"
               />
             </BannerLink>
           </div>
@@ -116,8 +116,10 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
   // Split the supporting banners across two slots so each one keeps sliding.
   const slotA = others.filter((_, i) => i % 2 === 0);
   const slotB = others.filter((_, i) => i % 2 === 1);
-  const slots = [slotA, slotB].filter((s) => s.length > 0);
-  const hasSide = slots.length > 0;
+  // Slots are fixed: left slot always slot A, right slot always slot B. An
+  // empty slot keeps its space so a single banner never grows or moves.
+  const slots = [slotA, slotB];
+  const hasSide = others.length > 0;
 
   if (main.length === 0) return null;
 
@@ -150,7 +152,7 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
                   loading={i === 0 ? "eager" : "lazy"}
                   fetchPriority={i === 0 ? "high" : "auto"}
                   decoding="async"
-                  className={`w-full select-none object-cover ${
+                  className={`w-full select-none object-contain ${
                     hasSide
                       ? "aspect-[16/9] sm:aspect-[16/8] lg:aspect-[16/9]"
                       : "aspect-[16/9] sm:aspect-[16/6] lg:aspect-[16/5]"
@@ -180,10 +182,18 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
 
       {/* Supporting banners */}
       {hasSide && (
-        <div className={`grid gap-3 ${slots.length > 1 ? "grid-cols-2 lg:grid-cols-1" : "grid-cols-1"}`}>
-          {slots.map((items, i) => (
-            <SideRotator key={i} items={items} delay={5200 + i * 900} />
-          ))}
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
+          {slots.map((items, i) =>
+            items.length > 0 ? (
+              <SideRotator key={i} items={items} delay={5200 + i * 900} />
+            ) : (
+              <div
+                key={i}
+                aria-hidden
+                className="aspect-[16/10] rounded-2xl bg-sf-surface/40 lg:aspect-[16/9]"
+              />
+            ),
+          )}
         </div>
       )}
     </section>
