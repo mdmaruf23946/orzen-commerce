@@ -149,6 +149,8 @@ function ProductPage() {
     ? meta.package.filter(Boolean)
     : [];
   const rating: number | null = typeof meta.rating === "number" ? meta.rating : null;
+  const reviewCount: number = typeof meta.review_count === "number" ? meta.review_count : 0;
+
   const features: string[] = Array.isArray(product!.features)
     ? (product!.features as string[]).filter(Boolean)
     : [];
@@ -326,7 +328,7 @@ function ProductPage() {
 
 
 
-      <ReviewsBlock rating={rating} />
+      <ReviewsBlock rating={rating} count={reviewCount} />
 
       <RelatedRail
         title="Related Products"

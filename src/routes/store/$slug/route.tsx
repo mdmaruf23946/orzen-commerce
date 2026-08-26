@@ -126,6 +126,8 @@ function StoreLayout() {
 
   const isAccount = pathname.includes("/account");
   const isCheckoutFlow = /\/(checkout|cart|order)/.test(pathname);
+  // Product pages render their own fixed buy bar; two fixed bars would stack.
+  const isProductPage = /\/product\//.test(pathname);
   // The preview iframe must show the footer too — it is customisable.
   const showChrome = !isAccount;
 
@@ -174,7 +176,7 @@ function StoreLayout() {
             messengerUrl={toMessengerUrl(store.facebook)}
           />
         )}
-        {!isPreview && <BottomNav slug={slug} />}
+        {!isPreview && !isProductPage && <BottomNav slug={slug} />}
       </div>
 
     </StoreUIProvider>

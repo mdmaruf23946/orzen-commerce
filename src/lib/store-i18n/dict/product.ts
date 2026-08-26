@@ -2,7 +2,25 @@ import type { Dict } from "./types";
 
 /** Product detail page: gallery, buy box, tabs, reviews, related. */
 export const productDict: Dict = {
+  "pdp.customerReviews": { en: "Customer reviews", bn: "কাস্টমার রিভিউ" },
+  "pdp.basedOnReviews": { en: "Based on {count} reviews", bn: "{count} টি রিভিউ অনুযায়ী" },
+  "pdp.copyLink": { en: "Copy link", bn: "লিংক কপি করুন" },
+  "pdp.copied": { en: "Copied", bn: "কপি হয়েছে" },
+  "pdp.linkCopied": { en: "Link copied", bn: "লিংক কপি হয়েছে" },
+  "pdp.copyFailed": { en: "Could not copy the link", bn: "লিংক কপি করা যায়নি" },
+  "pdp.brand": { en: "Brand", bn: "ব্র্যান্ড" },
+  "pdp.category": { en: "Category", bn: "ক্যাটাগরি" },
+  "pdp.sku": { en: "SKU", bn: "SKU" },
+  "pdp.available": { en: "Available", bn: "স্টকে আছে" },
+  "pdp.inStockCount": { en: "In stock ({count})", bn: "স্টকে আছে ({count})" },
+  "pdp.price": { en: "Price", bn: "দাম" },
+  "pdp.recentlyViewed": { en: "Recently viewed", bn: "সম্প্রতি দেখা" },
+  "pdp.youMayAlsoLike": { en: "You may also like", bn: "আপনার পছন্দ হতে পারে" },
+  "pdp.backToStore": { en: "Back to store", bn: "স্টোরে ফিরে যান" },
+  "pdp.searchPlaceholder": { en: "Search products…", bn: "প্রোডাক্ট খুঁজুন…" },
+  "pdp.clearSearch": { en: "Clear search", bn: "সার্চ মুছুন" },
   "pdp.onlyLeft": { en: "Only {count} left", bn: "মাত্র {count} টি বাকি" },
+
   "pdp.addToCart": { en: "Add to cart", bn: "কার্টে যোগ করুন" },
   "pdp.buyNow": { en: "Buy now", bn: "এখনই কিনুন" },
   "pdp.orderNow": { en: "Order now", bn: "অর্ডার করুন" },

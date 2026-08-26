@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { Copy, Facebook, MessageCircle, Send } from "lucide-react";
 import { toast } from "sonner";
+import { useStoreT } from "@/lib/store-i18n";
 
 export function ShareBar({ url, title }: { url: string; title: string }) {
+  const { t } = useStoreT();
   const [copied, setCopied] = useState(false);
   const enc = encodeURIComponent(url);
   const encTitle = encodeURIComponent(title);
 
   const items = [
     { label: "Facebook", href: `https://www.facebook.com/sharer/sharer.php?u=${enc}`, icon: Facebook, color: "#1877F2" },
-    { label: "Messenger", href: `fb-messenger://share/?link=${enc}`, icon: MessageCircle, color: "#0084FF" },
+    // Web fallback: the fb-messenger:// scheme is a dead link on desktop.
+    { label: "Messenger", href: `https://www.facebook.com/dialog/send?link=${enc}&app_id=291494419107518&redirect_uri=${enc}`, icon: MessageCircle, color: "#0084FF" },
     { label: "WhatsApp", href: `https://wa.me/?text=${encTitle}%20${enc}`, icon: MessageCircle, color: "#25D366" },
     { label: "Telegram", href: `https://t.me/share/url?url=${enc}&text=${encTitle}`, icon: Send, color: "#229ED9" },
   ];
@@ -18,16 +21,16 @@ export function ShareBar({ url, title }: { url: string; title: string }) {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
-      toast.success("Link copied");
+      toast.success(t("pdp.linkCopied"));
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      toast.error("Copy failed");
+      toast.error(t("pdp.copyFailed"));
     }
   }
 
   return (
     <section className="mt-10">
-      <h2 className="mb-3 text-lg font-semibold">Share this product</h2>
+      <h2 className="mb-3 text-lg font-semibold">{t("pdp.share")}</h2>
       <div className="flex flex-wrap gap-2">
         {items.map((it) => (
           <a
@@ -46,7 +49,7 @@ export function ShareBar({ url, title }: { url: string; title: string }) {
           onClick={copy}
           className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-2 text-xs font-semibold shadow-sm transition-colors hover:bg-neutral-50"
         >
-          <Copy className="h-4 w-4" /> {copied ? "Copied" : "Copy Link"}
+          <Copy className="h-4 w-4" /> {copied ? t("pdp.copied") : t("pdp.copyLink")}
         </button>
       </div>
     </section>
