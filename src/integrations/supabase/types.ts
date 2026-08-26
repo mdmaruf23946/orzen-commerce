@@ -7902,6 +7902,7 @@ export type Database = {
       }
       store_template: {
         Row: {
+          all_category_image_url: string | null
           banners: Json
           button_color: string | null
           categories: Json
@@ -7925,6 +7926,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          all_category_image_url?: string | null
           banners?: Json
           button_color?: string | null
           categories?: Json
@@ -7948,6 +7950,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          all_category_image_url?: string | null
           banners?: Json
           button_color?: string | null
           categories?: Json
@@ -8020,6 +8023,7 @@ export type Database = {
       stores: {
         Row: {
           address: string | null
+          all_category_image_url: string | null
           allow_guest_checkout: boolean
           bkash_number: string | null
           branding: Json
@@ -8083,6 +8087,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          all_category_image_url?: string | null
           allow_guest_checkout?: boolean
           bkash_number?: string | null
           branding?: Json
@@ -8146,6 +8151,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          all_category_image_url?: string | null
           allow_guest_checkout?: boolean
           bkash_number?: string | null
           branding?: Json
