@@ -7920,6 +7920,8 @@ export type Database = {
           product_defaults: Json
           products: Json
           seo: Json
+          storefront_default_lang: string
+          storefront_lang_switcher: boolean
           theme: Json
           title_bar_color: string | null
           updated_at: string
@@ -7944,6 +7946,8 @@ export type Database = {
           product_defaults?: Json
           products?: Json
           seo?: Json
+          storefront_default_lang?: string
+          storefront_lang_switcher?: boolean
           theme?: Json
           title_bar_color?: string | null
           updated_at?: string
@@ -7968,6 +7972,8 @@ export type Database = {
           product_defaults?: Json
           products?: Json
           seo?: Json
+          storefront_default_lang?: string
+          storefront_lang_switcher?: boolean
           theme?: Json
           title_bar_color?: string | null
           updated_at?: string
@@ -8067,6 +8073,8 @@ export type Database = {
           slug: string
           status: Database["public"]["Enums"]["store_status"]
           store_mode_changed_at: string | null
+          storefront_default_lang: string
+          storefront_lang_switcher: boolean
           subscription_status: string
           tax_number: string | null
           template_version: string | null
@@ -8131,6 +8139,8 @@ export type Database = {
           slug: string
           status?: Database["public"]["Enums"]["store_status"]
           store_mode_changed_at?: string | null
+          storefront_default_lang?: string
+          storefront_lang_switcher?: boolean
           subscription_status?: string
           tax_number?: string | null
           template_version?: string | null
@@ -8195,6 +8205,8 @@ export type Database = {
           slug?: string
           status?: Database["public"]["Enums"]["store_status"]
           store_mode_changed_at?: string | null
+          storefront_default_lang?: string
+          storefront_lang_switcher?: boolean
           subscription_status?: string
           tax_number?: string | null
           template_version?: string | null
