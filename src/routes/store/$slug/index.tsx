@@ -341,14 +341,8 @@ function Section({
 
 /** Section shell for the featured category cards. */
 function FeaturedCategories({ children }: { children: React.ReactNode }) {
-  const { t } = useStoreT();
   return (
     <section id="categories" className="scroll-mt-32 rounded-3xl border border-sf-line bg-white p-3 sm:p-5">
-      <div className="-mt-6 mb-3 flex justify-center sm:-mt-8 sm:mb-5">
-        <span className="rounded-full bg-sf-accent px-5 py-2 text-sm font-bold text-white shadow-[0_10px_20px_-12px_rgba(255,75,31,0.9)] sm:text-base">
-          {t("home.featuredCategories")}
-        </span>
-      </div>
       {children}
     </section>
   );
@@ -551,7 +545,7 @@ function CategoryStrip({
         ref={scrollRef}
         className="flex flex-nowrap gap-3 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory sm:grid sm:grid-cols-6 sm:gap-4 md:grid-cols-8"
       >
-        <div className="w-20 shrink-0 snap-start sm:w-auto">
+        <div className="w-[calc(25%-0.5625rem)] shrink-0 snap-start sm:w-auto">
           <CategoryTile
             label={t("home.categoryAll")}
             image={allImage ?? null}
@@ -560,7 +554,7 @@ function CategoryStrip({
           />
         </div>
         {categories.map((c) => (
-          <div key={c.id} className="w-20 shrink-0 snap-start sm:w-auto">
+          <div key={c.id} className="w-[calc(25%-0.5625rem)] shrink-0 snap-start sm:w-auto">
             <CategoryTile
               label={c.name}
               image={c.image_url ?? null}
@@ -582,13 +576,6 @@ function CategoryStrip({
           showLeft ? "opacity-100" : "opacity-0"
         }`}
       />
-      <div
-        className={`pointer-events-none absolute bottom-2 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-neutral-400 shadow-sm transition-opacity duration-300 sm:hidden ${
-          showRight ? "opacity-100" : "opacity-0"
-        }`}
-      >
-        <ChevronRight className="h-3.5 w-3.5" />
-      </div>
     </div>
   );
 }
