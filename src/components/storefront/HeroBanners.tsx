@@ -51,7 +51,7 @@ function SideRotator({ items, delay }: { items: HeroBanner[]; delay: number }) {
 
   return (
     <div
-      className="aspect-[16/10] overflow-hidden rounded-2xl bg-sf-surface lg:aspect-[16/9]"
+      className="aspect-[16/9] overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl"
       onMouseEnter={() => (paused.current = true)}
       onMouseLeave={() => (paused.current = false)}
     >
