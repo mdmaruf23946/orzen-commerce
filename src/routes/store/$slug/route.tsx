@@ -309,6 +309,7 @@ function StoreHeader({
   const [menuOpen, setMenuOpen] = useState(false);
   const { customer } = useCustomerSession(slug);
   const theme = useStoreTheme();
+  const { t } = useStoreT();
 
 
   const { data: categories = [] } = useQuery({
@@ -371,7 +372,7 @@ function StoreHeader({
               type="button"
               onClick={() => setMenuOpen(true)}
               className="grid h-9 w-9 place-items-center rounded-full text-neutral-700 hover:bg-neutral-100"
-              aria-label="Open menu"
+              aria-label={t("nav.openMenu")}
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -413,7 +414,7 @@ function StoreHeader({
               to="/store/$slug/cart"
               params={{ slug }}
               className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full hover:bg-neutral-100"
-              aria-label="Cart"
+              aria-label={t("nav.cart")}
             >
               <ShoppingCart className="h-5 w-5 text-neutral-700" />
               {count > 0 && (
@@ -432,7 +433,7 @@ function StoreHeader({
               to={customer ? "/store/$slug/account" : "/store/$slug/auth/login"}
               params={{ slug }}
               className="grid h-9 w-9 shrink-0 place-items-center rounded-full hover:bg-neutral-100"
-              aria-label={customer ? "Account" : "Sign in"}
+              aria-label={customer ? t("nav.account") : t("nav.signIn")}
             >
               <User className="h-5 w-5 text-neutral-700" />
             </Link>
@@ -487,7 +488,7 @@ function StoreHeader({
               className={`relative grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-neutral-100 ${
                 theme.header.cart_position === "left" ? "order-first" : ""
               }`}
-              aria-label="Cart"
+              aria-label={t("nav.cart")}
             >
               <ShoppingCart className="h-5 w-5" />
               {count > 0 && (
@@ -570,6 +571,7 @@ function HeaderCategoryBar({
   totalCount: number;
 }) {
   const { activeMainId, selectMain } = useStoreUI();
+  const { t } = useStoreT();
   const item = (active: boolean) =>
     `shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-[13px] font-medium transition-colors ${
       active ? "text-white" : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
@@ -586,7 +588,7 @@ function HeaderCategoryBar({
           className={item(activeMainId === null)}
           style={activeMainId === null ? { backgroundColor: "var(--store-btn-bg, #0f172a)" } : undefined}
         >
-          All ({totalCount})
+          {t("common.all")} ({totalCount})
         </button>
         {mains.map((c) => {
           const active = activeMainId === c.id;
@@ -674,7 +676,7 @@ function StoreFooter({
         </div>
 
         <div className={`space-y-2 text-sm ${centered ? "mx-auto" : ""}`}>
-          <h3 className="text-sm font-semibold text-white">Contact</h3>
+          <h3 className="text-sm font-semibold text-white">{t("footer.contact")}</h3>
           {phone && (
             <a href={`tel:${phone}`} className={`flex items-center gap-2 text-white/80 hover:text-white ${centered ? "justify-center" : ""}`}>
               <Phone className="h-4 w-4" /> {phone}
