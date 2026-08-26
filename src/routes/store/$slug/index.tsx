@@ -14,6 +14,7 @@ import { useStoreUI } from "@/lib/store-ui";
 import { useStoreT } from "@/lib/store-i18n";
 import { useStoreTheme } from "@/lib/theme/context";
 import { ProductCard } from "@/components/storefront/ProductCard";
+import { HeroBanners } from "@/components/storefront/HeroBanners";
 
 
 const STALE = 5 * 60_000;
@@ -147,36 +148,55 @@ function StoreHome() {
 
   const isFiltering = !!activeMainId || !!activeSubId || query.trim().length > 0;
 
+  // Products grouped by main category, for the category rows below featured.
+  const categoryRows = useMemo(() => {
+    if (isFiltering) return [];
+    return mainCategories
+      .map((c: any) => {
+        const items = products.filter((p: any) => {
+          const cid = p.category_id as string | null;
+          if (!cid) return false;
+          return cid === c.id || catParentMap.get(cid) === c.id;
+        });
+        return { id: c.id as string, name: c.name as string, items };
+      })
+      .filter((r) => r.items.length > 0)
+      .slice(0, 6);
+  }, [mainCategories, products, catParentMap, isFiltering]);
+
+  function showCategory(id: string) {
+    selectMain(id, "icon");
+    requestAnimationFrame(() =>
+      document.getElementById("all-products")?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  }
+
   const on = theme.sections;
   const blocks: Partial<Record<string, React.ReactNode>> = {
-    banner: on.banner && banners.length > 0 ? <BannerCarousel key="banner" banners={banners} /> : null,
+    banner: on.banner && banners.length > 0 ? <HeroBanners key="banner" banners={banners as any} /> : null,
     categories:
       on.categories && categories.length > 0 ? (
-        <CategoryStrip
-          key="categories"
-          allImage={(store as any).all_category_image_url ?? null}
-          categories={mainCategories as any}
-          active={activeMainId}
-          onSelect={(id) => selectMain(id, "icon")}
-        />
+        <FeaturedCategories key="categories">
+          <CategoryStrip
+            allImage={(store as any).all_category_image_url ?? null}
+            categories={mainCategories as any}
+            active={activeMainId}
+            onSelect={(id) => selectMain(id, "icon")}
+          />
+        </FeaturedCategories>
       ) : null,
     featured:
       on.featured && !isFiltering && featured.length > 0 ? (
-        <Section
-          key="featured"
-          title={t("home.featuredProducts")}
-          icon={<Sparkles className="h-4 w-4 text-amber-500" />}
-          onViewAll={() => selectMain(null, null)}
-        >
-          <ProductGrid slug={slug} products={featured} />
-        </Section>
+        <FeaturedPanel key="featured" title={t("home.featuredProducts")}>
+          <ProductCarousel slug={slug} products={featured} />
+        </FeaturedPanel>
       ) : null,
     best_sellers:
       on.best_sellers && !isFiltering && bestSelling.length > 0 ? (
         <Section
           key="best_sellers"
           title={t("home.bestSelling")}
-          icon={<Flame className="h-4 w-4 text-rose-500" />}
+          icon={<Flame className="h-4 w-4 text-sf-accent" />}
           onViewAll={() => selectMain(null, null)}
         >
           <ProductGrid slug={slug} products={bestSelling} />
@@ -187,7 +207,7 @@ function StoreHome() {
         <Section
           key="new_arrival"
           title={t("home.newArrivals")}
-          icon={<Sparkles className="h-4 w-4 text-sky-500" />}
+          icon={<Sparkles className="h-4 w-4 text-sf-accent" />}
           onViewAll={() => selectMain(null, null)}
         >
           <ProductGrid slug={slug} products={newArrivals} />
@@ -209,14 +229,25 @@ function StoreHome() {
 
       {theme.section_order.map((k) => blocks[k] ?? null)}
 
+      {categoryRows.map((row) => (
+        <Section
+          key={row.id}
+          title={row.name}
+          icon={<Grid3x3 className="h-4 w-4 text-sf-accent" />}
+          seeMoreLabel={t("home.seeMore")}
+          onViewAll={() => showCategory(row.id)}
+        >
+          <ProductGrid slug={slug} products={row.items.slice(0, 8) as any} />
+        </Section>
+      ))}
 
       <section id="all-products" className="scroll-mt-32 space-y-4">
         <div className="flex items-center gap-2">
-          <Grid3x3 className="h-4 w-4 text-neutral-500" />
-          <h2 className="text-lg font-bold tracking-tight text-neutral-900 sm:text-xl">
+          <Grid3x3 className="h-4 w-4 text-sf-accent" />
+          <h2 className="text-lg font-bold tracking-tight text-sf-ink sm:text-xl">
             {isFiltering ? t("home.results") : t("home.allProducts")}
           </h2>
-          <span className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-600">
+          <span className="ml-2 rounded-full bg-sf-surface px-2 py-0.5 text-[11px] font-medium text-sf-muted">
             {filtered.length}
           </span>
         </div>
@@ -274,33 +305,118 @@ function Section({
   title,
   icon,
   onViewAll,
+  seeMoreLabel,
   children,
 }: {
   title: string;
   icon: React.ReactNode;
   onViewAll?: () => void;
+  seeMoreLabel?: string;
   children: React.ReactNode;
 }) {
   const { t } = useStoreT();
   return (
     <section className="space-y-3 sm:space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          {icon}
-          <h2 className="text-lg font-bold tracking-tight text-neutral-900 sm:text-xl">{title}</h2>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="shrink-0">{icon}</span>
+          <h2 className="truncate text-lg font-bold tracking-tight text-sf-ink sm:text-xl">
+            {title}
+          </h2>
         </div>
         {onViewAll && (
           <button
             type="button"
             onClick={onViewAll}
-            className="flex shrink-0 items-center gap-0.5 text-xs font-semibold text-neutral-600 hover:text-neutral-900"
+            className="flex shrink-0 items-center gap-0.5 rounded-full bg-sf-ink px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-sf-accent sm:text-xs"
           >
-            {t("home.viewAll")} <ChevronRight className="h-3.5 w-3.5" />
+            {seeMoreLabel ?? t("home.viewAll")} <ChevronRight className="h-3.5 w-3.5" />
           </button>
         )}
       </div>
       {children}
     </section>
+  );
+}
+
+/** Section shell for the featured category cards. */
+function FeaturedCategories({ children }: { children: React.ReactNode }) {
+  const { t } = useStoreT();
+  return (
+    <section id="categories" className="scroll-mt-32 rounded-3xl border border-sf-line bg-white p-3 sm:p-5">
+      <div className="-mt-6 mb-3 flex justify-center sm:-mt-8 sm:mb-5">
+        <span className="rounded-full bg-sf-accent px-5 py-2 text-sm font-bold text-white shadow-[0_10px_20px_-12px_rgba(255,75,31,0.9)] sm:text-base">
+          {t("home.featuredCategories")}
+        </span>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** Dark charcoal panel that frames the featured product carousel. */
+function FeaturedPanel({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="overflow-hidden rounded-3xl bg-sf-ink p-3 sm:p-6">
+      <h2 className="mb-3 text-center text-lg font-extrabold tracking-tight text-white sm:mb-5 sm:text-2xl">
+        {title}
+        <span className="mx-auto mt-2 block h-1 w-16 rounded-full bg-sf-accent" />
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+/** Horizontal snap carousel of product cards with desktop arrows. */
+function ProductCarousel({
+  slug,
+  products,
+}: {
+  slug: string;
+  products: Array<Parameters<typeof ProductCard>[0]["p"]>;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { t } = useStoreT();
+
+  function scrollBy(dir: 1 | -1) {
+    const el = ref.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.max(240, el.clientWidth * 0.8), behavior: "smooth" });
+  }
+
+  return (
+    <div className="relative">
+      <div
+        ref={ref}
+        className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {products.map((p) => (
+          <div
+            key={p.id}
+            className="w-[46%] shrink-0 snap-start sm:w-[31%] lg:w-[23%] xl:w-[19%]"
+          >
+            <ProductCard slug={slug} p={p} />
+          </div>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        aria-label={t("home.prev")}
+        onClick={() => scrollBy(-1)}
+        className="absolute -left-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-white text-sf-ink shadow-md transition-colors hover:bg-sf-accent hover:text-white lg:grid"
+      >
+        <ChevronRight className="h-4 w-4 rotate-180" />
+      </button>
+      <button
+        type="button"
+        aria-label={t("home.next")}
+        onClick={() => scrollBy(1)}
+        className="absolute -right-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-white text-sf-ink shadow-md transition-colors hover:bg-sf-accent hover:text-white lg:grid"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
+    </div>
   );
 }
 
@@ -497,97 +613,3 @@ function CategoryTile({
 }
 
 
-function BannerCarousel({
-  banners,
-}: {
-  banners: { id: string; image_url: string; link: string | null }[];
-}) {
-  const [idx, setIdx] = useState(0);
-  const startX = useRef<number | null>(null);
-  const deltaX = useRef(0);
-  const paused = useRef(false);
-  const { t } = useStoreT();
-
-  useEffect(() => {
-    if (banners.length <= 1) return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mq.matches) return;
-    const t = setInterval(() => {
-      if (!paused.current) setIdx((i) => (i + 1) % banners.length);
-    }, 4500);
-    return () => clearInterval(t);
-  }, [banners.length]);
-
-  function onDown(e: React.PointerEvent) {
-    startX.current = e.clientX;
-    deltaX.current = 0;
-    paused.current = true;
-  }
-  function onMove(e: React.PointerEvent) {
-    if (startX.current == null) return;
-    deltaX.current = e.clientX - startX.current;
-  }
-  function onUp() {
-    if (startX.current == null) return;
-    const d = deltaX.current;
-    startX.current = null;
-    paused.current = false;
-    if (Math.abs(d) < 40) return;
-    setIdx((i) => (d < 0 ? (i + 1) % banners.length : (i - 1 + banners.length) % banners.length));
-  }
-
-  return (
-    <div
-      className="relative -mx-4 overflow-hidden rounded-none sm:mx-0 sm:rounded-2xl"
-      onPointerDown={onDown}
-      onPointerMove={onMove}
-      onPointerUp={onUp}
-      onPointerCancel={onUp}
-    >
-      <div
-        className="flex transition-transform duration-500 ease-out"
-        style={{ transform: `translateX(-${idx * 100}%)` }}
-      >
-        {banners.map((b, i) => {
-          const img = (
-            <img
-              src={b.image_url}
-              alt=""
-              draggable={false}
-              loading={i === 0 ? "eager" : "lazy"}
-              fetchPriority={i === 0 ? "high" : "auto"}
-              decoding="async"
-              className="aspect-[16/8] w-full flex-shrink-0 select-none object-cover sm:aspect-[21/8]"
-            />
-          );
-          return (
-            <div key={b.id} className="w-full flex-shrink-0">
-              {b.link ? (
-                <a href={b.link} target="_blank" rel="noreferrer">
-                  {img}
-                </a>
-              ) : (
-                img
-              )}
-            </div>
-          );
-        })}
-      </div>
-      {banners.length > 1 && (
-        <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1.5">
-          {banners.map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => setIdx(i)}
-              aria-label={t("home.banner", { n: i + 1 })}
-              className={`h-1.5 rounded-full transition-all ${
-                i === idx ? "w-6 bg-white" : "w-1.5 bg-white/60"
-              }`}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
