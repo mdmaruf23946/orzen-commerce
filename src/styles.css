@@ -68,6 +68,15 @@
   --color-messenger: var(--messenger);
   --color-messenger-deep: var(--messenger-deep);
   --color-messenger-foreground: var(--messenger-foreground);
+  /* Storefront (shopper-facing) palette */
+  --color-sf-accent: var(--sf-accent);
+  --color-sf-accent-hover: var(--sf-accent-hover);
+  --color-sf-accent-soft: var(--sf-accent-soft);
+  --color-sf-ink: var(--sf-ink);
+  --color-sf-text: var(--sf-text);
+  --color-sf-muted: var(--sf-muted);
+  --color-sf-surface: var(--sf-surface);
+  --color-sf-line: var(--sf-line);
 }
 
 :root {
