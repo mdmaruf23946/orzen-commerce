@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useStoreT } from "@/lib/store-i18n";
 import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
@@ -34,6 +35,7 @@ export const Route = createFileRoute("/store/$slug/checkout")({
 });
 
 function CheckoutPage() {
+  const { t } = useStoreT();
   const { slug } = Route.useParams();
   const navigate = useNavigate();
   const { data: store } = useSuspenseQuery(storeQuery(slug));

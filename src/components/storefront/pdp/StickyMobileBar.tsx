@@ -14,6 +14,7 @@ export function StickyMobileBar({
   onBuy: () => void;
   observeRef: RefObject<HTMLElement | null>;
 }) {
+  const { t } = useStoreT();
   const [show, setShow] = useState(false);
 
   useEffect(() => {

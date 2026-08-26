@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useStoreT } from "@/lib/store-i18n";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -14,23 +15,24 @@ export const Route = createFileRoute("/store/$slug/cart")({
 
 type PType = "physical" | "digital" | "service" | "subscription";
 
-const TYPE_LABEL: Record<PType, string> = {
-  physical: "Physical products",
-  digital: "Digital products",
-  service: "Services",
-  subscription: "Subscriptions",
+const TYPE_LABEL_KEY: Record<PType, "cart.typePhysical" | "cart.typeDigital" | "cart.typeService" | "cart.typeSubscription"> = {
+  physical: "cart.typePhysical",
+  digital: "cart.typeDigital",
+  service: "cart.typeService",
+  subscription: "cart.typeSubscription",
 };
 
-const TYPE_NOTE: Record<PType, string> = {
-  physical: "Delivered to your address",
-  digital: "Instant download after payment",
-  service: "Booked with schedule & requirements",
-  subscription: "Recurring billing plan",
+const TYPE_NOTE_KEY: Record<PType, "cart.noteDelivered" | "cart.noteDigital" | "cart.noteService" | "cart.noteSubscription"> = {
+  physical: "cart.noteDelivered",
+  digital: "cart.noteDigital",
+  service: "cart.noteService",
+  subscription: "cart.noteSubscription",
 };
 
 const ORDER: PType[] = ["physical", "digital", "service", "subscription"];
 
 function CartPage() {
+  const { t } = useStoreT();
   const { slug } = Route.useParams();
   const navigate = useNavigate();
   const [items, setItems] = useState<CartItem[]>([]);
@@ -128,9 +130,9 @@ function CartPage() {
   return (
     <div className="space-y-4 pb-28">
       <div>
-        <h1 className="text-xl font-semibold">Your cart</h1>
+        <h1 className="text-xl font-semibold">{t("cart.title")}</h1>
         <p className="mt-1 text-xs text-muted-foreground">
-          Select one product type to check out. Each type has its own order process.
+          {t("cart.selectTypeHint")}
         </p>
       </div>
 
@@ -146,8 +148,8 @@ function CartPage() {
             <header className="flex items-center gap-3 border-b bg-muted/40 p-3">
               <Box checked={allOn} onClick={() => toggleGroup(type, gItems)} />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">{TYPE_LABEL[type]}</p>
-                <p className="text-[11px] text-muted-foreground">{TYPE_NOTE[type]}</p>
+                <p className="text-sm font-semibold">{t(TYPE_LABEL_KEY[type])}</p>
+                <p className="text-[11px] text-muted-foreground">{t(TYPE_NOTE_KEY[type])}</p>
               </div>
               <span className="rounded-full bg-background px-2 py-0.5 text-[11px] font-medium">
                 {gItems.length}
@@ -168,7 +170,7 @@ function CartPage() {
                         <button
                           onClick={() => removeItem(slug, i.productId)}
                           className="text-muted-foreground hover:text-destructive"
-                          aria-label="Remove"
+                          aria-label={t("cart.removeAria")}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -204,13 +206,13 @@ function CartPage() {
 
       <div className="flex items-center justify-between border-t pt-4">
         <span className="text-sm text-muted-foreground">
-          Subtotal {selectedItems.length ? `(${selectedItems.length} selected)` : ""}
+          {t("cart.subtotal")} {selectedItems.length ? `(${t("cart.selectedCount", { count: selectedItems.length })})` : ""}
         </span>
         <span className="text-lg font-bold">৳{total.toFixed(0)}</span>
       </div>
       {!selected.length && (
         <p className="text-xs text-muted-foreground">
-          Tick the products of one type to continue.
+          {t("cart.tickHint")}
         </p>
       )}
       <Button
@@ -219,7 +221,7 @@ function CartPage() {
         style={{ backgroundColor: "var(--primary)", color: "white" }}
         onClick={() => navigate({ to: "/store/$slug/checkout", params: { slug } })}
       >
-        {activeType ? `Checkout ${TYPE_LABEL[activeType].toLowerCase()}` : "Checkout"}
+        {activeType ? t("cart.checkoutType", { type: t(TYPE_LABEL_KEY[activeType]).toLowerCase() }) : t("cart.checkout")}
       </Button>
     </div>
   );
