@@ -152,6 +152,9 @@ function CartPage() {
         </p>
       </div>
 
+      <CartNotices notices={notices} />
+
+
       {groups.map(({ type, items: gItems }) => {
         const gIds = gItems.map((i) => i.productId);
         const groupActive = activeType === null || activeType === type;
