@@ -61,3 +61,9 @@ export const commonDict: Dict = {
   "footer.quickLinks": { en: "Quick links", bn: "কুইক লিংক" },
   "footer.rights": { en: "All rights reserved.", bn: "সর্বস্বত্ব সংরক্ষিত।" },
 };
+
+Object.assign(commonDict, {
+  "footer.privacy": { en: "Privacy Policy", bn: "প্রাইভেসি পলিসি" },
+  "footer.terms": { en: "Terms & Conditions", bn: "শর্তাবলী" },
+  "footer.returnPolicy": { en: "Return Policy", bn: "Return পলিসি" },
+});

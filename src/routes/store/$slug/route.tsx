@@ -631,6 +631,7 @@ function StoreFooter({
   };
 }) {
   const theme = useStoreTheme();
+  const { t } = useStoreT();
   const f = theme.footer;
   const phone = f.phone || store.phone;
   const address = f.address || store.address;
@@ -712,10 +713,10 @@ function StoreFooter({
 
         {!compact && (
           <div id="policies" className={`space-y-2 text-sm ${centered ? "mx-auto" : ""}`}>
-            <h3 className="text-sm font-semibold text-white">Quick Links</h3>
-            <a href="/privacy-policy" className="block text-white/80 hover:text-white">Privacy Policy</a>
-            <a href="/terms" className="block text-white/80 hover:text-white">Terms &amp; Conditions</a>
-            <a href="/refund-policy" className="block text-white/80 hover:text-white">Return Policy</a>
+            <h3 className="text-sm font-semibold text-white">{t("footer.quickLinks")}</h3>
+            <a href="/privacy-policy" className="block text-white/80 hover:text-white">{t("footer.privacy")}</a>
+            <a href="/terms" className="block text-white/80 hover:text-white">{t("footer.terms")}</a>
+            <a href="/refund-policy" className="block text-white/80 hover:text-white">{t("footer.returnPolicy")}</a>
           </div>
         )}
       </div>
@@ -725,7 +726,7 @@ function StoreFooter({
             className="mx-auto px-4 py-4 text-center text-xs text-white/60 sm:px-6"
             style={{ maxWidth: "var(--store-container, 64rem)" }}
           >
-            © {new Date().getFullYear()} {store.name}. All rights reserved.
+            © {new Date().getFullYear()} {store.name}. {t("footer.rights")}
           </p>
         </div>
       )}
