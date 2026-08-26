@@ -179,7 +179,7 @@ function StoreLayout() {
             messengerUrl={toMessengerUrl(store.facebook)}
           />
         )}
-        {!isPreview && !isProductPage && <BottomNav slug={slug} />}
+        {!isPreview && !isProductPage && <BottomNav slug={slug} whatsapp={store.whatsapp} />}
       </div>
 
     </StoreUIProvider>
@@ -312,6 +312,12 @@ function StoreHeader({
 }) {
   const [count, setCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const open = () => setMenuOpen(true);
+    window.addEventListener("store-open-menu", open);
+    return () => window.removeEventListener("store-open-menu", open);
+  }, []);
   const { customer } = useCustomerSession(slug);
   const theme = useStoreTheme();
   const { t } = useStoreT();
