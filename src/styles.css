@@ -292,3 +292,13 @@
   .no-print, [data-no-print] { display: none !important; }
 }
 
+
+/* Storefront: multi-tone featured products panel (replaces flat charcoal) */
+.sf-featured-panel {
+  background-color: #16233a;
+  background-image:
+    radial-gradient(120% 90% at 0% 0%, rgba(255, 122, 69, 0.28) 0%, rgba(255, 122, 69, 0) 55%),
+    radial-gradient(110% 100% at 100% 0%, rgba(56, 189, 248, 0.22) 0%, rgba(56, 189, 248, 0) 60%),
+    radial-gradient(120% 110% at 100% 100%, rgba(147, 51, 234, 0.26) 0%, rgba(147, 51, 234, 0) 60%),
+    linear-gradient(135deg, #1b2a45 0%, #16233a 45%, #101a2c 100%);
+}
