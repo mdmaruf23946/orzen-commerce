@@ -5,8 +5,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Minus, Plus, Trash2, Check } from "lucide-react";
 import { readCart, updateQty, removeItem, readSelection, writeSelection, type CartItem } from "@/lib/cart";
+import { reconcileStoredCart, type CartNotice } from "@/lib/cart-reconcile";
+import { CartNotices } from "@/components/storefront/CartNotices";
 import { getStoreBySlug, listProductsByIds } from "@/lib/storefront.functions";
 import { Button } from "@/components/ui/button";
+
 
 export const Route = createFileRoute("/store/$slug/cart")({
   head: () => ({ meta: [{ title: "Cart" }] }),
