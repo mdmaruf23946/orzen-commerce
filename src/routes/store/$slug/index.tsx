@@ -192,7 +192,7 @@ function StoreHome() {
   };
 
   return (
-    <div className="theme-sections flex flex-col gap-8">
+    <div className="theme-sections flex flex-col gap-3 sm:gap-8">
 
 
       {!isFiltering && source === "header" && activeMainId && activeSubs.length > 0 && (
@@ -278,7 +278,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-4">
+    <section className="space-y-3 sm:space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           {icon}
