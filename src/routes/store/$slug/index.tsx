@@ -393,7 +393,7 @@ function ProductCarousel({
         {products.map((p) => (
           <div
             key={p.id}
-            className="w-[62%] shrink-0 snap-start sm:w-[31%] lg:w-[23%] xl:w-[19%]"
+            className="w-[calc(50%-0.375rem)] shrink-0 snap-start sm:w-[31%] lg:w-[23%] xl:w-[19%]"
           >
             <ProductCard slug={slug} p={p} />
           </div>
