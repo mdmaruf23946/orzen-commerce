@@ -757,7 +757,17 @@ export const placeOrder = createServerFn({ method: "POST" })
       .object({
         storeId: z.string().uuid(),
         customerName: z.string().trim().min(1).max(120),
-        phone: z.string().trim().min(5).max(40),
+        // Must contain a plausible phone number, not just 5 characters.
+        phone: z
+          .string()
+          .trim()
+          .min(5)
+          .max(40)
+          .refine((v) => {
+            const digits = v.replace(/\D/g, "");
+            return digits.length >= 9 && digits.length <= 15;
+          }, "Please enter a valid phone number"),
+
         // Digital-only carts have nothing to ship, so the address is optional.
         address: z.string().trim().max(500).optional(),
         area: z.string().trim().max(120).optional(),

@@ -4,6 +4,7 @@ import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { writeOrderContact } from "@/lib/order-proof";
 import { getStoreBySlug, listStoreOnlineGateways, startOnlineCheckout, placeOrder, validateCoupon, getStoreDeliveryZones, listProductsByIds } from "@/lib/storefront.functions";
 import { readCart, readSelection, removeSelected, type CartItem } from "@/lib/cart";
 import { Button } from "@/components/ui/button";
@@ -337,6 +338,10 @@ function CheckoutPage() {
       });
 
       if ((res as any)?.warning) toast.warning((res as any).warning);
+
+      // Remember the contact used, so the order page can prove ownership later.
+      writeOrderContact(res.orderId, phone || email.trim());
+
 
       if (isOnlineMethod) {
         // Hand the shopper over to the payment gateway BEFORE emptying the

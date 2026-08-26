@@ -57,11 +57,28 @@ function Icon({ ok }: { ok: boolean | null }) {
   return <Clock className="h-4 w-4 text-muted-foreground" />;
 }
 
-export function PaymentTimeline({ orderId, refreshKey }: { orderId: string; refreshKey?: string }) {
+export function PaymentTimeline({
+  orderId,
+  refreshKey,
+  token,
+  contact,
+}: {
+  orderId: string;
+  refreshKey?: string;
+  token?: string | null;
+  contact?: string | null;
+}) {
   const fn = useServerFn(getOrderPaymentTimeline);
   const { data } = useQuery({
-    queryKey: ["order-payment-timeline", orderId, refreshKey ?? ""],
-    queryFn: () => fn({ data: { orderId } }),
+    queryKey: ["order-payment-timeline", orderId, refreshKey ?? "", token ?? "", contact ?? ""],
+    queryFn: () =>
+      fn({
+        data: {
+          orderId,
+          ...(token ? { token } : {}),
+          ...(contact ? { contact } : {}),
+        },
+      }),
   });
 
   if (!data) return null;
