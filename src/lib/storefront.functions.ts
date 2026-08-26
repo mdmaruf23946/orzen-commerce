@@ -44,6 +44,8 @@ export const getStoreBySlug = createServerFn({ method: "GET" })
       ...store,
       logo_url: imgUrl(store.logo_url),
       name_logo_url: imgUrl(store.name_logo_url ?? null),
+      all_category_image_url: imgUrl(store.all_category_image_url ?? null),
+
       icon_url: imgUrl(store.icon_url),
       favicon_url: imgUrl(store.favicon_url),
       custom_favicon_url: imgUrl(store.custom_favicon_url),
