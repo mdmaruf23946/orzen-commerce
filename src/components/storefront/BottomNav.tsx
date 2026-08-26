@@ -6,7 +6,6 @@ import { useStoreT } from "@/lib/store-i18n";
 
 export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string | null }) {
   const { t } = useStoreT();
-  const [visible, setVisible] = useState(true);
   const [wish, setWish] = useState(0);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const searchStr = useRouterState({ select: (s) => s.location.searchStr });
@@ -21,26 +20,6 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
       window.removeEventListener("storage", updateWish);
     };
   }, [slug]);
-
-  useEffect(() => {
-    let lastY = window.scrollY;
-    let ticking = false;
-    const onScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => {
-        const y = window.scrollY;
-        const delta = y - lastY;
-        if (Math.abs(delta) > 6) {
-          setVisible(delta < 0 || y < 80);
-          lastY = y;
-        }
-        ticking = false;
-      });
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   const base = `/store/${slug}`;
   const isHome = pathname === base || pathname === `${base}/`;
@@ -64,9 +43,7 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
   return (
     <nav
       aria-label="Primary"
-      className={`fixed inset-x-0 bottom-0 z-40 border-t border-sf-line bg-white/95 backdrop-blur transition-transform duration-300 md:hidden ${
-        visible ? "translate-y-0" : "translate-y-full"
-      }`}
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-sf-line bg-white/95 backdrop-blur md:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <ul className="mx-auto grid max-w-md grid-cols-5 items-end">

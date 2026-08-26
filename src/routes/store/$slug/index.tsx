@@ -188,7 +188,7 @@ function StoreHome() {
     featured:
       on.featured && !isFiltering && featured.length > 0 ? (
         <FeaturedPanel key="featured" title={t("home.featuredProducts")}>
-          <ProductCarousel slug={slug} products={featured} />
+          <ProductCarousel slug={slug} products={featured} auto />
         </FeaturedPanel>
       ) : null,
     best_sellers:
@@ -354,10 +354,10 @@ function FeaturedCategories({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Dark charcoal panel that frames the featured product carousel. */
+/** Multi-tone gradient panel that frames the featured product carousel. */
 function FeaturedPanel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-3xl bg-sf-ink p-3 sm:p-6">
+    <section className="sf-featured-panel overflow-hidden rounded-3xl p-3 shadow-lg sm:p-6">
       <h2 className="mb-3 text-center text-lg font-extrabold tracking-tight text-white sm:mb-5 sm:text-2xl">
         {title}
         <span className="mx-auto mt-2 block h-1 w-16 rounded-full bg-sf-accent" />
@@ -371,9 +371,11 @@ function FeaturedPanel({ title, children }: { title: string; children: React.Rea
 function ProductCarousel({
   slug,
   products,
+  auto = false,
 }: {
   slug: string;
   products: Array<Parameters<typeof ProductCard>[0]["p"]>;
+  auto?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const { t } = useStoreT();
@@ -383,6 +385,34 @@ function ProductCarousel({
     if (!el) return;
     el.scrollBy({ left: dir * Math.max(240, el.clientWidth * 0.8), behavior: "smooth" });
   }
+
+  // Auto slide right, loop back to start at the end. Pauses on hover/touch.
+  useEffect(() => {
+    if (!auto || products.length < 2) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const el = ref.current;
+    if (!el) return;
+    let paused = false;
+    const pause = () => (paused = true);
+    const resume = () => (paused = false);
+    el.addEventListener("pointerdown", pause);
+    el.addEventListener("pointerup", resume);
+    el.addEventListener("mouseenter", pause);
+    el.addEventListener("mouseleave", resume);
+    const id = setInterval(() => {
+      if (paused) return;
+      const step = Math.max(200, el.clientWidth * 0.5);
+      const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 8;
+      el.scrollTo({ left: atEnd ? 0 : el.scrollLeft + step, behavior: "smooth" });
+    }, 3000);
+    return () => {
+      clearInterval(id);
+      el.removeEventListener("pointerdown", pause);
+      el.removeEventListener("pointerup", resume);
+      el.removeEventListener("mouseenter", pause);
+      el.removeEventListener("mouseleave", resume);
+    };
+  }, [auto, products.length]);
 
   return (
     <div className="relative">
@@ -399,6 +429,7 @@ function ProductCarousel({
           </div>
         ))}
       </div>
+
 
       <button
         type="button"
