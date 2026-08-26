@@ -19,7 +19,9 @@ function slugify(s: string) {
     .slice(0, 60);
 }
 
-// Get the current user's store (auto-create if missing).
+// Get the current user's store.
+// Owners: auto-create on first login. Employees: resolve their employer's store
+// (never create a new one for a staff account).
 export const getMyStore = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -31,6 +33,32 @@ export const getMyStore = createServerFn({ method: "GET" })
       .maybeSingle();
 
     if (!store) {
+      // Employee account? Return the store they belong to.
+      const { resolveStoreAccess } = await import("@/lib/store-access");
+      const access = await resolveStoreAccess(supabase, userId);
+      if (access.storeId && !access.isOwner) {
+        const { data: staffStore, error: staffErr } = await supabase
+          .from("stores")
+          .select("*")
+          .eq("id", access.storeId)
+          .maybeSingle();
+        if (staffErr) throw new Error(staffErr.message);
+        if (!staffStore) throw new Error("Your store could not be found. Contact the store owner.");
+        return staffStore;
+      }
+      // Linked as staff but not active — never create a stray store for them.
+      const { data: anyStaff } = await supabase
+        .from("store_staff")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (anyStaff) {
+        throw new Error("Your employee account is not active. Contact the store owner.");
+      }
+    }
+
+    if (!store) {
+
       const email = (claims.email as string | undefined) ?? "store";
       const base = slugify(email.split("@")[0]) || "store";
       let slug = base;
