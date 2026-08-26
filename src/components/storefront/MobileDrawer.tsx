@@ -18,6 +18,8 @@ import {
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useStoreUI } from "@/lib/store-ui";
 import { useCustomerSession } from "@/lib/customer-session";
+import { useStoreT } from "@/lib/store-i18n";
+import { StoreLangSwitch } from "@/components/storefront/StoreLangSwitch";
 
 type Category = { id: string; name: string; parent_id: string | null };
 
@@ -43,6 +45,7 @@ export function MobileDrawer({
   const [openCat, setOpenCat] = useState<string | null>(null);
   const { activeMainId, activeSubId, selectMain, selectSub } = useStoreUI();
   const { customer, signOut } = useCustomerSession(slug);
+  const { t } = useStoreT();
 
   const mains = categories.filter((c) => !c.parent_id);
   const subsByParent = new Map<string, Category[]>();
@@ -98,16 +101,16 @@ export function MobileDrawer({
               <div className="truncate text-sm font-semibold text-neutral-900">{storeName}</div>
               {customer ? (
                 <div className="truncate text-xs text-neutral-500">
-                  Hi, {customer.full_name.split(" ")[0]}
+                  {t("nav.greeting")}, {customer.full_name.split(" ")[0]}
                 </div>
               ) : (
-                <div className="text-xs text-neutral-500">Welcome</div>
+                <div className="text-xs text-neutral-500">{t("nav.welcome")}</div>
               )}
             </div>
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              aria-label="Close menu"
+              aria-label={t("common.close")}
               className="grid h-8 w-8 place-items-center rounded-full text-neutral-500 hover:bg-neutral-100"
             >
               <X className="h-4 w-4" />
@@ -116,12 +119,12 @@ export function MobileDrawer({
 
           <div className="flex-1 overflow-y-auto px-2 py-3">
             {/* Primary links */}
-            <NavItem to="/store/$slug" params={{ slug }} icon={Home} label="Home" onClick={() => onOpenChange(false)} />
+            <NavItem to="/store/$slug" params={{ slug }} icon={Home} label={t("nav.home")} onClick={() => onOpenChange(false)} />
 
             {/* Categories accordion */}
             <div className="mt-1">
               <div className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
-                Categories
+                {t("nav.categories")}
               </div>
               <button
                 type="button"
@@ -132,7 +135,7 @@ export function MobileDrawer({
               >
                 <span className="flex items-center gap-2.5">
                   <LayoutGrid className="h-4 w-4 text-neutral-500" />
-                  All products
+                  {t("nav.allProducts")}
                 </span>
                 <span className="text-[11px] font-medium text-neutral-400">{totalProducts}</span>
               </button>
@@ -197,34 +200,40 @@ export function MobileDrawer({
             {/* Shop */}
             <div className="mt-3">
               <div className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
-                Shop
+                {t("nav.shop")}
               </div>
-              <NavItem to="/store/$slug/cart" params={{ slug }} icon={ShoppingCart} label="Cart" onClick={() => onOpenChange(false)} />
-              <NavItem to="/store/$slug/account" params={{ slug }} search={{ tab: "orders" }} icon={Package} label="Orders" onClick={() => onOpenChange(false)} />
-              <NavItem to="/store/$slug/account" params={{ slug }} search={{ tab: "wishlist" }} icon={Heart} label="Wishlist" onClick={() => onOpenChange(false)} />
+              <NavItem to="/store/$slug/cart" params={{ slug }} icon={ShoppingCart} label={t("nav.cart")} onClick={() => onOpenChange(false)} />
+              <NavItem to="/store/$slug/account" params={{ slug }} search={{ tab: "orders" }} icon={Package} label={t("nav.orders")} onClick={() => onOpenChange(false)} />
+              <NavItem to="/store/$slug/account" params={{ slug }} search={{ tab: "wishlist" }} icon={Heart} label={t("nav.wishlist")} onClick={() => onOpenChange(false)} />
             </div>
 
             {/* More */}
             <div className="mt-3">
               <div className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
-                Help
+                {t("nav.help")}
               </div>
-              <NavExtLink href="/contact" icon={Phone} label="Contact" onClick={() => onOpenChange(false)} />
-              <NavExtLink href="/privacy-policy" icon={Shield} label="Privacy policy" onClick={() => onOpenChange(false)} />
-              <NavExtLink href="/terms" icon={Shield} label="Terms" onClick={() => onOpenChange(false)} />
-              <NavExtLink href="/refund-policy" icon={Shield} label="Refund policy" onClick={() => onOpenChange(false)} />
+              <NavExtLink href="/contact" icon={Phone} label={t("nav.contact")} onClick={() => onOpenChange(false)} />
+              <NavExtLink href="/privacy-policy" icon={Shield} label={t("footer.privacy")} onClick={() => onOpenChange(false)} />
+              <NavExtLink href="/terms" icon={Shield} label={t("footer.terms")} onClick={() => onOpenChange(false)} />
+              <NavExtLink href="/refund-policy" icon={Shield} label={t("footer.returnPolicy")} onClick={() => onOpenChange(false)} />
             </div>
           </div>
 
           {/* Account footer */}
           <div className="border-t p-3">
+            <div className="mb-2 flex items-center justify-between px-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
+                {t("nav.language")}
+              </span>
+              <StoreLangSwitch />
+            </div>
             {customer ? (
               <div className="space-y-1">
                 <NavItem
                   to="/store/$slug/account"
                   params={{ slug }}
                   icon={User}
-                  label="My account"
+                  label={t("nav.myAccount")}
                   onClick={() => onOpenChange(false)}
                 />
                 <button
@@ -236,7 +245,7 @@ export function MobileDrawer({
                   className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50"
                 >
                   <LogOut className="h-4 w-4" />
-                  Log out
+                  {t("nav.signOut")}
                 </button>
               </div>
             ) : (
@@ -248,7 +257,7 @@ export function MobileDrawer({
                 style={{ backgroundColor: "var(--store-btn-bg, #0f172a)" }}
               >
                 <LogIn className="h-4 w-4" />
-                Sign in
+                {t("nav.signIn")}
               </Link>
             )}
           </div>
