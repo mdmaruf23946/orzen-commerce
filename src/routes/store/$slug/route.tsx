@@ -175,7 +175,9 @@ function StoreLayout() {
       </div>
 
     </StoreUIProvider>
+    </StoreLangProvider>
     </StoreThemeProvider>
+
   );
 
 }
