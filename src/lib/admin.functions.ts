@@ -1197,8 +1197,7 @@ export const updateDelivery = createServerFn({ method: "POST" })
 
 async function getOwnedStoreId(sb: any, userId: string): Promise<string> {
   const data = await myStoreRow(sb, userId, "id");
-  const error = null as any;
-  if (error || !data) throw new Error("Store not found");
+  if (!data) throw new Error("Store not found");
   return data.id as string;
 }
 
