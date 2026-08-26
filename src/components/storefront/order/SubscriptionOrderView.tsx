@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { useStoreT } from "@/lib/store-i18n";
 import { CheckCircle2, RefreshCw, CalendarClock, ReceiptText, ShoppingBag } from "lucide-react";
 
 function Row({ label, value }: { label: string; value?: React.ReactNode }) {
@@ -12,6 +13,7 @@ function Row({ label, value }: { label: string; value?: React.ReactNode }) {
 }
 
 export function SubscriptionOrderView({ order, slug }: { order: any; slug: string }) {
+  const { t } = useStoreT();
   const meta = (order.fulfillment_meta ?? {}) as any;
   const sub = meta.subscription ?? {};
   const paid = order.payment_status === "paid";

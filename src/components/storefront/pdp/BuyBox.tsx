@@ -16,6 +16,7 @@ type Props = {
 };
 
 export function BuyBox({ price, oldPrice, stock, status, productType, qty, setQty, onAdd, onBuy }: Props) {
+  const { t } = useStoreT();
   const stockless = isStockless(productType);
   const inStock = status !== "draft" && (stockless || stock > 0);
   const discountPct = oldPrice && oldPrice > price ? Math.round(((oldPrice - price) / oldPrice) * 100) : 0;
