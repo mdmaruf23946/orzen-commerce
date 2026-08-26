@@ -116,8 +116,10 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
   // Split the supporting banners across two slots so each one keeps sliding.
   const slotA = others.filter((_, i) => i % 2 === 0);
   const slotB = others.filter((_, i) => i % 2 === 1);
-  const slots = [slotA, slotB].filter((s) => s.length > 0);
-  const hasSide = slots.length > 0;
+  // Slots are fixed: left slot always slot A, right slot always slot B. An
+  // empty slot keeps its space so a single banner never grows or moves.
+  const slots = [slotA, slotB];
+  const hasSide = others.length > 0;
 
   if (main.length === 0) return null;
 
