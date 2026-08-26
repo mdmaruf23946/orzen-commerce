@@ -11,7 +11,6 @@ async function assertOwnsStore(supabase: any, storeId: string) {
 
 async function resolveMyStoreId(supabase: any, userId: string) {
   const data = await myStoreRow(supabase, userId, "id");
-  if (error) throw new Error(error.message);
   if (!data) throw new Error("No store");
   return data.id as string;
 }
