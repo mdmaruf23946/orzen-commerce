@@ -8,6 +8,9 @@ import { toast } from "sonner";
 import { writeOrderContact } from "@/lib/order-proof";
 import { getStoreBySlug, listStoreOnlineGateways, startOnlineCheckout, placeOrder, validateCoupon, getStoreDeliveryZones, listProductsByIds } from "@/lib/storefront.functions";
 import { readCart, readSelection, removeSelected, type CartItem } from "@/lib/cart";
+import { reconcileStoredCart, type CartNotice } from "@/lib/cart-reconcile";
+import { CartNotices } from "@/components/storefront/CartNotices";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -84,6 +87,22 @@ function CheckoutPage() {
     queryKey: ["cartProducts", store?.id, cartIds.join(",")],
     queryFn: () => listByIds({ data: { storeId: store!.id, ids: cartIds } }),
   });
+
+  // Cart prices/stock are snapshots — reconcile with live data before paying.
+  const [cartNotices, setCartNotices] = useState<CartNotice[]>([]);
+  useEffect(() => {
+    if (!(cartProducts as any[]).length) return;
+    const n = reconcileStoredCart(slug, cartProducts as any[]);
+    if (!n.length) return;
+    setCartNotices(n);
+    const all = readCart(slug);
+    const sel = readSelection(slug);
+    setItems(sel.length ? all.filter((i) => sel.includes(i.productId)) : all);
+    // Totals changed, so a previously applied coupon must be re-validated.
+    setCoupon(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartProducts]);
+
   const digitalIds = new Set(
     (cartProducts as any[]).filter((p) => p.product_type === "digital").map((p) => p.id),
   );
@@ -374,7 +393,13 @@ function CheckoutPage() {
     <form onSubmit={submit} className="grid gap-6 sm:grid-cols-5">
       <div className="sm:col-span-3">
         <h1 className="text-xl font-semibold">Checkout</h1>
+        {cartNotices.length > 0 && (
+          <div className="mt-4">
+            <CartNotices notices={cartNotices} />
+          </div>
+        )}
         <div className="mt-4 space-y-4 rounded-xl border bg-card p-4">
+
           <div className="space-y-1.5">
             <Label htmlFor="name">Full name</Label>
             <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} />

@@ -5,8 +5,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Minus, Plus, Trash2, Check } from "lucide-react";
 import { readCart, updateQty, removeItem, readSelection, writeSelection, type CartItem } from "@/lib/cart";
+import { reconcileStoredCart, type CartNotice } from "@/lib/cart-reconcile";
+import { CartNotices } from "@/components/storefront/CartNotices";
 import { getStoreBySlug, listProductsByIds } from "@/lib/storefront.functions";
 import { Button } from "@/components/ui/button";
+
 
 export const Route = createFileRoute("/store/$slug/cart")({
   head: () => ({ meta: [{ title: "Cart" }] }),
@@ -59,6 +62,19 @@ function CartPage() {
     queryKey: ["cartProducts", store?.id, ids.join(",")],
     queryFn: () => listByIds({ data: { storeId: store!.id, ids } }),
   });
+
+  // Prices/stock are snapshots — refresh them against live product data.
+  const [notices, setNotices] = useState<CartNotice[]>([]);
+  useEffect(() => {
+    if (!(products as any[]).length) return;
+    const n = reconcileStoredCart(slug, products as any[]);
+    if (n.length) {
+      setNotices(n);
+      setItems(readCart(slug));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products]);
+
 
   const typeOf = useMemo(() => {
     const map: Record<string, PType> = {};
@@ -135,6 +151,9 @@ function CartPage() {
           {t("cart.selectTypeHint")}
         </p>
       </div>
+
+      <CartNotices notices={notices} />
+
 
       {groups.map(({ type, items: gItems }) => {
         const gIds = gItems.map((i) => i.productId);
