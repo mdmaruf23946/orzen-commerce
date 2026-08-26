@@ -9,10 +9,12 @@ import { useCustomerSession } from "@/lib/customer-session";
 import { Button } from "@/components/ui/button";
 import { ReturnStatusCard } from "@/components/storefront/order/ReturnRequestDialog";
 import { ReturnWizard } from "@/components/storefront/order/ReturnWizard";
+import { useStoreT } from "@/lib/store-i18n";
 
 const WINDOW_DAYS = 7;
 
 export function ReturnRequestBlock({ order, slug }: { order: any; slug: string }) {
+  const { t } = useStoreT();
   const { token } = useCustomerSession(slug);
   const qc = useQueryClient();
   const listFn = useServerFn(listMyOrderReturns);
@@ -44,7 +46,7 @@ export function ReturnRequestBlock({ order, slug }: { order: any; slug: string }
 
   return (
     <div className="mt-4 rounded-xl border bg-card p-4">
-      <h2 className="text-sm font-semibold">Returns &amp; exchanges</h2>
+      <h2 className="text-sm font-semibold">{t("return.block.title")}</h2>
 
       <div className="mt-3 space-y-2">
         {(requests as any[]).map((r) => (
@@ -54,8 +56,7 @@ export function ReturnRequestBlock({ order, slug }: { order: any; slug: string }
 
       {eligible && (requests as any[]).length === 0 && (
         <p className="mt-2 text-xs text-muted-foreground">
-          Use the buttons in “Order actions” to request a return or exchange within {WINDOW_DAYS}{" "}
-          days of delivery.
+          {t("return.block.hint", { days: WINDOW_DAYS })}
         </p>
       )}
 

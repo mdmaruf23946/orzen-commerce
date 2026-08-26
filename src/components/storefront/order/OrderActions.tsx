@@ -29,10 +29,12 @@ import { createMyReturnRequest, getReturnContext, listMyOrderReturns } from "@/l
 import { cancelMyOrder } from "@/lib/customer-account.functions";
 import { useCustomerSession } from "@/lib/customer-session";
 import { addToCart } from "@/lib/cart";
+import { useStoreT } from "@/lib/store-i18n";
 
 const DEFAULT_WINDOW_DAYS = 7;
 
 export function OrderActions({ order, slug }: { order: any; slug: string }) {
+  const { t } = useStoreT();
   const { token } = useCustomerSession(slug);
   const qc = useQueryClient();
   const listFn = useServerFn(listMyOrderReturns);
@@ -62,24 +64,24 @@ export function OrderActions({ order, slug }: { order: any; slug: string }) {
   const create = useMutation({
     mutationFn: (payload: any) => createFn({ data: payload }),
     onSuccess: () => {
-      toast.success("Request submitted");
+      toast.success(t("order.actions.toast.requestSubmitted"));
       setType(null);
       qc.invalidateQueries({ queryKey: ["my-returns", order.id] });
       qc.invalidateQueries({ queryKey: ["order", order.id] });
       qc.invalidateQueries({ queryKey: ["my-orders"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Could not submit request"),
+    onError: (e: any) => toast.error(e?.message ?? t("order.actions.toast.requestFailed")),
   });
 
   const cancel = useMutation({
     mutationFn: () => cancelFn({ data: { storeSlug: slug, token: token!, orderId: order.id } }),
     onSuccess: () => {
-      toast.success("Order cancelled");
+      toast.success(t("order.actions.toast.orderCancelled"));
       setConfirmCancel(false);
       qc.invalidateQueries({ queryKey: ["order", order.id] });
       qc.invalidateQueries({ queryKey: ["my-orders"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Could not cancel this order"),
+    onError: (e: any) => toast.error(e?.message ?? t("order.actions.toast.cancelFailed")),
   });
 
   const timeline: any[] = Array.isArray(order.timeline) ? order.timeline : [];
@@ -123,8 +125,8 @@ export function OrderActions({ order, slug }: { order: any; slug: string }) {
       });
       added += 1;
     }
-    if (added === 0) toast.error("These products are no longer available");
-    else toast.success("Added to your cart");
+    if (added === 0) toast.error(t("order.actions.toast.itemsUnavailable"));
+    else toast.success(t("order.actions.toast.addedToCart"));
   }
 
   function trackShipment() {
@@ -133,34 +135,34 @@ export function OrderActions({ order, slug }: { order: any; slug: string }) {
 
   return (
     <div className="mt-4 rounded-xl border bg-card p-4" data-no-print>
-      <h2 className="text-sm font-semibold">Order actions</h2>
+      <h2 className="text-sm font-semibold">{t("order.actions.title")}</h2>
       <div className="mt-3 grid grid-cols-2 gap-2">
         {canCancelNow && token && (
           <Button variant="outline" onClick={() => setConfirmCancel(true)}>
-            <XCircle className="mr-1 h-4 w-4" /> Cancel order
+            <XCircle className="mr-1 h-4 w-4" /> {t("order.actions.cancelOrder")}
           </Button>
         )}
         {(shipped || hasTracking) && (
           <Button variant="outline" onClick={trackShipment}>
-            <Truck className="mr-1 h-4 w-4" /> Track shipment
+            <Truck className="mr-1 h-4 w-4" /> {t("order.actions.trackShipment")}
           </Button>
         )}
         {returnEligible && token && (
           <>
             <Button variant="outline" onClick={() => setType("return")}>
-              <RotateCcw className="mr-1 h-4 w-4" /> Request return
+              <RotateCcw className="mr-1 h-4 w-4" /> {t("order.actions.requestReturn")}
             </Button>
             <Button variant="outline" onClick={() => setType("exchange")}>
-              <Repeat className="mr-1 h-4 w-4" /> Request exchange
+              <Repeat className="mr-1 h-4 w-4" /> {t("order.actions.requestExchange")}
             </Button>
           </>
         )}
         <Button variant="outline" onClick={() => window.print()}>
-          <ReceiptText className="mr-1 h-4 w-4" /> Download invoice
+          <ReceiptText className="mr-1 h-4 w-4" /> {t("order.downloadInvoice")}
         </Button>
         {canBuyAgain && (
           <Button variant="outline" onClick={buyAgain}>
-            <RefreshCw className="mr-1 h-4 w-4" /> Buy again
+            <RefreshCw className="mr-1 h-4 w-4" /> {t("order.actions.buyAgain")}
           </Button>
         )}
         <Link
@@ -168,7 +170,7 @@ export function OrderActions({ order, slug }: { order: any; slug: string }) {
           params={{ slug }}
           className="col-span-2 inline-flex h-9 items-center justify-center gap-1.5 rounded-md border text-sm font-medium"
         >
-          <ShoppingBag className="h-4 w-4" /> Continue shopping
+          <ShoppingBag className="h-4 w-4" /> {t("order.continueShopping")}
         </Link>
       </div>
 
@@ -179,9 +181,9 @@ export function OrderActions({ order, slug }: { order: any; slug: string }) {
             params={{ slug }}
             className="font-semibold underline"
           >
-            Sign in
+            {t("order.actions.signIn")}
           </Link>{" "}
-          to cancel this order or request a return.
+          {t("order.actions.signInHint")}
         </p>
       )}
 
@@ -202,13 +204,13 @@ export function OrderActions({ order, slug }: { order: any; slug: string }) {
       <AlertDialog open={confirmCancel} onOpenChange={setConfirmCancel}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel this order?</AlertDialogTitle>
+            <AlertDialogTitle>{t("order.actions.cancelDialogTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              You can cancel any time before the parcel is handed to the courier.
+              {t("order.actions.cancelDialogDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep order</AlertDialogCancel>
+            <AlertDialogCancel>{t("order.actions.keepOrder")}</AlertDialogCancel>
             <AlertDialogAction
               disabled={cancel.isPending}
               onClick={(e) => {
@@ -216,7 +218,7 @@ export function OrderActions({ order, slug }: { order: any; slug: string }) {
                 cancel.mutate();
               }}
             >
-              {cancel.isPending ? "Cancelling…" : "Yes, cancel"}
+              {cancel.isPending ? t("order.actions.cancelling") : t("order.actions.yesCancel")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

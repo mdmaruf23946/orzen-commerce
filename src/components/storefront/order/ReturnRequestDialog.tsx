@@ -1,5 +1,6 @@
 // Shared read-only view of a submitted return / exchange request.
 import { STATUS_LABEL, KIND_LABEL } from "@/lib/returns-pricing";
+import { useStoreT } from "@/lib/store-i18n";
 
 function img(p?: string | null) {
   if (!p) return null;
@@ -12,6 +13,7 @@ function img(p?: string | null) {
 const bdt = (n: number) => `৳${Number(n || 0).toFixed(0)}`;
 
 export function ReturnStatusCard({ r }: { r: any }) {
+  const { t } = useStoreT();
   const kind = (r.request_kind ?? (r.type === "exchange" ? "exchange_same" : "return")) as
     | "return"
     | "exchange_same"
@@ -23,7 +25,7 @@ export function ReturnStatusCard({ r }: { r: any }) {
   return (
     <div className="rounded-lg border bg-muted/30 p-3 text-sm">
       <div className="flex items-center justify-between gap-2">
-        <span className="font-medium">{KIND_LABEL[kind] ?? "Request"}</span>
+        <span className="font-medium">{KIND_LABEL[kind] ?? t("return.status.requestLabel")}</span>
         <span className="rounded-full bg-background px-2 py-0.5 text-[11px] font-medium">
           {STATUS_LABEL[r.status] ?? r.status}
         </span>
@@ -52,7 +54,7 @@ export function ReturnStatusCard({ r }: { r: any }) {
 
       {replacements.length > 0 && (
         <div className="mt-2 rounded-md bg-background p-2 text-xs">
-          <p className="mb-1 font-medium">Replacement</p>
+          <p className="mb-1 font-medium">{t("return.status.replacement")}</p>
           {replacements.map((it: any, i: number) => (
             <p key={i} className="truncate text-muted-foreground">
               {it.name}
@@ -64,25 +66,25 @@ export function ReturnStatusCard({ r }: { r: any }) {
 
       {r.reason && <p className="mt-2 text-xs text-muted-foreground">{r.reason}</p>}
       {r.customer_note && <p className="mt-1 text-xs text-muted-foreground">{r.customer_note}</p>}
-      {r.resolution_note && <p className="mt-1 text-xs">Store: {r.resolution_note}</p>}
+      {r.resolution_note && <p className="mt-1 text-xs">{t("return.status.storeNote")} {r.resolution_note}</p>}
 
       <div className="mt-2 space-y-0.5 text-xs">
         {Number(r.refund_amount ?? 0) > 0 && (
           <p>
-            Refund: <span className="font-semibold">{bdt(r.refund_amount)}</span>
-            {r.refund_status === "paid" ? " · processed" : " · pending"}
+            {t("return.status.refund")} <span className="font-semibold">{bdt(r.refund_amount)}</span>
+            {r.refund_status === "paid" ? ` · ${t("return.status.refundProcessed")}` : ` · ${t("return.status.refundPending")}`}
           </p>
         )}
         {Number(r.extra_payment_due ?? 0) > 0 && (
           <p>
-            Extra payable: <span className="font-semibold">{bdt(r.extra_payment_due)}</span>
+            {t("return.status.extraPayable")} <span className="font-semibold">{bdt(r.extra_payment_due)}</span>
           </p>
         )}
       </div>
 
       {r.courier_tracking_id && (
         <p className="mt-1 text-xs text-muted-foreground">
-          Return tracking: {r.courier_name ? `${r.courier_name} · ` : ""}
+          {t("return.status.trackingLabel")} {r.courier_name ? `${r.courier_name} · ` : ""}
           <span className="font-mono">{r.courier_tracking_id}</span>
         </p>
       )}
@@ -99,7 +101,7 @@ export function ReturnStatusCard({ r }: { r: any }) {
       )}
 
       <p className="mt-1 text-[11px] text-muted-foreground">
-        Requested {new Date(r.created_at).toLocaleDateString()}
+        {t("return.status.requestedOn", { date: new Date(r.created_at).toLocaleDateString() })}
       </p>
     </div>
   );

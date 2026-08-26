@@ -839,6 +839,7 @@ function IntakeField({
   value: any;
   onChange: (v: any) => void;
 }) {
+  const { t } = useStoreT();
   const id = `svc-f-${field.id}`;
   const label = (
     <Label htmlFor={id}>
@@ -875,7 +876,7 @@ function IntakeField({
           value={value ?? ""}
           onChange={(e) => onChange(e.target.value)}
         >
-          <option value="">Select…</option>
+          <option value="">{t("checkout.service.selectPlaceholder")}</option>
           {field.options.map((o) => (
             <option key={o} value={o}>
               {o}

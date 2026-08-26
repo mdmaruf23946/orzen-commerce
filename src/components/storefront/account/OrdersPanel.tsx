@@ -43,14 +43,18 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EmptyState } from "./EmptyState";
+import { useStoreT } from "@/lib/store-i18n";
 
-const RETURN_STATUS_LABEL: Record<string, string> = {
-  requested: "Return pending",
-  approved: "Return approved",
-  rejected: "Return rejected",
-  refunded: "Refunded",
-  completed: "Return completed",
-};
+function returnStatusLabel(t: (k: string) => string, status: string) {
+  const map: Record<string, string> = {
+    requested: t("account.returnPending"),
+    approved: t("account.returnApproved"),
+    rejected: t("account.returnRejected"),
+    refunded: t("account.refunded"),
+    completed: t("account.returnCompleted"),
+  };
+  return map[status] ?? status;
+}
 
 const RETURN_STATUS_TONE: Record<string, string> = {
   requested: "bg-amber-50 text-amber-700 ring-amber-200",
@@ -61,15 +65,28 @@ const RETURN_STATUS_TONE: Record<string, string> = {
 };
 
 
-const TYPE_TABS: { key: "all" | OrderType; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "physical", label: "Physical" },
-  { key: "digital", label: "Digital" },
-  { key: "service", label: "Service" },
-  { key: "subscription", label: "Subscription" },
-];
+function typeTabs(t: (k: string) => string): { key: "all" | OrderType; label: string }[] {
+  return [
+    { key: "all", label: t("common.all") },
+    { key: "physical", label: t("account.typePhysical") },
+    { key: "digital", label: t("account.typeDigital") },
+    { key: "service", label: t("account.typeService") },
+    { key: "subscription", label: t("account.typeSubscription") },
+  ];
+}
 
 const STATUSES = ["all", "pending", "completed", "cancelled", "active", "expired"] as const;
+function statusLabel(t: (k: string) => string, s: string) {
+  const map: Record<string, string> = {
+    all: t("account.allStatus"),
+    pending: t("account.statusPending"),
+    completed: t("account.statusCompleted"),
+    cancelled: t("account.statusCancelled"),
+    active: t("account.statusActive"),
+    expired: t("account.statusExpired"),
+  };
+  return map[s] ?? s;
+}
 
 const TYPE_ICON: Record<OrderType, typeof Truck> = {
   physical: Truck,
@@ -79,6 +96,8 @@ const TYPE_ICON: Record<OrderType, typeof Truck> = {
 };
 
 export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
+  const { t } = useStoreT();
+  const TYPE_TABS = typeTabs(t);
   const listFn = useServerFn(listMyOrders);
   const cancelFn = useServerFn(cancelMyOrder);
   const qc = useQueryClient();
@@ -118,11 +137,11 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
     setBusy(true);
     try {
       await cancelFn({ data: { storeSlug: slug, token, orderId: cancelId } });
-      toast.success("Order cancelled");
+      toast.success(t("account.orderCancelled"));
       qc.invalidateQueries({ queryKey: ["my-orders"] });
       setCancelId(null);
     } catch (e: any) {
-      toast.error(e?.message ?? "Could not cancel this order");
+      toast.error(e?.message ?? t("account.cancelError"));
     } finally {
       setBusy(false);
     }
@@ -153,7 +172,7 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search order or product"
+            placeholder={t("account.searchOrderPlaceholder")}
             className="h-9 pl-8 text-sm"
           />
         </div>
@@ -164,7 +183,7 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
         >
           {STATUSES.map((s) => (
             <option key={s} value={s}>
-              {s === "all" ? "All status" : s}
+              {statusLabel(t, s)}
             </option>
           ))}
         </select>
@@ -173,24 +192,24 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
           onChange={(e) => setSort(e.target.value as any)}
           className="h-9 rounded-md border border-neutral-200 bg-white px-2 text-xs font-medium"
         >
-          <option value="newest">Newest</option>
-          <option value="oldest">Oldest</option>
+          <option value="newest">{t("account.newest")}</option>
+          <option value="oldest">{t("account.oldest")}</option>
         </select>
       </div>
 
       {isLoading ? (
-        <div className="py-10 text-center text-sm text-neutral-500">Loading…</div>
+        <div className="py-10 text-center text-sm text-neutral-500">{t("common.loading")}</div>
       ) : rows.length === 0 ? (
         <EmptyState
-          title="No orders yet."
-          hint="Your purchases will appear here."
+          title={t("account.noOrders")}
+          hint={t("account.noOrdersDesc")}
           action={
             <Link
               to="/store/$slug"
               params={{ slug }}
               className="rounded-full bg-neutral-900 px-4 py-2 text-xs font-semibold text-white"
             >
-              Start shopping
+              {t("account.startShopping")}
             </Link>
           }
         />
@@ -224,7 +243,7 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
                       <p className="line-clamp-2 text-sm font-semibold text-neutral-900">
                         {o.product_name}
                         {o.extra_items > 0 && (
-                          <span className="text-neutral-500"> +{o.extra_items} more</span>
+                          <span className="text-neutral-500"> +{o.extra_items} {t("account.moreItems")}</span>
                         )}
                       </p>
                       <span
@@ -263,7 +282,7 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
                     params={{ slug, orderId: o.id }}
                     className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-900 hover:underline"
                   >
-                    View details <ChevronRight className="h-3.5 w-3.5" />
+                    {t("account.viewDetails")} <ChevronRight className="h-3.5 w-3.5" />
                   </Link>
                   <Link
                     to="/store/$slug/order/$orderId"
@@ -278,7 +297,7 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
                       onClick={() => setCancelId(o.id)}
                       className="ml-auto text-[11px] font-semibold text-rose-600 hover:underline"
                     >
-                      Cancel
+                      {t("common.cancel")}
                     </button>
                   )}
                 </div>
@@ -298,7 +317,7 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
                               "bg-neutral-100 text-neutral-600 ring-neutral-200"
                             }`}
                           >
-                            {RETURN_STATUS_LABEL[o.returns[0].status] ?? o.returns[0].status}
+                            {returnStatusLabel(t, o.returns[0].status)}
                           </span>
                           <ChevronDown
                             className={`ml-auto h-4 w-4 text-neutral-400 transition-transform ${
@@ -324,7 +343,7 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
                           className="text-[11px]"
                           onClick={() => setReturnFor({ order: o, type: "return" })}
                         >
-                          <RotateCcw className="mr-1 h-3.5 w-3.5" /> Request return
+                          <RotateCcw className="mr-1 h-3.5 w-3.5" /> {t("account.requestReturn")}
                         </Button>
                         <Button
                           variant="outline"
@@ -332,7 +351,7 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
                           className="text-[11px]"
                           onClick={() => setReturnFor({ order: o, type: "exchange" })}
                         >
-                          <Repeat className="mr-1 h-3.5 w-3.5" /> Request exchange
+                          <Repeat className="mr-1 h-3.5 w-3.5" /> {t("account.requestExchange")}
                         </Button>
                       </div>
                     )}
@@ -363,15 +382,15 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
 
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel this order?</AlertDialogTitle>
+            <AlertDialogTitle>{t("account.cancelOrderTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This cannot be undone. Orders can only be cancelled before they are confirmed.
+              {t("account.cancelOrderDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep order</AlertDialogCancel>
+            <AlertDialogCancel>{t("account.keepOrder")}</AlertDialogCancel>
             <AlertDialogAction disabled={busy} onClick={(e) => { e.preventDefault(); doCancel(); }}>
-              {busy ? "Cancelling…" : "Yes, cancel"}
+              {busy ? t("account.cancelling") : t("account.yesCancel")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -391,6 +410,7 @@ export function OrderCancelButton({
   order: { id: string; order_type: string; status: string; confirmation_status?: string };
   onDone?: () => void;
 }) {
+  const { t } = useStoreT();
   const cancelFn = useServerFn(cancelMyOrder);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -418,7 +438,7 @@ export function OrderCancelButton({
                 setBusy(true);
                 try {
                   await cancelFn({ data: { storeSlug: slug, token, orderId: order.id } });
-                  toast.success("Order cancelled");
+                  toast.success(t("account.orderCancelled"));
                   setOpen(false);
                   onDone?.();
                 } catch (err: any) {

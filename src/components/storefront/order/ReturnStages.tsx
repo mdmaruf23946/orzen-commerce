@@ -4,16 +4,18 @@ import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, RotateCcw, Repeat, Banknote } from "lucide-react";
 import { listMyOrderReturns } from "@/lib/returns.functions";
 import { useCustomerSession } from "@/lib/customer-session";
+import { useStoreT } from "@/lib/store-i18n";
 
-const LABEL: Record<string, string> = {
-  requested: "Requested",
-  approved: "Approved",
-  rejected: "Rejected",
-  refunded: "Refund processed",
-  completed: "Completed",
+const LABEL_KEY: Record<string, string> = {
+  requested: "return.stage.requested",
+  approved: "return.stage.approved",
+  rejected: "return.stage.rejected",
+  refunded: "return.stage.refunded",
+  completed: "return.stage.completed",
 };
 
 export function ReturnStages({ order, slug }: { order: any; slug: string }) {
+  const { t } = useStoreT();
   const { token } = useCustomerSession(slug);
   const listFn = useServerFn(listMyOrderReturns);
   const { data: requests = [] } = useQuery({
@@ -39,10 +41,10 @@ export function ReturnStages({ order, slug }: { order: any; slug: string }) {
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-1.5 text-sm font-semibold">
                   <Icon className="h-3.5 w-3.5" />
-                  {r.type === "exchange" ? "Exchange requested" : "Return requested"}
+                  {r.type === "exchange" ? t("return.stage.exchangeRequested") : t("return.stage.returnRequested")}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {new Date(r.created_at).toLocaleString()} · {LABEL[r.status] ?? r.status}
+                  {new Date(r.created_at).toLocaleString()} · {t(LABEL_KEY[r.status]) ?? r.status}
                 </p>
               </div>
             </div>
@@ -52,7 +54,7 @@ export function ReturnStages({ order, slug }: { order: any; slug: string }) {
                   <CheckCircle2 className="h-3 w-3" strokeWidth={3} />
                 </span>
                 <p className="flex items-center gap-1.5 text-sm font-semibold text-emerald-600">
-                  <Banknote className="h-3.5 w-3.5" /> Refund processed
+                  <Banknote className="h-3.5 w-3.5" /> {t("return.stage.refundProcessed")}
                   {Number(r.refund_amount ?? 0) > 0
                     ? ` · ৳${Number(r.refund_amount).toFixed(0)}`
                     : ""}

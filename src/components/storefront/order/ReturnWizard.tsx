@@ -21,6 +21,7 @@ import {
   type ReturnKind,
   type ReturnLine,
 } from "@/lib/returns-pricing";
+import { useStoreT } from "@/lib/store-i18n";
 
 function img(p?: string | null) {
   if (!p) return null;
@@ -56,6 +57,7 @@ export function ReturnWizard({
   onClose: () => void;
   onDone?: () => void;
 }) {
+  const { t } = useStoreT();
   const ctxFn = useServerFn(getReturnContext);
   const createFn = useServerFn(createMyReturnRequest);
 
@@ -146,10 +148,10 @@ export function ReturnWizard({
   }
 
   async function submit() {
-    if (selected.length === 0) return toast.error("Select at least one item");
-    if (reason.trim().length < 3) return toast.error("Please describe the reason");
+    if (selected.length === 0) return toast.error(t("return.wizard.toast.selectItem"));
+    if (reason.trim().length < 3) return toast.error(t("return.wizard.toast.describeReason"));
     if (kind !== "return" && replacements.length === 0)
-      return toast.error("Choose the replacement item");
+      return toast.error(t("return.wizard.toast.chooseReplacement"));
     setBusy(true);
     try {
       await createFn({
@@ -165,7 +167,7 @@ export function ReturnWizard({
           images,
         },
       });
-      toast.success("Request submitted");
+      toast.success(t("return.wizard.toast.submitted"));
       onDone?.();
       onClose();
     } catch (e) {
@@ -205,7 +207,7 @@ export function ReturnWizard({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[92vh] max-w-lg overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Return or exchange</DialogTitle>
+          <DialogTitle>{t("return.wizard.title")}</DialogTitle>
         </DialogHeader>
 
         {isLoading && (
@@ -216,9 +218,9 @@ export function ReturnWizard({
 
         {!isLoading && ctx && !(ctx as any).eligible && (
           <p className="py-6 text-center text-sm text-muted-foreground">
-            This order is not eligible for a return right now
+            {t("return.wizard.notEligible")}
             {(ctx as any).windowEndsAt
-              ? ` — the window closed on ${new Date((ctx as any).windowEndsAt).toLocaleDateString()}.`
+              ? t("return.wizard.windowClosed", { date: new Date((ctx as any).windowEndsAt).toLocaleDateString() })
               : "."}
           </p>
         )}
@@ -237,7 +239,7 @@ export function ReturnWizard({
             {/* STEP 1 — items */}
             {step === 0 && (
               <div className="space-y-3">
-                <Label>Which items?</Label>
+                <Label>{t("return.wizard.step1.title")}</Label>
                 {lines.map((l) => {
                   const max = l.returnable_qty;
                   const cur = qty[l.order_item_id] ?? 0;
@@ -254,7 +256,7 @@ export function ReturnWizard({
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium">{l.name}</p>
                           <p className="text-xs text-muted-foreground">
-                            {bdt(l.price)} · {max} of {l.qty} returnable
+                            {t("return.wizard.step1.info", { price: bdt(l.price), max, total: l.qty })}
                           </p>
                         </div>
                         <div className="flex items-center gap-1">
@@ -286,7 +288,7 @@ export function ReturnWizard({
             {/* STEP 2 — outcome */}
             {step === 1 && (
               <div className="space-y-3">
-                <Label>What would you like?</Label>
+                <Label>{t("return.wizard.step2.title")}</Label>
                 <div className="grid gap-2">
                   {kinds.map((k) => (
                     <button
@@ -304,7 +306,7 @@ export function ReturnWizard({
 
                 {kind === "exchange_same" && (
                   <div className="space-y-2">
-                    <Label>Pick the replacement variant</Label>
+                    <Label>{t("return.wizard.step2.pickVariant")}</Label>
                     {selected.map((s) => {
                       const src = lines.find((l) => l.order_item_id === s.order_item_id);
                       const opts = (src?.variants ?? []) as any[];
@@ -313,7 +315,7 @@ export function ReturnWizard({
                           <p className="truncate text-sm font-medium">{s.name}</p>
                           {opts.length === 0 ? (
                             <p className="mt-1 text-xs text-muted-foreground">
-                              No variants — the same item will be reshipped.
+                              {t("return.wizard.step2.noVariants")}
                             </p>
                           ) : (
                             <select
@@ -326,7 +328,7 @@ export function ReturnWizard({
                               }
                               className="mt-1.5 h-9 w-full rounded-md border bg-background px-2 text-sm"
                             >
-                              <option value="">Same as ordered</option>
+                              <option value="">{t("return.wizard.step2.sameAsOrdered")}</option>
                               {opts
                                 .filter((o) => o.stock > 0)
                                 .map((o) => (
@@ -349,7 +351,7 @@ export function ReturnWizard({
                       <Input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search in-stock products"
+                        placeholder={t("return.wizard.step2.searchPlaceholder")}
                         className="pl-8"
                       />
                     </div>
@@ -376,14 +378,14 @@ export function ReturnWizard({
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm font-medium">{p.name}</span>
                             <span className="block text-xs text-muted-foreground">
-                              {bdt(p.price)} · {p.stock} in stock
+                              {t("return.wizard.step2.inStock", { price: bdt(p.price), stock: p.stock })}
                             </span>
                           </span>
                         </button>
                       ))}
                       {catalogue.length === 0 && (
                         <p className="py-4 text-center text-xs text-muted-foreground">
-                          No products available.
+                          {t("return.wizard.step2.noProducts")}
                         </p>
                       )}
                     </div>
@@ -393,7 +395,7 @@ export function ReturnWizard({
                         onChange={(e) => setPickedVariant(e.target.value)}
                         className="h-9 w-full rounded-md border bg-background px-2 text-sm"
                       >
-                        <option value="">Choose a variant</option>
+                        <option value="">{t("return.wizard.step2.chooseVariant")}</option>
                         {pickedProduct.variants
                           .filter((o: any) => o.stock > 0)
                           .map((o: any) => (
@@ -414,20 +416,20 @@ export function ReturnWizard({
             {step === 2 && (
               <div className="space-y-3">
                 <div className="space-y-1.5">
-                  <Label>Reason</Label>
+                  <Label>{t("return.wizard.step3.reason")}</Label>
                   <Textarea
                     rows={3}
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
-                    placeholder="Tell us what went wrong"
+                    placeholder={t("return.wizard.step3.reasonPlaceholder")}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Additional note (optional)</Label>
+                  <Label>{t("return.wizard.step3.noteOptional")}</Label>
                   <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Photos (optional, up to 4)</Label>
+                  <Label>{t("return.wizard.step3.photosOptional")}</Label>
                   <Input type="file" accept="image/*" multiple onChange={(e) => addFiles(e.target.files)} />
                   {images.length > 0 && (
                     <div className="flex flex-wrap gap-2 pt-1">
@@ -458,7 +460,7 @@ export function ReturnWizard({
             <div className="flex gap-2 pt-1">
               {step > 0 && (
                 <Button variant="outline" className="flex-1" onClick={() => setStep((s) => s - 1)}>
-                  <ArrowLeft className="mr-1 h-4 w-4" /> Back
+                  <ArrowLeft className="mr-1 h-4 w-4" /> {t("return.wizard.back")}
                 </Button>
               )}
               {step < 2 ? (
@@ -467,11 +469,11 @@ export function ReturnWizard({
                   disabled={step === 0 && selected.length === 0}
                   onClick={() => setStep((s) => s + 1)}
                 >
-                  Next <ArrowRight className="ml-1 h-4 w-4" />
+                  {t("return.wizard.next")} <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
               ) : (
                 <Button className="flex-1" disabled={busy} onClick={submit}>
-                  {busy ? "Submitting…" : "Submit request"}
+                  {busy ? t("return.wizard.submitting") : t("return.wizard.submitRequest")}
                 </Button>
               )}
             </div>
@@ -483,19 +485,20 @@ export function ReturnWizard({
 }
 
 function AmountPreview({ a, kind }: { a: any; kind: ReturnKind }) {
+  const { t } = useStoreT();
   return (
     <div className="rounded-lg border bg-muted/30 p-3 text-xs">
-      <Row label="Returned items" value={bdt(a.items_value)} />
-      {kind !== "return" && <Row label="Replacement value" value={`− ${bdt(a.replacement_value)}`} />}
+      <Row label={t("return.wizard.amount.itemsValue")} value={bdt(a.items_value)} />
+      {kind !== "return" && <Row label={t("return.wizard.amount.replacementValue")} value={`− ${bdt(a.replacement_value)}`} />}
       {a.return_shipping_charge > 0 && (
-        <Row label="Return shipping" value={`− ${bdt(a.return_shipping_charge)}`} />
+        <Row label={t("return.wizard.amount.returnShipping")} value={`− ${bdt(a.return_shipping_charge)}`} />
       )}
       {a.replacement_shipping_charge > 0 && (
-        <Row label="Replacement shipping" value={`− ${bdt(a.replacement_shipping_charge)}`} />
+        <Row label={t("return.wizard.amount.replacementShipping")} value={`− ${bdt(a.replacement_shipping_charge)}`} />
       )}
-      {a.restocking_fee > 0 && <Row label="Restocking fee" value={`− ${bdt(a.restocking_fee)}`} />}
+      {a.restocking_fee > 0 && <Row label={t("return.wizard.amount.restockingFee")} value={`− ${bdt(a.restocking_fee)}`} />}
       <div className="mt-1.5 flex items-center justify-between border-t pt-1.5 text-sm font-semibold">
-        <span>{a.extra_payment_due > 0 ? "You pay" : "Refund to you"}</span>
+        <span>{a.extra_payment_due > 0 ? t("return.wizard.amount.youPay") : t("return.wizard.amount.refundToYou")}</span>
         <span>{bdt(a.extra_payment_due > 0 ? a.extra_payment_due : a.refund_amount)}</span>
       </div>
     </div>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Send, X, LifeBuoy, ExternalLink } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { getWebChatHistory, escalateWebChat } from "@/lib/ai-web-chat.functions";
+import { useStoreT } from "@/lib/store-i18n";
 
 type WebProduct = {
   id: string;
@@ -28,6 +29,7 @@ export default function AIChatPanel({
   welcome: string;
   onClose: () => void;
 }) {
+  const { t } = useStoreT();
   const cidKey = CID_KEY_PREFIX + slug;
   const [input, setInput] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(() => {
@@ -143,13 +145,13 @@ export default function AIChatPanel({
             <button
               onClick={handleEscalate}
               disabled={escalating}
-              title="Talk to a human"
+              title={t("chat.talkToHuman")}
               className="rounded-md p-1.5 hover:bg-white/10 disabled:opacity-50"
             >
               <LifeBuoy className="h-4 w-4" />
             </button>
           )}
-          <button onClick={onClose} aria-label="Close" className="rounded-md p-1.5 hover:bg-white/10">
+          <button onClick={onClose} aria-label={t("common.close")} className="rounded-md p-1.5 hover:bg-white/10">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -192,10 +194,10 @@ export default function AIChatPanel({
             </div>
           );
         })}
-        {busy && <div className="text-xs text-muted-foreground">Typing…</div>}
+        {busy && <div className="text-xs text-muted-foreground">{t("chat.typing")}</div>}
         {handedOff && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            A human agent has been notified and will reply shortly.
+            {t("chat.humanNotified")}
           </div>
         )}
       </div>
@@ -204,7 +206,7 @@ export default function AIChatPanel({
           ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={handedOff ? "Waiting for a human agent…" : "Type a message…"}
+          placeholder={handedOff ? t("chat.waitingForAgent") : t("chat.typeAMessage")}
           disabled={busy || handedOff}
           className="flex-1 rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
         />
@@ -222,6 +224,7 @@ export default function AIChatPanel({
 }
 
 function ProductCard({ p }: { p: WebProduct }) {
+  const { t } = useStoreT();
   const inStock = p.stock > 0;
   return (
     <a
@@ -249,10 +252,10 @@ function ProductCard({ p }: { p: WebProduct }) {
         </div>
         <div className="flex items-center justify-between">
           <span className={`text-[10px] font-medium ${inStock ? "text-emerald-600" : "text-red-500"}`}>
-            {inStock ? "In stock" : "Out of stock"}
+            {inStock ? t("chat.inStock") : t("chat.outOfStock")}
           </span>
           <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-            View <ExternalLink className="h-3 w-3" />
+            {t("common.view")} <ExternalLink className="h-3 w-3" />
           </span>
         </div>
       </div>
