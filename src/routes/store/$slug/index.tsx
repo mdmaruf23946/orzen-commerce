@@ -188,7 +188,7 @@ function StoreHome() {
     featured:
       on.featured && !isFiltering && featured.length > 0 ? (
         <FeaturedPanel key="featured" title={t("home.featuredProducts")}>
-          <ProductCarousel slug={slug} products={featured} />
+          <ProductCarousel slug={slug} products={featured} auto />
         </FeaturedPanel>
       ) : null,
     best_sellers:
