@@ -63,6 +63,19 @@ function CartPage() {
     queryFn: () => listByIds({ data: { storeId: store!.id, ids } }),
   });
 
+  // Prices/stock are snapshots — refresh them against live product data.
+  const [notices, setNotices] = useState<CartNotice[]>([]);
+  useEffect(() => {
+    if (!(products as any[]).length) return;
+    const n = reconcileStoredCart(slug, products as any[]);
+    if (n.length) {
+      setNotices(n);
+      setItems(readCart(slug));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products]);
+
+
   const typeOf = useMemo(() => {
     const map: Record<string, PType> = {};
     for (const p of products as any[]) map[p.id] = (p.product_type ?? "physical") as PType;
