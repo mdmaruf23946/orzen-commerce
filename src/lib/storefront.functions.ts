@@ -430,10 +430,12 @@ export const listStoreBanners = createServerFn({ method: "GET" })
     const sb = publicClient();
     const { data: banners, error } = await sb
       .from("banners")
-      .select("id,image_url,link,position")
+      .select("id,image_url,link,position,display_position,sort_order,is_active")
       .eq("store_id", data.storeId)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
       .order("position", { ascending: true })
-      .limit(3);
+      .limit(24);
     if (error) throw new Error(error.message);
     return (banners ?? []).map((b) => ({ ...b, image_url: imgUrl(b.image_url)! }));
   });

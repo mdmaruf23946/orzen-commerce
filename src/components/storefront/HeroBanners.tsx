@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useStoreT } from "@/lib/store-i18n";
 
-export type HeroBanner = { id: string; image_url: string; link: string | null };
+export type HeroBanner = {
+  id: string;
+  image_url: string;
+  link: string | null;
+  display_position?: string | null;
+};
 
 function BannerLink({
   banner,
@@ -18,28 +23,77 @@ function BannerLink({
   );
 }
 
-/**
- * Double-banner hero: one large rotating main banner plus up to two
- * supporting promo banners. Falls back cleanly with 1 or 2 banners.
- */
-export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
-  const { t } = useStoreT();
-  const main = banners.length > 3 ? banners.slice(0, banners.length - 2) : banners.slice(0, 1);
-  const side = banners.length > 3 ? banners.slice(-2) : banners.slice(1, 3);
-
+/** Auto-rotating index with pause support. */
+function useAutoIndex(count: number, delay: number) {
   const [idx, setIdx] = useState(0);
-  const startX = useRef<number | null>(null);
-  const deltaX = useRef(0);
   const paused = useRef(false);
 
   useEffect(() => {
-    if (main.length <= 1) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    setIdx(0);
+  }, [count]);
+
+  useEffect(() => {
+    if (count <= 1) return;
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+      return;
     const id = setInterval(() => {
-      if (!paused.current) setIdx((i) => (i + 1) % main.length);
-    }, 4500);
+      if (!paused.current) setIdx((i) => (i + 1) % count);
+    }, delay);
     return () => clearInterval(id);
-  }, [main.length]);
+  }, [count, delay]);
+
+  return { idx, setIdx, paused };
+}
+
+/** Small auto-sliding stack used for the supporting banners. */
+function SideRotator({ items, delay }: { items: HeroBanner[]; delay: number }) {
+  const { idx, paused } = useAutoIndex(items.length, delay);
+
+  return (
+    <div
+      className="overflow-hidden rounded-2xl bg-sf-surface"
+      onMouseEnter={() => (paused.current = true)}
+      onMouseLeave={() => (paused.current = false)}
+    >
+      <div
+        className="flex transition-transform duration-500 ease-out"
+        style={{ transform: `translateX(-${idx * 100}%)` }}
+      >
+        {items.map((b) => (
+          <div key={b.id} className="w-full flex-shrink-0">
+            <BannerLink banner={b}>
+              <img
+                src={b.image_url}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="aspect-[16/10] w-full select-none object-cover lg:aspect-[16/9]"
+              />
+            </BannerLink>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Hero-first banner layout: every banner marked as "hero" stays in the large
+ * top slot and auto-rotates. All other banners fall to the supporting column
+ * and auto-rotate there too.
+ */
+export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
+  const { t } = useStoreT();
+
+  const heroes = banners.filter((b) => (b.display_position ?? "hero") === "hero");
+  const rest = banners.filter((b) => (b.display_position ?? "hero") !== "hero");
+  // Fallback: no explicit hero -> promote the first banner.
+  const main = heroes.length > 0 ? heroes : banners.slice(0, 1);
+  const others = heroes.length > 0 ? rest : banners.slice(1);
+
+  const { idx, setIdx, paused } = useAutoIndex(main.length, 4500);
+  const startX = useRef<number | null>(null);
+  const deltaX = useRef(0);
 
   function onDown(e: React.PointerEvent) {
     startX.current = e.clientX;
@@ -59,20 +113,28 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
     setIdx((i) => (d < 0 ? (i + 1) % main.length : (i - 1 + main.length) % main.length));
   }
 
-  const hasSide = side.length > 0;
+  // Split the supporting banners across two slots so each one keeps sliding.
+  const slotA = others.filter((_, i) => i % 2 === 0);
+  const slotB = others.filter((_, i) => i % 2 === 1);
+  const slots = [slotA, slotB].filter((s) => s.length > 0);
+  const hasSide = slots.length > 0;
+
+  if (main.length === 0) return null;
 
   return (
     <section
       className={`grid gap-3 ${hasSide ? "lg:grid-cols-[1.85fr_1fr]" : ""}`}
       aria-label="Promotions"
     >
-      {/* Main banner */}
+      {/* Main hero banner */}
       <div
         className="relative -mx-4 overflow-hidden bg-sf-surface sm:mx-0 sm:rounded-2xl"
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
         onPointerCancel={onUp}
+        onMouseEnter={() => (paused.current = true)}
+        onMouseLeave={() => (paused.current = false)}
       >
         <div
           className="flex transition-transform duration-500 ease-out"
@@ -118,24 +180,9 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
 
       {/* Supporting banners */}
       {hasSide && (
-        <div
-          className={`grid gap-3 ${side.length > 1 ? "grid-cols-2 lg:grid-cols-1" : "grid-cols-1"}`}
-        >
-          {side.map((b) => (
-            <div
-              key={b.id}
-              className="overflow-hidden rounded-2xl bg-sf-surface"
-            >
-              <BannerLink banner={b}>
-                <img
-                  src={b.image_url}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                  className="aspect-[16/10] w-full object-cover transition-transform duration-500 hover:scale-[1.03] lg:aspect-[16/9]"
-                />
-              </BannerLink>
-            </div>
+        <div className={`grid gap-3 ${slots.length > 1 ? "grid-cols-2 lg:grid-cols-1" : "grid-cols-1"}`}>
+          {slots.map((items, i) => (
+            <SideRotator key={i} items={items} delay={5200 + i * 900} />
           ))}
         </div>
       )}
