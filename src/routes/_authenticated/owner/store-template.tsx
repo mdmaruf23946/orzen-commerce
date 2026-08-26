@@ -314,7 +314,7 @@ function StoreTemplatePage() {
               Shown on the storefront "All" tile. New stores inherit this image.
             </p>
             <ImageUploader
-              storeId="template"
+              folder={TEMPLATE_FOLDER}
               value={form.all_category_image_url || null}
               onChange={(v) => set("all_category_image_url", v ?? "")}
               label="Upload image"
