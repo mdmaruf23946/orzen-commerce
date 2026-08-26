@@ -190,7 +190,7 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
               <div
                 key={i}
                 aria-hidden
-                className="aspect-[16/10] rounded-2xl bg-sf-surface/40 lg:aspect-[16/9]"
+                className="aspect-[16/9] rounded-xl bg-sf-surface/40 sm:rounded-2xl"
               />
             ),
           )}
