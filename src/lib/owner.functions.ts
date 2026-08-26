@@ -1001,6 +1001,7 @@ export const getStoreTemplate = createServerFn({ method: "GET" })
 
 const templateSchema = z.object({
   description: z.string().max(2000).optional().nullable(),
+  all_category_image_url: z.string().max(500).optional().nullable(),
   primary_color: z.string().max(20).optional().nullable(),
   header_color: z.string().max(20).optional().nullable(),
   title_bar_color: z.string().max(20).optional().nullable(),

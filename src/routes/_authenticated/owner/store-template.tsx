@@ -68,6 +68,7 @@ type TemplateProduct = {
 
 type TemplateForm = {
   description: string;
+  all_category_image_url: string;
   primary_color: string;
   header_color: string;
   title_bar_color: string;
@@ -87,6 +88,7 @@ type TemplateForm = {
 
 const empty: TemplateForm = {
   description: "",
+  all_category_image_url: "",
   primary_color: "#0f172a",
   header_color: "#ffffff",
   title_bar_color: "#0f172a",
@@ -129,6 +131,7 @@ function StoreTemplatePage() {
       products: (d.products as any) ?? [],
       pages: (d.pages as any) ?? [],
       description: d.description ?? "",
+      all_category_image_url: d.all_category_image_url ?? "",
       primary_color: d.primary_color ?? "#0f172a",
       header_color: d.header_color ?? "#ffffff",
       title_bar_color: d.title_bar_color ?? "#0f172a",
@@ -305,6 +308,18 @@ function StoreTemplatePage() {
 
         {/* ============ Categories ============ */}
         <TabsContent value="categories" className="space-y-4 rounded-xl border bg-card p-4">
+          <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+            <Label>"All" category image</Label>
+            <p className="text-xs text-muted-foreground">
+              Shown on the storefront "All" tile. New stores inherit this image.
+            </p>
+            <ImageUploader
+              storeId="template"
+              value={form.all_category_image_url || null}
+              onChange={(v) => set("all_category_image_url", v ?? "")}
+              label="Upload image"
+            />
+          </div>
           <p className="text-xs text-muted-foreground">Square image recommended (512×512).</p>
           {form.categories.map((c, i) => (
             <div key={i} className="space-y-3 rounded-lg border p-3">
