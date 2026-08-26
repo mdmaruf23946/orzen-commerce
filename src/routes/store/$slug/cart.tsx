@@ -113,13 +113,13 @@ function CartPage() {
   if (items.length === 0) {
     return (
       <div className="py-16 text-center">
-        <h1 className="text-xl font-semibold">Your cart is empty</h1>
+        <h1 className="text-xl font-semibold">{t("cart.empty")}</h1>
         <Link
           to="/store/$slug"
           params={{ slug }}
           className="mt-4 inline-block text-sm text-muted-foreground hover:text-foreground"
         >
-          ← Continue shopping
+          {"\u2190 "}{t("cart.continueShopping")}
         </Link>
       </div>
     );

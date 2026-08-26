@@ -71,7 +71,7 @@ export function SubscriptionOrderView({ order, slug }: { order: any; slug: strin
         </Link>
         <Link to="/store/$slug" params={{ slug }}
           className="col-span-2 inline-flex h-10 items-center justify-center gap-1.5 rounded-md border text-sm font-medium">
-          <ShoppingBag className="h-4 w-4" /> Continue shopping
+          <ShoppingBag className="h-4 w-4" /> {t("cart.continueShopping")}
         </Link>
       </div>
     </div>

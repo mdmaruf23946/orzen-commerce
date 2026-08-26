@@ -1,4 +1,5 @@
 import { useEffect, useState, type RefObject } from "react";
+import { useStoreT } from "@/lib/store-i18n";
 
 export function StickyMobileBar({
   price,
@@ -49,7 +50,7 @@ export function StickyMobileBar({
           disabled={disabled}
           className="h-11 flex-1 rounded-full border border-neutral-300 bg-white text-sm font-semibold text-neutral-900 disabled:opacity-50"
         >
-          Add to Cart
+          {t("pdp.addToCart")}
         </button>
         <button
           type="button"
@@ -58,7 +59,7 @@ export function StickyMobileBar({
           className="h-11 flex-1 rounded-full text-sm font-semibold text-white disabled:opacity-50"
           style={{ backgroundColor: "var(--primary)" }}
         >
-          Buy Now
+          {t("pdp.buyNow")}
         </button>
       </div>
     </div>

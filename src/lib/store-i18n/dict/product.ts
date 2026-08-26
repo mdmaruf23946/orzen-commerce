@@ -2,6 +2,7 @@ import type { Dict } from "./types";
 
 /** Product detail page: gallery, buy box, tabs, reviews, related. */
 export const productDict: Dict = {
+  "pdp.onlyLeft": { en: "Only {count} left", bn: "মাত্র {count} টি বাকি" },
   "pdp.addToCart": { en: "Add to cart", bn: "কার্টে যোগ করুন" },
   "pdp.buyNow": { en: "Buy now", bn: "এখনই কিনুন" },
   "pdp.orderNow": { en: "Order now", bn: "অর্ডার করুন" },

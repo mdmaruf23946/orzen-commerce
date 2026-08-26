@@ -4,6 +4,7 @@ import { Heart } from "lucide-react";
 import { addToCart } from "@/lib/cart";
 import { isInWishlist, toggleWishlist } from "@/lib/wishlist";
 import { isStockless } from "@/lib/product-stock";
+import { useStoreT } from "@/lib/store-i18n";
 
 type Product = {
   id: string;
@@ -17,6 +18,7 @@ type Product = {
 
 export function ProductCard({ slug, p }: { slug: string; p: Product }) {
   const navigate = useNavigate();
+  const { t } = useStoreT();
   const [wished, setWished] = useState(false);
   const price = Number(p.price);
   const oldPrice = p.old_price != null ? Number(p.old_price) : null;
@@ -137,7 +139,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
         </div>
 
         {!outOfStock && !stockless && p.stock <= 5 && (
-          <span className="text-[10px] font-medium text-amber-600">Only {p.stock} left</span>
+          <span className="text-[10px] font-medium text-amber-600">{t("pdp.onlyLeft", { count: p.stock })}</span>
         )}
 
         <div className="mt-auto flex flex-col gap-1.5 pt-1">
@@ -147,7 +149,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
             disabled={outOfStock}
             className="theme-btn h-8 rounded-lg border border-neutral-200 bg-white text-[11px] font-semibold text-neutral-800 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Add to Cart
+            {t("pdp.addToCart")}
           </button>
           <button
             type="button"
@@ -156,7 +158,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
             className="theme-btn h-9 rounded-lg text-[13px] font-semibold text-white shadow-sm transition-opacity active:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             style={{ backgroundColor: "var(--store-btn-bg, #0f172a)" }}
           >
-            Buy Now
+            {t("pdp.buyNow")}
           </button>
         </div>
       </div>
