@@ -267,4 +267,20 @@ export const checkoutDict: Dict = {
   "checkout.bankTransfer": { en: "Bank Transfer", bn: "ব্যাংক ট্রান্সফার" },
   "checkout.emailPlaceholder": { en: "you@example.com", bn: "you@example.com" },
   "checkout.subscription.billing": { en: "billing", bn: "বিলিং" },
+
+  // Cart reconciliation notices
+  "cart.updated.title": { en: "Your cart was updated", bn: "আপনার কার্ট আপডেট হয়েছে" },
+  "cart.updated.price": {
+    en: "{name}: price changed from ৳{from} to ৳{to}",
+    bn: "{name}: দাম ৳{from} থেকে ৳{to} হয়েছে",
+  },
+  "cart.updated.stock": {
+    en: "{name}: only {to} left in stock, quantity adjusted",
+    bn: "{name}: স্টকে মাত্র {to}টি আছে, পরিমাণ সমন্বয় করা হয়েছে",
+  },
+  "cart.updated.removed": {
+    en: "{name} is no longer available and was removed",
+    bn: "{name} আর পাওয়া যাচ্ছে না, তাই সরিয়ে ফেলা হয়েছে",
+  },
 };
+
