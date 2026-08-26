@@ -540,7 +540,7 @@ function HeaderCategoryBar({
       active ? "text-white" : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
     }`;
   return (
-    <nav className="border-b border-black/5 bg-white/95 backdrop-blur">
+    <nav className="hidden md:block border-b border-black/5 bg-white/95 backdrop-blur">
       <div
         className="mx-auto flex items-center gap-1 overflow-x-auto px-3 py-1 sm:py-1.5 sm:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ maxWidth: "var(--store-container, 64rem)" }}
