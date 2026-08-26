@@ -43,4 +43,17 @@ export const miscDict: Dict = {
     en: "This page has not been generated yet by the store owner.",
     bn: "স্টোর মালিক এখনো এই পেজটি তৈরি করেননি।",
   },
+  "error.title": { en: "Something went wrong", bn: "কিছু একটা সমস্যা হয়েছে" },
+  "error.body": {
+    en: "We couldn't load this page. Please check your connection and try again.",
+    bn: "পেজটি লোড করা যায়নি। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।",
+  },
+  "error.retry": { en: "Try again", bn: "আবার চেষ্টা করুন" },
+  "order.locked.title": { en: "Verify it's your order", bn: "এটি আপনার Order কিনা যাচাই করুন" },
+  "order.locked.body": {
+    en: "For your privacy we only show order details to the buyer. Enter the phone number or email used on this order.",
+    bn: "গোপনীয়তার জন্য শুধু ক্রেতাকেই Order-এর বিস্তারিত দেখানো হয়। এই Order-এ ব্যবহৃত ফোন নম্বর বা ইমেইল দিন।",
+  },
+  "order.locked.placeholder": { en: "Phone or email", bn: "ফোন বা ইমেইল" },
+  "order.locked.verify": { en: "View my order", bn: "আমার Order দেখুন" },
 };

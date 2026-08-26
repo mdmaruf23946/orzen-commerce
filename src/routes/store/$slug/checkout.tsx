@@ -1,3 +1,4 @@
+import { StoreErrorState } from "@/components/storefront/StoreErrorState";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useStoreT } from "@/lib/store-i18n";
 import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
@@ -30,7 +31,7 @@ export const Route = createFileRoute("/store/$slug/checkout")({
     await context.queryClient.ensureQueryData(storeQuery(params.slug));
     return null;
   },
-  errorComponent: () => <div className="p-6 text-center">Something went wrong.</div>,
+  errorComponent: ({ error }) => <StoreErrorState error={error} scope="storefront:checkout" />,
   notFoundComponent: () => <div className="p-6 text-center">Not found</div>,
   component: CheckoutPage,
 });

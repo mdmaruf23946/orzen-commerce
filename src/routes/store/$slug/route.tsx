@@ -34,6 +34,7 @@ import { MobileDrawer } from "@/components/storefront/MobileDrawer";
 import { BottomNav } from "@/components/storefront/BottomNav";
 import { StoreBranding } from "@/components/storefront/StoreBranding";
 import { resolveStoreIcon, resolveStoreFavicon } from "@/lib/store-icon";
+import { useRouteErrorTracking } from "@/hooks/use-error-tracking";
 
 export const storeQuery = (slug: string) =>
   queryOptions({
@@ -95,6 +96,8 @@ export const Route = createFileRoute("/store/$slug")({
 
 function StoreLayout() {
   const { slug } = Route.useParams();
+  // Real-time runtime error logging for every Store Panel page.
+  useRouteErrorTracking("storefront");
   const { data: store } = useSuspenseQuery(storeQuery(slug));
   const { data: agent } = useQuery(agentQuery(slug));
   const pathname = useRouterState({ select: (s) => s.location.pathname });

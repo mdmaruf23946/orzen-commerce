@@ -1,3 +1,4 @@
+import { StoreErrorState } from "@/components/storefront/StoreErrorState";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -18,6 +19,7 @@ import { paymentStatusLabel } from "@/lib/order-display";
 import { useStoreT } from "@/lib/store-i18n";
 import { useCustomerSession } from "@/lib/customer-session";
 import { readOrderContact } from "@/lib/order-proof";
+import { OrderLockedCard } from "@/components/storefront/order/OrderLockedCard";
 
 
 
@@ -42,7 +44,7 @@ export const Route = createFileRoute("/store/$slug/order/$orderId")({
     if (!order) throw notFound();
     return null;
   },
-  errorComponent: () => <div className="p-6 text-center">Something went wrong.</div>,
+  errorComponent: ({ error }) => <StoreErrorState error={error} scope="storefront:order" />,
   notFoundComponent: () => <div className="p-6 text-center">Order not found</div>,
   component: OrderConfirmation,
 });
@@ -128,6 +130,12 @@ function OrderConfirmation() {
     );
   }, [order?.id]);
   if (!order) return null;
+
+  // The link alone is not proof of ownership: the server returns a minimal
+  // payload, so ask the shopper to verify instead of rendering a broken page.
+  if ((order as any).is_owner === false) {
+    return <OrderLockedCard order={order} slug={slug} onVerify={(c) => setContact(c)} />;
+  }
 
   // Type-aware order details: each product type shows only its own workflow.
   const orderType = (order as any).order_type ?? "physical";
@@ -320,7 +328,7 @@ function OrderConfirmation() {
         <div className="text-xs text-muted-foreground">{t("order.summary.id")}</div>
         <div className="font-mono text-sm">{order.id.slice(0, 8).toUpperCase()}</div>
         <ul className="mt-4 space-y-2 text-sm">
-          {(order.items as any[]).map((i: any, idx: number) => (
+          {orderItems.map((i: any, idx: number) => (
             <li key={idx} className="flex justify-between gap-3">
               <span>
                 {i.name_snapshot} × {i.qty}
