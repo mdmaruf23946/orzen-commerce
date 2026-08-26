@@ -74,7 +74,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
   }
 
   return (
-    <div className="theme-card group flex h-full flex-col overflow-hidden rounded-2xl border border-sf-line bg-white shadow-[0_1px_2px_rgba(17,17,17,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_-16px_rgba(17,17,17,0.3)]">
+    <div className="theme-card group flex h-full flex-col overflow-hidden rounded-xl border border-sf-line bg-white shadow-[0_1px_2px_rgba(17,17,17,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_-16px_rgba(17,17,17,0.3)] sm:rounded-2xl">
       <Link
         to="/store/$slug/product/$productId"
         params={{ slug, productId: p.id }}
@@ -108,28 +108,28 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
           onClick={handleWish}
           aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
           aria-pressed={wished}
-          className={`absolute ${outOfStock ? "right-2 top-9" : "right-2 top-2"} grid h-8 w-8 place-items-center rounded-full bg-white/90 shadow-sm backdrop-blur transition-colors hover:bg-white`}
+          className={`absolute ${outOfStock ? "right-2 top-9" : "right-2 top-2"} grid h-7 w-7 place-items-center rounded-full bg-white/90 shadow-sm backdrop-blur transition-colors hover:bg-white sm:h-8 sm:w-8`}
         >
           <Heart
-            className={`h-4 w-4 transition-colors ${wished ? "fill-sf-accent text-sf-accent" : "text-sf-muted"}`}
+            className={`h-3.5 w-3.5 transition-colors sm:h-4 sm:w-4 ${wished ? "fill-sf-accent text-sf-accent" : "text-sf-muted"}`}
           />
         </button>
       </Link>
 
-      <div className="flex flex-1 flex-col gap-1.5 p-2.5 sm:p-3">
+      <div className="flex flex-1 flex-col gap-1 p-2 sm:gap-1.5 sm:p-3">
         <Link
           to="/store/$slug/product/$productId"
           params={{ slug, productId: p.id }}
-          className="line-clamp-2 min-h-[2.4em] text-[13px] font-semibold leading-snug text-sf-text sm:text-sm"
+          className="line-clamp-2 min-h-[2.2em] text-xs font-semibold leading-snug text-sf-text sm:min-h-[2.4em] sm:text-sm"
         >
           {p.name}
         </Link>
 
-        <div className="flex flex-wrap items-baseline gap-x-1.5">
+        <div className="flex flex-wrap items-baseline gap-x-1">
           {hasDiscount && (
-            <span className="text-[11px] text-sf-muted line-through">৳{oldPrice!.toFixed(0)}</span>
+            <span className="text-[10px] text-sf-muted line-through sm:text-[11px]">৳{oldPrice!.toFixed(0)}</span>
           )}
-          <span className="text-[15px] font-extrabold text-sf-accent sm:text-base">
+          <span className="text-sm font-extrabold text-sf-accent sm:text-base">
             ৳{price.toFixed(0)}
           </span>
         </div>
@@ -140,14 +140,14 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
           </span>
         )}
 
-        <div className="mt-auto grid grid-cols-[1fr_auto] gap-1.5 pt-2">
+        <div className="mt-auto grid grid-cols-[1fr_auto] gap-1 pt-1.5 sm:gap-1.5 sm:pt-2">
           <button
             type="button"
             onClick={handleAdd}
             disabled={outOfStock}
-            className="theme-btn flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-lg bg-sf-accent px-2 text-[12px] font-bold text-white transition-colors hover:bg-sf-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+            className="theme-btn flex h-8 min-w-0 items-center justify-center gap-1 rounded-lg bg-sf-accent px-1.5 text-[11px] font-bold text-white transition-colors hover:bg-sf-accent-hover disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:gap-1.5 sm:px-2 sm:text-[12px]"
           >
-            <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
+            <ShoppingCart className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />
             <span className="hidden truncate sm:inline">{t("pdp.addToCart")}</span>
             <span className="truncate sm:hidden">{t("pdp.add")}</span>
           </button>
@@ -155,7 +155,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
             type="button"
             onClick={handleBuy}
             disabled={outOfStock}
-            className="h-9 shrink-0 whitespace-nowrap rounded-lg border border-sf-ink/15 bg-white px-2.5 text-[12px] font-semibold text-sf-ink transition-colors hover:bg-sf-surface disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-8 shrink-0 whitespace-nowrap rounded-lg border border-sf-ink/15 bg-white px-2 text-[11px] font-semibold text-sf-ink transition-colors hover:bg-sf-surface disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:px-2.5 sm:text-[12px]"
           >
             {t("pdp.buyNow")}
           </button>
