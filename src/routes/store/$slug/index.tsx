@@ -469,8 +469,8 @@ function SubPill({
       onClick={onClick}
       className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors duration-200 ${
         active
-          ? "bg-neutral-900 text-white"
-          : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
+          ? "bg-sf-accent text-white"
+          : "bg-sf-surface text-sf-ink hover:bg-neutral-200"
       }`}
     >
       {children}
@@ -575,7 +575,7 @@ function CategoryTile({
   active: boolean;
   onClick: () => void;
 }) {
-  const ring = active ? "var(--store-btn-bg, #0f172a)" : "transparent";
+  const ring = active ? "var(--sf-accent, #FF4B1F)" : "transparent";
   return (
     <button
       type="button"
@@ -583,7 +583,7 @@ function CategoryTile({
       className="group flex w-full min-w-0 flex-col items-center gap-1.5"
     >
       <div
-        className="aspect-square w-full overflow-hidden rounded-2xl bg-neutral-100 transition-all"
+        className="aspect-square w-full overflow-hidden rounded-2xl border border-sf-line bg-sf-surface transition-all"
         style={{ boxShadow: `inset 0 0 0 2px ${ring}` }}
       >
         {image ? (
@@ -603,7 +603,7 @@ function CategoryTile({
         )}
       </div>
       <span
-        className={`line-clamp-1 w-full text-center text-[11px] font-medium ${active ? "text-neutral-900" : "text-neutral-600"}`}
+        className={`line-clamp-1 w-full text-center text-[11px] font-medium ${active ? "text-sf-accent" : "text-sf-muted"}`}
       >
         {label}
       </span>
