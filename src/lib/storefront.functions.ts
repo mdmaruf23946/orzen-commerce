@@ -1388,9 +1388,23 @@ export const getOrder = createServerFn({ method: "GET" })
  * us about this order. Never exposes raw payloads, headers or credentials.
  */
 export const getOrderPaymentTimeline = createServerFn({ method: "GET" })
-  .inputValidator((d) => z.object({ orderId: z.string().uuid() }).parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        orderId: z.string().uuid(),
+        token: z.string().trim().max(200).optional(),
+        contact: z.string().trim().max(160).optional(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { ownsOrderById } = await import("@/lib/order-ownership.server");
+    const owns = await ownsOrderById(supabaseAdmin, data.orderId, {
+      token: data.token,
+      contact: data.contact,
+    });
+    if (!owns) return null;
     const { data: order } = await supabaseAdmin
       .from("orders")
       .select(
@@ -1400,6 +1414,7 @@ export const getOrderPaymentTimeline = createServerFn({ method: "GET" })
       .maybeSingle();
     if (!order) return null;
     const o = order as any;
+
 
     const refs = [o.payment_ref, o.invoice_no, o.id].filter(Boolean).map(String);
     const inList = `(${refs.map((r) => `"${r.replace(/["\\]/g, "")}"`).join(",")})`;
