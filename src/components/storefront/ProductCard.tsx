@@ -145,16 +145,17 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
             type="button"
             onClick={handleAdd}
             disabled={outOfStock}
-            className="theme-btn flex h-9 items-center justify-center gap-1.5 rounded-lg bg-sf-accent text-[12px] font-bold text-white transition-colors hover:bg-sf-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+            className="theme-btn flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-lg bg-sf-accent px-2 text-[12px] font-bold text-white transition-colors hover:bg-sf-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <ShoppingCart className="h-3.5 w-3.5" />
-            {t("pdp.addToCart")}
+            <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
+            <span className="hidden truncate sm:inline">{t("pdp.addToCart")}</span>
+            <span className="truncate sm:hidden">{t("pdp.add")}</span>
           </button>
           <button
             type="button"
             onClick={handleBuy}
             disabled={outOfStock}
-            className="h-9 rounded-lg border border-sf-ink/15 bg-white px-2.5 text-[12px] font-semibold text-sf-ink transition-colors hover:bg-sf-surface disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-9 shrink-0 whitespace-nowrap rounded-lg border border-sf-ink/15 bg-white px-2.5 text-[12px] font-semibold text-sf-ink transition-colors hover:bg-sf-surface disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t("pdp.buyNow")}
           </button>

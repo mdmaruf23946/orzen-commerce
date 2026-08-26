@@ -22,6 +22,7 @@ export const productDict: Dict = {
   "pdp.onlyLeft": { en: "Only {count} left", bn: "মাত্র {count} টি বাকি" },
 
   "pdp.addToCart": { en: "Add to cart", bn: "কার্টে যোগ করুন" },
+  "pdp.add": { en: "Add", bn: "যোগ করুন" },
   "pdp.buyNow": { en: "Buy now", bn: "এখনই কিনুন" },
   "pdp.orderNow": { en: "Order now", bn: "অর্ডার করুন" },
   "pdp.outOfStock": { en: "Out of stock", bn: "স্টকে নেই" },
