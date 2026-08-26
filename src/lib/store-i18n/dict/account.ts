@@ -28,10 +28,27 @@ export const accountDict: Dict = {
   },
   "auth.forgotTitle": { en: "Forgot password", bn: "পাসওয়ার্ড ভুলে গেছেন" },
   "auth.forgotBody": {
-    en: "Please contact the store to reset your password. Our team can help you regain access to your account.",
-    bn: "পাসওয়ার্ড রিসেট করতে অনুগ্রহ করে স্টোরের সাথে যোগাযোগ করুন। আমাদের টিম আপনাকে অ্যাকাউন্টে প্রবেশে সাহায্য করবে।",
+    en: "Enter the email address on your account and we will send you a link to set a new password.",
+    bn: "আপনার অ্যাকাউন্টের ইমেইল দিন, নতুন পাসওয়ার্ড সেট করার লিংক পাঠানো হবে।",
+  },
+  "auth.sendResetLink": { en: "Send reset link", bn: "রিসেট লিংক পাঠান" },
+  "auth.resetSent": {
+    en: "If an account matches, a reset link has been sent. Please check your email.",
+    bn: "অ্যাকাউন্ট থাকলে রিসেট লিংক পাঠানো হয়েছে। আপনার ইমেইল দেখুন।",
+  },
+  "auth.resetTitle": { en: "Set a new password", bn: "নতুন পাসওয়ার্ড দিন" },
+  "auth.newPassword": { en: "New password", bn: "নতুন পাসওয়ার্ড" },
+  "auth.confirmPassword": { en: "Confirm password", bn: "পাসওয়ার্ড নিশ্চিত করুন" },
+  "auth.resetDone": {
+    en: "Password updated. Please sign in with your new password.",
+    bn: "পাসওয়ার্ড আপডেট হয়েছে। নতুন পাসওয়ার্ড দিয়ে লগইন করুন।",
+  },
+  "auth.resetInvalid": {
+    en: "This reset link is invalid or has expired.",
+    bn: "এই রিসেট লিংকটি ভুল অথবা মেয়াদোত্তীর্ণ।",
   },
   "auth.backToSignIn": { en: "← Back to sign in", bn: "← লগইনে ফিরুন" },
+
 
   "account.title": { en: "My account", bn: "আমার অ্যাকাউন্ট" },
   "account.profile": { en: "Profile", bn: "প্রোফাইল" },
