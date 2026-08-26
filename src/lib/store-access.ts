@@ -119,3 +119,40 @@ export const ownerOnlyAccess = createMiddleware({ type: "function" })
 export function requireManage(context: any, section: string) {
   assertSection(context.access as StoreAccess, section, "manage");
 }
+
+/**
+ * Resolve the store the caller works in: the store they own, or — for an
+ * active employee — their employer's store. Returns null when neither exists.
+ */
+export async function resolveStoreRef(
+  supabase: any,
+  userId: string,
+): Promise<{ id: string } | null> {
+  const { data: own } = await supabase
+    .from("stores")
+    .select("id")
+    .eq("owner_user_id", userId)
+    .maybeSingle();
+  if (own?.id) return { id: own.id };
+
+  const { data: staff } = await supabase
+    .from("store_staff")
+    .select("store_id")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .maybeSingle();
+  return staff?.store_id ? { id: staff.store_id } : null;
+}
+
+/** Same as resolveStoreRef but selects the requested columns of that store. */
+export async function myStoreRow(
+  supabase: any,
+  userId: string,
+  columns = "id",
+): Promise<any | null> {
+  const ref = await resolveStoreRef(supabase, userId);
+  if (!ref) return null;
+  if (columns === "id") return ref;
+  const { data } = await supabase.from("stores").select(columns).eq("id", ref.id).maybeSingle();
+  return data ?? null;
+}
