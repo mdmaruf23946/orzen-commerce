@@ -8,6 +8,7 @@ import { useCustomerSession } from "@/lib/customer-session";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useStoreT } from "@/lib/store-i18n";
 
 export const Route = createFileRoute("/store/$slug/auth/signup")({
   validateSearch: (s: Record<string, unknown>) =>
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/store/$slug/auth/signup")({
 });
 
 function SignupPage() {
+  const { t } = useStoreT();
   const { slug } = Route.useParams();
   const { redirect } = useSearch({ from: "/store/$slug/auth/signup" });
   const navigate = useNavigate();
@@ -51,7 +53,7 @@ function SignupPage() {
         },
       });
       setSession(res.token);
-      toast.success("Account created");
+      toast.success(t("auth.signupSuccess"));
       if (redirect) navigate({ to: redirect });
       else navigate({ to: "/store/$slug/account", params: { slug } });
     } catch (err) {
@@ -64,13 +66,13 @@ function SignupPage() {
   return (
     <div className="mx-auto max-w-md py-8">
       <div className="rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
-        <h1 className="text-center text-lg font-semibold sm:text-xl">Create your account</h1>
+        <h1 className="text-center text-lg font-semibold sm:text-xl">{t("auth.signupTitle")}</h1>
         <p className="mt-1 text-center text-xs text-muted-foreground">
-          Provide at least one of email or phone number.
+          {t("auth.signupHint")}
         </p>
         <form className="mt-5 space-y-3" onSubmit={submit}>
           <div className="space-y-1.5">
-            <Label htmlFor="name">Full name</Label>
+            <Label htmlFor="name">{t("common.fullName")}</Label>
             <Input
               id="name"
               required
@@ -80,7 +82,7 @@ function SignupPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="email">Email (optional)</Label>
+            <Label htmlFor="email">{t("auth.emailOptional")}</Label>
             <Input
               id="email"
               type="email"
@@ -90,7 +92,7 @@ function SignupPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="phone">Phone (optional)</Label>
+            <Label htmlFor="phone">{t("auth.phoneOptional")}</Label>
             <Input
               id="phone"
               type="tel"
@@ -100,7 +102,7 @@ function SignupPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="pw">Password</Label>
+            <Label htmlFor="pw">{t("auth.password")}</Label>
             <Input
               id="pw"
               type="password"
@@ -112,7 +114,7 @@ function SignupPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="pw2">Confirm password</Label>
+            <Label htmlFor="pw2">{t("auth.confirmPassword")}</Label>
             <Input
               id="pw2"
               type="password"
@@ -123,7 +125,7 @@ function SignupPage() {
               onChange={(e) => setConfirm(e.target.value)}
             />
             {confirm.length > 0 && confirm !== password && (
-              <p className="text-xs text-destructive">Passwords do not match.</p>
+              <p className="text-xs text-destructive">{t("auth.passwordMismatch")}</p>
             )}
           </div>
           <Button
@@ -132,18 +134,18 @@ function SignupPage() {
             style={{ backgroundColor: "var(--store-btn-bg)", color: "white" }}
             disabled={loading || !canSubmit}
           >
-            {loading ? "Creating…" : "Create account"}
+            {loading ? t("auth.creating") : t("auth.signup")}
           </Button>
         </form>
         <div className="mt-4 text-center text-xs text-muted-foreground">
-          Already have an account?{" "}
+          {t("auth.haveAccount")}{" "}
           <Link
             to="/store/$slug/auth/login"
             params={{ slug }}
             search={redirect ? { redirect } : undefined}
             className="font-semibold text-foreground hover:underline"
           >
-            Sign in
+            {t("auth.login")}
           </Link>
         </div>
       </div>

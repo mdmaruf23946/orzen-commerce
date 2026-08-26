@@ -42,6 +42,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { useStoreT } from "@/lib/store-i18n";
 
 export type ServiceCartInfo = Record<
   string,
@@ -77,6 +78,7 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 export function ServiceCheckout({ slug, store, items, info, images = {} }: Props) {
+  const { t } = useStoreT();
   const navigate = useNavigate();
   const place = useServerFn(placeOrder);
   const startPay = useServerFn(startOnlineCheckout);
@@ -155,7 +157,7 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
       list.push({
         id: g.key,
         label: g.label,
-        desc: g.sandbox ? "Pay online (test mode)" : "Pay online securely",
+        desc: g.sandbox ? t("checkout.payOnlineTest") : t("checkout.payOnlineSecure"),
         online: true,
         logo: g.logo_url,
       });
@@ -213,7 +215,7 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
         setCoupon(null);
       } else {
         setCoupon({ code: res.code, discount: res.discount });
-        toast.success("Coupon applied");
+        toast.success(t("checkout.couponApplied"));
       }
     } catch (err) {
       toast.error((err as Error).message);
@@ -228,7 +230,7 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
     try {
       for (const f of Array.from(list)) {
         if (files.length >= settings.upload_max_files) {
-          toast.error(`Maximum ${settings.upload_max_files} files`);
+          toast.error(t("checkout.service.filesHint", { max: settings.upload_max_files, mb: settings.upload_max_mb, types: "" }));
           break;
         }
         const base64 = await fileToBase64(f);
@@ -260,26 +262,26 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
   }
 
   const termsList = [
-    { key: "terms", label: "Terms & Conditions", to: "/terms" },
-    { key: "refund", label: "Refund Policy", to: "/refund-policy" },
-    { key: "service", label: "Service Policy", to: "/terms" },
-    { key: "privacy", label: "Privacy Policy", to: "/privacy-policy" },
-  ].filter((t) => (settings?.terms as any)?.[t.key] !== false);
+    { key: "terms", label: t("footer.terms"), to: "/terms" },
+    { key: "refund", label: t("footer.returnPolicy"), to: "/refund-policy" },
+    { key: "service", label: t("footer.terms"), to: "/terms" },
+    { key: "privacy", label: t("footer.privacy"), to: "/privacy-policy" },
+  ].filter((term) => (settings?.terms as any)?.[term.key] !== false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     for (const f of fields) {
       if (f.is_required && !String(answers[f.field_key] ?? "").trim()) {
-        toast.error(`${f.label} is required`);
+        toast.error(t("checkout.service.fieldRequired", { label: f.label }));
         return;
       }
     }
-    if (termsList.some((t) => !accepted[t.key])) {
-      toast.error("Please accept the policies to continue");
+    if (termsList.some((term) => !accepted[term.key])) {
+      toast.error(t("checkout.service.acceptPolicies"));
       return;
     }
     if (total > 0 && !method) {
-      toast.error("Choose a payment method");
+      toast.error(t("checkout.choosePaymentMethod"));
       return;
     }
     setStage("creating");
@@ -335,7 +337,7 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
           window.location.href = pay.redirect_url;
           return;
         }
-        throw new Error("Payment could not be started. Please try another payment method.");
+        throw new Error(t("checkout.paymentStartFailed"));
       }
 
       removeSelected(slug, items.map((i) => i.productId));
@@ -351,9 +353,9 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
       <div className="mx-auto max-w-sm py-20 text-center">
         <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
         <h2 className="mt-4 text-lg font-semibold">
-          {stage === "creating" ? "Creating your service order…" : "Opening secure payment…"}
+          {stage === "creating" ? t("checkout.service.creatingOrder") : t("checkout.digital.openingPayment")}
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">Please don't close or refresh this page.</p>
+        <p className="mt-1 text-sm text-muted-foreground">{t("checkout.dontCloseRefresh")}</p>
       </div>
     );
   }
@@ -367,16 +369,16 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
     <form onSubmit={submit} className="grid gap-6 sm:grid-cols-5">
       <div className="space-y-5 sm:col-span-3">
         <div>
-          <h1 className="text-xl font-semibold">Service booking</h1>
+          <h1 className="text-xl font-semibold">{t("checkout.service.title")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Tell us about your project — nothing will be shipped.
+            {t("checkout.service.subtitle")}
           </p>
         </div>
 
         {/* Package selection */}
         {packages.length > 0 && (
           <section className="rounded-xl border bg-card p-4">
-            <h2 className="text-sm font-semibold">Choose a package</h2>
+            <h2 className="text-sm font-semibold">{t("checkout.service.choosePackage")}</h2>
             <div className="mt-3 grid gap-2">
               {packages.map((p: any) => {
                 const key = p.key ?? p.name;
@@ -410,7 +412,7 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
                         ) : null}
                         {p.revisions ? (
                           <span className="inline-flex items-center gap-1">
-                            <RefreshCw className="h-3 w-3" /> {p.revisions} revisions
+                            <RefreshCw className="h-3 w-3" /> {t("checkout.service.revisions", { n: p.revisions })}
                           </span>
                         ) : null}
                       </span>
@@ -425,7 +427,7 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
         {/* Add-ons */}
         {(svc?.addons ?? []).length > 0 && (
           <section className="rounded-xl border bg-card p-4">
-            <h2 className="text-sm font-semibold">Add-on services</h2>
+            <h2 className="text-sm font-semibold">{t("checkout.service.addonServices")}</h2>
             <div className="mt-3 space-y-2">
               {(svc?.addons ?? []).map((a: any) => (
                 <label key={a.name} className="flex items-start gap-3 text-sm">
@@ -451,18 +453,18 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
 
         {/* Customer information */}
         <section className="space-y-4 rounded-xl border bg-card p-4">
-          <h2 className="text-sm font-semibold">Your information</h2>
+          <h2 className="text-sm font-semibold">{t("checkout.service.yourInfo")}</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="s-name">Full name *</Label>
+              <Label htmlFor="s-name">{t("common.fullName")} *</Label>
               <Input id="s-name" required value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="s-phone">Mobile number *</Label>
+              <Label htmlFor="s-phone">{t("checkout.mobileNumber")}</Label>
               <Input id="s-phone" required value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="s-email">Email address *</Label>
+              <Label htmlFor="s-email">{t("checkout.emailAddress")}</Label>
               <Input
                 id="s-email"
                 type="email"
@@ -473,19 +475,19 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
             </div>
             {cf.company !== false && (
               <div className="space-y-1.5">
-                <Label htmlFor="s-company">Company name</Label>
+                <Label htmlFor="s-company">{t("checkout.companyName")}</Label>
                 <Input id="s-company" value={company} onChange={(e) => setCompany(e.target.value)} />
               </div>
             )}
             {cf.business_name && (
               <div className="space-y-1.5">
-                <Label htmlFor="s-biz">Business name</Label>
+                <Label htmlFor="s-biz">{t("checkout.service.businessName")}</Label>
                 <Input id="s-biz" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
               </div>
             )}
             {cf.website !== false && (
               <div className="space-y-1.5">
-                <Label htmlFor="s-web">Website URL</Label>
+                <Label htmlFor="s-web">{t("checkout.service.websiteUrl")}</Label>
                 <Input
                   id="s-web"
                   placeholder="https://"
@@ -496,13 +498,13 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
             )}
             {cf.country !== false && (
               <div className="space-y-1.5">
-                <Label htmlFor="s-country">Country</Label>
+                <Label htmlFor="s-country">{t("checkout.subscription.country")}</Label>
                 <Input id="s-country" value={country} onChange={(e) => setCountry(e.target.value)} />
               </div>
             )}
             {cf.language && (
               <div className="space-y-1.5">
-                <Label htmlFor="s-lang">Preferred language</Label>
+                <Label htmlFor="s-lang">{t("checkout.service.preferredLanguage")}</Label>
                 <Input id="s-lang" value={language} onChange={(e) => setLanguage(e.target.value)} />
               </div>
             )}
@@ -512,7 +514,7 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
         {/* Project requirements */}
         {fields.length > 0 && (
           <section className="space-y-4 rounded-xl border bg-card p-4">
-            <h2 className="text-sm font-semibold">Project requirements</h2>
+            <h2 className="text-sm font-semibold">{t("checkout.service.projectRequirements")}</h2>
             {fields.map((f) => (
               <IntakeField
                 key={f.id}
@@ -527,10 +529,13 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
         {/* File upload */}
         {(settings?.upload_max_files ?? 0) > 0 && (
           <section className="rounded-xl border bg-card p-4">
-            <h2 className="text-sm font-semibold">Project files</h2>
+            <h2 className="text-sm font-semibold">{t("checkout.service.projectFiles")}</h2>
             <p className="mt-1 text-xs text-muted-foreground">
-              Up to {settings?.upload_max_files} files, {settings?.upload_max_mb} MB each ·{" "}
-              {(settings?.upload_allowed_types ?? []).join(", ")}
+              {t("checkout.service.filesHint", {
+                max: settings?.upload_max_files ?? 0,
+                mb: settings?.upload_max_mb ?? 0,
+                types: (settings?.upload_allowed_types ?? []).join(", "),
+              })}
             </p>
             <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
               {uploading ? (
@@ -538,7 +543,7 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
               ) : (
                 <Paperclip className="h-4 w-4" />
               )}
-              {uploading ? "Uploading…" : "Attach files"}
+              {uploading ? t("checkout.service.uploading") : t("checkout.service.attachFiles")}
               <input
                 type="file"
                 multiple
@@ -556,7 +561,7 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
                   <li key={f.id} className="flex items-center gap-2 rounded-md border p-2 text-xs">
                     <Paperclip className="h-3 w-3 shrink-0" />
                     <span className="min-w-0 flex-1 truncate">{f.file_name}</span>
-                    <button type="button" onClick={() => dropFile(f.id)} aria-label="Remove file">
+                    <button type="button" onClick={() => dropFile(f.id)} aria-label={t("checkout.service.removeFile")}>
                       <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                     </button>
                   </li>
@@ -569,10 +574,10 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
         {/* Communication preferences */}
         {settings?.communication_enabled !== false && (
           <section className="rounded-xl border bg-card p-4">
-            <h2 className="text-sm font-semibold">Communication preferences (optional)</h2>
+            <h2 className="text-sm font-semibold">{t("checkout.service.commPrefs")}</h2>
             <div className="mt-3 space-y-3">
               <div>
-                <Label className="text-xs text-muted-foreground">Preferred channel</Label>
+                <Label className="text-xs text-muted-foreground">{t("checkout.service.preferredChannel")}</Label>
                 <div className="mt-1.5 flex flex-wrap gap-2">
                   {CONTACT_CHANNELS.map((c) => (
                     <button
@@ -589,7 +594,7 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
                 </div>
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Preferred contact time</Label>
+                <Label className="text-xs text-muted-foreground">{t("checkout.service.preferredContactTime")}</Label>
                 <div className="mt-1.5 flex flex-wrap gap-2">
                   {CONTACT_TIMES.map((c) => (
                     <button
@@ -611,7 +616,7 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
 
         {/* Payment */}
         <section className="rounded-xl border bg-card p-4">
-          <h2 className="text-sm font-semibold">Payment</h2>
+          <h2 className="text-sm font-semibold">{t("checkout.service.payment")}</h2>
           {settings?.payment_mode === "advance" && total > 0 && (
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {(["full", "advance"] as const).map((p) => (
@@ -624,8 +629,8 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
                   <input type="radio" name="svc-plan" checked={plan === p} onChange={() => setPlan(p)} />
                   <span>
                     {p === "full"
-                      ? "Pay in full"
-                      : `Pay ${settings?.min_advance_percent}% advance`}
+                      ? t("checkout.service.payInFull")
+                      : t("checkout.service.payAdvancePercent", { percent: settings?.min_advance_percent })}
                   </span>
                 </label>
               ))}
@@ -633,14 +638,14 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
           )}
           {settings?.payment_mode === "advance_required" && total > 0 && (
             <p className="mt-2 rounded-md bg-muted p-2 text-xs text-muted-foreground">
-              This service requires a {settings.min_advance_percent}% advance to start.
+              {t("checkout.service.advanceRequired", { percent: settings.min_advance_percent })}
             </p>
           )}
           {total === 0 ? (
-            <p className="mt-2 text-sm text-muted-foreground">This booking is free — no payment required.</p>
+            <p className="mt-2 text-sm text-muted-foreground">{t("checkout.service.freeBooking")}</p>
           ) : methods.length === 0 ? (
             <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-              No payment method is available for services yet. Please contact the store.
+              {t("checkout.service.noMethod")}
             </div>
           ) : (
             <div className="mt-3 grid gap-2">
@@ -668,30 +673,30 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
           )}
           {total > 0 && !isOnline && method ? (
             <div className="mt-3 space-y-1.5">
-              <Label htmlFor="svc-txn">Transaction ID</Label>
+              <Label htmlFor="svc-txn">{t("checkout.transactionId")}</Label>
               <Input id="svc-txn" required value={txnId} onChange={(e) => setTxnId(e.target.value)} />
             </div>
           ) : null}
           <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Lock className="h-3 w-3" /> Cash on Delivery is never available for services.
+            <Lock className="h-3 w-3" /> {t("checkout.service.noCod")}
           </p>
         </section>
 
         {/* Terms */}
         {termsList.length > 0 && (
           <section className="space-y-3 rounded-xl border bg-card p-4">
-            <h2 className="text-sm font-semibold">Agreements</h2>
-            {termsList.map((t) => (
-              <label key={t.key} className="flex items-start gap-3 text-sm">
+            <h2 className="text-sm font-semibold">{t("checkout.service.agreements")}</h2>
+            {termsList.map((term) => (
+              <label key={term.key} className="flex items-start gap-3 text-sm">
                 <Checkbox
                   className="mt-0.5"
-                  checked={!!accepted[t.key]}
-                  onCheckedChange={(v) => setAccepted((prev) => ({ ...prev, [t.key]: v === true }))}
+                  checked={!!accepted[term.key]}
+                  onCheckedChange={(v) => setAccepted((prev) => ({ ...prev, [term.key]: v === true }))}
                 />
                 <span>
-                  I accept the{" "}
-                  <Link to={t.to} className="underline">
-                    {t.label}
+                  {t("checkout.service.acceptPrefix")}{" "}
+                  <Link to={term.to} className="underline">
+                    {term.label}
                   </Link>
                   .
                 </span>
@@ -704,7 +709,7 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
       {/* Summary */}
       <aside className="sm:col-span-2">
         <div className="sticky top-20 rounded-xl border bg-card p-4">
-          <h2 className="text-sm font-semibold">Order summary</h2>
+          <h2 className="text-sm font-semibold">{t("checkout.orderSummary")}</h2>
           <div className="mt-3 flex gap-3">
             {images[main?.productId ?? ""] || main?.image ? (
               <img
@@ -720,7 +725,7 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
             <div className="min-w-0 flex-1">
               <p className="line-clamp-2 text-sm font-medium">{main?.name}</p>
               {selectedPkg ? (
-                <p className="text-xs text-muted-foreground">{selectedPkg.name} package</p>
+                <p className="text-xs text-muted-foreground">{t("checkout.service.package", { name: selectedPkg.name })}</p>
               ) : null}
               <p className="mt-1 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
                 {deliveryTime ? (
@@ -730,7 +735,7 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
                 ) : null}
                 {selectedPkg?.revisions ? (
                   <span className="inline-flex items-center gap-1">
-                    <RefreshCw className="h-3 w-3" /> {selectedPkg.revisions} revisions
+                    <RefreshCw className="h-3 w-3" /> {t("checkout.service.revisions", { n: selectedPkg.revisions })}
                   </span>
                 ) : null}
               </p>
@@ -739,7 +744,7 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
 
           <div className="mt-3 flex gap-2">
             <Input
-              placeholder="Coupon code"
+              placeholder={t("checkout.couponCode")}
               value={couponCode}
               onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
               className="h-9"
@@ -764,47 +769,47 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
                 onClick={applyCoupon}
                 disabled={applying || !couponCode.trim()}
               >
-                {applying ? "…" : "Apply"}
+                {applying ? t("checkout.applying") : t("checkout.applyCoupon")}
               </Button>
             )}
           </div>
 
           <div className="mt-3 space-y-1 border-t pt-3 text-sm">
             <div className="flex justify-between">
-              <span>Base price</span>
+              <span>{t("checkout.service.basePrice")}</span>
               <span>৳{(basePrice * qty).toFixed(0)}</span>
             </div>
             {addonTotal > 0 && (
               <div className="flex justify-between">
-                <span>Add-ons</span>
+                <span>{t("checkout.service.addons")}</span>
                 <span>৳{addonTotal.toFixed(0)}</span>
               </div>
             )}
             {discount > 0 && (
               <div className="flex justify-between text-emerald-600">
-                <span>Discount ({coupon!.code})</span>
+                <span>{t("checkout.discountWithCode", { code: coupon!.code })}</span>
                 <span>-৳{discount.toFixed(0)}</span>
               </div>
             )}
             <div className="mt-2 flex items-center justify-between border-t pt-2">
-              <span>Total</span>
+              <span>{t("checkout.total")}</span>
               <span className="text-lg font-bold">৳{total.toFixed(0)}</span>
             </div>
             {wantsAdvance && total > 0 && (
               <>
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Pay now (advance)</span>
+                  <span>{t("checkout.service.payNowAdvance")}</span>
                   <span>৳{payNow.toFixed(0)}</span>
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Balance due later</span>
+                  <span>{t("checkout.service.balanceDueLater")}</span>
                   <span>৳{(total - payNow).toFixed(0)}</span>
                 </div>
               </>
             )}
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Payment status</span>
-              <span>Unpaid</span>
+              <span>{t("checkout.service.paymentStatus")}</span>
+              <span>{t("checkout.service.unpaid")}</span>
             </div>
           </div>
 
@@ -814,10 +819,10 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
             className="mt-4 h-12 w-full"
             style={{ backgroundColor: "var(--primary)", color: "white" }}
           >
-            Continue to Payment
+            {t("checkout.service.continueToPayment")}
           </Button>
           <p className="mt-2 flex items-center justify-center gap-1 text-[11px] text-muted-foreground">
-            <ShieldCheck className="h-3 w-3" /> Secure booking · no shipping involved
+            <ShieldCheck className="h-3 w-3" /> {t("checkout.service.secureBooking")}
           </p>
         </div>
       </aside>

@@ -8,6 +8,7 @@ import { useCustomerSession } from "@/lib/customer-session";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useStoreT } from "@/lib/store-i18n";
 
 export const Route = createFileRoute("/store/$slug/auth/login")({
   validateSearch: (s: Record<string, unknown>) =>
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/store/$slug/auth/login")({
 });
 
 function LoginPage() {
+  const { t } = useStoreT();
   const { slug } = Route.useParams();
   const { redirect } = useSearch({ from: "/store/$slug/auth/login" });
   const navigate = useNavigate();
@@ -32,7 +34,7 @@ function LoginPage() {
     try {
       const res = await login({ data: { storeSlug: slug, identifier, password } });
       setSession(res.token);
-      toast.success("Welcome back!");
+      toast.success(t("auth.loginSuccess"));
       if (redirect) navigate({ to: redirect });
       else navigate({ to: "/store/$slug/account", params: { slug } });
     } catch (err) {
@@ -45,13 +47,13 @@ function LoginPage() {
   return (
     <div className="mx-auto max-w-sm py-8">
       <div className="rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
-        <h1 className="text-center text-lg font-semibold sm:text-xl">Sign in</h1>
+        <h1 className="text-center text-lg font-semibold sm:text-xl">{t("auth.login")}</h1>
         <p className="mt-1 text-center text-xs text-muted-foreground">
-          Use your email or phone number.
+          {t("auth.emailOrPhone")}
         </p>
         <form className="mt-5 space-y-3" onSubmit={submit}>
           <div className="space-y-1.5">
-            <Label htmlFor="id">Email or phone</Label>
+            <Label htmlFor="id">{t("auth.emailOrPhone")}</Label>
             <Input
               id="id"
               required
@@ -61,7 +63,7 @@ function LoginPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="pw">Password</Label>
+            <Label htmlFor="pw">{t("auth.password")}</Label>
             <Input
               id="pw"
               type="password"
@@ -77,18 +79,18 @@ function LoginPage() {
             style={{ backgroundColor: "var(--store-btn-bg)", color: "white" }}
             disabled={loading}
           >
-            {loading ? "Signing in…" : "Sign in"}
+            {loading ? t("common.saving") : t("auth.login")}
           </Button>
         </form>
         <div className="mt-4 text-center text-xs text-muted-foreground">
-          Don't have an account?{" "}
+          {t("auth.noAccount")}{" "}
           <Link
             to="/store/$slug/auth/signup"
             params={{ slug }}
             search={redirect ? { redirect } : undefined}
             className="font-semibold text-foreground hover:underline"
           >
-            Create one
+            {t("auth.signup")}
           </Link>
         </div>
         <div className="mt-2 text-center text-xs">
@@ -97,7 +99,7 @@ function LoginPage() {
             params={{ slug }}
             className="text-muted-foreground hover:text-foreground"
           >
-            Forgot password?
+            {t("auth.forgotPassword")}
           </Link>
         </div>
       </div>

@@ -15,6 +15,7 @@ import { ReturnRequestBlock } from "@/components/storefront/order/ReturnRequestB
 import { ReturnStages } from "@/components/storefront/order/ReturnStages";
 import { OrderActions } from "@/components/storefront/order/OrderActions";
 import { paymentStatusLabel } from "@/lib/order-display";
+import { useStoreT } from "@/lib/store-i18n";
 
 
 
@@ -37,16 +38,16 @@ export const Route = createFileRoute("/store/$slug/order/$orderId")({
   component: OrderConfirmation,
 });
 
-const STAGE_LABEL: Record<string, string> = {
-  placed: "Order Placed",
-  confirmed: "Confirmed",
-  packed: "Packed",
-  courier_assigned: "Courier Assigned",
-  shipped: "Shipped",
-  delivered: "Delivered",
-  completed: "Completed",
-  returned: "Returned",
-  cancelled: "Cancelled",
+const STAGE_KEY: Record<string, string> = {
+  placed: "order.stage.placed",
+  confirmed: "order.stage.confirmed",
+  packed: "order.stage.packed",
+  courier_assigned: "order.stage.courier_assigned",
+  shipped: "order.stage.shipped",
+  delivered: "order.stage.delivered",
+  completed: "order.stage.completed",
+  returned: "order.stage.returned",
+  cancelled: "order.stage.cancelled",
 };
 
 const STAGE_ORDER = [
@@ -61,6 +62,7 @@ const STAGE_ORDER = [
 
 
 function OrderConfirmation() {
+  const { t } = useStoreT();
   const { slug, orderId } = Route.useParams();
   const { data: order } = useSuspenseQuery(orderQuery(orderId));
   const qc = useQueryClient();
@@ -131,11 +133,11 @@ function OrderConfirmation() {
   const paid = (order as any).payment_status === "paid";
   const accessReady = dItems.some((d) => d.status === "active");
   const digitalStages = [
-    { id: "pending", label: "Pending payment", done: true },
-    { id: "paid", label: "Paid", done: paid },
-    { id: "processing", label: "Processing access", done: paid || dItems.length > 0 },
-    { id: "ready", label: "Ready to download", done: accessReady },
-    { id: "completed", label: "Completed", done: dItems.some((d) => d.downloadCount > 0) },
+    { id: "pending", label: t("order.digital.stage.pending"), done: true },
+    { id: "paid", label: t("order.digital.stage.paid"), done: paid },
+    { id: "processing", label: t("order.digital.stage.processing"), done: paid || dItems.length > 0 },
+    { id: "ready", label: t("order.digital.stage.ready"), done: accessReady },
+    { id: "completed", label: t("order.digital.stage.completed"), done: dItems.some((d) => d.downloadCount > 0) },
   ];
 
   return (
@@ -143,14 +145,18 @@ function OrderConfirmation() {
       <div className="text-center">
         <CheckCircle2 className="mx-auto h-14 w-14 text-emerald-500" />
         <h1 className="mt-3 text-2xl font-semibold">
-          {isDigitalOrder ? (paid ? "Payment successful" : "Order placed") : "Order placed"}
+          {isDigitalOrder
+            ? paid
+              ? t("order.digital.paymentSuccessTitle")
+              : t("order.digital.placedTitle")
+            : t("order.digital.placedTitle")}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {isDigitalOrder
             ? paid
-              ? "Thank you for your purchase — your files are ready below."
-              : "We'll unlock your downloads as soon as the payment is confirmed."
-            : "We'll contact you shortly to confirm."}
+              ? t("order.digital.paidSubtitle")
+              : t("order.digital.unpaidSubtitle")
+            : t("order.physical.subtitle")}
         </p>
       </div>
 
@@ -158,9 +164,9 @@ function OrderConfirmation() {
         <>
           <div className="mt-6 rounded-xl border bg-card p-4">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Purchase status</h2>
+              <h2 className="text-sm font-semibold">{t("order.digital.purchaseStatus")}</h2>
               <span className="text-xs uppercase text-muted-foreground">
-                {accessReady ? "ready" : (order as any).payment_status}
+                {accessReady ? t("order.digital.stage.ready.short") : (order as any).payment_status}
               </span>
             </div>
             <ol className="space-y-3">
@@ -190,20 +196,20 @@ function OrderConfirmation() {
               search={{ tab: "downloads" as any }}
               className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border text-sm font-medium"
             >
-              <Download className="h-4 w-4" /> My downloads
+              <Download className="h-4 w-4" /> {t("order.myDownloads")}
             </Link>
             <a
               href={`/api/invoice/${order.id}`}
               className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border text-sm font-medium"
             >
-              <ReceiptText className="h-4 w-4" /> View invoice
+              <ReceiptText className="h-4 w-4" /> {t("order.viewInvoice")}
             </a>
             <Link
               to="/store/$slug"
               params={{ slug }}
               className="col-span-2 inline-flex h-10 items-center justify-center gap-1.5 rounded-md border text-sm font-medium"
             >
-              <ShoppingBag className="h-4 w-4" /> Continue shopping
+              <ShoppingBag className="h-4 w-4" /> {t("order.continueShopping")}
             </Link>
           </div>
         </>
@@ -213,12 +219,12 @@ function OrderConfirmation() {
 
 
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Order tracking</h2>
+          <h2 className="text-sm font-semibold">{t("order.tracking")}</h2>
           <span className="text-xs uppercase text-muted-foreground">{order.status}</span>
         </div>
         {cancelled ? (
           <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-            This order has been cancelled.
+            {t("order.cancelledNotice")}
           </div>
         ) : (
           <>
@@ -241,7 +247,7 @@ function OrderConfirmation() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className={`text-sm ${done ? "font-semibold" : "text-muted-foreground"}`}>
-                      {STAGE_LABEL[stage]}
+                      {t(STAGE_KEY[stage])}
                     </p>
                     {event && (
                       <p className="text-xs text-muted-foreground">
@@ -262,22 +268,22 @@ function OrderConfirmation() {
         {(order as any).courier_name || (order as any).courier_tracking_id ? (
           <div className="mt-4 rounded-lg border bg-muted/30 p-3 text-sm">
             <div className="flex items-center gap-2 text-xs uppercase text-muted-foreground">
-              <Truck className="h-3 w-3" /> Courier
+              <Truck className="h-3 w-3" /> {t("order.courier")}
             </div>
             <div className="mt-1 space-y-0.5">
               {(order as any).courier_name && <div className="font-medium">{(order as any).courier_name}</div>}
               {(order as any).courier_tracking_id && (
                 <div className="text-xs">
-                  Tracking:{" "}
+                  {t("order.courier.tracking")}{" "}
                   <span className="font-mono">{(order as any).courier_tracking_id}</span>
                 </div>
               )}
               {(order as any).courier_status && (
-                <div className="text-xs text-muted-foreground">Status: {(order as any).courier_status}</div>
+                <div className="text-xs text-muted-foreground">{t("order.courier.status")} {(order as any).courier_status}</div>
               )}
               {(order as any).courier_last_synced_at && (
                 <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                  <Clock className="h-3 w-3" /> Updated {new Date((order as any).courier_last_synced_at).toLocaleString()}
+                  <Clock className="h-3 w-3" /> {t("order.courier.updated", { time: new Date((order as any).courier_last_synced_at).toLocaleString() })}
                 </div>
               )}
             </div>
@@ -297,9 +303,9 @@ function OrderConfirmation() {
 
       <div className="mt-4 rounded-xl border bg-card p-4">
         <div className="mb-2 flex items-center gap-2 text-xs uppercase text-muted-foreground">
-          <Package className="h-3 w-3" /> Order summary
+          <Package className="h-3 w-3" /> {t("order.summary")}
         </div>
-        <div className="text-xs text-muted-foreground">Order ID</div>
+        <div className="text-xs text-muted-foreground">{t("order.summary.id")}</div>
         <div className="font-mono text-sm">{order.id.slice(0, 8).toUpperCase()}</div>
         <ul className="mt-4 space-y-2 text-sm">
           {(order.items as any[]).map((i: any, idx: number) => (
@@ -313,23 +319,23 @@ function OrderConfirmation() {
         </ul>
         <div className="mt-3 space-y-1 border-t pt-3 text-sm">
           <div className="flex justify-between text-muted-foreground">
-            <span>Subtotal</span>
+            <span>{t("common.subtotal")}</span>
             <span>৳{Number(order.subtotal ?? 0).toFixed(0)}</span>
           </div>
           {Number((order as any).delivery_amount ?? 0) > 0 && (
             <div className="flex justify-between text-muted-foreground">
-              <span>Delivery</span>
+              <span>{t("common.delivery")}</span>
               <span>৳{Number((order as any).delivery_amount).toFixed(0)}</span>
             </div>
           )}
           {Number((order as any).discount_amount ?? 0) > 0 && (
             <div className="flex justify-between text-muted-foreground">
-              <span>Discount</span>
+              <span>{t("common.discount")}</span>
               <span>-৳{Number((order as any).discount_amount).toFixed(0)}</span>
             </div>
           )}
           <div className="flex items-center justify-between pt-1">
-            <span>Total</span>
+            <span>{t("common.total")}</span>
             <span className="text-lg font-bold">
               ৳{(
                 Number(order.subtotal ?? 0) +
@@ -340,19 +346,19 @@ function OrderConfirmation() {
           </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-          <div>Name</div>
+          <div>{t("order.summary.name")}</div>
           <div className="text-right text-foreground">{order.customer_name}</div>
-          <div>Phone</div>
+          <div>{t("order.summary.phone")}</div>
           <div className="text-right text-foreground">{order.phone}</div>
-          <div>Address</div>
+          <div>{t("order.summary.address")}</div>
           <div className="text-right text-foreground">{order.address}</div>
-          <div>Payment</div>
+          <div>{t("order.summary.payment")}</div>
           <div className="text-right text-foreground">
             {String(order.payment_method ?? "cod").toLowerCase() === "cod"
-              ? "Cash on Delivery"
+              ? t("order.summary.cod")
               : String(order.payment_method).toUpperCase()}
           </div>
-          <div>Payment status</div>
+          <div>{t("order.summary.paymentStatus")}</div>
           <div className="text-right">
             <span
               className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
@@ -377,7 +383,7 @@ function OrderConfirmation() {
         params={{ slug }}
         className="mt-6 block text-center text-sm text-muted-foreground hover:text-foreground"
       >
-        ← Back to store
+        {t("order.backToStore")}
       </Link>
     </div>
   );

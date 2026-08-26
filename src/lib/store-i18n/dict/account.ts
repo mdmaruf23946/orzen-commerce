@@ -17,6 +17,21 @@ export const accountDict: Dict = {
   "auth.loginSuccess": { en: "Signed in", bn: "লগইন সফল" },
   "auth.signupSuccess": { en: "Account created", bn: "অ্যাকাউন্ট তৈরি হয়েছে" },
   "auth.invalid": { en: "Invalid credentials", bn: "তথ্য সঠিক নয়" },
+  "auth.emailOptional": { en: "Email (optional)", bn: "Email (ঐচ্ছিক)" },
+  "auth.phoneOptional": { en: "Phone (optional)", bn: "ফোন নম্বর (ঐচ্ছিক)" },
+  "auth.confirmPassword": { en: "Confirm password", bn: "পাসওয়ার্ড নিশ্চিত করুন" },
+  "auth.passwordMismatch": { en: "Passwords do not match.", bn: "পাসওয়ার্ড মিলছে না।" },
+  "auth.creating": { en: "Creating…", bn: "তৈরি হচ্ছে…" },
+  "auth.signupHint": {
+    en: "Provide at least one of email or phone number.",
+    bn: "Email অথবা ফোন নম্বরের যেকোনো একটি দিন।",
+  },
+  "auth.forgotTitle": { en: "Forgot password", bn: "পাসওয়ার্ড ভুলে গেছেন" },
+  "auth.forgotBody": {
+    en: "Please contact the store to reset your password. Our team can help you regain access to your account.",
+    bn: "পাসওয়ার্ড রিসেট করতে অনুগ্রহ করে স্টোরের সাথে যোগাযোগ করুন। আমাদের টিম আপনাকে অ্যাকাউন্টে প্রবেশে সাহায্য করবে।",
+  },
+  "auth.backToSignIn": { en: "← Back to sign in", bn: "← লগইনে ফিরুন" },
 
   "account.title": { en: "My account", bn: "আমার অ্যাকাউন্ট" },
   "account.profile": { en: "Profile", bn: "প্রোফাইল" },
