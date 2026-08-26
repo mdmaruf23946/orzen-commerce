@@ -341,14 +341,8 @@ function Section({
 
 /** Section shell for the featured category cards. */
 function FeaturedCategories({ children }: { children: React.ReactNode }) {
-  const { t } = useStoreT();
   return (
     <section id="categories" className="scroll-mt-32 rounded-3xl border border-sf-line bg-white p-3 sm:p-5">
-      <div className="-mt-6 mb-3 flex justify-center sm:-mt-8 sm:mb-5">
-        <span className="rounded-full bg-sf-accent px-5 py-2 text-sm font-bold text-white shadow-[0_10px_20px_-12px_rgba(255,75,31,0.9)] sm:text-base">
-          {t("home.featuredCategories")}
-        </span>
-      </div>
       {children}
     </section>
   );
