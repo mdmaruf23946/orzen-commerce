@@ -216,8 +216,8 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
       ) : (
         <ul className="space-y-3">
           {rows.map((o) => {
-            const t = asOrderType(o.order_type);
-            const Icon = TYPE_ICON[t];
+            const ot = asOrderType(o.order_type);
+            const Icon = TYPE_ICON[ot];
             return (
               <li
                 key={o.id}
@@ -247,9 +247,9 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
                         )}
                       </p>
                       <span
-                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${ORDER_TYPE_TONE[t]}`}
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${ORDER_TYPE_TONE[ot]}`}
                       >
-                        {ORDER_TYPE_LABEL[t]}
+                        {ORDER_TYPE_LABEL[ot]}
                       </span>
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-neutral-500">
@@ -289,7 +289,7 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
                     params={{ slug, orderId: o.id }}
                     className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-semibold text-neutral-700"
                   >
-                    <Icon className="h-3.5 w-3.5" /> {ORDER_TYPE_ACTION[t]}
+                    <Icon className="h-3.5 w-3.5" /> {ORDER_TYPE_ACTION[ot]}
                   </Link>
                   {canCancel(o) && (
                     <button
