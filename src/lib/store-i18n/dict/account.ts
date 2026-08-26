@@ -1,0 +1,35 @@
+import type { Dict } from "./types";
+
+/** Customer auth + account area (profile, orders, addresses, downloads, subscriptions). */
+export const accountDict: Dict = {
+  "auth.login": { en: "Sign in", bn: "লগইন" },
+  "auth.loginTitle": { en: "Welcome back", bn: "আবার স্বাগতম" },
+  "auth.loginSubtitle": { en: "Sign in to your account", bn: "আপনার অ্যাকাউন্টে লগইন করুন" },
+  "auth.signup": { en: "Create account", bn: "অ্যাকাউন্ট খুলুন" },
+  "auth.signupTitle": { en: "Create your account", bn: "আপনার অ্যাকাউন্ট তৈরি করুন" },
+  "auth.password": { en: "Password", bn: "পাসওয়ার্ড" },
+  "auth.newPassword": { en: "New password", bn: "নতুন পাসওয়ার্ড" },
+  "auth.currentPassword": { en: "Current password", bn: "বর্তমান পাসওয়ার্ড" },
+  "auth.forgotPassword": { en: "Forgot password?", bn: "পাসওয়ার্ড ভুলে গেছেন?" },
+  "auth.emailOrPhone": { en: "Email or phone", bn: "Email বা ফোন নম্বর" },
+  "auth.noAccount": { en: "Don't have an account?", bn: "অ্যাকাউন্ট নেই?" },
+  "auth.haveAccount": { en: "Already have an account?", bn: "আগে থেকেই অ্যাকাউন্ট আছে?" },
+  "auth.loginSuccess": { en: "Signed in", bn: "লগইন সফল" },
+  "auth.signupSuccess": { en: "Account created", bn: "অ্যাকাউন্ট তৈরি হয়েছে" },
+  "auth.invalid": { en: "Invalid credentials", bn: "তথ্য সঠিক নয়" },
+
+  "account.title": { en: "My account", bn: "আমার অ্যাকাউন্ট" },
+  "account.profile": { en: "Profile", bn: "প্রোফাইল" },
+  "account.myOrders": { en: "My orders", bn: "আমার Order" },
+  "account.addresses": { en: "Addresses", bn: "ঠিকানা" },
+  "account.addAddress": { en: "Add address", bn: "ঠিকানা যোগ করুন" },
+  "account.defaultAddress": { en: "Default address", bn: "ডিফল্ট ঠিকানা" },
+  "account.downloads": { en: "My downloads", bn: "আমার Download" },
+  "account.subscriptions": { en: "My subscriptions", bn: "আমার Subscription" },
+  "account.returns": { en: "Returns & exchanges", bn: "Return ও Exchange" },
+  "account.changePassword": { en: "Change password", bn: "পাসওয়ার্ড পরিবর্তন" },
+  "account.updateProfile": { en: "Update profile", bn: "প্রোফাইল আপডেট করুন" },
+  "account.profileUpdated": { en: "Profile updated", bn: "প্রোফাইল আপডেট হয়েছে" },
+  "account.noOrders": { en: "You have no orders yet.", bn: "আপনার কোনো Order নেই।" },
+  "account.signOut": { en: "Sign out", bn: "লগআউট" },
+};
