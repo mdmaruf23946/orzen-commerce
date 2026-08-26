@@ -37,8 +37,6 @@ export const accountDict: Dict = {
     bn: "অ্যাকাউন্ট থাকলে রিসেট লিংক পাঠানো হয়েছে। আপনার ইমেইল দেখুন।",
   },
   "auth.resetTitle": { en: "Set a new password", bn: "নতুন পাসওয়ার্ড দিন" },
-  "auth.newPassword": { en: "New password", bn: "নতুন পাসওয়ার্ড" },
-  "auth.confirmPassword": { en: "Confirm password", bn: "পাসওয়ার্ড নিশ্চিত করুন" },
   "auth.resetDone": {
     en: "Password updated. Please sign in with your new password.",
     bn: "পাসওয়ার্ড আপডেট হয়েছে। নতুন পাসওয়ার্ড দিয়ে লগইন করুন।",
