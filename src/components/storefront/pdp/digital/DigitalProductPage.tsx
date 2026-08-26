@@ -14,6 +14,7 @@ import { ShareBar } from "@/components/storefront/pdp/ShareBar";
 import { StoreCard } from "@/components/storefront/pdp/StoreCard";
 import { StickyMobileBar } from "@/components/storefront/pdp/StickyMobileBar";
 import { Button } from "@/components/ui/button";
+import { useStoreT } from "@/lib/store-i18n";
 import {
   DigitalChangelog,
   DigitalDescription,
@@ -28,6 +29,7 @@ import {
 type Props = { slug: string; store: any; product: any };
 
 export function DigitalProductPage({ slug, store, product }: Props) {
+  const { t } = useStoreT();
   const navigate = useNavigate();
   const buyBoxRef = useRef<HTMLDivElement | null>(null);
   const dg = product.digital ?? {};
@@ -78,7 +80,7 @@ export function DigitalProductPage({ slug, store, product }: Props) {
       qty: 1,
     });
     setAdded(true);
-    toast.success("Added to cart");
+    toast.success(t("pdp.addedToCart"));
   }
   function buy() {
     add();
@@ -91,12 +93,12 @@ export function DigitalProductPage({ slug, store, product }: Props) {
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
 
   const metaRow: { label: string; value: string }[] = [];
-  if (product.brand) metaRow.push({ label: "Creator", value: product.brand });
-  if (dg.version) metaRow.push({ label: "Version", value: dg.version });
+  if (product.brand) metaRow.push({ label: t("digital.creator"), value: product.brand });
+  if (dg.version) metaRow.push({ label: t("digital.version"), value: dg.version });
   if (product.updated_at)
-    metaRow.push({ label: "Last updated", value: new Date(product.updated_at).toLocaleDateString() });
-  if (size) metaRow.push({ label: "File size", value: size });
-  metaRow.push({ label: "License", value: LICENSE_LABELS[licenseType] ?? "Personal License" });
+    metaRow.push({ label: t("digital.lastUpdated"), value: new Date(product.updated_at).toLocaleDateString() });
+  if (size) metaRow.push({ label: t("digital.fileSize"), value: size });
+  metaRow.push({ label: t("digital.license"), value: LICENSE_LABELS[licenseType] ?? t("digital.personalLicense") });
 
   return (
     <div className="pb-24 lg:pb-6">
@@ -114,20 +116,20 @@ export function DigitalProductPage({ slug, store, product }: Props) {
         <div className="min-w-0">
           <div className="lg:sticky lg:top-20">
             <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-primary">
-              <Zap className="h-3 w-3" /> Digital product
+              <Zap className="h-3 w-3" /> {t("digital.badge")}
             </span>
             <h1 className="mt-2 text-xl font-bold sm:text-2xl">{product.name}</h1>
 
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
               {categoryName && (
                 <span>
-                  Category: <span className="font-medium text-foreground">{categoryName}</span>
+                  {t("digital.category")}: <span className="font-medium text-foreground">{categoryName}</span>
                 </span>
               )}
               <span className="inline-flex items-center gap-1">
                 <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                <span className="font-medium text-foreground">{rating ? rating.toFixed(1) : "New"}</span>
-                {product.total_sold ? <span>· {product.total_sold} sales</span> : null}
+                <span className="font-medium text-foreground">{rating ? rating.toFixed(1) : t("digital.new")}</span>
+                {product.total_sold ? <span>· {product.total_sold} {t("digital.sales")}</span> : null}
               </span>
             </div>
 
@@ -143,7 +145,7 @@ export function DigitalProductPage({ slug, store, product }: Props) {
             <div ref={buyBoxRef} className="mt-4 rounded-xl border bg-card p-4">
               <div className="flex items-end gap-2">
                 <span className="text-2xl font-bold text-foreground">
-                  {isFree ? "Free" : `৳${price.toFixed(0)}`}
+                  {isFree ? t("common.free") : `৳${price.toFixed(0)}`}
                 </span>
                 {!isFree && oldPrice && oldPrice > price && (
                   <>
@@ -159,7 +161,7 @@ export function DigitalProductPage({ slug, store, product }: Props) {
 
               <div className="mt-4 grid gap-2">
                 <Button type="button" variant="outline" className="h-11" onClick={add}>
-                  {added ? "Added ✓" : "Add to Cart"}
+                  {added ? t("digital.addedCheck") : t("pdp.addToCart")}
                 </Button>
                 <Button
                   type="button"
@@ -167,25 +169,25 @@ export function DigitalProductPage({ slug, store, product }: Props) {
                   style={{ backgroundColor: "var(--primary)", color: "white" }}
                   onClick={buy}
                 >
-                  Buy Now
+                  {t("pdp.buyNow")}
                 </Button>
               </div>
 
               <ul className="mt-4 space-y-2 border-t pt-3 text-xs text-muted-foreground">
                 <li className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-primary" /> Secure payment
+                  <ShieldCheck className="h-4 w-4 text-primary" /> {t("digital.securePayment")}
                 </li>
                 <li className="flex items-center gap-2">
-                  <Download className="h-4 w-4 text-primary" /> Instant access after payment
+                  <Download className="h-4 w-4 text-primary" /> {t("digital.instantAccess")}
                 </li>
                 {!dg.download?.expiry_days && (
                   <li className="flex items-center gap-2">
-                    <InfinityIcon className="h-4 w-4 text-primary" /> Lifetime access
+                    <InfinityIcon className="h-4 w-4 text-primary" /> {t("digital.lifetimeAccess")}
                   </li>
                 )}
                 {dg.version && (
                   <li className="flex items-center gap-2">
-                    <RefreshCw className="h-4 w-4 text-primary" /> Free updates for v{dg.version}
+                    <RefreshCw className="h-4 w-4 text-primary" /> {t("digital.freeUpdates", { version: dg.version })}
                   </li>
                 )}
               </ul>
@@ -231,7 +233,7 @@ export function DigitalProductPage({ slug, store, product }: Props) {
       <ReviewsBlock rating={rating || null} />
 
       <RelatedRail
-        title="Related Products"
+        title={t("digital.relatedProducts")}
         slug={slug}
         products={(relatedQ.data ?? []) as any}
         variant="grid"
@@ -246,7 +248,7 @@ export function DigitalProductPage({ slug, store, product }: Props) {
           params={{ slug }}
           className="text-sm text-muted-foreground hover:text-foreground"
         >
-          ← Back to store
+          {t("digital.backToStore")}
         </Link>
       </div>
 
