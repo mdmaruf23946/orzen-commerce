@@ -610,84 +610,88 @@ function HeaderCategoryBar({
     timerRef.current = setTimeout(() => setOpenId(null), 180);
   };
 
-  const basePill =
-    "flex items-center gap-0.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all";
-  const inactivePill =
-    "bg-white text-gray-700 hover:bg-orange-50 hover:text-orange-600 shadow-sm";
-  const activePill = "bg-orange-500 text-white shadow-sm";
+  const itemBase =
+    "flex items-center gap-0.5 px-3 py-1.5 text-[13px] font-medium transition-colors";
+  const inactiveItem =
+    "text-gray-600 hover:text-orange-600 hover:bg-white/60";
+  const activeItem =
+    "bg-white text-orange-600 shadow-sm";
 
   return (
-    <nav className="hidden md:block border-b border-black/5 bg-gray-100/95 backdrop-blur">
+    <nav className="hidden md:block border-b border-black/5">
       <div
-        className="mx-auto flex flex-wrap items-center gap-2 px-3 py-2 sm:px-6"
+        className="mx-auto px-3 py-2 sm:px-6"
         style={{ maxWidth: "var(--store-container, 64rem)" }}
       >
-        <button
-          type="button"
-          onClick={() => selectMain(null, "header")}
-          className={`${basePill} ${activeMainId === null ? activePill : inactivePill}`}
-        >
-          {t("common.all")} ({totalCount})
-        </button>
-        {mains.map((c) => {
-          const active = activeMainId === c.id;
-          const subs = subsByParent.get(c.id) ?? [];
-          const hasSubs = subs.length > 0;
-          const isOpen = openId === c.id;
-          return (
-            <div
-              key={c.id}
-              className="relative"
-              onMouseEnter={() => hasSubs && open(c.id)}
-              onMouseLeave={closeSoon}
-            >
-              <button
-                type="button"
-                onClick={() => {
-                  selectMain(c.id, "header");
-                  if (hasSubs) open(c.id);
-                }}
+        {/* একই Unified Structure — সব Tax ভিত্তিক Category একই container-এ */}
+        <div className="flex flex-wrap items-center gap-1 rounded-2xl border border-orange-100/40 bg-orange-50/70 p-1.5 backdrop-blur">
+          <button
+            type="button"
+            onClick={() => selectMain(null, "header")}
+            className={`${itemBase} rounded-xl ${activeMainId === null ? activeItem : inactiveItem}`}
+          >
+            {t("common.all")} ({totalCount})
+          </button>
+          {mains.map((c) => {
+            const active = activeMainId === c.id;
+            const subs = subsByParent.get(c.id) ?? [];
+            const hasSubs = subs.length > 0;
+            const isOpen = openId === c.id;
+            return (
+              <div
+                key={c.id}
+                className="relative"
                 onMouseEnter={() => hasSubs && open(c.id)}
-                className={`${basePill} ${active ? activePill : inactivePill}`}
+                onMouseLeave={closeSoon}
               >
-                {c.name} ({counts.get(c.id) ?? 0})
-                {hasSubs && (
-                  <ChevronDown
-                    className={`h-3.5 w-3.5 transition-transform ${isOpen ? "rotate-180" : ""}`}
-                  />
-                )}
-              </button>
-              {hasSubs && isOpen && (
-                <div
-                  className="absolute left-0 top-full z-50 mt-1.5 min-w-[12rem] rounded-xl border border-neutral-100 bg-white p-1.5 shadow-lg"
-                  onMouseEnter={() => open(c.id)}
-                  onMouseLeave={closeSoon}
+                <button
+                  type="button"
+                  onClick={() => {
+                    selectMain(c.id, "header");
+                    if (hasSubs) open(c.id);
+                  }}
+                  onMouseEnter={() => hasSubs && open(c.id)}
+                  className={`${itemBase} rounded-xl ${active ? activeItem : inactiveItem}`}
                 >
-                  {subs.map((s: any) => {
-                    const subActive = activeSubId === s.id && active;
-                    return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => {
-                          selectSub(s.id);
-                          setOpenId(null);
-                        }}
-                        className={`w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                          subActive
-                            ? "bg-orange-50 font-medium text-orange-700"
-                            : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900"
-                        }`}
-                      >
-                        {s.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
+                  {c.name} ({counts.get(c.id) ?? 0})
+                  {hasSubs && (
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                    />
+                  )}
+                </button>
+                {hasSubs && isOpen && (
+                  <div
+                    className="absolute left-0 top-full z-50 mt-1.5 min-w-[12rem] rounded-xl border border-neutral-100 bg-white p-1.5 shadow-lg"
+                    onMouseEnter={() => open(c.id)}
+                    onMouseLeave={closeSoon}
+                  >
+                    {subs.map((s: any) => {
+                      const subActive = activeSubId === s.id && active;
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => {
+                            selectSub(s.id);
+                            setOpenId(null);
+                          }}
+                          className={`w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                            subActive
+                              ? "bg-orange-50 font-medium text-orange-700"
+                              : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900"
+                          }`}
+                        >
+                          {s.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );
