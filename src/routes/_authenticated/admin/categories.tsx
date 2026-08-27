@@ -412,12 +412,12 @@ function CategoryDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{editing ? "Edit category" : "New category"}</DialogTitle>
+      <DialogContent className="max-h-[92vh] w-[calc(100%-1rem)] gap-2 overflow-y-auto p-3 sm:max-w-lg sm:p-6">
+        <DialogHeader className="pb-1">
+          <DialogTitle className="text-base sm:text-lg">{editing ? "Edit category" : "New category"}</DialogTitle>
         </DialogHeader>
-        <p className="-mt-2 text-xs text-muted-foreground">Product type: {typeLabel}</p>
-        <form onSubmit={submit} className="space-y-4">
+        <p className="-mt-1 text-xs text-muted-foreground">Product type: {typeLabel}</p>
+        <form onSubmit={submit} className="space-y-3 sm:space-y-4">
           {!parentId && (
             <div className="space-y-1.5">
               <Label>Category icon</Label>
