@@ -29,7 +29,15 @@ export function CategoryIconPicker({
   onChangeImage: (v: string | null) => void;
 }) {
   const [mode, setMode] = useState<"preset" | "upload">(imageUrl && !iconName ? "upload" : "preset");
+  const [group, setGroup] = useState<string>("all");
+  const [query, setQuery] = useState("");
   const selected = parseIconNames(iconName);
+
+  const visibleKeys = useMemo(() => {
+    const base =
+      CATEGORY_ICON_GROUPS.find((g) => g.key === group)?.icons ?? CATEGORY_ICON_GROUPS[0].icons;
+    return searchIconKeys(base, query);
+  }, [group, query]);
 
   function toggle(key: string) {
     const next = selected.includes(key)
