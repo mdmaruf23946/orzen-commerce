@@ -16,6 +16,7 @@ import { useStoreTheme } from "@/lib/theme/context";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { HeroBanners } from "@/components/storefront/HeroBanners";
 import { getCategoryIcon } from "@/lib/category-icons";
+import { CategoryIconCluster } from "@/components/CategoryIconCluster";
 
 
 const STALE = 5 * 60_000;
