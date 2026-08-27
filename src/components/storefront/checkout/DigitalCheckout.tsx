@@ -139,6 +139,10 @@ export function DigitalCheckout({ slug, store, items, info }: Props) {
       });
       if ((res as any)?.warning) toast.warning((res as any).warning);
 
+      // Remember the contact used at checkout so the order page can prove
+      // ownership without asking the shopper to retype phone/email.
+      writeOrderContact(res.orderId, (phone || email || "").trim());
+
       if (total > 0) {
         setStage("redirecting");
         // Retry once — gateways occasionally fail to open a session.
