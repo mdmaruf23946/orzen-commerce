@@ -647,6 +647,7 @@ function HeaderCategoryBar({
                   selectMain(c.id, "header");
                   if (hasSubs) open(c.id);
                 }}
+                onMouseEnter={() => hasSubs && open(c.id)}
                 className={`${basePill} ${active ? activePill : inactivePill}`}
               >
                 {c.name} ({counts.get(c.id) ?? 0})
