@@ -595,6 +595,7 @@ export const listRelatedProducts = createServerFn({ method: "GET" })
         categoryId: z.string().uuid().nullable().optional(),
         excludeId: z.string().uuid(),
         limit: z.number().int().min(1).max(24).optional(),
+        strictCategory: z.boolean().optional(),
       })
       .parse(d),
   )
@@ -614,6 +615,11 @@ export const listRelatedProducts = createServerFn({ method: "GET" })
         .limit(limit);
       rows = cat ?? [];
     }
+    if (data.strictCategory) {
+      return rows
+        .slice(0, limit)
+        .map((p) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }));
+    }
     if (rows.length < 6) {
       const need = limit - rows.length;
       const have = new Set(rows.map((r) => r.id));
@@ -632,6 +638,58 @@ export const listRelatedProducts = createServerFn({ method: "GET" })
     }
     return rows.map((p) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }));
   });
+
+export const listProductReviews = createServerFn({ method: "GET" })
+  .inputValidator((d) => z.object({ productId: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const sb = publicClient();
+    const { data: row, error } = await (sb as any).rpc("get_product_reviews", {
+      _product_id: data.productId,
+    });
+    if (error) throw new Error(error.message);
+    const r = (row ?? {}) as any;
+    return {
+      count: Number(r.count ?? 0),
+      average: Number(r.average ?? 0),
+      reviews: (r.reviews ?? []) as {
+        id: string;
+        rating: number;
+        name: string;
+        comment: string;
+        created_at: string;
+      }[],
+    };
+  });
+
+export const submitProductReview = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z
+      .object({
+        storeId: z.string().uuid(),
+        productId: z.string().uuid(),
+        rating: z.number().int().min(1).max(5),
+        name: z.string().trim().min(1).max(100),
+        comment: z.string().trim().min(1).max(2000),
+        email: z.string().trim().email().max(255).optional().or(z.literal("")),
+        phone: z.string().trim().max(30).optional().or(z.literal("")),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const sb = publicClient();
+    const { data: row, error } = await (sb as any).rpc("submit_product_review", {
+      _store_id: data.storeId,
+      _product_id: data.productId,
+      _rating: data.rating,
+      _name: data.name,
+      _comment: data.comment,
+      _email: data.email || null,
+      _phone: data.phone || null,
+    });
+    if (error) throw new Error(error.message);
+    return (row ?? { ok: false }) as { ok: boolean; error?: string };
+  });
+
 
 export const listProductsByIds = createServerFn({ method: "GET" })
   .inputValidator((d) =>
