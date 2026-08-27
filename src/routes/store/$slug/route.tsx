@@ -617,7 +617,7 @@ function HeaderCategoryBar({
   const activePill = "bg-orange-500 text-white shadow-sm";
 
   return (
-    <nav className="border-b border-black/5 bg-white/95 backdrop-blur">
+    <nav className="hidden md:block border-b border-black/5 bg-orange-50/95 backdrop-blur">
       <div
         className="mx-auto flex flex-wrap items-center gap-2 px-3 py-2 sm:px-6"
         style={{ maxWidth: "var(--store-container, 64rem)" }}
