@@ -125,12 +125,12 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
 
   return (
     <section
-      className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-3"
+      className="grid grid-cols-1 items-stretch gap-4 lg:aspect-[7/2] lg:grid-cols-3"
       aria-label="Promotions"
     >
       {/* Main hero banner */}
       <div
-        className="relative aspect-[47/20] w-full min-w-0 max-w-full overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl lg:col-span-2"
+        className="relative aspect-[47/20] w-full min-w-0 max-w-full overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl lg:col-span-2 lg:aspect-auto lg:h-full"
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
