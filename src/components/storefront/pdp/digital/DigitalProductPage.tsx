@@ -230,7 +230,7 @@ export function DigitalProductPage({ slug, store, product }: Props) {
 
       <DigitalFaqList items={dg.faq ?? []} />
 
-      <ReviewsBlock rating={rating || null} />
+      <ReviewsBlock rating={rating || null} storeId={store.id} productId={product.id} />
 
       <RelatedRail
         title={t("digital.relatedProducts")}
