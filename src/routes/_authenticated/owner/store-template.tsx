@@ -320,66 +320,158 @@ function StoreTemplatePage() {
               label="Upload image"
             />
           </div>
-          <p className="text-xs text-muted-foreground">Square image recommended (512×512).</p>
-          {form.categories.map((c, i) => (
-            <div key={i} className="space-y-3 rounded-lg border p-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="text-sm font-medium">{c.name || `Category ${i + 1}`}</div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => set("categories", form.categories.filter((_, j) => j !== i))}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+
+          <p className="text-xs text-muted-foreground">
+            Same system as the Merchant Panel: main categories support 1–3 preset icons (outline or colored) or a
+            custom square image; subcategories are text-only.
+          </p>
+
+          {form.categories.map((c, i) => {
+            const isSub = !!c.parent_name;
+            const patch = (v: Partial<TemplateCategory>) => {
+              const arr = [...form.categories];
+              arr[i] = { ...c, ...v };
+              set("categories", arr);
+            };
+            return (
+              <div key={i} className="space-y-3 rounded-lg border p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg border bg-muted">
+                      {!isSub && c.icon_name ? (
+                        <CategoryIconCluster iconName={c.icon_name} iconStyle={c.icon_style ?? "outline"} />
+                      ) : !isSub && c.image_url ? (
+                        <img
+                          src={c.image_url.startsWith("http") ? c.image_url : `/api/img/${c.image_url}`}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-[9px] text-muted-foreground">{isSub ? "Sub" : "—"}</span>
+                      )}
+                    </span>
+                    <div className="min-w-0 text-sm font-medium">
+                      {c.name || `Category ${i + 1}`}
+                      {isSub && (
+                        <span className="ml-1 text-xs text-muted-foreground">↳ in {c.parent_name}</span>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => set("categories", form.categories.filter((_, j) => j !== i))}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {!isSub && (
+                  <div className="space-y-1.5">
+                    <Label>Category icon</Label>
+                    <CategoryIconPicker
+                      folder={TEMPLATE_FOLDER}
+                      iconName={c.icon_name ?? null}
+                      imageUrl={c.image_url || null}
+                      iconStyle={c.icon_style === "colored" ? "colored" : "outline"}
+                      onChangeIcon={(v) => patch({ icon_name: v ?? "" })}
+                      onChangeImage={(v) => patch({ image_url: v ?? "" })}
+                      onChangeIconStyle={(v) => patch({ icon_style: v })}
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <Label>Name</Label>
+                  <Input value={c.name} onChange={(e) => patch({ name: e.target.value })} />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Parent category</Label>
+                  <select
+                    value={c.parent_name ?? ""}
+                    onChange={(e) => {
+                      const parent = e.target.value || "";
+                      patch(
+                        parent
+                          ? { parent_name: parent, icon_name: "", image_url: "", icon_style: "outline" }
+                          : { parent_name: "" },
+                      );
+                    }}
+                    className="flex h-9 w-full rounded-md border bg-background px-3 text-sm"
+                  >
+                    <option value="">— None (main category)</option>
+                    {form.categories
+                      .filter((p, j) => j !== i && !p.parent_name && p.name.trim())
+                      .map((p) => (
+                        <option key={p.name} value={p.name}>
+                          {p.name}
+                        </option>
+                      ))}
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    Leave empty for a main category. Selecting a parent makes this a text-only subcategory.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Description (optional)</Label>
+                  <Textarea
+                    rows={2}
+                    value={c.description ?? ""}
+                    onChange={(e) => patch({ description: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Display order</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={c.sort_order ?? i}
+                      onChange={(e) => patch({ sort_order: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Status</Label>
+                    <select
+                      value={c.is_active === false ? "0" : "1"}
+                      onChange={(e) => patch({ is_active: e.target.value === "1" })}
+                      className="flex h-9 w-full rounded-md border bg-background px-3 text-sm"
+                    >
+                      <option value="1">Active</option>
+                      <option value="0">Inactive</option>
+                    </select>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Category name</Label>
-                <Input
-                  value={c.name}
-                  onChange={(e) => {
-                    const arr = [...form.categories];
-                    arr[i] = { ...c, name: e.target.value };
-                    set("categories", arr);
-                  }}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Image</Label>
-                <ImageUploader
-                  folder={TEMPLATE_FOLDER}
-                  value={c.image_url || null}
-                  onChange={(v) => {
-                    const arr = [...form.categories];
-                    arr[i] = { ...c, image_url: v ?? "" };
-                    set("categories", arr);
-                  }}
-                  label="Upload image"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Description (optional)</Label>
-                <Textarea
-                  rows={2}
-                  value={c.description ?? ""}
-                  onChange={(e) => {
-                    const arr = [...form.categories];
-                    arr[i] = { ...c, description: e.target.value };
-                    set("categories", arr);
-                  }}
-                />
-              </div>
-            </div>
-          ))}
+            );
+          })}
           <Button
             type="button"
             variant="outline"
-            onClick={() => set("categories", [...form.categories, { name: "", image_url: "", description: "" }])}
+            onClick={() =>
+              set("categories", [
+                ...form.categories,
+                {
+                  name: "",
+                  image_url: "",
+                  icon_name: "",
+                  icon_style: "outline",
+                  description: "",
+                  parent_name: "",
+                  sort_order: form.categories.length,
+                  is_active: true,
+                },
+              ])
+            }
           >
             <Plus className="mr-2 h-4 w-4" /> Add category
           </Button>
         </TabsContent>
+
 
         {/* ============ Products ============ */}
         <TabsContent value="products" className="space-y-4 rounded-xl border bg-card p-4">
