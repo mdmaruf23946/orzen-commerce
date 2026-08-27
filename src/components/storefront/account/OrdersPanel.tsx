@@ -149,16 +149,18 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
 
   return (
     <div className="space-y-3">
+      <OrderTracker slug={storeSlug} compact showDetailLink />
+
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
         {TYPE_TABS.map((t) => (
           <button
             key={t.key}
             type="button"
             onClick={() => setType(t.key)}
-            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+            className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold ring-1 transition-colors ${
               type === t.key
-                ? "bg-neutral-900 text-white"
-                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                ? "bg-sf-accent text-white ring-sf-accent"
+                : "bg-white text-neutral-600 ring-neutral-200 hover:bg-neutral-50"
             }`}
           >
             {t.label}
@@ -168,18 +170,18 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-[180px] flex-1">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("account.searchOrderPlaceholder")}
-            className="h-9 pl-8 text-sm"
+            className="h-9 rounded-full border-neutral-200 pl-9 text-sm"
           />
         </div>
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value as any)}
-          className="h-9 rounded-md border border-neutral-200 bg-white px-2 text-xs font-medium capitalize"
+          className="h-9 rounded-full border border-neutral-200 bg-white px-3 text-xs font-medium capitalize outline-none focus:border-sf-accent"
         >
           {STATUSES.map((s) => (
             <option key={s} value={s}>
@@ -190,12 +192,13 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value as any)}
-          className="h-9 rounded-md border border-neutral-200 bg-white px-2 text-xs font-medium"
+          className="h-9 rounded-full border border-neutral-200 bg-white px-3 text-xs font-medium outline-none focus:border-sf-accent"
         >
           <option value="newest">{t("account.newest")}</option>
           <option value="oldest">{t("account.oldest")}</option>
         </select>
       </div>
+
 
       {isLoading ? (
         <div className="py-10 text-center text-sm text-neutral-500">{t("common.loading")}</div>
