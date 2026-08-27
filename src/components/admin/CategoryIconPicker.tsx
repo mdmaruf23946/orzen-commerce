@@ -217,6 +217,7 @@ export function CategoryIconPicker({
         <div className="space-y-1.5">
           <ImageUploader
             storeId={storeId}
+            folder={folder}
             value={imageUrl}
             accept="image/*"
             onChange={(v) => {
