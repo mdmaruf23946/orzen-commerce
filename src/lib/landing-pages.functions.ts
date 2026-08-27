@@ -78,9 +78,12 @@ export const getLandingPageConnection = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ id: idSchema }).parse(d))
   .handler(async ({ data, context }) => {
     await assertOwnedConnection(context.supabase, data.id);
+    // Credential rows are never readable by client roles; read them with the
+    // service-role client only after ownership has been proven above.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [connRes, credRes, mapsRes, fmapRes] = await Promise.all([
       context.supabase.from("landing_page_connections").select("*").eq("id", data.id).maybeSingle(),
-      context.supabase
+      supabaseAdmin
         .from("landing_page_credentials")
         .select("api_key_last4,rotated_at,webhook_secret_enc,api_key_hash")
         .eq("connection_id", data.id)
