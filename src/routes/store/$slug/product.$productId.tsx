@@ -297,11 +297,12 @@ function ProductPage() {
                 stock={product!.stock}
                 status={product!.status}
                 productType={(product as any)!.product_type}
-
                 qty={qty}
                 setQty={setQty}
                 onAdd={add}
                 onBuy={buy}
+                whatsapp={(store as any)?.whatsapp ?? null}
+                productName={product!.name}
               />
             </div>
           </div>
@@ -326,10 +327,12 @@ function ProductPage() {
         <SubscriptionInfoSections subscription={((product as any)?.meta ?? {}).subscription} />
       )}
 
-
-
-
-      <ReviewsBlock rating={rating} count={reviewCount} />
+      <ReviewsBlock
+        rating={rating}
+        count={reviewCount}
+        storeId={store!.id}
+        productId={product!.id}
+      />
 
       <RelatedRail
         title="Related Products"
@@ -338,32 +341,16 @@ function ProductPage() {
         variant="grid"
       />
 
-      {recentSorted.length > 0 && (
-        <RelatedRail
-          title="Recently Viewed"
-          slug={slug}
-          products={recentSorted}
-          variant="scroll"
-        />
-      )}
-
-      {alsoLike.length > 0 && (
-        <RelatedRail title="You May Also Like" slug={slug} products={alsoLike as any} variant="grid" />
-      )}
-
-      <StoreCard slug={slug} name={store!.name} logoUrl={store!.logo_url} />
-      <TrustBadges codEnabled={codEnabled} />
-      <ShareBar url={shareUrl} title={product!.name} />
-
-      <div className="mt-8">
+      <div className="mt-10 flex justify-center">
         <Link
           to="/store/$slug"
           params={{ slug }}
-          className="text-sm text-muted-foreground hover:text-foreground"
+          className="rounded-full bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-sf-accent"
         >
-          ← Back to store
+          ← Back to Store
         </Link>
       </div>
+
 
       <StickyMobileBar
         price={price}
