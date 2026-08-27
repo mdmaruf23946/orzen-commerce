@@ -19,18 +19,6 @@ import { subscribeToStoreOffers } from "@/lib/newsletter.functions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-const SOCIAL_BRANDS: Record<
-  string,
-  { icon: typeof Facebook; color: string; label: string }
-> = {
-  facebook: { icon: Facebook, color: "#1877F2", label: "Facebook" },
-  instagram: { icon: Instagram, color: "#E4405F", label: "Instagram" },
-  youtube: { icon: Youtube, color: "#FF0000", label: "YouTube" },
-  tiktok: { icon: MessageCircle, color: "#000000", label: "TikTok" },
-  linkedin: { icon: MessageCircle, color: "#0A66C2", label: "LinkedIn" },
-  website: { icon: Send, color: "#0EA5E9", label: "Website" },
-};
-
 function WhatsAppIcon(props: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={props.className} aria-hidden="true">
@@ -72,20 +60,20 @@ export function StoreFooter({
   const email = f.email || store.email || null;
   const businessHours = store.business_hours || null;
 
-  const socials: { key: string; href: string; label: string; color: string; Icon: any }[] = [];
+  const socials: { key: string; href: string; label: string; Icon: any }[] = [];
   if (f.social !== false) {
     if (store.facebook)
-      socials.push({ key: "facebook", href: store.facebook, label: "Facebook", color: "#1877F2", Icon: Facebook });
+      socials.push({ key: "facebook", href: store.facebook, label: "Facebook", Icon: Facebook });
     if (store.instagram)
-      socials.push({ key: "instagram", href: store.instagram, label: "Instagram", color: "#E4405F", Icon: Instagram });
+      socials.push({ key: "instagram", href: store.instagram, label: "Instagram", Icon: Instagram });
     if (store.youtube)
-      socials.push({ key: "youtube", href: store.youtube, label: "YouTube", color: "#FF0000", Icon: Youtube });
+      socials.push({ key: "youtube", href: store.youtube, label: "YouTube", Icon: Youtube });
     if (store.tiktok)
-      socials.push({ key: "tiktok", href: store.tiktok, label: "TikTok", color: "#000000", Icon: MessageCircle });
+      socials.push({ key: "tiktok", href: store.tiktok, label: "TikTok", Icon: MessageCircle });
     if (store.linkedin)
-      socials.push({ key: "linkedin", href: store.linkedin, label: "LinkedIn", color: "#0A66C2", Icon: MessageCircle });
+      socials.push({ key: "linkedin", href: store.linkedin, label: "LinkedIn", Icon: MessageCircle });
     if (store.website)
-      socials.push({ key: "website", href: store.website, label: "Website", color: "#0EA5E9", Icon: Send });
+      socials.push({ key: "website", href: store.website, label: "Website", Icon: Send });
   }
 
   const [emailInput, setEmailInput] = useState("");
@@ -108,7 +96,7 @@ export function StoreFooter({
   }
 
   return (
-    <footer id="contact" className="mt-10 bg-slate-950 text-slate-300">
+    <footer id="contact" className="mt-10 border-t-4 border-sf-accent bg-slate-50 text-slate-600">
       <div className="mx-auto max-w-7xl px-5 py-12 md:px-8 md:py-14">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}
@@ -117,16 +105,16 @@ export function StoreFooter({
               {store.logo_url ? (
                 <img src={store.logo_url} alt="" className="h-11 w-11 rounded-full object-cover" loading="lazy" />
               ) : (
-                <div className="grid h-11 w-11 place-items-center rounded-full bg-slate-800 text-sm font-bold text-white">
+                <div className="grid h-11 w-11 place-items-center rounded-full bg-slate-200 text-sm font-bold text-slate-700">
                   {store.name.charAt(0)}
                 </div>
               )}
-              <span className="text-lg font-semibold text-white">{store.name}</span>
+              <span className="text-lg font-bold text-slate-900">{store.name}</span>
             </div>
-            {store.description && <p className="text-sm leading-relaxed text-slate-400">{store.description}</p>}
+            {store.description && <p className="text-sm leading-relaxed text-slate-600">{store.description}</p>}
             {address && (
-              <p className="flex items-start gap-2 text-sm text-slate-400">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
+              <p className="flex items-start gap-2 text-sm text-slate-600">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-sf-accent" />
                 <span>{address}</span>
               </p>
             )}
@@ -138,17 +126,7 @@ export function StoreFooter({
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={s.label}
-                  className="grid h-9 w-9 place-items-center rounded-full border border-slate-700 bg-slate-900 text-slate-300 transition-all duration-200 hover:-translate-y-0.5 hover:text-white hover:shadow-md"
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = s.color;
-                    e.currentTarget.style.backgroundColor = `${s.color}14`;
-                    e.currentTarget.style.color = "#fff";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "";
-                    e.currentTarget.style.backgroundColor = "";
-                    e.currentTarget.style.color = "";
-                  }}
+                  className="grid h-9 w-9 place-items-center rounded-full border border-slate-200/80 bg-slate-200/80 text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sf-accent hover:text-white hover:shadow-md"
                 >
                   <s.Icon className="h-4 w-4" />
                 </a>
@@ -159,17 +137,7 @@ export function StoreFooter({
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="WhatsApp"
-                  className="grid h-9 w-9 place-items-center rounded-full border border-slate-700 bg-slate-900 text-slate-300 transition-all duration-200 hover:-translate-y-0.5 hover:text-white hover:shadow-md"
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "#25D366";
-                    e.currentTarget.style.backgroundColor = "#25D36614";
-                    e.currentTarget.style.color = "#fff";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "";
-                    e.currentTarget.style.backgroundColor = "";
-                    e.currentTarget.style.color = "";
-                  }}
+                  className="grid h-9 w-9 place-items-center rounded-full border border-slate-200/80 bg-slate-200/80 text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sf-accent hover:text-white hover:shadow-md"
                 >
                   <WhatsAppIcon className="h-4 w-4" />
                 </a>
@@ -179,55 +147,55 @@ export function StoreFooter({
 
           {/* Quick Links */}
           <div className="space-y-4">
-            <h3 className="text-base font-semibold text-white">{t("footer.quickLinks")}</h3>
+            <h3 className="text-base font-bold text-slate-900">{t("footer.quickLinks")}</h3>
             <ul className="space-y-2.5 text-sm">
               <li>
-                <Link to="/store/$slug" params={{ slug }} className="transition-colors hover:text-orange-500">
+                <Link to="/store/$slug" params={{ slug }} className="transition-colors hover:text-sf-accent">
                   {t("footer.aboutUs")}
                 </Link>
               </li>
               <li>
-                <a href="#contact" className="transition-colors hover:text-orange-500">
+                <a href="#contact" className="transition-colors hover:text-sf-accent">
                   {t("footer.contactUs")}
                 </a>
               </li>
               <li>
-                <Link to="/store/$slug" params={{ slug }} search={{ view: "all" }} className="transition-colors hover:text-orange-500">
+                <Link to="/store/$slug" params={{ slug }} search={{ view: "all" }} className="transition-colors hover:text-sf-accent">
                   {t("footer.shopAll")}
                 </Link>
               </li>
               <li>
-                <Link to="/store/$slug/account" params={{ slug }} className="transition-colors hover:text-orange-500">
+                <Link to="/store/$slug/account" params={{ slug }} className="transition-colors hover:text-sf-accent">
                   {t("footer.trackOrder")}
                 </Link>
               </li>
               <li>
-                <span className="cursor-not-allowed text-slate-500">{t("footer.blogs")}</span>
+                <span className="cursor-not-allowed text-slate-400">{t("footer.blogs")}</span>
               </li>
             </ul>
           </div>
 
           {/* Customer Policies */}
           <div className="space-y-4">
-            <h3 className="text-base font-semibold text-white">{t("footer.customerPolicies")}</h3>
+            <h3 className="text-base font-bold text-slate-900">{t("footer.customerPolicies")}</h3>
             <ul className="space-y-2.5 text-sm">
               <li>
-                <a href="/privacy-policy" className="transition-colors hover:text-orange-500">
+                <a href="/privacy-policy" className="transition-colors hover:text-sf-accent">
                   {t("footer.privacy")}
                 </a>
               </li>
               <li>
-                <a href="/terms" className="transition-colors hover:text-orange-500">
+                <a href="/terms" className="transition-colors hover:text-sf-accent">
                   {t("footer.terms")}
                 </a>
               </li>
               <li>
-                <a href="/refund-policy" className="transition-colors hover:text-orange-500">
+                <a href="/refund-policy" className="transition-colors hover:text-sf-accent">
                   {t("footer.returnRefund")}
                 </a>
               </li>
               <li>
-                <a href="/shipping-policy" className="transition-colors hover:text-orange-500">
+                <a href="/shipping-policy" className="transition-colors hover:text-sf-accent">
                   {t("footer.shippingPolicy")}
                 </a>
               </li>
@@ -236,26 +204,26 @@ export function StoreFooter({
 
           {/* Newsletter & Contact */}
           <div className="space-y-4">
-            <h3 className="text-base font-semibold text-white">{t("footer.newsletter")}</h3>
+            <h3 className="text-base font-bold text-slate-900">{t("footer.newsletter")}</h3>
             {phone && (
-              <p className="flex items-center gap-2 text-sm text-slate-400">
-                <Phone className="h-4 w-4 shrink-0 text-orange-500" />
-                <a href={`tel:${phone}`} className="transition-colors hover:text-orange-500">
+              <p className="flex items-center gap-2 text-sm text-slate-600">
+                <Phone className="h-4 w-4 shrink-0 text-sf-accent" />
+                <a href={`tel:${phone}`} className="transition-colors hover:text-sf-accent">
                   {phone}
                 </a>
               </p>
             )}
             {email && (
-              <p className="flex items-center gap-2 text-sm text-slate-400">
-                <Mail className="h-4 w-4 shrink-0 text-orange-500" />
-                <a href={`mailto:${email}`} className="transition-colors hover:text-orange-500">
+              <p className="flex items-center gap-2 text-sm text-slate-600">
+                <Mail className="h-4 w-4 shrink-0 text-sf-accent" />
+                <a href={`mailto:${email}`} className="transition-colors hover:text-sf-accent">
                   {email}
                 </a>
               </p>
             )}
             {businessHours && (
-              <p className="flex items-start gap-2 text-sm text-slate-400">
-                <Clock className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
+              <p className="flex items-start gap-2 text-sm text-slate-600">
+                <Clock className="mt-0.5 h-4 w-4 shrink-0 text-sf-accent" />
                 <span>{businessHours}</span>
               </p>
             )}
@@ -266,9 +234,9 @@ export function StoreFooter({
                 placeholder={t("footer.subscribePlaceholder") as string}
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
-                className="h-10 flex-1 border-slate-700 bg-slate-900 text-sm text-white placeholder:text-slate-500 focus-visible:ring-orange-500"
+                className="h-10 flex-1 border-slate-300 bg-white text-sm text-slate-800 placeholder:text-slate-500 focus-visible:ring-sf-accent"
               />
-              <Button type="submit" disabled={subscribing} size="sm" className="h-10 px-4 bg-orange-600 hover:bg-orange-700 text-white">
+              <Button type="submit" disabled={subscribing} size="sm" className="h-10 px-4 bg-sf-accent hover:bg-sf-accent-hover text-white">
                 {subscribing ? t("common.saving") : t("footer.join")}
               </Button>
             </form>
@@ -279,7 +247,7 @@ export function StoreFooter({
 
       {/* Bottom Bar */}
       {f.copyright !== false && (
-        <div className="border-t border-slate-800">
+        <div className="border-t border-slate-200 bg-slate-100">
           <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-5 py-5 text-center text-xs text-slate-500 md:flex-row md:text-left md:px-8">
             <p>
               © {new Date().getFullYear()} {store.name}. {t("footer.copyright")}
