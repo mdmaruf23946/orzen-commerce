@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, notFound, useRouterState } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ShoppingCart, Phone, MessageCircle, Facebook, Menu, Mail, User, ChevronDown } from "lucide-react";
+import { ShoppingCart, Menu, User, ChevronDown } from "lucide-react";
 import { getStoreBySlug, listStoreCategories, listStoreProducts } from "@/lib/storefront.functions";
 import { getRequestOrigin } from "@/lib/seo.functions";
 import {
@@ -33,6 +33,7 @@ import { SearchBar } from "@/components/storefront/SearchBar";
 import { MobileDrawer } from "@/components/storefront/MobileDrawer";
 import { BottomNav } from "@/components/storefront/BottomNav";
 import { StoreBranding } from "@/components/storefront/StoreBranding";
+import { StoreFooter } from "@/components/storefront/StoreFooter";
 import { resolveStoreIcon, resolveStoreFavicon } from "@/lib/store-icon";
 import { useRouteErrorTracking } from "@/hooks/use-error-tracking";
 
@@ -170,7 +171,7 @@ function StoreLayout() {
         >
           <Outlet />
         </main>
-        {showChrome && <StoreFooter store={store} />}
+        {showChrome && <StoreFooter store={store} slug={slug} />}
         {showChrome && !isPreview && agent && (
           <AIChatLauncher
             slug={slug}
@@ -697,128 +698,4 @@ function HeaderCategoryBar({
   );
 }
 
-function StoreFooter({
-
-  store,
-}: {
-  store: {
-    name: string;
-    description: string | null;
-    logo_url: string | null;
-    phone: string | null;
-    whatsapp: string | null;
-    email?: string | null;
-    facebook: string | null;
-    instagram?: string | null;
-    youtube?: string | null;
-    tiktok?: string | null;
-    linkedin?: string | null;
-    website?: string | null;
-    address: string | null;
-    seo?: any;
-  };
-}) {
-  const theme = useStoreTheme();
-  const { t } = useStoreT();
-  const f = theme.footer;
-  const phone = f.phone || store.phone;
-  const address = f.address || store.address;
-  const email = f.email || store.email || (store.seo && (store.seo.contact_email || store.seo.email)) || null;
-  const socials: { label: string; href: string; icon: any }[] = [];
-  if (f.social !== false) {
-    if (store.facebook) socials.push({ label: "Facebook", href: store.facebook, icon: Facebook });
-    if (store.instagram) socials.push({ label: "Instagram", href: store.instagram, icon: MessageCircle });
-    if (store.youtube) socials.push({ label: "YouTube", href: store.youtube, icon: MessageCircle });
-    if (store.tiktok) socials.push({ label: "TikTok", href: store.tiktok, icon: MessageCircle });
-    if (store.linkedin) socials.push({ label: "LinkedIn", href: store.linkedin, icon: MessageCircle });
-    if (store.website) socials.push({ label: "Website", href: store.website, icon: MessageCircle });
-  }
-  const compact = f.layout === "compact";
-  const centered = f.layout === "centered";
-  return (
-    <footer
-      id="contact"
-      className="mt-10 text-white/90"
-      style={{ backgroundColor: "var(--store-footer-bg)" }}
-    >
-      <div
-        className={`mx-auto grid gap-8 px-4 py-10 sm:px-6 ${
-          centered ? "text-center" : compact ? "sm:grid-cols-2" : "sm:grid-cols-3"
-        }`}
-        style={{ maxWidth: "var(--store-container, 64rem)" }}
-      >
-        <div className={`space-y-3 ${centered ? "mx-auto" : ""}`}>
-          <div className={`flex items-center gap-2 ${centered ? "justify-center" : ""}`}>
-            {store.logo_url ? (
-              <img src={store.logo_url} alt="" className="h-10 w-10 rounded-full object-cover" />
-            ) : (
-              <div className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-sm font-bold">
-                {store.name.charAt(0)}
-              </div>
-            )}
-            <span className="text-base font-semibold text-white">{store.name}</span>
-          </div>
-          {store.description && (
-            <p className="text-sm text-white/70 line-clamp-4">{store.description}</p>
-          )}
-          {address && <p className="text-xs text-white/60">{address}</p>}
-        </div>
-
-        <div className={`space-y-2 text-sm ${centered ? "mx-auto" : ""}`}>
-          <h3 className="text-sm font-semibold text-white">{t("footer.contact")}</h3>
-          {phone && (
-            <a href={`tel:${phone}`} className={`flex items-center gap-2 text-white/80 hover:text-white ${centered ? "justify-center" : ""}`}>
-              <Phone className="h-4 w-4" /> {phone}
-            </a>
-          )}
-          {email && (
-            <a href={`mailto:${email}`} className={`flex items-center gap-2 text-white/80 hover:text-white ${centered ? "justify-center" : ""}`}>
-              <Mail className="h-4 w-4" /> {email}
-            </a>
-          )}
-          {store.whatsapp && (
-            <a
-              href={`https://wa.me/${store.whatsapp.replace(/\D/g, "")}`}
-              target="_blank"
-              rel="noreferrer"
-              className={`flex items-center gap-2 text-white/80 hover:text-white ${centered ? "justify-center" : ""}`}
-            >
-              <MessageCircle className="h-4 w-4" /> WhatsApp
-            </a>
-          )}
-          {socials.map((s) => (
-            <a
-              key={s.label}
-              href={s.href}
-              target="_blank"
-              rel="noreferrer"
-              className={`flex items-center gap-2 text-white/80 hover:text-white ${centered ? "justify-center" : ""}`}
-            >
-              <s.icon className="h-4 w-4" /> {s.label}
-            </a>
-          ))}
-        </div>
-
-        {!compact && (
-          <div id="policies" className={`space-y-2 text-sm ${centered ? "mx-auto" : ""}`}>
-            <h3 className="text-sm font-semibold text-white">{t("footer.quickLinks")}</h3>
-            <a href="/privacy-policy" className="block text-white/80 hover:text-white">{t("footer.privacy")}</a>
-            <a href="/terms" className="block text-white/80 hover:text-white">{t("footer.terms")}</a>
-            <a href="/refund-policy" className="block text-white/80 hover:text-white">{t("footer.returnPolicy")}</a>
-          </div>
-        )}
-      </div>
-      {f.copyright !== false && (
-        <div className="border-t border-white/10">
-          <p
-            className="mx-auto px-4 py-4 text-center text-xs text-white/60 sm:px-6"
-            style={{ maxWidth: "var(--store-container, 64rem)" }}
-          >
-            © {new Date().getFullYear()} {store.name}. {t("footer.rights")}
-          </p>
-        </div>
-      )}
-    </footer>
-  );
-}
 
