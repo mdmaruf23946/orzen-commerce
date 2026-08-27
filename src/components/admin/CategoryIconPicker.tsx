@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 
 export function CategoryIconPicker({
   storeId,
+  folder,
   iconName,
   imageUrl,
   iconStyle = "outline",
@@ -24,7 +25,8 @@ export function CategoryIconPicker({
   onChangeImage,
   onChangeIconStyle,
 }: {
-  storeId: string;
+  storeId?: string;
+  folder?: string;
   iconName: string | null;
   imageUrl: string | null;
   iconStyle?: "outline" | "colored";
@@ -215,6 +217,7 @@ export function CategoryIconPicker({
         <div className="space-y-1.5">
           <ImageUploader
             storeId={storeId}
+            folder={folder}
             value={imageUrl}
             accept="image/*"
             onChange={(v) => {
