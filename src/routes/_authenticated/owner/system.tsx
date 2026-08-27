@@ -37,6 +37,12 @@ function Page() {
     email_from: data.email_from ?? "",
     sms_provider: data.sms_provider ?? "",
     whatsapp_number: data.whatsapp_number ?? "",
+    global_banner: {
+      enabled: !!data.global_banner?.enabled,
+      image_url: data.global_banner?.image_url ?? "",
+      link_url: data.global_banner?.link_url ?? "",
+      alt: data.global_banner?.alt ?? "",
+    },
   }); }, [data]);
 
   if (!f) return <div className="p-8 text-sm text-muted-foreground">Loading…</div>;
@@ -46,6 +52,30 @@ function Page() {
     try { await save({ data: { settings: f } }); toast.success("Saved"); qc.invalidateQueries({ queryKey: ["owner", "sysSettings"] }); }
     catch (e) { toast.error((e as Error).message); }
     finally { setSaving(false); }
+  }
+
+  const gb = f.global_banner ?? {};
+  const setGB = (patch: any) => setF({ ...f, global_banner: { ...gb, ...patch } });
+
+  async function uploadBanner(file: File) {
+    if (!file.type.startsWith("image/")) return toast.error("Please choose an image file");
+    if (file.size > 3 * 1024 * 1024) return toast.error("File is too large (max 3 MB)");
+    setUploading(true);
+    try {
+      const toUpload = file.type === "image/svg+xml" ? file : await compressImage(file, { maxEdge: 1920, quality: 0.92 });
+      const ext = (toUpload.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "png";
+      const path = `platform-branding/global-banner/banner-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("store-assets")
+        .upload(path, toUpload, { upsert: true, contentType: toUpload.type });
+      if (error) throw new Error(error.message);
+      setF({ ...f, global_banner: { ...gb, image_url: `/api/img/${path}` } });
+      toast.success("Banner uploaded — remember to save");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Upload failed");
+    } finally {
+      setUploading(false);
+    }
   }
 
   const F = ({ k, label, type = "text", ph }: any) => (
