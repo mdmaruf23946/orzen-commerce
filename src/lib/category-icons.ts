@@ -657,3 +657,76 @@ export function searchIconKeys(keys: string[], query: string): string[] {
   if (!q) return keys;
   return keys.filter((k) => k.replace(/-/g, " ").includes(q));
 }
+
+/* ------------------------------------------------------------------ */
+/* Icon style: minimalist outline vs professional colored illustration */
+/* ------------------------------------------------------------------ */
+
+export type CategoryIconStyle = "outline" | "colored";
+
+export function parseIconStyle(v?: string | null): CategoryIconStyle {
+  return v === "colored" ? "colored" : "outline";
+}
+
+export type IconPalette = {
+  /** soft pastel background */
+  bg: string;
+  /** subtle inner accent shape */
+  glow: string;
+  /** main stroke tone */
+  primary: string;
+  /** secondary stroke tone for supporting icons */
+  secondary: string;
+};
+
+/** Curated pastel palettes, one per e-commerce niche. */
+export const ICON_PALETTES: Record<string, IconPalette> = {
+  fashion: { bg: "#FFE7DD", glow: "#FFCDBA", primary: "#E4572E", secondary: "#B8452089" },
+  electronics: { bg: "#E1EEFF", glow: "#C4DCFF", primary: "#2563C9", secondary: "#1E4E9E8C" },
+  home: { bg: "#FFF2D9", glow: "#FFE3AC", primary: "#C98A16", secondary: "#9C6A0F8C" },
+  health: { bg: "#DFF5EC", glow: "#BEEBD9", primary: "#128F6B", secondary: "#0C6E528C" },
+  sports: { bg: "#E4F1DA", glow: "#CBE6B7", primary: "#4B8B27", secondary: "#3767208C" },
+  kids: { bg: "#FBE6FA", glow: "#F5CCF3", primary: "#B23FA6", secondary: "#8C2F828C" },
+  auto: { bg: "#E7E9F7", glow: "#CFD3EF", primary: "#4A56A6", secondary: "#374189" },
+  office: { bg: "#E9E4FB", glow: "#D5CCF7", primary: "#6A4FC6", secondary: "#513C9B8C" },
+  food: { bg: "#FFEAEA", glow: "#FFD1D1", primary: "#D93A3A", secondary: "#A82C2C8C" },
+  gifts: { bg: "#E6F3F6", glow: "#CBE7ED", primary: "#1E8497", secondary: "#166574" },
+  default: { bg: "#F1F0FB", glow: "#E1DEF7", primary: "#5B5BD6", secondary: "#43439E8C" },
+};
+
+const NICHE_ORDER = [
+  "fashion",
+  "electronics",
+  "home",
+  "health",
+  "sports",
+  "kids",
+  "auto",
+  "office",
+  "food",
+  "gifts",
+];
+
+const KEY_TO_NICHE: Record<string, string> = (() => {
+  const map: Record<string, string> = {};
+  for (const niche of NICHE_ORDER) {
+    const group = CATEGORY_ICON_GROUPS.find((g) => g.key === niche);
+    if (!group) continue;
+    for (const k of group.icons) if (!(k in map)) map[k] = niche;
+  }
+  return map;
+})();
+
+/** Auto-assign a pleasant palette from the icon's niche (stable hash fallback). */
+export function getIconPalette(iconName?: string | null): IconPalette {
+  const keys = parseIconNames(iconName);
+  const first = keys[0];
+  if (first) {
+    const niche = KEY_TO_NICHE[first];
+    if (niche && ICON_PALETTES[niche]) return ICON_PALETTES[niche];
+    let h = 0;
+    for (let i = 0; i < first.length; i++) h = (h * 31 + first.charCodeAt(i)) >>> 0;
+    return ICON_PALETTES[NICHE_ORDER[h % NICHE_ORDER.length]] ?? ICON_PALETTES.default;
+  }
+  return ICON_PALETTES.default;
+}
