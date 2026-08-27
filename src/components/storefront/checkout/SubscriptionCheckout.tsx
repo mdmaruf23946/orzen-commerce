@@ -198,6 +198,10 @@ export function SubscriptionCheckout({
         } as any,
       });
 
+      // Remember the contact used at checkout so the order page can prove
+      // ownership without asking the shopper to retype phone/email.
+      writeOrderContact((res as any).orderId, (phone || email || "").trim());
+
       if (isOnline) {
         const pay = await startPay({ data: { orderId: (res as any).orderId, gatewayKey: method } });
         if ((pay as any)?.redirect_url) {
