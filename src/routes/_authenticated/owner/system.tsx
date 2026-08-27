@@ -23,6 +23,7 @@ function Page() {
   const { data } = useQuery({ queryKey: ["owner", "sysSettings"], queryFn: () => get() });
   const [f, setF] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => { if (data && !f) setF({
     platform_name: data.platform_name ?? "",
