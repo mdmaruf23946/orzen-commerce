@@ -610,8 +610,8 @@ function CategoryTile({
         style={{ boxShadow: `inset 0 0 0 2px ${ring}` }}
       >
         {PresetIcon ? (
-          <span className="grid h-full w-full place-items-center text-neutral-700">
-            <PresetIcon className="h-1/2 w-1/2" strokeWidth={1.5} />
+          <span className="grid h-full w-full place-items-center p-1 text-neutral-700">
+            <CategoryIconCluster iconName={iconName} />
           </span>
         ) : image ? (
           <img
