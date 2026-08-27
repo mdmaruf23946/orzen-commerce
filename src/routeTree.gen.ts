@@ -34,6 +34,7 @@ import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authentic
 import { Route as StoreSlugIndexRouteImport } from './routes/store/$slug/index'
 import { Route as AuthenticatedOwnerIndexRouteImport } from './routes/_authenticated/owner/index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
+import { Route as StoreSlugTrackOrderRouteImport } from './routes/store/$slug/track-order'
 import { Route as StoreSlugSitemapDotxmlRouteImport } from './routes/store/$slug/sitemap[.]xml'
 import { Route as StoreSlugCheckoutRouteImport } from './routes/store/$slug/checkout'
 import { Route as StoreSlugCartRouteImport } from './routes/store/$slug/cart'
@@ -315,6 +316,11 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
+const StoreSlugTrackOrderRoute = StoreSlugTrackOrderRouteImport.update({
+  id: '/track-order',
+  path: '/track-order',
+  getParentRoute: () => StoreSlugRouteRoute,
 } as any)
 const StoreSlugSitemapDotxmlRoute = StoreSlugSitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -1335,6 +1341,7 @@ export interface FileRoutesByFullPath {
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/store/$slug/sitemap.xml': typeof StoreSlugSitemapDotxmlRoute
+  '/store/$slug/track-order': typeof StoreSlugTrackOrderRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/owner/': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
@@ -1507,6 +1514,7 @@ export interface FileRoutesByTo {
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/store/$slug/sitemap.xml': typeof StoreSlugSitemapDotxmlRoute
+  '/store/$slug/track-order': typeof StoreSlugTrackOrderRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/owner': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug': typeof StoreSlugIndexRoute
@@ -1690,6 +1698,7 @@ export interface FileRoutesById {
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/store/$slug/sitemap.xml': typeof StoreSlugSitemapDotxmlRoute
+  '/store/$slug/track-order': typeof StoreSlugTrackOrderRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/owner/': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
@@ -1873,6 +1882,7 @@ export interface FileRouteTypes {
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
     | '/store/$slug/sitemap.xml'
+    | '/store/$slug/track-order'
     | '/admin/'
     | '/owner/'
     | '/store/$slug/'
@@ -2045,6 +2055,7 @@ export interface FileRouteTypes {
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
     | '/store/$slug/sitemap.xml'
+    | '/store/$slug/track-order'
     | '/admin'
     | '/owner'
     | '/store/$slug'
@@ -2227,6 +2238,7 @@ export interface FileRouteTypes {
     | '/store/$slug/cart'
     | '/store/$slug/checkout'
     | '/store/$slug/sitemap.xml'
+    | '/store/$slug/track-order'
     | '/_authenticated/admin/'
     | '/_authenticated/owner/'
     | '/store/$slug/'
@@ -2515,6 +2527,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/store/$slug/track-order': {
+      id: '/store/$slug/track-order'
+      path: '/track-order'
+      fullPath: '/store/$slug/track-order'
+      preLoaderRoute: typeof StoreSlugTrackOrderRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
     }
     '/store/$slug/sitemap.xml': {
       id: '/store/$slug/sitemap.xml'
@@ -4017,6 +4036,7 @@ interface StoreSlugRouteRouteChildren {
   StoreSlugCartRoute: typeof StoreSlugCartRoute
   StoreSlugCheckoutRoute: typeof StoreSlugCheckoutRoute
   StoreSlugSitemapDotxmlRoute: typeof StoreSlugSitemapDotxmlRoute
+  StoreSlugTrackOrderRoute: typeof StoreSlugTrackOrderRoute
   StoreSlugIndexRoute: typeof StoreSlugIndexRoute
   StoreSlugAuthForgotRoute: typeof StoreSlugAuthForgotRoute
   StoreSlugAuthLoginRoute: typeof StoreSlugAuthLoginRoute
@@ -4031,6 +4051,7 @@ const StoreSlugRouteRouteChildren: StoreSlugRouteRouteChildren = {
   StoreSlugCartRoute: StoreSlugCartRoute,
   StoreSlugCheckoutRoute: StoreSlugCheckoutRoute,
   StoreSlugSitemapDotxmlRoute: StoreSlugSitemapDotxmlRoute,
+  StoreSlugTrackOrderRoute: StoreSlugTrackOrderRoute,
   StoreSlugIndexRoute: StoreSlugIndexRoute,
   StoreSlugAuthForgotRoute: StoreSlugAuthForgotRoute,
   StoreSlugAuthLoginRoute: StoreSlugAuthLoginRoute,

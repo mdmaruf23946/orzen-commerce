@@ -1563,3 +1563,121 @@ export const getOrderPaymentTimeline = createServerFn({ method: "GET" })
       events,
     };
   });
+
+/** ---------------------------------------------------------------
+ *  Instant Order Tracker — public lookup by Order ID or phone.
+ *  Results are masked: no email, no full address, no cost data.
+ *  ---------------------------------------------------------------*/
+const TRACK_STAGES = ["placed", "confirmed", "packed", "shipped", "delivered"] as const;
+
+function maskName(name: string | null): string {
+  const n = String(name ?? "").trim();
+  if (!n) return "Customer";
+  const parts = n.split(/\s+/);
+  const first = parts[0];
+  const rest = parts.slice(1).map((p) => `${p.charAt(0).toUpperCase()}.`);
+  return [first, ...rest].join(" ");
+}
+
+function maskPhone(phone: string | null): string {
+  const p = String(phone ?? "").replace(/\s/g, "");
+  if (p.length < 7) return "•••";
+  return `${p.slice(0, 3)}${"*".repeat(Math.max(3, p.length - 6))}${p.slice(-3)}`;
+}
+
+export const trackOrderPublic = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z
+      .object({
+        slug: z.string().min(1).max(120),
+        query: z.string().trim().min(4).max(60),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const sb = publicClient();
+    const { data: storeRow } = await sb.rpc("get_public_store_by_slug", { _slug: data.slug });
+    const store = storeRow as any;
+    if (!store?.id) return { ok: false as const, error: "Store not found", orders: [] };
+    const storeId = store.id as string;
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const raw = data.query.trim().replace(/^#/, "");
+    const digits = raw.replace(/[^0-9]/g, "");
+    const isPhone = digits.length >= 9 && digits.length === raw.replace(/[+\-\s]/g, "").length;
+
+    const sel =
+      "id,invoice_no,order_type,status,payment_status,payment_method,created_at,subtotal,delivery_amount,discount_amount,customer_name,phone,area,courier_name,courier_tracking_id,courier_status,customer_id";
+
+    let rows: any[] = [];
+    if (isPhone) {
+      const tail = digits.slice(-9);
+      const { data: found } = await (supabaseAdmin as any)
+        .from("orders")
+        .select(sel)
+        .eq("store_id", storeId)
+        .ilike("phone", `%${tail}`)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      rows = found ?? [];
+    } else {
+      const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw);
+      let q = (supabaseAdmin as any).from("orders").select(sel).eq("store_id", storeId);
+      q = uuid ? q.eq("id", raw) : q.eq("invoice_no", raw);
+      const { data: found } = await q.limit(1);
+      rows = found ?? [];
+    }
+
+    if (!rows.length)
+      return { ok: false as const, error: "No order found for this Order ID or phone number.", orders: [] };
+
+    const ids = rows.map((r) => r.id);
+    const { data: tl } = await (supabaseAdmin as any)
+      .from("order_timeline")
+      .select("order_id,stage,created_at")
+      .in("order_id", ids)
+      .order("created_at", { ascending: true });
+
+    const byOrder = new Map<string, { stage: string; at: string }[]>();
+    for (const t of ((tl ?? []) as any[])) {
+      const list = byOrder.get(t.order_id) ?? [];
+      list.push({ stage: t.stage, at: t.created_at });
+      byOrder.set(t.order_id, list);
+    }
+
+    const orders = rows.map((o) => {
+      const events = byOrder.get(o.id) ?? [];
+      const done = new Set(events.map((e) => e.stage));
+      const timeline = TRACK_STAGES.map((s) => {
+        const hit =
+          s === "placed"
+            ? { stage: "placed", at: o.created_at as string }
+            : events.find((e) => e.stage === s) ??
+              (s === "shipped" && done.has("courier_assigned")
+                ? events.find((e) => e.stage === "courier_assigned")!
+                : null);
+        return { stage: s, at: hit?.at ?? null, done: !!hit };
+      });
+      return {
+        id: o.id as string,
+        ref: (o.invoice_no as string) ?? String(o.id).slice(0, 8).toUpperCase(),
+        order_type: (o.order_type ?? "physical") as string,
+        status: o.status as string,
+        payment_status: (o.payment_status ?? "pending") as string,
+        payment_method: (o.payment_method ?? "cod") as string,
+        created_at: o.created_at as string,
+        total:
+          Number(o.subtotal ?? 0) + Number(o.delivery_amount ?? 0) - Number(o.discount_amount ?? 0),
+        customer_name: maskName(o.customer_name),
+        phone: maskPhone(o.phone),
+        area: (o.area as string) ?? null,
+        courier_name: (o.courier_name as string) ?? null,
+        courier_tracking_id: (o.courier_tracking_id as string) ?? null,
+        courier_status: (o.courier_status as string) ?? null,
+        cancelled: o.status === "cancelled",
+        timeline,
+      };
+    });
+
+    return { ok: true as const, error: null, orders };
+  });
