@@ -55,8 +55,8 @@ export function CategoryIconPicker({
 
 
   return (
-    <div className="space-y-2 rounded-lg border p-2 sm:space-y-3 sm:p-3">
-      <div className="flex flex-col gap-2 sm:flex-row">
+    <div className="min-w-0 space-y-2 overflow-hidden rounded-lg border p-2 sm:space-y-3 sm:p-3">
+      <div className="grid grid-cols-2 gap-1.5 sm:flex sm:gap-2">
         <Button
           type="button"
           size="sm"
@@ -65,9 +65,9 @@ export function CategoryIconPicker({
             setMode("preset");
             onChangeImage(null);
           }}
-          className="h-8 text-xs sm:h-9"
+          className="h-8 min-w-0 px-2 text-[11px] sm:h-9 sm:px-3 sm:text-xs"
         >
-          Choose preset icon
+          Preset icons
         </Button>
         <Button
           type="button"
@@ -77,9 +77,9 @@ export function CategoryIconPicker({
             setMode("upload");
             onChangeIcon(null);
           }}
-          className="h-8 text-xs sm:h-9"
+          className="h-8 min-w-0 px-2 text-[11px] sm:h-9 sm:px-3 sm:text-xs"
         >
-          Upload custom icon
+          Custom upload
         </Button>
       </div>
 
@@ -87,7 +87,7 @@ export function CategoryIconPicker({
         <div className="space-y-2">
           <div className="space-y-1.5">
             <p className="text-xs font-medium">Icon style</p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
               {(
                 [
                   { key: "outline", label: "Standard outline", hint: "Minimal monochrome lines" },
@@ -100,19 +100,19 @@ export function CategoryIconPicker({
                   onClick={() => onChangeIconStyle?.(o.key)}
                   aria-pressed={iconStyle === o.key}
                   className={cn(
-                    "flex items-center gap-2 rounded-lg border p-2 text-left transition",
+                    "flex min-w-0 items-center gap-1.5 rounded-lg border p-1.5 text-left transition sm:gap-2 sm:p-2",
                     iconStyle === o.key ? "border-primary bg-primary/5" : "hover:bg-muted",
                   )}
                 >
-                  <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg border bg-muted sm:h-10 sm:w-10">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-md border bg-muted sm:h-10 sm:w-10 sm:rounded-lg">
                     <CategoryIconCluster
                       iconName={iconName ?? "shopping-bag"}
                       iconStyle={o.key}
                     />
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-xs font-medium">{o.label}</span>
-                    <span className="block text-[10px] text-muted-foreground">{o.hint}</span>
+                    <span className="block text-[10px] font-medium leading-tight sm:text-xs">{o.label}</span>
+                    <span className="hidden text-[10px] text-muted-foreground sm:block">{o.hint}</span>
                   </span>
                 </button>
               ))}
@@ -120,11 +120,11 @@ export function CategoryIconPicker({
           </div>
 
           <div className="flex items-center gap-2 text-xs text-muted-foreground sm:gap-3">
-            <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl border bg-muted sm:h-14 sm:w-14">
+            <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg border bg-muted sm:h-14 sm:w-14 sm:rounded-xl">
               {selected.length ? (
                 <CategoryIconCluster iconName={iconName} iconStyle={iconStyle} />
               ) : (
-                <span className="text-[10px]">Preview</span>
+                <span className="text-[9px]">Preview</span>
               )}
             </span>
             <div className="min-w-0">
@@ -174,7 +174,7 @@ export function CategoryIconPicker({
             ))}
           </div>
 
-          <div className="grid max-h-44 grid-cols-7 gap-1.5 overflow-y-auto sm:max-h-56 sm:grid-cols-8 sm:gap-2">
+          <div className="grid max-h-28 grid-cols-6 gap-1 overflow-y-auto overscroll-contain pr-0.5 sm:max-h-56 sm:grid-cols-8 sm:gap-2">
             {visibleKeys.length === 0 && (
               <p className="col-span-full py-4 text-center text-xs text-muted-foreground sm:py-6">
                 No icons match “{query}”.
