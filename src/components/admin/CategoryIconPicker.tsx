@@ -83,10 +83,44 @@ export function CategoryIconPicker({
 
       {mode === "preset" ? (
         <div className="space-y-2">
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium">Icon style</p>
+            <div className="grid grid-cols-2 gap-2">
+              {(
+                [
+                  { key: "outline", label: "Standard outline", hint: "Minimal monochrome lines" },
+                  { key: "colored", label: "Colored illustrated", hint: "Pastel badge + multi-tone" },
+                ] as const
+              ).map((o) => (
+                <button
+                  key={o.key}
+                  type="button"
+                  onClick={() => onChangeIconStyle?.(o.key)}
+                  aria-pressed={iconStyle === o.key}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg border p-2 text-left transition",
+                    iconStyle === o.key ? "border-primary bg-primary/5" : "hover:bg-muted",
+                  )}
+                >
+                  <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg border bg-muted">
+                    <CategoryIconCluster
+                      iconName={iconName ?? "shopping-bag"}
+                      iconStyle={o.key}
+                    />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-xs font-medium">{o.label}</span>
+                    <span className="block text-[10px] text-muted-foreground">{o.hint}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl border bg-muted">
               {selected.length ? (
-                <CategoryIconCluster iconName={iconName} />
+                <CategoryIconCluster iconName={iconName} iconStyle={iconStyle} />
               ) : (
                 <span className="text-[10px]">Preview</span>
               )}
@@ -108,6 +142,7 @@ export function CategoryIconPicker({
               )}
             </div>
           </div>
+
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
