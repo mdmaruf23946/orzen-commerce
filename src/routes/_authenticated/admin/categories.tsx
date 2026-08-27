@@ -267,7 +267,10 @@ function CategoriesPage() {
                     <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-muted-foreground" />
                     <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-muted">
                       {getCategoryIcon((c as any).icon_name) ? (
-                        <CategoryIconCluster iconName={(c as any).icon_name} />
+                        <CategoryIconCluster
+                          iconName={(c as any).icon_name}
+                          iconStyle={(c as any).icon_style}
+                        />
                       ) : src ? (
                         <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
                       ) : (
@@ -364,6 +367,9 @@ function CategoryDialog({
   const [name, setName] = useState(editing?.name ?? "");
   const [image, setImage] = useState<string | null>(editing?.image_url ?? null);
   const [iconName, setIconName] = useState<string | null>((editing as any)?.icon_name ?? null);
+  const [iconStyle, setIconStyle] = useState<"outline" | "colored">(
+    (editing as any)?.icon_style === "colored" ? "colored" : "outline",
+  );
   const [description, setDescription] = useState<string>(editing?.description ?? "");
   const [sortOrder, setSortOrder] = useState<number>(editing?.sort_order ?? nextOrder);
   const [isActive, setIsActive] = useState<boolean>(editing?.is_active ?? true);
@@ -390,6 +396,7 @@ function CategoryDialog({
         name: name.trim(),
         image_url: isSub ? null : image,
         icon_name: isSub ? null : iconName,
+        icon_style: isSub ? "outline" : iconStyle,
         description: description.trim() || null,
         sort_order: Number(sortOrder) || 0,
         is_active: isActive,
@@ -418,8 +425,10 @@ function CategoryDialog({
                 storeId={storeId}
                 iconName={iconName}
                 imageUrl={image}
+                iconStyle={iconStyle}
                 onChangeIcon={setIconName}
                 onChangeImage={setImage}
+                onChangeIconStyle={setIconStyle}
               />
             </div>
           )}

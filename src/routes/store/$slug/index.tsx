@@ -511,7 +511,13 @@ function CategoryStrip({
   active,
   onSelect,
 }: {
-  categories: { id: string; name: string; image_url?: string | null; icon_name?: string | null }[];
+  categories: {
+    id: string;
+    name: string;
+    image_url?: string | null;
+    icon_name?: string | null;
+    icon_style?: string | null;
+  }[];
   allImage?: string | null;
   active: string | null;
   onSelect: (id: string | null) => void;
@@ -561,6 +567,7 @@ function CategoryStrip({
               label={c.name}
               image={c.image_url ?? null}
               iconName={c.icon_name ?? null}
+              iconStyle={c.icon_style ?? "outline"}
               active={active === c.id}
               onClick={() => onSelect(c.id)}
             />
@@ -589,12 +596,14 @@ function CategoryTile({
   label,
   image,
   iconName,
+  iconStyle,
   active,
   onClick,
 }: {
   label: string;
   image?: string | null;
   iconName?: string | null;
+  iconStyle?: string | null;
   active: boolean;
   onClick: () => void;
 }) {
@@ -611,8 +620,8 @@ function CategoryTile({
         style={{ boxShadow: `inset 0 0 0 2px ${ring}` }}
       >
         {PresetIcon ? (
-          <span className="grid h-full w-full place-items-center p-1 text-neutral-700">
-            <CategoryIconCluster iconName={iconName} />
+          <span className={`grid h-full w-full place-items-center text-neutral-700 ${iconStyle === "colored" ? "" : "p-1"}`}>
+            <CategoryIconCluster iconName={iconName} iconStyle={iconStyle ?? "outline"} />
           </span>
         ) : image ? (
           <img
