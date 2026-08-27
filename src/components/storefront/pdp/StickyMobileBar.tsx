@@ -41,7 +41,7 @@ export function StickyMobileBar({
       <div className="flex items-center gap-2">
         <div className="min-w-0 pr-1">
           <p className="text-[10px] text-muted-foreground">Price</p>
-          <p className="text-base font-extrabold leading-none" style={{ color: "var(--primary)" }}>
+          <p className="text-base font-extrabold leading-none text-sf-accent">
             ৳{price.toFixed(0)}
           </p>
         </div>
@@ -49,7 +49,7 @@ export function StickyMobileBar({
           type="button"
           onClick={onAdd}
           disabled={disabled}
-          className="h-11 flex-1 rounded-full border border-neutral-300 bg-white text-sm font-semibold text-neutral-900 disabled:opacity-50"
+          className="h-11 flex-1 rounded-full border-2 border-sf-accent bg-white text-sm font-semibold text-sf-accent hover:bg-sf-accent/10 disabled:opacity-50"
         >
           {t("pdp.addToCart")}
         </button>
@@ -57,8 +57,7 @@ export function StickyMobileBar({
           type="button"
           onClick={onBuy}
           disabled={disabled}
-          className="h-11 flex-1 rounded-full text-sm font-semibold text-white disabled:opacity-50"
-          style={{ backgroundColor: "var(--primary)" }}
+          className="h-11 flex-1 rounded-full bg-sf-accent text-sm font-semibold text-white shadow-sm hover:bg-sf-accent-hover disabled:opacity-50"
         >
           {t("pdp.buyNow")}
         </button>
