@@ -94,7 +94,7 @@ type TemplateForm = {
   payments_config: Record<string, any>;
   product_defaults: { warranty?: string; return_policy?: string; shipping_info?: string };
   banners: Array<{ image_url: string; link_url?: string; sort_order?: number }>;
-  categories: Array<{ name: string; image_url?: string; description?: string }>;
+  categories: TemplateCategory[];
   products: TemplateProduct[];
   pages: Array<{ slug: string; title: string; content: string }>;
 };
