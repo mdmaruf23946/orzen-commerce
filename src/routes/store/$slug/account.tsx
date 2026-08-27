@@ -295,7 +295,7 @@ function Overview({
           params={{ slug }}
           className="flex items-center gap-3 border-t border-neutral-100 px-4 py-3.5 text-sm hover:bg-neutral-50"
         >
-          <Package className="h-4 w-4 text-neutral-500" />
+          <Package className="h-4 w-4 text-sf-accent" />
           <span className="flex-1 text-neutral-800">{t("account.myCart")}</span>
           <ChevronRight className="h-4 w-4 text-neutral-400" />
         </Link>
@@ -304,7 +304,7 @@ function Overview({
       <button
         type="button"
         onClick={onSignOut}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-white px-4 py-3 text-sm font-semibold text-rose-600 shadow-sm transition-colors hover:bg-rose-50"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-transparent px-4 py-3 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
       >
         <LogOut className="h-4 w-4" /> {t("account.logout")}
       </button>
@@ -327,7 +327,7 @@ function SettingsRow({
       onClick={onClick}
       className="flex w-full items-center gap-3 border-b border-neutral-100 px-4 py-3.5 text-left text-sm last:border-b-0 hover:bg-neutral-50"
     >
-      <Icon className="h-4 w-4 text-neutral-500" />
+      <Icon className="h-4 w-4 text-sf-accent" />
       <span className="flex-1 text-neutral-800">{label}</span>
       <ChevronRight className="h-4 w-4 text-neutral-400" />
     </button>
