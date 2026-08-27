@@ -4760,6 +4760,33 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_global_banner: {
+        Row: {
+          alt: string | null
+          enabled: boolean
+          id: number
+          image_url: string | null
+          link_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          alt?: string | null
+          enabled?: boolean
+          id?: number
+          image_url?: string | null
+          link_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alt?: string | null
+          enabled?: boolean
+          id?: number
+          image_url?: string | null
+          link_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_notices: {
         Row: {
           body: string | null
@@ -9351,7 +9378,6 @@ export type Database = {
         Returns: Json
       }
       get_fraud_public_status: { Args: never; Returns: Json }
-      get_global_header_banner: { Args: never; Returns: Json }
       get_messenger_daily_stats: { Args: { _store_id: string }; Returns: Json }
       get_my_active_ads: { Args: never; Returns: Json }
       get_platform_branding: { Args: never; Returns: Json }
