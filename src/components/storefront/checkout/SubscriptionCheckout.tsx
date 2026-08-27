@@ -13,6 +13,7 @@ import {
 import { getPublicSubscriptionSettings } from "@/lib/subscriptions.functions";
 import { removeSelected, type CartItem } from "@/lib/cart";
 import { useCustomerSession } from "@/lib/customer-session";
+import { writeOrderContact } from "@/lib/order-proof";
 import { computeFingerprint, getDeviceId } from "@/lib/fingerprint";
 import { billingSummary, CYCLE_LABEL, nextBillingDate, type SubCycle } from "@/lib/subscriptions";
 import {
