@@ -17,13 +17,10 @@ import { toast } from "sonner";
 import {
   getProduct,
   getStoreBySlug,
-  listBestSellingProducts,
-  listProductsByIds,
   listRelatedProducts,
   listStoreCategories,
 } from "@/lib/storefront.functions";
 import { addToCart } from "@/lib/cart";
-import { pushRecent, readRecent } from "@/lib/recently-viewed";
 import { ProductGallery } from "@/components/storefront/pdp/ProductGallery";
 import { BuyBox } from "@/components/storefront/pdp/BuyBox";
 import { InfoTabs } from "@/components/storefront/pdp/InfoTabs";
@@ -32,9 +29,6 @@ import { SubscriptionInfoSections } from "@/components/storefront/pdp/Subscripti
 
 import { ReviewsBlock } from "@/components/storefront/pdp/ReviewsBlock";
 import { RelatedRail } from "@/components/storefront/pdp/RelatedRail";
-import { ShareBar } from "@/components/storefront/pdp/ShareBar";
-import { TrustBadges } from "@/components/storefront/pdp/TrustBadges";
-import { StoreCard } from "@/components/storefront/pdp/StoreCard";
 import { StickyMobileBar } from "@/components/storefront/pdp/StickyMobileBar";
 import { DigitalProductPage } from "@/components/storefront/pdp/digital/DigitalProductPage";
 
@@ -124,7 +118,6 @@ function ProductPage() {
 
   useEffect(() => {
     if (!product) return;
-    pushRecent(slug, product.id);
     fbTrack("ViewContent", {
       content_ids: [product.id],
       content_name: product.name,
@@ -188,37 +181,12 @@ function ProductPage() {
           storeId: store!.id,
           categoryId: product!.category_id ?? undefined,
           excludeId: product!.id,
-          limit: 8,
+          limit: 4,
+          strictCategory: true,
         },
       }),
     staleTime: 60_000,
   });
-
-  const [recentIds, setRecentIds] = useState<string[]>([]);
-  useEffect(() => {
-    setRecentIds(readRecent(slug, product!.id).slice(0, 12));
-  }, [slug, product!.id]);
-  const recentQ = useQuery({
-    queryKey: ["recent-products", store!.id, recentIds.join(",")],
-    queryFn: () => listProductsByIds({ data: { storeId: store!.id, ids: recentIds } }),
-    enabled: recentIds.length > 0,
-    staleTime: 60_000,
-  });
-  const recentSorted = useMemo(() => {
-    if (!recentQ.data) return [];
-    const map = new Map(recentQ.data.map((p: any) => [p.id, p]));
-    return recentIds.map((id) => map.get(id)).filter(Boolean) as any[];
-  }, [recentQ.data, recentIds]);
-
-  const bestQ = useQuery({
-    queryKey: ["bestsellers", store!.id],
-    queryFn: () => listBestSellingProducts({ data: { storeId: store!.id, limit: 8 } }),
-    staleTime: 5 * 60_000,
-  });
-  const alsoLike = useMemo(
-    () => (bestQ.data ?? []).filter((p: any) => p.id !== product!.id).slice(0, 8),
-    [bestQ.data, product!.id],
-  );
 
   function add() {
     addToCart(slug, {
@@ -235,8 +203,6 @@ function ProductPage() {
     navigate({ to: "/store/$slug/checkout", params: { slug } });
   }
 
-  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
-  const codEnabled = ((store as any)?.payment_methods ?? []).includes?.("cod") ?? true;
 
   if (isDigital) {
     return <DigitalProductPage slug={slug} store={store} product={product} />;
