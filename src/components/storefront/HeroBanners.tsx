@@ -67,7 +67,7 @@ function SideRotator({ items, delay }: { items: HeroBanner[]; delay: number }) {
                 alt=""
                 loading="lazy"
                 decoding="async"
-                className="h-full w-full select-none object-cover"
+                className="h-full w-full select-none object-cover lg:object-contain"
               />
             </BannerLink>
           </div>
@@ -125,12 +125,12 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
 
   return (
     <section
-      className="grid grid-cols-1 items-stretch gap-4 lg:aspect-[7/2] lg:grid-cols-3"
+      className="grid grid-cols-1 items-stretch gap-3 lg:aspect-[86/25] lg:grid-cols-[3fr_1fr] lg:gap-3"
       aria-label="Promotions"
     >
       {/* Main hero banner */}
       <div
-        className="relative aspect-[47/20] w-full min-w-0 max-w-full overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl lg:col-span-2 lg:aspect-auto lg:h-full"
+        className="relative aspect-[47/20] w-full min-w-0 max-w-full overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl lg:col-span-1 lg:aspect-auto lg:h-full"
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
@@ -152,7 +152,7 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
                   loading={i === 0 ? "eager" : "lazy"}
                   fetchPriority={i === 0 ? "high" : "auto"}
                   decoding="async"
-                  className="h-full w-full select-none object-cover"
+                  className="h-full w-full select-none object-cover lg:object-contain"
                 />
               </BannerLink>
             </div>
@@ -179,7 +179,7 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
 
       {/* Supporting banners */}
       {hasSide && (
-        <div className="grid min-w-0 grid-cols-2 gap-4 lg:col-span-1 lg:grid-cols-1 lg:grid-rows-2">
+        <div className="grid min-w-0 grid-cols-2 gap-3 lg:col-span-1 lg:grid-cols-1 lg:grid-rows-2">
           {slots.map((items, i) =>
             items.length > 0 ? (
               <div
