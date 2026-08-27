@@ -151,7 +151,6 @@ export function StoreFooter({
                   rel="noopener noreferrer"
                   aria-label={s.label}
                   className="grid h-9 w-9 place-items-center rounded-full border border-slate-700 bg-slate-900 text-slate-300 transition-all duration-200 hover:-translate-y-0.5 hover:text-white hover:shadow-md"
-                  style={{ "--hover-bg": `${s.color}14` } as React.CSSProperties}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = s.color;
                     e.currentTarget.style.backgroundColor = `${s.color}14`;
