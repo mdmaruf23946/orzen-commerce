@@ -165,7 +165,7 @@ export function StoreFooter({
                 </Link>
               </li>
               <li>
-                <Link to="/store/$slug/account" params={{ slug }} className="transition-colors hover:text-sf-accent">
+                <Link to="/store/$slug/track-order" params={{ slug }} className="transition-colors hover:text-sf-accent">
                   {t("footer.trackOrder")}
                 </Link>
               </li>
