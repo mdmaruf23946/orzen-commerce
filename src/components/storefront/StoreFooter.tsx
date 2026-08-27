@@ -39,18 +39,6 @@ function WhatsAppIcon(props: { className?: string }) {
   );
 }
 
-function PaymentBadge({ label, color, icon }: { label: string; color: string; icon?: string }) {
-  return (
-    <div
-      className="flex h-10 items-center gap-1.5 rounded-lg border border-slate-700/50 bg-slate-800/60 px-3 text-xs font-semibold text-white"
-      style={{ borderColor: `${color}40` }}
-    >
-      {icon ? <span className="text-sm">{icon}</span> : <span className="h-3 w-3 rounded-full" style={{ backgroundColor: color }} />}
-      {label}
-    </div>
-  );
-}
-
 export function StoreFooter({
   store,
   slug,
@@ -287,23 +275,6 @@ export function StoreFooter({
           </div>
         </div>
 
-        {/* Trust Badges */}
-        {f.payment_icons !== false && (
-          <div className="mt-10 border-t border-slate-800 pt-8">
-            <p className="mb-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">
-              {t("footer.trustBadges")}
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              <PaymentBadge label="bKash" color="#E2136E" />
-              <PaymentBadge label="Nagad" color="#F7941D" />
-              <PaymentBadge label="Rocket" color="#8C3494" />
-              <PaymentBadge label="Visa" color="#1A1F71" />
-              <PaymentBadge label="Mastercard" color="#EB001B" />
-              <PaymentBadge label="Pathao" color="#25A162" />
-              <PaymentBadge label="Steadfast" color="#0056A4" />
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Bottom Bar */}
