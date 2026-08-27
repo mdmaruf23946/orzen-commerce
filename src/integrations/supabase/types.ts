@@ -7274,6 +7274,35 @@ export type Database = {
           },
         ]
       }
+      store_newsletter_subscribers: {
+        Row: {
+          email: string
+          id: string
+          store_id: string
+          subscribed_at: string
+        }
+        Insert: {
+          email: string
+          id?: string
+          store_id: string
+          subscribed_at?: string
+        }
+        Update: {
+          email?: string
+          id?: string
+          store_id?: string
+          subscribed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_newsletter_subscribers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_payment_gateways: {
         Row: {
           connected_at: string | null
@@ -8119,6 +8148,7 @@ export type Database = {
           allow_guest_checkout: boolean
           bkash_number: string | null
           branding: Json
+          business_hours: string | null
           business_name: string | null
           button_color: string | null
           couriers: Json
@@ -8185,6 +8215,7 @@ export type Database = {
           allow_guest_checkout?: boolean
           bkash_number?: string | null
           branding?: Json
+          business_hours?: string | null
           business_name?: string | null
           button_color?: string | null
           couriers?: Json
@@ -8251,6 +8282,7 @@ export type Database = {
           allow_guest_checkout?: boolean
           bkash_number?: string | null
           branding?: Json
+          business_hours?: string | null
           business_name?: string | null
           button_color?: string | null
           couriers?: Json
