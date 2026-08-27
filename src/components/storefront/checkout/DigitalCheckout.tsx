@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCustomerSession } from "@/lib/customer-session";
+import { writeOrderContact } from "@/lib/order-proof";
 import { computeFingerprint, getDeviceId } from "@/lib/fingerprint";
 import { LICENSE_LABELS, formatBytes, type LicenseType } from "@/lib/digital";
 import { Download, ShieldCheck, Sparkles, Loader2, Lock } from "lucide-react";
