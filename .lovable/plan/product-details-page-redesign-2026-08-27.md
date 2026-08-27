@@ -1,6 +1,6 @@
 # Product Details Page Redesign
 
-Rework the storefront product page (physical/service/subscription types) so the buy area, reviews, related products, and page bottom match the requested layout.
+Rework the storefront product page (physical/digital/service/subscription types) so the buy area, reviews, related products, and page bottom match the requested layout.
 
 ## 1. Buy box styling
 
