@@ -1,4 +1,4 @@
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { isStockless } from "@/lib/product-stock";
 import { useStoreT } from "@/lib/store-i18n";
@@ -13,20 +13,40 @@ type Props = {
   setQty: (n: number) => void;
   onAdd: () => void;
   onBuy: () => void;
+  whatsapp?: string | null;
+  productName?: string;
 };
 
-export function BuyBox({ price, oldPrice, stock, status, productType, qty, setQty, onAdd, onBuy }: Props) {
+export function BuyBox({
+  price,
+  oldPrice,
+  stock,
+  status,
+  productType,
+  qty,
+  setQty,
+  onAdd,
+  onBuy,
+  whatsapp,
+  productName,
+}: Props) {
   const { t } = useStoreT();
   const stockless = isStockless(productType);
   const inStock = status !== "draft" && (stockless || stock > 0);
   const discountPct = oldPrice && oldPrice > price ? Math.round(((oldPrice - price) / oldPrice) * 100) : 0;
 
+  const waDigits = (whatsapp ?? "").replace(/\D/g, "");
+  const pageUrl = typeof window !== "undefined" ? window.location.href : "";
+  const waHref = waDigits
+    ? `https://wa.me/${waDigits}?text=${encodeURIComponent(
+        `Hi! I want to order:\n${productName ?? ""}\nPrice: ৳${price.toFixed(0)}\n${pageUrl}`,
+      )}`
+    : null;
+
   return (
     <div className="rounded-2xl border bg-white p-4 sm:p-5">
       <div className="flex items-baseline gap-3">
-        <span className="text-3xl font-extrabold" style={{ color: "var(--primary)" }}>
-          ৳{price.toFixed(0)}
-        </span>
+        <span className="text-3xl font-extrabold tracking-tight text-sf-accent">৳{price.toFixed(0)}</span>
         {oldPrice && oldPrice > price && (
           <>
             <span className="text-sm text-muted-foreground line-through">৳{oldPrice.toFixed(0)}</span>
@@ -44,7 +64,6 @@ export function BuyBox({ price, oldPrice, stock, status, productType, qty, setQt
           <span className="text-destructive">Out of stock</span>
         )}
       </p>
-
 
       <div className="mt-4 flex items-center gap-3">
         <span className="text-sm text-muted-foreground">Qty</span>
@@ -70,19 +89,36 @@ export function BuyBox({ price, oldPrice, stock, status, productType, qty, setQt
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <Button type="button" variant="outline" disabled={!inStock} onClick={onAdd} className="h-12">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!inStock}
+          onClick={onAdd}
+          className="h-12 border-2 border-sf-accent font-semibold text-sf-accent hover:bg-sf-accent/10 hover:text-sf-accent"
+        >
           {t("pdp.addToCart")}
         </Button>
         <Button
           type="button"
           disabled={!inStock}
           onClick={onBuy}
-          className="h-12"
-          style={{ backgroundColor: "var(--primary)", color: "white" }}
+          className="h-12 bg-sf-accent font-semibold text-white shadow-sm hover:bg-sf-accent-hover"
         >
           {t("pdp.buyNow")}
         </Button>
       </div>
+
+      {waHref && (
+        <a
+          href={waHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-md bg-emerald-600 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
+        >
+          <MessageCircle className="h-4 w-4" />
+          Order via WhatsApp
+        </a>
+      )}
     </div>
   );
 }
