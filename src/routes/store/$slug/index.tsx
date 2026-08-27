@@ -293,7 +293,7 @@ function ProductGrid({
   products: Array<Parameters<typeof ProductCard>[0]["p"]>;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
       {products.map((p) => (
         <ProductCard key={p.id} slug={slug} p={p} />
       ))}
@@ -417,7 +417,7 @@ function ProductCarousel({
         {products.map((p) => (
           <div
             key={p.id}
-            className="w-[calc(50%-0.375rem)] shrink-0 snap-start sm:w-[31%] lg:w-[23%] xl:w-[19%]"
+            className="w-[calc(50%-0.375rem)] shrink-0 snap-start sm:w-[calc(33.333%-0.5rem)] md:w-[calc(25%-0.5625rem)] lg:w-[calc(20%-0.6rem)]"
           >
             <ProductCard slug={slug} p={p} />
           </div>
