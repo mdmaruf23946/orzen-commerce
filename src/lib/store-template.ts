@@ -56,20 +56,36 @@ export async function seedStoreFromTemplate(supabase: SB, storeId: string, tpl: 
   const catList: any[] = Array.isArray(tpl.categories) ? tpl.categories : [];
   const catNameToId = new Map<string, string>();
   if (catList.length) {
-    const rows = catList
-      .filter((c) => typeof c?.name === "string" && c.name.trim())
-      .map((c, i) => ({
-        store_id: storeId,
-        name: String(c.name).trim(),
-        image_url: c.image_url ?? null,
-        description: c.description ?? null,
-        sort_order: Number.isFinite(Number(c.sort_order)) ? Number(c.sort_order) : i,
-        is_active: c.is_active === false ? false : true,
-      }));
-    if (rows.length) {
-      const { data: created, error } = await supabase.from("categories").insert(rows).select("id,name");
+    const clean = catList.filter((c) => typeof c?.name === "string" && c.name.trim());
+    const toRow = (c: any, i: number, parentId: string | null) => ({
+      store_id: storeId,
+      name: String(c.name).trim(),
+      parent_id: parentId,
+      image_url: parentId ? null : c.image_url || null,
+      icon_name: parentId ? null : c.icon_name || null,
+      icon_style: parentId ? "outline" : c.icon_style === "colored" ? "colored" : "outline",
+      description: c.description || null,
+      sort_order: Number.isFinite(Number(c.sort_order)) ? Number(c.sort_order) : i,
+      is_active: c.is_active === false ? false : true,
+    });
+
+    const mains = clean.filter((c) => !c.parent_name);
+    if (mains.length) {
+      const { data: created, error } = await supabase
+        .from("categories")
+        .insert(mains.map((c, i) => toRow(c, i, null)))
+        .select("id,name");
       if (error) throw new Error(error.message);
       for (const c of created ?? []) catNameToId.set(c.name, c.id);
+    }
+
+    const subs = clean
+      .filter((c) => c.parent_name && catNameToId.has(String(c.parent_name).trim()))
+      .map((c, i) => toRow(c, i, catNameToId.get(String(c.parent_name).trim())!));
+    if (subs.length) {
+      const { data: created, error } = await supabase.from("categories").insert(subs).select("id,name");
+      if (error) throw new Error(error.message);
+      for (const c of created ?? []) if (!catNameToId.has(c.name)) catNameToId.set(c.name, c.id);
     }
   }
 

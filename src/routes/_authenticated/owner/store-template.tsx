@@ -18,6 +18,8 @@ import {
 import { Trash2, Plus } from "lucide-react";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { GalleryUploader } from "@/components/admin/GalleryUploader";
+import { CategoryIconPicker } from "@/components/admin/CategoryIconPicker";
+import { CategoryIconCluster } from "@/components/CategoryIconCluster";
 
 export const Route = createFileRoute("/_authenticated/owner/store-template")({
   component: StoreTemplatePage,
@@ -26,6 +28,17 @@ export const Route = createFileRoute("/_authenticated/owner/store-template")({
 const TEMPLATE_FOLDER = "_template";
 
 type Variant = { name: string; values: string[] };
+
+export type TemplateCategory = {
+  name: string;
+  image_url?: string;
+  icon_name?: string;
+  icon_style?: "outline" | "colored";
+  description?: string;
+  parent_name?: string;
+  sort_order?: number;
+  is_active?: boolean;
+};
 
 type TemplateProduct = {
   name: string;
@@ -81,7 +94,7 @@ type TemplateForm = {
   payments_config: Record<string, any>;
   product_defaults: { warranty?: string; return_policy?: string; shipping_info?: string };
   banners: Array<{ image_url: string; link_url?: string; sort_order?: number }>;
-  categories: Array<{ name: string; image_url?: string; description?: string }>;
+  categories: TemplateCategory[];
   products: TemplateProduct[];
   pages: Array<{ slug: string; title: string; content: string }>;
 };
