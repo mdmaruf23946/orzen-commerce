@@ -5032,6 +5032,70 @@ export type Database = {
           },
         ]
       }
+      product_reviews: {
+        Row: {
+          comment: string
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          product_id: string
+          rating: number
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          comment: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          product_id: string
+          rating: number
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          product_id?: string
+          rating?: number
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "storefront_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_reviews_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           brand: string | null
@@ -9382,6 +9446,7 @@ export type Database = {
       get_my_active_ads: { Args: never; Returns: Json }
       get_platform_branding: { Args: never; Returns: Json }
       get_platform_footer: { Args: never; Returns: Json }
+      get_product_reviews: { Args: { _product_id: string }; Returns: Json }
       get_public_courier_providers: {
         Args: never
         Returns: {
@@ -9500,6 +9565,18 @@ export type Database = {
       resolve_domain: { Args: { _host: string }; Returns: Json }
       resolve_host_kind: { Args: { _host: string }; Returns: Json }
       staff_store_id: { Args: { _user_id: string }; Returns: string }
+      submit_product_review: {
+        Args: {
+          _comment: string
+          _email?: string
+          _name: string
+          _phone?: string
+          _product_id: string
+          _rating: number
+          _store_id: string
+        }
+        Returns: Json
+      }
       validate_coupon: {
         Args: { _code: string; _store_id: string; _subtotal: number }
         Returns: Json
