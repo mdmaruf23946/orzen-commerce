@@ -167,7 +167,6 @@ function StoreLayout() {
           nameLogoUrl={(store as any).name_logo_url ?? null}
           showSearch={!isAccount && !isCheckoutFlow}
         />
-        <GlobalHeaderBanner />
         <main
           className="mx-auto px-4 pb-24 pt-0 sm:pt-4 sm:px-6 md:pb-12"
           style={{ maxWidth: resolved ? "var(--store-container)" : undefined }}
@@ -175,6 +174,7 @@ function StoreLayout() {
           <Outlet />
         </main>
         {showChrome && <StoreFooter store={store} slug={slug} />}
+        {showChrome && <GlobalHeaderBanner />}
         {showChrome && !isPreview && agent && (
           <AIChatLauncher
             slug={slug}
