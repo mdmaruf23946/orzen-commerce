@@ -492,7 +492,7 @@ export const listStoreCategories = createServerFn({ method: "GET" })
     const sb = publicClient();
     const { data: cats, error } = await sb
       .from("categories")
-      .select("id,name,image_url,icon_name,description,sort_order,is_active,parent_id")
+      .select("id,name,image_url,icon_name,icon_style,description,sort_order,is_active,parent_id")
       .eq("store_id", data.storeId)
       .eq("is_active", true)
       .order("sort_order", { ascending: true })

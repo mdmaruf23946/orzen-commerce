@@ -1331,6 +1331,7 @@ export type Database = {
           created_at: string
           description: string | null
           icon_name: string | null
+          icon_style: string
           id: string
           image_url: string | null
           is_active: boolean
@@ -1344,6 +1345,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           icon_name?: string | null
+          icon_style?: string
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -1357,6 +1359,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           icon_name?: string | null
+          icon_style?: string
           id?: string
           image_url?: string | null
           is_active?: boolean

@@ -1,0 +1,2 @@
+ALTER TABLE public.categories ADD COLUMN IF NOT EXISTS icon_style text NOT NULL DEFAULT 'outline';
+ALTER TABLE public.categories ADD CONSTRAINT categories_icon_style_chk CHECK (icon_style IN ('outline','colored'));
