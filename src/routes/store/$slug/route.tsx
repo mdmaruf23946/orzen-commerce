@@ -549,6 +549,7 @@ function StoreHeader({
       {showSearch && mainCategories.length > 0 && (
         <HeaderCategoryBar
           mains={mainCategories as any}
+          categories={categories as any}
           counts={countsByMain}
           totalCount={(products as any[]).length}
         />
