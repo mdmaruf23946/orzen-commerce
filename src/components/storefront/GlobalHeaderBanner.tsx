@@ -29,14 +29,14 @@ export function GlobalHeaderBanner() {
     <img
       src={data.image_url}
       alt={data.alt || "Available payment methods"}
-      loading="eager"
+      loading="lazy"
       decoding="async"
-      className="mx-auto max-h-12 w-full object-contain"
+      className="mx-auto max-h-16 w-full object-contain"
     />
   );
 
   return (
-    <div className="w-full border-b bg-background py-1.5">
+    <div className="w-full border-t bg-background py-3 pb-24 md:pb-3">
       <div className="mx-auto px-3 sm:px-6" style={{ maxWidth: "var(--store-container, 64rem)" }}>
         {data.link_url ? (
           <a href={data.link_url} target="_blank" rel="noreferrer noopener" className="block">
