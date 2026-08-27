@@ -130,7 +130,7 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
     >
       {/* Main hero banner */}
       <div
-        className="relative aspect-[16/9] overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl lg:col-span-2 lg:aspect-auto lg:h-full"
+        className="relative aspect-[47/20] w-full min-w-0 max-w-full overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl lg:col-span-2"
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
@@ -179,12 +179,12 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
 
       {/* Supporting banners */}
       {hasSide && (
-        <div className="flex h-full flex-col gap-4 lg:col-span-1">
+        <div className="grid min-w-0 grid-cols-2 gap-4 lg:col-span-1 lg:grid-cols-1 lg:grid-rows-2">
           {slots.map((items, i) =>
             items.length > 0 ? (
               <div
                 key={i}
-                className="flex-1 overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl"
+                className="aspect-[8/5] min-h-0 overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl lg:aspect-auto"
               >
                 <SideRotator items={items} delay={5200 + i * 900} />
               </div>
@@ -192,7 +192,7 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
               <div
                 key={i}
                 aria-hidden
-                className="flex-1 rounded-xl bg-sf-surface/40 sm:rounded-2xl"
+                className="aspect-[8/5] min-h-0 rounded-xl bg-sf-surface/40 sm:rounded-2xl lg:aspect-auto"
               />
             ),
           )}
