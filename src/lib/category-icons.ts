@@ -73,7 +73,26 @@ export const CATEGORY_ICONS: Record<string, LucideIcon> = {
 
 export const CATEGORY_ICON_KEYS = Object.keys(CATEGORY_ICONS);
 
+export const MAX_CATEGORY_ICONS = 3;
+
 export function getCategoryIcon(name?: string | null): LucideIcon | null {
   if (!name) return null;
-  return CATEGORY_ICONS[name] ?? null;
+  const first = name.split(",")[0]?.trim();
+  if (!first) return null;
+  return CATEGORY_ICONS[first] ?? null;
+}
+
+/** icon_name stores 1–3 comma-separated preset keys. */
+export function parseIconNames(value?: string | null): string[] {
+  if (!value) return [];
+  return value
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s && s in CATEGORY_ICONS)
+    .slice(0, MAX_CATEGORY_ICONS);
+}
+
+export function serializeIconNames(keys: string[]): string | null {
+  const clean = keys.filter((k) => k in CATEGORY_ICONS).slice(0, MAX_CATEGORY_ICONS);
+  return clean.length ? clean.join(",") : null;
 }
