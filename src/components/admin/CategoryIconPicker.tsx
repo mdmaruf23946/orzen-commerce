@@ -19,14 +19,18 @@ export function CategoryIconPicker({
   storeId,
   iconName,
   imageUrl,
+  iconStyle = "outline",
   onChangeIcon,
   onChangeImage,
+  onChangeIconStyle,
 }: {
   storeId: string;
   iconName: string | null;
   imageUrl: string | null;
+  iconStyle?: "outline" | "colored";
   onChangeIcon: (v: string | null) => void;
   onChangeImage: (v: string | null) => void;
+  onChangeIconStyle?: (v: "outline" | "colored") => void;
 }) {
   const [mode, setMode] = useState<"preset" | "upload">(imageUrl && !iconName ? "upload" : "preset");
   const [group, setGroup] = useState<string>("all");
@@ -48,6 +52,7 @@ export function CategoryIconPicker({
     onChangeIcon(serializeIconNames(next));
     if (next.length) onChangeImage(null);
   }
+
 
   return (
     <div className="space-y-3 rounded-lg border p-3">
