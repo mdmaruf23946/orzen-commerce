@@ -613,11 +613,11 @@ function HeaderCategoryBar({
   const basePill =
     "flex items-center gap-0.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all";
   const inactivePill =
-    "bg-gray-100 text-gray-700 hover:bg-orange-50 hover:text-orange-600";
+    "bg-white text-gray-700 hover:bg-orange-50 hover:text-orange-600 shadow-sm";
   const activePill = "bg-orange-500 text-white shadow-sm";
 
   return (
-    <nav className="hidden md:block border-b border-black/5 bg-orange-50/95 backdrop-blur">
+    <nav className="hidden md:block border-b border-black/5 bg-gray-100/95 backdrop-blur">
       <div
         className="mx-auto flex flex-wrap items-center gap-2 px-3 py-2 sm:px-6"
         style={{ maxWidth: "var(--store-container, 64rem)" }}
