@@ -55,8 +55,8 @@ export function CategoryIconPicker({
 
 
   return (
-    <div className="space-y-3 rounded-lg border p-3">
-      <div className="flex gap-2">
+    <div className="space-y-2 rounded-lg border p-2 sm:space-y-3 sm:p-3">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <Button
           type="button"
           size="sm"
@@ -65,6 +65,7 @@ export function CategoryIconPicker({
             setMode("preset");
             onChangeImage(null);
           }}
+          className="h-8 text-xs sm:h-9"
         >
           Choose preset icon
         </Button>
@@ -76,6 +77,7 @@ export function CategoryIconPicker({
             setMode("upload");
             onChangeIcon(null);
           }}
+          className="h-8 text-xs sm:h-9"
         >
           Upload custom icon
         </Button>
@@ -85,7 +87,7 @@ export function CategoryIconPicker({
         <div className="space-y-2">
           <div className="space-y-1.5">
             <p className="text-xs font-medium">Icon style</p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {(
                 [
                   { key: "outline", label: "Standard outline", hint: "Minimal monochrome lines" },
@@ -102,7 +104,7 @@ export function CategoryIconPicker({
                     iconStyle === o.key ? "border-primary bg-primary/5" : "hover:bg-muted",
                   )}
                 >
-                  <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg border bg-muted">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg border bg-muted sm:h-10 sm:w-10">
                     <CategoryIconCluster
                       iconName={iconName ?? "shopping-bag"}
                       iconStyle={o.key}
@@ -117,8 +119,8 @@ export function CategoryIconPicker({
             </div>
           </div>
 
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl border bg-muted">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground sm:gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl border bg-muted sm:h-14 sm:w-14">
               {selected.length ? (
                 <CategoryIconCluster iconName={iconName} iconStyle={iconStyle} />
               ) : (
@@ -126,9 +128,9 @@ export function CategoryIconPicker({
               )}
             </span>
             <div className="min-w-0">
-              <p>
+              <p className="line-clamp-2">
                 {selected.length
-                  ? `${selected.length} of ${MAX_CATEGORY_ICONS} selected: ${selected.join(", ")}`
+                  ? `${selected.length}/${MAX_CATEGORY_ICONS}: ${selected.join(", ")}`
                   : `Pick up to ${MAX_CATEGORY_ICONS} icons below.`}
               </p>
               {selected.length > 0 && (
@@ -149,11 +151,11 @@ export function CategoryIconPicker({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search icon by name..."
-              className="h-9 pl-8"
+              className="h-8 pl-8 text-sm sm:h-9"
             />
           </div>
 
-          <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {CATEGORY_ICON_GROUPS.map((g) => (
               <button
                 key={g.key}
@@ -161,7 +163,7 @@ export function CategoryIconPicker({
                 onClick={() => setGroup(g.key)}
                 aria-pressed={group === g.key}
                 className={cn(
-                  "shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition",
+                  "shrink-0 rounded-full border px-2 py-1 text-[11px] font-medium transition sm:px-3 sm:text-xs",
                   group === g.key
                     ? "border-primary bg-primary text-primary-foreground"
                     : "bg-background text-muted-foreground hover:bg-muted",
@@ -172,9 +174,9 @@ export function CategoryIconPicker({
             ))}
           </div>
 
-          <div className="grid max-h-56 grid-cols-6 gap-2 overflow-y-auto sm:grid-cols-8">
+          <div className="grid max-h-44 grid-cols-7 gap-1.5 overflow-y-auto sm:max-h-56 sm:grid-cols-8 sm:gap-2">
             {visibleKeys.length === 0 && (
-              <p className="col-span-full py-6 text-center text-xs text-muted-foreground">
+              <p className="col-span-full py-4 text-center text-xs text-muted-foreground sm:py-6">
                 No icons match “{query}”.
               </p>
             )}
@@ -198,9 +200,9 @@ export function CategoryIconPicker({
                     full && "cursor-not-allowed opacity-40",
                   )}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
                   {active && (
-                    <span className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+                    <span className="absolute -right-0.5 -top-0.5 grid h-3.5 w-3.5 place-items-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground sm:-right-1 sm:-top-1 sm:h-4 sm:w-4 sm:text-[9px]">
                       {idx + 1}
                     </span>
                   )}
