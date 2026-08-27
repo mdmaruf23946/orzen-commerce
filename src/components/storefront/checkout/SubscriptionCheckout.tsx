@@ -13,6 +13,7 @@ import {
 import { getPublicSubscriptionSettings } from "@/lib/subscriptions.functions";
 import { removeSelected, type CartItem } from "@/lib/cart";
 import { useCustomerSession } from "@/lib/customer-session";
+import { writeOrderContact } from "@/lib/order-proof";
 import { computeFingerprint, getDeviceId } from "@/lib/fingerprint";
 import { billingSummary, CYCLE_LABEL, nextBillingDate, type SubCycle } from "@/lib/subscriptions";
 import {
@@ -196,6 +197,10 @@ export function SubscriptionCheckout({
           },
         } as any,
       });
+
+      // Remember the contact used at checkout so the order page can prove
+      // ownership without asking the shopper to retype phone/email.
+      writeOrderContact((res as any).orderId, (phone || email || "").trim());
 
       if (isOnline) {
         const pay = await startPay({ data: { orderId: (res as any).orderId, gatewayKey: method } });
