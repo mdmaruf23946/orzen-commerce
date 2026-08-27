@@ -539,6 +539,9 @@ function StoreHeader({
         </div>
       </header>
 
+      {/* Platform-wide banner (Owner-managed) — sits right below the nav bar */}
+      <GlobalHeaderBanner />
+
       {/* Mobile-only search band below header */}
       {showSearch && theme.header.search && theme.header.search_position !== "hidden" && (
         <div className="border-b border-black/5 bg-white/95 px-3 py-1 backdrop-blur md:hidden">
