@@ -19,6 +19,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ImageUploader } from "@/components/admin/ImageUploader";
+import { CategoryIconPicker } from "@/components/admin/CategoryIconPicker";
+import { getCategoryIcon } from "@/lib/category-icons";
 import { cn } from "@/lib/utils";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
@@ -263,11 +265,15 @@ function CategoriesPage() {
                   >
                     <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-muted-foreground" />
                     <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-muted">
-                      {src ? (
+                      {(() => {
+                        const Preset = getCategoryIcon((c as any).icon_name);
+                        return Preset ? <Preset className="h-5 w-5" /> : null;
+                      })()}
+                      {!getCategoryIcon((c as any).icon_name) && src ? (
                         <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
-                      ) : (
+                      ) : !getCategoryIcon((c as any).icon_name) ? (
                         <ImageIcon className="h-5 w-5 text-muted-foreground" />
-                      )}
+                      ) : null}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
@@ -358,6 +364,7 @@ function CategoryDialog({
 }) {
   const [name, setName] = useState(editing?.name ?? "");
   const [image, setImage] = useState<string | null>(editing?.image_url ?? null);
+  const [iconName, setIconName] = useState<string | null>((editing as any)?.icon_name ?? null);
   const [description, setDescription] = useState<string>(editing?.description ?? "");
   const [sortOrder, setSortOrder] = useState<number>(editing?.sort_order ?? nextOrder);
   const [isActive, setIsActive] = useState<boolean>(editing?.is_active ?? true);
@@ -378,10 +385,12 @@ function CategoryDialog({
     }
     setSaving(true);
     try {
+      const isSub = !!parentId;
       await onSave({
         id: editing?.id,
         name: name.trim(),
-        image_url: image,
+        image_url: isSub ? null : image,
+        icon_name: isSub ? null : iconName,
         description: description.trim() || null,
         sort_order: Number(sortOrder) || 0,
         is_active: isActive,
@@ -403,13 +412,18 @@ function CategoryDialog({
         </DialogHeader>
         <p className="-mt-2 text-xs text-muted-foreground">Product type: {typeLabel}</p>
         <form onSubmit={submit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Category image</Label>
-            <ImageUploader storeId={storeId} value={image} onChange={setImage} />
-            <p className="text-xs text-muted-foreground">
-              JPG, PNG or WEBP. Recommended 512×512 (square). Max 2 MB.
-            </p>
-          </div>
+          {!parentId && (
+            <div className="space-y-1.5">
+              <Label>Category icon</Label>
+              <CategoryIconPicker
+                storeId={storeId}
+                iconName={iconName}
+                imageUrl={image}
+                onChangeIcon={setIconName}
+                onChangeImage={setImage}
+              />
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label htmlFor="n">Name</Label>
