@@ -34,6 +34,7 @@ import { MobileDrawer } from "@/components/storefront/MobileDrawer";
 import { BottomNav } from "@/components/storefront/BottomNav";
 import { StoreBranding } from "@/components/storefront/StoreBranding";
 import { StoreFooter } from "@/components/storefront/StoreFooter";
+import { GlobalHeaderBanner } from "@/components/storefront/GlobalHeaderBanner";
 import { resolveStoreIcon, resolveStoreFavicon } from "@/lib/store-icon";
 import { useRouteErrorTracking } from "@/hooks/use-error-tracking";
 
