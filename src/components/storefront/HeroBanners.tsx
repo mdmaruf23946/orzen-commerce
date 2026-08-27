@@ -130,7 +130,7 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
     >
       {/* Main hero banner */}
       <div
-        className="relative aspect-[47/20] overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl lg:col-span-2 lg:aspect-[47/20]"
+        className="relative min-w-0 aspect-[47/20] overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl lg:col-span-2"
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
@@ -179,7 +179,7 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
 
       {/* Supporting banners */}
       {hasSide && (
-        <div className="grid grid-cols-2 gap-4 lg:col-span-1 lg:grid-cols-1 lg:grid-rows-2">
+        <div className="grid min-w-0 grid-cols-2 gap-4 lg:col-span-1 lg:grid-cols-1 lg:grid-rows-2">
           {slots.map((items, i) =>
             items.length > 0 ? (
               <div
