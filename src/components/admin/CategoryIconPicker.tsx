@@ -1,14 +1,16 @@
 // Dual icon control for main categories: 1–3 preset lucide icons OR custom upload.
-import { useState } from "react";
-import { X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { CategoryIconCluster } from "@/components/CategoryIconCluster";
 import {
   CATEGORY_ICONS,
-  CATEGORY_ICON_KEYS,
+  CATEGORY_ICON_GROUPS,
   MAX_CATEGORY_ICONS,
   parseIconNames,
+  searchIconKeys,
   serializeIconNames,
 } from "@/lib/category-icons";
 import { cn } from "@/lib/utils";
