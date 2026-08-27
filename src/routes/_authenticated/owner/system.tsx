@@ -3,6 +3,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Loader2, Upload } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { compressImage } from "@/lib/compress-image";
 import { getPlatformSettings, updatePlatformSettings } from "@/lib/owner-ext.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Button } from "@/components/ui/button";
@@ -20,6 +23,7 @@ function Page() {
   const { data } = useQuery({ queryKey: ["owner", "sysSettings"], queryFn: () => get() });
   const [f, setF] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => { if (data && !f) setF({
     platform_name: data.platform_name ?? "",
@@ -34,6 +38,12 @@ function Page() {
     email_from: data.email_from ?? "",
     sms_provider: data.sms_provider ?? "",
     whatsapp_number: data.whatsapp_number ?? "",
+    global_banner: {
+      enabled: !!data.global_banner?.enabled,
+      image_url: data.global_banner?.image_url ?? "",
+      link_url: data.global_banner?.link_url ?? "",
+      alt: data.global_banner?.alt ?? "",
+    },
   }); }, [data]);
 
   if (!f) return <div className="p-8 text-sm text-muted-foreground">Loading…</div>;
@@ -43,6 +53,30 @@ function Page() {
     try { await save({ data: { settings: f } }); toast.success("Saved"); qc.invalidateQueries({ queryKey: ["owner", "sysSettings"] }); }
     catch (e) { toast.error((e as Error).message); }
     finally { setSaving(false); }
+  }
+
+  const gb = f.global_banner ?? {};
+  const setGB = (patch: any) => setF({ ...f, global_banner: { ...gb, ...patch } });
+
+  async function uploadBanner(file: File) {
+    if (!file.type.startsWith("image/")) return toast.error("Please choose an image file");
+    if (file.size > 3 * 1024 * 1024) return toast.error("File is too large (max 3 MB)");
+    setUploading(true);
+    try {
+      const toUpload = file.type === "image/svg+xml" ? file : await compressImage(file, { maxEdge: 1920, quality: 0.92 });
+      const ext = (toUpload.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "png";
+      const path = `platform-branding/global-banner/banner-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("store-assets")
+        .upload(path, toUpload, { upsert: true, contentType: toUpload.type });
+      if (error) throw new Error(error.message);
+      setF({ ...f, global_banner: { ...gb, image_url: `/api/img/${path}` } });
+      toast.success("Banner uploaded — remember to save");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Upload failed");
+    } finally {
+      setUploading(false);
+    }
   }
 
   const F = ({ k, label, type = "text", ph }: any) => (
@@ -77,6 +111,65 @@ function Page() {
           <h2 className="mb-3 font-semibold">Maintenance mode</h2>
           <label className="flex items-center gap-2 text-sm"><Switch checked={f.maintenance_mode} onCheckedChange={(v) => setF({ ...f, maintenance_mode: v })} /> Enable maintenance mode</label>
           <Textarea className="mt-3" rows={2} placeholder="Message shown to visitors" value={f.maintenance_message} onChange={(e) => setF({ ...f, maintenance_message: e.target.value })} />
+        </div>
+        <div className="rounded-xl border bg-card p-4">
+          <h2 className="font-semibold">Global Header Banner</h2>
+          <p className="mb-3 mt-1 text-xs text-muted-foreground">
+            Shown on every storefront right below the navigation bar. Merchants cannot edit or hide it.
+          </p>
+          <label className="flex items-center gap-2 text-sm">
+            <Switch checked={!!gb.enabled} onCheckedChange={(v) => setGB({ enabled: v })} /> Show global banner
+          </label>
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label>Image URL</Label>
+              <Input
+                value={gb.image_url ?? ""}
+                onChange={(e) => setGB({ image_url: e.target.value })}
+                placeholder="/api/img/… or https://…"
+              />
+            </div>
+            <div>
+              <Label>Destination link (optional)</Label>
+              <Input
+                value={gb.link_url ?? ""}
+                onChange={(e) => setGB({ link_url: e.target.value })}
+                placeholder="https://example.com"
+              />
+            </div>
+            <div>
+              <Label>Alt text</Label>
+              <Input
+                value={gb.alt ?? ""}
+                onChange={(e) => setGB({ alt: e.target.value })}
+                placeholder="Accepted payment methods"
+              />
+            </div>
+            <div>
+              <Label>Upload image</Label>
+              <label className="mt-1 flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed text-sm text-muted-foreground hover:bg-muted/40">
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                {uploading ? "Uploading…" : "Choose file"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void uploadBanner(file);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+
+          {gb.image_url ? (
+            <div className="mt-3 rounded-lg border bg-white p-2">
+              <img src={gb.image_url} alt={gb.alt || "Banner preview"} className="mx-auto max-h-10 w-full object-contain" />
+            </div>
+          ) : null}
         </div>
         <Button onClick={submit} disabled={saving} className="w-full sm:w-auto">{saving ? "Saving…" : "Save settings"}</Button>
       </div>

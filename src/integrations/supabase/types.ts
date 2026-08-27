@@ -9351,6 +9351,7 @@ export type Database = {
         Returns: Json
       }
       get_fraud_public_status: { Args: never; Returns: Json }
+      get_global_header_banner: { Args: never; Returns: Json }
       get_messenger_daily_stats: { Args: { _store_id: string }; Returns: Json }
       get_my_active_ads: { Args: never; Returns: Json }
       get_platform_branding: { Args: never; Returns: Json }
