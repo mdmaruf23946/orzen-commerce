@@ -821,6 +821,7 @@ export const upsertCategory = createServerFn({ method: "POST" })
     const patch = {
       name: data.name,
       ...(data.image_url !== undefined ? { image_url: data.image_url } : {}),
+      ...(data.icon_name !== undefined ? { icon_name: data.icon_name } : {}),
       ...(data.description !== undefined ? { description: data.description } : {}),
       ...(data.sort_order !== undefined ? { sort_order: data.sort_order } : {}),
       ...(data.is_active !== undefined ? { is_active: data.is_active } : {}),
