@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, notFound, useRouterState } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ShoppingCart, Phone, MessageCircle, Facebook, Menu, Mail, User } from "lucide-react";
+import { ShoppingCart, Phone, MessageCircle, Facebook, Menu, Mail, User, ChevronDown } from "lucide-react";
 import { getStoreBySlug, listStoreCategories, listStoreProducts } from "@/lib/storefront.functions";
 import { getRequestOrigin } from "@/lib/seo.functions";
 import {
