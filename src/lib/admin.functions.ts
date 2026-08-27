@@ -805,6 +805,7 @@ export const upsertCategory = createServerFn({ method: "POST" })
         id: z.string().uuid().optional(),
         name: z.string().trim().min(1).max(80),
         image_url: z.string().max(500).nullable().optional(),
+        icon_name: z.string().max(60).nullable().optional(),
         description: z.string().max(500).nullable().optional(),
         sort_order: z.number().int().min(0).max(9999).optional(),
         is_active: z.boolean().optional(),
@@ -820,6 +821,7 @@ export const upsertCategory = createServerFn({ method: "POST" })
     const patch = {
       name: data.name,
       ...(data.image_url !== undefined ? { image_url: data.image_url } : {}),
+      ...(data.icon_name !== undefined ? { icon_name: data.icon_name } : {}),
       ...(data.description !== undefined ? { description: data.description } : {}),
       ...(data.sort_order !== undefined ? { sort_order: data.sort_order } : {}),
       ...(data.is_active !== undefined ? { is_active: data.is_active } : {}),

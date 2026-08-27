@@ -15,6 +15,7 @@ import { useStoreT } from "@/lib/store-i18n";
 import { useStoreTheme } from "@/lib/theme/context";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { HeroBanners } from "@/components/storefront/HeroBanners";
+import { getCategoryIcon } from "@/lib/category-icons";
 
 
 const STALE = 5 * 60_000;
@@ -509,7 +510,7 @@ function CategoryStrip({
   active,
   onSelect,
 }: {
-  categories: { id: string; name: string; image_url?: string | null }[];
+  categories: { id: string; name: string; image_url?: string | null; icon_name?: string | null }[];
   allImage?: string | null;
   active: string | null;
   onSelect: (id: string | null) => void;
@@ -558,6 +559,7 @@ function CategoryStrip({
             <CategoryTile
               label={c.name}
               image={c.image_url ?? null}
+              iconName={c.icon_name ?? null}
               active={active === c.id}
               onClick={() => onSelect(c.id)}
             />
@@ -585,14 +587,17 @@ function CategoryStrip({
 function CategoryTile({
   label,
   image,
+  iconName,
   active,
   onClick,
 }: {
   label: string;
   image?: string | null;
+  iconName?: string | null;
   active: boolean;
   onClick: () => void;
 }) {
+  const PresetIcon = getCategoryIcon(iconName);
   const ring = active ? "var(--sf-accent, #FF4B1F)" : "transparent";
   return (
     <button
@@ -604,7 +609,11 @@ function CategoryTile({
         className="aspect-square w-full overflow-hidden rounded-2xl border border-sf-line bg-sf-surface transition-all"
         style={{ boxShadow: `inset 0 0 0 2px ${ring}` }}
       >
-        {image ? (
+        {PresetIcon ? (
+          <span className="grid h-full w-full place-items-center text-neutral-700">
+            <PresetIcon className="h-1/2 w-1/2" strokeWidth={1.5} />
+          </span>
+        ) : image ? (
           <img
             src={image}
             alt={label}
