@@ -51,7 +51,7 @@ function SideRotator({ items, delay }: { items: HeroBanner[]; delay: number }) {
 
   return (
     <div
-      className="aspect-[16/9] overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl lg:aspect-auto lg:h-full"
+      className="h-full w-full overflow-hidden"
       onMouseEnter={() => (paused.current = true)}
       onMouseLeave={() => (paused.current = false)}
     >
@@ -125,12 +125,12 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
 
   return (
     <section
-      className={`grid items-stretch gap-3 ${hasSide ? "lg:grid-cols-[27fr_10fr]" : ""}`}
+      className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-3"
       aria-label="Promotions"
     >
       {/* Main hero banner */}
       <div
-        className="relative aspect-[16/9] overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl lg:aspect-[47/20]"
+        className="relative aspect-[16/9] overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl lg:col-span-2 lg:aspect-auto lg:h-full"
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
@@ -179,15 +179,20 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
 
       {/* Supporting banners */}
       {hasSide && (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-1 lg:grid-rows-2">
+        <div className="flex h-full flex-col gap-4 lg:col-span-1">
           {slots.map((items, i) =>
             items.length > 0 ? (
-              <SideRotator key={i} items={items} delay={5200 + i * 900} />
+              <div
+                key={i}
+                className="flex-1 overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl"
+              >
+                <SideRotator items={items} delay={5200 + i * 900} />
+              </div>
             ) : (
               <div
                 key={i}
                 aria-hidden
-                className="aspect-[16/9] rounded-xl bg-sf-surface/40 sm:rounded-2xl lg:aspect-auto lg:h-full"
+                className="flex-1 rounded-xl bg-sf-surface/40 sm:rounded-2xl"
               />
             ),
           )}
