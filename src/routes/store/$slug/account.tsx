@@ -194,59 +194,62 @@ function Overview({
   const counts = (summary as any)?.counts ?? {};
 
   const actions = [
-    { id: "orders", label: t("nav.orders"), icon: Package, hint: t("account.ordersHint"), tone: "text-indigo-600 bg-indigo-50", show: true },
-    { id: "wishlist", label: t("nav.wishlist"), icon: Heart, hint: t("account.wishlistHint"), tone: "text-rose-600 bg-rose-50", show: true },
-    { id: "addresses", label: t("account.addresses"), icon: MapPin, hint: t("account.addressesHint"), tone: "text-emerald-600 bg-emerald-50", show: true },
-    { id: "services", label: t("account.activeServices"), icon: Wrench, hint: t("account.servicesHint"), tone: "text-orange-600 bg-orange-50", show: (counts.services ?? 0) > 0 },
-    { id: "subscriptions", label: t("account.subscriptionsLabel"), icon: RefreshCw, hint: t("account.subscriptionsHint"), tone: "text-teal-600 bg-teal-50", show: (counts.subscriptions ?? 0) > 0 },
-    { id: "downloads", label: t("account.downloads"), icon: Download, hint: t("account.downloadsHint"), tone: "text-violet-600 bg-violet-50", show: (counts.downloads ?? 0) > 0 },
-    { id: "profile", label: t("account.settings"), icon: User, hint: t("account.settingsHint"), tone: "text-amber-600 bg-amber-50", show: true },
-  ].filter((a) => a.show) as { id: Tab; label: string; icon: any; hint: string; tone: string; show: boolean }[];
+    { id: "orders", label: t("nav.orders"), icon: Package, hint: t("account.ordersHint"), show: true },
+    { id: "wishlist", label: t("nav.wishlist"), icon: Heart, hint: t("account.wishlistHint"), show: true },
+    { id: "addresses", label: t("account.addresses"), icon: MapPin, hint: t("account.addressesHint"), show: true },
+    { id: "services", label: t("account.activeServices"), icon: Wrench, hint: t("account.servicesHint"), show: (counts.services ?? 0) > 0 },
+    { id: "subscriptions", label: t("account.subscriptionsLabel"), icon: RefreshCw, hint: t("account.subscriptionsHint"), show: (counts.subscriptions ?? 0) > 0 },
+    { id: "downloads", label: t("account.downloads"), icon: Download, hint: t("account.downloadsHint"), show: (counts.downloads ?? 0) > 0 },
+    { id: "profile", label: t("account.settings"), icon: User, hint: t("account.settingsHint"), show: true },
+  ].filter((a) => a.show) as { id: Tab; label: string; icon: any; hint: string; show: boolean }[];
 
 
   return (
     <div className="space-y-4">
-      {/* Profile card */}
-      <div
-        className="relative overflow-hidden rounded-2xl p-5 text-white shadow-sm"
-        style={{
-          background:
-            "linear-gradient(135deg, var(--store-btn-bg, #0f172a) 0%, var(--primary, #1e293b) 100%)",
-        }}
-      >
-        <div className="flex items-center gap-4">
-          <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-white/15 text-lg font-bold ring-2 ring-white/20">
-            {initials || "U"}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <h2 className="truncate text-lg font-bold">{customer.full_name}</h2>
-              <BadgeCheck className="h-4 w-4 text-white/80" />
+      {/* Profile card — multi-colour mesh gradient */}
+      <div className="relative overflow-hidden rounded-3xl p-5 text-white shadow-lg shadow-purple-500/20 sm:p-6">
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500" />
+        <div className="absolute -left-10 -top-16 h-48 w-48 rounded-full bg-sky-400/40 blur-3xl" />
+        <div className="absolute -bottom-20 right-0 h-52 w-52 rounded-full bg-fuchsia-500/40 blur-3xl" />
+        <div className="absolute right-1/3 top-1/2 h-32 w-32 rounded-full bg-blue-400/30 blur-2xl" />
+
+        <div className="relative">
+          <div className="flex items-center gap-4">
+            <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-white/20 text-lg font-extrabold text-white shadow-inner ring-2 ring-white/40 backdrop-blur-md">
+              {initials || "U"}
             </div>
-            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-white/75">
-              {customer.email && (
-                <span className="flex items-center gap-1">
-                  <Mail className="h-3 w-3" /> {customer.email}
-                </span>
-              )}
-              {customer.phone && (
-                <span className="flex items-center gap-1">
-                  <Phone className="h-3 w-3" /> {customer.phone}
-                </span>
-              )}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <h2 className="truncate text-lg font-extrabold tracking-tight drop-shadow-sm">
+                  {customer.full_name}
+                </h2>
+                <BadgeCheck className="h-4 w-4 text-white" />
+              </div>
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs font-medium text-white/90">
+                {customer.email && (
+                  <span className="flex items-center gap-1">
+                    <Mail className="h-3 w-3" /> {customer.email}
+                  </span>
+                )}
+                {customer.phone && (
+                  <span className="flex items-center gap-1">
+                    <Phone className="h-3 w-3" /> {customer.phone}
+                  </span>
+                )}
+              </div>
+              <span className="mt-2 inline-flex rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white ring-1 ring-white/30 backdrop-blur-md">
+                {t("account.member")}
+              </span>
             </div>
-            <span className="mt-2 inline-flex rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
-              {t("account.member")}
-            </span>
           </div>
+          <button
+            type="button"
+            onClick={() => onNavigate("profile")}
+            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/20 px-4 py-2 text-xs font-bold text-white ring-1 ring-white/40 backdrop-blur-md transition-colors hover:bg-white/30"
+          >
+            <Pencil className="h-3.5 w-3.5" /> {t("account.editProfile")}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => onNavigate("profile")}
-          className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur transition-colors hover:bg-white/25"
-        >
-          <Pencil className="h-3.5 w-3.5" /> {t("account.editProfile")}
-        </button>
       </div>
 
       {/* Quick action grid */}
@@ -256,9 +259,9 @@ function Overview({
             key={a.id}
             type="button"
             onClick={() => onNavigate(a.id)}
-            className="group flex flex-col items-start gap-2 rounded-2xl border border-black/5 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+            className="group flex flex-col items-start gap-2 rounded-2xl border border-black/5 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-sf-accent/40 hover:shadow-md"
           >
-            <span className={`grid h-9 w-9 place-items-center rounded-xl ${a.tone}`}>
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-sf-accent-soft text-sf-accent">
               <a.icon className="h-4.5 w-4.5" />
             </span>
             <div>
@@ -268,6 +271,7 @@ function Overview({
           </button>
         ))}
       </div>
+
 
       {/* Settings list */}
       <div className="overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm">
