@@ -225,24 +225,24 @@ export function StoreFooter({
             <h3 className="text-base font-semibold text-white">{t("footer.customerPolicies")}</h3>
             <ul className="space-y-2.5 text-sm">
               <li>
-                <Link to="/store/$slug/privacy-policy" params={{ slug }} className="transition-colors hover:text-orange-500">
+                <a href="/privacy-policy" className="transition-colors hover:text-orange-500">
                   {t("footer.privacy")}
-                </Link>
+                </a>
               </li>
               <li>
-                <Link to="/store/$slug/terms" params={{ slug }} className="transition-colors hover:text-orange-500">
+                <a href="/terms" className="transition-colors hover:text-orange-500">
                   {t("footer.terms")}
-                </Link>
+                </a>
               </li>
               <li>
-                <Link to="/store/$slug/refund-policy" params={{ slug }} className="transition-colors hover:text-orange-500">
+                <a href="/refund-policy" className="transition-colors hover:text-orange-500">
                   {t("footer.returnRefund")}
-                </Link>
+                </a>
               </li>
               <li>
-                <Link to="/store/$slug/shipping-policy" params={{ slug }} className="transition-colors hover:text-orange-500">
+                <a href="/shipping-policy" className="transition-colors hover:text-orange-500">
                   {t("footer.shippingPolicy")}
-                </Link>
+                </a>
               </li>
             </ul>
           </div>
