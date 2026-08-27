@@ -1,0 +1,1 @@
+drop function if exists public.get_global_header_banner();

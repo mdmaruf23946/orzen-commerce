@@ -3,9 +3,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Upload } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { compressImage } from "@/lib/compress-image";
 import { getPlatformSettings, updatePlatformSettings } from "@/lib/owner-ext.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Button } from "@/components/ui/button";
@@ -23,7 +20,6 @@ function Page() {
   const { data } = useQuery({ queryKey: ["owner", "sysSettings"], queryFn: () => get() });
   const [f, setF] = useState<any>(null);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
 
   useEffect(() => { if (data && !f) setF({
     platform_name: data.platform_name ?? "",
