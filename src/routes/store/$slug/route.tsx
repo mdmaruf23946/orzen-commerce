@@ -171,7 +171,7 @@ function StoreLayout() {
         >
           <Outlet />
         </main>
-        {showChrome && <StoreFooter store={store} />}
+        {showChrome && <StoreFooter store={store} slug={slug} />}
         {showChrome && !isPreview && agent && (
           <AIChatLauncher
             slug={slug}
