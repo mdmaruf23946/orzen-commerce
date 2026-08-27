@@ -112,6 +112,65 @@ function Page() {
           <label className="flex items-center gap-2 text-sm"><Switch checked={f.maintenance_mode} onCheckedChange={(v) => setF({ ...f, maintenance_mode: v })} /> Enable maintenance mode</label>
           <Textarea className="mt-3" rows={2} placeholder="Message shown to visitors" value={f.maintenance_message} onChange={(e) => setF({ ...f, maintenance_message: e.target.value })} />
         </div>
+        <div className="rounded-xl border bg-card p-4">
+          <h2 className="font-semibold">Global Header Banner</h2>
+          <p className="mb-3 mt-1 text-xs text-muted-foreground">
+            Shown on every storefront right below the navigation bar. Merchants cannot edit or hide it.
+          </p>
+          <label className="flex items-center gap-2 text-sm">
+            <Switch checked={!!gb.enabled} onCheckedChange={(v) => setGB({ enabled: v })} /> Show global banner
+          </label>
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label>Image URL</Label>
+              <Input
+                value={gb.image_url ?? ""}
+                onChange={(e) => setGB({ image_url: e.target.value })}
+                placeholder="/api/img/… or https://…"
+              />
+            </div>
+            <div>
+              <Label>Destination link (optional)</Label>
+              <Input
+                value={gb.link_url ?? ""}
+                onChange={(e) => setGB({ link_url: e.target.value })}
+                placeholder="https://example.com"
+              />
+            </div>
+            <div>
+              <Label>Alt text</Label>
+              <Input
+                value={gb.alt ?? ""}
+                onChange={(e) => setGB({ alt: e.target.value })}
+                placeholder="Accepted payment methods"
+              />
+            </div>
+            <div>
+              <Label>Upload image</Label>
+              <label className="mt-1 flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed text-sm text-muted-foreground hover:bg-muted/40">
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                {uploading ? "Uploading…" : "Choose file"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void uploadBanner(file);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+
+          {gb.image_url ? (
+            <div className="mt-3 rounded-lg border bg-white p-2">
+              <img src={gb.image_url} alt={gb.alt || "Banner preview"} className="mx-auto max-h-10 w-full object-contain" />
+            </div>
+          ) : null}
+        </div>
         <Button onClick={submit} disabled={saving} className="w-full sm:w-auto">{saving ? "Saving…" : "Save settings"}</Button>
       </div>
     </div>
