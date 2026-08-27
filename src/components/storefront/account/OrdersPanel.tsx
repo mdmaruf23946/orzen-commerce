@@ -30,6 +30,7 @@ import {
   taka,
   type OrderType,
 } from "@/lib/order-display";
+import { OrderTracker } from "@/components/storefront/account/OrderTracker";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -149,7 +150,7 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
 
   return (
     <div className="space-y-3">
-      <OrderTracker slug={storeSlug} compact showDetailLink />
+      <OrderTracker slug={slug} compact showDetailLink />
 
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
         {TYPE_TABS.map((t) => (
