@@ -805,7 +805,7 @@ export const upsertCategory = createServerFn({ method: "POST" })
         id: z.string().uuid().optional(),
         name: z.string().trim().min(1).max(80),
         image_url: z.string().max(500).nullable().optional(),
-        icon_name: z.string().max(60).nullable().optional(),
+        icon_name: z.string().max(200).nullable().optional(),
         description: z.string().max(500).nullable().optional(),
         sort_order: z.number().int().min(0).max(9999).optional(),
         is_active: z.boolean().optional(),

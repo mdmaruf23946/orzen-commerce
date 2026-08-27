@@ -1,9 +1,16 @@
-// Dual icon control for main categories: preset lucide icon OR custom upload.
+// Dual icon control for main categories: 1–3 preset lucide icons OR custom upload.
 import { useState } from "react";
-import { Check, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ImageUploader } from "@/components/admin/ImageUploader";
-import { CATEGORY_ICONS, CATEGORY_ICON_KEYS, getCategoryIcon } from "@/lib/category-icons";
+import { CategoryIconCluster } from "@/components/CategoryIconCluster";
+import {
+  CATEGORY_ICONS,
+  CATEGORY_ICON_KEYS,
+  MAX_CATEGORY_ICONS,
+  parseIconNames,
+  serializeIconNames,
+} from "@/lib/category-icons";
 import { cn } from "@/lib/utils";
 
 export function CategoryIconPicker({
@@ -20,7 +27,17 @@ export function CategoryIconPicker({
   onChangeImage: (v: string | null) => void;
 }) {
   const [mode, setMode] = useState<"preset" | "upload">(imageUrl && !iconName ? "upload" : "preset");
-  const Active = getCategoryIcon(iconName);
+  const selected = parseIconNames(iconName);
+
+  function toggle(key: string) {
+    const next = selected.includes(key)
+      ? selected.filter((k) => k !== key)
+      : selected.length >= MAX_CATEGORY_ICONS
+        ? selected
+        : [...selected, key];
+    onChangeIcon(serializeIconNames(next));
+    if (next.length) onChangeImage(null);
+  }
 
   return (
     <div className="space-y-3 rounded-lg border p-3">
@@ -51,47 +68,57 @@ export function CategoryIconPicker({
 
       {mode === "preset" ? (
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {Active ? (
-              <>
-                <span className="grid h-9 w-9 place-items-center rounded-md border bg-muted">
-                  <Active className="h-5 w-5" />
-                </span>
-                <span>Selected: {iconName}</span>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl border bg-muted">
+              {selected.length ? (
+                <CategoryIconCluster iconName={iconName} />
+              ) : (
+                <span className="text-[10px]">Preview</span>
+              )}
+            </span>
+            <div className="min-w-0">
+              <p>
+                {selected.length
+                  ? `${selected.length} of ${MAX_CATEGORY_ICONS} selected: ${selected.join(", ")}`
+                  : `Pick up to ${MAX_CATEGORY_ICONS} icons below.`}
+              </p>
+              {selected.length > 0 && (
                 <button
                   type="button"
                   onClick={() => onChangeIcon(null)}
-                  className="ml-auto inline-flex items-center rounded px-2 py-1 hover:bg-muted"
+                  className="mt-1 inline-flex items-center rounded px-2 py-1 hover:bg-muted"
                 >
-                  <X className="mr-1 h-3.5 w-3.5" /> Clear
+                  <X className="mr-1 h-3.5 w-3.5" /> Clear all
                 </button>
-              </>
-            ) : (
-              <span>Pick an icon below.</span>
-            )}
+              )}
+            </div>
           </div>
           <div className="grid max-h-56 grid-cols-6 gap-2 overflow-y-auto sm:grid-cols-8">
             {CATEGORY_ICON_KEYS.map((key) => {
               const Icon = CATEGORY_ICONS[key];
-              const active = iconName === key;
+              const idx = selected.indexOf(key);
+              const active = idx >= 0;
+              const full = !active && selected.length >= MAX_CATEGORY_ICONS;
               return (
                 <button
                   key={key}
                   type="button"
                   title={key}
                   aria-label={key}
-                  onClick={() => {
-                    onChangeIcon(key);
-                    onChangeImage(null);
-                  }}
+                  aria-pressed={active}
+                  disabled={full}
+                  onClick={() => toggle(key)}
                   className={cn(
                     "relative grid aspect-square place-items-center rounded-md border transition hover:bg-muted",
                     active && "border-primary bg-primary/10",
+                    full && "cursor-not-allowed opacity-40",
                   )}
                 >
                   <Icon className="h-5 w-5" />
                   {active && (
-                    <Check className="absolute right-0.5 top-0.5 h-3 w-3 text-primary" />
+                    <span className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+                      {idx + 1}
+                    </span>
                   )}
                 </button>
               );

@@ -21,6 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { CategoryIconPicker } from "@/components/admin/CategoryIconPicker";
 import { getCategoryIcon } from "@/lib/category-icons";
+import { CategoryIconCluster } from "@/components/CategoryIconCluster";
 import { cn } from "@/lib/utils";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
@@ -265,15 +266,13 @@ function CategoriesPage() {
                   >
                     <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-muted-foreground" />
                     <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-muted">
-                      {(() => {
-                        const Preset = getCategoryIcon((c as any).icon_name);
-                        return Preset ? <Preset className="h-5 w-5" /> : null;
-                      })()}
-                      {!getCategoryIcon((c as any).icon_name) && src ? (
+                      {getCategoryIcon((c as any).icon_name) ? (
+                        <CategoryIconCluster iconName={(c as any).icon_name} />
+                      ) : src ? (
                         <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
-                      ) : !getCategoryIcon((c as any).icon_name) ? (
+                      ) : (
                         <ImageIcon className="h-5 w-5 text-muted-foreground" />
-                      ) : null}
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
