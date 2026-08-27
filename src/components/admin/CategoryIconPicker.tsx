@@ -1,14 +1,16 @@
 // Dual icon control for main categories: 1–3 preset lucide icons OR custom upload.
-import { useState } from "react";
-import { X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { CategoryIconCluster } from "@/components/CategoryIconCluster";
 import {
   CATEGORY_ICONS,
-  CATEGORY_ICON_KEYS,
+  CATEGORY_ICON_GROUPS,
   MAX_CATEGORY_ICONS,
   parseIconNames,
+  searchIconKeys,
   serializeIconNames,
 } from "@/lib/category-icons";
 import { cn } from "@/lib/utils";
@@ -27,7 +29,15 @@ export function CategoryIconPicker({
   onChangeImage: (v: string | null) => void;
 }) {
   const [mode, setMode] = useState<"preset" | "upload">(imageUrl && !iconName ? "upload" : "preset");
+  const [group, setGroup] = useState<string>("all");
+  const [query, setQuery] = useState("");
   const selected = parseIconNames(iconName);
+
+  const visibleKeys = useMemo(() => {
+    const base =
+      CATEGORY_ICON_GROUPS.find((g) => g.key === group)?.icons ?? CATEGORY_ICON_GROUPS[0].icons;
+    return searchIconKeys(base, query);
+  }, [group, query]);
 
   function toggle(key: string) {
     const next = selected.includes(key)
@@ -93,8 +103,42 @@ export function CategoryIconPicker({
               )}
             </div>
           </div>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search icon by name..."
+              className="h-9 pl-8"
+            />
+          </div>
+
+          <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {CATEGORY_ICON_GROUPS.map((g) => (
+              <button
+                key={g.key}
+                type="button"
+                onClick={() => setGroup(g.key)}
+                aria-pressed={group === g.key}
+                className={cn(
+                  "shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition",
+                  group === g.key
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "bg-background text-muted-foreground hover:bg-muted",
+                )}
+              >
+                {g.label}
+              </button>
+            ))}
+          </div>
+
           <div className="grid max-h-56 grid-cols-6 gap-2 overflow-y-auto sm:grid-cols-8">
-            {CATEGORY_ICON_KEYS.map((key) => {
+            {visibleKeys.length === 0 && (
+              <p className="col-span-full py-6 text-center text-xs text-muted-foreground">
+                No icons match “{query}”.
+              </p>
+            )}
+            {visibleKeys.map((key) => {
               const Icon = CATEGORY_ICONS[key];
               const idx = selected.indexOf(key);
               const active = idx >= 0;
