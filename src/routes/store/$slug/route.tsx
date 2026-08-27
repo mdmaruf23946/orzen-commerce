@@ -34,6 +34,7 @@ import { MobileDrawer } from "@/components/storefront/MobileDrawer";
 import { BottomNav } from "@/components/storefront/BottomNav";
 import { StoreBranding } from "@/components/storefront/StoreBranding";
 import { StoreFooter } from "@/components/storefront/StoreFooter";
+import { GlobalHeaderBanner } from "@/components/storefront/GlobalHeaderBanner";
 
 import { resolveStoreIcon, resolveStoreFavicon } from "@/lib/store-icon";
 import { useRouteErrorTracking } from "@/hooks/use-error-tracking";
@@ -166,6 +167,7 @@ function StoreLayout() {
           nameLogoUrl={(store as any).name_logo_url ?? null}
           showSearch={!isAccount && !isCheckoutFlow}
         />
+        <GlobalHeaderBanner />
         <main
           className="mx-auto px-4 pb-24 pt-0 sm:pt-4 sm:px-6 md:pb-12"
           style={{ maxWidth: resolved ? "var(--store-container)" : undefined }}

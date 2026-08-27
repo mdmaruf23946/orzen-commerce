@@ -4760,6 +4760,33 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_global_banner: {
+        Row: {
+          alt: string | null
+          enabled: boolean
+          id: number
+          image_url: string | null
+          link_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          alt?: string | null
+          enabled?: boolean
+          id?: number
+          image_url?: string | null
+          link_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alt?: string | null
+          enabled?: boolean
+          id?: number
+          image_url?: string | null
+          link_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_notices: {
         Row: {
           body: string | null
