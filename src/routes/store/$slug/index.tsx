@@ -511,36 +511,7 @@ function CategoryStrip({
   onSelect: (id: string | null) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [showRight, setShowRight] = useState(true);
-  const [showLeft, setShowLeft] = useState(false);
   const { t } = useStoreT();
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    // rAF-coalesced so a fast flick never triggers a setState per scroll event.
-    let frame = 0;
-    const measure = () => {
-      frame = 0;
-      const max = el.scrollWidth - el.clientWidth;
-      const left = el.scrollLeft > 4;
-      const right = el.scrollLeft < max - 4;
-      setShowLeft((v) => (v === left ? v : left));
-      setShowRight((v) => (v === right ? v : right));
-    };
-    const schedule = () => {
-      if (frame) return;
-      frame = requestAnimationFrame(measure);
-    };
-    measure();
-    el.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", schedule, { passive: true });
-    return () => {
-      if (frame) cancelAnimationFrame(frame);
-      el.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", schedule);
-    };
-  }, [categories.length]);
 
 
   return (
@@ -549,7 +520,7 @@ function CategoryStrip({
         ref={scrollRef}
         className="flex flex-nowrap gap-3 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory sm:grid sm:grid-cols-6 sm:gap-4 md:grid-cols-8"
       >
-        <div className="w-[calc(25%-0.5625rem)] shrink-0 snap-start sm:w-auto">
+        <div className="w-[calc(25%-0.75rem)] shrink-0 snap-start sm:w-auto">
           <CategoryTile
             label={t("home.categoryAll")}
             image={allImage ?? null}
@@ -558,7 +529,7 @@ function CategoryStrip({
           />
         </div>
         {categories.map((c) => (
-          <div key={c.id} className="w-[calc(25%-0.5625rem)] shrink-0 snap-start sm:w-auto">
+          <div key={c.id} className="w-[calc(25%-0.75rem)] shrink-0 snap-start sm:w-auto">
             <CategoryTile
               label={c.name}
               image={c.image_url ?? null}
@@ -570,18 +541,6 @@ function CategoryStrip({
           </div>
         ))}
       </div>
-
-      {/* Mobile swipe hint */}
-      <div
-        className={`pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-white via-white/80 to-transparent transition-opacity duration-300 sm:hidden ${
-          showRight ? "opacity-100" : "opacity-0"
-        }`}
-      />
-      <div
-        className={`pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-white via-white/80 to-transparent transition-opacity duration-300 sm:hidden ${
-          showLeft ? "opacity-100" : "opacity-0"
-        }`}
-      />
     </div>
   );
 }

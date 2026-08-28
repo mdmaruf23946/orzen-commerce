@@ -36,7 +36,7 @@ export function GlobalHeaderBanner() {
   );
 
   return (
-    <div className="w-full border-t bg-background py-3 pb-24 md:pb-3">
+    <div className="w-full border-t bg-slate-100 py-3 pb-24 md:pb-3">
       <div className="mx-auto px-3 sm:px-6" style={{ maxWidth: "var(--store-container, 64rem)" }}>
         {data.link_url ? (
           <a href={data.link_url} target="_blank" rel="noreferrer noopener" className="block">
