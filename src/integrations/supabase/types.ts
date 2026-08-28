@@ -3741,6 +3741,50 @@ export type Database = {
         }
         Relationships: []
       }
+      merchant_wallets: {
+        Row: {
+          auto_renew: boolean
+          auto_renew_cycle: string
+          balance: number
+          created_at: string
+          currency: string
+          id: string
+          store_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_renew?: boolean
+          auto_renew_cycle?: string
+          balance?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          store_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_renew?: boolean
+          auto_renew_cycle?: string
+          balance?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          store_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_wallets_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messenger_integrations: {
         Row: {
           ai_auto_reply: boolean
@@ -8615,6 +8659,7 @@ export type Database = {
           package_id: string | null
           paid_at: string | null
           pdf_path: string | null
+          purpose: string
           status: string
           store_id: string | null
           tax: number
@@ -8635,6 +8680,7 @@ export type Database = {
           package_id?: string | null
           paid_at?: string | null
           pdf_path?: string | null
+          purpose?: string
           status?: string
           store_id?: string | null
           tax?: number
@@ -8655,6 +8701,7 @@ export type Database = {
           package_id?: string | null
           paid_at?: string | null
           pdf_path?: string | null
+          purpose?: string
           status?: string
           store_id?: string | null
           tax?: number
@@ -9012,6 +9059,63 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          id: string
+          invoice_id: string | null
+          note: string | null
+          reference: string | null
+          status: string
+          type: string
+          user_id: string
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          note?: string | null
+          reference?: string | null
+          status?: string
+          type: string
+          user_id: string
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          note?: string | null
+          reference?: string | null
+          status?: string
+          type?: string
+          user_id?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_wallets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       webhooks: {
         Row: {
@@ -9644,6 +9748,50 @@ export type Database = {
           _package_id: string
         }
         Returns: Json
+      }
+      wallet_credit: {
+        Args: {
+          _amount: number
+          _invoice_id?: string
+          _note?: string
+          _reference?: string
+          _store_id?: string
+          _type: string
+          _user_id: string
+        }
+        Returns: Json
+      }
+      wallet_debit: {
+        Args: {
+          _amount: number
+          _invoice_id?: string
+          _note?: string
+          _reference?: string
+          _store_id?: string
+          _type: string
+          _user_id: string
+        }
+        Returns: Json
+      }
+      wallet_ensure: {
+        Args: { _store_id?: string; _user_id: string }
+        Returns: {
+          auto_renew: boolean
+          auto_renew_cycle: string
+          balance: number
+          created_at: string
+          currency: string
+          id: string
+          store_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "merchant_wallets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {
