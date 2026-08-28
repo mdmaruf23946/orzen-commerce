@@ -53,11 +53,16 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
       <ul className="mx-auto grid max-w-md grid-cols-5 items-end">
         {/* Categories */}
         <li>
-          <a href="#categories" onClick={openCategories} className={itemCls(false)}>
+          <Link
+            to="/store/$slug/categories"
+            params={{ slug }}
+            className={itemCls(pathname === `${base}/categories`)}
+          >
             <LayoutGrid className="h-5 w-5 text-sf-accent" />
             <span>{t("nav.categories")}</span>
-          </a>
+          </Link>
         </li>
+
 
         {/* WhatsApp */}
         <li>
