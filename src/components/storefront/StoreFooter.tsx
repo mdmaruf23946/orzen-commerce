@@ -144,7 +144,7 @@ export function StoreFooter({
   }
 
   return (
-    <footer id="contact" className="mt-10 border-t-4 border-sf-accent bg-slate-50 text-slate-600">
+    <footer id="contact" className="mt-4 border-t-4 border-sf-accent bg-slate-50 text-slate-600 sm:mt-6 md:mt-10">
       <div className="mx-auto max-w-7xl px-5 py-12 md:px-8 md:py-14">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}

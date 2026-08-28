@@ -2,7 +2,7 @@ import { StoreErrorState } from "@/components/storefront/StoreErrorState";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { keepPreviousData, queryOptions } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, Flame, Grid3x3, ChevronRight, SearchX } from "lucide-react";
+import { Sparkles, Flame, Grid3x3, ChevronRight, ChevronDown, SearchX } from "lucide-react";
 import {
   listStoreBanners,
   listStoreProducts,
@@ -260,13 +260,13 @@ function HomeContent() {
           <>
             <ProductGrid slug={slug} products={filtered.slice(0, pageSize)} />
             {filtered.length > pageSize && (
-              <div className="flex justify-center pt-2">
+              <div className="flex justify-end pt-2">
                 <button
                   type="button"
                   onClick={() => setPageSize((n) => n + PAGE_SIZE)}
-                  className="rounded-full border border-neutral-200 bg-white px-6 py-2.5 text-sm font-semibold text-neutral-800 shadow-sm transition-colors hover:bg-neutral-50"
+                  className="inline-flex items-center gap-1 rounded-full bg-sf-ink px-4 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-sf-accent sm:text-sm"
                 >
-                  {t("home.loadMore")}
+                  {t("home.loadMore")} <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
               </div>
             )}
