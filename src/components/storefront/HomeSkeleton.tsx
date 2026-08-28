@@ -27,12 +27,12 @@ export function HomeSkeleton() {
       <Box className="aspect-[16/7] w-full rounded-3xl sm:aspect-[21/8]" />
 
       {/* Category tiles */}
-      <section className="rounded-3xl border border-sf-line bg-white p-3 sm:p-5">
-        <div className="flex flex-nowrap gap-3 sm:grid sm:grid-cols-6 sm:gap-4 md:grid-cols-8">
+      <section className="rounded-2xl border border-sf-line bg-white p-2 sm:rounded-3xl sm:p-4">
+        <div className="flex flex-nowrap gap-2 sm:grid sm:grid-cols-6 sm:gap-4 md:grid-cols-8">
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
-              className="w-[calc(25%-0.75rem)] shrink-0 space-y-1.5 sm:w-auto"
+              className="w-[calc(25%-0.5rem)] shrink-0 space-y-1 sm:w-auto"
             >
               <Box className="aspect-square w-full" />
               <Box className="mx-auto h-2.5 w-3/4 rounded-md" />
