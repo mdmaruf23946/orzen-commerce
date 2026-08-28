@@ -150,29 +150,6 @@ function StoreHome() {
 
   const isFiltering = !!activeMainId || !!activeSubId || query.trim().length > 0;
 
-  // Products grouped by main category, for the category rows below featured.
-  const categoryRows = useMemo(() => {
-    if (isFiltering) return [];
-    return mainCategories
-      .map((c: any) => {
-        const items = products.filter((p: any) => {
-          const cid = p.category_id as string | null;
-          if (!cid) return false;
-          return cid === c.id || catParentMap.get(cid) === c.id;
-        });
-        return { id: c.id as string, name: c.name as string, items };
-      })
-      .filter((r) => r.items.length > 0)
-      .slice(0, 6);
-  }, [mainCategories, products, catParentMap, isFiltering]);
-
-  function showCategory(id: string) {
-    selectMain(id, "icon");
-    requestAnimationFrame(() =>
-      document.getElementById("all-products")?.scrollIntoView({ behavior: "smooth", block: "start" }),
-    );
-  }
-
   const on = theme.sections;
   const blocks: Partial<Record<string, React.ReactNode>> = {
     banner: on.banner && banners.length > 0 ? <HeroBanners key="banner" banners={banners as any} /> : null,
