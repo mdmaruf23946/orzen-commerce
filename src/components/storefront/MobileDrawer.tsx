@@ -240,10 +240,10 @@ export function MobileDrawer({
               {email && (
                 <NavExtLink href={`mailto:${email}`} icon={Mail} label={email} onClick={() => onOpenChange(false)} />
               )}
-              <NavExtLink href="/privacy-policy" icon={Shield} label={t("footer.privacy")} onClick={() => onOpenChange(false)} />
-              <NavExtLink href="/terms" icon={Shield} label={t("footer.terms")} onClick={() => onOpenChange(false)} />
-              <NavExtLink href="/refund-policy" icon={Shield} label={t("footer.returnPolicy")} onClick={() => onOpenChange(false)} />
-              <NavExtLink href="/shipping-policy" icon={Shield} label={t("footer.shippingPolicy")} onClick={() => onOpenChange(false)} />
+              <NavItem to="/store/$slug/privacy-policy" params={{ slug }} icon={Shield} label={t("footer.privacy")} onClick={() => onOpenChange(false)} />
+              <NavItem to="/store/$slug/terms-conditions" params={{ slug }} icon={Shield} label={t("footer.terms")} onClick={() => onOpenChange(false)} />
+              <NavItem to="/store/$slug/return-refund-policy" params={{ slug }} icon={Shield} label={t("footer.returnPolicy")} onClick={() => onOpenChange(false)} />
+              <NavItem to="/store/$slug/shipping-policy" params={{ slug }} icon={Shield} label={t("footer.shippingPolicy")} onClick={() => onOpenChange(false)} />
             </div>
           </div>
 
