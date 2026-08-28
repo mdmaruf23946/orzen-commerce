@@ -121,7 +121,7 @@ export function MySubscriptions({ slug, token }: { slug: string; token: string }
               <Button
                 size="sm"
                 variant="outline"
-                className="h-8 text-xs"
+                className="h-8 border-sf-accent text-xs text-sf-accent hover:bg-sf-accent-soft hover:text-sf-accent"
                 disabled={busy === s.id}
                 onClick={() =>
                   run(
@@ -137,7 +137,7 @@ export function MySubscriptions({ slug, token }: { slug: string; token: string }
               <Button
                 size="sm"
                 variant="outline"
-                className="h-8 text-xs"
+                className="h-8 border-sf-accent text-xs text-sf-accent hover:bg-sf-accent-soft hover:text-sf-accent"
                 disabled={busy === s.id}
                 onClick={() =>
                   run(
@@ -152,7 +152,7 @@ export function MySubscriptions({ slug, token }: { slug: string; token: string }
               {s.billing_cycle !== "lifetime" && !["cancelled", "expired"].includes(status) && (
                 <Button
                   size="sm"
-                  className="h-8 text-xs"
+                  className="h-8 bg-sf-accent text-xs text-white hover:bg-sf-accent-hover"
                   disabled={busy === s.id}
                   onClick={() =>
                     run(
@@ -169,7 +169,7 @@ export function MySubscriptions({ slug, token }: { slug: string; token: string }
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-8 text-xs text-rose-600"
+                  className="h-8 border-rose-600 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700"
                   disabled={busy === s.id}
                   onClick={() => {
                     if (!confirm(t("sub.cancelConfirm"))) return;
@@ -187,7 +187,7 @@ export function MySubscriptions({ slug, token }: { slug: string; token: string }
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-8 text-xs"
+                  className="h-8 text-xs text-sf-accent hover:bg-sf-accent-soft hover:text-sf-accent"
                   onClick={() => setOpenId(open ? null : s.id)}
                 >
                   <ReceiptText className="mr-1 h-3.5 w-3.5" /> {t("sub.invoices", { count: invoices.length })}
