@@ -343,8 +343,8 @@ function FeaturedCategories({ children }: { children: React.ReactNode }) {
 /** Multi-tone gradient panel that frames the featured product carousel. */
 function FeaturedPanel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="sf-featured-panel overflow-hidden rounded-3xl p-3 shadow-lg sm:p-6">
-      <h2 className="mb-3 text-center text-lg font-extrabold tracking-tight text-white sm:mb-5 sm:text-2xl">
+    <section className="sf-featured-panel overflow-hidden rounded-2xl p-2 shadow-lg sm:rounded-3xl sm:p-6">
+      <h2 className="mb-2 text-center text-lg font-extrabold tracking-tight text-white sm:mb-5 sm:text-2xl">
         {title}
         <span className="mx-auto mt-2 block h-1 w-16 rounded-full bg-sf-accent" />
       </h2>
