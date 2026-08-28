@@ -211,7 +211,7 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
             <Link
               to="/store/$slug"
               params={{ slug }}
-              className="rounded-full bg-neutral-900 px-4 py-2 text-xs font-semibold text-white"
+              className="rounded-full bg-sf-accent px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-sf-accent-hover"
             >
               {t("account.startShopping")}
             </Link>
@@ -291,7 +291,7 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
                   <Link
                     to="/store/$slug/order/$orderId"
                     params={{ slug, orderId: o.id }}
-                    className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-semibold text-neutral-700"
+                    className="inline-flex items-center gap-1 rounded-full bg-sf-accent px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm hover:bg-sf-accent-hover"
                   >
                     <Icon className="h-3.5 w-3.5" /> {ORDER_TYPE_ACTION[ot]}
                   </Link>
@@ -344,7 +344,7 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-[11px]"
+                          className="border-sf-accent text-[11px] text-sf-accent hover:bg-sf-accent-soft hover:text-sf-accent"
                           onClick={() => setReturnFor({ order: o, type: "return" })}
                         >
                           <RotateCcw className="mr-1 h-3.5 w-3.5" /> {t("account.requestReturn")}
@@ -352,7 +352,7 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-[11px]"
+                          className="border-sf-accent text-[11px] text-sf-accent hover:bg-sf-accent-soft hover:text-sf-accent"
                           onClick={() => setReturnFor({ order: o, type: "exchange" })}
                         >
                           <Repeat className="mr-1 h-3.5 w-3.5" /> {t("account.requestExchange")}
@@ -393,7 +393,7 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("account.keepOrder")}</AlertDialogCancel>
-            <AlertDialogAction disabled={busy} onClick={(e) => { e.preventDefault(); doCancel(); }}>
+            <AlertDialogAction disabled={busy} className="bg-rose-600 text-white hover:bg-rose-700" onClick={(e) => { e.preventDefault(); doCancel(); }}>
               {busy ? t("account.cancelling") : t("account.yesCancel")}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -422,7 +422,7 @@ export function OrderCancelButton({
 
   return (
     <>
-      <Button variant="outline" className="w-full" onClick={() => setOpen(true)}>
+      <Button variant="outline" className="w-full border-rose-600 text-rose-600 hover:bg-rose-50 hover:text-rose-700" onClick={() => setOpen(true)}>
         Cancel order
       </Button>
       <AlertDialog open={open} onOpenChange={setOpen}>
@@ -437,6 +437,7 @@ export function OrderCancelButton({
             <AlertDialogCancel>Keep order</AlertDialogCancel>
             <AlertDialogAction
               disabled={busy}
+              className="bg-rose-600 text-white hover:bg-rose-700"
               onClick={async (e) => {
                 e.preventDefault();
                 setBusy(true);
