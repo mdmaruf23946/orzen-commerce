@@ -169,7 +169,10 @@ export function WelcomeCard(props: WelcomeCardProps) {
   const aiRepliesCount = inbox?.ai_replied ?? 0;
 
   const badges = (
-    <div className="flex flex-wrap items-center gap-2 mb-4">
+    <div
+      className="flex flex-nowrap items-center gap-2 mb-4 overflow-x-auto"
+      style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+    >
       <StatusChip tone="emerald">Active Store</StatusChip>
       {store?.package_name && (
         <Chip className="bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700">
