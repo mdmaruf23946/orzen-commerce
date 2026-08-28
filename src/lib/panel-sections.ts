@@ -63,7 +63,7 @@ export const PANEL_SECTIONS: PanelSection[] = [
   { key: "landing_pages", label: "Landing Page Integrations", group: "Operations", paths: ["/admin/landing-pages"], feature: "landing_pages" },
 
   { key: "theme", label: "Theme", group: "System", paths: ["/admin/theme"] },
-  { key: "legal", label: "Legal & Info Pages", group: "System", paths: ["/admin/legal"] },
+  { key: "pages", label: "Pages & Content", group: "System", paths: ["/admin/pages", "/admin/legal"] },
   { key: "invoice_templates", label: "Invoice Templates", group: "System", paths: ["/admin/invoice-templates"], feature: "invoice" },
   { key: "import_export", label: "Import / Export", group: "System", paths: ["/admin/import-export"], feature: "import_export" },
   { key: "activity", label: "Activity Log", group: "System", paths: ["/admin/activity"] },
