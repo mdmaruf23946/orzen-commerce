@@ -88,7 +88,7 @@ ${HOVER_CSS[t.product_card.hover] ?? ""}
   };}
 .${THEME_SCOPE} .theme-header{height:var(--store-header-height);}
 .${THEME_SCOPE} .theme-container{max-width:var(--store-container);margin-inline:auto;}
-.${THEME_SCOPE} .theme-sections{display:flex;flex-direction:column;gap:0.25rem;}
+.${THEME_SCOPE} .theme-sections{display:flex;flex-direction:column;gap:0.75rem;}
 @media (min-width:640px){
   .${THEME_SCOPE} .theme-sections{gap:var(--store-section-gap);}
 }
