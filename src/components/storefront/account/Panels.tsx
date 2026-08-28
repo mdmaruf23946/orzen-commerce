@@ -47,7 +47,7 @@ export function ActiveServicesPanel({ slug, token }: { slug: string; token: stri
           <Link
             to="/store/$slug/order/$orderId"
             params={{ slug, orderId: o.id }}
-            className="mt-3 inline-flex rounded-full bg-neutral-900 px-3 py-1.5 text-[11px] font-semibold text-white"
+            className="mt-3 inline-flex rounded-full bg-sf-accent px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-sf-accent-hover"
           >
             Manage service
           </Link>
@@ -161,7 +161,7 @@ export function PrivacyPanel({
           <button
             type="button"
             onClick={onChangePassword}
-            className="mt-2 rounded-full bg-neutral-900 px-3 py-1.5 text-[11px] font-semibold text-white"
+            className="mt-2 rounded-full bg-sf-accent px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-sf-accent-hover"
           >
             Change password
           </button>
@@ -174,7 +174,7 @@ export function PrivacyPanel({
         </p>
         <a
           href="/data-deletion"
-          className="mt-2 inline-flex text-xs font-semibold text-neutral-900 underline"
+          className="mt-2 inline-flex text-xs font-semibold text-rose-600 underline hover:text-rose-700"
         >
           Request data deletion
         </a>

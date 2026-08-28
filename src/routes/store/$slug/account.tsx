@@ -245,7 +245,7 @@ function Overview({
           <button
             type="button"
             onClick={() => onNavigate("profile")}
-            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/20 px-4 py-2 text-xs font-bold text-white ring-1 ring-white/40 backdrop-blur-md transition-colors hover:bg-white/30"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-sf-accent px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-sf-accent-hover"
           >
             <Pencil className="h-3.5 w-3.5" /> {t("account.editProfile")}
           </button>
@@ -382,7 +382,7 @@ function ProfileTab({
         <Label>{t("common.phone")}</Label>
         <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
       </div>
-      <Button type="submit" disabled={saving} className="w-full sm:w-auto">
+      <Button type="submit" disabled={saving} className="w-full bg-sf-accent text-white hover:bg-sf-accent-hover sm:w-auto">
         {saving ? t("common.saving") : t("account.saveChanges")}
       </Button>
     </form>
@@ -511,11 +511,11 @@ function AddressesTab({ slug, token }: { slug: string; token: string }) {
               </div>
               <div className="flex flex-col gap-1">
                 {!a.is_default && (
-                  <Button size="sm" variant="outline" onClick={() => setDefault(a.id, a)}>
+                  <Button size="sm" variant="outline" className="border-sf-accent text-sf-accent hover:bg-sf-accent-soft hover:text-sf-accent" onClick={() => setDefault(a.id, a)}>
                     {t("account.setDefault")}
                   </Button>
                 )}
-                <Button size="sm" variant="ghost" onClick={() => remove(a.id)}>
+                <Button size="sm" variant="ghost" className="text-rose-600 hover:bg-rose-50 hover:text-rose-700" onClick={() => remove(a.id)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -533,7 +533,7 @@ function AddressesTab({ slug, token }: { slug: string; token: string }) {
         <Input placeholder={t("account.addressLabelPlaceholder")} value={label} onChange={(e) => setLabel(e.target.value)} />
         <Textarea placeholder={t("account.addressPlaceholder")} value={address} onChange={(e) => setAddress(e.target.value)} />
         <Input placeholder={t("account.areaOptional")} value={area} onChange={(e) => setArea(e.target.value)} />
-        <Button size="sm" onClick={add} disabled={!address.trim()}>
+        <Button size="sm" className="bg-sf-accent text-white hover:bg-sf-accent-hover" onClick={add} disabled={!address.trim()}>
           {t("account.addAddress")}
         </Button>
       </div>
@@ -637,7 +637,7 @@ function PasswordTab({ slug, token }: { slug: string; token: string }) {
           onChange={(e) => setConfirm(e.target.value)}
         />
       </div>
-      <Button type="submit" disabled={saving} className="w-full sm:w-auto">
+      <Button type="submit" disabled={saving} className="w-full bg-sf-accent text-white hover:bg-sf-accent-hover sm:w-auto">
         {saving ? t("common.saving") : t("account.changePassword")}
       </Button>
     </form>
