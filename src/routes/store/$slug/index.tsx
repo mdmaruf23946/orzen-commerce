@@ -1,8 +1,7 @@
 import { StoreErrorState } from "@/components/storefront/StoreErrorState";
-import { createFileRoute } from "@tanstack/react-router";
-import { keepPreviousData, queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { HomeSkeleton } from "@/components/storefront/HomeSkeleton";
+import { createFileRoute, notFound } from "@tanstack/react-router";
+import { keepPreviousData, queryOptions } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles, Flame, Grid3x3, ChevronRight, SearchX } from "lucide-react";
 import {
   listStoreBanners,
@@ -73,20 +72,27 @@ const bestSellingQuery = (storeId: string) =>
   });
 
 export const Route = createFileRoute("/store/$slug/")({
-  // Only the store record blocks the route; the content queries are primed in
-  // the background and rendered behind a skeleton so the body never collapses.
+  head: () => ({
+    meta: [
+      { title: "Shop Products — ORZEN Store" },
+      { name: "description", content: "Browse featured, best-selling, and new products from this ORZEN store." },
+      { property: "og:title", content: "Shop Products — ORZEN Store" },
+      { property: "og:description", content: "Browse featured, best-selling, and new products from this ORZEN store." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   loader: async ({ context, params }) => {
     const store = await context.queryClient.ensureQueryData(storeQuery(params.slug));
-    if (!store) return null;
-    void context.queryClient.prefetchQuery(bannersQuery(store.id));
-    void context.queryClient.prefetchQuery(productsQuery(store.id));
-    void context.queryClient.prefetchQuery(categoriesQuery(store.id));
-    void context.queryClient.prefetchQuery(bestSellingQuery(store.id));
-    return { storeId: store.id };
+    if (!store) throw notFound();
+    const [banners, products, categories, bestSelling] = await Promise.all([
+      context.queryClient.ensureQueryData(bannersQuery(store.id)),
+      context.queryClient.ensureQueryData(productsQuery(store.id)),
+      context.queryClient.ensureQueryData(categoriesQuery(store.id)),
+      context.queryClient.ensureQueryData(bestSellingQuery(store.id)),
+    ]);
+    return { store, banners, products, categories, bestSelling };
   },
-  pendingMs: 0,
-  pendingMinMs: 0,
-  pendingComponent: () => <HomeSkeleton />,
   errorComponent: ({ error }) => <StoreErrorState error={error} scope="storefront:home" />,
   notFoundComponent: () => <div className="p-6 text-center">Not found</div>,
   component: StoreHome,
@@ -95,23 +101,14 @@ export const Route = createFileRoute("/store/$slug/")({
 const PAGE_SIZE = 12;
 
 function StoreHome() {
-  return (
-    <Suspense fallback={<HomeSkeleton />}>
-      <HomeContent />
-    </Suspense>
-  );
+  return <HomeContent />;
 }
 
 function HomeContent() {
   const { t } = useStoreT();
 
   const { slug } = Route.useParams();
-  const { data: store } = useSuspenseQuery(storeQuery(slug));
-  if (!store) return null;
-  const { data: banners } = useSuspenseQuery(bannersQuery(store.id));
-  const { data: products } = useSuspenseQuery(productsQuery(store.id));
-  const { data: categories } = useSuspenseQuery(categoriesQuery(store.id));
-  const { data: bestSelling } = useSuspenseQuery(bestSellingQuery(store.id));
+  const { store, banners, products, categories, bestSelling } = Route.useLoaderData();
   const { query, activeMainId, activeSubId, source, selectMain, selectSub } = useStoreUI();
   const theme = useStoreTheme();
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
