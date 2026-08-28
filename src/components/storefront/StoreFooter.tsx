@@ -90,6 +90,13 @@ export function StoreFooter({
   const theme = useStoreTheme();
   const f = theme.footer;
 
+  const iconUrl = resolveStoreIcon(store as any);
+  const nameLogoUrl = (store as any).name_logo_url
+    ? ((store as any).name_logo_url.startsWith("http") || (store as any).name_logo_url.startsWith("/")
+        ? (store as any).name_logo_url
+        : `/api/img/${(store as any).name_logo_url}`)
+    : null;
+
   const phone = f.phone || store.phone;
   const address = f.address || store.address;
   const email = f.email || store.email || null;
