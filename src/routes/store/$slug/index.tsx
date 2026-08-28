@@ -511,36 +511,7 @@ function CategoryStrip({
   onSelect: (id: string | null) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [showRight, setShowRight] = useState(true);
-  const [showLeft, setShowLeft] = useState(false);
   const { t } = useStoreT();
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    // rAF-coalesced so a fast flick never triggers a setState per scroll event.
-    let frame = 0;
-    const measure = () => {
-      frame = 0;
-      const max = el.scrollWidth - el.clientWidth;
-      const left = el.scrollLeft > 4;
-      const right = el.scrollLeft < max - 4;
-      setShowLeft((v) => (v === left ? v : left));
-      setShowRight((v) => (v === right ? v : right));
-    };
-    const schedule = () => {
-      if (frame) return;
-      frame = requestAnimationFrame(measure);
-    };
-    measure();
-    el.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", schedule, { passive: true });
-    return () => {
-      if (frame) cancelAnimationFrame(frame);
-      el.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", schedule);
-    };
-  }, [categories.length]);
 
 
   return (
