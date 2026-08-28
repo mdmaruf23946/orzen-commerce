@@ -22,7 +22,7 @@ function ProductGridSkeleton({ count = 10 }: { count?: number }) {
 
 export function HomeSkeleton() {
   return (
-    <div className="flex flex-col gap-1 sm:gap-8" aria-busy="true" aria-hidden>
+    <div className="theme-sections" aria-busy="true" aria-hidden>
       {/* Banner */}
       <Box className="aspect-[16/7] w-full rounded-3xl sm:aspect-[21/8]" />
 
