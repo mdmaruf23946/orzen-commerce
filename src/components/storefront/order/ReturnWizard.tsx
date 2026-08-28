@@ -459,20 +459,20 @@ export function ReturnWizard({
 
             <div className="flex gap-2 pt-1">
               {step > 0 && (
-                <Button variant="outline" className="flex-1" onClick={() => setStep((s) => s - 1)}>
+                <Button variant="outline" className="flex-1 border-sf-accent text-sf-accent hover:bg-sf-accent-soft hover:text-sf-accent" onClick={() => setStep((s) => s - 1)}>
                   <ArrowLeft className="mr-1 h-4 w-4" /> {t("return.wizard.back")}
                 </Button>
               )}
               {step < 2 ? (
                 <Button
-                  className="flex-1"
+                  className="flex-1 bg-sf-accent text-white hover:bg-sf-accent-hover"
                   disabled={step === 0 && selected.length === 0}
                   onClick={() => setStep((s) => s + 1)}
                 >
                   {t("return.wizard.next")} <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
               ) : (
-                <Button className="flex-1" disabled={busy} onClick={submit}>
+                <Button className="flex-1 bg-sf-accent text-white hover:bg-sf-accent-hover" disabled={busy} onClick={submit}>
                   {busy ? t("return.wizard.submitting") : t("return.wizard.submitRequest")}
                 </Button>
               )}
