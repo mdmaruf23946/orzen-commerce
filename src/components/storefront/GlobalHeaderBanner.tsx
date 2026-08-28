@@ -31,13 +31,13 @@ export function GlobalHeaderBanner() {
       alt={data.alt || "Available payment methods"}
       loading="lazy"
       decoding="async"
-      className="mx-auto max-h-16 w-full object-contain"
+      className="max-h-7 w-full object-contain sm:max-h-9"
     />
   );
 
   return (
-    <div className="w-full border-t bg-slate-100 py-3 pb-24 md:pb-3">
-      <div className="mx-auto px-3 sm:px-6" style={{ maxWidth: "var(--store-container, 64rem)" }}>
+    <div className="flex w-full items-center justify-center bg-[#0A192F] py-3 px-4 pb-24 md:pb-3">
+      <div className="w-full" style={{ maxWidth: "var(--store-container, 64rem)" }}>
         {data.link_url ? (
           <a href={data.link_url} target="_blank" rel="noreferrer noopener" className="block">
             {image}
