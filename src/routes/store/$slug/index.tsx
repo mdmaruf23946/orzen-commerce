@@ -220,7 +220,7 @@ function HomeContent() {
   };
 
   return (
-    <div className="theme-sections flex animate-fade-in flex-col gap-3 opacity-100 transition-opacity duration-300 sm:gap-8">
+    <div className="theme-sections flex animate-fade-in flex-col gap-2 opacity-100 transition-opacity duration-300 sm:gap-8">
 
 
       {!isFiltering && source === "header" && activeMainId && activeSubs.length > 0 && (
@@ -334,7 +334,7 @@ function Section({
 /** Section shell for the featured category cards. */
 function FeaturedCategories({ children }: { children: React.ReactNode }) {
   return (
-    <section id="categories" className="scroll-mt-32 rounded-3xl border border-sf-line bg-white p-3 sm:p-5">
+    <section id="categories" className="scroll-mt-32 rounded-2xl border border-sf-line bg-white p-2 sm:rounded-3xl sm:p-4">
       {children}
     </section>
   );
@@ -343,8 +343,8 @@ function FeaturedCategories({ children }: { children: React.ReactNode }) {
 /** Multi-tone gradient panel that frames the featured product carousel. */
 function FeaturedPanel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="sf-featured-panel overflow-hidden rounded-3xl p-3 shadow-lg sm:p-6">
-      <h2 className="mb-3 text-center text-lg font-extrabold tracking-tight text-white sm:mb-5 sm:text-2xl">
+    <section className="sf-featured-panel overflow-hidden rounded-2xl p-2 shadow-lg sm:rounded-3xl sm:p-6">
+      <h2 className="mb-2 text-center text-lg font-extrabold tracking-tight text-white sm:mb-5 sm:text-2xl">
         {title}
         <span className="mx-auto mt-2 block h-1 w-16 rounded-full bg-sf-accent" />
       </h2>
@@ -543,9 +543,9 @@ function CategoryStrip({
     <div className="relative">
       <div
         ref={scrollRef}
-        className="flex flex-nowrap gap-3 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory sm:grid sm:grid-cols-6 sm:gap-4 md:grid-cols-8"
+        className="flex flex-nowrap gap-2 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory sm:grid sm:grid-cols-6 sm:gap-4 md:grid-cols-8"
       >
-        <div className="w-[calc(25%-0.75rem)] shrink-0 snap-start sm:w-auto">
+        <div className="w-[calc(25%-0.5rem)] shrink-0 snap-start sm:w-auto">
           <CategoryTile
             label={t("home.categoryAll")}
             image={allImage ?? null}
@@ -554,7 +554,7 @@ function CategoryStrip({
           />
         </div>
         {categories.map((c) => (
-          <div key={c.id} className="w-[calc(25%-0.75rem)] shrink-0 snap-start sm:w-auto">
+          <div key={c.id} className="w-[calc(25%-0.5rem)] shrink-0 snap-start sm:w-auto">
             <CategoryTile
               label={c.name}
               image={c.image_url ?? null}
@@ -593,7 +593,7 @@ function CategoryTile({
     <button
       type="button"
       onClick={onClick}
-      className="group flex w-full min-w-0 flex-col items-center gap-1.5"
+      className="group flex w-full min-w-0 flex-col items-center gap-1"
     >
       <div
         className="aspect-square w-full overflow-hidden rounded-2xl border border-sf-line bg-sf-surface transition-all"
