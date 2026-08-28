@@ -165,6 +165,9 @@ function StoreLayout() {
           name={store.name}
           logoUrl={resolveStoreIcon(store as any)}
           nameLogoUrl={(store as any).name_logo_url ?? null}
+          phone={(store as any).phone ?? null}
+          email={(store as any).email ?? null}
+          whatsapp={(store as any).whatsapp ?? null}
           showSearch={!isAccount && !isCheckoutFlow}
         />
         <main
@@ -305,6 +308,9 @@ function StoreHeader({
   name,
   logoUrl,
   nameLogoUrl,
+  phone,
+  email,
+  whatsapp,
   showSearch,
 }: {
   slug: string;
@@ -312,6 +318,9 @@ function StoreHeader({
   name: string;
   logoUrl: string | null;
   nameLogoUrl?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  whatsapp?: string | null;
   showSearch: boolean;
 }) {
   const [count, setCount] = useState(0);
@@ -574,6 +583,10 @@ function StoreHeader({
         slug={slug}
         storeName={name}
         logoUrl={logoUrl}
+        nameLogoUrl={nameLogoUrl}
+        phone={phone}
+        email={email}
+        whatsapp={whatsapp}
         categories={categories as any}
         productCounts={countsByMain}
         totalProducts={(products as any[]).length}
