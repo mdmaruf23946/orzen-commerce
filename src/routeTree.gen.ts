@@ -37,6 +37,7 @@ import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authentic
 import { Route as StoreSlugTrackOrderRouteImport } from './routes/store/$slug/track-order'
 import { Route as StoreSlugTermsConditionsRouteImport } from './routes/store/$slug/terms-conditions'
 import { Route as StoreSlugSitemapDotxmlRouteImport } from './routes/store/$slug/sitemap[.]xml'
+import { Route as StoreSlugShopRouteImport } from './routes/store/$slug/shop'
 import { Route as StoreSlugShippingPolicyRouteImport } from './routes/store/$slug/shipping-policy'
 import { Route as StoreSlugReturnRefundPolicyRouteImport } from './routes/store/$slug/return-refund-policy'
 import { Route as StoreSlugPrivacyPolicyRouteImport } from './routes/store/$slug/privacy-policy'
@@ -339,6 +340,11 @@ const StoreSlugTermsConditionsRoute =
 const StoreSlugSitemapDotxmlRoute = StoreSlugSitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => StoreSlugRouteRoute,
+} as any)
+const StoreSlugShopRoute = StoreSlugShopRouteImport.update({
+  id: '/shop',
+  path: '/shop',
   getParentRoute: () => StoreSlugRouteRoute,
 } as any)
 const StoreSlugShippingPolicyRoute = StoreSlugShippingPolicyRouteImport.update({
@@ -1397,6 +1403,7 @@ export interface FileRoutesByFullPath {
   '/store/$slug/privacy-policy': typeof StoreSlugPrivacyPolicyRoute
   '/store/$slug/return-refund-policy': typeof StoreSlugReturnRefundPolicyRoute
   '/store/$slug/shipping-policy': typeof StoreSlugShippingPolicyRoute
+  '/store/$slug/shop': typeof StoreSlugShopRoute
   '/store/$slug/sitemap.xml': typeof StoreSlugSitemapDotxmlRoute
   '/store/$slug/terms-conditions': typeof StoreSlugTermsConditionsRoute
   '/store/$slug/track-order': typeof StoreSlugTrackOrderRoute
@@ -1578,6 +1585,7 @@ export interface FileRoutesByTo {
   '/store/$slug/privacy-policy': typeof StoreSlugPrivacyPolicyRoute
   '/store/$slug/return-refund-policy': typeof StoreSlugReturnRefundPolicyRoute
   '/store/$slug/shipping-policy': typeof StoreSlugShippingPolicyRoute
+  '/store/$slug/shop': typeof StoreSlugShopRoute
   '/store/$slug/sitemap.xml': typeof StoreSlugSitemapDotxmlRoute
   '/store/$slug/terms-conditions': typeof StoreSlugTermsConditionsRoute
   '/store/$slug/track-order': typeof StoreSlugTrackOrderRoute
@@ -1770,6 +1778,7 @@ export interface FileRoutesById {
   '/store/$slug/privacy-policy': typeof StoreSlugPrivacyPolicyRoute
   '/store/$slug/return-refund-policy': typeof StoreSlugReturnRefundPolicyRoute
   '/store/$slug/shipping-policy': typeof StoreSlugShippingPolicyRoute
+  '/store/$slug/shop': typeof StoreSlugShopRoute
   '/store/$slug/sitemap.xml': typeof StoreSlugSitemapDotxmlRoute
   '/store/$slug/terms-conditions': typeof StoreSlugTermsConditionsRoute
   '/store/$slug/track-order': typeof StoreSlugTrackOrderRoute
@@ -1962,6 +1971,7 @@ export interface FileRouteTypes {
     | '/store/$slug/privacy-policy'
     | '/store/$slug/return-refund-policy'
     | '/store/$slug/shipping-policy'
+    | '/store/$slug/shop'
     | '/store/$slug/sitemap.xml'
     | '/store/$slug/terms-conditions'
     | '/store/$slug/track-order'
@@ -2143,6 +2153,7 @@ export interface FileRouteTypes {
     | '/store/$slug/privacy-policy'
     | '/store/$slug/return-refund-policy'
     | '/store/$slug/shipping-policy'
+    | '/store/$slug/shop'
     | '/store/$slug/sitemap.xml'
     | '/store/$slug/terms-conditions'
     | '/store/$slug/track-order'
@@ -2334,6 +2345,7 @@ export interface FileRouteTypes {
     | '/store/$slug/privacy-policy'
     | '/store/$slug/return-refund-policy'
     | '/store/$slug/shipping-policy'
+    | '/store/$slug/shop'
     | '/store/$slug/sitemap.xml'
     | '/store/$slug/terms-conditions'
     | '/store/$slug/track-order'
@@ -2645,6 +2657,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/store/$slug/sitemap.xml'
       preLoaderRoute: typeof StoreSlugSitemapDotxmlRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
+    }
+    '/store/$slug/shop': {
+      id: '/store/$slug/shop'
+      path: '/shop'
+      fullPath: '/store/$slug/shop'
+      preLoaderRoute: typeof StoreSlugShopRouteImport
       parentRoute: typeof StoreSlugRouteRoute
     }
     '/store/$slug/shipping-policy': {
@@ -4196,6 +4215,7 @@ interface StoreSlugRouteRouteChildren {
   StoreSlugPrivacyPolicyRoute: typeof StoreSlugPrivacyPolicyRoute
   StoreSlugReturnRefundPolicyRoute: typeof StoreSlugReturnRefundPolicyRoute
   StoreSlugShippingPolicyRoute: typeof StoreSlugShippingPolicyRoute
+  StoreSlugShopRoute: typeof StoreSlugShopRoute
   StoreSlugSitemapDotxmlRoute: typeof StoreSlugSitemapDotxmlRoute
   StoreSlugTermsConditionsRoute: typeof StoreSlugTermsConditionsRoute
   StoreSlugTrackOrderRoute: typeof StoreSlugTrackOrderRoute
@@ -4219,6 +4239,7 @@ const StoreSlugRouteRouteChildren: StoreSlugRouteRouteChildren = {
   StoreSlugPrivacyPolicyRoute: StoreSlugPrivacyPolicyRoute,
   StoreSlugReturnRefundPolicyRoute: StoreSlugReturnRefundPolicyRoute,
   StoreSlugShippingPolicyRoute: StoreSlugShippingPolicyRoute,
+  StoreSlugShopRoute: StoreSlugShopRoute,
   StoreSlugSitemapDotxmlRoute: StoreSlugSitemapDotxmlRoute,
   StoreSlugTermsConditionsRoute: StoreSlugTermsConditionsRoute,
   StoreSlugTrackOrderRoute: StoreSlugTrackOrderRoute,
