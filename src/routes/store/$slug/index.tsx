@@ -593,7 +593,7 @@ function CategoryTile({
     <button
       type="button"
       onClick={onClick}
-      className="group flex w-full min-w-0 flex-col items-center gap-1.5"
+      className="group flex w-full min-w-0 flex-col items-center gap-1"
     >
       <div
         className="aspect-square w-full overflow-hidden rounded-2xl border border-sf-line bg-sf-surface transition-all"
