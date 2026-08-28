@@ -264,8 +264,13 @@ export async function processWalletAutoRenewals(sb: Sb) {
       stats.renewed++;
       await sb.from("subscription_notifications").insert({
         store_id: w.store_id,
-        kind: "auto_renewed",
-        message: `Auto renewal successful — ${(pkg as any).name} (${cycle}). ৳${(res as any).total} deducted from your wallet.`,
+        type: "auto_renewed",
+        meta: {
+          message: `Auto renewal successful — ${(pkg as any).name} (${cycle}). ৳${(res as any).total} deducted from your wallet.`,
+          plan: (pkg as any).name,
+          cycle,
+          amount: (res as any).total,
+        },
       }).then(() => null, () => null);
     } else {
       stats.insufficient++;
@@ -273,8 +278,14 @@ export async function processWalletAutoRenewals(sb: Sb) {
       const balance = (res as any).balance ?? 0;
       await sb.from("subscription_notifications").insert({
         store_id: w.store_id,
-        kind: "auto_renew_failed",
-        message: `Auto renewal failed — wallet balance ৳${balance} is short of the ৳${required} needed for ${(pkg as any).name} (${cycle}). Please add funds.`,
+        type: "auto_renew_failed",
+        meta: {
+          message: `Auto renewal failed — wallet balance ৳${balance} is short of the ৳${required} needed for ${(pkg as any).name} (${cycle}). Please add funds to your wallet.`,
+          plan: (pkg as any).name,
+          cycle,
+          required,
+          balance,
+        },
       }).then(() => null, () => null);
     }
   }
