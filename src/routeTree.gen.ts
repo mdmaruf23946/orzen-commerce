@@ -35,11 +35,17 @@ import { Route as StoreSlugIndexRouteImport } from './routes/store/$slug/index'
 import { Route as AuthenticatedOwnerIndexRouteImport } from './routes/_authenticated/owner/index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as StoreSlugTrackOrderRouteImport } from './routes/store/$slug/track-order'
+import { Route as StoreSlugTermsConditionsRouteImport } from './routes/store/$slug/terms-conditions'
 import { Route as StoreSlugSitemapDotxmlRouteImport } from './routes/store/$slug/sitemap[.]xml'
+import { Route as StoreSlugShippingPolicyRouteImport } from './routes/store/$slug/shipping-policy'
+import { Route as StoreSlugReturnRefundPolicyRouteImport } from './routes/store/$slug/return-refund-policy'
+import { Route as StoreSlugPrivacyPolicyRouteImport } from './routes/store/$slug/privacy-policy'
 import { Route as StoreSlugCheckoutRouteImport } from './routes/store/$slug/checkout'
 import { Route as StoreSlugCategoriesRouteImport } from './routes/store/$slug/categories'
 import { Route as StoreSlugCartRouteImport } from './routes/store/$slug/cart'
+import { Route as StoreSlugBlogsRouteImport } from './routes/store/$slug/blogs'
 import { Route as StoreSlugAccountRouteImport } from './routes/store/$slug/account'
+import { Route as StoreSlugAboutUsRouteImport } from './routes/store/$slug/about-us'
 import { Route as ApiImgSplatRouteImport } from './routes/api/img.$'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
 import { Route as AuthenticatedOwnerWebhooksRouteImport } from './routes/_authenticated/owner/webhooks'
@@ -323,9 +329,31 @@ const StoreSlugTrackOrderRoute = StoreSlugTrackOrderRouteImport.update({
   path: '/track-order',
   getParentRoute: () => StoreSlugRouteRoute,
 } as any)
+const StoreSlugTermsConditionsRoute =
+  StoreSlugTermsConditionsRouteImport.update({
+    id: '/terms-conditions',
+    path: '/terms-conditions',
+    getParentRoute: () => StoreSlugRouteRoute,
+  } as any)
 const StoreSlugSitemapDotxmlRoute = StoreSlugSitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => StoreSlugRouteRoute,
+} as any)
+const StoreSlugShippingPolicyRoute = StoreSlugShippingPolicyRouteImport.update({
+  id: '/shipping-policy',
+  path: '/shipping-policy',
+  getParentRoute: () => StoreSlugRouteRoute,
+} as any)
+const StoreSlugReturnRefundPolicyRoute =
+  StoreSlugReturnRefundPolicyRouteImport.update({
+    id: '/return-refund-policy',
+    path: '/return-refund-policy',
+    getParentRoute: () => StoreSlugRouteRoute,
+  } as any)
+const StoreSlugPrivacyPolicyRoute = StoreSlugPrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
   getParentRoute: () => StoreSlugRouteRoute,
 } as any)
 const StoreSlugCheckoutRoute = StoreSlugCheckoutRouteImport.update({
@@ -343,9 +371,19 @@ const StoreSlugCartRoute = StoreSlugCartRouteImport.update({
   path: '/cart',
   getParentRoute: () => StoreSlugRouteRoute,
 } as any)
+const StoreSlugBlogsRoute = StoreSlugBlogsRouteImport.update({
+  id: '/blogs',
+  path: '/blogs',
+  getParentRoute: () => StoreSlugRouteRoute,
+} as any)
 const StoreSlugAccountRoute = StoreSlugAccountRouteImport.update({
   id: '/account',
   path: '/account',
+  getParentRoute: () => StoreSlugRouteRoute,
+} as any)
+const StoreSlugAboutUsRoute = StoreSlugAboutUsRouteImport.update({
+  id: '/about-us',
+  path: '/about-us',
   getParentRoute: () => StoreSlugRouteRoute,
 } as any)
 const ApiImgSplatRoute = ApiImgSplatRouteImport.update({
@@ -1343,11 +1381,17 @@ export interface FileRoutesByFullPath {
   '/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
+  '/store/$slug/about-us': typeof StoreSlugAboutUsRoute
   '/store/$slug/account': typeof StoreSlugAccountRoute
+  '/store/$slug/blogs': typeof StoreSlugBlogsRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/categories': typeof StoreSlugCategoriesRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
+  '/store/$slug/privacy-policy': typeof StoreSlugPrivacyPolicyRoute
+  '/store/$slug/return-refund-policy': typeof StoreSlugReturnRefundPolicyRoute
+  '/store/$slug/shipping-policy': typeof StoreSlugShippingPolicyRoute
   '/store/$slug/sitemap.xml': typeof StoreSlugSitemapDotxmlRoute
+  '/store/$slug/terms-conditions': typeof StoreSlugTermsConditionsRoute
   '/store/$slug/track-order': typeof StoreSlugTrackOrderRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/owner/': typeof AuthenticatedOwnerIndexRoute
@@ -1517,11 +1561,17 @@ export interface FileRoutesByTo {
   '/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
+  '/store/$slug/about-us': typeof StoreSlugAboutUsRoute
   '/store/$slug/account': typeof StoreSlugAccountRoute
+  '/store/$slug/blogs': typeof StoreSlugBlogsRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/categories': typeof StoreSlugCategoriesRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
+  '/store/$slug/privacy-policy': typeof StoreSlugPrivacyPolicyRoute
+  '/store/$slug/return-refund-policy': typeof StoreSlugReturnRefundPolicyRoute
+  '/store/$slug/shipping-policy': typeof StoreSlugShippingPolicyRoute
   '/store/$slug/sitemap.xml': typeof StoreSlugSitemapDotxmlRoute
+  '/store/$slug/terms-conditions': typeof StoreSlugTermsConditionsRoute
   '/store/$slug/track-order': typeof StoreSlugTrackOrderRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/owner': typeof AuthenticatedOwnerIndexRoute
@@ -1702,11 +1752,17 @@ export interface FileRoutesById {
   '/_authenticated/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
+  '/store/$slug/about-us': typeof StoreSlugAboutUsRoute
   '/store/$slug/account': typeof StoreSlugAccountRoute
+  '/store/$slug/blogs': typeof StoreSlugBlogsRoute
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/categories': typeof StoreSlugCategoriesRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
+  '/store/$slug/privacy-policy': typeof StoreSlugPrivacyPolicyRoute
+  '/store/$slug/return-refund-policy': typeof StoreSlugReturnRefundPolicyRoute
+  '/store/$slug/shipping-policy': typeof StoreSlugShippingPolicyRoute
   '/store/$slug/sitemap.xml': typeof StoreSlugSitemapDotxmlRoute
+  '/store/$slug/terms-conditions': typeof StoreSlugTermsConditionsRoute
   '/store/$slug/track-order': typeof StoreSlugTrackOrderRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/owner/': typeof AuthenticatedOwnerIndexRoute
@@ -1887,11 +1943,17 @@ export interface FileRouteTypes {
     | '/owner/webhooks'
     | '/api/ai/chat'
     | '/api/img/$'
+    | '/store/$slug/about-us'
     | '/store/$slug/account'
+    | '/store/$slug/blogs'
     | '/store/$slug/cart'
     | '/store/$slug/categories'
     | '/store/$slug/checkout'
+    | '/store/$slug/privacy-policy'
+    | '/store/$slug/return-refund-policy'
+    | '/store/$slug/shipping-policy'
     | '/store/$slug/sitemap.xml'
+    | '/store/$slug/terms-conditions'
     | '/store/$slug/track-order'
     | '/admin/'
     | '/owner/'
@@ -2061,11 +2123,17 @@ export interface FileRouteTypes {
     | '/owner/webhooks'
     | '/api/ai/chat'
     | '/api/img/$'
+    | '/store/$slug/about-us'
     | '/store/$slug/account'
+    | '/store/$slug/blogs'
     | '/store/$slug/cart'
     | '/store/$slug/categories'
     | '/store/$slug/checkout'
+    | '/store/$slug/privacy-policy'
+    | '/store/$slug/return-refund-policy'
+    | '/store/$slug/shipping-policy'
     | '/store/$slug/sitemap.xml'
+    | '/store/$slug/terms-conditions'
     | '/store/$slug/track-order'
     | '/admin'
     | '/owner'
@@ -2245,11 +2313,17 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/webhooks'
     | '/api/ai/chat'
     | '/api/img/$'
+    | '/store/$slug/about-us'
     | '/store/$slug/account'
+    | '/store/$slug/blogs'
     | '/store/$slug/cart'
     | '/store/$slug/categories'
     | '/store/$slug/checkout'
+    | '/store/$slug/privacy-policy'
+    | '/store/$slug/return-refund-policy'
+    | '/store/$slug/shipping-policy'
     | '/store/$slug/sitemap.xml'
+    | '/store/$slug/terms-conditions'
     | '/store/$slug/track-order'
     | '/_authenticated/admin/'
     | '/_authenticated/owner/'
@@ -2547,11 +2621,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreSlugTrackOrderRouteImport
       parentRoute: typeof StoreSlugRouteRoute
     }
+    '/store/$slug/terms-conditions': {
+      id: '/store/$slug/terms-conditions'
+      path: '/terms-conditions'
+      fullPath: '/store/$slug/terms-conditions'
+      preLoaderRoute: typeof StoreSlugTermsConditionsRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
+    }
     '/store/$slug/sitemap.xml': {
       id: '/store/$slug/sitemap.xml'
       path: '/sitemap.xml'
       fullPath: '/store/$slug/sitemap.xml'
       preLoaderRoute: typeof StoreSlugSitemapDotxmlRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
+    }
+    '/store/$slug/shipping-policy': {
+      id: '/store/$slug/shipping-policy'
+      path: '/shipping-policy'
+      fullPath: '/store/$slug/shipping-policy'
+      preLoaderRoute: typeof StoreSlugShippingPolicyRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
+    }
+    '/store/$slug/return-refund-policy': {
+      id: '/store/$slug/return-refund-policy'
+      path: '/return-refund-policy'
+      fullPath: '/store/$slug/return-refund-policy'
+      preLoaderRoute: typeof StoreSlugReturnRefundPolicyRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
+    }
+    '/store/$slug/privacy-policy': {
+      id: '/store/$slug/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/store/$slug/privacy-policy'
+      preLoaderRoute: typeof StoreSlugPrivacyPolicyRouteImport
       parentRoute: typeof StoreSlugRouteRoute
     }
     '/store/$slug/checkout': {
@@ -2575,11 +2677,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreSlugCartRouteImport
       parentRoute: typeof StoreSlugRouteRoute
     }
+    '/store/$slug/blogs': {
+      id: '/store/$slug/blogs'
+      path: '/blogs'
+      fullPath: '/store/$slug/blogs'
+      preLoaderRoute: typeof StoreSlugBlogsRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
+    }
     '/store/$slug/account': {
       id: '/store/$slug/account'
       path: '/account'
       fullPath: '/store/$slug/account'
       preLoaderRoute: typeof StoreSlugAccountRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
+    }
+    '/store/$slug/about-us': {
+      id: '/store/$slug/about-us'
+      path: '/about-us'
+      fullPath: '/store/$slug/about-us'
+      preLoaderRoute: typeof StoreSlugAboutUsRouteImport
       parentRoute: typeof StoreSlugRouteRoute
     }
     '/api/img/$': {
@@ -4051,11 +4167,17 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface StoreSlugRouteRouteChildren {
+  StoreSlugAboutUsRoute: typeof StoreSlugAboutUsRoute
   StoreSlugAccountRoute: typeof StoreSlugAccountRoute
+  StoreSlugBlogsRoute: typeof StoreSlugBlogsRoute
   StoreSlugCartRoute: typeof StoreSlugCartRoute
   StoreSlugCategoriesRoute: typeof StoreSlugCategoriesRoute
   StoreSlugCheckoutRoute: typeof StoreSlugCheckoutRoute
+  StoreSlugPrivacyPolicyRoute: typeof StoreSlugPrivacyPolicyRoute
+  StoreSlugReturnRefundPolicyRoute: typeof StoreSlugReturnRefundPolicyRoute
+  StoreSlugShippingPolicyRoute: typeof StoreSlugShippingPolicyRoute
   StoreSlugSitemapDotxmlRoute: typeof StoreSlugSitemapDotxmlRoute
+  StoreSlugTermsConditionsRoute: typeof StoreSlugTermsConditionsRoute
   StoreSlugTrackOrderRoute: typeof StoreSlugTrackOrderRoute
   StoreSlugIndexRoute: typeof StoreSlugIndexRoute
   StoreSlugAuthForgotRoute: typeof StoreSlugAuthForgotRoute
@@ -4067,11 +4189,17 @@ interface StoreSlugRouteRouteChildren {
 }
 
 const StoreSlugRouteRouteChildren: StoreSlugRouteRouteChildren = {
+  StoreSlugAboutUsRoute: StoreSlugAboutUsRoute,
   StoreSlugAccountRoute: StoreSlugAccountRoute,
+  StoreSlugBlogsRoute: StoreSlugBlogsRoute,
   StoreSlugCartRoute: StoreSlugCartRoute,
   StoreSlugCategoriesRoute: StoreSlugCategoriesRoute,
   StoreSlugCheckoutRoute: StoreSlugCheckoutRoute,
+  StoreSlugPrivacyPolicyRoute: StoreSlugPrivacyPolicyRoute,
+  StoreSlugReturnRefundPolicyRoute: StoreSlugReturnRefundPolicyRoute,
+  StoreSlugShippingPolicyRoute: StoreSlugShippingPolicyRoute,
   StoreSlugSitemapDotxmlRoute: StoreSlugSitemapDotxmlRoute,
+  StoreSlugTermsConditionsRoute: StoreSlugTermsConditionsRoute,
   StoreSlugTrackOrderRoute: StoreSlugTrackOrderRoute,
   StoreSlugIndexRoute: StoreSlugIndexRoute,
   StoreSlugAuthForgotRoute: StoreSlugAuthForgotRoute,
