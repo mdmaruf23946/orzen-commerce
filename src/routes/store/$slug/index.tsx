@@ -1,6 +1,6 @@
 import { StoreErrorState } from "@/components/storefront/StoreErrorState";
 import { createFileRoute } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { keepPreviousData, queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { HomeSkeleton } from "@/components/storefront/HomeSkeleton";
 import { Sparkles, Flame, Grid3x3, ChevronRight, SearchX } from "lucide-react";
@@ -34,7 +34,7 @@ const stable = {
   refetchOnWindowFocus: false,
   refetchOnMount: false,
   refetchOnReconnect: false,
-  placeholderData: (prev: unknown) => prev,
+  placeholderData: keepPreviousData,
 } as const;
 
 const storeQuery = (slug: string) =>
