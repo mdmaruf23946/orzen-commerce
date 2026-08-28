@@ -245,6 +245,9 @@ function StoreInformationPage() {
               ["youtube", "YouTube", "https://youtube.com/@channel"],
               ["tiktok", "TikTok", "https://tiktok.com/@handle"],
               ["linkedin", "LinkedIn", "https://linkedin.com/company/..."],
+              ["whatsapp", "WhatsApp number / link", "https://wa.me/8801XXXXXXXXX"],
+              ["messenger", "Messenger link", "https://m.me/yourpage"],
+              ["telegram", "Telegram username / link", "https://t.me/yourhandle"],
               ["website", "Website (optional)", "https://yourdomain.com"],
             ].map(([k, label, ph]) => (
               <Field key={k} label={label} htmlFor={`soc-${k}`}>
