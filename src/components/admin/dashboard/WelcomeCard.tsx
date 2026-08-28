@@ -49,7 +49,7 @@ function Chip({ children, className }: { children: React.ReactNode; className?: 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border border-black/5 dark:border-white/10 bg-white/70 dark:bg-white/5 px-2.5 py-1 text-[11px] font-medium text-foreground/80",
+        "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-black/5 dark:border-white/10 bg-white/70 dark:bg-white/5 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-medium text-foreground/80",
         className,
       )}
     >
@@ -74,7 +74,7 @@ function StatusChip({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium",
+        "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-medium",
         styles,
       )}
     >
@@ -169,7 +169,10 @@ export function WelcomeCard(props: WelcomeCardProps) {
   const aiRepliesCount = inbox?.ai_replied ?? 0;
 
   const badges = (
-    <div className="flex flex-wrap items-center gap-2 mb-4">
+    <div
+      className="flex flex-nowrap items-center gap-2 mb-4 overflow-x-auto"
+      style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+    >
       <StatusChip tone="emerald">Active Store</StatusChip>
       {store?.package_name && (
         <Chip className="bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700">
