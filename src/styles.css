@@ -316,3 +316,17 @@
     radial-gradient(75% 65% at 0% 100%, rgba(244, 63, 148, 0.38) 0%, rgba(244, 63, 148, 0) 60%),
     linear-gradient(140deg, #1a2440 0%, #131c2e 50%, #0f1626 100%);
 }
+
+/* Storefront: uniform vertical rhythm between home sections for EVERY store,
+   themed or not. Mobile matches the hero-banner gap (0.75rem); desktop can be
+   tuned per store via the theme customizer. */
+.theme-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+@media (min-width: 640px) {
+  .theme-sections {
+    gap: var(--store-section-gap, 2rem);
+  }
+}
