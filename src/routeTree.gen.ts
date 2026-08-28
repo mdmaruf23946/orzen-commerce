@@ -106,6 +106,7 @@ import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminProductDefaultsRouteImport } from './routes/_authenticated/admin/product-defaults'
 import { Route as AuthenticatedAdminPaymentGatewayRouteImport } from './routes/_authenticated/admin/payment-gateway'
 import { Route as AuthenticatedAdminParcelsRouteImport } from './routes/_authenticated/admin/parcels'
+import { Route as AuthenticatedAdminPagesRouteImport } from './routes/_authenticated/admin/pages'
 import { Route as AuthenticatedAdminOrdersRouteImport } from './routes/_authenticated/admin/orders'
 import { Route as AuthenticatedAdminNotificationsRouteImport } from './routes/_authenticated/admin/notifications'
 import { Route as AuthenticatedAdminMessengerInboxRouteImport } from './routes/_authenticated/admin/messenger-inbox'
@@ -734,6 +735,11 @@ const AuthenticatedAdminParcelsRoute =
     path: '/parcels',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminPagesRoute = AuthenticatedAdminPagesRouteImport.update({
+  id: '/pages',
+  path: '/pages',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
 const AuthenticatedAdminOrdersRoute =
   AuthenticatedAdminOrdersRouteImport.update({
     id: '/orders',
@@ -1363,6 +1369,7 @@ export interface FileRoutesByFullPath {
   '/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
+  '/admin/pages': typeof AuthenticatedAdminPagesRoute
   '/admin/parcels': typeof AuthenticatedAdminParcelsRoute
   '/admin/payment-gateway': typeof AuthenticatedAdminPaymentGatewayRoute
   '/admin/product-defaults': typeof AuthenticatedAdminProductDefaultsRoute
@@ -1550,6 +1557,7 @@ export interface FileRoutesByTo {
   '/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
+  '/admin/pages': typeof AuthenticatedAdminPagesRoute
   '/admin/parcels': typeof AuthenticatedAdminParcelsRoute
   '/admin/payment-gateway': typeof AuthenticatedAdminPaymentGatewayRoute
   '/admin/product-defaults': typeof AuthenticatedAdminProductDefaultsRoute
@@ -1746,6 +1754,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
   '/_authenticated/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
+  '/_authenticated/admin/pages': typeof AuthenticatedAdminPagesRoute
   '/_authenticated/admin/parcels': typeof AuthenticatedAdminParcelsRoute
   '/_authenticated/admin/payment-gateway': typeof AuthenticatedAdminPaymentGatewayRoute
   '/_authenticated/admin/product-defaults': typeof AuthenticatedAdminProductDefaultsRoute
@@ -1943,6 +1952,7 @@ export interface FileRouteTypes {
     | '/admin/messenger-inbox'
     | '/admin/notifications'
     | '/admin/orders'
+    | '/admin/pages'
     | '/admin/parcels'
     | '/admin/payment-gateway'
     | '/admin/product-defaults'
@@ -2130,6 +2140,7 @@ export interface FileRouteTypes {
     | '/admin/messenger-inbox'
     | '/admin/notifications'
     | '/admin/orders'
+    | '/admin/pages'
     | '/admin/parcels'
     | '/admin/payment-gateway'
     | '/admin/product-defaults'
@@ -2325,6 +2336,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/messenger-inbox'
     | '/_authenticated/admin/notifications'
     | '/_authenticated/admin/orders'
+    | '/_authenticated/admin/pages'
     | '/_authenticated/admin/parcels'
     | '/_authenticated/admin/payment-gateway'
     | '/_authenticated/admin/product-defaults'
@@ -3190,6 +3202,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminParcelsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/pages': {
+      id: '/_authenticated/admin/pages'
+      path: '/pages'
+      fullPath: '/admin/pages'
+      preLoaderRoute: typeof AuthenticatedAdminPagesRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/orders': {
       id: '/_authenticated/admin/orders'
       path: '/orders'
@@ -3979,6 +3998,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminMessengerInboxRoute: typeof AuthenticatedAdminMessengerInboxRoute
   AuthenticatedAdminNotificationsRoute: typeof AuthenticatedAdminNotificationsRoute
   AuthenticatedAdminOrdersRoute: typeof AuthenticatedAdminOrdersRoute
+  AuthenticatedAdminPagesRoute: typeof AuthenticatedAdminPagesRoute
   AuthenticatedAdminParcelsRoute: typeof AuthenticatedAdminParcelsRoute
   AuthenticatedAdminPaymentGatewayRoute: typeof AuthenticatedAdminPaymentGatewayRoute
   AuthenticatedAdminProductDefaultsRoute: typeof AuthenticatedAdminProductDefaultsRoute
@@ -4042,6 +4062,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
       AuthenticatedAdminMessengerInboxRoute,
     AuthenticatedAdminNotificationsRoute: AuthenticatedAdminNotificationsRoute,
     AuthenticatedAdminOrdersRoute: AuthenticatedAdminOrdersRoute,
+    AuthenticatedAdminPagesRoute: AuthenticatedAdminPagesRoute,
     AuthenticatedAdminParcelsRoute: AuthenticatedAdminParcelsRoute,
     AuthenticatedAdminPaymentGatewayRoute:
       AuthenticatedAdminPaymentGatewayRoute,
