@@ -125,7 +125,7 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
             search={{ tab: "orders" } as any}
             className={itemCls(ordersActive)}
           >
-            <Truck className="h-5 w-5" />
+            <Truck className="h-5 w-5 text-sf-accent" />
             <span>{t("home.trackOrder")}</span>
           </Link>
         </li>
