@@ -1,30 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { OrderTracker } from "@/components/storefront/account/OrderTracker";
+import { getStorePagePublic } from "@/lib/store-pages.functions";
+import { storePageHead } from "@/lib/store-page-view";
+import { StorePageBody } from "@/components/storefront/StorePageLayout";
+
+const PAGE_KEY = "track-order";
 
 export const Route = createFileRoute("/store/$slug/track-order")({
-  head: () => ({
-    meta: [
-      { title: "Track your order — order status & delivery updates" },
-      {
-        name: "description",
-        content:
-          "Track any order instantly with your Order ID or the phone number used at checkout. See live status, shipping progress and courier details.",
-      },
-      { property: "og:title", content: "Track your order" },
-      {
-        property: "og:description",
-        content: "Check live order status and delivery progress with your Order ID or phone number.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-  }),
+  loader: ({ params }) => getStorePagePublic({ data: { slug: params.slug, pageKey: PAGE_KEY } }),
+  head: ({ loaderData }) => storePageHead(loaderData, PAGE_KEY),
   component: TrackOrderPage,
 });
 
 function TrackOrderPage() {
   const { slug } = Route.useParams();
+  const d = Route.useLoaderData() as any;
+  const intro = d?.page?.content_html as string | undefined;
   return (
     <div className="-mx-4 min-h-[calc(100dvh-3.5rem)] bg-neutral-50 px-4 py-5 sm:-mx-6 sm:px-6">
       <div className="mx-auto max-w-2xl space-y-4">
@@ -35,7 +27,14 @@ function TrackOrderPage() {
         >
           <ArrowLeft className="h-3.5 w-3.5" /> Back to store
         </Link>
-        <h1 className="text-xl font-bold text-neutral-900">Track your order</h1>
+        <h1 className="text-xl font-bold text-neutral-900">
+          {d?.page?.title?.trim() || "Track your order"}
+        </h1>
+        {intro && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <StorePageBody html={intro} title="Track your order" store={d?.store ?? null} />
+          </div>
+        )}
         <OrderTracker slug={slug} />
       </div>
     </div>
