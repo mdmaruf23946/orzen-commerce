@@ -106,7 +106,7 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
             className={itemCls(wishActive)}
           >
             <span className="relative">
-              <Heart className="h-5 w-5" />
+              <Heart className="h-5 w-5 text-sf-accent" />
               {wish > 0 && (
                 <span className="absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-sf-accent px-1 text-[9px] font-bold text-white">
                   {wish > 99 ? "99+" : wish}
