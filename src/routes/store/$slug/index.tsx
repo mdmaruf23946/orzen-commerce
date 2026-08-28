@@ -21,12 +21,14 @@ import { CategoryIconCluster } from "@/components/CategoryIconCluster";
 
 
 const STALE = 5 * 60_000;
+const GC = 30 * 60_000;
 
 const storeQuery = (slug: string) =>
   queryOptions({
     queryKey: ["store", slug],
     queryFn: () => getStoreBySlug({ data: { slug } }),
     staleTime: STALE,
+    gcTime: GC,
   });
 
 const bannersQuery = (storeId: string) =>
@@ -34,6 +36,7 @@ const bannersQuery = (storeId: string) =>
     queryKey: ["banners", storeId],
     queryFn: () => listStoreBanners({ data: { storeId } }),
     staleTime: STALE,
+    gcTime: GC,
   });
 
 const productsQuery = (storeId: string) =>
@@ -41,6 +44,7 @@ const productsQuery = (storeId: string) =>
     queryKey: ["products", storeId],
     queryFn: () => listStoreProducts({ data: { storeId } }),
     staleTime: STALE,
+    gcTime: GC,
   });
 
 const categoriesQuery = (storeId: string) =>
@@ -48,6 +52,7 @@ const categoriesQuery = (storeId: string) =>
     queryKey: ["categories", storeId],
     queryFn: () => listStoreCategories({ data: { storeId } }),
     staleTime: STALE,
+    gcTime: GC,
   });
 
 const bestSellingQuery = (storeId: string) =>
@@ -55,20 +60,24 @@ const bestSellingQuery = (storeId: string) =>
     queryKey: ["best-selling", storeId],
     queryFn: () => listBestSellingProducts({ data: { storeId, limit: 12 } }),
     staleTime: STALE,
+    gcTime: GC,
   });
 
 export const Route = createFileRoute("/store/$slug/")({
+  // Only the store record blocks the route; the content queries are primed in
+  // the background and rendered behind a skeleton so the body never collapses.
   loader: async ({ context, params }) => {
     const store = await context.queryClient.ensureQueryData(storeQuery(params.slug));
     if (!store) return null;
-    await Promise.all([
-      context.queryClient.ensureQueryData(bannersQuery(store.id)),
-      context.queryClient.ensureQueryData(productsQuery(store.id)),
-      context.queryClient.ensureQueryData(categoriesQuery(store.id)),
-      context.queryClient.ensureQueryData(bestSellingQuery(store.id)),
-    ]);
+    void context.queryClient.prefetchQuery(bannersQuery(store.id));
+    void context.queryClient.prefetchQuery(productsQuery(store.id));
+    void context.queryClient.prefetchQuery(categoriesQuery(store.id));
+    void context.queryClient.prefetchQuery(bestSellingQuery(store.id));
     return { storeId: store.id };
   },
+  pendingMs: 0,
+  pendingMinMs: 0,
+  pendingComponent: () => <HomeSkeleton />,
   errorComponent: ({ error }) => <StoreErrorState error={error} scope="storefront:home" />,
   notFoundComponent: () => <div className="p-6 text-center">Not found</div>,
   component: StoreHome,
@@ -77,7 +86,16 @@ export const Route = createFileRoute("/store/$slug/")({
 const PAGE_SIZE = 12;
 
 function StoreHome() {
+  return (
+    <Suspense fallback={<HomeSkeleton />}>
+      <HomeContent />
+    </Suspense>
+  );
+}
+
+function HomeContent() {
   const { t } = useStoreT();
+
   const { slug } = Route.useParams();
   const { data: store } = useSuspenseQuery(storeQuery(slug));
   if (!store) return null;
