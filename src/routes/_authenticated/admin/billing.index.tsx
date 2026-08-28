@@ -13,6 +13,7 @@ import {
 import { FEATURE_KEYS, FEATURE_LABELS, formatLimit } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import WalletPanel from "@/components/admin/billing/WalletPanel";
 
 export const Route = createFileRoute("/_authenticated/admin/billing/")({
   head: () => ({
@@ -235,6 +236,9 @@ function BillingPage() {
           </div>
         )}
       </div>
+
+      {/* Merchant Wallet */}
+      <WalletPanel />
 
       {/* 3. Billing Cycle Selector */}
       <section>

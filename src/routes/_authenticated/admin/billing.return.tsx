@@ -39,6 +39,7 @@ function ReturnPage() {
   });
 
   const paid = data?.status === "paid";
+  const isTopup = (data as any)?.purpose === "wallet_topup";
   const missingRef = !invoice;
 
   return (
@@ -67,8 +68,14 @@ function ReturnPage() {
             <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-700">
               <CheckCircle2 className="h-8 w-8" />
             </div>
-            <h1 className="mt-3 text-lg font-semibold">Subscription activated</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Invoice {invoice}. A receipt has been emailed.</p>
+            <h1 className="mt-3 text-lg font-semibold">
+              {isTopup ? "Fund added to wallet" : "Subscription activated"}
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {isTopup
+                ? `Invoice ${invoice}. Your wallet balance has been updated.`
+                : `Invoice ${invoice}. A receipt has been emailed.`}
+            </p>
             <Button className="mt-4 w-full" onClick={() => navigate({ to: "/admin/billing", search: {} as never })}>Continue</Button>
           </>
         ) : (

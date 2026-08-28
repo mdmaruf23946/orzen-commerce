@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Copy, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Copy, CheckCircle2, Wallet, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { getMyWallet, payPlanWithWallet } from "@/lib/wallet.functions";
 
 const searchSchema = z.object({
   cycle: z.enum(["monthly", "3m", "6m", "yearly"]).default("monthly").catch("monthly"),
@@ -118,6 +119,14 @@ function CheckoutPage() {
   useMemo(() => {
     if (sessionRes?.email && !email) setEmail(sessionRes.email);
   }, [sessionRes?.email]);
+
+  const walletFn = useServerFn(getMyWallet);
+  const payWalletFn = useServerFn(payPlanWithWallet);
+  const { data: wallet, refetch: refetchWallet } = useQuery({
+    queryKey: ["admin", "wallet"],
+    queryFn: () => walletFn(),
+  });
+  const [walletPaying, setWalletPaying] = useState(false);
 
   if (!pkg) return <div className="p-8 text-sm text-muted-foreground">Loading plan…</div>;
 
@@ -276,6 +285,54 @@ function CheckoutPage() {
           ))}
         </div>
       </div>
+
+      {/* Pay from wallet */}
+      {(() => {
+        const balance = Number(wallet?.balance ?? 0);
+        const enough = balance >= calc.total;
+        return (
+          <div className="rounded-2xl border bg-card p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 text-sm font-semibold">
+                  <Wallet className="h-4 w-4" /> Pay from wallet
+                </div>
+                <div className="mt-0.5 text-xs text-muted-foreground">
+                  Balance ৳{balance.toLocaleString()} · Instant activation, no manual approval.
+                </div>
+              </div>
+              <Button
+                disabled={!enough || walletPaying}
+                onClick={async () => {
+                  setWalletPaying(true);
+                  try {
+                    await payWalletFn({ data: { packageId, cycle } });
+                    await refetchWallet();
+                    toast.success("Plan activated from wallet balance");
+                    navigate({ to: "/admin/billing", search: {} as never });
+                  } catch (err) {
+                    toast.error((err as Error).message);
+                  } finally {
+                    setWalletPaying(false);
+                  }
+                }}
+                className="shrink-0 gap-1.5"
+              >
+                {walletPaying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
+                Pay ৳{calc.total.toLocaleString()}
+              </Button>
+            </div>
+            {!enough && (
+              <div className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
+                Not enough balance — you need ৳{(calc.total - balance).toLocaleString()} more.{" "}
+                <Link to="/admin/billing" search={{} as never} className="font-semibold underline">
+                  Add fund
+                </Link>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {enabledMethods.length === 0 ? (
         <div className="rounded-2xl border bg-amber-50 p-4 text-sm text-amber-900">
