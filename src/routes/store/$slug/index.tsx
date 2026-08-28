@@ -208,18 +208,6 @@ function StoreHome() {
 
       {theme.section_order.map((k) => blocks[k] ?? null)}
 
-      {categoryRows.map((row) => (
-        <Section
-          key={row.id}
-          title={row.name}
-          icon={<Grid3x3 className="h-4 w-4 text-sf-accent" />}
-          seeMoreLabel={t("home.seeMore")}
-          onViewAll={() => showCategory(row.id)}
-        >
-          <ProductGrid slug={slug} products={row.items.slice(0, 8) as any} />
-        </Section>
-      ))}
-
       <section id="all-products" className="scroll-mt-32 space-y-4">
         <div className="flex items-center gap-2">
           <Grid3x3 className="h-4 w-4 text-sf-accent" />
