@@ -220,6 +220,8 @@ export const updateMyStore = createServerFn({ method: "POST" })
         tiktok: z.string().trim().max(200).optional().nullable(),
         linkedin: z.string().trim().max(200).optional().nullable(),
         website: z.string().trim().max(200).optional().nullable(),
+        messenger: z.string().trim().max(200).optional().nullable(),
+        telegram: z.string().trim().max(200).optional().nullable(),
         address: z.string().trim().max(500).optional().nullable(),
         primary_color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
         header_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().nullable(),

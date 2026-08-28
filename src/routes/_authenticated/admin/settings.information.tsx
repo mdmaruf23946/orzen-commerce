@@ -221,9 +221,6 @@ function StoreInformationPage() {
             <Field label="Phone number" htmlFor="c-phone">
               <Input id="c-phone" value={form.phone ?? ""} onChange={(e) => set("phone", e.target.value)} />
             </Field>
-            <Field label="WhatsApp number" htmlFor="c-wa">
-              <Input id="c-wa" value={form.whatsapp ?? ""} onChange={(e) => set("whatsapp", e.target.value)} />
-            </Field>
             <Field label="Email address" htmlFor="c-email">
               <Input id="c-email" type="email" value={form.email ?? ""} onChange={(e) => set("email", e.target.value)} />
             </Field>
@@ -245,6 +242,9 @@ function StoreInformationPage() {
               ["youtube", "YouTube", "https://youtube.com/@channel"],
               ["tiktok", "TikTok", "https://tiktok.com/@handle"],
               ["linkedin", "LinkedIn", "https://linkedin.com/company/..."],
+              ["whatsapp", "WhatsApp number / link", "https://wa.me/8801XXXXXXXXX"],
+              ["messenger", "Messenger link", "https://m.me/yourpage"],
+              ["telegram", "Telegram username / link", "https://t.me/yourhandle"],
               ["website", "Website (optional)", "https://yourdomain.com"],
             ].map(([k, label, ph]) => (
               <Field key={k} label={label} htmlFor={`soc-${k}`}>
