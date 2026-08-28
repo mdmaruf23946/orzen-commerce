@@ -42,9 +42,9 @@ export function HomeSkeleton() {
       </section>
 
       {/* Featured carousel */}
-      <section className="sf-featured-panel overflow-hidden rounded-3xl p-3 shadow-lg sm:p-6">
-        <Box className="mx-auto mb-4 h-5 w-48 rounded-md bg-white/40" />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <section className="sf-featured-panel overflow-hidden rounded-2xl p-2 shadow-lg sm:rounded-3xl sm:p-6">
+        <Box className="mx-auto mb-2 h-5 w-48 rounded-md bg-white/40" />
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="space-y-2 rounded-2xl bg-white/80 p-2">
               <Box className="aspect-square w-full" />
