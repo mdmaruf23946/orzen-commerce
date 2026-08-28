@@ -7394,6 +7394,50 @@ export type Database = {
           },
         ]
       }
+      store_pages: {
+        Row: {
+          content_html: string
+          created_at: string
+          id: string
+          is_published: boolean
+          page_key: string
+          seo_description: string | null
+          store_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content_html?: string
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          page_key: string
+          seo_description?: string | null
+          store_id: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          content_html?: string
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          page_key?: string
+          seo_description?: string | null
+          store_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_pages_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_payment_gateways: {
         Row: {
           connected_at: string | null
@@ -9518,6 +9562,10 @@ export type Database = {
         Args: { _page: string; _slug: string }
         Returns: Json
       }
+      get_store_page: {
+        Args: { _page_key: string; _slug: string }
+        Returns: Json
+      }
       get_store_subscription_public_settings: {
         Args: { _store_id: string }
         Returns: Json
@@ -9545,6 +9593,7 @@ export type Database = {
           sort_order: number
         }[]
       }
+      list_store_pages_public: { Args: { _slug: string }; Returns: Json }
       move_to_dlq: {
         Args: {
           dlq_name: string
