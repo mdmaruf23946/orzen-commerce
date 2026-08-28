@@ -23,44 +23,53 @@ import { CategoryIconCluster } from "@/components/CategoryIconCluster";
 const STALE = 5 * 60_000;
 const GC = 30 * 60_000;
 
+/**
+ * Shared stability options: once data has rendered, background refetches must
+ * never flip the query back to a pending state (which would re-suspend the
+ * component and flash the skeleton again).
+ */
+const stable = {
+  staleTime: STALE,
+  gcTime: GC,
+  refetchOnWindowFocus: false,
+  refetchOnMount: false,
+  refetchOnReconnect: false,
+  placeholderData: (prev: unknown) => prev,
+} as const;
+
 const storeQuery = (slug: string) =>
   queryOptions({
     queryKey: ["store", slug],
     queryFn: () => getStoreBySlug({ data: { slug } }),
-    staleTime: STALE,
-    gcTime: GC,
+    ...stable,
   });
 
 const bannersQuery = (storeId: string) =>
   queryOptions({
     queryKey: ["banners", storeId],
     queryFn: () => listStoreBanners({ data: { storeId } }),
-    staleTime: STALE,
-    gcTime: GC,
+    ...stable,
   });
 
 const productsQuery = (storeId: string) =>
   queryOptions({
     queryKey: ["products", storeId],
     queryFn: () => listStoreProducts({ data: { storeId } }),
-    staleTime: STALE,
-    gcTime: GC,
+    ...stable,
   });
 
 const categoriesQuery = (storeId: string) =>
   queryOptions({
     queryKey: ["categories", storeId],
     queryFn: () => listStoreCategories({ data: { storeId } }),
-    staleTime: STALE,
-    gcTime: GC,
+    ...stable,
   });
 
 const bestSellingQuery = (storeId: string) =>
   queryOptions({
     queryKey: ["best-selling", storeId],
     queryFn: () => listBestSellingProducts({ data: { storeId, limit: 12 } }),
-    staleTime: STALE,
-    gcTime: GC,
+    ...stable,
   });
 
 export const Route = createFileRoute("/store/$slug/")({
