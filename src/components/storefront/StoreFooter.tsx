@@ -1,15 +1,5 @@
 import { useState } from "react";
-import {
-  Facebook,
-  Instagram,
-  Youtube,
-  MessageCircle,
-  Mail,
-  Phone,
-  MapPin,
-  Clock,
-  Send,
-} from "lucide-react";
+import { Mail, Phone, MapPin, Clock } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -18,14 +8,55 @@ import { useStoreTheme } from "@/lib/theme/context";
 import { subscribeToStoreOffers } from "@/lib/newsletter.functions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  FacebookGlyph,
+  InstagramGlyph,
+  YoutubeGlyph,
+  TiktokGlyph,
+  LinkedinGlyph,
+  WhatsappGlyph,
+  MessengerGlyph,
+  TelegramGlyph,
+  WebsiteGlyph,
+} from "@/components/storefront/social-icons";
 
-function WhatsAppIcon(props: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={props.className} aria-hidden="true">
-      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-    </svg>
-  );
+const SOCIAL_BRANDS = {
+  facebook: { label: "Facebook", Icon: FacebookGlyph, bg: "#1877F2" },
+  instagram: {
+    label: "Instagram",
+    Icon: InstagramGlyph,
+    bg: "linear-gradient(45deg,#F58529,#DD2A7B,#8134AF,#515BD4)",
+  },
+  youtube: { label: "YouTube", Icon: YoutubeGlyph, bg: "#FF0000" },
+  tiktok: { label: "TikTok", Icon: TiktokGlyph, bg: "#000000" },
+  linkedin: { label: "LinkedIn", Icon: LinkedinGlyph, bg: "#0A66C2" },
+  whatsapp: { label: "WhatsApp", Icon: WhatsappGlyph, bg: "#25D366" },
+  messenger: {
+    label: "Messenger",
+    Icon: MessengerGlyph,
+    bg: "linear-gradient(45deg,#0084FF,#A033FF,#FF5280)",
+  },
+  telegram: { label: "Telegram", Icon: TelegramGlyph, bg: "#24A1DE" },
+  website: { label: "Website", Icon: WebsiteGlyph, bg: "#334155" },
+} as const;
+
+type SocialKey = keyof typeof SOCIAL_BRANDS;
+
+/** Normalizes a raw merchant value (handle or URL) into an external link. */
+function socialHref(key: SocialKey, raw: string): string | null {
+  const v = raw.trim();
+  if (!v) return null;
+  if (/^https?:\/\//i.test(v)) return v;
+  const handle = v.replace(/^@/, "");
+  if (key === "whatsapp") {
+    const digits = v.replace(/\D/g, "");
+    return digits ? `https://wa.me/${digits}` : null;
+  }
+  if (key === "telegram") return `https://t.me/${handle}`;
+  if (key === "messenger") return `https://m.me/${handle}`;
+  return `https://${v}`;
 }
+
 
 export function StoreFooter({
   store,
@@ -45,6 +76,8 @@ export function StoreFooter({
     tiktok?: string | null;
     linkedin?: string | null;
     website?: string | null;
+    messenger?: string | null;
+    telegram?: string | null;
     address: string | null;
     trade_license?: string | null;
     business_hours?: string | null;
@@ -60,21 +93,26 @@ export function StoreFooter({
   const email = f.email || store.email || null;
   const businessHours = store.business_hours || null;
 
-  const socials: { key: string; href: string; label: string; Icon: any }[] = [];
-  if (f.social !== false) {
-    if (store.facebook)
-      socials.push({ key: "facebook", href: store.facebook, label: "Facebook", Icon: Facebook });
-    if (store.instagram)
-      socials.push({ key: "instagram", href: store.instagram, label: "Instagram", Icon: Instagram });
-    if (store.youtube)
-      socials.push({ key: "youtube", href: store.youtube, label: "YouTube", Icon: Youtube });
-    if (store.tiktok)
-      socials.push({ key: "tiktok", href: store.tiktok, label: "TikTok", Icon: MessageCircle });
-    if (store.linkedin)
-      socials.push({ key: "linkedin", href: store.linkedin, label: "LinkedIn", Icon: MessageCircle });
-    if (store.website)
-      socials.push({ key: "website", href: store.website, label: "Website", Icon: Send });
-  }
+  const socialOrder: SocialKey[] = [
+    "facebook",
+    "instagram",
+    "whatsapp",
+    "messenger",
+    "telegram",
+    "youtube",
+    "tiktok",
+    "linkedin",
+    "website",
+  ];
+  const socials =
+    f.social === false
+      ? []
+      : socialOrder
+          .map((key) => {
+            const href = socialHref(key, (store as Record<string, any>)[key] ?? "");
+            return href ? { key, href, ...SOCIAL_BRANDS[key] } : null;
+          })
+          .filter((x): x is NonNullable<typeof x> => x !== null);
 
   const [emailInput, setEmailInput] = useState("");
   const [subscribing, setSubscribing] = useState(false);
@@ -119,29 +157,20 @@ export function StoreFooter({
               </p>
             )}
             <div className="flex flex-wrap gap-2 pt-1">
-              {socials.map((s) => (
+              {socials.map((s2) => (
                 <a
-                  key={s.key}
-                  href={s.href}
+                  key={s2.key}
+                  href={s2.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={s.label}
-                  className="grid h-9 w-9 place-items-center rounded-full border border-slate-200/80 bg-slate-200/80 text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sf-accent hover:text-white hover:shadow-md"
+                  aria-label={s2.label}
+                  title={s2.label}
+                  style={{ background: s2.bg }}
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-white shadow-sm transition-transform duration-200 hover:scale-110"
                 >
-                  <s.Icon className="h-4 w-4" />
+                  <s2.Icon className="h-4 w-4" />
                 </a>
               ))}
-              {store.whatsapp && (
-                <a
-                  href={`https://wa.me/${store.whatsapp.replace(/\D/g, "")}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="WhatsApp"
-                  className="grid h-9 w-9 place-items-center rounded-full border border-slate-200/80 bg-slate-200/80 text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sf-accent hover:text-white hover:shadow-md"
-                >
-                  <WhatsAppIcon className="h-4 w-4" />
-                </a>
-              )}
             </div>
           </div>
 
