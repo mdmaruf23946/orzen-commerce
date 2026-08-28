@@ -6,6 +6,7 @@ import {
   Heart,
   ShoppingCart,
   Phone,
+  Mail,
   Shield,
   User,
   LogOut,
@@ -14,6 +15,8 @@ import {
   X,
   LogIn,
   LayoutGrid,
+  MessageCircle,
+  Truck,
 } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useStoreUI } from "@/lib/store-ui";
@@ -23,12 +26,22 @@ import { StoreLangSwitch } from "@/components/storefront/StoreLangSwitch";
 
 type Category = { id: string; name: string; parent_id: string | null };
 
+function toDisplayUrl(v?: string | null): string | null {
+  if (!v) return null;
+  if (v.startsWith("http") || v.startsWith("/")) return v;
+  return `/api/img/${v}`;
+}
+
 export function MobileDrawer({
   open,
   onOpenChange,
   slug,
   storeName,
   logoUrl,
+  nameLogoUrl,
+  phone,
+  email,
+  whatsapp,
   categories,
   productCounts,
   totalProducts,
@@ -38,6 +51,10 @@ export function MobileDrawer({
   slug: string;
   storeName: string;
   logoUrl: string | null;
+  nameLogoUrl?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  whatsapp?: string | null;
   categories: Category[];
   productCounts: Map<string, number>;
   totalProducts: number;
@@ -46,6 +63,11 @@ export function MobileDrawer({
   const { activeMainId, activeSubId, selectMain, selectSub } = useStoreUI();
   const { customer, signOut } = useCustomerSession(slug);
   const { t } = useStoreT();
+
+  const nameLogo = toDisplayUrl(nameLogoUrl);
+  const waHref = whatsapp
+    ? `https://wa.me/${whatsapp.replace(/[^0-9]/g, "")}`
+    : null;
 
   const mains = categories.filter((c) => !c.parent_id);
   const subsByParent = new Map<string, Category[]>();
@@ -81,37 +103,39 @@ export function MobileDrawer({
         side="left"
         className="w-[86%] max-w-sm p-0 [&>button]:hidden"
       >
-        <div className="flex h-full flex-col">
-          {/* Header card */}
-          <div
-            className="flex items-center gap-3 border-b p-4"
-            style={{ backgroundColor: "var(--store-header-bg, #fafafa)" }}
-          >
+        <div className="flex h-full flex-col bg-white">
+          {/* Brand header — same logo as storefront header & footer */}
+          <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50 p-4">
             {logoUrl ? (
-              <img src={logoUrl} alt="" className="h-11 w-11 rounded-full object-cover" />
+              <img src={logoUrl} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
             ) : (
-              <div
-                className="grid h-11 w-11 place-items-center rounded-full text-sm font-bold text-white"
-                style={{ backgroundColor: "var(--primary)" }}
-              >
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sf-accent text-sm font-bold text-white">
                 {storeName.charAt(0)}
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-semibold text-neutral-900">{storeName}</div>
+              {nameLogo ? (
+                <img
+                  src={nameLogo}
+                  alt={storeName}
+                  className="h-7 w-auto max-w-[160px] object-contain"
+                />
+              ) : (
+                <div className="truncate text-base font-bold text-slate-900">{storeName}</div>
+              )}
               {customer ? (
-                <div className="truncate text-xs text-neutral-500">
+                <div className="truncate text-xs text-slate-500">
                   {t("nav.greeting")}, {customer.full_name.split(" ")[0]}
                 </div>
               ) : (
-                <div className="text-xs text-neutral-500">{t("nav.welcome")}</div>
+                <div className="text-xs text-slate-500">{t("nav.welcome")}</div>
               )}
             </div>
             <button
               type="button"
               onClick={() => onOpenChange(false)}
               aria-label={t("common.close")}
-              className="grid h-8 w-8 place-items-center rounded-full text-neutral-500 hover:bg-neutral-100"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-slate-500 hover:bg-slate-200/70"
             >
               <X className="h-4 w-4" />
             </button>
@@ -123,21 +147,19 @@ export function MobileDrawer({
 
             {/* Categories accordion */}
             <div className="mt-1">
-              <div className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
-                {t("nav.categories")}
-              </div>
+              <SectionLabel>{t("nav.categories")}</SectionLabel>
               <button
                 type="button"
                 onClick={() => pickMain(null)}
-                className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-neutral-100 ${
-                  activeMainId === null ? "font-semibold text-neutral-900" : "text-neutral-700"
+                className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-slate-100 ${
+                  activeMainId === null ? "bg-slate-100 font-semibold text-slate-900" : "text-slate-700"
                 }`}
               >
                 <span className="flex items-center gap-2.5">
-                  <LayoutGrid className="h-4 w-4 text-neutral-500" />
+                  <LayoutGrid className="h-4 w-4 text-sf-accent" />
                   {t("nav.allProducts")}
                 </span>
-                <span className="text-[11px] font-medium text-neutral-400">{totalProducts}</span>
+                <span className="text-[11px] font-medium text-slate-400">{totalProducts}</span>
               </button>
               {mains.map((m) => {
                 const subs = subsByParent.get(m.id) ?? [];
@@ -149,12 +171,12 @@ export function MobileDrawer({
                       <button
                         type="button"
                         onClick={() => pickMain(m.id)}
-                        className={`flex flex-1 items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-neutral-100 ${
-                          isActive ? "font-semibold text-neutral-900" : "text-neutral-700"
+                        className={`flex flex-1 items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-slate-100 ${
+                          isActive ? "bg-slate-100 font-semibold text-slate-900" : "text-slate-700"
                         }`}
                       >
-                        <span>{m.name}</span>
-                        <span className="text-[11px] font-medium text-neutral-400">
+                        <span className="truncate">{m.name}</span>
+                        <span className="text-[11px] font-medium text-slate-400">
                           {productCounts.get(m.id) ?? 0}
                         </span>
                       </button>
@@ -164,7 +186,7 @@ export function MobileDrawer({
                           onClick={() => setOpenCat(expanded ? null : m.id)}
                           aria-expanded={expanded}
                           aria-label={expanded ? "Collapse" : "Expand"}
-                          className="ml-1 grid h-8 w-8 place-items-center rounded-full text-neutral-500 hover:bg-neutral-100"
+                          className="ml-1 grid h-8 w-8 shrink-0 place-items-center rounded-full text-sf-accent hover:bg-slate-100"
                         >
                           {expanded ? (
                             <ChevronDown className="h-4 w-4" />
@@ -175,16 +197,16 @@ export function MobileDrawer({
                       )}
                     </div>
                     {expanded && subs.length > 0 && (
-                      <div className="ml-6 mt-1 space-y-0.5 border-l border-neutral-200 pl-2 animate-accordion-down">
+                      <div className="ml-6 mt-1 space-y-0.5 border-l border-slate-200 pl-2 animate-accordion-down">
                         {subs.map((s) => (
                           <button
                             key={s.id}
                             type="button"
                             onClick={() => pickSub(m.id, s.id)}
-                            className={`block w-full rounded-lg px-3 py-1.5 text-left text-[13px] transition-colors hover:bg-neutral-100 ${
+                            className={`block w-full rounded-lg px-3 py-1.5 text-left text-[13px] transition-colors hover:bg-slate-100 ${
                               activeSubId === s.id
-                                ? "font-semibold text-neutral-900"
-                                : "text-neutral-600"
+                                ? "font-semibold text-sf-accent"
+                                : "text-slate-600"
                             }`}
                           >
                             {s.name}
@@ -199,30 +221,36 @@ export function MobileDrawer({
 
             {/* Shop */}
             <div className="mt-3">
-              <div className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
-                {t("nav.shop")}
-              </div>
+              <SectionLabel>{t("nav.shop")}</SectionLabel>
               <NavItem to="/store/$slug/cart" params={{ slug }} icon={ShoppingCart} label={t("nav.cart")} onClick={() => onOpenChange(false)} />
               <NavItem to="/store/$slug/account" params={{ slug }} search={{ tab: "orders" }} icon={Package} label={t("nav.orders")} onClick={() => onOpenChange(false)} />
               <NavItem to="/store/$slug/account" params={{ slug }} search={{ tab: "wishlist" }} icon={Heart} label={t("nav.wishlist")} onClick={() => onOpenChange(false)} />
+              <NavItem to="/store/$slug/track-order" params={{ slug }} icon={Truck} label={t("footer.trackOrder")} onClick={() => onOpenChange(false)} />
             </div>
 
-            {/* More */}
+            {/* Help — merchant-managed contact + policies */}
             <div className="mt-3">
-              <div className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
-                {t("nav.help")}
-              </div>
-              <NavExtLink href="/contact" icon={Phone} label={t("nav.contact")} onClick={() => onOpenChange(false)} />
+              <SectionLabel>{t("nav.help")}</SectionLabel>
+              {phone && (
+                <NavExtLink href={`tel:${phone}`} icon={Phone} label={phone} onClick={() => onOpenChange(false)} />
+              )}
+              {waHref && (
+                <NavExtLink href={waHref} icon={MessageCircle} label="WhatsApp" onClick={() => onOpenChange(false)} external />
+              )}
+              {email && (
+                <NavExtLink href={`mailto:${email}`} icon={Mail} label={email} onClick={() => onOpenChange(false)} />
+              )}
               <NavExtLink href="/privacy-policy" icon={Shield} label={t("footer.privacy")} onClick={() => onOpenChange(false)} />
               <NavExtLink href="/terms" icon={Shield} label={t("footer.terms")} onClick={() => onOpenChange(false)} />
               <NavExtLink href="/refund-policy" icon={Shield} label={t("footer.returnPolicy")} onClick={() => onOpenChange(false)} />
+              <NavExtLink href="/shipping-policy" icon={Shield} label={t("footer.shippingPolicy")} onClick={() => onOpenChange(false)} />
             </div>
           </div>
 
           {/* Account footer */}
-          <div className="border-t p-3">
+          <div className="border-t border-slate-100 bg-slate-50 p-3">
             <div className="mb-2 flex items-center justify-between px-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                 {t("nav.language")}
               </span>
               <StoreLangSwitch />
@@ -242,7 +270,7 @@ export function MobileDrawer({
                     onOpenChange(false);
                     signOut();
                   }}
-                  className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50"
+                  className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-sf-accent transition-colors hover:bg-sf-accent/10"
                 >
                   <LogOut className="h-4 w-4" />
                   {t("nav.signOut")}
@@ -253,8 +281,7 @@ export function MobileDrawer({
                 to="/store/$slug/auth/login"
                 params={{ slug }}
                 onClick={() => onOpenChange(false)}
-                className="flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-white shadow-sm"
-                style={{ backgroundColor: "var(--store-btn-bg, #0f172a)" }}
+                className="flex items-center justify-center gap-2 rounded-xl bg-sf-accent px-3 py-2.5 text-sm font-semibold text-white shadow-sm"
               >
                 <LogIn className="h-4 w-4" />
                 {t("nav.signIn")}
@@ -264,6 +291,14 @@ export function MobileDrawer({
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+      {children}
+    </div>
   );
 }
 
@@ -288,10 +323,10 @@ function NavItem({
       params={params}
       search={search}
       onClick={onClick}
-      className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100"
+      className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
     >
-      <Icon className="h-4 w-4 text-neutral-500" />
-      {label}
+      <Icon className="h-4 w-4 shrink-0 text-sf-accent" />
+      <span className="truncate">{label}</span>
     </Link>
   );
 }
@@ -301,20 +336,24 @@ function NavExtLink({
   icon: Icon,
   label,
   onClick,
+  external,
 }: {
   href: string;
   icon: any;
   label: string;
   onClick?: () => void;
+  external?: boolean;
 }) {
   return (
     <a
       href={href}
       onClick={onClick}
-      className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100"
+      target={external ? "_blank" : undefined}
+      rel={external ? "noopener noreferrer" : undefined}
+      className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
     >
-      <Icon className="h-4 w-4 text-neutral-500" />
-      {label}
+      <Icon className="h-4 w-4 shrink-0 text-sf-accent" />
+      <span className="truncate">{label}</span>
     </a>
   );
 }
