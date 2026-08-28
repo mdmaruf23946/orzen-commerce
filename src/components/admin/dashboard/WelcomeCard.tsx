@@ -1,4 +1,4 @@
-import { ExternalLink, Copy, Bot, ShoppingBag, MessageSquare, Sparkles, TrendingUp } from "lucide-react";
+import { ExternalLink, Bot, ShoppingBag, MessageSquare, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type InboxStats = {
@@ -160,33 +160,25 @@ function StatTile({
 }
 
 export function WelcomeCard(props: WelcomeCardProps) {
-  const { ownerName, store, storeUrl, onCopy, today, products, inbox, updatedRel } = props;
+  const { ownerName, store, storeUrl, today, products, inbox, updatedRel } = props;
 
   const fmtBDT = (n: number) => `৳${(n ?? 0).toLocaleString("en-BD", { maximumFractionDigits: 0 })}`;
   const nFmt = (n: number) => (n ?? 0).toLocaleString("en-BD");
 
   const messagesCount = inbox?.today ?? 0;
   const aiRepliesCount = inbox?.ai_replied ?? 0;
-  const productsReady = products.total > 0;
 
-  const hasMessengerActivity =
-    (inbox?.today ?? 0) + (inbox?.ai_replied ?? 0) + (inbox?.human_replied ?? 0) + (inbox?.unread ?? 0) > 0;
-  const messengerTone: "emerald" | "amber" | null =
-    hasMessengerActivity ? "emerald" : inbox === undefined ? null : "amber";
-  const webhookTone: "emerald" | "amber" | null =
-    inbox === undefined || inbox === null ? null : (inbox.failed ?? 0) > 0 ? "amber" : "emerald";
-
-  const storePath = store ? `/store/${store.slug}` : "";
-
-  const CopyBtn = (
-    <button
-      type="button"
-      onClick={onCopy}
-      aria-label="Copy store URL"
-      className="ml-1 rounded p-0.5 text-muted-foreground transition hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10"
-    >
-      <Copy className="h-3 w-3" />
-    </button>
+  const badges = (
+    <div className="flex flex-wrap items-center gap-2 mb-4">
+      <StatusChip tone="emerald">Active Store</StatusChip>
+      {store?.package_name && (
+        <Chip className="bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700">
+          {store.package_name}
+        </Chip>
+      )}
+      <Chip className="text-muted-foreground">Updated {updatedRel}</Chip>
+      <StatusChip tone="emerald">AI Online</StatusChip>
+    </div>
   );
 
   const stats = [
@@ -211,44 +203,19 @@ export function WelcomeCard(props: WelcomeCardProps) {
       {/* ============ DESKTOP / TABLET (md+) ============ */}
       <div className="relative hidden md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto] md:items-center md:gap-5 md:p-5 lg:p-6">
         {/* LEFT */}
-        <div className="min-w-0 space-y-3">
+        <div className="min-w-0">
           <h1 className="truncate text-xl font-semibold tracking-tight lg:text-2xl">
             👋 Welcome back, {ownerName}!
           </h1>
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusChip tone="emerald">Active Store</StatusChip>
-            {store?.package_name && <Chip>{store.package_name}</Chip>}
-            {store && (
-              <Chip className="max-w-[220px]">
-                <a
-                  href={storeUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="truncate text-muted-foreground hover:text-foreground"
-                >
-                  {storePath}
-                </a>
-                {CopyBtn}
-              </Chip>
-            )}
-            <Chip className="text-muted-foreground">Updated {updatedRel}</Chip>
-          </div>
+          {badges}
         </div>
 
-        {/* CENTER — 4 stats + 2 status chips */}
-        <div className="min-w-0 space-y-2.5">
+        {/* CENTER — 4 stats */}
+        <div className="min-w-0">
           <div className="grid grid-cols-4 gap-2.5">
             {stats.map((s) => (
               <StatTile key={s.label} {...s} />
             ))}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <StatusChip tone="emerald">AI Online</StatusChip>
-            {messengerTone && (
-              <StatusChip tone={messengerTone}>
-                Messenger {messengerTone === "emerald" ? "Connected" : "Idle"}
-              </StatusChip>
-            )}
           </div>
         </div>
 
@@ -278,25 +245,8 @@ export function WelcomeCard(props: WelcomeCardProps) {
           </h1>
         </div>
 
-        {/* Row 2: chips */}
-        <div className="flex flex-wrap gap-1.5">
-          <StatusChip tone="emerald">Active Store</StatusChip>
-          {store?.package_name && <Chip>{store.package_name}</Chip>}
-          {store && (
-            <Chip className="max-w-[180px]">
-              <a
-                href={storeUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="truncate text-muted-foreground hover:text-foreground"
-              >
-                {storePath}
-              </a>
-              {CopyBtn}
-            </Chip>
-          )}
-          <Chip className="text-muted-foreground">Updated {updatedRel}</Chip>
-        </div>
+        {/* Row 2: badges */}
+        {badges}
 
         {/* Row 3: 2x2 stats grid */}
         <div className="grid grid-cols-2 gap-2">
@@ -305,23 +255,7 @@ export function WelcomeCard(props: WelcomeCardProps) {
           ))}
         </div>
 
-        {/* Row 4: status chip strip (wrap, no horizontal scroll) */}
-        <div className="flex flex-wrap gap-1.5">
-          <StatusChip tone="emerald">AI Online</StatusChip>
-          {messengerTone && (
-            <StatusChip tone={messengerTone}>
-              Messenger {messengerTone === "emerald" ? "Connected" : "Idle"}
-            </StatusChip>
-          )}
-          {webhookTone && (
-            <StatusChip tone={webhookTone}>
-              Webhook {webhookTone === "emerald" ? "Verified" : "Partial"}
-            </StatusChip>
-          )}
-          {productsReady && <StatusChip tone="emerald">Product Index Ready</StatusChip>}
-        </div>
-
-        {/* Row 5: full-width View Store CTA */}
+        {/* Row 4: full-width View Store CTA */}
         {store && (
           <a
             href={storeUrl}
