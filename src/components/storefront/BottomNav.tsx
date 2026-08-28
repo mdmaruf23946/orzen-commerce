@@ -46,7 +46,6 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
       className="fixed inset-x-0 bottom-0 z-40 border-t border-sf-line bg-white md:hidden"
       style={{
         transform: "translateZ(0)",
-        contain: "paint",
         paddingBottom: "env(safe-area-inset-bottom)",
       }}
 
