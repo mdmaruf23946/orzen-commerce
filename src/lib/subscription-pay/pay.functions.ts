@@ -466,6 +466,17 @@ export const verifyAndActivateSubscription = createServerFn({ method: "POST" })
       })
       .eq("id", (tx as any).id);
 
+    if (result.status === "paid" && (inv as any).purpose === "wallet_topup") {
+      // Wallet top-up: credit the balance (idempotent) — no plan activation.
+      const { creditTopupInvoice } = await import("@/lib/wallet.server");
+      await creditTopupInvoice(supabaseAdmin as any, inv);
+      await supabaseAdmin
+        .from("subscription_invoices")
+        .update({ status: "paid", paid_at: new Date().toISOString() })
+        .eq("id", (inv as any).id);
+      return { ok: true, status: "paid", purpose: "wallet_topup", invoice_no: data.invoice_no };
+    }
+
     if (result.status !== "paid") {
       if (result.status === "failed") {
         await supabaseAdmin

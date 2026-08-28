@@ -23,7 +23,7 @@ export const Route = createFileRoute("/api/public/subscription-pay/webhook/$prov
           const invoiceNo = parsed.provider_ref;
           const { data: inv } = await supabaseAdmin
             .from("subscription_invoices")
-            .select("id, user_id")
+            .select("id, user_id, store_id, invoice_no, total, purpose")
             .eq("invoice_no", invoiceNo)
             .maybeSingle();
           if (!inv) return new Response("Unknown invoice", { status: 404 });
@@ -43,7 +43,14 @@ export const Route = createFileRoute("/api/public/subscription-pay/webhook/$prov
             })
             .eq("invoice_id", (inv as any).id);
 
-          if (result.status === "paid") {
+          if (result.status === "paid" && (inv as any).purpose === "wallet_topup") {
+            const { creditTopupInvoice } = await import("@/lib/wallet.server");
+            await creditTopupInvoice(supabaseAdmin as any, inv);
+            await supabaseAdmin
+              .from("subscription_invoices")
+              .update({ status: "paid", paid_at: new Date().toISOString() })
+              .eq("id", (inv as any).id);
+          } else if (result.status === "paid") {
             // Mark invoice paid; UI verify call will run activation next time
             // the customer returns. Idempotent — safe to run twice.
             await supabaseAdmin

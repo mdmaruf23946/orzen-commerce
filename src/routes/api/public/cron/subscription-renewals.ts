@@ -15,7 +15,9 @@ export const Route = createFileRoute("/api/public/cron/subscription-renewals")({
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { processRenewals } = await import("@/lib/subscriptions.server");
         const stats = await processRenewals(supabaseAdmin as any);
-        return Response.json({ ok: true, ...stats });
+        const { processWalletAutoRenewals } = await import("@/lib/wallet.server");
+        const wallet = await processWalletAutoRenewals(supabaseAdmin as any);
+        return Response.json({ ok: true, ...stats, wallet });
       },
     },
   },
