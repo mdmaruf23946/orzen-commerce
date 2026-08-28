@@ -72,7 +72,7 @@ export function MyDownloads({ slug, token }: { slug: string; token: string }) {
             type="button"
             onClick={() => setFilter(f)}
             className={`rounded-full border px-3 py-1 text-xs font-medium capitalize ${
-              filter === f ? "border-primary bg-primary/10" : ""
+              filter === f ? "border-sf-accent bg-sf-accent-soft text-sf-accent" : "border-neutral-200 text-neutral-600 hover:border-sf-accent hover:text-sf-accent"
             }`}
           >
             {t(`digital.myDownloads.filter.${f}`)}
@@ -134,6 +134,7 @@ export function MyDownloads({ slug, token }: { slug: string; token: string }) {
                   </div>
                   <Button
                     size="sm"
+                    className="bg-sf-accent text-white hover:bg-sf-accent-hover"
                     onClick={() => download(r.id, f.index)}
                     disabled={busy === `${r.id}:${f.index}`}
                   >
@@ -142,7 +143,7 @@ export function MyDownloads({ slug, token }: { slug: string; token: string }) {
                 </div>
               ))}
               {r.hasExternal && (
-                <Button size="sm" variant="outline" onClick={() => download(r.id, -1)}>
+                <Button size="sm" variant="outline" className="border-sf-accent text-sf-accent hover:bg-sf-accent-soft hover:text-sf-accent" onClick={() => download(r.id, -1)}>
                   {t("digital.openExternalLink")}
                 </Button>
               )}
@@ -159,6 +160,7 @@ export function MyDownloads({ slug, token }: { slug: string; token: string }) {
               <Button
                 size="sm"
                 variant="ghost"
+                className="text-sf-accent hover:bg-sf-accent-soft hover:text-sf-accent"
                 onClick={() => {
                   navigator.clipboard.writeText(r.license.key);
                   toast.success(t("digital.licenseCopied"));
