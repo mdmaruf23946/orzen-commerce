@@ -193,17 +193,17 @@ export function StoreFooter({
             <h3 className="text-base font-bold text-slate-900">{t("footer.quickLinks")}</h3>
             <ul className="space-y-2.5 text-sm">
               <li>
-                <Link to="/store/$slug" params={{ slug }} className="transition-colors hover:text-sf-accent">
+                <Link to="/store/$slug/about-us" params={{ slug }} className="transition-colors hover:text-sf-accent">
                   {t("footer.aboutUs")}
                 </Link>
               </li>
               <li>
-                <a href="#contact" className="transition-colors hover:text-sf-accent">
+                <Link to="/store/$slug/contact-us" params={{ slug }} className="transition-colors hover:text-sf-accent">
                   {t("footer.contactUs")}
-                </a>
+                </Link>
               </li>
               <li>
-                <Link to="/store/$slug" params={{ slug }} search={{ view: "all" }} className="transition-colors hover:text-sf-accent">
+                <Link to="/store/$slug/shop" params={{ slug }} className="transition-colors hover:text-sf-accent">
                   {t("footer.shopAll")}
                 </Link>
               </li>
@@ -213,7 +213,9 @@ export function StoreFooter({
                 </Link>
               </li>
               <li>
-                <span className="cursor-not-allowed text-slate-400">{t("footer.blogs")}</span>
+                <Link to="/store/$slug/blogs" params={{ slug }} className="transition-colors hover:text-sf-accent">
+                  {t("footer.blogs")}
+                </Link>
               </li>
             </ul>
           </div>
@@ -223,24 +225,24 @@ export function StoreFooter({
             <h3 className="text-base font-bold text-slate-900">{t("footer.customerPolicies")}</h3>
             <ul className="space-y-2.5 text-sm">
               <li>
-                <a href="/privacy-policy" className="transition-colors hover:text-sf-accent">
+                <Link to="/store/$slug/privacy-policy" params={{ slug }} className="transition-colors hover:text-sf-accent">
                   {t("footer.privacy")}
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/terms" className="transition-colors hover:text-sf-accent">
+                <Link to="/store/$slug/terms-conditions" params={{ slug }} className="transition-colors hover:text-sf-accent">
                   {t("footer.terms")}
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/refund-policy" className="transition-colors hover:text-sf-accent">
+                <Link to="/store/$slug/return-refund-policy" params={{ slug }} className="transition-colors hover:text-sf-accent">
                   {t("footer.returnRefund")}
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/shipping-policy" className="transition-colors hover:text-sf-accent">
+                <Link to="/store/$slug/shipping-policy" params={{ slug }} className="transition-colors hover:text-sf-accent">
                   {t("footer.shippingPolicy")}
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

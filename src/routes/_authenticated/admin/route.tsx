@@ -64,7 +64,7 @@ const links: LinkDef[] = [
   { to: "/admin/banners", label: "Banners", icon: ImageIcon },
   { to: "/admin/theme", label: "Theme", icon: Palette },
   { to: "/admin/seo", label: "SEO", icon: SearchIcon },
-  { to: "/admin/legal", label: "Legal & Info Pages", icon: FileText },
+  { to: "/admin/pages", label: "Pages & Content", icon: FileText },
   { to: "/admin/delivery", label: "Delivery", icon: PackageOpen, badgeKey: "delivery" },
   { to: "/admin/couriers", label: "Couriers", icon: Truck, badgeKey: "delivery" },
   { to: "/admin/parcels", label: "Courier Parcels", icon: PackageOpen, badgeKey: "delivery" },
@@ -133,7 +133,7 @@ const groupDefs: { label: string; paths: string[] }[] = [
   { label: "Marketing", paths: ["/admin/marketing", "/admin/coupons", "/admin/seo", "/admin/banners", "/admin/notifications"] },
   { label: "Finance", paths: ["/admin/payment-gateway", "/admin/finance", "/admin/analytics"] },
   { label: "Operations", paths: ["/admin/delivery", "/admin/couriers", "/admin/parcels", "/admin/landing-builder", "/admin/landing-pages"] },
-  { label: "System", paths: ["/admin/theme", "/admin/legal", "/admin/invoice-templates", "/admin/domains", "/admin/dns-check", "/admin/import-export", "/admin/staff", "/admin/employees", "/admin/activity"] },
+  { label: "System", paths: ["/admin/theme", "/admin/pages", "/admin/invoice-templates", "/admin/domains", "/admin/dns-check", "/admin/import-export", "/admin/staff", "/admin/employees", "/admin/activity"] },
   { label: "Account", paths: ["/admin/subscription", "/admin/billing", "/admin/support", "/admin/settings"] },
 ];
 
