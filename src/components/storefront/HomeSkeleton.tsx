@@ -22,12 +22,12 @@ function ProductGridSkeleton({ count = 10 }: { count?: number }) {
 
 export function HomeSkeleton() {
   return (
-    <div className="flex flex-col gap-2 sm:gap-8" aria-busy="true" aria-hidden>
+    <div className="flex flex-col gap-1 sm:gap-8" aria-busy="true" aria-hidden>
       {/* Banner */}
       <Box className="aspect-[16/7] w-full rounded-3xl sm:aspect-[21/8]" />
 
       {/* Category tiles */}
-      <section className="rounded-2xl border border-sf-line bg-white p-2 sm:rounded-3xl sm:p-4">
+      <section className="rounded-xl border border-sf-line bg-white px-1 py-0.5 sm:rounded-3xl sm:p-4">
         <div className="flex flex-nowrap gap-2 sm:grid sm:grid-cols-6 sm:gap-4 md:grid-cols-8">
           {Array.from({ length: 8 }).map((_, i) => (
             <div
