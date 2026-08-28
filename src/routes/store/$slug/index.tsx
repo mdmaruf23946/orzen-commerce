@@ -220,7 +220,7 @@ function HomeContent() {
   };
 
   return (
-    <div className="theme-sections flex animate-fade-in flex-col gap-2 opacity-100 transition-opacity duration-300 sm:gap-8">
+    <div className="theme-sections flex animate-fade-in flex-col gap-1 opacity-100 transition-opacity duration-300 sm:gap-8">
 
 
       {!isFiltering && source === "header" && activeMainId && activeSubs.length > 0 && (
@@ -334,7 +334,7 @@ function Section({
 /** Section shell for the featured category cards. */
 function FeaturedCategories({ children }: { children: React.ReactNode }) {
   return (
-    <section id="categories" className="scroll-mt-32 rounded-2xl border border-sf-line bg-white p-2 sm:rounded-3xl sm:p-4">
+    <section id="categories" className="scroll-mt-32 rounded-xl border border-sf-line bg-white px-1 py-0.5 sm:rounded-3xl sm:p-4">
       {children}
     </section>
   );
@@ -543,7 +543,7 @@ function CategoryStrip({
     <div className="relative">
       <div
         ref={scrollRef}
-        className="flex flex-nowrap gap-2 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory sm:grid sm:grid-cols-6 sm:gap-4 md:grid-cols-8"
+        className="flex flex-nowrap gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory sm:grid sm:grid-cols-6 sm:gap-4 sm:pb-1 md:grid-cols-8"
       >
         <div className="w-[calc(25%-0.5rem)] shrink-0 snap-start sm:w-auto">
           <CategoryTile
