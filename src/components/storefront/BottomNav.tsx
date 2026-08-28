@@ -54,7 +54,7 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
         {/* Categories */}
         <li>
           <a href="#categories" onClick={openCategories} className={itemCls(false)}>
-            <LayoutGrid className="h-5 w-5" />
+            <LayoutGrid className="h-5 w-5 text-sf-accent" />
             <span>{t("nav.categories")}</span>
           </a>
         </li>
@@ -63,12 +63,12 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
         <li>
           {waHref ? (
             <a href={waHref} target="_blank" rel="noreferrer" className={itemCls(false)}>
-              <MessageCircle className="h-5 w-5" />
+              <MessageCircle className="h-5 w-5 text-sf-accent" />
               <span>{t("home.whatsapp")}</span>
             </a>
           ) : (
             <span className={`${itemCls(false)} opacity-40`}>
-              <MessageCircle className="h-5 w-5" />
+              <MessageCircle className="h-5 w-5 text-sf-accent" />
               <span>{t("home.whatsapp")}</span>
             </span>
           )}
@@ -106,7 +106,7 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
             className={itemCls(wishActive)}
           >
             <span className="relative">
-              <Heart className="h-5 w-5" />
+              <Heart className="h-5 w-5 text-sf-accent" />
               {wish > 0 && (
                 <span className="absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-sf-accent px-1 text-[9px] font-bold text-white">
                   {wish > 99 ? "99+" : wish}
@@ -125,7 +125,7 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
             search={{ tab: "orders" } as any}
             className={itemCls(ordersActive)}
           >
-            <Truck className="h-5 w-5" />
+            <Truck className="h-5 w-5 text-sf-accent" />
             <span>{t("home.trackOrder")}</span>
           </Link>
         </li>
