@@ -168,7 +168,7 @@ function StoreLayout() {
           showSearch={!isAccount && !isCheckoutFlow}
         />
         <main
-          className="mx-auto px-4 pb-24 pt-0 sm:pt-4 sm:px-6 md:pb-12"
+          className="mx-auto px-4 pb-10 pt-0 sm:pt-4 sm:px-6 md:pb-12"
           style={{ maxWidth: resolved ? "var(--store-container)" : undefined }}
         >
           <Outlet />
