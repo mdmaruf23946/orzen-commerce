@@ -67,6 +67,8 @@ export function StoreFooter({
     name: string;
     description: string | null;
     logo_url: string | null;
+    icon_url?: string | null;
+    name_logo_url?: string | null;
     phone: string | null;
     whatsapp: string | null;
     email?: string | null;
