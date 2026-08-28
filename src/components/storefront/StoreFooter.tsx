@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { useStoreT } from "@/lib/store-i18n";
 import { useStoreTheme } from "@/lib/theme/context";
+import { resolveStoreIcon } from "@/lib/store-icon";
 import { subscribeToStoreOffers } from "@/lib/newsletter.functions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,8 @@ export function StoreFooter({
     name: string;
     description: string | null;
     logo_url: string | null;
+    icon_url?: string | null;
+    name_logo_url?: string | null;
     phone: string | null;
     whatsapp: string | null;
     email?: string | null;
@@ -87,6 +90,13 @@ export function StoreFooter({
   const { t } = useStoreT();
   const theme = useStoreTheme();
   const f = theme.footer;
+
+  const iconUrl = resolveStoreIcon(store as any);
+  const nameLogoUrl = (store as any).name_logo_url
+    ? ((store as any).name_logo_url.startsWith("http") || (store as any).name_logo_url.startsWith("/")
+        ? (store as any).name_logo_url
+        : `/api/img/${(store as any).name_logo_url}`)
+    : null;
 
   const phone = f.phone || store.phone;
   const address = f.address || store.address;
@@ -140,14 +150,18 @@ export function StoreFooter({
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              {store.logo_url ? (
-                <img src={store.logo_url} alt="" className="h-11 w-11 rounded-full object-cover" loading="lazy" />
+              {iconUrl ? (
+                <img src={iconUrl} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" loading="lazy" />
               ) : (
                 <div className="grid h-11 w-11 place-items-center rounded-full bg-slate-200 text-sm font-bold text-slate-700">
                   {store.name.charAt(0)}
                 </div>
               )}
-              <span className="text-lg font-bold text-slate-900">{store.name}</span>
+              {nameLogoUrl ? (
+                <img src={nameLogoUrl} alt={store.name} className="h-7 w-auto max-w-[150px] object-contain" loading="lazy" />
+              ) : (
+                <span className="text-lg font-bold text-slate-900">{store.name}</span>
+              )}
             </div>
             {store.description && <p className="text-sm leading-relaxed text-slate-600">{store.description}</p>}
             {address && (
