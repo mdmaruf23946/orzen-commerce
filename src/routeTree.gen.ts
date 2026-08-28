@@ -40,6 +40,7 @@ import { Route as StoreSlugSitemapDotxmlRouteImport } from './routes/store/$slug
 import { Route as StoreSlugShippingPolicyRouteImport } from './routes/store/$slug/shipping-policy'
 import { Route as StoreSlugReturnRefundPolicyRouteImport } from './routes/store/$slug/return-refund-policy'
 import { Route as StoreSlugPrivacyPolicyRouteImport } from './routes/store/$slug/privacy-policy'
+import { Route as StoreSlugContactUsRouteImport } from './routes/store/$slug/contact-us'
 import { Route as StoreSlugCheckoutRouteImport } from './routes/store/$slug/checkout'
 import { Route as StoreSlugCategoriesRouteImport } from './routes/store/$slug/categories'
 import { Route as StoreSlugCartRouteImport } from './routes/store/$slug/cart'
@@ -354,6 +355,11 @@ const StoreSlugReturnRefundPolicyRoute =
 const StoreSlugPrivacyPolicyRoute = StoreSlugPrivacyPolicyRouteImport.update({
   id: '/privacy-policy',
   path: '/privacy-policy',
+  getParentRoute: () => StoreSlugRouteRoute,
+} as any)
+const StoreSlugContactUsRoute = StoreSlugContactUsRouteImport.update({
+  id: '/contact-us',
+  path: '/contact-us',
   getParentRoute: () => StoreSlugRouteRoute,
 } as any)
 const StoreSlugCheckoutRoute = StoreSlugCheckoutRouteImport.update({
@@ -1387,6 +1393,7 @@ export interface FileRoutesByFullPath {
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/categories': typeof StoreSlugCategoriesRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
+  '/store/$slug/contact-us': typeof StoreSlugContactUsRoute
   '/store/$slug/privacy-policy': typeof StoreSlugPrivacyPolicyRoute
   '/store/$slug/return-refund-policy': typeof StoreSlugReturnRefundPolicyRoute
   '/store/$slug/shipping-policy': typeof StoreSlugShippingPolicyRoute
@@ -1567,6 +1574,7 @@ export interface FileRoutesByTo {
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/categories': typeof StoreSlugCategoriesRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
+  '/store/$slug/contact-us': typeof StoreSlugContactUsRoute
   '/store/$slug/privacy-policy': typeof StoreSlugPrivacyPolicyRoute
   '/store/$slug/return-refund-policy': typeof StoreSlugReturnRefundPolicyRoute
   '/store/$slug/shipping-policy': typeof StoreSlugShippingPolicyRoute
@@ -1758,6 +1766,7 @@ export interface FileRoutesById {
   '/store/$slug/cart': typeof StoreSlugCartRoute
   '/store/$slug/categories': typeof StoreSlugCategoriesRoute
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
+  '/store/$slug/contact-us': typeof StoreSlugContactUsRoute
   '/store/$slug/privacy-policy': typeof StoreSlugPrivacyPolicyRoute
   '/store/$slug/return-refund-policy': typeof StoreSlugReturnRefundPolicyRoute
   '/store/$slug/shipping-policy': typeof StoreSlugShippingPolicyRoute
@@ -1949,6 +1958,7 @@ export interface FileRouteTypes {
     | '/store/$slug/cart'
     | '/store/$slug/categories'
     | '/store/$slug/checkout'
+    | '/store/$slug/contact-us'
     | '/store/$slug/privacy-policy'
     | '/store/$slug/return-refund-policy'
     | '/store/$slug/shipping-policy'
@@ -2129,6 +2139,7 @@ export interface FileRouteTypes {
     | '/store/$slug/cart'
     | '/store/$slug/categories'
     | '/store/$slug/checkout'
+    | '/store/$slug/contact-us'
     | '/store/$slug/privacy-policy'
     | '/store/$slug/return-refund-policy'
     | '/store/$slug/shipping-policy'
@@ -2319,6 +2330,7 @@ export interface FileRouteTypes {
     | '/store/$slug/cart'
     | '/store/$slug/categories'
     | '/store/$slug/checkout'
+    | '/store/$slug/contact-us'
     | '/store/$slug/privacy-policy'
     | '/store/$slug/return-refund-policy'
     | '/store/$slug/shipping-policy'
@@ -2654,6 +2666,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy-policy'
       fullPath: '/store/$slug/privacy-policy'
       preLoaderRoute: typeof StoreSlugPrivacyPolicyRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
+    }
+    '/store/$slug/contact-us': {
+      id: '/store/$slug/contact-us'
+      path: '/contact-us'
+      fullPath: '/store/$slug/contact-us'
+      preLoaderRoute: typeof StoreSlugContactUsRouteImport
       parentRoute: typeof StoreSlugRouteRoute
     }
     '/store/$slug/checkout': {
@@ -4173,6 +4192,7 @@ interface StoreSlugRouteRouteChildren {
   StoreSlugCartRoute: typeof StoreSlugCartRoute
   StoreSlugCategoriesRoute: typeof StoreSlugCategoriesRoute
   StoreSlugCheckoutRoute: typeof StoreSlugCheckoutRoute
+  StoreSlugContactUsRoute: typeof StoreSlugContactUsRoute
   StoreSlugPrivacyPolicyRoute: typeof StoreSlugPrivacyPolicyRoute
   StoreSlugReturnRefundPolicyRoute: typeof StoreSlugReturnRefundPolicyRoute
   StoreSlugShippingPolicyRoute: typeof StoreSlugShippingPolicyRoute
@@ -4195,6 +4215,7 @@ const StoreSlugRouteRouteChildren: StoreSlugRouteRouteChildren = {
   StoreSlugCartRoute: StoreSlugCartRoute,
   StoreSlugCategoriesRoute: StoreSlugCategoriesRoute,
   StoreSlugCheckoutRoute: StoreSlugCheckoutRoute,
+  StoreSlugContactUsRoute: StoreSlugContactUsRoute,
   StoreSlugPrivacyPolicyRoute: StoreSlugPrivacyPolicyRoute,
   StoreSlugReturnRefundPolicyRoute: StoreSlugReturnRefundPolicyRoute,
   StoreSlugShippingPolicyRoute: StoreSlugShippingPolicyRoute,
