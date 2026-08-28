@@ -25,10 +25,6 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
   const isHome = pathname === base || pathname === `${base}/`;
   const waHref = whatsapp ? `https://wa.me/${whatsapp.replace(/\D/g, "")}` : null;
 
-  function openCategories(e: React.MouseEvent) {
-    e.preventDefault();
-    window.dispatchEvent(new CustomEvent("store-open-menu"));
-  }
 
   const wishActive =
     pathname === `${base}/account` && /[?&]tab=wishlist(?:&|$)/.test(searchStr ?? "");
@@ -53,11 +49,16 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
       <ul className="mx-auto grid max-w-md grid-cols-5 items-end">
         {/* Categories */}
         <li>
-          <a href="#categories" onClick={openCategories} className={itemCls(false)}>
+          <Link
+            to="/store/$slug/categories"
+            params={{ slug }}
+            className={itemCls(pathname === `${base}/categories`)}
+          >
             <LayoutGrid className="h-5 w-5 text-sf-accent" />
             <span>{t("nav.categories")}</span>
-          </a>
+          </Link>
         </li>
+
 
         {/* WhatsApp */}
         <li>
