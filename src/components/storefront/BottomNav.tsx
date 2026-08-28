@@ -25,10 +25,6 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
   const isHome = pathname === base || pathname === `${base}/`;
   const waHref = whatsapp ? `https://wa.me/${whatsapp.replace(/\D/g, "")}` : null;
 
-  function openCategories(e: React.MouseEvent) {
-    e.preventDefault();
-    window.dispatchEvent(new CustomEvent("store-open-menu"));
-  }
 
   const wishActive =
     pathname === `${base}/account` && /[?&]tab=wishlist(?:&|$)/.test(searchStr ?? "");
