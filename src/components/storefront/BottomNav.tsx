@@ -43,8 +43,13 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-sf-line bg-white/95 backdrop-blur md:hidden"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-sf-line bg-white md:hidden"
+      style={{
+        transform: "translateZ(0)",
+        contain: "paint",
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}
+
     >
       <ul className="mx-auto grid max-w-md grid-cols-5 items-end">
         {/* Categories */}

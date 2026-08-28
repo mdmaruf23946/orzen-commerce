@@ -347,33 +347,56 @@ function ProductCarousel({
     el.scrollBy({ left: dir * Math.max(240, el.clientWidth * 0.8), behavior: "smooth" });
   }
 
-  // Auto slide right, loop back to start at the end. Pauses on hover/touch.
+  // Auto slide right, loop back to start at the end. Pauses on hover/touch,
+  // while the page itself is scrolling, and when the rail is off-screen.
   useEffect(() => {
     if (!auto || products.length < 2) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const el = ref.current;
     if (!el) return;
     let paused = false;
+    let visible = true;
+    let pageScrolling = 0;
     const pause = () => (paused = true);
     const resume = () => (paused = false);
     el.addEventListener("pointerdown", pause);
     el.addEventListener("pointerup", resume);
     el.addEventListener("mouseenter", pause);
     el.addEventListener("mouseleave", resume);
+
+    // Programmatic smooth scrolling of a nested rail steals touch momentum
+    // from the page, so never animate it while the user is scrolling.
+    const onPageScroll = () => {
+      pageScrolling = Date.now();
+    };
+    window.addEventListener("scroll", onPageScroll, { passive: true });
+
+    let io: IntersectionObserver | undefined;
+    if (typeof IntersectionObserver !== "undefined") {
+      io = new IntersectionObserver(([e]) => (visible = e.isIntersecting), {
+        threshold: 0.25,
+      });
+      io.observe(el);
+    }
+
     const id = setInterval(() => {
-      if (paused) return;
+      if (paused || !visible) return;
+      if (Date.now() - pageScrolling < 800) return;
       const step = Math.max(200, el.clientWidth * 0.5);
       const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 8;
       el.scrollTo({ left: atEnd ? 0 : el.scrollLeft + step, behavior: "smooth" });
     }, 3000);
     return () => {
       clearInterval(id);
+      io?.disconnect();
+      window.removeEventListener("scroll", onPageScroll);
       el.removeEventListener("pointerdown", pause);
       el.removeEventListener("pointerup", resume);
       el.removeEventListener("mouseenter", pause);
       el.removeEventListener("mouseleave", resume);
     };
   }, [auto, products.length]);
+
 
   return (
     <div className="relative">
@@ -492,25 +515,33 @@ function CategoryStrip({
   const [showLeft, setShowLeft] = useState(false);
   const { t } = useStoreT();
 
-  const updateHints = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const max = el.scrollWidth - el.clientWidth;
-    setShowLeft(el.scrollLeft > 4);
-    setShowRight(el.scrollLeft < max - 4);
-  };
-
   useEffect(() => {
-    updateHints();
     const el = scrollRef.current;
     if (!el) return;
-    el.addEventListener("scroll", updateHints, { passive: true });
-    window.addEventListener("resize", updateHints);
+    // rAF-coalesced so a fast flick never triggers a setState per scroll event.
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const max = el.scrollWidth - el.clientWidth;
+      const left = el.scrollLeft > 4;
+      const right = el.scrollLeft < max - 4;
+      setShowLeft((v) => (v === left ? v : left));
+      setShowRight((v) => (v === right ? v : right));
+    };
+    const schedule = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(measure);
+    };
+    measure();
+    el.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule, { passive: true });
     return () => {
-      el.removeEventListener("scroll", updateHints);
-      window.removeEventListener("resize", updateHints);
+      if (frame) cancelAnimationFrame(frame);
+      el.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
     };
   }, [categories.length]);
+
 
   return (
     <div className="relative">

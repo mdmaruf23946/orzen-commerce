@@ -199,10 +199,23 @@
     font-family: "Inter", system-ui, -apple-system, sans-serif;
   }
 
-  html {
-    scroll-behavior: smooth;
+  /*
+   * Global smooth scrolling fights native touch momentum on mobile: fast
+   * flicks get queued behind the animation and land as a "stick then jump".
+   * Keep it for mouse-driven anchor jumps only.
+   */
+  @media (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  /* Avoid scroll-anchoring jumps when lazy images/carousels settle. */
+  body {
+    overflow-anchor: auto;
   }
 }
+
 
 /* ORZEN brand tokens & landing-page utilities */
 :root {
