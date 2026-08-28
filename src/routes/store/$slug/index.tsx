@@ -543,9 +543,9 @@ function CategoryStrip({
     <div className="relative">
       <div
         ref={scrollRef}
-        className="flex flex-nowrap gap-3 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory sm:grid sm:grid-cols-6 sm:gap-4 md:grid-cols-8"
+        className="flex flex-nowrap gap-2 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory sm:grid sm:grid-cols-6 sm:gap-4 md:grid-cols-8"
       >
-        <div className="w-[calc(25%-0.75rem)] shrink-0 snap-start sm:w-auto">
+        <div className="w-[calc(25%-0.5rem)] shrink-0 snap-start sm:w-auto">
           <CategoryTile
             label={t("home.categoryAll")}
             image={allImage ?? null}
@@ -554,7 +554,7 @@ function CategoryStrip({
           />
         </div>
         {categories.map((c) => (
-          <div key={c.id} className="w-[calc(25%-0.75rem)] shrink-0 snap-start sm:w-auto">
+          <div key={c.id} className="w-[calc(25%-0.5rem)] shrink-0 snap-start sm:w-auto">
             <CategoryTile
               label={c.name}
               image={c.image_url ?? null}
