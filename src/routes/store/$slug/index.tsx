@@ -220,7 +220,7 @@ function HomeContent() {
   };
 
   return (
-    <div className="theme-sections flex animate-fade-in flex-col gap-1 opacity-100 transition-opacity duration-300 sm:gap-8">
+    <div className="theme-sections animate-fade-in opacity-100 transition-opacity duration-300">
 
 
       {!isFiltering && source === "header" && activeMainId && activeSubs.length > 0 && (
