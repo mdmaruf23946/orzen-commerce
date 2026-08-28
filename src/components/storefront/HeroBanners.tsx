@@ -37,7 +37,10 @@ function useAutoIndex(count: number, delay: number) {
     if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches)
       return;
     const id = setInterval(() => {
-      if (!paused.current) setIdx((i) => (i + 1) % count);
+      if (paused.current) return;
+      // Don't repaint banners while the tab is hidden.
+      if (typeof document !== "undefined" && document.hidden) return;
+      setIdx((i) => (i + 1) % count);
     }, delay);
     return () => clearInterval(id);
   }, [count, delay]);

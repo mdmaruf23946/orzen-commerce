@@ -369,9 +369,13 @@ function StoreHeader({
 
   return (
     <>
-      <div className={`${theme.header.sticky ? "sticky top-0" : ""} z-40 bg-background`}>
+      <div
+        className={`${theme.header.sticky ? "sticky top-0" : ""} z-40 bg-background`}
+        style={{ transform: "translateZ(0)" }}
+      >
       <header
-        className={`border-b border-black/5 backdrop-blur-md`}
+        className={`border-b border-black/5 md:backdrop-blur-md`}
+
         style={{
           backgroundColor: theme.header.transparent
             ? "transparent"
@@ -545,7 +549,7 @@ function StoreHeader({
 
       {/* Mobile-only search band below header */}
       {showSearch && theme.header.search && theme.header.search_position !== "hidden" && (
-        <div className="border-b border-black/5 bg-white/95 px-3 py-1 backdrop-blur md:hidden">
+        <div className="border-b border-black/5 bg-white px-3 py-1 md:hidden">
           <SearchBar />
         </div>
       )}
