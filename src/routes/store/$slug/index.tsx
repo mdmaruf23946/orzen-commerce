@@ -549,7 +549,7 @@ function CategoryStrip({
         ref={scrollRef}
         className="flex flex-nowrap gap-3 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory sm:grid sm:grid-cols-6 sm:gap-4 md:grid-cols-8"
       >
-        <div className="w-[calc(25%-0.5625rem)] shrink-0 snap-start sm:w-auto">
+        <div className="w-[calc(25%-0.75rem)] shrink-0 snap-start sm:w-auto">
           <CategoryTile
             label={t("home.categoryAll")}
             image={allImage ?? null}
@@ -558,7 +558,7 @@ function CategoryStrip({
           />
         </div>
         {categories.map((c) => (
-          <div key={c.id} className="w-[calc(25%-0.5625rem)] shrink-0 snap-start sm:w-auto">
+          <div key={c.id} className="w-[calc(25%-0.75rem)] shrink-0 snap-start sm:w-auto">
             <CategoryTile
               label={c.name}
               image={c.image_url ?? null}
@@ -570,18 +570,6 @@ function CategoryStrip({
           </div>
         ))}
       </div>
-
-      {/* Mobile swipe hint */}
-      <div
-        className={`pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-white via-white/80 to-transparent transition-opacity duration-300 sm:hidden ${
-          showRight ? "opacity-100" : "opacity-0"
-        }`}
-      />
-      <div
-        className={`pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-white via-white/80 to-transparent transition-opacity duration-300 sm:hidden ${
-          showLeft ? "opacity-100" : "opacity-0"
-        }`}
-      />
     </div>
   );
 }
