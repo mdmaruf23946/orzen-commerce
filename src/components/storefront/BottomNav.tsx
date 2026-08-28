@@ -63,12 +63,12 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
         <li>
           {waHref ? (
             <a href={waHref} target="_blank" rel="noreferrer" className={itemCls(false)}>
-              <MessageCircle className="h-5 w-5" />
+              <MessageCircle className="h-5 w-5 text-sf-accent" />
               <span>{t("home.whatsapp")}</span>
             </a>
           ) : (
             <span className={`${itemCls(false)} opacity-40`}>
-              <MessageCircle className="h-5 w-5" />
+              <MessageCircle className="h-5 w-5 text-sf-accent" />
               <span>{t("home.whatsapp")}</span>
             </span>
           )}
