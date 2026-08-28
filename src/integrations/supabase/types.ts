@@ -8262,6 +8262,7 @@ export type Database = {
           linkedin: string | null
           logo_url: string | null
           marketing: Json
+          messenger: string | null
           nagad_number: string | null
           name: string
           name_logo_url: string | null
@@ -8284,6 +8285,7 @@ export type Database = {
           storefront_lang_switcher: boolean
           subscription_status: string
           tax_number: string | null
+          telegram: string | null
           template_version: string | null
           theme: Json
           theme_draft: Json
@@ -8329,6 +8331,7 @@ export type Database = {
           linkedin?: string | null
           logo_url?: string | null
           marketing?: Json
+          messenger?: string | null
           nagad_number?: string | null
           name: string
           name_logo_url?: string | null
@@ -8351,6 +8354,7 @@ export type Database = {
           storefront_lang_switcher?: boolean
           subscription_status?: string
           tax_number?: string | null
+          telegram?: string | null
           template_version?: string | null
           theme?: Json
           theme_draft?: Json
@@ -8396,6 +8400,7 @@ export type Database = {
           linkedin?: string | null
           logo_url?: string | null
           marketing?: Json
+          messenger?: string | null
           nagad_number?: string | null
           name?: string
           name_logo_url?: string | null
@@ -8418,6 +8423,7 @@ export type Database = {
           storefront_lang_switcher?: boolean
           subscription_status?: string
           tax_number?: string | null
+          telegram?: string | null
           template_version?: string | null
           theme?: Json
           theme_draft?: Json
