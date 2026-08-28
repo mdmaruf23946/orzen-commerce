@@ -334,7 +334,7 @@ function Section({
 /** Section shell for the featured category cards. */
 function FeaturedCategories({ children }: { children: React.ReactNode }) {
   return (
-    <section id="categories" className="scroll-mt-32 rounded-3xl border border-sf-line bg-white p-3 sm:p-5">
+    <section id="categories" className="scroll-mt-32 rounded-2xl border border-sf-line bg-white p-2 sm:rounded-3xl sm:p-4">
       {children}
     </section>
   );
