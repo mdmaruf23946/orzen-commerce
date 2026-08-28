@@ -150,14 +150,18 @@ export function StoreFooter({
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              {store.logo_url ? (
-                <img src={store.logo_url} alt="" className="h-11 w-11 rounded-full object-cover" loading="lazy" />
+              {iconUrl ? (
+                <img src={iconUrl} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" loading="lazy" />
               ) : (
                 <div className="grid h-11 w-11 place-items-center rounded-full bg-slate-200 text-sm font-bold text-slate-700">
                   {store.name.charAt(0)}
                 </div>
               )}
-              <span className="text-lg font-bold text-slate-900">{store.name}</span>
+              {nameLogoUrl ? (
+                <img src={nameLogoUrl} alt={store.name} className="h-7 w-auto max-w-[150px] object-contain" loading="lazy" />
+              ) : (
+                <span className="text-lg font-bold text-slate-900">{store.name}</span>
+              )}
             </div>
             {store.description && <p className="text-sm leading-relaxed text-slate-600">{store.description}</p>}
             {address && (
