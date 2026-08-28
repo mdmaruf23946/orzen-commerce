@@ -73,7 +73,7 @@ export function NotificationsPanel({ slug, token }: { slug: string; token: strin
     <ul className="divide-y divide-neutral-100">
       {rows.map((n) => (
         <li key={n.id} className="flex gap-3 py-3">
-          <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-neutral-100 text-neutral-600">
+          <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-sf-accent-soft text-sf-accent">
             <Bell className="h-4 w-4" />
           </span>
           <div className="min-w-0 flex-1">
@@ -123,7 +123,7 @@ export function PaymentMethodsPanel({ slug, token }: { slug: string; token: stri
           key={m.label}
           className="flex items-center gap-3 rounded-xl border border-neutral-200 p-3"
         >
-          <CreditCard className="h-4 w-4 text-neutral-500" />
+          <CreditCard className="h-4 w-4 text-sf-accent" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold capitalize text-neutral-900">{m.label}</p>
             <p className="text-[11px] text-neutral-500">
@@ -152,7 +152,7 @@ export function PrivacyPanel({
   return (
     <div className="space-y-3 text-sm">
       <div className="flex items-start gap-3 rounded-xl border border-neutral-200 p-3">
-        <ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-600" />
+        <ShieldCheck className="mt-0.5 h-4 w-4 text-sf-accent" />
         <div>
           <p className="font-semibold text-neutral-900">Account security</p>
           <p className="text-xs text-neutral-500">
@@ -194,7 +194,7 @@ export function SupportPanel({ slug, token }: { slug: string; token: string }) {
   return (
     <div className="space-y-2 text-sm">
       <div className="flex items-center gap-3 rounded-xl border border-neutral-200 p-3">
-        <LifeBuoy className="h-4 w-4 text-neutral-500" />
+        <LifeBuoy className="h-4 w-4 text-sf-accent" />
         <span className="text-neutral-700">Need help with an order? Reach out to {s.name ?? "the store"}.</span>
       </div>
       {s.phone && (
@@ -202,7 +202,7 @@ export function SupportPanel({ slug, token }: { slug: string; token: string }) {
           href={`tel:${s.phone}`}
           className="flex items-center gap-3 rounded-xl border border-neutral-200 p-3 hover:bg-neutral-50"
         >
-          <Phone className="h-4 w-4 text-neutral-500" /> {s.phone}
+          <Phone className="h-4 w-4 text-sf-accent" /> {s.phone}
         </a>
       )}
       {s.email && (
@@ -210,7 +210,7 @@ export function SupportPanel({ slug, token }: { slug: string; token: string }) {
           href={`mailto:${s.email}`}
           className="flex items-center gap-3 rounded-xl border border-neutral-200 p-3 hover:bg-neutral-50"
         >
-          <Mail className="h-4 w-4 text-neutral-500" /> {s.email}
+          <Mail className="h-4 w-4 text-sf-accent" /> {s.email}
         </a>
       )}
       {s.facebook && (
@@ -220,7 +220,7 @@ export function SupportPanel({ slug, token }: { slug: string; token: string }) {
           rel="noreferrer"
           className="flex items-center gap-3 rounded-xl border border-neutral-200 p-3 hover:bg-neutral-50"
         >
-          <LifeBuoy className="h-4 w-4 text-neutral-500" /> Message on Facebook
+          <LifeBuoy className="h-4 w-4 text-sf-accent" /> Message on Facebook
         </a>
       )}
       {!s.phone && !s.email && !s.facebook && (
