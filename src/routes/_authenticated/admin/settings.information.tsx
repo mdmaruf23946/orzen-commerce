@@ -221,9 +221,6 @@ function StoreInformationPage() {
             <Field label="Phone number" htmlFor="c-phone">
               <Input id="c-phone" value={form.phone ?? ""} onChange={(e) => set("phone", e.target.value)} />
             </Field>
-            <Field label="WhatsApp number" htmlFor="c-wa">
-              <Input id="c-wa" value={form.whatsapp ?? ""} onChange={(e) => set("whatsapp", e.target.value)} />
-            </Field>
             <Field label="Email address" htmlFor="c-email">
               <Input id="c-email" type="email" value={form.email ?? ""} onChange={(e) => set("email", e.target.value)} />
             </Field>
