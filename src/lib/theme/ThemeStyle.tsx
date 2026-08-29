@@ -3,9 +3,10 @@
 // radius, shadow, spacing or card tokens. This component scopes a single style
 // block to the storefront root and loads the selected Google fonts.
 import { useEffect } from "react";
-import type { ThemeDefinition } from "./definition";
+import { themeCssVars, type ThemeDefinition } from "./definition";
 
 export const THEME_SCOPE = "orzen-theme";
+
 
 const STACK = `ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif`;
 
