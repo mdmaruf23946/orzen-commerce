@@ -234,7 +234,7 @@ function PagesAdmin() {
                   />
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+                <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                   <label className="flex items-center gap-2 text-sm">
                     <Switch
                       checked={draft.is_published}
@@ -242,25 +242,31 @@ function PagesAdmin() {
                     />
                     Show this page on the storefront
                   </label>
-                  <div className="flex gap-2">
+                  <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:flex sm:w-auto">
                     <Button
                       type="button"
                       variant="outline"
+                      className="w-full sm:w-auto"
                       onClick={() => genMut.mutate()}
                       disabled={genMut.isPending}
                     >
                       {genMut.isPending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" />
                       ) : (
-                        <Sparkles className="mr-2 h-4 w-4" />
+                        <Sparkles className="mr-2 h-4 w-4 shrink-0" />
                       )}
-                      Generate starter content
+                      <span className="truncate">Generate starter content</span>
                     </Button>
-                    <Button type="button" onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
+                    <Button
+                      type="button"
+                      className="w-full sm:w-auto"
+                      onClick={() => saveMut.mutate()}
+                      disabled={saveMut.isPending}
+                    >
                       {saveMut.isPending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" />
                       ) : (
-                        <Save className="mr-2 h-4 w-4" />
+                        <Save className="mr-2 h-4 w-4 shrink-0" />
                       )}
                       Save page
                     </Button>
