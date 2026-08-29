@@ -62,6 +62,7 @@ const links: LinkDef[] = [
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/admin/marketing", label: "Marketing", icon: Megaphone },
   { to: "/admin/banners", label: "Banners", icon: ImageIcon },
+  { to: "/admin/theme", label: "Store Theme", icon: Palette },
   
   { to: "/admin/seo", label: "SEO", icon: SearchIcon },
   { to: "/admin/pages", label: "Pages & Content", icon: FileText },
