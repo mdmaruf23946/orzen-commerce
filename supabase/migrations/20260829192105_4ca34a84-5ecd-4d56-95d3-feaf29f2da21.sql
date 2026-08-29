@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.tg_block_staff_owned_store() FROM PUBLIC, anon, authenticated;
