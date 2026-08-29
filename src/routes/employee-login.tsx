@@ -39,7 +39,11 @@ function EmployeeLogin() {
       const info = (await session()) as any;
       if (!info?.ok) {
         await supabase.auth.signOut();
-        throw new Error("This account is not an active employee. Ask your merchant to activate it.");
+        throw new Error(
+          info?.reason === "inactive_employee"
+            ? "Your employee account is not active. Ask your merchant to activate it."
+            : "This is a merchant account. Please sign in from the Merchant login page.",
+        );
       }
       toast.success(`Welcome back, ${info.staff.name}`);
       navigate({ to: "/admin", replace: true });
@@ -49,6 +53,7 @@ function EmployeeLogin() {
       setBusy(false);
     }
   }
+
 
   return (
     <main className="grid min-h-screen place-items-center bg-muted/40 px-4">
