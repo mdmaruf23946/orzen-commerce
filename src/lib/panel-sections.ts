@@ -50,6 +50,7 @@ export const PANEL_SECTIONS: PanelSection[] = [
   { key: "coupons", label: "Coupons", group: "Marketing", paths: ["/admin/coupons"], feature: "coupons" },
   { key: "seo", label: "SEO", group: "Marketing", paths: ["/admin/seo"] },
   { key: "banners", label: "Banners", group: "Marketing", paths: ["/admin/banners"] },
+  { key: "theme", label: "Store Theme", group: "Marketing", paths: ["/admin/theme"] },
   { key: "notifications", label: "Notifications", group: "Marketing", paths: ["/admin/notifications"] },
 
   { key: "payment_gateway", label: "Payment Gateway", group: "Finance", paths: ["/admin/payment-gateway"], ownerOnly: true },

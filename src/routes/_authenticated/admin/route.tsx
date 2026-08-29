@@ -7,7 +7,7 @@ import {
   Settings, CreditCard, LogOut, Menu, Megaphone, Truck,
   Search as SearchIcon, PackageOpen, Wallet, Bell, ClipboardList, Bot,
   MessageSquare, MessageCircle, Boxes, Ticket, RotateCcw, BarChart3, FileUp, Globe,
-  Radar, ShieldCheck, FileText, PhoneCall, Sparkles, AlertTriangle, UserCog,
+  Radar, ShieldCheck, FileText, PhoneCall, Sparkles, AlertTriangle, UserCog, Palette,
   ChevronDown, ChevronsLeft, ChevronsRight, Moon, Sun, ExternalLink, LayoutTemplate, X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,6 +62,7 @@ const links: LinkDef[] = [
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/admin/marketing", label: "Marketing", icon: Megaphone },
   { to: "/admin/banners", label: "Banners", icon: ImageIcon },
+  { to: "/admin/theme", label: "Store Theme", icon: Palette },
   
   { to: "/admin/seo", label: "SEO", icon: SearchIcon },
   { to: "/admin/pages", label: "Pages & Content", icon: FileText },
@@ -130,7 +131,7 @@ const groupDefs: { label: string; paths: string[] }[] = [
   { label: "Call Center", paths: ["/admin/call-center", "/admin/ai-call-center"] },
   { label: "AI & Automation", paths: ["/admin/ai-agent", "/admin/ai-recommendations", "/admin/handoff-queue", "/admin/low-stock", "/admin/messenger", "/admin/messenger-inbox", "/admin/whatsapp", "/admin/whatsapp-inbox"] },
   { label: "Facebook Page", paths: ["/admin/facebook"] },
-  { label: "Marketing", paths: ["/admin/marketing", "/admin/coupons", "/admin/seo", "/admin/banners", "/admin/notifications"] },
+  { label: "Marketing", paths: ["/admin/marketing", "/admin/coupons", "/admin/seo", "/admin/banners", "/admin/theme", "/admin/notifications"] },
   { label: "Finance", paths: ["/admin/payment-gateway", "/admin/finance", "/admin/analytics"] },
   { label: "Operations", paths: ["/admin/delivery", "/admin/couriers", "/admin/parcels", "/admin/landing-builder", "/admin/landing-pages"] },
   { label: "System", paths: ["/admin/pages", "/admin/invoice-templates", "/admin/domains", "/admin/dns-check", "/admin/import-export", "/admin/staff", "/admin/employees", "/admin/activity"] },
