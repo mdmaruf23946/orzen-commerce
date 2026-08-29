@@ -4625,6 +4625,7 @@ export type Database = {
           method: string | null
           notes: string | null
           package_id: string | null
+          purpose: string
           rejection_reason: string | null
           sender_number: string | null
           status: string
@@ -4645,6 +4646,7 @@ export type Database = {
           method?: string | null
           notes?: string | null
           package_id?: string | null
+          purpose?: string
           rejection_reason?: string | null
           sender_number?: string | null
           status?: string
@@ -4665,6 +4667,7 @@ export type Database = {
           method?: string | null
           notes?: string | null
           package_id?: string | null
+          purpose?: string
           rejection_reason?: string | null
           sender_number?: string | null
           status?: string

@@ -18,6 +18,8 @@ import {
   listWalletTransactions,
   initiateWalletTopup,
   setWalletAutoRenew,
+  getWalletTopupOptions,
+  submitWalletTopupManual,
 } from "@/lib/wallet.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,6 +62,8 @@ export default function WalletPanel() {
   const txFn = useServerFn(listWalletTransactions);
   const topupFn = useServerFn(initiateWalletTopup);
   const autoFn = useServerFn(setWalletAutoRenew);
+  const optionsFn = useServerFn(getWalletTopupOptions);
+  const manualFn = useServerFn(submitWalletTopupManual);
 
   const { data: wallet, isLoading } = useQuery({
     queryKey: ["admin", "wallet"],
@@ -73,9 +77,36 @@ export default function WalletPanel() {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState<string>("1000");
   const [showAll, setShowAll] = useState(false);
+  const [method, setMethod] = useState<"bkash" | "nagad" | "rocket">("bkash");
+  const [sender, setSender] = useState("");
+  const [txnId, setTxnId] = useState("");
+  const [email, setEmail] = useState("");
 
   const amountNum = Math.round(Number(amount) || 0);
   const valid = amountNum >= 50 && amountNum <= 1_000_000;
+
+  const { data: options } = useQuery({
+    queryKey: ["admin", "walletTopupOptions"],
+    queryFn: () => optionsFn(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const hasGateway = !!(options as any)?.gateway;
+  const manualKeys = useMemo(
+    () =>
+      (["bkash", "nagad", "rocket"] as const).filter(
+        (k) => (options as any)?.manual?.[k]?.enabled,
+      ),
+    [options],
+  );
+  const activeManual = (options as any)?.manual?.[method];
+  const manualNumber = activeManual?.number ?? null;
+  const manualName = activeManual?.merchant_name ?? null;
+  const canSubmitManual =
+    valid &&
+    manualKeys.includes(method) &&
+    /^01[3-9]\d{8}$/.test(sender.trim()) &&
+    /^[A-Za-z0-9]{6,32}$/.test(txnId.trim()) &&
+    /^\S+@\S+\.\S+$/.test(email.trim());
 
   const topup = useMutation({
     mutationFn: async () => {
@@ -99,6 +130,27 @@ export default function WalletPanel() {
       }
     },
     onError: (e: any) => toast.error(e?.message ?? "Could not start the payment"),
+  });
+
+  const manualTopup = useMutation({
+    mutationFn: async () =>
+      manualFn({
+        data: {
+          amount: amountNum,
+          method,
+          txn_id: txnId.trim(),
+          sender_number: sender.trim(),
+          customer_email: email.trim(),
+        },
+      }),
+    onSuccess: () => {
+      setOpen(false);
+      setTxnId("");
+      setSender("");
+      void qc.invalidateQueries({ queryKey: ["admin", "walletTx"] });
+      toast.success("Top-up submitted. Your wallet will be credited after verification.");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not submit the top-up"),
   });
 
   const saveAuto = useMutation({
@@ -243,12 +295,12 @@ export default function WalletPanel() {
 
       {/* Add Fund dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-h-[85vh] max-w-sm overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Fund</DialogTitle>
             <DialogDescription>
-              Pay with the same secure gateway used for subscription plans. Your balance is credited
-              only after the payment is verified.
+              Uses the same payment process as subscription plans. Your balance is credited only
+              after the payment is verified.
             </DialogDescription>
           </DialogHeader>
 
@@ -280,20 +332,99 @@ export default function WalletPanel() {
                 <p className="text-[11px] text-red-600">Enter an amount between ৳50 and ৳1,000,000.</p>
               )}
             </div>
+
+            {hasGateway ? null : manualKeys.length === 0 ? (
+              <p className="rounded-lg border border-dashed p-2.5 text-[11px] text-muted-foreground">
+                No payment method is available right now. Please contact support.
+              </p>
+            ) : (
+              <div className="space-y-2.5 rounded-lg border bg-muted/30 p-2.5">
+                <div className="grid grid-cols-3 gap-1.5">
+                  {manualKeys.map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setMethod(k)}
+                      className={`rounded-lg border px-2 py-1.5 text-[11px] font-semibold uppercase ${
+                        method === k ? "border-primary bg-primary/5" : "hover:border-foreground/30"
+                      }`}
+                    >
+                      {k}
+                    </button>
+                  ))}
+                </div>
+                {manualNumber && (
+                  <div className="rounded-lg border bg-background px-2.5 py-2 text-[11px]">
+                    Send <b>{money(amountNum)}</b> to{" "}
+                    <span className="font-mono font-semibold">{manualNumber}</span>
+                    {manualName ? ` (${manualName})` : ""} using {method.toUpperCase()}, then submit
+                    the transaction details below.
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  <Label htmlFor="wt-sender">Sender {method.toUpperCase()} number</Label>
+                  <Input
+                    id="wt-sender"
+                    inputMode="numeric"
+                    value={sender}
+                    onChange={(e) => setSender(e.target.value.replace(/[^\d]/g, ""))}
+                    placeholder="01XXXXXXXXX"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="wt-txn">Transaction ID</Label>
+                  <Input
+                    id="wt-txn"
+                    value={txnId}
+                    onChange={(e) => setTxnId(e.target.value)}
+                    placeholder="e.g. 9A7B2C3D4E"
+                    className="font-mono"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="wt-email">Email address</Label>
+                  <Input
+                    id="wt-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Your wallet is credited as soon as the platform verifies this payment.
+                </p>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button
-              disabled={!valid || topup.isPending}
-              onClick={() => topup.mutate()}
-              className="w-full gap-1.5 sm:w-auto"
-            >
-              {topup.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Pay {valid ? money(amountNum) : ""}
-            </Button>
+            {hasGateway ? (
+              <Button
+                disabled={!valid || topup.isPending}
+                onClick={() => topup.mutate()}
+                className="w-full gap-1.5 sm:w-auto"
+              >
+                {topup.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                Pay {valid ? money(amountNum) : ""}
+              </Button>
+            ) : (
+              <Button
+                disabled={!canSubmitManual || manualTopup.isPending}
+                onClick={() => manualTopup.mutate()}
+                className="w-full gap-1.5 sm:w-auto"
+              >
+                {manualTopup.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+                Submit {valid ? money(amountNum) : ""}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
