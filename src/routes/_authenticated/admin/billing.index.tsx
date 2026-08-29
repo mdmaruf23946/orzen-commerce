@@ -110,6 +110,24 @@ function BillingPage() {
   const isInactive = ["expired", "cancelled", "suspended", "past_due"].includes(subStatus);
   const s = settings ?? { discount_3m: 5, discount_6m: 10, discount_yearly: 20 };
 
+  // Free plan activates instantly — no transaction ID or phone number needed.
+  const queryClient = useQueryClient();
+  const activateFreeFn = useServerFn(activateFreePlan);
+  const [activatingFreeId, setActivatingFreeId] = useState<string | null>(null);
+  async function handleActivateFree(packageId: string) {
+    setActivatingFreeId(packageId);
+    try {
+      const res = (await activateFreeFn({ data: { package_id: packageId } })) as any;
+      if (!res?.ok) throw new Error(res?.error ?? "Could not activate the free plan");
+      toast.success("Free plan activated");
+      await queryClient.invalidateQueries({ queryKey: ["admin", "billing"] });
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setActivatingFreeId(null);
+    }
+  }
+
   // Highlight logic: prefer explicit `plan` id, else the cheapest paid plan
   // that includes the requested `highlight` feature key.
   const highlightedPlanId = useMemo<string | null>(() => {
@@ -443,9 +461,20 @@ function BillingPage() {
                       <Button variant="outline" className="h-9 w-full text-xs sm:h-10 sm:text-sm">Contact Sales</Button>
                     </a>
                   ) : isFree ? (
-                    <Button disabled className="h-9 w-full text-xs sm:h-10 sm:text-sm" variant="outline">
-                      {isTrialing ? "After trial" : "Free Forever"}
-                    </Button>
+                    isInactive ? (
+                      <Button
+                        className="h-9 w-full gap-1.5 text-xs sm:h-10 sm:text-sm"
+                        disabled={activatingFreeId === p.id}
+                        onClick={() => handleActivateFree(p.id)}
+                      >
+                        {activatingFreeId === p.id && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                        {activatingFreeId === p.id ? "Activating…" : "Update"}
+                      </Button>
+                    ) : (
+                      <Button disabled className="h-9 w-full text-xs sm:h-10 sm:text-sm" variant="outline">
+                        {isTrialing ? "After trial" : "Free Forever"}
+                      </Button>
+                    )
                   ) : (
                     <Link to="/admin/billing/checkout/$packageId" params={{ packageId: p.id }} search={{ cycle } as any} className="block">
                       <Button className="h-9 w-full text-xs sm:h-10 sm:text-sm">Upgrade</Button>
