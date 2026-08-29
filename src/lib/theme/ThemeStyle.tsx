@@ -49,8 +49,17 @@ export function ThemeStyle({ theme }: { theme: ThemeDefinition }) {
   const t = theme;
   useThemeFonts([t.typography.heading_font, t.typography.body_font, t.typography.button_font]);
 
+  // The drawer/dialog/dropdown layers render in a portal on <body>, outside the
+  // scoped storefront wrapper. Publishing the same variables on :root makes the
+  // theme reach those layers too (this component only mounts on storefront pages).
+  const rootVars = Object.entries(themeCssVars(t))
+    .map(([k, v]) => `${k}:${v};`)
+    .join("");
+
   const css = `
+:root{${rootVars}}
 .${THEME_SCOPE}{
+
   background:var(--store-bg);
   font-family:var(--store-body-font), ${STACK};
   font-size:var(--store-base-size);
