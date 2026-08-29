@@ -248,6 +248,38 @@ function CheckoutPage() {
     );
   }
 
+  // Free plan — instant activation, no payment details required.
+  if (calc.total <= 0) {
+    return (
+      <div className="mx-auto max-w-xl space-y-4 pb-10">
+        <Link
+          to="/admin/billing" search={{} as never}
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to billing
+        </Link>
+        <div className="rounded-2xl border bg-card p-6 text-center shadow-sm">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-700">
+            <CheckCircle2 className="h-7 w-7" />
+          </div>
+          <h1 className="mt-4 text-xl font-semibold">{pkg.name}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            This is a free plan — no payment, transaction ID or phone number needed.
+            Click below and it activates instantly.
+          </p>
+          <Button
+            onClick={handleActivateFree}
+            disabled={activatingFree}
+            className="mt-5 h-11 w-full gap-2"
+          >
+            {activatingFree && <Loader2 className="h-4 w-4 animate-spin" />}
+            {activatingFree ? "Activating…" : "Activate Free Plan"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   const cycleOptions: { key: CycleKey; label: string; discount: number }[] = [
     { key: "monthly", label: "Monthly", discount: 0 },
     { key: "3m", label: "3 Months", discount: s.discount_3m },
