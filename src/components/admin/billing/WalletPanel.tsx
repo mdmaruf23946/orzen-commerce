@@ -18,6 +18,8 @@ import {
   listWalletTransactions,
   initiateWalletTopup,
   setWalletAutoRenew,
+  getWalletTopupOptions,
+  submitWalletTopupManual,
 } from "@/lib/wallet.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
