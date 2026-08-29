@@ -98,10 +98,15 @@ function StoreThemePage() {
                 className={`min-w-0 rounded-xl border bg-card p-3 ${active ? "ring-2 ring-primary" : ""}`}
               >
                 <div className="flex h-16 overflow-hidden rounded-lg border">
-                  <span className="w-1/4" style={{ background: d.colors.header }} />
-                  <span className="w-1/4" style={{ background: d.colors.primary }} />
-                  <span className="w-1/4" style={{ background: d.colors.accent }} />
-                  <span className="w-1/4" style={{ background: d.colors.footer }} />
+                  <span className="w-1/5" style={{ background: d.colors.header }} />
+                  <span className="w-1/5" style={{ background: d.colors.primary }} />
+                  <span className="w-1/5" style={{ background: d.colors.accent }} />
+                  <span className="w-1/5" style={{ background: d.colors.footer }} />
+                  <span
+                    className="w-1/5"
+                    style={{ background: (d.colors as any).ink ?? d.colors.secondary }}
+                    title="Ink (Black)"
+                  />
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-2">
                   <span className="min-w-0 truncate text-sm font-medium">{t.name}</span>
