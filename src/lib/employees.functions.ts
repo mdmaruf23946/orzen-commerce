@@ -272,14 +272,47 @@ export const deleteEmployee = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Which login system does this signed-in account belong to?
+ * `employee` = has a staff record (any status). `merchant` = owns a store.
+ */
+export const myAccountKind = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data: staff } = await supabase
+      .from("store_staff")
+      .select("id,status")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (staff) {
+      return { kind: "employee" as const, active: staff.status === "active" };
+    }
+    const { data: store } = await supabase
+      .from("stores")
+      .select("id")
+      .eq("owner_user_id", userId)
+      .maybeSingle();
+    return { kind: store ? ("merchant" as const) : ("none" as const), active: true };
+  });
+
 /** Employee signs in: verify they belong to a store and stamp last login. */
 export const employeeSessionInfo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const access = await resolveStoreAccess(context.supabase, context.userId);
     if (!access.staff) {
-      return { ok: false as const, reason: "not_employee" };
+      const { data: inactive } = await context.supabase
+        .from("store_staff")
+        .select("id")
+        .eq("user_id", context.userId)
+        .maybeSingle();
+      return {
+        ok: false as const,
+        reason: inactive ? ("inactive_employee" as const) : ("not_employee" as const),
+      };
     }
+
     await context.supabase
       .from("store_staff")
       .update({ last_login_at: new Date().toISOString() })

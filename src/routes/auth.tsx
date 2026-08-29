@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { checkStoreSlugAvailable, createMyStoreWithSlug } from "@/lib/admin.functions";
+import { myAccountKind } from "@/lib/employees.functions";
+
 import { CheckCircle2, XCircle, Loader2, AlertCircle } from "lucide-react";
 import { BrandMark } from "@/lib/platform-branding";
 
@@ -145,7 +147,16 @@ function AuthPage() {
         toast.success("Store created. Welcome!");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
+
         if (error) throw error;
+        const kind = (await accountKind()) as any;
+        if (kind?.kind === "employee") {
+          await supabase.auth.signOut();
+          throw new Error(
+            "This is an employee account. Please sign in from the Employee login page (/employee-login).",
+          );
+        }
+
       }
       navigate({ to: next, replace: true });
     } catch (err) {
