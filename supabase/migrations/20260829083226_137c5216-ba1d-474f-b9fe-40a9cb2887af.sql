@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.is_store_active(uuid) TO anon, authenticated, service_role;
