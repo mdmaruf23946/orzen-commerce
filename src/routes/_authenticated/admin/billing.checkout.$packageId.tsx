@@ -128,6 +128,8 @@ function CheckoutPage() {
     queryFn: () => walletFn(),
   });
   const [walletPaying, setWalletPaying] = useState(false);
+  const [activatingFree, setActivatingFree] = useState(false);
+  const activateFreeFn = useServerFn(activateFreePlan);
 
   if (!pkg) return <div className="p-8 text-sm text-muted-foreground">Loading plan…</div>;
 
