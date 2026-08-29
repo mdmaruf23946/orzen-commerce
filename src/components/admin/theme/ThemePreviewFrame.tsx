@@ -31,8 +31,12 @@ export function ThemePreviewFrame({ slug }: { slug: string }) {
     const el = wrapRef.current;
     if (!el) return;
     const update = () => {
-      const available = el.clientWidth;
-      setScale(Math.min(1, available / device.width));
+      // Subtract the wrapper padding (p-2 = 16px, sm:p-3 = 24px) plus a small
+      // safety margin, otherwise the scaled frame overflows on the right and
+      // the preview looks clipped on that side.
+      const padding = window.innerWidth >= 640 ? 24 : 16;
+      const available = el.clientWidth - padding - 2;
+      setScale(Math.min(1, Math.max(0.1, available / device.width)));
     };
     update();
     const ro = new ResizeObserver(update);
