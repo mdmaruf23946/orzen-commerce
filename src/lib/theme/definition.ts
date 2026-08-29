@@ -34,6 +34,9 @@ export const COLOR_KEYS = [
   "card",
   "border",
   "link",
+  "ink",
+  "text",
+  "muted",
 ] as const;
 export type ColorKey = (typeof COLOR_KEYS)[number];
 
@@ -52,6 +55,9 @@ export const COLOR_LABELS: Record<ColorKey, string> = {
   card: "Card",
   border: "Border",
   link: "Link",
+  ink: "Ink (Black)",
+  text: "Body Text",
+  muted: "Muted Text",
 };
 
 export const HEADER_KEYS = ["search", "categories", "wishlist", "cart", "account"] as const;
@@ -267,6 +273,9 @@ export const DEFAULT_THEME: ThemeDefinition = {
     card: "#FFFFFF",
     border: "#E2E8F0",
     link: "#2563EB",
+    ink: "#111111",
+    text: "#171717",
+    muted: "#6B7280",
   },
   typography: {
     heading_font: "Inter",
@@ -647,6 +656,19 @@ export function themeCssVars(t: ThemeDefinition): Record<string, string> {
     "--store-card": t.colors.card,
     "--store-border": t.colors.border,
     "--store-link": t.colors.link,
+    "--store-ink": t.colors.ink,
+    "--store-text": t.colors.text,
+    "--store-muted": t.colors.muted,
+    // Storefront UI tokens (sf-*) so the theme actually drives every visible
+    // colour of the Store Panel, not just the legacy --store-* ones.
+    "--sf-accent": t.colors.button,
+    "--sf-accent-hover": t.buttons.hover_color,
+    "--sf-accent-soft": `color-mix(in srgb, ${t.colors.button} 12%, #ffffff)`,
+    "--sf-ink": t.colors.ink,
+    "--sf-text": t.colors.text,
+    "--sf-muted": t.colors.muted,
+    "--sf-surface": t.colors.surface,
+    "--sf-line": t.colors.border,
     "--radius": `${t.global.radius}px`,
     "--store-btn-radius": `${t.buttons.radius}px`,
     "--store-btn-border": `${t.buttons.border}px`,
