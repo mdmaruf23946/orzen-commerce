@@ -383,7 +383,7 @@ function StoreHeader({
         style={{ transform: "translateZ(0)" }}
       >
       <header
-        className={`border-b border-black/5 md:backdrop-blur-md`}
+        className={`border-b border-sf-line md:backdrop-blur-md`}
 
         style={{
           backgroundColor: theme.header.transparent
@@ -558,7 +558,7 @@ function StoreHeader({
 
       {/* Mobile-only search band below header */}
       {showSearch && theme.header.search && theme.header.search_position !== "hidden" && (
-        <div className="border-b border-black/5 bg-white px-3 py-1 md:hidden">
+        <div className="border-b border-sf-line bg-sf-header px-3 py-1 md:hidden">
           <SearchBar />
         </div>
       )}
@@ -635,18 +635,18 @@ function HeaderCategoryBar({
   const itemBase =
     "flex items-center gap-0.5 px-3 py-1.5 text-[13px] font-medium transition-colors";
   const inactiveItem =
-    "text-gray-600 hover:text-orange-600 hover:bg-white/60";
+    "text-sf-muted hover:text-sf-accent hover:bg-sf-card/70";
   const activeItem =
-    "bg-white text-orange-600 shadow-sm";
+    "bg-sf-card text-sf-accent shadow-sm";
 
   return (
-    <nav className="hidden md:block border-b border-black/5">
+    <nav className="hidden md:block border-b border-sf-line bg-sf-header">
       <div
         className="mx-auto px-3 py-2 sm:px-6"
         style={{ maxWidth: "var(--store-container, 64rem)" }}
       >
         {/* একই Unified Structure — সব Tax ভিত্তিক Category একই container-এ */}
-        <div className="flex flex-wrap items-center gap-1 rounded-2xl border border-orange-100/40 bg-orange-50/70 p-1.5 backdrop-blur">
+        <div className="flex flex-wrap items-center gap-1 rounded-2xl border border-sf-line bg-sf-accent-soft p-1.5 backdrop-blur">
           <button
             type="button"
             onClick={() => selectMain(null, "header")}
@@ -684,7 +684,7 @@ function HeaderCategoryBar({
                 </button>
                 {hasSubs && isOpen && (
                   <div
-                    className="absolute left-0 top-full z-50 mt-1.5 min-w-[12rem] rounded-xl border border-neutral-100 bg-white p-1.5 shadow-lg"
+                    className="absolute left-0 top-full z-50 mt-1.5 min-w-[12rem] rounded-xl border border-sf-line bg-sf-card p-1.5 shadow-lg"
                     onMouseEnter={() => open(c.id)}
                     onMouseLeave={closeSoon}
                   >
