@@ -89,6 +89,15 @@
   --color-sf-muted: var(--sf-muted);
   --color-sf-surface: var(--sf-surface);
   --color-sf-line: var(--sf-line);
+  --color-sf-on-accent: var(--sf-on-accent);
+  --color-sf-on-primary: var(--sf-on-primary);
+  --color-sf-on-secondary: var(--sf-on-secondary);
+  --color-sf-on-highlight: var(--sf-on-highlight);
+  --color-sf-header-fg: var(--sf-header-fg);
+  --color-sf-footer-fg: var(--sf-footer-fg);
+  --color-sf-footer-muted: var(--sf-footer-muted);
+  --color-sf-footer-line: var(--sf-footer-line);
+  --color-sf-footer-surface: var(--sf-footer-surface);
 }
 
 :root {
@@ -114,6 +123,15 @@
   --sf-muted: #6b7280;
   --sf-surface: #f7f7f7;
   --sf-line: #ececec;
+  --sf-on-accent: #ffffff;
+  --sf-on-primary: #ffffff;
+  --sf-on-secondary: #ffffff;
+  --sf-on-highlight: #111111;
+  --sf-header-fg: #111111;
+  --sf-footer-fg: #111111;
+  --sf-footer-muted: #475569;
+  --sf-footer-line: #e2e8f0;
+  --sf-footer-surface: #f1f5f9;
   --sf-shadow: 0 1px 2px rgba(17, 17, 17, 0.04), 0 8px 24px -12px rgba(17, 17, 17, 0.16);
 
 

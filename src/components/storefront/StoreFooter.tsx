@@ -144,7 +144,7 @@ export function StoreFooter({
   }
 
   return (
-    <footer id="contact" className="mt-4 border-t-4 border-sf-accent bg-sf-surface text-sf-muted sm:mt-6 md:mt-10">
+    <footer id="contact" className="mt-4 border-t-4 border-sf-accent bg-sf-footer text-sf-footer-muted sm:mt-6 md:mt-10">
       <div className="mx-auto max-w-7xl px-5 py-12 md:px-8 md:py-14">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}
@@ -153,19 +153,19 @@ export function StoreFooter({
               {iconUrl ? (
                 <img src={iconUrl} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" loading="lazy" />
               ) : (
-                <div className="grid h-11 w-11 place-items-center rounded-full bg-sf-surface text-sm font-bold text-sf-text">
+                <div className="grid h-11 w-11 place-items-center rounded-full bg-sf-footer-surface text-sm font-bold text-sf-text">
                   {store.name.charAt(0)}
                 </div>
               )}
               {nameLogoUrl ? (
                 <img src={nameLogoUrl} alt={store.name} className="h-7 w-auto max-w-[150px] object-contain" loading="lazy" />
               ) : (
-                <span className="text-lg font-bold text-sf-ink">{store.name}</span>
+                <span className="text-lg font-bold text-sf-footer-fg">{store.name}</span>
               )}
             </div>
-            {store.description && <p className="text-sm leading-relaxed text-sf-muted">{store.description}</p>}
+            {store.description && <p className="text-sm leading-relaxed text-sf-footer-muted">{store.description}</p>}
             {address && (
-              <p className="flex items-start gap-2 text-sm text-sf-muted">
+              <p className="flex items-start gap-2 text-sm text-sf-footer-muted">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-sf-accent" />
                 <span>{address}</span>
               </p>
@@ -190,7 +190,7 @@ export function StoreFooter({
 
           {/* Quick Links */}
           <div className="space-y-4">
-            <h3 className="text-base font-bold text-sf-ink">{t("footer.quickLinks")}</h3>
+            <h3 className="text-base font-bold text-sf-footer-fg">{t("footer.quickLinks")}</h3>
             <ul className="space-y-2.5 text-sm">
               <li>
                 <Link to="/store/$slug/about-us" params={{ slug }} className="transition-colors hover:text-sf-accent">
@@ -222,7 +222,7 @@ export function StoreFooter({
 
           {/* Customer Policies */}
           <div className="space-y-4">
-            <h3 className="text-base font-bold text-sf-ink">{t("footer.customerPolicies")}</h3>
+            <h3 className="text-base font-bold text-sf-footer-fg">{t("footer.customerPolicies")}</h3>
             <ul className="space-y-2.5 text-sm">
               <li>
                 <Link to="/store/$slug/privacy-policy" params={{ slug }} className="transition-colors hover:text-sf-accent">
@@ -249,9 +249,9 @@ export function StoreFooter({
 
           {/* Newsletter & Contact */}
           <div className="space-y-4">
-            <h3 className="text-base font-bold text-sf-ink">{t("footer.newsletter")}</h3>
+            <h3 className="text-base font-bold text-sf-footer-fg">{t("footer.newsletter")}</h3>
             {phone && (
-              <p className="flex items-center gap-2 text-sm text-sf-muted">
+              <p className="flex items-center gap-2 text-sm text-sf-footer-muted">
                 <Phone className="h-4 w-4 shrink-0 text-sf-accent" />
                 <a href={`tel:${phone}`} className="transition-colors hover:text-sf-accent">
                   {phone}
@@ -259,7 +259,7 @@ export function StoreFooter({
               </p>
             )}
             {email && (
-              <p className="flex items-center gap-2 text-sm text-sf-muted">
+              <p className="flex items-center gap-2 text-sm text-sf-footer-muted">
                 <Mail className="h-4 w-4 shrink-0 text-sf-accent" />
                 <a href={`mailto:${email}`} className="transition-colors hover:text-sf-accent">
                   {email}
@@ -267,7 +267,7 @@ export function StoreFooter({
               </p>
             )}
             {businessHours && (
-              <p className="flex items-start gap-2 text-sm text-sf-muted">
+              <p className="flex items-start gap-2 text-sm text-sf-footer-muted">
                 <Clock className="mt-0.5 h-4 w-4 shrink-0 text-sf-accent" />
                 <span>{businessHours}</span>
               </p>
@@ -279,7 +279,7 @@ export function StoreFooter({
                 placeholder={t("footer.subscribePlaceholder") as string}
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
-                className="h-10 flex-1 border-sf-line bg-sf-card text-sm text-sf-ink placeholder:text-sf-muted focus-visible:ring-sf-accent"
+                className="h-10 flex-1 border-sf-footer-line bg-sf-card text-sm text-sf-ink placeholder:text-sf-footer-muted focus-visible:ring-sf-accent"
               />
               <Button type="submit" disabled={subscribing} size="sm" className="h-10 px-4 bg-sf-accent hover:bg-sf-accent-hover text-white">
                 {subscribing ? t("common.saving") : t("footer.join")}
@@ -292,8 +292,8 @@ export function StoreFooter({
 
       {/* Bottom Bar */}
       {f.copyright !== false && (
-        <div className="border-t border-sf-line bg-sf-surface">
-          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-5 py-5 text-center text-xs text-sf-muted md:flex-row md:text-left md:px-8">
+        <div className="border-t border-sf-footer-line bg-sf-footer-surface">
+          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-5 py-5 text-center text-xs text-sf-footer-muted md:flex-row md:text-left md:px-8">
             <p>
               © {new Date().getFullYear()} {store.name}. {t("footer.copyright")}
             </p>
