@@ -8,8 +8,14 @@ const esc = (v: any) =>
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string,
   );
 
-const imgUrl = (u?: string | null) =>
-  !u ? null : u.startsWith("http") || u.startsWith("data:") ? u : `/api/img/${u}`;
+// The invoice renders inside a blank popup window (about:blank), so relative
+// paths never resolve there — every asset URL must be absolutised.
+const imgUrl = (u?: string | null) => {
+  if (!u) return null;
+  if (u.startsWith("http") || u.startsWith("data:")) return u;
+  const origin = window.location.origin;
+  return u.startsWith("/") ? `${origin}${u}` : `${origin}/api/img/${u}`;
+};
 
 const fmtDate = (d: any) =>
   d
@@ -65,7 +71,11 @@ export type InvoiceStore = {
   name_logo_url?: string | null;
 };
 
-export type InvoiceBrand = { logoUrl?: string | null; wordmarkUrl?: string | null };
+export type InvoiceBrand = {
+  logoUrl?: string | null;
+  wordmarkUrl?: string | null;
+  supportEmail?: string | null;
+};
 
 const CYCLE_LABEL: Record<string, string> = {
   monthly: "Monthly",
@@ -94,9 +104,12 @@ export async function openSubscriptionInvoice(
 
   const amount = Number(p.amount ?? 0);
   const amountBn = `৳${toBn(amount.toLocaleString("en-US"))}`;
-  const storeLogo = imgUrl(store?.name_logo_url ?? store?.icon_url ?? store?.logo_url ?? null);
+  // Icon slot uses the store's icon logo; the name slot uses the name logo.
+  const storeIcon = imgUrl(store?.icon_url ?? store?.logo_url ?? null);
+  const storeNameLogo = imgUrl(store?.name_logo_url ?? null);
   const platformLogo = imgUrl(brand.logoUrl ?? null);
   const platformWordmark = imgUrl(brand.wordmarkUrl ?? null);
+  const supportEmail = brand.supportEmail || "support@orzen.top";
   const paid = String(p.status ?? "").toLowerCase() === "paid";
   const period =
     fmtDate(p.cycle_start) && fmtDate(p.cycle_end)
@@ -178,12 +191,16 @@ export async function openSubscriptionInvoice(
       <div class="label">Billed To</div>
       <div class="box merchant">
         ${
-          storeLogo
-            ? `<img src="${esc(storeLogo)}" alt=""/>`
+          storeIcon
+            ? `<img src="${esc(storeIcon)}" alt=""/>`
             : `<span class="m-tile">${esc((store?.name ?? "S").slice(0, 1).toUpperCase())}</span>`
         }
         <div>
-          <div class="m-name">${esc(store?.name)}</div>
+          <div class="m-name">${
+            storeNameLogo
+              ? `<img src="${esc(storeNameLogo)}" alt="${esc(store?.name)}" style="height:22px;width:auto;object-fit:contain;display:block"/>`
+              : esc(store?.name)
+          }</div>
           ${store?.slug ? `<div class="muted">${esc(store.slug)}.orzen.top</div>` : ""}
         </div>
       </div>
@@ -225,7 +242,7 @@ export async function openSubscriptionInvoice(
 
   <div class="foot">
     <div>
-      <div class="muted">Questions? <b style="color:#0F172A">support@orzen.com</b></div>
+      <div class="muted">Questions? <b style="color:#0F172A">${esc(supportEmail)}</b></div>
       <div class="tag">AUTO-GENERATED RECEIPT</div>
     </div>
     <div style="text-align:center">
