@@ -16,6 +16,8 @@ import { FEATURE_KEYS, FEATURE_LABELS, formatLimit } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import WalletPanel from "@/components/admin/billing/WalletPanel";
+import { openSubscriptionInvoice } from "@/lib/subscription-invoice-print";
+import { usePlatformBranding, resolvePlacement } from "@/lib/platform-branding";
 
 export const Route = createFileRoute("/_authenticated/admin/billing/")({
   head: () => ({
@@ -88,6 +90,12 @@ function BillingPage() {
     queryFn: () => settingsFn(),
     staleTime: 5 * 60_000,
   });
+
+  const { data: branding } = usePlatformBranding();
+  const invoiceBrand = useMemo(() => {
+    const r = resolvePlacement(branding ?? null, "invoice", false);
+    return { logoUrl: r?.logo?.url ?? null, wordmarkUrl: r?.wordmark?.url ?? null };
+  }, [branding]);
 
   const [cycle, setCycle] = useState<CycleKey>("monthly");
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -620,7 +628,7 @@ function BillingPage() {
                     {p.status === "paid" && (
                       <button
                         type="button"
-                        onClick={() => printPaymentInvoice(p, store)}
+                        onClick={() => openInvoice(p)}
                         className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
                       >
                         <Download className="h-3 w-3" /> Invoice
@@ -664,7 +672,7 @@ function BillingPage() {
                 {p.status === "paid" && (
                   <button
                     type="button"
-                    onClick={() => printPaymentInvoice(p, store)}
+                    onClick={() => openInvoice(p)}
                     className="mt-2 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
                   >
                     <Download className="h-3 w-3" /> Invoice
