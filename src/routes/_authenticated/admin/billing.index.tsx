@@ -331,6 +331,11 @@ function BillingPage() {
                     <Crown className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Current
                   </div>
                 )}
+                {needsRenew && (
+                  <div className="absolute -top-2 right-3 inline-flex items-center gap-1 rounded-full bg-red-600 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white sm:right-4 sm:px-2 sm:text-[10px]">
+                    <Crown className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Expired
+                  </div>
+                )}
 
                 <div className="mt-0.5 truncate text-sm font-semibold sm:text-base">{TIER_NAME[tier]}</div>
                 {p.description && <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-2 sm:text-xs">{p.description}</p>}
