@@ -170,14 +170,30 @@ function PagesAdmin() {
               </CardDescription>
             </div>
             {slug && (
-              <a
-                href={publicPath}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary hover:underline"
-              >
-                View page <ExternalLink className="h-3 w-3" />
-              </a>
+              <div className="flex shrink-0 items-center gap-3">
+                <a
+                  href={publicPath}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                >
+                  View page <ExternalLink className="h-3 w-3" />
+                </a>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(`${window.location.origin}${publicPath}`);
+                      toast.success("Page URL copied");
+                    } catch {
+                      toast.error("Could not copy the URL");
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                >
+                  Copy <Copy className="h-3 w-3" />
+                </button>
+              </div>
             )}
           </CardHeader>
           <CardContent className="space-y-4">
