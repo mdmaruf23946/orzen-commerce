@@ -101,6 +101,27 @@ export default function WalletPanel() {
     onError: (e: any) => toast.error(e?.message ?? "Could not start the payment"),
   });
 
+  const manualTopup = useMutation({
+    mutationFn: async () =>
+      manualFn({
+        data: {
+          amount: amountNum,
+          method,
+          txn_id: txnId.trim(),
+          sender_number: sender.trim(),
+          customer_email: email.trim(),
+        },
+      }),
+    onSuccess: () => {
+      setOpen(false);
+      setTxnId("");
+      setSender("");
+      void qc.invalidateQueries({ queryKey: ["admin", "walletTx"] });
+      toast.success("Top-up submitted. Your wallet will be credited after verification.");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not submit the top-up"),
+  });
+
   const saveAuto = useMutation({
     mutationFn: (vars: { auto_renew: boolean; auto_renew_cycle?: CycleKey }) =>
       autoFn({ data: vars }),
