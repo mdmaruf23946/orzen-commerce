@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { checkStoreSlugAvailable, createMyStoreWithSlug } from "@/lib/admin.functions";
 import { myAccountKind } from "@/lib/employees.functions";
 
-import { CheckCircle2, XCircle, Loader2, AlertCircle } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, AlertCircle, UserCog } from "lucide-react";
 import { BrandMark } from "@/lib/platform-branding";
 
 export const Route = createFileRoute("/auth")({
@@ -313,6 +313,22 @@ function AuthPage() {
         >
           {mode === "signin" ? "New here? Create your store" : "Have an account? Sign in"}
         </button>
+
+        {mode === "signin" && (
+          <>
+            <div className="my-4 flex items-center gap-3">
+              <span className="h-px flex-1 bg-border" />
+              <span className="text-[11px] uppercase tracking-wide text-muted-foreground">or</span>
+              <span className="h-px flex-1 bg-border" />
+            </div>
+            <Button asChild variant="outline" className="h-10 w-full">
+              <Link to="/employee-login">
+                <UserCog className="mr-2 h-4 w-4" />
+                Employee login
+              </Link>
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );
