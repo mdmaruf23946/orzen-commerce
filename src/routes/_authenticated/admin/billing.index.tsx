@@ -461,9 +461,20 @@ function BillingPage() {
                       <Button variant="outline" className="h-9 w-full text-xs sm:h-10 sm:text-sm">Contact Sales</Button>
                     </a>
                   ) : isFree ? (
-                    <Button disabled className="h-9 w-full text-xs sm:h-10 sm:text-sm" variant="outline">
-                      {isTrialing ? "After trial" : "Free Forever"}
-                    </Button>
+                    isInactive ? (
+                      <Button
+                        className="h-9 w-full gap-1.5 text-xs sm:h-10 sm:text-sm"
+                        disabled={activatingFreeId === p.id}
+                        onClick={() => handleActivateFree(p.id)}
+                      >
+                        {activatingFreeId === p.id && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                        {activatingFreeId === p.id ? "Activating…" : "Update"}
+                      </Button>
+                    ) : (
+                      <Button disabled className="h-9 w-full text-xs sm:h-10 sm:text-sm" variant="outline">
+                        {isTrialing ? "After trial" : "Free Forever"}
+                      </Button>
+                    )
                   ) : (
                     <Link to="/admin/billing/checkout/$packageId" params={{ packageId: p.id }} search={{ cycle } as any} className="block">
                       <Button className="h-9 w-full text-xs sm:h-10 sm:text-sm">Upgrade</Button>
