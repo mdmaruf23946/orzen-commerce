@@ -23,7 +23,7 @@ function TrackOrderPage() {
         <Link
           to="/store/$slug"
           params={{ slug }}
-          className="inline-flex items-center gap-1 text-xs font-medium text-sf-muted hover:text-sf-ink"
+          className="inline-flex items-center gap-1 text-xs font-semibold text-sf-ink transition-colors hover:text-sf-accent"
         >
           <ArrowLeft className="h-3.5 w-3.5" /> Back to store
         </Link>

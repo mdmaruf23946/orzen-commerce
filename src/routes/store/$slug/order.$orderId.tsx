@@ -401,7 +401,7 @@ function OrderConfirmation() {
       <Link
         to="/store/$slug"
         params={{ slug }}
-        className="mt-6 block text-center text-sm text-muted-foreground hover:text-foreground"
+        className="mt-6 block text-center text-sm font-semibold text-sf-ink transition-colors hover:text-sf-accent"
       >
         {t("order.backToStore")}
       </Link>
