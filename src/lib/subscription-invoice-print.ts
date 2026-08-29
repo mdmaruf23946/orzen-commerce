@@ -71,7 +71,11 @@ export type InvoiceStore = {
   name_logo_url?: string | null;
 };
 
-export type InvoiceBrand = { logoUrl?: string | null; wordmarkUrl?: string | null };
+export type InvoiceBrand = {
+  logoUrl?: string | null;
+  wordmarkUrl?: string | null;
+  supportEmail?: string | null;
+};
 
 const CYCLE_LABEL: Record<string, string> = {
   monthly: "Monthly",
