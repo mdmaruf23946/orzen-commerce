@@ -493,7 +493,7 @@ function StoreHeader({
                 <img
                   src={nameLogoUrl}
                   alt={name}
-                  className="h-8 max-h-8 w-auto min-w-0 max-w-[140px] object-contain lg:max-w-[220px]"
+                  className="h-8 max-h-8 w-auto min-w-0 max-w-[220px] object-contain"
                   loading="eager"
                 />
               ) : (
@@ -503,7 +503,7 @@ function StoreHeader({
 
             {theme.header.search && theme.header.search_position !== "hidden" && (
               <div
-                className={`w-full min-w-0 max-w-md ${theme.header.search_position === "center" ? "mx-auto" : "ml-auto"}`}
+                className={`w-full min-w-0 max-w-[12rem] md:max-w-[14rem] lg:max-w-md ${theme.header.search_position === "center" ? "mx-auto" : "ml-auto"}`}
               >
                 <SearchBar />
               </div>
