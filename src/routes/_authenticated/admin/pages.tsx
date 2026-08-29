@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ExternalLink, FileText, Loader2, Save, Sparkles } from "lucide-react";
+import { Copy, ExternalLink, FileText, Loader2, Save, Sparkles } from "lucide-react";
 import RichTextEditor from "@/components/admin/product-form/RichTextEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
