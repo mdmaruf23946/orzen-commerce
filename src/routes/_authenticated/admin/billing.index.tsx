@@ -103,6 +103,9 @@ function BillingPage() {
   }, [plans]);
 
   const currentTier = pkg ? tierOf(pkg) : isTrialing ? null : "free";
+  // Expired / cancelled / suspended → the plan is no longer active, so the
+  // merchant must be able to renew (update) it manually again.
+  const isInactive = ["expired", "cancelled", "suspended", "past_due"].includes(subStatus);
   const s = settings ?? { discount_3m: 5, discount_6m: 10, discount_yearly: 20 };
 
   // Highlight logic: prefer explicit `plan` id, else the cheapest paid plan
