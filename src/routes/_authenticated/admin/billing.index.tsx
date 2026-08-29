@@ -655,7 +655,7 @@ function BillingPage() {
                     {p.status === "paid" && (
                       <button
                         type="button"
-                        onClick={() => window.print()}
+                        onClick={() => printPaymentInvoice(p, store)}
                         className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
                       >
                         <Download className="h-3 w-3" /> Invoice
@@ -699,7 +699,7 @@ function BillingPage() {
                 {p.status === "paid" && (
                   <button
                     type="button"
-                    onClick={() => window.print()}
+                    onClick={() => printPaymentInvoice(p, store)}
                     className="mt-2 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
                   >
                     <Download className="h-3 w-3" /> Invoice
