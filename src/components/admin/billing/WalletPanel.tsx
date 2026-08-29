@@ -182,7 +182,17 @@ export default function WalletPanel() {
             Add funds and pay for plans or renewals instantly.
           </p>
         </div>
-        <Button onClick={() => setOpen(true)} className="h-9 w-full gap-1.5 sm:w-auto">
+        <Button
+          onClick={async () => {
+            if (manualKeys.length && !manualKeys.includes(method)) setMethod(manualKeys[0]!);
+            if (!email) {
+              const { data } = await supabase.auth.getUser();
+              if (data.user?.email) setEmail(data.user.email);
+            }
+            setOpen(true);
+          }}
+          className="h-9 w-full gap-1.5 sm:w-auto"
+        >
           <Plus className="h-4 w-4" /> Add Fund
         </Button>
       </div>
