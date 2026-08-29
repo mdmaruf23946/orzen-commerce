@@ -78,7 +78,7 @@ function StoreAiCallCenter() {
           </p>
           <Button asChild className="mt-4">
             <Link to="/admin/billing" search={{ highlight: "ai_call_center" } as any}>
-              আপডেট করুন
+              Update
             </Link>
           </Button>
         </div>
