@@ -493,7 +493,7 @@ function StoreHeader({
                 <img
                   src={nameLogoUrl}
                   alt={name}
-                  className="h-8 max-h-8 w-auto max-w-[220px] object-contain"
+                  className="h-8 max-h-8 w-auto min-w-0 max-w-[140px] object-contain lg:max-w-[220px]"
                   loading="eager"
                 />
               ) : (
