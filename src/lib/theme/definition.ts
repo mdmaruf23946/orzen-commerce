@@ -698,6 +698,17 @@ export function themeCssVars(t: ThemeDefinition): Record<string, string> {
     "--sf-muted": t.colors.muted,
     "--sf-surface": t.colors.surface,
     "--sf-line": t.colors.border,
+    // Auto-contrast foregrounds so dark headers/footers/buttons stay readable.
+    "--sf-on-accent": on(t.colors.button),
+    "--sf-on-primary": on(t.colors.primary),
+    "--sf-on-secondary": on(t.colors.secondary),
+    "--sf-on-highlight": on(t.colors.accent),
+    "--sf-header-fg": on(t.colors.header, "#ffffff", t.colors.ink),
+    "--sf-footer-fg": on(t.colors.footer, "#ffffff", t.colors.ink),
+    "--sf-footer-muted": `color-mix(in srgb, ${on(t.colors.footer, "#ffffff", t.colors.ink)} 70%, ${t.colors.footer})`,
+    "--sf-footer-line": `color-mix(in srgb, ${on(t.colors.footer, "#ffffff", t.colors.ink)} 18%, ${t.colors.footer})`,
+    "--sf-footer-surface": `color-mix(in srgb, ${on(t.colors.footer, "#ffffff", t.colors.ink)} 7%, ${t.colors.footer})`,
+
 
     "--radius": `${t.global.radius}px`,
     "--store-btn-radius": `${t.buttons.radius}px`,
