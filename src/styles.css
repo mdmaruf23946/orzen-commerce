@@ -72,6 +72,18 @@
   --color-sf-accent: var(--sf-accent);
   --color-sf-accent-hover: var(--sf-accent-hover);
   --color-sf-accent-soft: var(--sf-accent-soft);
+  --color-sf-primary: var(--sf-primary);
+  --color-sf-secondary: var(--sf-secondary);
+  --color-sf-highlight: var(--sf-highlight);
+  --color-sf-highlight-soft: var(--sf-highlight-soft);
+  --color-sf-card: var(--sf-card);
+  --color-sf-bg: var(--sf-bg);
+  --color-sf-header: var(--sf-header);
+  --color-sf-footer: var(--sf-footer);
+  --color-sf-link: var(--sf-link);
+  --color-sf-success: var(--sf-success);
+  --color-sf-warning: var(--sf-warning);
+  --color-sf-error: var(--sf-error);
   --color-sf-ink: var(--sf-ink);
   --color-sf-text: var(--sf-text);
   --color-sf-muted: var(--sf-muted);
@@ -85,12 +97,25 @@
   --sf-accent: #ff4b1f;
   --sf-accent-hover: #e93f14;
   --sf-accent-soft: #fff1ec;
+  --sf-primary: #ff4b1f;
+  --sf-secondary: #111111;
+  --sf-highlight: #f59e0b;
+  --sf-highlight-soft: #fff7ed;
+  --sf-card: #ffffff;
+  --sf-bg: #ffffff;
+  --sf-header: #ffffff;
+  --sf-footer: #f8fafc;
+  --sf-link: #ff4b1f;
+  --sf-success: #16a34a;
+  --sf-warning: #f59e0b;
+  --sf-error: #dc2626;
   --sf-ink: #111111;
   --sf-text: #171717;
   --sf-muted: #6b7280;
   --sf-surface: #f7f7f7;
   --sf-line: #ececec;
   --sf-shadow: 0 1px 2px rgba(17, 17, 17, 0.04), 0 8px 24px -12px rgba(17, 17, 17, 0.16);
+
 
 
   --radius: 0.875rem;
