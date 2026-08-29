@@ -16,6 +16,7 @@ import { FEATURE_KEYS, FEATURE_LABELS, formatLimit } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import WalletPanel from "@/components/admin/billing/WalletPanel";
+import { getFooterSettings } from "@/lib/footer.functions";
 import { openSubscriptionInvoice } from "@/lib/subscription-invoice-print";
 import { usePlatformBranding, resolvePlacement } from "@/lib/platform-branding";
 
@@ -92,10 +93,20 @@ function BillingPage() {
   });
 
   const { data: branding } = usePlatformBranding();
+  const footerFn = useServerFn(getFooterSettings);
+  const { data: footer } = useQuery({
+    queryKey: ["platform", "footer"],
+    queryFn: () => footerFn(),
+    staleTime: 10 * 60_000,
+  });
   const invoiceBrand = useMemo(() => {
     const r = resolvePlacement(branding ?? null, "invoice", false);
-    return { logoUrl: r?.logo?.url ?? null, wordmarkUrl: r?.wordmark?.url ?? null };
-  }, [branding]);
+    return {
+      logoUrl: r?.logo?.url ?? null,
+      wordmarkUrl: r?.wordmark?.url ?? null,
+      supportEmail: footer?.contact?.email ?? null,
+    };
+  }, [branding, footer]);
 
   const [cycle, setCycle] = useState<CycleKey>("monthly");
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
