@@ -503,7 +503,7 @@ function StoreHeader({
 
             {theme.header.search && theme.header.search_position !== "hidden" && (
               <div
-                className={`w-full min-w-0 max-w-[12rem] md:max-w-[14rem] lg:max-w-md ${theme.header.search_position === "center" ? "mx-auto" : "ml-auto"}`}
+                className={`w-[12rem] md:w-[14rem] lg:w-[28rem] ${theme.header.search_position === "center" ? "mx-auto" : "ml-auto"}`}
               >
                 <SearchBar />
               </div>
