@@ -95,7 +95,6 @@ import { Route as AuthenticatedOwnerAiRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedOwnerAdsRouteImport } from './routes/_authenticated/owner/ads'
 import { Route as AuthenticatedAdminWhatsappInboxRouteImport } from './routes/_authenticated/admin/whatsapp-inbox'
 import { Route as AuthenticatedAdminWhatsappRouteImport } from './routes/_authenticated/admin/whatsapp'
-import { Route as AuthenticatedAdminThemeRouteImport } from './routes/_authenticated/admin/theme'
 import { Route as AuthenticatedAdminSupportRouteImport } from './routes/_authenticated/admin/support'
 import { Route as AuthenticatedAdminSubscriptionRouteImport } from './routes/_authenticated/admin/subscription'
 import { Route as AuthenticatedAdminStaffRouteImport } from './routes/_authenticated/admin/staff'
@@ -672,11 +671,6 @@ const AuthenticatedAdminWhatsappRoute =
     path: '/whatsapp',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
-const AuthenticatedAdminThemeRoute = AuthenticatedAdminThemeRouteImport.update({
-  id: '/theme',
-  path: '/theme',
-  getParentRoute: () => AuthenticatedAdminRouteRoute,
-} as any)
 const AuthenticatedAdminSupportRoute =
   AuthenticatedAdminSupportRouteImport.update({
     id: '/support',
@@ -1380,7 +1374,6 @@ export interface FileRoutesByFullPath {
   '/admin/staff': typeof AuthenticatedAdminStaffRoute
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/admin/support': typeof AuthenticatedAdminSupportRoute
-  '/admin/theme': typeof AuthenticatedAdminThemeRoute
   '/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
   '/admin/whatsapp-inbox': typeof AuthenticatedAdminWhatsappInboxRoute
   '/owner/ads': typeof AuthenticatedOwnerAdsRoute
@@ -1567,7 +1560,6 @@ export interface FileRoutesByTo {
   '/admin/staff': typeof AuthenticatedAdminStaffRoute
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/admin/support': typeof AuthenticatedAdminSupportRoute
-  '/admin/theme': typeof AuthenticatedAdminThemeRoute
   '/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
   '/admin/whatsapp-inbox': typeof AuthenticatedAdminWhatsappInboxRoute
   '/owner/ads': typeof AuthenticatedOwnerAdsRoute
@@ -1765,7 +1757,6 @@ export interface FileRoutesById {
   '/_authenticated/admin/staff': typeof AuthenticatedAdminStaffRoute
   '/_authenticated/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/_authenticated/admin/support': typeof AuthenticatedAdminSupportRoute
-  '/_authenticated/admin/theme': typeof AuthenticatedAdminThemeRoute
   '/_authenticated/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
   '/_authenticated/admin/whatsapp-inbox': typeof AuthenticatedAdminWhatsappInboxRoute
   '/_authenticated/owner/ads': typeof AuthenticatedOwnerAdsRoute
@@ -1963,7 +1954,6 @@ export interface FileRouteTypes {
     | '/admin/staff'
     | '/admin/subscription'
     | '/admin/support'
-    | '/admin/theme'
     | '/admin/whatsapp'
     | '/admin/whatsapp-inbox'
     | '/owner/ads'
@@ -2150,7 +2140,6 @@ export interface FileRouteTypes {
     | '/admin/staff'
     | '/admin/subscription'
     | '/admin/support'
-    | '/admin/theme'
     | '/admin/whatsapp'
     | '/admin/whatsapp-inbox'
     | '/owner/ads'
@@ -2347,7 +2336,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/staff'
     | '/_authenticated/admin/subscription'
     | '/_authenticated/admin/support'
-    | '/_authenticated/admin/theme'
     | '/_authenticated/admin/whatsapp'
     | '/_authenticated/admin/whatsapp-inbox'
     | '/_authenticated/owner/ads'
@@ -3123,13 +3111,6 @@ declare module '@tanstack/react-router' {
       path: '/whatsapp'
       fullPath: '/admin/whatsapp'
       preLoaderRoute: typeof AuthenticatedAdminWhatsappRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
-    }
-    '/_authenticated/admin/theme': {
-      id: '/_authenticated/admin/theme'
-      path: '/theme'
-      fullPath: '/admin/theme'
-      preLoaderRoute: typeof AuthenticatedAdminThemeRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/support': {
@@ -4009,7 +3990,6 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminStaffRoute: typeof AuthenticatedAdminStaffRoute
   AuthenticatedAdminSubscriptionRoute: typeof AuthenticatedAdminSubscriptionRoute
   AuthenticatedAdminSupportRoute: typeof AuthenticatedAdminSupportRoute
-  AuthenticatedAdminThemeRoute: typeof AuthenticatedAdminThemeRoute
   AuthenticatedAdminWhatsappRoute: typeof AuthenticatedAdminWhatsappRoute
   AuthenticatedAdminWhatsappInboxRoute: typeof AuthenticatedAdminWhatsappInboxRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
@@ -4076,7 +4056,6 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminStaffRoute: AuthenticatedAdminStaffRoute,
     AuthenticatedAdminSubscriptionRoute: AuthenticatedAdminSubscriptionRoute,
     AuthenticatedAdminSupportRoute: AuthenticatedAdminSupportRoute,
-    AuthenticatedAdminThemeRoute: AuthenticatedAdminThemeRoute,
     AuthenticatedAdminWhatsappRoute: AuthenticatedAdminWhatsappRoute,
     AuthenticatedAdminWhatsappInboxRoute: AuthenticatedAdminWhatsappInboxRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
