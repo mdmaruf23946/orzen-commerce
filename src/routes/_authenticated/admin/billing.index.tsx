@@ -238,7 +238,7 @@ function BillingPage() {
             <span>Your subscription has expired. The Free plan is active now — renew to restore full access.</span>
             {pkg?.id && (
               <Link to="/admin/billing/checkout/$packageId" params={{ packageId: pkg.id }} search={{ cycle } as any} className="shrink-0">
-                <Button size="sm" className="h-8 w-full text-xs sm:w-auto">আপডেট করুন</Button>
+                <Button size="sm" className="h-8 w-full text-xs sm:w-auto">Update</Button>
               </Link>
             )}
           </div>
@@ -434,7 +434,7 @@ function BillingPage() {
                     <Button disabled className="h-9 w-full text-xs sm:h-10 sm:text-sm" variant="secondary">Current Plan</Button>
                   ) : needsRenew && !isFree && !isCustom ? (
                     <Link to="/admin/billing/checkout/$packageId" params={{ packageId: p.id }} search={{ cycle } as any} className="block">
-                      <Button className="h-9 w-full text-xs sm:h-10 sm:text-sm">আপডেট করুন</Button>
+                      <Button className="h-9 w-full text-xs sm:h-10 sm:text-sm">Update</Button>
                     </Link>
                   ) : isCustom ? (
                     <a href="mailto:support@example.com?subject=Custom%20Plan%20Inquiry" className="block">
