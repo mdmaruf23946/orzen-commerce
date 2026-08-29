@@ -288,7 +288,9 @@ function BillingPage() {
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
           {TIER_ORDER.map((tier) => {
             const p = tierMap.get(tier);
-            const isCurrent = currentTier === tier && !isTrialing;
+            const isOwnTier = currentTier === tier && !isTrialing;
+            const isCurrent = isOwnTier && !isInactive;
+            const needsRenew = isOwnTier && isInactive;
             const isPopular = tier === "business";
             const isCustom = tier === "custom";
             const isFree = tier === "free";
