@@ -110,10 +110,10 @@ function PagesAdmin() {
   const publicPath = `/store/${slug}/${activeKey}`;
 
   return (
-    <div className="space-y-5 p-4 sm:p-6">
-      <header>
+    <div className="w-full min-w-0 max-w-full space-y-5 overflow-x-clip p-4 sm:p-6">
+      <header className="min-w-0">
         <h1 className="flex items-center gap-2 text-xl font-bold sm:text-2xl">
-          <FileText className="h-5 w-5 text-primary" /> Pages & Content
+          <FileText className="h-5 w-5 shrink-0 text-primary" /> Pages & Content
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Write your About, Contact, Blogs and legal pages. Content is published instantly on your
@@ -121,8 +121,8 @@ function PagesAdmin() {
         </p>
       </header>
 
-      <div className="grid gap-5 lg:grid-cols-[260px_1fr]">
-        <nav className="space-y-4">
+      <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
+        <nav className="min-w-0 space-y-4">
           {(["quick", "policy"] as const).map((group) => (
             <div key={group}>
               <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
