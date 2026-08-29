@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Check, Loader2, RotateCcw } from "lucide-react";
 import { listThemes, getMyThemeState, selectStoreTheme, resetStoreTheme } from "@/lib/themes.functions";
 import { mergeTheme } from "@/lib/theme/definition";
+import { ThemePreviewFrame } from "@/components/admin/theme/ThemePreviewFrame";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/admin/theme")({
@@ -54,6 +55,7 @@ function StoreThemePage() {
   });
 
   const activeId = (state as any)?.theme_id ?? null;
+  const storeSlug = (state as any)?.slug ?? null;
 
   return (
     <div className="min-w-0 space-y-5">
@@ -78,6 +80,8 @@ function StoreThemePage() {
           Restore Default Theme
         </Button>
       </header>
+
+      {storeSlug && <ThemePreviewFrame slug={storeSlug} />}
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading themes…</p>
