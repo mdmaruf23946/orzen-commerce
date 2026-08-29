@@ -1,13 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, X, Sparkles, Crown, Sparkle, Download } from "lucide-react";
+import { toast } from "sonner";
+import { Check, X, Sparkles, Crown, Sparkle, Download, Loader2 } from "lucide-react";
 import {
   myBillingStatus,
   listPublicPlans,
   getBillingSettings,
   computeCycleTotal,
+  activateFreePlan,
   type CycleKey,
 } from "@/lib/billing.functions";
 import { FEATURE_KEYS, FEATURE_LABELS, formatLimit } from "@/lib/features";
