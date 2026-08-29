@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard, Package, Tags, ShoppingBag, Users, Image as ImageIcon,
-  Settings, CreditCard, LogOut, Menu, Megaphone, Truck, Palette,
+  Settings, CreditCard, LogOut, Menu, Megaphone, Truck,
   Search as SearchIcon, PackageOpen, Wallet, Bell, ClipboardList, Bot,
   MessageSquare, MessageCircle, Boxes, Ticket, RotateCcw, BarChart3, FileUp, Globe,
   Radar, ShieldCheck, FileText, PhoneCall, Sparkles, AlertTriangle, UserCog,
