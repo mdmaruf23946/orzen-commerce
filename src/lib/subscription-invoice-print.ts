@@ -104,9 +104,12 @@ export async function openSubscriptionInvoice(
 
   const amount = Number(p.amount ?? 0);
   const amountBn = `৳${toBn(amount.toLocaleString("en-US"))}`;
-  const storeLogo = imgUrl(store?.name_logo_url ?? store?.icon_url ?? store?.logo_url ?? null);
+  // Icon slot uses the store's icon logo; the name slot uses the name logo.
+  const storeIcon = imgUrl(store?.icon_url ?? store?.logo_url ?? null);
+  const storeNameLogo = imgUrl(store?.name_logo_url ?? null);
   const platformLogo = imgUrl(brand.logoUrl ?? null);
   const platformWordmark = imgUrl(brand.wordmarkUrl ?? null);
+  const supportEmail = brand.supportEmail || "support@orzen.top";
   const paid = String(p.status ?? "").toLowerCase() === "paid";
   const period =
     fmtDate(p.cycle_start) && fmtDate(p.cycle_end)
