@@ -137,13 +137,13 @@ function PagesAdmin() {
                       key={p.key}
                       type="button"
                       onClick={() => setActiveKey(p.key)}
-                      className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
+                      className={`flex w-full min-w-0 items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
                         active
                           ? "border-primary bg-primary/5 font-semibold text-primary"
                           : "border-transparent hover:bg-muted"
                       }`}
                     >
-                      <span>{p.label}</span>
+                      <span className="min-w-0 truncate">{p.label}</span>
                       {row?.content_html ? (
                         <span className="text-[10px] font-medium text-emerald-600">
                           {row.is_published ? "Live" : "Hidden"}
@@ -159,9 +159,9 @@ function PagesAdmin() {
           ))}
         </nav>
 
-        <Card>
+        <Card className="min-w-0 max-w-full overflow-hidden">
           <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
-            <div>
+            <div className="min-w-0">
               <CardTitle className="text-base">{def.label}</CardTitle>
               <CardDescription>
                 {def.functional
