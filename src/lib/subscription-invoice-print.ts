@@ -8,8 +8,14 @@ const esc = (v: any) =>
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string,
   );
 
-const imgUrl = (u?: string | null) =>
-  !u ? null : u.startsWith("http") || u.startsWith("data:") ? u : `/api/img/${u}`;
+// The invoice renders inside a blank popup window (about:blank), so relative
+// paths never resolve there — every asset URL must be absolutised.
+const imgUrl = (u?: string | null) => {
+  if (!u) return null;
+  if (u.startsWith("http") || u.startsWith("data:")) return u;
+  const origin = window.location.origin;
+  return u.startsWith("/") ? `${origin}${u}` : `${origin}/api/img/${u}`;
+};
 
 const fmtDate = (d: any) =>
   d
