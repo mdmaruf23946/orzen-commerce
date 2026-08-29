@@ -27,7 +27,7 @@ export function LegalPage({ title, html, storeName, updatedAt }: Props) {
         dangerouslySetInnerHTML={{ __html: html }}
       />
       <footer className="mt-10 border-t pt-4 text-xs text-muted-foreground">
-        <Link to="/" className="hover:underline">
+        <Link to="/" className="font-semibold text-sf-ink transition-colors hover:text-sf-accent">
           &larr; Back to store
         </Link>
       </footer>
@@ -42,7 +42,7 @@ export function LegalPageMissing({ title }: { title: string }) {
       <p className="mt-3 text-sm text-muted-foreground">
         This page has not been generated yet by the store owner.
       </p>
-      <Link to="/" className="mt-6 inline-block text-sm text-primary hover:underline">
+      <Link to="/" className="mt-6 inline-block text-sm font-semibold text-sf-ink transition-colors hover:text-sf-accent">
         &larr; Back to store
       </Link>
     </div>
