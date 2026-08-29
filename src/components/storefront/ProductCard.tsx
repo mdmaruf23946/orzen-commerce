@@ -94,12 +94,12 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
           </div>
         )}
         {hasDiscount && (
-          <span className="theme-badge absolute left-2 top-2 rounded-md bg-sf-accent px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+          <span className="theme-badge absolute left-2 top-2 rounded-md bg-sf-highlight px-1.5 py-0.5 text-[10px] font-bold text-sf-on-highlight shadow-sm">
             −{discountPct}%
           </span>
         )}
         {outOfStock && (
-          <span className="theme-badge absolute right-2 top-2 rounded-md bg-sf-ink/85 px-1.5 py-0.5 text-[10px] font-bold text-white">
+          <span className="theme-badge absolute right-2 top-2 rounded-md bg-sf-error px-1.5 py-0.5 text-[10px] font-bold text-white">
             {t("home.soldOut")}
           </span>
         )}
@@ -145,7 +145,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
             type="button"
             onClick={handleAdd}
             disabled={outOfStock}
-            className="theme-btn flex h-8 min-w-0 items-center justify-center gap-1 rounded-lg bg-sf-accent px-1.5 text-[11px] font-bold text-white transition-colors hover:bg-sf-accent-hover disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:gap-1.5 sm:px-2 sm:text-[12px]"
+            className="theme-btn flex h-8 min-w-0 items-center justify-center gap-1 rounded-lg bg-sf-accent px-1.5 text-[11px] font-bold text-sf-on-accent transition-colors hover:bg-sf-accent-hover disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:gap-1.5 sm:px-2 sm:text-[12px]"
           >
             <ShoppingCart className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />
             <span className="hidden truncate sm:inline">{t("pdp.addToCart")}</span>

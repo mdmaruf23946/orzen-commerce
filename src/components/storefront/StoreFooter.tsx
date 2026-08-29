@@ -292,8 +292,8 @@ export function StoreFooter({
 
       {/* Bottom Bar */}
       {f.copyright !== false && (
-        <div className="border-t border-sf-footer-line bg-sf-footer-surface">
-          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-5 py-5 text-center text-xs text-sf-footer-muted md:flex-row md:text-left md:px-8">
+        <div className="border-t border-sf-footer-line bg-sf-secondary text-sf-on-secondary">
+          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-5 py-5 text-center text-xs text-sf-on-secondary/80 md:flex-row md:text-left md:px-8">
             <p>
               © {new Date().getFullYear()} {store.name}. {t("footer.copyright")}
             </p>

@@ -236,7 +236,7 @@ function HomeContent() {
       <section id="all-products" className="scroll-mt-32 space-y-4">
         <div className="flex items-center gap-2">
           <Grid3x3 className="h-4 w-4 text-sf-accent" />
-          <h2 className="text-lg font-bold tracking-tight text-sf-ink sm:text-xl">
+          <h2 className="text-lg font-bold tracking-tight text-sf-primary sm:text-xl">
             {isFiltering ? t("home.results") : t("home.allProducts")}
           </h2>
           <span className="ml-2 rounded-full bg-sf-surface px-2 py-0.5 text-[11px] font-medium text-sf-muted">
@@ -312,7 +312,7 @@ function Section({
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <span className="shrink-0">{icon}</span>
-          <h2 className="truncate text-lg font-bold tracking-tight text-sf-ink sm:text-xl">
+          <h2 className="truncate text-lg font-bold tracking-tight text-sf-primary sm:text-xl">
             {title}
           </h2>
         </div>
