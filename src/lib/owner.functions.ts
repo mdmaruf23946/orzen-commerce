@@ -380,6 +380,62 @@ export const verifyPayment = createServerFn({ method: "POST" })
       return { ok: true };
     }
 
+    // Wallet top-up approval: credit the merchant wallet instead of a plan.
+    if ((pay as any).purpose === "wallet_topup") {
+      const nowT = new Date();
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const adm: any = supabaseAdmin;
+      const { data: inv } = await adm
+        .from("subscription_invoices")
+        .select("id,user_id,total")
+        .eq("invoice_no", (pay as any).invoice_no)
+        .maybeSingle();
+      const walletUserId = inv?.user_id ?? store?.owner_user_id;
+      if (!walletUserId) throw new Error("Wallet owner not found for this payment");
+
+      const { creditWallet } = await import("./wallet.server");
+      const res = await creditWallet(adm, {
+        userId: walletUserId,
+        amount: Number(pay.amount),
+        type: "topup",
+        invoiceId: inv?.id ?? null,
+        reference: (pay as any).invoice_no ?? null,
+        note: `Fund added via ${pay.method ?? "manual"} (verified)`,
+        storeId: pay.store_id,
+      });
+      if (!res?.ok && !res?.already) throw new Error(res?.error ?? "Could not credit the wallet");
+
+      await adm
+        .from("payments")
+        .update({
+          status: "paid",
+          verified_by: context.userId,
+          verified_at: nowT.toISOString(),
+          notes: data.notes ?? "Wallet top-up verified",
+        })
+        .eq("id", pay.id);
+      if (inv?.id) {
+        await adm
+          .from("subscription_invoices")
+          .update({ status: "paid", paid_at: nowT.toISOString() })
+          .eq("id", inv.id);
+      }
+      await adm
+        .from("subscription_notifications")
+        .insert({
+          store_id: pay.store_id,
+          type: "payment_success",
+          meta: {
+            payment_id: pay.id,
+            purpose: "wallet_topup",
+            amount: Number(pay.amount),
+            message: `৳${Number(pay.amount)} added to your wallet.`,
+          },
+        })
+        .then(() => null, () => null);
+      return { ok: true, invoice_no: (pay as any).invoice_no ?? null };
+    }
+
     if (!pkg) throw new Error("Package missing");
     const now = new Date();
     const base =
