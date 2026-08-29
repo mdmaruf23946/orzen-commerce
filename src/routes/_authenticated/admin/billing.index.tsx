@@ -233,9 +233,14 @@ function BillingPage() {
           </div>
         </div>
 
-        {(subStatus === "expired" || subStatus === "cancelled") && (
-          <div className="mt-2 rounded-md bg-red-50 p-2 text-[11px] text-red-900 sm:mt-3 sm:rounded-lg sm:p-3 sm:text-sm dark:bg-red-950/30 dark:text-red-200">
-            Your subscription has expired. The Free plan is active now — renew to restore full access.
+        {isInactive && (
+          <div className="mt-2 flex flex-col gap-2 rounded-md bg-red-50 p-2 text-[11px] text-red-900 sm:mt-3 sm:flex-row sm:items-center sm:justify-between sm:rounded-lg sm:p-3 sm:text-sm dark:bg-red-950/30 dark:text-red-200">
+            <span>Your subscription has expired. The Free plan is active now — renew to restore full access.</span>
+            {pkg?.id && (
+              <Link to="/admin/billing/checkout/$packageId" params={{ packageId: pkg.id }} search={{ cycle } as any} className="shrink-0">
+                <Button size="sm" className="h-8 w-full text-xs sm:w-auto">আপডেট করুন</Button>
+              </Link>
+            )}
           </div>
         )}
       </div>
