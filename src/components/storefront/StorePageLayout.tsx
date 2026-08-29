@@ -10,7 +10,7 @@ type StoreInfo = {
 } | null;
 
 const PROSE =
-  "prose prose-sm max-w-none text-slate-700 sm:prose-base [&_a]:text-sf-accent [&_h2]:mt-7 [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-slate-900 [&_h3]:font-semibold [&_h3]:text-slate-900 [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-3 [&_ul]:list-disc [&_ul]:pl-5";
+  "prose prose-sm max-w-none text-sf-text sm:prose-base [&_a]:text-sf-accent [&_h2]:mt-7 [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-sf-ink [&_h3]:font-semibold [&_h3]:text-sf-ink [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-3 [&_ul]:list-disc [&_ul]:pl-5";
 
 export function StorePageShell({
   slug,
@@ -26,21 +26,21 @@ export function StorePageShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="-mx-4 min-h-[calc(100dvh-3.5rem)] bg-neutral-50 px-4 py-6 sm:-mx-6 sm:px-6">
+    <div className="-mx-4 min-h-[calc(100dvh-3.5rem)] bg-sf-surface px-4 py-6 sm:-mx-6 sm:px-6">
       <div className="mx-auto max-w-3xl">
-        <nav className="mb-3 text-xs text-slate-500">
+        <nav className="mb-3 text-xs text-sf-muted">
           <Link to="/store/$slug" params={{ slug }} className="hover:text-sf-accent">
             {storeName || "Home"}
           </Link>
           <span className="px-1.5">/</span>
-          <span className="text-slate-700">{title}</span>
+          <span className="text-sf-text">{title}</span>
         </nav>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
-          <header className="mb-5 border-b border-slate-100 pb-4">
-            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">{title}</h1>
+        <div className="rounded-2xl border border-sf-line bg-sf-card p-5 shadow-sm sm:p-8">
+          <header className="mb-5 border-b border-sf-line pb-4">
+            <h1 className="text-2xl font-bold text-sf-ink sm:text-3xl">{title}</h1>
             {updatedAt && (
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-sf-muted">
                 Last updated: {new Date(updatedAt).toLocaleDateString()}
               </p>
             )}
@@ -52,7 +52,7 @@ export function StorePageShell({
           <Link
             to="/store/$slug"
             params={{ slug }}
-            className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+            className="inline-flex items-center gap-2 rounded-full bg-sf-ink px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sf-accent-hover"
           >
             <ArrowLeft className="h-4 w-4" /> Back to store
           </Link>
@@ -79,14 +79,14 @@ export function StorePageBody({
   }
   return (
     <div className="space-y-5">
-      <p className="text-sm text-slate-600">
-        We are still preparing the <span className="font-semibold text-slate-900">{title}</span>{" "}
+      <p className="text-sm text-sf-muted">
+        We are still preparing the <span className="font-semibold text-sf-ink">{title}</span>{" "}
         content for {store?.name || "this store"}. In the meantime, our team is happy to answer any
         question directly.
       </p>
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <h2 className="text-sm font-bold text-slate-900">Contact us</h2>
-        <ul className="mt-3 space-y-2 text-sm text-slate-600">
+      <div className="rounded-xl border border-sf-line bg-sf-surface p-4">
+        <h2 className="text-sm font-bold text-sf-ink">Contact us</h2>
+        <ul className="mt-3 space-y-2 text-sm text-sf-muted">
           {store?.phone && (
             <li className="flex items-center gap-2">
               <Phone className="h-4 w-4 text-sf-accent" />

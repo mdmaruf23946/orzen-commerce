@@ -97,18 +97,18 @@ function ShopPage() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sf-muted" />
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search products"
-            className="bg-white pl-9"
+            className="bg-sf-card pl-9"
           />
         </div>
         <select
           value={cat}
           onChange={(e) => setCat(e.target.value)}
-          className="h-10 rounded-md border border-input bg-white px-3 text-sm"
+          className="h-10 rounded-md border border-input bg-sf-card px-3 text-sm"
           aria-label="Filter by category"
         >
           <option value="all">All categories</option>
@@ -121,7 +121,7 @@ function ShopPage() {
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value as Sort)}
-          className="h-10 rounded-md border border-input bg-white px-3 text-sm"
+          className="h-10 rounded-md border border-input bg-sf-card px-3 text-sm"
           aria-label="Sort products"
         >
           <option value="newest">Newest</option>
@@ -132,9 +132,9 @@ function ShopPage() {
       </div>
 
       {list.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-neutral-200 bg-white p-10 text-center">
-          <SearchX className="h-8 w-8 text-neutral-400" />
-          <p className="text-sm font-semibold text-neutral-800">No products found</p>
+        <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-sf-line bg-sf-card p-10 text-center">
+          <SearchX className="h-8 w-8 text-sf-muted" />
+          <p className="text-sm font-semibold text-sf-ink">No products found</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">

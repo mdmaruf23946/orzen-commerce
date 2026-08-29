@@ -115,7 +115,7 @@ function AccountPage() {
   if (!customer || !token) {
     return (
       <AccountShell>
-        <div className="py-10 text-center text-sm text-neutral-500">{t("common.loading")}</div>
+        <div className="py-10 text-center text-sm text-sf-muted">{t("common.loading")}</div>
       </AccountShell>
     );
   }
@@ -136,11 +136,11 @@ function AccountPage() {
           <button
             type="button"
             onClick={() => setTab("overview")}
-            className="text-xs font-medium text-neutral-500 hover:text-neutral-900"
+            className="text-xs font-medium text-sf-muted hover:text-sf-ink"
           >
             {t("account.backToAccount")}
           </button>
-          <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:p-6">
+          <div className="rounded-2xl border border-black/5 bg-sf-card p-4 shadow-sm sm:p-6">
             {tab === "profile" && (
               <ProfileTab slug={slug} token={token} customer={customer} onSaved={refresh} />
             )}
@@ -215,7 +215,7 @@ function Overview({
 
         <div className="relative">
           <div className="flex items-center gap-4">
-            <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-white/20 text-lg font-extrabold text-white shadow-inner ring-2 ring-white/40 backdrop-blur-md">
+            <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-sf-card/20 text-lg font-extrabold text-white shadow-inner ring-2 ring-white/40 backdrop-blur-md">
               {initials || "U"}
             </div>
             <div className="min-w-0 flex-1">
@@ -237,7 +237,7 @@ function Overview({
                   </span>
                 )}
               </div>
-              <span className="mt-2 inline-flex rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white ring-1 ring-white/30 backdrop-blur-md">
+              <span className="mt-2 inline-flex rounded-full bg-sf-card/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white ring-1 ring-white/30 backdrop-blur-md">
                 {t("account.member")}
               </span>
             </div>
@@ -259,14 +259,14 @@ function Overview({
             key={a.id}
             type="button"
             onClick={() => onNavigate(a.id)}
-            className="group flex flex-col items-start gap-2 rounded-2xl border border-black/5 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-sf-accent/40 hover:shadow-md"
+            className="group flex flex-col items-start gap-2 rounded-2xl border border-black/5 bg-sf-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-sf-accent/40 hover:shadow-md"
           >
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-sf-accent-soft text-sf-accent">
               <a.icon className="h-4.5 w-4.5" />
             </span>
             <div>
-              <div className="text-sm font-semibold text-neutral-900">{a.label}</div>
-              <div className="text-[11px] text-neutral-500">{a.hint}</div>
+              <div className="text-sm font-semibold text-sf-ink">{a.label}</div>
+              <div className="text-[11px] text-sf-muted">{a.hint}</div>
             </div>
           </button>
         ))}
@@ -274,7 +274,7 @@ function Overview({
 
 
       {/* Settings list */}
-      <div className="overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-black/5 bg-sf-card shadow-sm">
         <SettingsRow
           icon={User}
           label={t("account.personalInfo")}
@@ -293,11 +293,11 @@ function Overview({
         <Link
           to="/store/$slug/cart"
           params={{ slug }}
-          className="flex items-center gap-3 border-t border-neutral-100 px-4 py-3.5 text-sm hover:bg-neutral-50"
+          className="flex items-center gap-3 border-t border-sf-line px-4 py-3.5 text-sm hover:bg-sf-accent-soft"
         >
           <Package className="h-4 w-4 text-sf-accent" />
-          <span className="flex-1 text-neutral-800">{t("account.myCart")}</span>
-          <ChevronRight className="h-4 w-4 text-neutral-400" />
+          <span className="flex-1 text-sf-ink">{t("account.myCart")}</span>
+          <ChevronRight className="h-4 w-4 text-sf-muted" />
         </Link>
       </div>
 
@@ -325,11 +325,11 @@ function SettingsRow({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-3 border-b border-neutral-100 px-4 py-3.5 text-left text-sm last:border-b-0 hover:bg-neutral-50"
+      className="flex w-full items-center gap-3 border-b border-sf-line px-4 py-3.5 text-left text-sm last:border-b-0 hover:bg-sf-accent-soft"
     >
       <Icon className="h-4 w-4 text-sf-accent" />
-      <span className="flex-1 text-neutral-800">{label}</span>
-      <ChevronRight className="h-4 w-4 text-neutral-400" />
+      <span className="flex-1 text-sf-ink">{label}</span>
+      <ChevronRight className="h-4 w-4 text-sf-muted" />
     </button>
   );
 }
@@ -399,7 +399,7 @@ function OrdersTab({ slug, token }: { slug: string; token: string }) {
   const rows = (data ?? []) as any[];
   if (rows.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-neutral-200 p-8 text-center text-sm text-neutral-500">
+      <div className="rounded-xl border border-dashed border-sf-line p-8 text-center text-sm text-sf-muted">
         {t("account.noOrders")}
       </div>
     );
@@ -412,15 +412,15 @@ function OrdersTab({ slug, token }: { slug: string; token: string }) {
             <Link
               to="/store/$slug/order/$orderId"
               params={{ slug, orderId: o.id }}
-              className="text-sm font-semibold text-neutral-900 hover:underline"
+              className="text-sm font-semibold text-sf-ink hover:underline"
             >
               {o.invoice_no ?? o.id.slice(0, 8)}
             </Link>
-            <div className="mt-0.5 text-xs text-neutral-500">
+            <div className="mt-0.5 text-xs text-sf-muted">
               {new Date(o.created_at).toLocaleDateString()} · {o.status}
             </div>
           </div>
-          <div className="text-sm font-bold text-neutral-900">৳{Number(o.subtotal).toFixed(0)}</div>
+          <div className="text-sm font-bold text-sf-ink">৳{Number(o.subtotal).toFixed(0)}</div>
         </li>
       ))}
     </ul>
@@ -493,10 +493,10 @@ function AddressesTab({ slug, token }: { slug: string; token: string }) {
     <div className="space-y-4">
       <ul className="space-y-2">
         {rows.map((a) => (
-          <li key={a.id} className="rounded-xl border border-neutral-200 p-3 text-sm">
+          <li key={a.id} className="rounded-xl border border-sf-line p-3 text-sm">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <div className="font-semibold text-neutral-900">
+                <div className="font-semibold text-sf-ink">
                   {a.label ?? t("account.addressPlaceholder")}{" "}
                   {a.is_default && (
                     <span className="ml-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
@@ -504,7 +504,7 @@ function AddressesTab({ slug, token }: { slug: string; token: string }) {
                     </span>
                   )}
                 </div>
-                <div className="mt-0.5 text-neutral-600">
+                <div className="mt-0.5 text-sf-muted">
                   {a.address}
                   {a.area ? `, ${a.area}` : ""}
                 </div>
@@ -523,13 +523,13 @@ function AddressesTab({ slug, token }: { slug: string; token: string }) {
           </li>
         ))}
         {rows.length === 0 && (
-          <li className="rounded-xl border border-dashed border-neutral-200 p-6 text-center text-sm text-neutral-500">
+          <li className="rounded-xl border border-dashed border-sf-line p-6 text-center text-sm text-sf-muted">
             {t("account.noAddressesSaved")}
           </li>
         )}
       </ul>
-      <div className="space-y-2 rounded-xl border border-neutral-200 p-3">
-        <div className="text-xs font-semibold uppercase text-neutral-500">{t("account.addAddress")}</div>
+      <div className="space-y-2 rounded-xl border border-sf-line p-3">
+        <div className="text-xs font-semibold uppercase text-sf-muted">{t("account.addAddress")}</div>
         <Input placeholder={t("account.addressLabelPlaceholder")} value={label} onChange={(e) => setLabel(e.target.value)} />
         <Textarea placeholder={t("account.addressPlaceholder")} value={address} onChange={(e) => setAddress(e.target.value)} />
         <Input placeholder={t("account.areaOptional")} value={area} onChange={(e) => setArea(e.target.value)} />
@@ -556,7 +556,7 @@ function WishlistTab({ slug }: { slug: string }) {
 
   if (items.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-neutral-200 p-8 text-center text-sm text-neutral-500">
+      <div className="rounded-xl border border-dashed border-sf-line p-8 text-center text-sm text-sf-muted">
         {t("account.wishlistEmpty")}
       </div>
     );
@@ -569,16 +569,16 @@ function WishlistTab({ slug }: { slug: string }) {
           <Link
             to="/store/$slug/product/$productId"
             params={{ slug, productId: i.productId }}
-            className="block overflow-hidden rounded-xl border border-neutral-200 bg-white"
+            className="block overflow-hidden rounded-xl border border-sf-line bg-sf-card"
           >
-            <div className="aspect-square bg-neutral-100">
+            <div className="aspect-square bg-sf-surface">
               {i.image ? (
                 <img src={i.image} alt="" className="h-full w-full object-cover" loading="lazy" />
               ) : null}
             </div>
             <div className="p-2">
-              <div className="line-clamp-2 text-xs font-semibold text-neutral-900">{i.name}</div>
-              <div className="mt-1 text-sm font-bold text-neutral-900">৳{i.price.toFixed(0)}</div>
+              <div className="line-clamp-2 text-xs font-semibold text-sf-ink">{i.name}</div>
+              <div className="mt-1 text-sm font-bold text-sf-ink">৳{i.price.toFixed(0)}</div>
             </div>
           </Link>
         </li>

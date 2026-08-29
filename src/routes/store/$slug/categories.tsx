@@ -108,7 +108,7 @@ function CategoriesPage() {
                 <button
                   type="button"
                   onClick={() => (hasSubs ? setOpenId(open ? null : c.id) : goMain(c.id))}
-                  className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-sf-line bg-white p-4 text-center shadow-sm transition-all hover:shadow-md"
+                  className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-sf-line bg-sf-card p-4 text-center shadow-sm transition-all hover:shadow-md"
                 >
                   <span className="grid h-16 w-16 place-items-center">
                     {PresetIcon ? (
@@ -138,7 +138,7 @@ function CategoriesPage() {
                 </button>
 
                 {hasSubs && open && (
-                  <div className="flex flex-wrap gap-1.5 rounded-2xl border border-sf-line bg-white p-2">
+                  <div className="flex flex-wrap gap-1.5 rounded-2xl border border-sf-line bg-sf-card p-2">
                     <button
                       type="button"
                       onClick={() => goMain(c.id)}

@@ -246,13 +246,13 @@ function HomeContent() {
 
         {filtered.length === 0 ? (
           isFiltering ? (
-            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-neutral-200 bg-white p-10 text-center">
-              <SearchX className="h-8 w-8 text-neutral-400" />
-              <p className="text-sm font-semibold text-neutral-800">{t("home.noProductsFound")}</p>
-              <p className="text-xs text-neutral-500">{t("home.tryAnotherKeyword")}</p>
+            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-sf-line bg-sf-card p-10 text-center">
+              <SearchX className="h-8 w-8 text-sf-muted" />
+              <p className="text-sm font-semibold text-sf-ink">{t("home.noProductsFound")}</p>
+              <p className="text-xs text-sf-muted">{t("home.tryAnotherKeyword")}</p>
             </div>
           ) : (
-            <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-10 text-center text-sm text-neutral-500">
+            <div className="rounded-2xl border border-dashed border-sf-line bg-sf-card p-10 text-center text-sm text-sf-muted">
               {t("home.noProductsYet")}
             </div>
           )
@@ -334,7 +334,7 @@ function Section({
 /** Section shell for the featured category cards. */
 function FeaturedCategories({ children }: { children: React.ReactNode }) {
   return (
-    <section id="categories" className="scroll-mt-32 rounded-xl border border-sf-line bg-white px-1 py-2 sm:rounded-3xl sm:p-4">
+    <section id="categories" className="scroll-mt-32 rounded-xl border border-sf-line bg-sf-card px-1 py-2 sm:rounded-3xl sm:p-4">
       {children}
     </section>
   );
@@ -444,7 +444,7 @@ function ProductCarousel({
         type="button"
         aria-label={t("home.prev")}
         onClick={() => scrollBy(-1)}
-        className="absolute -left-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-white text-sf-ink shadow-md transition-colors hover:bg-sf-accent hover:text-white lg:grid"
+        className="absolute -left-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-sf-card text-sf-ink shadow-md transition-colors hover:bg-sf-accent hover:text-white lg:grid"
       >
         <ChevronRight className="h-4 w-4 rotate-180" />
       </button>
@@ -452,7 +452,7 @@ function ProductCarousel({
         type="button"
         aria-label={t("home.next")}
         onClick={() => scrollBy(1)}
-        className="absolute -right-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-white text-sf-ink shadow-md transition-colors hover:bg-sf-accent hover:text-white lg:grid"
+        className="absolute -right-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-sf-card text-sf-ink shadow-md transition-colors hover:bg-sf-accent hover:text-white lg:grid"
       >
         <ChevronRight className="h-4 w-4" />
       </button>
@@ -510,7 +510,7 @@ function SubPill({
       className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors duration-200 ${
         active
           ? "bg-sf-accent text-white"
-          : "bg-sf-surface text-sf-ink hover:bg-neutral-200"
+          : "bg-sf-surface text-sf-ink hover:bg-sf-accent-soft"
       }`}
     >
       {children}
@@ -600,7 +600,7 @@ function CategoryTile({
         style={{ boxShadow: `inset 0 0 0 2px ${ring}` }}
       >
         {PresetIcon ? (
-          <span className={`grid h-full w-full place-items-center text-neutral-700 ${iconStyle === "colored" ? "" : "p-1"}`}>
+          <span className={`grid h-full w-full place-items-center text-sf-text ${iconStyle === "colored" ? "" : "p-1"}`}>
             <CategoryIconCluster iconName={iconName} iconStyle={iconStyle ?? "outline"} />
           </span>
         ) : image ? (
@@ -612,7 +612,7 @@ function CategoryTile({
           />
         ) : (
           <span
-            className="grid h-full w-full place-items-center text-lg font-bold text-neutral-400"
+            className="grid h-full w-full place-items-center text-lg font-bold text-sf-muted"
             aria-hidden
           >
             {label.charAt(0).toUpperCase()}
