@@ -1,13 +1,14 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { UserCog, Loader2 } from "lucide-react";
+import { Store } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { employeeSessionInfo } from "@/lib/employees.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BrandMark } from "@/lib/platform-branding";
 
 export const Route = createFileRoute("/employee-login")({
   component: EmployeeLogin,
@@ -28,11 +29,11 @@ function EmployeeLogin() {
   const session = useServerFn(employeeSessionInfo);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
+    setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) throw new Error(error.message);
@@ -50,46 +51,66 @@ function EmployeeLogin() {
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
-      setBusy(false);
+      setLoading(false);
     }
   }
 
-
   return (
-    <main className="grid min-h-screen place-items-center bg-muted/40 px-4">
-      <div className="w-full max-w-sm rounded-2xl border bg-card p-6 shadow-sm">
-        <div className="mb-5 flex items-center gap-3">
-          <span className="grid h-11 w-11 place-items-center rounded-xl bg-primary/10 text-primary">
-            <UserCog className="h-5 w-5" />
-          </span>
-          <div>
-            <h1 className="text-lg font-semibold">Employee Login</h1>
-            <p className="text-xs text-muted-foreground">Sign in to your store's Merchant Panel</p>
-          </div>
-        </div>
+    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4 py-8">
+      <div className="w-full max-w-sm rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
+        <Link to="/" className="flex items-center justify-center">
+          <BrandMark
+            placement="auth_login"
+            fallbackText="ORZEN"
+            className="text-sm font-bold tracking-tight"
+          />
+        </Link>
+        <h1 className="mt-3 text-center text-lg font-semibold sm:text-xl">Employee login</h1>
+        <p className="mt-1 text-center text-xs text-muted-foreground">
+          Sign in to your store's Merchant Panel
+        </p>
 
-        <form onSubmit={submit} className="space-y-3">
-          <div>
+        <form className="mt-5 space-y-3" onSubmit={submit}>
+          <div className="space-y-1.5">
             <Label htmlFor="emp-email">Work email</Label>
-            <Input id="emp-email" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <Input
+              id="emp-email"
+              type="email"
+              autoComplete="username"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
-          <div>
+          <div className="space-y-1.5">
             <Label htmlFor="emp-pass">Password</Label>
-            <Input id="emp-pass" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <Input
+              id="emp-pass"
+              type="password"
+              autoComplete="current-password"
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
-          <Button type="submit" className="w-full" disabled={busy}>
-            {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Sign in
+          <Button type="submit" className="mt-1 h-10 w-full" disabled={loading}>
+            {loading ? "Please wait…" : "Sign in"}
           </Button>
         </form>
 
-        <p className="mt-4 text-center text-xs text-muted-foreground">
-          Store owner?{" "}
-          <Link to="/auth" className="font-medium text-primary hover:underline">
+        <div className="my-4 flex items-center gap-3">
+          <span className="h-px flex-1 bg-border" />
+          <span className="text-[11px] uppercase tracking-wide text-muted-foreground">or</span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
+        <Button asChild variant="outline" className="h-10 w-full">
+          <Link to="/auth">
+            <Store className="mr-2 h-4 w-4" />
             Merchant login
           </Link>
-        </p>
+        </Button>
       </div>
-    </main>
+    </div>
   );
 }
