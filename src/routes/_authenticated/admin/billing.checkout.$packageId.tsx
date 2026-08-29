@@ -12,6 +12,7 @@ import {
   submitManualPayment,
   getBillingSettings,
   computeCycleTotal,
+  activateFreePlan,
   type CycleKey,
 } from "@/lib/billing.functions";
 import { Button } from "@/components/ui/button";
