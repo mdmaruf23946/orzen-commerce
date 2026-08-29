@@ -236,7 +236,7 @@ function HomeContent() {
       <section id="all-products" className="scroll-mt-32 space-y-4">
         <div className="flex items-center gap-2">
           <Grid3x3 className="h-4 w-4 text-sf-accent" />
-          <h2 className="text-lg font-bold tracking-tight text-sf-ink sm:text-xl">
+          <h2 className="text-lg font-bold tracking-tight text-sf-primary sm:text-xl">
             {isFiltering ? t("home.results") : t("home.allProducts")}
           </h2>
           <span className="ml-2 rounded-full bg-sf-surface px-2 py-0.5 text-[11px] font-medium text-sf-muted">
@@ -246,13 +246,13 @@ function HomeContent() {
 
         {filtered.length === 0 ? (
           isFiltering ? (
-            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-neutral-200 bg-white p-10 text-center">
-              <SearchX className="h-8 w-8 text-neutral-400" />
-              <p className="text-sm font-semibold text-neutral-800">{t("home.noProductsFound")}</p>
-              <p className="text-xs text-neutral-500">{t("home.tryAnotherKeyword")}</p>
+            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-sf-line bg-sf-card p-10 text-center">
+              <SearchX className="h-8 w-8 text-sf-muted" />
+              <p className="text-sm font-semibold text-sf-ink">{t("home.noProductsFound")}</p>
+              <p className="text-xs text-sf-muted">{t("home.tryAnotherKeyword")}</p>
             </div>
           ) : (
-            <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-10 text-center text-sm text-neutral-500">
+            <div className="rounded-2xl border border-dashed border-sf-line bg-sf-card p-10 text-center text-sm text-sf-muted">
               {t("home.noProductsYet")}
             </div>
           )
@@ -264,7 +264,7 @@ function HomeContent() {
                 <button
                   type="button"
                   onClick={() => setPageSize((n) => n + PAGE_SIZE)}
-                  className="inline-flex items-center gap-1 rounded-full bg-sf-ink px-4 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-sf-accent sm:text-sm"
+                  className="inline-flex items-center gap-1 rounded-full bg-sf-ink px-4 py-2 text-xs font-semibold text-sf-card shadow-sm transition-colors hover:bg-sf-accent sm:text-sm"
                 >
                   {t("home.loadMore")} <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
@@ -312,7 +312,7 @@ function Section({
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <span className="shrink-0">{icon}</span>
-          <h2 className="truncate text-lg font-bold tracking-tight text-sf-ink sm:text-xl">
+          <h2 className="truncate text-lg font-bold tracking-tight text-sf-primary sm:text-xl">
             {title}
           </h2>
         </div>
@@ -320,7 +320,7 @@ function Section({
           <button
             type="button"
             onClick={onViewAll}
-            className="flex shrink-0 items-center gap-0.5 rounded-full bg-sf-ink px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-sf-accent sm:text-xs"
+            className="flex shrink-0 items-center gap-0.5 rounded-full bg-sf-ink px-3 py-1.5 text-[11px] font-bold text-sf-card transition-colors hover:bg-sf-accent sm:text-xs"
           >
             {seeMoreLabel ?? t("home.viewAll")} <ChevronRight className="h-3.5 w-3.5" />
           </button>
@@ -334,7 +334,7 @@ function Section({
 /** Section shell for the featured category cards. */
 function FeaturedCategories({ children }: { children: React.ReactNode }) {
   return (
-    <section id="categories" className="scroll-mt-32 rounded-xl border border-sf-line bg-white px-1 py-2 sm:rounded-3xl sm:p-4">
+    <section id="categories" className="scroll-mt-32 rounded-xl border border-sf-line bg-sf-card px-1 py-2 sm:rounded-3xl sm:p-4">
       {children}
     </section>
   );
@@ -444,7 +444,7 @@ function ProductCarousel({
         type="button"
         aria-label={t("home.prev")}
         onClick={() => scrollBy(-1)}
-        className="absolute -left-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-white text-sf-ink shadow-md transition-colors hover:bg-sf-accent hover:text-white lg:grid"
+        className="absolute -left-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-sf-card text-sf-ink shadow-md transition-colors hover:bg-sf-accent hover:text-sf-on-accent lg:grid"
       >
         <ChevronRight className="h-4 w-4 rotate-180" />
       </button>
@@ -452,7 +452,7 @@ function ProductCarousel({
         type="button"
         aria-label={t("home.next")}
         onClick={() => scrollBy(1)}
-        className="absolute -right-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-white text-sf-ink shadow-md transition-colors hover:bg-sf-accent hover:text-white lg:grid"
+        className="absolute -right-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-sf-card text-sf-ink shadow-md transition-colors hover:bg-sf-accent hover:text-sf-on-accent lg:grid"
       >
         <ChevronRight className="h-4 w-4" />
       </button>
@@ -509,8 +509,8 @@ function SubPill({
       onClick={onClick}
       className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors duration-200 ${
         active
-          ? "bg-sf-accent text-white"
-          : "bg-sf-surface text-sf-ink hover:bg-neutral-200"
+          ? "bg-sf-accent text-sf-on-accent"
+          : "bg-sf-surface text-sf-ink hover:bg-sf-accent-soft"
       }`}
     >
       {children}
@@ -600,7 +600,7 @@ function CategoryTile({
         style={{ boxShadow: `inset 0 0 0 2px ${ring}` }}
       >
         {PresetIcon ? (
-          <span className={`grid h-full w-full place-items-center text-neutral-700 ${iconStyle === "colored" ? "" : "p-1"}`}>
+          <span className={`grid h-full w-full place-items-center text-sf-text ${iconStyle === "colored" ? "" : "p-1"}`}>
             <CategoryIconCluster iconName={iconName} iconStyle={iconStyle ?? "outline"} />
           </span>
         ) : image ? (
@@ -612,7 +612,7 @@ function CategoryTile({
           />
         ) : (
           <span
-            className="grid h-full w-full place-items-center text-lg font-bold text-neutral-400"
+            className="grid h-full w-full place-items-center text-lg font-bold text-sf-muted"
             aria-hidden
           >
             {label.charAt(0).toUpperCase()}

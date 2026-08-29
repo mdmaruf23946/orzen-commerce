@@ -39,7 +39,7 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-sf-line bg-white md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-sf-line bg-sf-card md:hidden"
       style={{
         transform: "translateZ(0)",
         paddingBottom: "env(safe-area-inset-bottom)",
@@ -109,7 +109,7 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
             <span className="relative">
               <Heart className="h-5 w-5 text-sf-accent" />
               {wish > 0 && (
-                <span className="absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-sf-accent px-1 text-[9px] font-bold text-white">
+                <span className="absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-sf-accent px-1 text-[9px] font-bold text-sf-on-accent">
                   {wish > 99 ? "99+" : wish}
                 </span>
               )}

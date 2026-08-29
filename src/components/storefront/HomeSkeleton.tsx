@@ -2,14 +2,14 @@
  * layout (banner, category tiles, product grids) so the page never collapses
  * to an empty body while data is being fetched. */
 function Box({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded-2xl bg-neutral-200/70 ${className}`} />;
+  return <div className={`animate-pulse rounded-2xl bg-sf-surface/70 ${className}`} />;
 }
 
 function ProductGridSkeleton({ count = 10 }: { count?: number }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="space-y-2 rounded-2xl border border-sf-line bg-white p-2">
+        <div key={i} className="space-y-2 rounded-2xl border border-sf-line bg-sf-card p-2">
           <Box className="aspect-square w-full" />
           <Box className="h-3 w-11/12 rounded-md" />
           <Box className="h-3 w-2/3 rounded-md" />
@@ -27,7 +27,7 @@ export function HomeSkeleton() {
       <Box className="aspect-[16/7] w-full rounded-3xl sm:aspect-[21/8]" />
 
       {/* Category tiles */}
-      <section className="rounded-xl border border-sf-line bg-white px-1 py-2 sm:rounded-3xl sm:p-4">
+      <section className="rounded-xl border border-sf-line bg-sf-card px-1 py-2 sm:rounded-3xl sm:p-4">
         <div className="flex flex-nowrap gap-2 sm:grid sm:grid-cols-6 sm:gap-4 md:grid-cols-8">
           {Array.from({ length: 8 }).map((_, i) => (
             <div
@@ -43,10 +43,10 @@ export function HomeSkeleton() {
 
       {/* Featured carousel */}
       <section className="sf-featured-panel overflow-hidden rounded-2xl p-2 shadow-lg sm:rounded-3xl sm:p-6">
-        <Box className="mx-auto mb-2 h-5 w-48 rounded-md bg-white/40" />
+        <Box className="mx-auto mb-2 h-5 w-48 rounded-md bg-sf-card/40" />
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="space-y-2 rounded-2xl bg-white/80 p-2">
+            <div key={i} className="space-y-2 rounded-2xl bg-sf-card/80 p-2">
               <Box className="aspect-square w-full" />
               <Box className="h-3 w-10/12 rounded-md" />
               <Box className="h-3 w-1/2 rounded-md" />

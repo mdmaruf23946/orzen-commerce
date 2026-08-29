@@ -101,15 +101,15 @@ export function MobileDrawer({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="left"
-        className="w-[86%] max-w-sm p-0 [&>button]:hidden"
+        className="w-[86%] max-w-sm border-sf-line bg-sf-card p-0 [&>button]:hidden"
       >
-        <div className="flex h-full flex-col bg-white">
+        <div className="flex h-full flex-col bg-sf-card">
           {/* Brand header — same logo as storefront header & footer */}
-          <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50 p-4">
+          <div className="flex items-center gap-3 border-b border-sf-line bg-sf-surface p-4">
             {logoUrl ? (
               <img src={logoUrl} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
             ) : (
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sf-accent text-sm font-bold text-white">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sf-accent text-sm font-bold text-sf-on-accent">
                 {storeName.charAt(0)}
               </div>
             )}
@@ -121,21 +121,21 @@ export function MobileDrawer({
                   className="h-7 w-auto max-w-[160px] object-contain"
                 />
               ) : (
-                <div className="truncate text-base font-bold text-slate-900">{storeName}</div>
+                <div className="truncate text-base font-bold text-sf-ink">{storeName}</div>
               )}
               {customer ? (
-                <div className="truncate text-xs text-slate-500">
+                <div className="truncate text-xs text-sf-muted">
                   {t("nav.greeting")}, {customer.full_name.split(" ")[0]}
                 </div>
               ) : (
-                <div className="text-xs text-slate-500">{t("nav.welcome")}</div>
+                <div className="text-xs text-sf-muted">{t("nav.welcome")}</div>
               )}
             </div>
             <button
               type="button"
               onClick={() => onOpenChange(false)}
               aria-label={t("common.close")}
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-slate-500 hover:bg-slate-200/70"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sf-muted hover:bg-sf-line"
             >
               <X className="h-4 w-4" />
             </button>
@@ -151,15 +151,15 @@ export function MobileDrawer({
               <button
                 type="button"
                 onClick={() => pickMain(null)}
-                className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-slate-100 ${
-                  activeMainId === null ? "bg-slate-100 font-semibold text-slate-900" : "text-slate-700"
+                className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-sf-accent-soft ${
+                  activeMainId === null ? "bg-sf-accent-soft font-semibold text-sf-ink" : "text-sf-text"
                 }`}
               >
                 <span className="flex items-center gap-2.5">
                   <LayoutGrid className="h-4 w-4 text-sf-accent" />
                   {t("nav.allProducts")}
                 </span>
-                <span className="text-[11px] font-medium text-slate-400">{totalProducts}</span>
+                <span className="text-[11px] font-medium text-sf-muted">{totalProducts}</span>
               </button>
               {mains.map((m) => {
                 const subs = subsByParent.get(m.id) ?? [];
@@ -171,12 +171,12 @@ export function MobileDrawer({
                       <button
                         type="button"
                         onClick={() => pickMain(m.id)}
-                        className={`flex flex-1 items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-slate-100 ${
-                          isActive ? "bg-slate-100 font-semibold text-slate-900" : "text-slate-700"
+                        className={`flex flex-1 items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-sf-accent-soft ${
+                          isActive ? "bg-sf-accent-soft font-semibold text-sf-ink" : "text-sf-text"
                         }`}
                       >
                         <span className="truncate">{m.name}</span>
-                        <span className="text-[11px] font-medium text-slate-400">
+                        <span className="text-[11px] font-medium text-sf-muted">
                           {productCounts.get(m.id) ?? 0}
                         </span>
                       </button>
@@ -186,7 +186,7 @@ export function MobileDrawer({
                           onClick={() => setOpenCat(expanded ? null : m.id)}
                           aria-expanded={expanded}
                           aria-label={expanded ? "Collapse" : "Expand"}
-                          className="ml-1 grid h-8 w-8 shrink-0 place-items-center rounded-full text-sf-accent hover:bg-slate-100"
+                          className="ml-1 grid h-8 w-8 shrink-0 place-items-center rounded-full text-sf-accent hover:bg-sf-accent-soft"
                         >
                           {expanded ? (
                             <ChevronDown className="h-4 w-4" />
@@ -197,16 +197,16 @@ export function MobileDrawer({
                       )}
                     </div>
                     {expanded && subs.length > 0 && (
-                      <div className="ml-6 mt-1 space-y-0.5 border-l border-slate-200 pl-2 animate-accordion-down">
+                      <div className="ml-6 mt-1 space-y-0.5 border-l border-sf-line pl-2 animate-accordion-down">
                         {subs.map((s) => (
                           <button
                             key={s.id}
                             type="button"
                             onClick={() => pickSub(m.id, s.id)}
-                            className={`block w-full rounded-lg px-3 py-1.5 text-left text-[13px] transition-colors hover:bg-slate-100 ${
+                            className={`block w-full rounded-lg px-3 py-1.5 text-left text-[13px] transition-colors hover:bg-sf-accent-soft ${
                               activeSubId === s.id
                                 ? "font-semibold text-sf-accent"
-                                : "text-slate-600"
+                                : "text-sf-muted"
                             }`}
                           >
                             {s.name}
@@ -248,9 +248,9 @@ export function MobileDrawer({
           </div>
 
           {/* Account footer */}
-          <div className="border-t border-slate-100 bg-slate-50 p-3">
+          <div className="border-t border-sf-line bg-sf-surface p-3">
             <div className="mb-2 flex items-center justify-between px-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-sf-muted">
                 {t("nav.language")}
               </span>
               <StoreLangSwitch />
@@ -281,7 +281,7 @@ export function MobileDrawer({
                 to="/store/$slug/auth/login"
                 params={{ slug }}
                 onClick={() => onOpenChange(false)}
-                className="flex items-center justify-center gap-2 rounded-xl bg-sf-accent px-3 py-2.5 text-sm font-semibold text-white shadow-sm"
+                className="flex items-center justify-center gap-2 rounded-xl bg-sf-accent px-3 py-2.5 text-sm font-semibold text-sf-on-accent shadow-sm"
               >
                 <LogIn className="h-4 w-4" />
                 {t("nav.signIn")}
@@ -296,7 +296,7 @@ export function MobileDrawer({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+    <div className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-sf-muted">
       {children}
     </div>
   );
@@ -323,7 +323,7 @@ function NavItem({
       params={params}
       search={search}
       onClick={onClick}
-      className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+      className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-sf-text transition-colors hover:bg-sf-accent-soft"
     >
       <Icon className="h-4 w-4 shrink-0 text-sf-accent" />
       <span className="truncate">{label}</span>
@@ -350,7 +350,7 @@ function NavExtLink({
       onClick={onClick}
       target={external ? "_blank" : undefined}
       rel={external ? "noopener noreferrer" : undefined}
-      className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+      className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-sf-text transition-colors hover:bg-sf-accent-soft"
     >
       <Icon className="h-4 w-4 shrink-0 text-sf-accent" />
       <span className="truncate">{label}</span>

@@ -383,7 +383,7 @@ function StoreHeader({
         style={{ transform: "translateZ(0)" }}
       >
       <header
-        className={`border-b border-black/5 md:backdrop-blur-md`}
+        className={`border-b border-sf-line md:backdrop-blur-md`}
 
         style={{
           backgroundColor: theme.header.transparent
@@ -399,7 +399,7 @@ function StoreHeader({
             <button
               type="button"
               onClick={() => setMenuOpen(true)}
-              className="grid h-9 w-9 place-items-center rounded-full text-neutral-700 hover:bg-neutral-100"
+              className="grid h-9 w-9 place-items-center rounded-full text-sf-text hover:bg-sf-accent-soft"
               aria-label={t("nav.openMenu")}
             >
               <Menu className="h-5 w-5" />
@@ -433,7 +433,7 @@ function StoreHeader({
                   loading="eager"
                 />
               ) : (
-                <span className="truncate text-sm font-semibold text-neutral-900">{name}</span>
+                <span className="truncate text-sm font-semibold text-sf-ink">{name}</span>
               )}
             </Link>
 
@@ -441,10 +441,10 @@ function StoreHeader({
             <Link
               to="/store/$slug/cart"
               params={{ slug }}
-              className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full hover:bg-neutral-100"
+              className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full hover:bg-sf-accent-soft"
               aria-label={t("nav.cart")}
             >
-              <ShoppingCart className="h-5 w-5 text-neutral-700" />
+              <ShoppingCart className="h-5 w-5 text-sf-text" />
               {count > 0 && (
                 <span
                   className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[9px] font-bold text-white"
@@ -460,10 +460,10 @@ function StoreHeader({
             <Link
               to={customer ? "/store/$slug/account" : "/store/$slug/auth/login"}
               params={{ slug }}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full hover:bg-neutral-100"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full hover:bg-sf-accent-soft"
               aria-label={customer ? t("nav.account") : t("nav.signIn")}
             >
-              <User className="h-5 w-5 text-neutral-700" />
+              <User className="h-5 w-5 text-sf-text" />
             </Link>
             )}
 
@@ -513,7 +513,7 @@ function StoreHeader({
             <Link
               to="/store/$slug/cart"
               params={{ slug }}
-              className={`relative grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-neutral-100 ${
+              className={`relative grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-sf-accent-soft ${
                 theme.header.cart_position === "left" ? "order-first" : ""
               }`}
               aria-label={t("nav.cart")}
@@ -536,7 +536,7 @@ function StoreHeader({
               <Link
                 to="/store/$slug/account"
                 params={{ slug }}
-                className="flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-medium hover:bg-neutral-100"
+                className="flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-medium hover:bg-sf-accent-soft"
               >
                 <User className="h-4 w-4" />
                 <span className="max-w-[8rem] truncate">{customer.full_name.split(" ")[0]}</span>
@@ -545,7 +545,7 @@ function StoreHeader({
               <Link
                 to="/store/$slug/auth/login"
                 params={{ slug }}
-                className="flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-medium hover:bg-neutral-100"
+                className="flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-medium hover:bg-sf-accent-soft"
               >
                 <User className="h-4 w-4" /> {t("nav.signIn")}
               </Link>
@@ -558,7 +558,7 @@ function StoreHeader({
 
       {/* Mobile-only search band below header */}
       {showSearch && theme.header.search && theme.header.search_position !== "hidden" && (
-        <div className="border-b border-black/5 bg-white px-3 py-1 md:hidden">
+        <div className="border-b border-sf-line bg-sf-header px-3 py-1 md:hidden">
           <SearchBar />
         </div>
       )}
@@ -635,18 +635,18 @@ function HeaderCategoryBar({
   const itemBase =
     "flex items-center gap-0.5 px-3 py-1.5 text-[13px] font-medium transition-colors";
   const inactiveItem =
-    "text-gray-600 hover:text-orange-600 hover:bg-white/60";
+    "text-sf-muted hover:text-sf-accent hover:bg-sf-card/70";
   const activeItem =
-    "bg-white text-orange-600 shadow-sm";
+    "bg-sf-card text-sf-accent shadow-sm";
 
   return (
-    <nav className="hidden md:block border-b border-black/5">
+    <nav className="hidden md:block border-b border-sf-line bg-sf-header">
       <div
         className="mx-auto px-3 py-2 sm:px-6"
         style={{ maxWidth: "var(--store-container, 64rem)" }}
       >
         {/* একই Unified Structure — সব Tax ভিত্তিক Category একই container-এ */}
-        <div className="flex flex-wrap items-center gap-1 rounded-2xl border border-orange-100/40 bg-orange-50/70 p-1.5 backdrop-blur">
+        <div className="flex flex-wrap items-center gap-1 rounded-2xl border border-sf-line bg-sf-accent-soft p-1.5 backdrop-blur">
           <button
             type="button"
             onClick={() => selectMain(null, "header")}
@@ -684,7 +684,7 @@ function HeaderCategoryBar({
                 </button>
                 {hasSubs && isOpen && (
                   <div
-                    className="absolute left-0 top-full z-50 mt-1.5 min-w-[12rem] rounded-xl border border-neutral-100 bg-white p-1.5 shadow-lg"
+                    className="absolute left-0 top-full z-50 mt-1.5 min-w-[12rem] rounded-xl border border-sf-line bg-sf-card p-1.5 shadow-lg"
                     onMouseEnter={() => open(c.id)}
                     onMouseLeave={closeSoon}
                   >
@@ -700,8 +700,8 @@ function HeaderCategoryBar({
                           }}
                           className={`w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                             subActive
-                              ? "bg-orange-50 font-medium text-orange-700"
-                              : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900"
+                              ? "bg-sf-accent-soft font-medium text-sf-accent"
+                              : "text-sf-text hover:bg-sf-accent-soft hover:text-sf-ink"
                           }`}
                         >
                           {s.name}

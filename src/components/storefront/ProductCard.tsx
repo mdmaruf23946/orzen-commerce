@@ -74,7 +74,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
   }
 
   return (
-    <div className="theme-card group flex h-full flex-col overflow-hidden rounded-xl border border-sf-line bg-white shadow-[0_1px_2px_rgba(17,17,17,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_-16px_rgba(17,17,17,0.3)] sm:rounded-2xl">
+    <div className="theme-card group flex h-full flex-col overflow-hidden rounded-xl border border-sf-line bg-sf-card shadow-[0_1px_2px_rgba(17,17,17,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_-16px_rgba(17,17,17,0.3)] sm:rounded-2xl">
       <Link
         to="/store/$slug/product/$productId"
         params={{ slug, productId: p.id }}
@@ -94,12 +94,12 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
           </div>
         )}
         {hasDiscount && (
-          <span className="theme-badge absolute left-2 top-2 rounded-md bg-sf-accent px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+          <span className="theme-badge absolute left-2 top-2 rounded-md bg-sf-highlight px-1.5 py-0.5 text-[10px] font-bold text-sf-on-highlight shadow-sm">
             −{discountPct}%
           </span>
         )}
         {outOfStock && (
-          <span className="theme-badge absolute right-2 top-2 rounded-md bg-sf-ink/85 px-1.5 py-0.5 text-[10px] font-bold text-white">
+          <span className="theme-badge absolute right-2 top-2 rounded-md bg-sf-error px-1.5 py-0.5 text-[10px] font-bold text-white">
             {t("home.soldOut")}
           </span>
         )}
@@ -108,7 +108,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
           onClick={handleWish}
           aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
           aria-pressed={wished}
-          className={`absolute ${outOfStock ? "right-2 top-9" : "right-2 top-2"} grid h-7 w-7 place-items-center rounded-full bg-white/90 shadow-sm backdrop-blur transition-colors hover:bg-white sm:h-8 sm:w-8`}
+          className={`absolute ${outOfStock ? "right-2 top-9" : "right-2 top-2"} grid h-7 w-7 place-items-center rounded-full bg-sf-card/90 shadow-sm backdrop-blur transition-colors hover:bg-sf-card sm:h-8 sm:w-8`}
         >
           <Heart
             className={`h-3.5 w-3.5 transition-colors sm:h-4 sm:w-4 ${wished ? "fill-sf-accent text-sf-accent" : "text-sf-muted"}`}
@@ -145,7 +145,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
             type="button"
             onClick={handleAdd}
             disabled={outOfStock}
-            className="theme-btn flex h-8 min-w-0 items-center justify-center gap-1 rounded-lg bg-sf-accent px-1.5 text-[11px] font-bold text-white transition-colors hover:bg-sf-accent-hover disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:gap-1.5 sm:px-2 sm:text-[12px]"
+            className="theme-btn flex h-8 min-w-0 items-center justify-center gap-1 rounded-lg bg-sf-accent px-1.5 text-[11px] font-bold text-sf-on-accent transition-colors hover:bg-sf-accent-hover disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:gap-1.5 sm:px-2 sm:text-[12px]"
           >
             <ShoppingCart className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />
             <span className="hidden truncate sm:inline">{t("pdp.addToCart")}</span>
@@ -155,7 +155,7 @@ export function ProductCard({ slug, p }: { slug: string; p: Product }) {
             type="button"
             onClick={handleBuy}
             disabled={outOfStock}
-            className="h-8 shrink-0 whitespace-nowrap rounded-lg border border-sf-ink/15 bg-white px-2 text-[11px] font-semibold text-sf-ink transition-colors hover:bg-sf-surface disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:px-2.5 sm:text-[12px]"
+            className="h-8 shrink-0 whitespace-nowrap rounded-lg border border-sf-ink/15 bg-sf-card px-2 text-[11px] font-semibold text-sf-ink transition-colors hover:bg-sf-surface disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:px-2.5 sm:text-[12px]"
           >
             {t("pdp.buyNow")}
           </button>

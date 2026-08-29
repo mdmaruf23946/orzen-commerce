@@ -45,22 +45,22 @@ function ContactForm({ email, storeName }: { email: string | null; storeName: st
   };
 
   return (
-    <form onSubmit={submit} className="mt-8 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-      <h2 className="text-sm font-bold text-slate-900">
+    <form onSubmit={submit} className="mt-8 space-y-3 rounded-xl border border-sf-line bg-sf-surface p-4">
+      <h2 className="text-sm font-bold text-sf-ink">
         Send {storeName || "us"} a message
       </h2>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" required className="bg-white" />
-        <Input value={from} onChange={(e) => setFrom(e.target.value)} type="email" placeholder="Your email" required className="bg-white" />
+        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" required className="bg-sf-card" />
+        <Input value={from} onChange={(e) => setFrom(e.target.value)} type="email" placeholder="Your email" required className="bg-sf-card" />
       </div>
-      <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone (optional)" className="bg-white" />
+      <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone (optional)" className="bg-sf-card" />
       <Textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         placeholder="How can we help?"
         rows={5}
         required
-        className="bg-white"
+        className="bg-sf-card"
       />
       <Button type="submit" className="bg-sf-accent text-white hover:bg-sf-accent/90">
         <Send className="mr-2 h-4 w-4" /> Send message

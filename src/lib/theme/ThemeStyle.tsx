@@ -3,9 +3,10 @@
 // radius, shadow, spacing or card tokens. This component scopes a single style
 // block to the storefront root and loads the selected Google fonts.
 import { useEffect } from "react";
-import type { ThemeDefinition } from "./definition";
+import { themeCssVars, type ThemeDefinition } from "./definition";
 
 export const THEME_SCOPE = "orzen-theme";
+
 
 const STACK = `ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif`;
 
@@ -48,8 +49,17 @@ export function ThemeStyle({ theme }: { theme: ThemeDefinition }) {
   const t = theme;
   useThemeFonts([t.typography.heading_font, t.typography.body_font, t.typography.button_font]);
 
+  // The drawer/dialog/dropdown layers render in a portal on <body>, outside the
+  // scoped storefront wrapper. Publishing the same variables on :root makes the
+  // theme reach those layers too (this component only mounts on storefront pages).
+  const rootVars = Object.entries(themeCssVars(t))
+    .map(([k, v]) => `${k}:${v};`)
+    .join("");
+
   const css = `
+:root{${rootVars}}
 .${THEME_SCOPE}{
+
   background:var(--store-bg);
   font-family:var(--store-body-font), ${STACK};
   font-size:var(--store-base-size);

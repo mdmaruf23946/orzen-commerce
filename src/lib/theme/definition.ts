@@ -638,9 +638,26 @@ const RATIO_CSS: Record<string, string> = {
   landscape: "4 / 3",
 };
 
+/** Relative luminance of a hex colour (0 = black, 1 = white). */
+function luminance(hex: string): number {
+  const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return 1;
+  let h = m[1];
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+  const f = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+
+/** Readable foreground for a background colour. */
+function on(bg: string, light = "#ffffff", dark = "#111111"): string {
+  return luminance(bg) > 0.55 ? dark : light;
+}
+
 /** CSS custom properties for a resolved theme. */
 export function themeCssVars(t: ThemeDefinition): Record<string, string> {
   return {
+
     "--primary": t.colors.primary,
     "--store-header-bg": t.colors.header,
     "--store-title-bar-bg": t.colors.secondary,
@@ -663,12 +680,36 @@ export function themeCssVars(t: ThemeDefinition): Record<string, string> {
     // colour of the Store Panel, not just the legacy --store-* ones.
     "--sf-accent": t.colors.button,
     "--sf-accent-hover": t.buttons.hover_color,
-    "--sf-accent-soft": `color-mix(in srgb, ${t.colors.button} 12%, #ffffff)`,
+    "--sf-accent-soft": `color-mix(in srgb, ${t.colors.button} 12%, ${t.colors.card})`,
+    "--sf-primary": t.colors.primary,
+    "--sf-secondary": t.colors.secondary,
+    "--sf-highlight": t.colors.accent,
+    "--sf-highlight-soft": `color-mix(in srgb, ${t.colors.accent} 14%, ${t.colors.card})`,
+    "--sf-card": t.colors.card,
+    "--sf-bg": t.colors.background,
+    "--sf-header": t.colors.header,
+    "--sf-footer": t.colors.footer,
+    "--sf-link": t.colors.link,
+    "--sf-success": t.colors.success,
+    "--sf-warning": t.colors.warning,
+    "--sf-error": t.colors.error,
     "--sf-ink": t.colors.ink,
     "--sf-text": t.colors.text,
     "--sf-muted": t.colors.muted,
     "--sf-surface": t.colors.surface,
     "--sf-line": t.colors.border,
+    // Auto-contrast foregrounds so dark headers/footers/buttons stay readable.
+    "--sf-on-accent": on(t.colors.button),
+    "--sf-on-primary": on(t.colors.primary),
+    "--sf-on-secondary": on(t.colors.secondary),
+    "--sf-on-highlight": on(t.colors.accent),
+    "--sf-header-fg": on(t.colors.header, "#ffffff", t.colors.ink),
+    "--sf-footer-fg": on(t.colors.footer, "#ffffff", t.colors.ink),
+    "--sf-footer-muted": `color-mix(in srgb, ${on(t.colors.footer, "#ffffff", t.colors.ink)} 70%, ${t.colors.footer})`,
+    "--sf-footer-line": `color-mix(in srgb, ${on(t.colors.footer, "#ffffff", t.colors.ink)} 18%, ${t.colors.footer})`,
+    "--sf-footer-surface": `color-mix(in srgb, ${on(t.colors.footer, "#ffffff", t.colors.ink)} 7%, ${t.colors.footer})`,
+
+
     "--radius": `${t.global.radius}px`,
     "--store-btn-radius": `${t.buttons.radius}px`,
     "--store-btn-border": `${t.buttons.border}px`,
