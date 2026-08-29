@@ -73,9 +73,36 @@ export default function WalletPanel() {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState<string>("1000");
   const [showAll, setShowAll] = useState(false);
+  const [method, setMethod] = useState<"bkash" | "nagad" | "rocket">("bkash");
+  const [sender, setSender] = useState("");
+  const [txnId, setTxnId] = useState("");
+  const [email, setEmail] = useState("");
 
   const amountNum = Math.round(Number(amount) || 0);
   const valid = amountNum >= 50 && amountNum <= 1_000_000;
+
+  const { data: options } = useQuery({
+    queryKey: ["admin", "walletTopupOptions"],
+    queryFn: () => optionsFn(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const hasGateway = !!(options as any)?.gateway;
+  const manualKeys = useMemo(
+    () =>
+      (["bkash", "nagad", "rocket"] as const).filter(
+        (k) => (options as any)?.manual?.[k]?.enabled,
+      ),
+    [options],
+  );
+  const activeManual = (options as any)?.manual?.[method];
+  const manualNumber = activeManual?.number ?? null;
+  const manualName = activeManual?.merchant_name ?? null;
+  const canSubmitManual =
+    valid &&
+    manualKeys.includes(method) &&
+    /^01[3-9]\d{8}$/.test(sender.trim()) &&
+    /^[A-Za-z0-9]{6,32}$/.test(txnId.trim()) &&
+    /^\S+@\S+\.\S+$/.test(email.trim());
 
   const topup = useMutation({
     mutationFn: async () => {
