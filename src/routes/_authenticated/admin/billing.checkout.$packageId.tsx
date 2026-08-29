@@ -306,7 +306,7 @@ function CheckoutPage() {
                 onClick={async () => {
                   setWalletPaying(true);
                   try {
-                    await payWalletFn({ data: { packageId, cycle } });
+                    await payWalletFn({ data: { package_id: packageId, cycle } });
                     await refetchWallet();
                     toast.success("Plan activated from wallet balance");
                     navigate({ to: "/admin/billing", search: {} as never });
