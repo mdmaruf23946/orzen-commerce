@@ -109,7 +109,7 @@ export function MobileDrawer({
             {logoUrl ? (
               <img src={logoUrl} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
             ) : (
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sf-accent text-sm font-bold text-white">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sf-accent text-sm font-bold text-sf-on-accent">
                 {storeName.charAt(0)}
               </div>
             )}
@@ -281,7 +281,7 @@ export function MobileDrawer({
                 to="/store/$slug/auth/login"
                 params={{ slug }}
                 onClick={() => onOpenChange(false)}
-                className="flex items-center justify-center gap-2 rounded-xl bg-sf-accent px-3 py-2.5 text-sm font-semibold text-white shadow-sm"
+                className="flex items-center justify-center gap-2 rounded-xl bg-sf-accent px-3 py-2.5 text-sm font-semibold text-sf-on-accent shadow-sm"
               >
                 <LogIn className="h-4 w-4" />
                 {t("nav.signIn")}

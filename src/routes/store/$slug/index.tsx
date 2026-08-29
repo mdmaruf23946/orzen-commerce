@@ -264,7 +264,7 @@ function HomeContent() {
                 <button
                   type="button"
                   onClick={() => setPageSize((n) => n + PAGE_SIZE)}
-                  className="inline-flex items-center gap-1 rounded-full bg-sf-ink px-4 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-sf-accent sm:text-sm"
+                  className="inline-flex items-center gap-1 rounded-full bg-sf-ink px-4 py-2 text-xs font-semibold text-sf-card shadow-sm transition-colors hover:bg-sf-accent sm:text-sm"
                 >
                   {t("home.loadMore")} <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
@@ -320,7 +320,7 @@ function Section({
           <button
             type="button"
             onClick={onViewAll}
-            className="flex shrink-0 items-center gap-0.5 rounded-full bg-sf-ink px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-sf-accent sm:text-xs"
+            className="flex shrink-0 items-center gap-0.5 rounded-full bg-sf-ink px-3 py-1.5 text-[11px] font-bold text-sf-card transition-colors hover:bg-sf-accent sm:text-xs"
           >
             {seeMoreLabel ?? t("home.viewAll")} <ChevronRight className="h-3.5 w-3.5" />
           </button>
@@ -444,7 +444,7 @@ function ProductCarousel({
         type="button"
         aria-label={t("home.prev")}
         onClick={() => scrollBy(-1)}
-        className="absolute -left-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-sf-card text-sf-ink shadow-md transition-colors hover:bg-sf-accent hover:text-white lg:grid"
+        className="absolute -left-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-sf-card text-sf-ink shadow-md transition-colors hover:bg-sf-accent hover:text-sf-on-accent lg:grid"
       >
         <ChevronRight className="h-4 w-4 rotate-180" />
       </button>
@@ -452,7 +452,7 @@ function ProductCarousel({
         type="button"
         aria-label={t("home.next")}
         onClick={() => scrollBy(1)}
-        className="absolute -right-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-sf-card text-sf-ink shadow-md transition-colors hover:bg-sf-accent hover:text-white lg:grid"
+        className="absolute -right-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-sf-card text-sf-ink shadow-md transition-colors hover:bg-sf-accent hover:text-sf-on-accent lg:grid"
       >
         <ChevronRight className="h-4 w-4" />
       </button>
@@ -509,7 +509,7 @@ function SubPill({
       onClick={onClick}
       className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors duration-200 ${
         active
-          ? "bg-sf-accent text-white"
+          ? "bg-sf-accent text-sf-on-accent"
           : "bg-sf-surface text-sf-ink hover:bg-sf-accent-soft"
       }`}
     >
