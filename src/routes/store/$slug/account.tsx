@@ -136,7 +136,7 @@ function AccountPage() {
           <button
             type="button"
             onClick={() => setTab("overview")}
-            className="text-xs font-medium text-sf-muted hover:text-sf-ink"
+            className="text-xs font-semibold text-sf-ink transition-colors hover:text-sf-accent"
           >
             {t("account.backToAccount")}
           </button>

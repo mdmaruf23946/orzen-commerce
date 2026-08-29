@@ -551,7 +551,7 @@ export function ServiceOrderView({ order, slug }: { order: any; slug: string }) 
       </div>
 
       <Link to="/store/$slug" params={{ slug }}
-        className="mt-6 block text-center text-sm text-muted-foreground hover:text-foreground">
+        className="mt-6 block text-center text-sm font-semibold text-sf-ink transition-colors hover:text-sf-accent">
         ← Back to store
       </Link>
     </div>

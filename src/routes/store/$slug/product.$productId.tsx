@@ -311,7 +311,7 @@ function ProductPage() {
         <Link
           to="/store/$slug"
           params={{ slug }}
-          className="rounded-full bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-sf-accent"
+          className="rounded-full bg-sf-ink px-6 py-2.5 text-sm font-semibold text-sf-on-accent shadow-md transition-all hover:bg-sf-accent"
         >
           ← Back to Store
         </Link>
