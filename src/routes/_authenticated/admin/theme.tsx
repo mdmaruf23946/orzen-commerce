@@ -54,6 +54,7 @@ function StoreThemePage() {
   });
 
   const activeId = (state as any)?.theme_id ?? null;
+  const storeSlug = (state as any)?.slug ?? null;
 
   return (
     <div className="min-w-0 space-y-5">
