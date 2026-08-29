@@ -317,3 +317,60 @@ export const getEnabledPaymentMethods = createServerFn({ method: "GET" })
     };
   });
 
+
+export const activateFreePlan = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ package_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: store } = await supabase
+      .from("stores")
+      .select("id,expires_at")
+      .eq("owner_user_id", userId)
+      .maybeSingle();
+    if (!store) throw new Error("Store not found");
+
+    const { data: pkg } = await supabase
+      .from("subscription_packages")
+      .select("id,name,price,duration_days,is_active")
+      .eq("id", data.package_id)
+      .maybeSingle();
+    if (!pkg || !(pkg as any).is_active) throw new Error("This plan is not available");
+    if (Number((pkg as any).price) > 0) {
+      throw new Error("This is a paid plan — please complete a payment to activate it");
+    }
+
+    const now = new Date();
+    const base =
+      (store as any).expires_at && new Date((store as any).expires_at) > now
+        ? new Date((store as any).expires_at)
+        : now;
+    const newExpiry = new Date(base);
+    newExpiry.setDate(newExpiry.getDate() + ((pkg as any).duration_days || 30));
+
+    const { error } = await supabase
+      .from("stores")
+      .update({
+        package_id: (pkg as any).id,
+        expires_at: newExpiry.toISOString(),
+        last_renewed_at: now.toISOString(),
+        subscription_status: "active",
+      })
+      .eq("id", (store as any).id);
+    if (error) throw new Error(error.message);
+
+    await (supabase.from("subscription_notifications") as any)
+      .insert({
+        store_id: (store as any).id,
+        type: "plan_activated",
+        meta: {
+          package: (pkg as any).name,
+          amount: 0,
+          expires_at: newExpiry.toISOString(),
+          message: `${(pkg as any).name} activated instantly — no payment required.`,
+        },
+      })
+      .then(() => null, () => null);
+
+    return { ok: true, expires_at: newExpiry.toISOString() };
+  });

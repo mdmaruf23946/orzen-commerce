@@ -12,6 +12,7 @@ import {
   submitManualPayment,
   getBillingSettings,
   computeCycleTotal,
+  activateFreePlan,
   type CycleKey,
 } from "@/lib/billing.functions";
 import { Button } from "@/components/ui/button";
@@ -127,6 +128,8 @@ function CheckoutPage() {
     queryFn: () => walletFn(),
   });
   const [walletPaying, setWalletPaying] = useState(false);
+  const [activatingFree, setActivatingFree] = useState(false);
+  const activateFreeFn = useServerFn(activateFreePlan);
 
   if (!pkg) return <div className="p-8 text-sm text-muted-foreground">Loading plan…</div>;
 
@@ -193,6 +196,22 @@ function CheckoutPage() {
     }
   }
 
+  // Free plan: activate instantly — no transaction ID, sender number or
+  // manual verification needed since there is nothing to pay.
+  async function handleActivateFree() {
+    setActivatingFree(true);
+    try {
+      const res = (await activateFreeFn({ data: { package_id: packageId } })) as any;
+      if (!res?.ok) throw new Error(res?.error ?? "Could not activate the free plan");
+      toast.success("Free plan activated");
+      navigate({ to: "/admin/billing", search: {} as never });
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setActivatingFree(false);
+    }
+  }
+
   // Success state
   if (successId) {
     return (
@@ -224,6 +243,38 @@ function CheckoutPage() {
               Go to dashboard
             </Button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Free plan — instant activation, no payment details required.
+  if (calc.total <= 0) {
+    return (
+      <div className="mx-auto max-w-xl space-y-4 pb-10">
+        <Link
+          to="/admin/billing" search={{} as never}
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to billing
+        </Link>
+        <div className="rounded-2xl border bg-card p-6 text-center shadow-sm">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-700">
+            <CheckCircle2 className="h-7 w-7" />
+          </div>
+          <h1 className="mt-4 text-xl font-semibold">{pkg.name}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            This is a free plan — no payment, transaction ID or phone number needed.
+            Click below and it activates instantly.
+          </p>
+          <Button
+            onClick={handleActivateFree}
+            disabled={activatingFree}
+            className="mt-5 h-11 w-full gap-2"
+          >
+            {activatingFree && <Loader2 className="h-4 w-4 animate-spin" />}
+            {activatingFree ? "Activating…" : "Activate Free Plan"}
+          </Button>
         </div>
       </div>
     );
