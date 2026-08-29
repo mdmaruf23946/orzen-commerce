@@ -191,12 +191,16 @@ export async function openSubscriptionInvoice(
       <div class="label">Billed To</div>
       <div class="box merchant">
         ${
-          storeLogo
-            ? `<img src="${esc(storeLogo)}" alt=""/>`
+          storeIcon
+            ? `<img src="${esc(storeIcon)}" alt=""/>`
             : `<span class="m-tile">${esc((store?.name ?? "S").slice(0, 1).toUpperCase())}</span>`
         }
         <div>
-          <div class="m-name">${esc(store?.name)}</div>
+          <div class="m-name">${
+            storeNameLogo
+              ? `<img src="${esc(storeNameLogo)}" alt="${esc(store?.name)}" style="height:22px;width:auto;object-fit:contain;display:block"/>`
+              : esc(store?.name)
+          }</div>
           ${store?.slug ? `<div class="muted">${esc(store.slug)}.orzen.top</div>` : ""}
         </div>
       </div>
