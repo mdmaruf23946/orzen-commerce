@@ -103,6 +103,9 @@ function BillingPage() {
   }, [plans]);
 
   const currentTier = pkg ? tierOf(pkg) : isTrialing ? null : "free";
+  // Expired / cancelled / suspended → the plan is no longer active, so the
+  // merchant must be able to renew (update) it manually again.
+  const isInactive = ["expired", "cancelled", "suspended", "past_due"].includes(subStatus);
   const s = settings ?? { discount_3m: 5, discount_6m: 10, discount_yearly: 20 };
 
   // Highlight logic: prefer explicit `plan` id, else the cheapest paid plan
@@ -230,9 +233,14 @@ function BillingPage() {
           </div>
         </div>
 
-        {(subStatus === "expired" || subStatus === "cancelled") && (
-          <div className="mt-2 rounded-md bg-red-50 p-2 text-[11px] text-red-900 sm:mt-3 sm:rounded-lg sm:p-3 sm:text-sm dark:bg-red-950/30 dark:text-red-200">
-            Your subscription has expired. The Free plan is active now — renew to restore full access.
+        {isInactive && (
+          <div className="mt-2 flex flex-col gap-2 rounded-md bg-red-50 p-2 text-[11px] text-red-900 sm:mt-3 sm:flex-row sm:items-center sm:justify-between sm:rounded-lg sm:p-3 sm:text-sm dark:bg-red-950/30 dark:text-red-200">
+            <span>Your subscription has expired. The Free plan is active now — renew to restore full access.</span>
+            {pkg?.id && (
+              <Link to="/admin/billing/checkout/$packageId" params={{ packageId: pkg.id }} search={{ cycle } as any} className="shrink-0">
+                <Button size="sm" className="h-8 w-full text-xs sm:w-auto">আপডেট করুন</Button>
+              </Link>
+            )}
           </div>
         )}
       </div>
@@ -280,7 +288,9 @@ function BillingPage() {
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
           {TIER_ORDER.map((tier) => {
             const p = tierMap.get(tier);
-            const isCurrent = currentTier === tier && !isTrialing;
+            const isOwnTier = currentTier === tier && !isTrialing;
+            const isCurrent = isOwnTier && !isInactive;
+            const needsRenew = isOwnTier && isInactive;
             const isPopular = tier === "business";
             const isCustom = tier === "custom";
             const isFree = tier === "free";
@@ -319,6 +329,11 @@ function BillingPage() {
                 {isCurrent && (
                   <div className="absolute -top-2 right-3 inline-flex items-center gap-1 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white sm:right-4 sm:px-2 sm:text-[10px]">
                     <Crown className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Current
+                  </div>
+                )}
+                {needsRenew && (
+                  <div className="absolute -top-2 right-3 inline-flex items-center gap-1 rounded-full bg-red-600 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white sm:right-4 sm:px-2 sm:text-[10px]">
+                    <Crown className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Expired
                   </div>
                 )}
 
@@ -417,6 +432,10 @@ function BillingPage() {
                 <div className="mt-3 sm:mt-4">
                   {isCurrent ? (
                     <Button disabled className="h-9 w-full text-xs sm:h-10 sm:text-sm" variant="secondary">Current Plan</Button>
+                  ) : needsRenew && !isFree && !isCustom ? (
+                    <Link to="/admin/billing/checkout/$packageId" params={{ packageId: p.id }} search={{ cycle } as any} className="block">
+                      <Button className="h-9 w-full text-xs sm:h-10 sm:text-sm">আপডেট করুন</Button>
+                    </Link>
                   ) : isCustom ? (
                     <a href="mailto:support@example.com?subject=Custom%20Plan%20Inquiry" className="block">
                       <Button variant="outline" className="h-9 w-full text-xs sm:h-10 sm:text-sm">Contact Sales</Button>
