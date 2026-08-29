@@ -196,6 +196,22 @@ function CheckoutPage() {
     }
   }
 
+  // Free plan: activate instantly — no transaction ID, sender number or
+  // manual verification needed since there is nothing to pay.
+  async function handleActivateFree() {
+    setActivatingFree(true);
+    try {
+      const res = (await activateFreeFn({ data: { package_id: packageId } })) as any;
+      if (!res?.ok) throw new Error(res?.error ?? "Could not activate the free plan");
+      toast.success("Free plan activated");
+      navigate({ to: "/admin/billing", search: {} as never });
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setActivatingFree(false);
+    }
+  }
+
   // Success state
   if (successId) {
     return (
