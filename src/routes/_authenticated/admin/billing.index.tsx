@@ -427,6 +427,10 @@ function BillingPage() {
                 <div className="mt-3 sm:mt-4">
                   {isCurrent ? (
                     <Button disabled className="h-9 w-full text-xs sm:h-10 sm:text-sm" variant="secondary">Current Plan</Button>
+                  ) : needsRenew && !isFree && !isCustom ? (
+                    <Link to="/admin/billing/checkout/$packageId" params={{ packageId: p.id }} search={{ cycle } as any} className="block">
+                      <Button className="h-9 w-full text-xs sm:h-10 sm:text-sm">আপডেট করুন</Button>
+                    </Link>
                   ) : isCustom ? (
                     <a href="mailto:support@example.com?subject=Custom%20Plan%20Inquiry" className="block">
                       <Button variant="outline" className="h-9 w-full text-xs sm:h-10 sm:text-sm">Contact Sales</Button>
