@@ -7,7 +7,7 @@ import {
   Settings, CreditCard, LogOut, Menu, Megaphone, Truck,
   Search as SearchIcon, PackageOpen, Wallet, Bell, ClipboardList, Bot,
   MessageSquare, MessageCircle, Boxes, Ticket, RotateCcw, BarChart3, FileUp, Globe,
-  Radar, ShieldCheck, FileText, PhoneCall, Sparkles, AlertTriangle, UserCog,
+  Radar, ShieldCheck, FileText, PhoneCall, Sparkles, AlertTriangle, UserCog, Palette,
   ChevronDown, ChevronsLeft, ChevronsRight, Moon, Sun, ExternalLink, LayoutTemplate, X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
