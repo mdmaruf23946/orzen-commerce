@@ -306,7 +306,15 @@ function CheckoutPage() {
                 onClick={async () => {
                   setWalletPaying(true);
                   try {
-                    await payWalletFn({ data: { package_id: packageId, cycle } });
+                    const res = (await payWalletFn({ data: { package_id: packageId, cycle } })) as any;
+                    if (!res?.ok) {
+                      const msg = res?.error ?? "Wallet payment failed";
+                      const detail =
+                        res?.required && res?.balance != null
+                          ? ` (balance ৳${Number(res.balance).toLocaleString()} of ৳${Number(res.required).toLocaleString()})`
+                          : "";
+                      throw new Error(msg + detail);
+                    }
                     await refetchWallet();
                     toast.success("Plan activated from wallet balance");
                     navigate({ to: "/admin/billing", search: {} as never });
