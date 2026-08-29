@@ -242,7 +242,7 @@ export async function openSubscriptionInvoice(
 
   <div class="foot">
     <div>
-      <div class="muted">Questions? <b style="color:#0F172A">support@orzen.com</b></div>
+      <div class="muted">Questions? <b style="color:#0F172A">${esc(supportEmail)}</b></div>
       <div class="tag">AUTO-GENERATED RECEIPT</div>
     </div>
     <div style="text-align:center">
