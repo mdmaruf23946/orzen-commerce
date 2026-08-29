@@ -82,7 +82,7 @@ export const myBillingStatus = createServerFn({ method: "GET" })
     const { data: storeRaw } = await supabase
       .from("stores")
       .select(
-        "id,name,slug,status,subscription_status,trial_ends_at,expires_at,last_renewed_at,package_id,subscription_packages(" +
+        "id,name,slug,status,subscription_status,trial_ends_at,expires_at,last_renewed_at,package_id,icon_url,logo_url,name_logo_url,subscription_packages(" +
           PUBLIC_FIELDS +
           ")",
       )
