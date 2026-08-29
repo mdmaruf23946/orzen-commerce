@@ -62,6 +62,8 @@ export default function WalletPanel() {
   const txFn = useServerFn(listWalletTransactions);
   const topupFn = useServerFn(initiateWalletTopup);
   const autoFn = useServerFn(setWalletAutoRenew);
+  const optionsFn = useServerFn(getWalletTopupOptions);
+  const manualFn = useServerFn(submitWalletTopupManual);
 
   const { data: wallet, isLoading } = useQuery({
     queryKey: ["admin", "wallet"],
