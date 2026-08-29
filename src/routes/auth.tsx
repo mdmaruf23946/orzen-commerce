@@ -149,7 +149,7 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
 
         if (error) throw error;
-        const kind = (await accountKind()) as any;
+        const kind = (await myAccountKind()) as any;
         if (kind?.kind === "employee") {
           await supabase.auth.signOut();
           throw new Error(
