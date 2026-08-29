@@ -169,3 +169,119 @@ export const payPlanWithWallet = createServerFn({ method: "POST" })
     });
     return res;
   });
+
+// Which top-up options are available: the online gateway (if any provider is
+// active) and the manual methods configured by the platform owner.
+export const getWalletTopupOptions = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: prov } = await (supabaseAdmin.from("subscription_payment_providers") as any)
+      .select("id")
+      .eq("is_active", true)
+      .eq("enabled", true)
+      .maybeSingle();
+    const { data } = await (supabaseAdmin.from("platform_payment_settings" as any) as any)
+      .select("bkash,nagad,rocket")
+      .eq("id", "global")
+      .maybeSingle();
+    const pick = (v: any) => ({
+      enabled: !!v?.enabled,
+      number: v?.number ?? null,
+      instructions: v?.instructions ?? null,
+      merchant_name: v?.merchant_name ?? null,
+    });
+    return {
+      gateway: prov ? { id: (prov as any).id as string } : null,
+      manual: {
+        bkash: pick(data?.bkash),
+        nagad: pick(data?.nagad),
+        rocket: pick(data?.rocket),
+      },
+    };
+  });
+
+// Manual (bKash / Nagad / Rocket) wallet top-up request. Works for every
+// merchant account regardless of plan state; funds are credited only after the
+// platform owner verifies the payment.
+export const submitWalletTopupManual = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        amount: z.number().min(50).max(1_000_000),
+        method: z.enum(["bkash", "nagad", "rocket"]),
+        txn_id: z.string().trim().regex(/^[A-Za-z0-9]{6,32}$/, "Transaction ID must be 6–32 letters or digits"),
+        sender_number: z.string().trim().regex(/^01[3-9]\d{8}$/, "Enter a valid Bangladesh mobile number"),
+        customer_email: z.string().trim().email().max(255),
+        customer_note: z.string().trim().max(500).optional().nullable(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const amount = Math.round(data.amount);
+
+    const { data: store } = await supabase
+      .from("stores")
+      .select("id")
+      .eq("owner_user_id", userId)
+      .maybeSingle();
+    if (!store) throw new Error("No store found for your account");
+
+    const { admin, ensureWallet, nextInvoiceNo } = await import("./wallet.server");
+    const sb = await admin();
+    await ensureWallet(sb, userId, (store as any).id);
+
+    const invoiceNo = await nextInvoiceNo(sb);
+    const { error: invErr } = await sb.from("subscription_invoices").insert({
+      invoice_no: invoiceNo,
+      store_id: (store as any).id,
+      user_id: userId,
+      package_id: null,
+      billing_cycle: "monthly",
+      amount,
+      discount: 0,
+      total: amount,
+      currency: "BDT",
+      status: "pending",
+      purpose: "wallet_topup",
+    });
+    if (invErr) throw new Error(invErr.message);
+
+    const { data: payment, error } = await sb
+      .from("payments")
+      .insert({
+        store_id: (store as any).id,
+        package_id: null,
+        purpose: "wallet_topup",
+        amount,
+        method: data.method,
+        txn_id: data.txn_id,
+        sender_number: data.sender_number,
+        customer_email: data.customer_email,
+        customer_note: data.customer_note ?? null,
+        status: "pending",
+        invoice_no: invoiceNo,
+        notes: `Wallet top-up ৳${amount}. Awaiting verification.`,
+      })
+      .select("id")
+      .single();
+    if (error) {
+      if ((error.message || "").toLowerCase().includes("txn") || (error as any).code === "23505") {
+        throw new Error("This transaction ID has already been submitted.");
+      }
+      throw new Error(error.message);
+    }
+
+    await sb
+      .from("subscription_notifications")
+      .insert({
+        store_id: (store as any).id,
+        type: "payment_pending",
+        meta: { payment_id: (payment as any).id, purpose: "wallet_topup", amount },
+      })
+      .then(() => null, () => null);
+
+    return { ok: true as const, paymentId: (payment as any).id, invoice_no: invoiceNo, amount };
+  });
