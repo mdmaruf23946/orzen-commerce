@@ -107,6 +107,10 @@ function BillingPage() {
   const daysLeft = status?.days_left ?? 0;
   const isTrialing = subStatus === "trialing";
 
+  function openInvoice(p: any) {
+    void openSubscriptionInvoice(p, store, invoiceBrand);
+  }
+
   const tierMap = useMemo(() => {
     const m = new Map<string, Plan>();
     for (const p of plans) {
