@@ -319,6 +319,7 @@ function CheckoutPage() {
                     toast.success("Plan activated from wallet balance");
                     navigate({ to: "/admin/billing", search: {} as never });
                   } catch (err) {
+                    await refetchWallet().catch(() => null);
                     toast.error((err as Error).message);
                   } finally {
                     setWalletPaying(false);
