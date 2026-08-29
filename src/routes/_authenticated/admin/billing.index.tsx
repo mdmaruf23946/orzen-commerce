@@ -16,6 +16,8 @@ import { FEATURE_KEYS, FEATURE_LABELS, formatLimit } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import WalletPanel from "@/components/admin/billing/WalletPanel";
+import { openSubscriptionInvoice } from "@/lib/subscription-invoice-print";
+import { usePlatformBranding, resolvePlacement } from "@/lib/platform-branding";
 
 export const Route = createFileRoute("/_authenticated/admin/billing/")({
   head: () => ({
@@ -71,44 +73,9 @@ function tierOf(p: Plan): "free" | "basic" | "business" | "custom" | null {
   return null;
 }
 
-// Opens a clean, standalone invoice (amount + key details only) in a new
-// window and prints that — never the whole billing page.
-function printPaymentInvoice(p: any, store: any) {
-  const esc = (v: any) =>
-    String(v ?? "—").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
-  const win = window.open("", "_blank", "width=720,height=900");
-  if (!win) return;
-  win.document.write(`<!doctype html><html><head><meta charset="utf-8"/><title>${esc(p.invoice_no ?? "Invoice")}</title>
-<style>
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#111;margin:0;padding:32px;background:#fff}
-  .card{max-width:560px;margin:0 auto;border:1px solid #e5e7eb;border-radius:12px;padding:28px}
-  h1{margin:0;font-size:20px}
-  .muted{color:#6b7280;font-size:12px}
-  .row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:14px}
-  .row span:first-child{color:#6b7280}
-  .total{font-size:18px;font-weight:700;border-bottom:none;margin-top:6px}
-  .brand{color:#3b82f6;font-weight:700}
-  @media print{.no-print{display:none}}
-</style></head><body>
-<div class="card">
-  <div class="row" style="border-bottom:1px solid #e5e7eb;padding-bottom:14px;margin-bottom:8px">
-    <div><div class="brand">ORZEN</div><div class="muted">Payment receipt</div></div>
-    <div style="text-align:right"><b>${esc(p.invoice_no)}</b><div class="muted">${new Date(p.created_at).toLocaleDateString()}</div></div>
-  </div>
-  <div class="row"><span>Billed to</span><b>${esc(store?.name ?? store?.store_name)}</b></div>
-  <div class="row"><span>Plan</span><b>${esc(p.subscription_packages?.name)}</b></div>
-  ${p.cycle_start ? `<div class="row"><span>Billing period</span><span>${new Date(p.cycle_start).toLocaleDateString()}${p.cycle_end ? ` → ${new Date(p.cycle_end).toLocaleDateString()}` : ""}</span></div>` : ""}
-  <div class="row"><span>Method</span><span style="text-transform:uppercase">${esc(p.method)}</span></div>
-  <div class="row"><span>Transaction ID</span><span style="font-family:monospace">${esc(p.txn_id)}</span></div>
-  <div class="row"><span>Status</span><span style="text-transform:capitalize">${esc(p.status)}</span></div>
-  <div class="row total"><span>Total paid</span><span>৳${Number(p.amount).toLocaleString(undefined, { minimumFractionDigits: 0 })}</span></div>
-  <p class="muted" style="margin-top:18px">Thank you for using ORZEN. This receipt was generated automatically.</p>
-  <button class="no-print" onclick="window.print()" style="margin-top:10px;padding:8px 14px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer">Print / Save PDF</button>
-</div>
-<script>window.onload=function(){setTimeout(function(){window.print()},200)}</script>
-</body></html>`);
-  win.document.close();
-}
+// Invoice rendering lives in `subscription-invoice-print` — it opens a clean,
+// standalone A4 receipt window so the billing page never enters the PDF.
+
 
 function BillingPage() {
   const statusFn = useServerFn(myBillingStatus);
@@ -124,6 +91,12 @@ function BillingPage() {
     staleTime: 5 * 60_000,
   });
 
+  const { data: branding } = usePlatformBranding();
+  const invoiceBrand = useMemo(() => {
+    const r = resolvePlacement(branding ?? null, "invoice", false);
+    return { logoUrl: r?.logo?.url ?? null, wordmarkUrl: r?.wordmark?.url ?? null };
+  }, [branding]);
+
   const [cycle, setCycle] = useState<CycleKey>("monthly");
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -133,6 +106,10 @@ function BillingPage() {
   const subStatus = (store?.subscription_status ?? "active") as string;
   const daysLeft = status?.days_left ?? 0;
   const isTrialing = subStatus === "trialing";
+
+  function openInvoice(p: any) {
+    void openSubscriptionInvoice(p, store, invoiceBrand);
+  }
 
   const tierMap = useMemo(() => {
     const m = new Map<string, Plan>();
@@ -655,7 +632,7 @@ function BillingPage() {
                     {p.status === "paid" && (
                       <button
                         type="button"
-                        onClick={() => printPaymentInvoice(p, store)}
+                        onClick={() => openInvoice(p)}
                         className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
                       >
                         <Download className="h-3 w-3" /> Invoice
@@ -699,7 +676,7 @@ function BillingPage() {
                 {p.status === "paid" && (
                   <button
                     type="button"
-                    onClick={() => printPaymentInvoice(p, store)}
+                    onClick={() => openInvoice(p)}
                     className="mt-2 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
                   >
                     <Download className="h-3 w-3" /> Invoice
