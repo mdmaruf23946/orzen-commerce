@@ -736,11 +736,14 @@ function StoreTemplatePage() {
         <TemplateBannerDialog
           editing={bIndex == null ? null : form.banners[bIndex]}
           nextOrder={form.banners.length}
+          productType={bIndex == null ? bannerActiveType : bannerType(form.banners[bIndex])}
+          categories={form.categories.filter((c) => c.name.trim()).map((c) => c.name)}
           onClose={() => setBOpen(false)}
           onSave={async (b) => {
             await saveBanner(b);
           }}
         />
+
       )}
     </div>
   );
