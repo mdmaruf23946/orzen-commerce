@@ -410,15 +410,10 @@ function PlatformSettings({ global, overview }: { global: any; overview: any }) 
           onClear={() => clearKey("openai")}
           placeholder="sk-…"
         />
-        <ProviderKeyField
-          icon={KeyRound}
-          label="Gemini API key"
-          existing={g.gemini_key_masked}
-          value={gemini}
-          onChange={setGemini}
-          onClear={() => clearKey("gemini")}
-          placeholder="AIza…"
-        />
+        <div className="sm:col-span-2">
+          <GeminiKeysManager />
+        </div>
+
       </div>
 
       <div className="flex justify-end">
