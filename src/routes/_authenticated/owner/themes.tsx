@@ -1,5 +1,5 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -12,7 +12,13 @@ import {
 } from "@/lib/themes.functions";
 import { mergeTheme } from "@/lib/theme/definition";
 import { Button } from "@/components/ui/button";
-import { ThemeEditorDrawer, type OwnerThemeRow } from "@/components/owner/ThemeEditorDrawer";
+import type { OwnerThemeRow } from "@/components/owner/ThemeEditorDrawer";
+
+const ThemeEditorDrawer = lazy(() =>
+  import("@/components/owner/ThemeEditorDrawer").then((module) => ({
+    default: module.ThemeEditorDrawer,
+  })),
+);
 
 
 export const Route = createFileRoute("/_authenticated/owner/themes")({
@@ -36,7 +42,20 @@ function ThemesError({ error, reset }: { error: Error; reset: () => void }) {
     <div className="mx-auto max-w-md space-y-3 py-12 text-center">
       <h1 className="text-lg font-semibold">Store Themes could not load</h1>
       <p className="text-sm text-muted-foreground">{error?.message || "Something went wrong."}</p>
-      <Button size="sm" onClick={() => { router.invalidate(); reset(); }}>Try again</Button>
+      <Button
+        size="sm"
+        onClick={() => {
+          if (typeof window !== "undefined") {
+            window.sessionStorage.removeItem("orzen:chunk-reload");
+            window.location.reload();
+            return;
+          }
+          router.invalidate();
+          reset();
+        }}
+      >
+        Try again
+      </Button>
     </div>
   );
 }
@@ -136,7 +155,11 @@ function OwnerThemes() {
         </div>
       )}
 
-      <ThemeEditorDrawer open={editorOpen} theme={editing} onOpenChange={setEditorOpen} />
+      {editorOpen ? (
+        <Suspense fallback={null}>
+          <ThemeEditorDrawer open={editorOpen} theme={editing} onOpenChange={setEditorOpen} />
+        </Suspense>
+      ) : null}
     </div>
   );
 
