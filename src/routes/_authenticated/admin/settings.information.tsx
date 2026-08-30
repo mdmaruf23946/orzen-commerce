@@ -97,6 +97,7 @@ function StoreInformationPage() {
                 value={form.name_logo_url ?? null}
                 onChange={(v) => set("name_logo_url", v)}
                 label="Upload name logo"
+                wide
               />
               {!form.name_logo_url && (
                 <p className="mt-2 text-xs text-muted-foreground">

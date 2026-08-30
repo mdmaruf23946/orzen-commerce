@@ -81,9 +81,23 @@ export function ImageUploader({
 
   return (
     <div className="flex items-center gap-3">
-      <div className="grid h-20 w-20 place-items-center overflow-hidden rounded-md border bg-muted">
+      <div
+        className={
+          wide
+            ? "grid h-20 w-44 place-items-center overflow-hidden rounded-md border bg-muted"
+            : "grid h-20 w-20 place-items-center overflow-hidden rounded-md border bg-muted"
+        }
+      >
         {src && isImage ? (
-          <img src={src} alt="" className="h-full w-full object-cover" />
+          <img
+            src={src}
+            alt=""
+            className={
+              wide
+                ? "max-h-full max-w-full object-contain p-1"
+                : "h-full w-full object-cover"
+            }
+          />
         ) : src ? (
           <span className="px-1 text-center text-[10px] text-muted-foreground">File</span>
         ) : (
