@@ -127,7 +127,21 @@ export const saveStorePaymentGateway = createServerFn({ method: "POST" })
       }
     }
 
+    // Required credential fields must be present — some adapters accept
+    // partial config and only fail later at real checkout time.
+    const missing = (provider.meta.credentialFields ?? [])
+      .filter((f) => f.required)
+      .filter((f) => {
+        const v = mergedCreds[f.key];
+        return v === undefined || v === null || (typeof v === "string" && v.trim() === "");
+      })
+      .map((f) => f.label);
+    if (missing.length) {
+      return { ok: false as const, error: `Missing required field(s): ${missing.join(", ")}`, latency_ms: 0 };
+    }
+
     // Validate credentials before saving via adapter testConnection.
+
     const test = await provider.testConnection({ credentials: mergedCreds as any, sandbox: data.sandbox });
     if (!test.ok) {
       return { ok: false as const, error: test.message, latency_ms: test.latency_ms };
