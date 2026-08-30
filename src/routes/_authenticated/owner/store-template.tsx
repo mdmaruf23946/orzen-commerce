@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getStoreTemplate, updateStoreTemplate, applyTemplateToAllStores } from "@/lib/owner.functions";
+import { getStoreTemplate, updateStoreTemplate } from "@/lib/owner.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -179,13 +179,8 @@ function StoreTemplatePage() {
     }
   }
 
-  const colors: Array<[keyof TemplateForm, string]> = [
-    ["primary_color", "Primary"],
-    ["header_color", "Header"],
-    ["title_bar_color", "Product Card"],
-    ["footer_color", "Footer"],
-    ["button_color", "Button"],
-  ];
+
+
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -197,62 +192,14 @@ function StoreTemplatePage() {
         </p>
       </div>
 
-      <DemoStoreManager />
-
-
-
-      <Tabs defaultValue="design">
+      <Tabs defaultValue="products">
         <TabsList className="flex flex-wrap">
-          <TabsTrigger value="design">Design</TabsTrigger>
-          <TabsTrigger value="header">Header / Footer</TabsTrigger>
-          <TabsTrigger value="banners">Banners</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="products">Products</TabsTrigger>
-          <TabsTrigger value="pages">Pages</TabsTrigger>
-          <TabsTrigger value="defaults">Defaults</TabsTrigger>
+          <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="banners">Banners</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="design" className="space-y-4 rounded-xl border bg-card p-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            {colors.map(([k, label]) => (
-              <div key={k as string} className="space-y-1.5">
-                <Label>{label}</Label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={(form as any)[k] || "#000000"}
-                    onChange={(e) => set(k, e.target.value as any)}
-                    className="h-10 w-14 rounded-md border"
-                  />
-                  <Input value={(form as any)[k] || ""} onChange={(e) => set(k, e.target.value as any)} />
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="space-y-1.5">
-            <Label>Border radius — {form.theme.radius ?? 8}px</Label>
-            <input
-              type="range"
-              min={0}
-              max={24}
-              value={form.theme.radius ?? 8}
-              onChange={(e) => set("theme", { ...form.theme, radius: Number(e.target.value) })}
-              className="w-full"
-            />
-          </div>
-        </TabsContent>
 
-        <TabsContent value="header" className="space-y-4 rounded-xl border bg-card p-4">
-          <div className="space-y-1.5">
-            <Label>Default store description</Label>
-            <Textarea
-              rows={4}
-              value={form.description}
-              onChange={(e) => set("description", e.target.value)}
-              placeholder="Shown in the footer of every new store."
-            />
-          </div>
-        </TabsContent>
 
         {/* ============ Banners ============ */}
         <TabsContent value="banners" className="space-y-4 rounded-xl border bg-card p-4">
@@ -518,88 +465,6 @@ function StoreTemplatePage() {
           </Button>
         </TabsContent>
 
-        {/* ============ Pages ============ */}
-        <TabsContent value="pages" className="space-y-4 rounded-xl border bg-card p-4">
-          <p className="text-xs text-muted-foreground">
-            Stored for use when the Pages feature ships. Values are copied to new stores.
-          </p>
-          {form.pages.map((p, i) => (
-            <div key={i} className="space-y-2 rounded-lg border p-3">
-              <div className="grid gap-2 sm:grid-cols-2">
-                <Input
-                  placeholder="Slug (e.g. about)"
-                  value={p.slug}
-                  onChange={(e) => {
-                    const arr = [...form.pages];
-                    arr[i] = { ...p, slug: e.target.value };
-                    set("pages", arr);
-                  }}
-                />
-                <Input
-                  placeholder="Title"
-                  value={p.title}
-                  onChange={(e) => {
-                    const arr = [...form.pages];
-                    arr[i] = { ...p, title: e.target.value };
-                    set("pages", arr);
-                  }}
-                />
-              </div>
-              <Textarea
-                rows={4}
-                placeholder="Content"
-                value={p.content}
-                onChange={(e) => {
-                  const arr = [...form.pages];
-                  arr[i] = { ...p, content: e.target.value };
-                  set("pages", arr);
-                }}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => set("pages", form.pages.filter((_, j) => j !== i))}
-              >
-                <Trash2 className="mr-2 h-4 w-4" /> Remove
-              </Button>
-            </div>
-          ))}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => set("pages", [...form.pages, { slug: "", title: "", content: "" }])}
-          >
-            <Plus className="mr-2 h-4 w-4" /> Add page
-          </Button>
-        </TabsContent>
-
-        <TabsContent value="defaults" className="space-y-4 rounded-xl border bg-card p-4">
-          <div className="space-y-1.5">
-            <Label>Default warranty</Label>
-            <Textarea
-              rows={2}
-              value={form.product_defaults.warranty ?? ""}
-              onChange={(e) => set("product_defaults", { ...form.product_defaults, warranty: e.target.value })}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Default return policy</Label>
-            <Textarea
-              rows={2}
-              value={form.product_defaults.return_policy ?? ""}
-              onChange={(e) => set("product_defaults", { ...form.product_defaults, return_policy: e.target.value })}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Default shipping info</Label>
-            <Textarea
-              rows={2}
-              value={form.product_defaults.shipping_info ?? ""}
-              onChange={(e) => set("product_defaults", { ...form.product_defaults, shipping_info: e.target.value })}
-            />
-          </div>
-        </TabsContent>
       </Tabs>
 
       <div className="sticky bottom-4 flex justify-end">
@@ -979,54 +844,8 @@ function ProductEditor({
   );
 }
 
-function DemoStoreManager() {
-  const apply = useServerFn(applyTemplateToAllStores);
-  const [busy, setBusy] = useState<null | "missing-only" | "reset">(null);
 
-  async function run(mode: "missing-only" | "reset") {
-    if (mode === "reset" && !window.confirm("Reset ALL existing stores to the current template? This wipes their categories, products and banners.")) return;
-    setBusy(mode);
-    try {
-      const res: any = await apply({ data: { mode } });
-      toast.success(`Applied to ${res.updated} store(s). Skipped: ${res.skipped}.`);
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setBusy(null);
-    }
-  }
 
-  return (
-    <div className="rounded-xl border bg-card p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="text-base font-semibold">Demo Store Manager</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            New stores automatically use the current template. Push it to existing stores below.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={busy !== null}
-            onClick={() => run("missing-only")}
-          >
-            {busy === "missing-only" ? "Seeding…" : "Seed empty stores"}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            disabled={busy !== null}
-            onClick={() => run("reset")}
-          >
-            {busy === "reset" ? "Resetting…" : "Reset all stores"}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
