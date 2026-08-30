@@ -57,7 +57,7 @@ export const PANEL_SECTIONS: PanelSection[] = [
   { key: "finance", label: "Business Finance", group: "Finance", paths: ["/admin/finance"] },
   { key: "analytics", label: "Analytics", group: "Finance", paths: ["/admin/analytics"], feature: "analytics" },
 
-  { key: "delivery", label: "Delivery Zones", group: "Operations", paths: ["/admin/delivery"] },
+  { key: "delivery", label: "Delivery zone", group: "Operations", paths: ["/admin/delivery"] },
   { key: "couriers", label: "Couriers", group: "Operations", paths: ["/admin/couriers"], feature: "courier" },
   { key: "parcels", label: "Courier Parcels", group: "Operations", paths: ["/admin/parcels"], feature: "courier" },
   { key: "landing_builder", label: "Landing Pages", group: "Operations", paths: ["/admin/landing-builder"], feature: "landing_pages" },
