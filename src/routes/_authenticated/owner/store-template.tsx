@@ -307,14 +307,28 @@ function StoreTemplatePage() {
   }
 
   // ---------- banners ----------
+  const bannerActiveType = bTab === "all" ? "physical" : bTab;
+  const bannerTypeCount = useMemo(
+    () => form.banners.filter((b) => bannerType(b) === bannerActiveType).length,
+    [form.banners, bannerActiveType],
+  );
+  const bannersFull = bTab !== "all" && bannerTypeCount >= 3;
+
   const visibleBanners = useMemo(() => {
     const n = bq.trim().toLowerCase();
-    return form.banners
+    let rows = form.banners
       .map((b, i) => ({ b, i }))
-      .filter(({ b }) =>
-        !n ? true : ((b.title ?? "") + " " + (b.link_url ?? "")).toLowerCase().includes(n),
-      );
-  }, [form.banners, bq]);
+      .filter(({ b }) => {
+        if (bTab !== "all" && bannerType(b) !== bTab) return false;
+        if (!n) return true;
+        return ((b.title ?? "") + " " + (b.link_url ?? "")).toLowerCase().includes(n);
+      });
+    if (bSort === "active") rows = rows.filter(({ b }) => b.is_active !== false);
+    if (bSort === "inactive") rows = rows.filter(({ b }) => b.is_active === false);
+    if (bSort === "oldest") rows = rows.slice().reverse();
+    return rows;
+  }, [form.banners, bq, bTab, bSort]);
+
 
   function saveBanner(next: TemplateBanner) {
     const arr = [...form.banners];
