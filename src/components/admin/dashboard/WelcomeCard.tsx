@@ -204,35 +204,35 @@ export function WelcomeCard(props: WelcomeCardProps) {
       <div className="pointer-events-none absolute -bottom-24 right-10 h-56 w-56 rounded-full bg-blue-400/10 blur-3xl" />
 
       {/* ============ DESKTOP / TABLET (md+) ============ */}
-      <div className="relative hidden md:grid md:grid-cols-[minmax(0,1.1fr)_minmax(0,1.3fr)_auto] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto] md:items-start md:gap-4 lg:gap-5 md:p-5 lg:p-6">
-        {/* LEFT — welcome + badges pinned to top */}
-        <div className="min-w-0 self-start">
-          <h1 className="text-base md:text-lg lg:text-[26px] font-semibold tracking-tight leading-tight break-words whitespace-normal">
-            👋 Welcome back, {ownerName}!
-          </h1>
-          {badges}
-        </div>
+      <div className="relative hidden md:block md:p-5 lg:p-6">
+        {/* TOP — welcome heading spans the full width, single long line */}
+        <h1 className="whitespace-nowrap overflow-hidden text-ellipsis text-xl lg:text-[26px] font-semibold tracking-tight leading-tight">
+          👋 Welcome back, {ownerName}!
+        </h1>
 
-        {/* CENTER — 4 stats pinned to bottom */}
-        <div className="min-w-0 self-end">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-2.5">
-            {stats.map((s) => (
-              <StatTile key={s.label} {...s} />
-            ))}
+        {/* ROW 2 — badges span the full width too */}
+        {badges}
+
+        {/* ROW 3 — stats (left, stretched) + illustration/CTA (right) */}
+        <div className="mt-3 flex items-end gap-4 lg:gap-5">
+          <div className="min-w-0 flex-1">
+            <div className="grid grid-cols-4 gap-2 md:gap-2.5">
+              {stats.map((s) => (
+                <StatTile key={s.label} {...s} />
+              ))}
+            </div>
           </div>
-        </div>
-
-        {/* RIGHT — Illustration + CTA pinned to bottom */}
-        <div className="relative flex shrink-0 flex-col items-end gap-2 self-end">
-          <a
-            href={storeUrl || "#"}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary to-indigo-500 px-3 py-1.5 lg:px-4 lg:py-2 text-[10px] lg:text-xs font-semibold text-white shadow-md shadow-primary/30 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/40"
-          >
-            View Store <ExternalLink className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
-          </a>
-          <AiIllustration className="h-20 w-32 lg:h-24 lg:w-36 md:scale-75 lg:scale-100" />
+          <div className="relative flex shrink-0 flex-col items-end gap-2">
+            <a
+              href={storeUrl || "#"}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary to-indigo-500 px-3 py-1.5 lg:px-4 lg:py-2 text-[10px] lg:text-xs font-semibold text-white shadow-md shadow-primary/30 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/40"
+            >
+              View Store <ExternalLink className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
+            </a>
+            <AiIllustration className="h-20 w-32 lg:h-24 lg:w-36 md:scale-75 lg:scale-100" />
+          </div>
         </div>
       </div>
 
