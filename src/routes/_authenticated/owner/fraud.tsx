@@ -199,6 +199,10 @@ function FraudPage() {
             </div>
           </div>
 
+          <ApiKeysManager keys={(cfg as any).api_keys ?? []} testPhone={testPhone} />
+
+
+
           <div className="flex flex-wrap items-center gap-2 pt-2">
             <Button type="button" variant="outline" onClick={runTest} disabled={testing || testPhone.trim().length < 6}>
               {testing ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Zap className="mr-1.5 h-4 w-4" />}
