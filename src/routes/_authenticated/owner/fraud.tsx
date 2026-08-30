@@ -483,21 +483,21 @@ function ApiKeysManager({ keys, testPhone }: { keys: KeyRow[]; testPhone: string
                 </pre>
               )}
 
-              <div className="mt-2 grid grid-cols-4 gap-1.5 sm:flex sm:flex-wrap sm:items-center">
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
                 <Button
-                  size="sm" variant="ghost" className="px-0 sm:px-3" disabled={i === 0 || busy === k.id}
+                  size="sm" variant="ghost" className="h-8 w-8 shrink-0 px-0" disabled={i === 0 || busy === k.id}
                   onClick={() => run(k.id, () => moveFn({ data: { id: k.id, direction: "up" } }), "Order updated")}
                 >
                   <ArrowUp className="h-3.5 w-3.5" />
                 </Button>
                 <Button
-                  size="sm" variant="ghost" className="px-0 sm:px-3" disabled={i === keys.length - 1 || busy === k.id}
+                  size="sm" variant="ghost" className="h-8 w-8 shrink-0 px-0" disabled={i === keys.length - 1 || busy === k.id}
                   onClick={() => run(k.id, () => moveFn({ data: { id: k.id, direction: "down" } }), "Order updated")}
                 >
                   <ArrowDown className="h-3.5 w-3.5" />
                 </Button>
                 <Button
-                  size="sm" variant="outline" className="col-span-2 justify-center" disabled={busy === k.id}
+                  size="sm" variant="outline" className="h-8 flex-1" disabled={busy === k.id}
                   onClick={() =>
                     run(k.id, async () => {
                       const r = await testFn({ data: { phone: testPhone.trim() || "01700000000", key_id: k.id } });
@@ -509,14 +509,14 @@ function ApiKeysManager({ keys, testPhone }: { keys: KeyRow[]; testPhone: string
                 </Button>
                 {failedToday && (
                   <Button
-                    size="sm" variant="outline" className="col-span-2 justify-center" disabled={busy === k.id}
+                    size="sm" variant="outline" className="h-8 flex-1" disabled={busy === k.id}
                     onClick={() => run(k.id, () => updFn({ data: { id: k.id, reset_failure: true } }), "Key resumed")}
                   >
                     <RotateCcw className="mr-1 h-3.5 w-3.5" /> Resume
                   </Button>
                 )}
                 <Button
-                  size="sm" variant="ghost" className="col-span-2 justify-center text-destructive sm:ml-auto" disabled={busy === k.id}
+                  size="sm" variant="ghost" className="h-8 w-8 shrink-0 px-0 text-destructive" disabled={busy === k.id}
                   onClick={() => run(k.id, () => delFn({ data: { id: k.id } }), "Key removed")}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
