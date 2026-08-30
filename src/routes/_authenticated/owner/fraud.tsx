@@ -187,16 +187,7 @@ function FraudPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>API Secret (optional)</Label>
-              <Input
-                type="password"
-                autoComplete="off"
-                placeholder={cfg.api_secret_masked ?? "Not required for BD Courier"}
-                value={form.api_secret}
-                onChange={(e) => set("api_secret", e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
+
               <Label>Test phone number</Label>
               <Input
                 inputMode="tel"
