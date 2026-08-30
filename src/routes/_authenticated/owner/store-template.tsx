@@ -22,6 +22,16 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/owner/store-template")({
   component: StoreTemplatePage,
+  head: () => ({
+    meta: [
+      { title: "Store Template — ORZEN Admin" },
+      { name: "description", content: "Manage the default products, categories, and banners for new ORZEN stores." },
+      { property: "og:title", content: "Store Template — ORZEN Admin" },
+      { property: "og:description", content: "Manage the global default store template." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 const TEMPLATE_FOLDER = "_template";
@@ -96,7 +106,10 @@ function StoreTemplatePage() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["owner", "store-template"], queryFn: () => fetchTpl() });
 
-  const [form, setForm] = useState<TemplateForm | null>(null);
+  // Keep the hook tree stable while the server data is loading. Starting this
+  // as null previously returned before the useMemo hooks below, then rendered
+  // those hooks after loading and crashed with "Rendered more hooks".
+  const [form, setForm] = useState<TemplateForm>(empty);
   const [rest, setRest] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState(false);
 
@@ -142,10 +155,8 @@ function StoreTemplatePage() {
       (form?.categories ?? [])
         .filter((c) => c.name.trim())
         .map((c) => ({ id: c.name, name: c.name, parent_id: c.parent_name || null })),
-    [form?.categories],
+    [form.categories],
   );
-
-  if (!form) return <div className="text-sm text-muted-foreground">Loading…</div>;
 
   function set<K extends keyof TemplateForm>(k: K, v: TemplateForm[K]) {
     setForm((f) => ({ ...(f as TemplateForm), [k]: v }));
@@ -198,10 +209,10 @@ function StoreTemplatePage() {
       product_type: payload.product_type ?? "physical",
       _meta: meta,
     };
-    const arr = [...form!.products];
+    const arr = [...form.products];
     if (pIndex == null) arr.push(next);
     else arr[pIndex] = next;
-    const updated = { ...form!, products: arr };
+    const updated = { ...form, products: arr };
     setForm(updated);
     setPOpen(false);
     return persist(updated);
@@ -247,10 +258,10 @@ function StoreTemplatePage() {
   }, [form.categories, cq]);
 
   function saveCategory(next: TemplateCategory) {
-    const arr = [...form!.categories];
+    const arr = [...form.categories];
     if (cIndex == null) arr.push(next);
     else arr[cIndex] = next;
-    const updated = { ...form!, categories: arr };
+    const updated = { ...form, categories: arr };
     setForm(updated);
     setCOpen(false);
     return persist(updated);
@@ -267,10 +278,10 @@ function StoreTemplatePage() {
   }, [form.banners, bq]);
 
   function saveBanner(next: TemplateBanner) {
-    const arr = [...form!.banners];
+    const arr = [...form.banners];
     if (bIndex == null) arr.push(next);
     else arr[bIndex] = next;
-    const updated = { ...form!, banners: arr };
+    const updated = { ...form, banners: arr };
     setForm(updated);
     setBOpen(false);
     return persist(updated);
