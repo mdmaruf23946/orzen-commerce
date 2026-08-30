@@ -124,57 +124,6 @@ export const ownerListThemes = createServerFn({ method: "GET" })
     return ((data as any[]) ?? []).map((t) => ({ ...t, used_by: usage[t.id] ?? 0 }));
   });
 
-export const ownerSaveTheme = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
-    z
-      .object({
-        id: z.string().uuid().optional(),
-        name: z.string().trim().min(2).max(80),
-        slug: z
-          .string()
-          .trim()
-          .min(2)
-          .max(60)
-          .regex(/^[a-z0-9-]+$/, "Use lowercase letters, numbers and dashes"),
-        category: z.enum([
-          "modern",
-          "premium",
-          "luxury",
-          "fashion",
-          "electronics",
-          "grocery",
-          "minimal",
-          "dark",
-          "corporate",
-          "elegant",
-        ]),
-        description: z.string().trim().max(300).optional().nullable(),
-        preview_url: z.string().trim().max(500).optional().nullable(),
-        status: z.enum(["draft", "published", "hidden"]),
-        sort_order: z.number().int().min(0).max(9999),
-        definition: z.record(z.string(), z.unknown()),
-        locked: z.record(z.string(), z.unknown()),
-      })
-      .parse(d),
-  )
-  .handler(async ({ data, context }) => {
-    await requireThemeOwner(context.supabase, context.userId);
-    const { id, ...row } = data;
-    if (id) {
-      const { error } = await context.supabase.from("store_themes").update(row as any).eq("id", id);
-      if (error) throw new Error(error.message);
-      return { ok: true, id };
-    }
-    const { data: created, error } = await context.supabase
-      .from("store_themes")
-      .insert(row as any)
-      .select("id")
-      .single();
-    if (error) throw new Error(error.message);
-    return { ok: true, id: (created as any).id as string };
-  });
-
 export const ownerSetThemeStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
@@ -190,39 +139,3 @@ export const ownerSetThemeStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const ownerDuplicateTheme = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
-  .handler(async ({ data, context }) => {
-    await requireThemeOwner(context.supabase, context.userId);
-    const { data: src, error } = await context.supabase
-      .from("store_themes")
-      .select("name,slug,category,description,preview_url,sort_order,definition,locked")
-      .eq("id", data.id)
-      .maybeSingle();
-    if (error || !src) throw new Error(error?.message ?? "Theme not found");
-    const s: any = src;
-    const suffix = Date.now().toString(36).slice(-4);
-    const { data: created, error: insErr } = await context.supabase
-      .from("store_themes")
-      .insert({
-        ...s,
-        name: `${s.name} Copy`,
-        slug: `${s.slug}-${suffix}`.slice(0, 60),
-        status: "draft",
-      } as any)
-      .select("id")
-      .single();
-    if (insErr) throw new Error(insErr.message);
-    return { ok: true, id: (created as any).id as string };
-  });
-
-export const ownerDeleteTheme = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
-  .handler(async ({ data, context }) => {
-    await requireThemeOwner(context.supabase, context.userId);
-    const { error } = await context.supabase.from("store_themes").delete().eq("id", data.id);
-    if (error) throw new Error(error.message);
-    return { ok: true };
-  });
