@@ -18,6 +18,8 @@ import { getCategoryIcon } from "@/lib/category-icons";
 import { ProductDialog } from "@/components/admin/product-form/ProductDialog";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { AdminToolbar } from "@/components/admin/page/AdminToolbar";
+import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
+
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/owner/store-template")({
