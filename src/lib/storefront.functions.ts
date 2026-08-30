@@ -1189,13 +1189,26 @@ export const placeOrder = createServerFn({ method: "POST" })
         gatewayId = (gw as any).id;
         gatewayName = (gw as any).name;
       } else {
-        const { data: p } = await sb
-          .from("platform_payment_gateways")
-          .select("id,label")
-          .eq("id", ref)
-          .maybeSingle();
+        // Built-in provider: the store must actually have it connected and
+        // enabled, otherwise the order gets stranded as unpaid "online".
+        const [{ data: p }, { data: conn }] = await Promise.all([
+          sb.from("platform_payment_gateways").select("id,label,enabled").eq("id", ref).maybeSingle(),
+          sb
+            .from("store_payment_gateways")
+            .select("provider_id,status,enabled")
+            .eq("store_id", data.storeId)
+            .eq("provider_id", ref)
+            .maybeSingle(),
+        ]);
+        if (!p || (p as any).enabled === false) throw new Error("Payment gateway unavailable");
+        if (!conn || (conn as any).enabled !== true || (conn as any).status !== "connected") {
+          throw new Error("Payment gateway unavailable");
+        }
+        const { PROVIDERS } = await import("@/lib/subscription-pay/providers/registry");
+        if (!PROVIDERS[ref]?.meta.storefrontCheckout) throw new Error("Payment gateway unavailable");
         gatewayName = (p as any)?.label ?? ref;
       }
+
     }
 
     // ---- Service order extras (isolated from every other checkout type) ----
