@@ -8,6 +8,12 @@ import {
   listStoresAiConfig,
   upsertStoreAiConfig,
   updateGlobalAiKeys,
+  listGlobalGeminiKeys,
+  addGlobalGeminiKey,
+  updateGlobalGeminiKey,
+  deleteGlobalGeminiKey,
+  moveGlobalGeminiKey,
+  testGlobalGeminiKey,
 } from "@/lib/owner.functions";
 import { getAiGlobalSettings, updateAiGlobalSettings } from "@/lib/ai.functions";
 import { Button } from "@/components/ui/button";
@@ -18,7 +24,9 @@ import {
 } from "@/components/ui/sheet";
 import {
   Sparkles, KeyRound, Zap, DollarSign, Activity, Cpu, CheckCircle2, XCircle, Settings2, Search,
+  ArrowUp, ArrowDown, RotateCcw, Trash2, Plus,
 } from "lucide-react";
+
 
 export const Route = createFileRoute("/_authenticated/owner/ai")({
   component: AIControlCenter,
