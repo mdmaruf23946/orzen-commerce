@@ -137,7 +137,18 @@ export const ownerSaveTheme = createServerFn({ method: "POST" })
           .min(2)
           .max(60)
           .regex(/^[a-z0-9-]+$/, "Use lowercase letters, numbers and dashes"),
-        category: z.enum(["general", "fashion", "electronics", "food", "beauty", "sports", "services"]),
+        category: z.enum([
+          "modern",
+          "premium",
+          "luxury",
+          "fashion",
+          "electronics",
+          "grocery",
+          "minimal",
+          "dark",
+          "corporate",
+          "elegant",
+        ]),
         description: z.string().trim().max(300).optional().nullable(),
         preview_url: z.string().trim().max(500).optional().nullable(),
         status: z.enum(["draft", "published", "hidden"]),
