@@ -2,27 +2,13 @@
 // customises whitelisted options. Every store-side write is sanitized against
 // the selected theme's locks server-side, so the UI gate cannot be bypassed.
 import { createServerFn } from "@tanstack/react-start";
-import { myStoreRow } from "@/lib/store-access";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { sanitizeOverrides, THEME_CATEGORIES } from "@/lib/theme/definition";
-
-async function ownerOnly(supabase: any, userId: string) {
-  const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "owner" });
-  if (!data) throw new Error("Forbidden");
-}
-
-async function myStore(supabase: any, userId: string) {
-  const data = await myStoreRow(supabase, userId, "id, slug, theme_id, theme_overrides, theme_draft", "theme");
-  if (!data) throw new Error("No store found for this account");
-  return data as any;
-}
-
-async function themeLocks(supabase: any, themeId: string | null) {
-  if (!themeId) return {};
-  const { data } = await supabase.from("store_themes").select("locked").eq("id", themeId).maybeSingle();
-  return ((data as any)?.locked as Record<string, unknown>) ?? {};
-}
+import {
+  getSafeThemeOverrides,
+  getThemeStore,
+  requireThemeOwner,
+} from "@/lib/themes.server";
 
 // ---------------- SHARED READS ----------------
 
@@ -43,7 +29,7 @@ export const listThemes = createServerFn({ method: "GET" })
 export const getMyThemeState = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const store = await myStore(context.supabase, context.userId);
+    const store = await getThemeStore(context.supabase, context.userId);
     return {
       store_id: store.id,
       slug: store.slug as string,
@@ -74,19 +60,20 @@ export const selectStoreTheme = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-const saveSchema = z.object({
-  overrides: z.record(z.string(), z.unknown()),
-  publish: z.boolean().optional(),
-});
-
 export const saveStoreThemeCustomization = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => saveSchema.parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        overrides: z.record(z.string(), z.unknown()),
+        publish: z.boolean().optional(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const store = await myStore(supabase, userId);
-    const locks = await themeLocks(supabase, store.theme_id);
-    const safe = sanitizeOverrides(data.overrides, locks as any);
+    const store = await getThemeStore(supabase, userId);
+    const safe = await getSafeThemeOverrides(supabase, store.theme_id, data.overrides);
     const patch: any = data.publish
       ? { theme_overrides: safe, theme_draft: {} }
       : { theme_draft: safe };
@@ -122,7 +109,7 @@ export const resetStoreTheme = createServerFn({ method: "POST" })
 export const ownerListThemes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await ownerOnly(context.supabase, context.userId);
+    await requireThemeOwner(context.supabase, context.userId);
     const { data, error } = await context.supabase
       .from("store_themes")
       .select("id,name,slug,category,description,preview_url,status,sort_order,definition,locked,created_at,updated_at")
@@ -137,29 +124,31 @@ export const ownerListThemes = createServerFn({ method: "GET" })
     return ((data as any[]) ?? []).map((t) => ({ ...t, used_by: usage[t.id] ?? 0 }));
   });
 
-const themeInput = z.object({
-  id: z.string().uuid().optional(),
-  name: z.string().trim().min(2).max(80),
-  slug: z
-    .string()
-    .trim()
-    .min(2)
-    .max(60)
-    .regex(/^[a-z0-9-]+$/, "Use lowercase letters, numbers and dashes"),
-  category: z.enum(THEME_CATEGORIES),
-  description: z.string().trim().max(300).optional().nullable(),
-  preview_url: z.string().trim().max(500).optional().nullable(),
-  status: z.enum(["draft", "published", "hidden"]),
-  sort_order: z.number().int().min(0).max(9999),
-  definition: z.record(z.string(), z.unknown()),
-  locked: z.record(z.string(), z.unknown()),
-});
-
 export const ownerSaveTheme = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => themeInput.parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string().uuid().optional(),
+        name: z.string().trim().min(2).max(80),
+        slug: z
+          .string()
+          .trim()
+          .min(2)
+          .max(60)
+          .regex(/^[a-z0-9-]+$/, "Use lowercase letters, numbers and dashes"),
+        category: z.enum(["general", "fashion", "electronics", "food", "beauty", "sports", "services"]),
+        description: z.string().trim().max(300).optional().nullable(),
+        preview_url: z.string().trim().max(500).optional().nullable(),
+        status: z.enum(["draft", "published", "hidden"]),
+        sort_order: z.number().int().min(0).max(9999),
+        definition: z.record(z.string(), z.unknown()),
+        locked: z.record(z.string(), z.unknown()),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
-    await ownerOnly(context.supabase, context.userId);
+    await requireThemeOwner(context.supabase, context.userId);
     const { id, ...row } = data;
     if (id) {
       const { error } = await context.supabase.from("store_themes").update(row as any).eq("id", id);
@@ -181,7 +170,7 @@ export const ownerSetThemeStatus = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid(), status: z.enum(["draft", "published", "hidden"]) }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    await ownerOnly(context.supabase, context.userId);
+    await requireThemeOwner(context.supabase, context.userId);
     const { error } = await context.supabase
       .from("store_themes")
       .update({ status: data.status })
@@ -194,7 +183,7 @@ export const ownerDuplicateTheme = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    await ownerOnly(context.supabase, context.userId);
+    await requireThemeOwner(context.supabase, context.userId);
     const { data: src, error } = await context.supabase
       .from("store_themes")
       .select("name,slug,category,description,preview_url,sort_order,definition,locked")
@@ -221,7 +210,7 @@ export const ownerDeleteTheme = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    await ownerOnly(context.supabase, context.userId);
+    await requireThemeOwner(context.supabase, context.userId);
     const { error } = await context.supabase.from("store_themes").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
