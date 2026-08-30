@@ -83,17 +83,18 @@ export function autoDescription(
 export function resolveFavicon(store: SeoStoreLike) {
   const seo = store.seo ?? {};
   const useIcon = store.use_icon_as_favicon !== false;
+  // Favicon / app icon come from the Store Icon (or a custom favicon) only.
+  // The store logo (logo_url) is a header/footer/menu asset and is never
+  // used as a browser icon.
   return useIcon
     ? clean(store.favicon_url) ??
         clean(store.icon_url) ??
         clean(store.custom_favicon_url) ??
-        clean(seo.favicon_url) ??
-        clean(store.logo_url)
+        clean(seo.favicon_url)
     : clean(store.custom_favicon_url) ??
         clean(store.favicon_url) ??
         clean(store.icon_url) ??
-        clean(seo.favicon_url) ??
-        clean(store.logo_url);
+        clean(seo.favicon_url);
 }
 
 export type ResolvedSeo = {
