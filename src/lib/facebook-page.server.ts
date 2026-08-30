@@ -170,7 +170,7 @@ export function requireCapability(row: any, cap: Capability) {
 }
 
 export function attachmentOf(post: any): { type: string; url: string | null; thumb: string | null; target: string | null } {
-  const a = post?.attachments?.data?.[0] ?? post?.full_picture ? post?.attachments?.data?.[0] : null;
+  const a = post?.attachments?.data?.[0] ?? null;
   const media = a?.media ?? null;
   return {
     type: a?.type ?? (post?.full_picture ? "photo" : "status"),
