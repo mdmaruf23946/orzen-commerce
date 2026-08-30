@@ -203,6 +203,10 @@ export const startOnlineCheckout = createServerFn({ method: "POST" })
     if (recorded && kind === "custom" && recorded !== ref) {
       throw new Error("Payment gateway mismatch for this order");
     }
+    if (recorded && kind !== "custom") {
+      throw new Error("Payment gateway mismatch for this order");
+    }
+
 
 
     if (kind === "custom") {
