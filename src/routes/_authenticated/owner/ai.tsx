@@ -410,15 +410,10 @@ function PlatformSettings({ global, overview }: { global: any; overview: any }) 
           onClear={() => clearKey("openai")}
           placeholder="sk-…"
         />
-        <ProviderKeyField
-          icon={KeyRound}
-          label="Gemini API key"
-          existing={g.gemini_key_masked}
-          value={gemini}
-          onChange={setGemini}
-          onClear={() => clearKey("gemini")}
-          placeholder="AIza…"
-        />
+        <div className="sm:col-span-2">
+          <GeminiKeysManager />
+        </div>
+
       </div>
 
       <div className="flex justify-end">
@@ -446,6 +441,131 @@ function ProviderKeyField({ icon: Icon, label, existing, value, onChange, onClea
     </div>
   );
 }
+
+function GeminiKeysManager() {
+  const listFn = useServerFn(listGlobalGeminiKeys);
+  const addFn = useServerFn(addGlobalGeminiKey);
+  const updFn = useServerFn(updateGlobalGeminiKey);
+  const delFn = useServerFn(deleteGlobalGeminiKey);
+  const moveFn = useServerFn(moveGlobalGeminiKey);
+  const testFn = useServerFn(testGlobalGeminiKey);
+  const qc = useQueryClient();
+
+  const { data } = useQuery({ queryKey: ["ai", "gemini-keys"], queryFn: () => listFn() as any });
+  const keys: any[] = (data as any)?.keys ?? [];
+  const activeId = (data as any)?.active_id ?? null;
+
+  const [label, setLabel] = useState("");
+  const [value, setValue] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+
+  async function run(id: string, fn: () => Promise<any>, ok: string) {
+    setBusy(id);
+    try {
+      await fn();
+      qc.invalidateQueries({ queryKey: ["ai", "gemini-keys"] });
+      qc.invalidateQueries({ queryKey: ["ai", "overview"] });
+      toast.success(ok);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div className="rounded-xl border bg-muted/20 p-3 min-w-0">
+      <div className="flex items-center gap-2">
+        <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-sm font-medium">Gemini API keys ({keys.length})</span>
+      </div>
+      <p className="mt-1 text-[11px] text-muted-foreground">
+        Keys are used one at a time, in this order. If the first key stops working it is paused for the day and the
+        next key takes over automatically. Every day the rotation restarts from key 1.
+      </p>
+
+      <div className="mt-3 space-y-2">
+        {keys.length === 0 && <p className="text-xs text-muted-foreground">No Gemini key added yet.</p>}
+        {keys.map((k, i) => (
+          <div key={k.id} className="overflow-hidden rounded-lg border bg-card p-2.5 min-w-0">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="truncate text-xs font-medium">{k.order}. {k.label}</span>
+                  {k.id === activeId && (
+                    <span className="shrink-0 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-600">Active</span>
+                  )}
+                  {!k.enabled && <span className="shrink-0 text-[10px] text-muted-foreground">Disabled</span>}
+                  {k.failed_today && <span className="shrink-0 text-[10px] text-destructive">Paused today</span>}
+                </div>
+                <div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">{k.masked}</div>
+                {k.last_error && <div className="mt-0.5 line-clamp-2 text-[10px] text-destructive">{k.last_error}</div>}
+              </div>
+              <Switch
+                checked={k.enabled}
+                disabled={busy === k.id}
+                onCheckedChange={(v) => run(k.id, () => updFn({ data: { id: k.id, enabled: v } }), v ? "Enabled" : "Disabled")}
+              />
+            </div>
+
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <Button size="sm" variant="ghost" className="h-8 w-8 shrink-0 px-0" disabled={i === 0 || busy === k.id}
+                onClick={() => run(k.id, () => moveFn({ data: { id: k.id, direction: "up" } }), "Order updated")}>
+                <ArrowUp className="h-3.5 w-3.5" />
+              </Button>
+              <Button size="sm" variant="ghost" className="h-8 w-8 shrink-0 px-0" disabled={i === keys.length - 1 || busy === k.id}
+                onClick={() => run(k.id, () => moveFn({ data: { id: k.id, direction: "down" } }), "Order updated")}>
+                <ArrowDown className="h-3.5 w-3.5" />
+              </Button>
+              <Button size="sm" variant="outline" className="h-8 flex-1" disabled={busy === k.id}
+                onClick={() =>
+                  run(k.id, async () => {
+                    const r: any = await testFn({ data: { id: k.id } });
+                    if (!r?.ok) throw new Error(r?.error ?? "Connection failed");
+                  }, "Key works")
+                }>
+                <Zap className="mr-1 h-3.5 w-3.5" /> Test
+              </Button>
+              {k.failed_today && (
+                <Button size="sm" variant="outline" className="h-8 flex-1" disabled={busy === k.id}
+                  onClick={() => run(k.id, () => updFn({ data: { id: k.id, reset_failure: true } }), "Key resumed")}>
+                  <RotateCcw className="mr-1 h-3.5 w-3.5" /> Resume
+                </Button>
+              )}
+              <Button size="sm" variant="ghost" className="h-8 w-8 shrink-0 px-0 text-destructive" disabled={busy === k.id}
+                onClick={() => {
+                  if (confirm("Remove this Gemini key?")) run(k.id, () => delFn({ data: { id: k.id } }), "Key removed");
+                }}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-3 space-y-2 rounded-lg border bg-card p-2.5">
+        <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label (optional) — e.g. Main key" className="h-9" />
+        <Input type="password" value={value} onChange={(e) => setValue(e.target.value)} placeholder="AIza…" className="h-9" />
+        <Button
+          size="sm"
+          className="h-9 w-full"
+          disabled={value.trim().length < 10 || busy === "new"}
+          onClick={() =>
+            run("new", async () => {
+              await addFn({ data: { key: value.trim(), label: label.trim() || undefined } });
+              setValue("");
+              setLabel("");
+            }, "Key added")
+          }
+        >
+          <Plus className="mr-1 h-3.5 w-3.5" /> Add API key
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+
 
 function StoreCard({ row, onEdit }: { row: any; onEdit: () => void }) {
   return (

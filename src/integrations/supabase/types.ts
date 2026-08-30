@@ -733,6 +733,7 @@ export type Database = {
           enabled: boolean
           fallback_model: string | null
           gemini_api_key: string | null
+          gemini_api_keys: Json
           global_system_prompt: string | null
           id: number
           max_tokens: number | null
@@ -750,6 +751,7 @@ export type Database = {
           enabled?: boolean
           fallback_model?: string | null
           gemini_api_key?: string | null
+          gemini_api_keys?: Json
           global_system_prompt?: string | null
           id?: number
           max_tokens?: number | null
@@ -767,6 +769,7 @@ export type Database = {
           enabled?: boolean
           fallback_model?: string | null
           gemini_api_key?: string | null
+          gemini_api_keys?: Json
           global_system_prompt?: string | null
           id?: number
           max_tokens?: number | null
