@@ -276,14 +276,15 @@ function EmployeesPage() {
 
       {/* Add / edit */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto">
+        <DialogContent className="max-h-[88vh] w-[calc(100vw-2rem)] max-w-[22rem] overflow-y-auto p-4 sm:max-w-2xl sm:p-6">
           <DialogHeader>
-            <DialogTitle>{form.id ? "Edit employee" : "Add employee"}</DialogTitle>
+            <DialogTitle className="text-base sm:text-lg">{form.id ? "Edit employee" : "Add employee"}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+          <div className="space-y-3 sm:space-y-4">
+            <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
+              <div><Label className="text-xs sm:text-sm">Name</Label><Input className="h-9 text-sm" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+
               <div>
                 <Label>Work email {form.id ? "" : "(login)"}</Label>
                 <Input type="email" value={form.email} disabled={!!form.id}
