@@ -888,20 +888,28 @@ function TemplateCategoryDialog({
 function TemplateBannerDialog({
   editing,
   nextOrder,
+  productType,
+  categories,
   onClose,
   onSave,
 }: {
   editing: TemplateBanner | null;
   nextOrder: number;
+  productType: string;
+  categories: string[];
   onClose: () => void;
   onSave: (b: TemplateBanner) => Promise<void>;
 }) {
   const [title, setTitle] = useState(editing?.title ?? "");
   const [image, setImage] = useState<string | null>(editing?.image_url || null);
   const [link, setLink] = useState(editing?.link_url ?? "");
+  const [position, setPosition] = useState<string>(editing?.display_position ?? "hero");
+  const [categoryName, setCategoryName] = useState<string>(editing?.category_name ?? "");
   const [sortOrder, setSortOrder] = useState<number>(editing?.sort_order ?? nextOrder);
   const [isActive, setIsActive] = useState<boolean>(editing?.is_active !== false);
   const [saving, setSaving] = useState(false);
+
+  const typeLabel = BANNER_TABS.find((t) => t.key === productType)?.label ?? "Physical";
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -913,6 +921,9 @@ function TemplateBannerDialog({
         title: title.trim(),
         image_url: image,
         link_url: link.trim(),
+        display_position: position,
+        category_name: categoryName || undefined,
+        product_type: productType,
         sort_order: Number(sortOrder) || 0,
         is_active: isActive,
       });
@@ -929,6 +940,7 @@ function TemplateBannerDialog({
         <DialogHeader>
           <DialogTitle>{editing ? "Edit banner" : "New banner"}</DialogTitle>
         </DialogHeader>
+        <p className="-mt-2 text-xs text-muted-foreground">Product type: {typeLabel}</p>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="tbt">Banner title</Label>
@@ -945,6 +957,41 @@ function TemplateBannerDialog({
             <Label htmlFor="tbl">Link (optional)</Label>
             <Input id="tbl" value={link} onChange={(e) => setLink(e.target.value)} placeholder="/product/..." />
           </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="tbp">Display position</Label>
+            <select
+              id="tbp"
+              value={position}
+              onChange={(e) => setPosition(e.target.value)}
+              className="flex h-9 w-full rounded-md border bg-background px-3 text-sm"
+            >
+              {BANNER_POSITIONS.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="tbc">Related category (optional)</Label>
+            <select
+              id="tbc"
+              value={categoryName}
+              onChange={(e) => setCategoryName(e.target.value)}
+              className="flex h-9 w-full rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="">— None</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+
+
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
