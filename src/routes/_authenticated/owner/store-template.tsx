@@ -590,7 +590,7 @@ function StoreTemplatePage() {
 
         {/* ============ Banners ============ */}
         <TabsContent value="banners" className="space-y-4">
-          <TypeFilterTabs tabs={BANNER_TABS} value={bTab} onChange={(k) => setBTab(k as BannerTabKey)} />
+          <TypeFilterTabs tabs={BANNER_TABS} value={bTab} onChange={(k: string) => setBTab(k as BannerTabKey)} />
 
           <AdminToolbar
             value={bq}
