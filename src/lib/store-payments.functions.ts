@@ -195,7 +195,23 @@ export const setActiveStorePaymentGateway = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertStoreOwnership(context.supabase, data.storeId, context.userId);
+    const provider = getProvider(data.providerId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Never mark a gateway default unless it is actually usable — otherwise
+    // the merchant sees "Default" while checkout silently skips it.
+    const { data: row } = await supabaseAdmin
+      .from("store_payment_gateways")
+      .select("status,credentials_ciphertext")
+      .eq("store_id", data.storeId)
+      .eq("provider_id", data.providerId)
+      .maybeSingle();
+    if (!row) throw new Error("Connect this gateway before making it the default");
+    if (!(row as any).credentials_ciphertext || (row as any).status !== "connected") {
+      throw new Error("This gateway is not connected. Save and test credentials first.");
+    }
+    if (!provider.meta.storefrontCheckout) {
+      throw new Error(`${provider.meta.label} cannot process storefront payments yet`);
+    }
     // Clear others first (partial unique index enforces at most one)
     await supabaseAdmin
       .from("store_payment_gateways")
@@ -223,14 +239,17 @@ export const toggleStorePaymentGateway = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const patch: any = { enabled: data.enabled };
     if (!data.enabled) patch.is_active = false;
-    const { error } = await supabaseAdmin
+    const { data: updated, error } = await supabaseAdmin
       .from("store_payment_gateways")
       .update(patch)
       .eq("store_id", data.storeId)
-      .eq("provider_id", data.providerId);
+      .eq("provider_id", data.providerId)
+      .select("provider_id");
     if (error) throw new Error(error.message);
+    if (!updated?.length) throw new Error("Connect this gateway first");
     return { ok: true };
   });
+
 
 export const disconnectStorePaymentGateway = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
