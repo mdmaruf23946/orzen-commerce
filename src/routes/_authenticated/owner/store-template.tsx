@@ -53,7 +53,43 @@ type TemplateBanner = {
   link_url?: string;
   sort_order?: number;
   is_active?: boolean;
+  product_type?: string;
+  display_position?: string;
+  category_name?: string;
 };
+
+const BANNER_TABS = [
+  { key: "all", label: "All" },
+  { key: "physical", label: "Physical" },
+  { key: "digital", label: "Digital" },
+  { key: "service", label: "Service" },
+  { key: "subscription", label: "Subscription" },
+] as const;
+
+type BannerTabKey = (typeof BANNER_TABS)[number]["key"];
+
+const BANNER_POSITIONS = [
+  { value: "hero", label: "Hero Banner" },
+  { value: "secondary", label: "Secondary Banner" },
+  { value: "promotional", label: "Promotional Banner" },
+  { value: "category", label: "Category Banner" },
+] as const;
+
+const BANNER_SORTS = [
+  { value: "newest", label: "Newest" },
+  { value: "oldest", label: "Oldest" },
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+] as const;
+
+type BannerSortKey = (typeof BANNER_SORTS)[number]["value"];
+
+function bannerType(b: TemplateBanner): string {
+  const t = (b.product_type ?? "").toString().trim().toLowerCase();
+  if (!t || t === "both" || t === "general") return "physical";
+  return t;
+}
+
 
 type TemplateProduct = {
   name: string;
