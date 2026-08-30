@@ -1,33 +1,30 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Plus, Pencil, Trash2, ImageIcon, Eye, EyeOff, Package } from "lucide-react";
 import { getStoreTemplate, updateStoreTemplate } from "@/lib/owner.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Trash2, Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ImageUploader } from "@/components/admin/ImageUploader";
-import { GalleryUploader } from "@/components/admin/GalleryUploader";
 import { CategoryIconPicker } from "@/components/admin/CategoryIconPicker";
 import { CategoryIconCluster } from "@/components/CategoryIconCluster";
+import { getCategoryIcon } from "@/lib/category-icons";
+import { ProductDialog } from "@/components/admin/product-form/ProductDialog";
+import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
+import { AdminToolbar } from "@/components/admin/page/AdminToolbar";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/owner/store-template")({
   component: StoreTemplatePage,
 });
 
 const TEMPLATE_FOLDER = "_template";
-
-type Variant = { name: string; values: string[] };
 
 export type TemplateCategory = {
   name: string;
@@ -40,84 +37,58 @@ export type TemplateCategory = {
   is_active?: boolean;
 };
 
+type TemplateBanner = {
+  title?: string;
+  image_url: string;
+  link_url?: string;
+  sort_order?: number;
+  is_active?: boolean;
+};
+
 type TemplateProduct = {
   name: string;
-  slug?: string;
   short_description?: string;
   description?: string;
-  sku?: string;
   brand?: string;
+  sku?: string;
   category_name?: string;
   subcategory_name?: string;
-  tags?: string[];
   image_url?: string;
   gallery?: string[];
   price?: number;
-  sale_price?: number;
+  old_price?: number;
   cost_price?: number;
-  discount_type?: "percent" | "fixed";
-  discount_value?: number;
   stock?: number;
   low_stock_alert?: number;
-  unlimited_stock?: boolean;
   status?: "active" | "draft";
-  variants?: Variant[];
-  weight?: number;
-  length?: number;
-  width?: number;
-  height?: number;
-  free_shipping?: boolean;
-  youtube_url?: string;
-  video_url?: string;
-  meta_title?: string;
-  meta_description?: string;
-  seo_image?: string;
   featured?: boolean;
-  new_arrival?: boolean;
-  best_seller?: boolean;
-  visibility?: "published" | "draft" | "hidden";
-  is_active?: boolean;
+  variants?: any;
+  video_url?: string;
+  product_type?: string;
+  /** Full merchant-panel meta payload so editing round-trips exactly. */
+  _meta?: Record<string, any>;
 };
 
 type TemplateForm = {
   description: string;
   all_category_image_url: string;
-  primary_color: string;
-  header_color: string;
-  title_bar_color: string;
-  footer_color: string;
-  button_color: string;
-  theme: { radius?: number } & Record<string, any>;
-  seo: Record<string, any>;
-  marketing: Record<string, any>;
-  delivery: Record<string, any>;
-  payments_config: Record<string, any>;
-  product_defaults: { warranty?: string; return_policy?: string; shipping_info?: string };
-  banners: Array<{ image_url: string; link_url?: string; sort_order?: number }>;
+  banners: TemplateBanner[];
   categories: TemplateCategory[];
   products: TemplateProduct[];
-  pages: Array<{ slug: string; title: string; content: string }>;
 };
 
 const empty: TemplateForm = {
   description: "",
   all_category_image_url: "",
-  primary_color: "#0f172a",
-  header_color: "#ffffff",
-  title_bar_color: "#0f172a",
-  footer_color: "#0f172a",
-  button_color: "#0f172a",
-  theme: { radius: 8 },
-  seo: {},
-  marketing: {},
-  delivery: {},
-  payments_config: {},
-  product_defaults: {},
   banners: [],
   categories: [],
   products: [],
-  pages: [],
 };
+
+function imgSrc(url?: string | null) {
+  if (!url) return null;
+  return url.startsWith("http") ? url : `/api/img/${url}`;
+}
 
 function StoreTemplatePage() {
   const fetchTpl = useServerFn(getStoreTemplate);
@@ -126,32 +97,53 @@ function StoreTemplatePage() {
   const { data } = useQuery({ queryKey: ["owner", "store-template"], queryFn: () => fetchTpl() });
 
   const [form, setForm] = useState<TemplateForm | null>(null);
+  const [rest, setRest] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState(false);
+
+  // Products
+  const [pq, setPq] = useState("");
+  const [pOpen, setPOpen] = useState(false);
+  const [pIndex, setPIndex] = useState<number | null>(null);
+
+  // Categories
+  const [cq, setCq] = useState("");
+  const [cOpen, setCOpen] = useState(false);
+  const [cIndex, setCIndex] = useState<number | null>(null);
+
+  // Banners
+  const [bq, setBq] = useState("");
+  const [bOpen, setBOpen] = useState(false);
+  const [bIndex, setBIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (!data) return;
     const d = data as any;
+    setRest({
+      theme: d.theme ?? {},
+      seo: d.seo ?? {},
+      marketing: d.marketing ?? {},
+      delivery: d.delivery ?? {},
+      payments_config: d.payments_config ?? {},
+      product_defaults: d.product_defaults ?? {},
+      pages: d.pages ?? [],
+    });
     setForm({
       ...empty,
-      theme: { ...empty.theme, ...((d.theme as any) ?? {}) },
-      seo: (d.seo as any) ?? {},
-      marketing: (d.marketing as any) ?? {},
-      delivery: (d.delivery as any) ?? {},
-      payments_config: (d.payments_config as any) ?? {},
-      product_defaults: (d.product_defaults as any) ?? {},
-      banners: (d.banners as any) ?? [],
-      categories: (d.categories as any) ?? [],
-      products: (d.products as any) ?? [],
-      pages: (d.pages as any) ?? [],
       description: d.description ?? "",
       all_category_image_url: d.all_category_image_url ?? "",
-      primary_color: d.primary_color ?? "#0f172a",
-      header_color: d.header_color ?? "#ffffff",
-      title_bar_color: d.title_bar_color ?? "#0f172a",
-      footer_color: d.footer_color ?? "#0f172a",
-      button_color: d.button_color ?? "#0f172a",
+      banners: (d.banners as TemplateBanner[]) ?? [],
+      categories: (d.categories as TemplateCategory[]) ?? [],
+      products: (d.products as TemplateProduct[]) ?? [],
     });
   }, [data]);
+
+  const categoriesForDialog = useMemo(
+    () =>
+      (form?.categories ?? [])
+        .filter((c) => c.name.trim())
+        .map((c) => ({ id: c.name, name: c.name, parent_id: c.parent_name || null })),
+    [form?.categories],
+  );
 
   if (!form) return <div className="text-sm text-muted-foreground">Loading…</div>;
 
@@ -159,19 +151,12 @@ function StoreTemplatePage() {
     setForm((f) => ({ ...(f as TemplateForm), [k]: v }));
   }
 
-  function updateProduct(i: number, patch: Partial<TemplateProduct>) {
-    const arr = [...form!.products];
-    arr[i] = { ...arr[i], ...patch };
-    set("products", arr);
-  }
-
-  async function save() {
-    if (!form) return;
+  async function persist(next: TemplateForm) {
     setSaving(true);
     try {
-      await saveTpl({ data: form as any });
+      await saveTpl({ data: { ...rest, ...next } as any });
       qc.invalidateQueries({ queryKey: ["owner", "store-template"] });
-      toast.success("Template saved. New stores will use this from now on.");
+      toast.success("Saved");
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -179,679 +164,710 @@ function StoreTemplatePage() {
     }
   }
 
+  // ---------- products ----------
+  const visibleProducts = useMemo(() => {
+    const n = pq.trim().toLowerCase();
+    return form.products
+      .map((p, i) => ({ p, i }))
+      .filter(({ p }) =>
+        !n ? true : [p.name, p.sku, p.category_name].some((v) => (v ?? "").toLowerCase().includes(n)),
+      );
+  }, [form.products, pq]);
 
+  function saveProduct(payload: any) {
+    const meta = payload.meta ?? {};
+    const next: TemplateProduct = {
+      name: payload.name,
+      short_description: payload.short_description ?? "",
+      description: payload.description ?? "",
+      brand: payload.brand ?? "",
+      sku: payload.sku ?? "",
+      category_name: payload.category_id ?? "",
+      subcategory_name: meta.subcategory_id ?? "",
+      image_url: payload.primary_image_url ?? "",
+      gallery: payload.gallery ?? [],
+      price: Number(payload.price ?? 0),
+      old_price: payload.old_price != null ? Number(payload.old_price) : undefined,
+      cost_price: payload.cost_price != null ? Number(payload.cost_price) : undefined,
+      stock: Number(payload.stock ?? 0),
+      low_stock_alert: payload.low_stock_threshold != null ? Number(payload.low_stock_threshold) : undefined,
+      status: payload.status === "draft" ? "draft" : "active",
+      featured: !!payload.is_featured,
+      variants: payload.variants ?? null,
+      video_url: payload.video_url ?? "",
+      product_type: payload.product_type ?? "physical",
+      _meta: meta,
+    };
+    const arr = [...form!.products];
+    if (pIndex == null) arr.push(next);
+    else arr[pIndex] = next;
+    const updated = { ...form!, products: arr };
+    setForm(updated);
+    setPOpen(false);
+    return persist(updated);
+  }
 
+  const editingProduct =
+    pIndex == null
+      ? null
+      : (() => {
+          const p = form.products[pIndex];
+          return {
+            id: `tpl-${pIndex}`,
+            name: p.name,
+            short_description: p.short_description ?? null,
+            description: p.description ?? null,
+            brand: p.brand ?? null,
+            sku: p.sku ?? null,
+            price: p.price ?? 0,
+            old_price: p.old_price ?? null,
+            cost_price: p.cost_price ?? 0,
+            stock: p.stock ?? 0,
+            low_stock_threshold: p.low_stock_alert ?? 5,
+            status: p.status ?? "active",
+            primary_image_url: p.image_url || null,
+            gallery: p.gallery ?? [],
+            is_featured: !!p.featured,
+            category_id: p.category_name || null,
+            variants: p.variants ?? null,
+            video_url: p.video_url || null,
+            product_type: p.product_type ?? "physical",
+            meta: p._meta ?? {},
+          } as any;
+        })();
+
+  // ---------- categories ----------
+  const visibleCategories = useMemo(() => {
+    const n = cq.trim().toLowerCase();
+    return form.categories
+      .map((c, i) => ({ c, i }))
+      .filter(({ c }) =>
+        !n ? true : (c.name + " " + (c.description ?? "")).toLowerCase().includes(n),
+      );
+  }, [form.categories, cq]);
+
+  function saveCategory(next: TemplateCategory) {
+    const arr = [...form!.categories];
+    if (cIndex == null) arr.push(next);
+    else arr[cIndex] = next;
+    const updated = { ...form!, categories: arr };
+    setForm(updated);
+    setCOpen(false);
+    return persist(updated);
+  }
+
+  // ---------- banners ----------
+  const visibleBanners = useMemo(() => {
+    const n = bq.trim().toLowerCase();
+    return form.banners
+      .map((b, i) => ({ b, i }))
+      .filter(({ b }) =>
+        !n ? true : ((b.title ?? "") + " " + (b.link_url ?? "")).toLowerCase().includes(n),
+      );
+  }, [form.banners, bq]);
+
+  function saveBanner(next: TemplateBanner) {
+    const arr = [...form!.banners];
+    if (bIndex == null) arr.push(next);
+    else arr[bIndex] = next;
+    const updated = { ...form!, banners: arr };
+    setForm(updated);
+    setBOpen(false);
+    return persist(updated);
+  }
+
+  const addProductBtn = (
+    <Button
+      onClick={() => {
+        setPIndex(null);
+        setPOpen(true);
+      }}
+    >
+      <Plus className="mr-1 h-4 w-4" /> Add product
+    </Button>
+  );
+  const addCategoryBtn = (
+    <Button
+      onClick={() => {
+        setCIndex(null);
+        setCOpen(true);
+      }}
+    >
+      <Plus className="mr-1 h-4 w-4" /> Add category
+    </Button>
+  );
+  const addBannerBtn = (
+    <Button
+      onClick={() => {
+        setBIndex(null);
+        setBOpen(true);
+      }}
+    >
+      <Plus className="mr-1 h-4 w-4" /> Add banner
+    </Button>
+  );
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Global Store Template</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          The blueprint every newly created store inherits. Existing stores keep their current setup unless their
-          admin taps "Reset to Default Template".
-        </p>
-      </div>
+    <div className="space-y-4 sm:space-y-5">
+      <AdminPageHeader
+        title="Global Store Template"
+        description="The blueprint every newly created store inherits. Same add/edit system as the Merchant Panel."
+      />
 
-      <Tabs defaultValue="products">
+      <Tabs defaultValue="products" className="space-y-4">
         <TabsList className="flex flex-wrap">
           <TabsTrigger value="products">Products</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="banners">Banners</TabsTrigger>
         </TabsList>
 
+        {/* ============ Products ============ */}
+        <TabsContent value="products" className="space-y-4">
+          <AdminToolbar
+            value={pq}
+            onChange={setPq}
+            placeholder="Search by name, SKU or category…"
+            action={addProductBtn}
+            trailing={<div className="hidden sm:block">{addProductBtn}</div>}
+          />
 
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: "Total", value: form.products.length },
+              { label: "Active", value: form.products.filter((p) => (p.status ?? "active") === "active").length },
+              { label: "Draft", value: form.products.filter((p) => p.status === "draft").length },
+            ].map((s) => (
+              <div key={s.label} className="rounded-xl border bg-card p-3">
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <Package className="h-3.5 w-3.5" />
+                  {s.label}
+                </div>
+                <p className="mt-1 text-lg font-semibold">{s.value}</p>
+              </div>
+            ))}
+          </div>
 
-        {/* ============ Banners ============ */}
-        <TabsContent value="banners" className="space-y-4 rounded-xl border bg-card p-4">
-          <p className="text-xs text-muted-foreground">
-            Upload banner images (JPG/PNG/WEBP, auto-compressed). Recommended 1600×600.
-          </p>
-          {form.banners.map((b, i) => (
-            <div key={i} className="space-y-3 rounded-lg border p-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="text-sm font-medium">Banner {i + 1}</div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => set("banners", form.banners.filter((_, j) => j !== i))}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+          <div className="overflow-hidden rounded-xl border bg-card">
+            {visibleProducts.length === 0 ? (
+              <div className="space-y-3 p-10 text-center">
+                <p className="text-sm text-muted-foreground">No products yet.</p>
+                {addProductBtn}
               </div>
-              <ImageUploader
-                folder={TEMPLATE_FOLDER}
-                value={b.image_url || null}
-                onChange={(v) => {
-                  const arr = [...form.banners];
-                  arr[i] = { ...b, image_url: v ?? "" };
-                  set("banners", arr);
-                }}
-                label="Upload banner"
-              />
-              <div className="grid gap-2 sm:grid-cols-[1fr_120px]">
-                <div className="space-y-1.5">
-                  <Label>Link (optional)</Label>
-                  <Input
-                    placeholder="/product/..."
-                    value={b.link_url ?? ""}
-                    onChange={(e) => {
-                      const arr = [...form.banners];
-                      arr[i] = { ...b, link_url: e.target.value };
-                      set("banners", arr);
-                    }}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Order</Label>
-                  <Input
-                    type="number"
-                    value={b.sort_order ?? i}
-                    onChange={(e) => {
-                      const arr = [...form.banners];
-                      arr[i] = { ...b, sort_order: Number(e.target.value) };
-                      set("banners", arr);
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => set("banners", [...form.banners, { image_url: "", link_url: "", sort_order: form.banners.length }])}
-          >
-            <Plus className="mr-2 h-4 w-4" /> Add banner
-          </Button>
+            ) : (
+              <ul className="divide-y">
+                {visibleProducts.map(({ p, i }) => {
+                  const src = imgSrc(p.image_url);
+                  return (
+                    <li key={i} className="flex items-center gap-3 p-3">
+                      <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-muted">
+                        {src ? (
+                          <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
+                        ) : (
+                          <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="line-clamp-1 text-sm font-medium">{p.name || `Product ${i + 1}`}</p>
+                          <span
+                            className={cn(
+                              "rounded-full px-2 py-0.5 text-[11px]",
+                              (p.status ?? "active") === "active"
+                                ? "bg-primary/10 text-primary"
+                                : "bg-muted text-muted-foreground",
+                            )}
+                          >
+                            {(p.status ?? "active") === "active" ? "Active" : "Draft"}
+                          </span>
+                        </div>
+                        <p className="line-clamp-1 text-xs text-muted-foreground">
+                          {p.category_name ? `${p.category_name} · ` : ""}
+                          {Number(p.price ?? 0)} · Stock {Number(p.stock ?? 0)}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setPIndex(i);
+                          setPOpen(true);
+                        }}
+                        className="rounded p-2 hover:bg-muted"
+                        aria-label="Edit"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!confirm("Delete this product?")) return;
+                          const updated = { ...form, products: form.products.filter((_, j) => j !== i) };
+                          setForm(updated);
+                          persist(updated);
+                        }}
+                        className="rounded p-2 text-destructive hover:bg-destructive/10"
+                        aria-label="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </TabsContent>
 
         {/* ============ Categories ============ */}
-        <TabsContent value="categories" className="space-y-4 rounded-xl border bg-card p-4">
-          <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+        <TabsContent value="categories" className="space-y-4">
+          <div className="space-y-2 rounded-xl border bg-card p-4">
             <Label>"All" category image</Label>
             <p className="text-xs text-muted-foreground">
-              Shown on the storefront "All" tile. New stores inherit this image.
+              Shown on the storefront as the first category tile. Square image recommended (512×512).
             </p>
             <ImageUploader
               folder={TEMPLATE_FOLDER}
               value={form.all_category_image_url || null}
-              onChange={(v) => set("all_category_image_url", v ?? "")}
-              label="Upload image"
+              onChange={(v) => {
+                const updated = { ...form, all_category_image_url: v ?? "" };
+                setForm(updated);
+                persist(updated);
+              }}
             />
           </div>
 
-          <p className="text-xs text-muted-foreground">
-            Same system as the Merchant Panel: main categories support 1–3 preset icons (outline or colored) or a
-            custom square image; subcategories are text-only.
-          </p>
+          <AdminToolbar
+            value={cq}
+            onChange={setCq}
+            placeholder="Search categories…"
+            action={addCategoryBtn}
+            trailing={<div className="hidden sm:block">{addCategoryBtn}</div>}
+          />
 
-          {form.categories.map((c, i) => {
-            const isSub = !!c.parent_name;
-            const patch = (v: Partial<TemplateCategory>) => {
-              const arr = [...form.categories];
-              arr[i] = { ...c, ...v };
-              set("categories", arr);
-            };
-            return (
-              <div key={i} className="space-y-3 rounded-lg border p-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg border bg-muted">
-                      {!isSub && c.icon_name ? (
-                        <CategoryIconCluster iconName={c.icon_name} iconStyle={c.icon_style ?? "outline"} />
-                      ) : !isSub && c.image_url ? (
-                        <img
-                          src={c.image_url.startsWith("http") ? c.image_url : `/api/img/${c.image_url}`}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
+          <div className="overflow-hidden rounded-xl border bg-card">
+            {visibleCategories.length === 0 ? (
+              <div className="space-y-3 p-10 text-center">
+                <p className="text-sm text-muted-foreground">No categories found.</p>
+                {addCategoryBtn}
+              </div>
+            ) : (
+              <ul className="divide-y">
+                {visibleCategories.map(({ c, i }) => {
+                  const isSub = !!c.parent_name;
+                  const src = imgSrc(c.image_url);
+                  return (
+                    <li key={i} className={cn("flex items-center gap-3 p-3", isSub && "pl-10")}>
+                      <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-muted">
+                        {!isSub && getCategoryIcon(c.icon_name) ? (
+                          <CategoryIconCluster iconName={c.icon_name!} iconStyle={c.icon_style ?? "outline"} />
+                        ) : !isSub && src ? (
+                          <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
+                        ) : (
+                          <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-1 text-sm font-medium">
+                          {isSub && <span className="text-muted-foreground">↳ </span>}
+                          {c.name || `Category ${i + 1}`}
+                        </p>
+                        <p className="line-clamp-1 text-xs text-muted-foreground">
+                          {isSub ? `In ${c.parent_name}` : "Main category"}
+                          {c.description ? ` · ${c.description}` : ""}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const arr = [...form.categories];
+                          arr[i] = { ...c, is_active: c.is_active === false };
+                          const updated = { ...form, categories: arr };
+                          setForm(updated);
+                          persist(updated);
+                        }}
+                        className="rounded p-2 hover:bg-muted"
+                        aria-label={c.is_active === false ? "Show" : "Hide"}
+                      >
+                        {c.is_active === false ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setCIndex(i);
+                          setCOpen(true);
+                        }}
+                        className="rounded p-2 hover:bg-muted"
+                        aria-label="Edit"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!confirm("Delete this category?")) return;
+                          const updated = { ...form, categories: form.categories.filter((_, j) => j !== i) };
+                          setForm(updated);
+                          persist(updated);
+                        }}
+                        className="rounded p-2 text-destructive hover:bg-destructive/10"
+                        aria-label="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* ============ Banners ============ */}
+        <TabsContent value="banners" className="space-y-4">
+          <AdminToolbar
+            value={bq}
+            onChange={setBq}
+            placeholder="Search banners…"
+            action={addBannerBtn}
+            trailing={<div className="hidden sm:block">{addBannerBtn}</div>}
+          />
+
+          {visibleBanners.length === 0 ? (
+            <div className="space-y-3 rounded-xl border bg-card p-10 text-center">
+              <p className="text-sm text-muted-foreground">No banners found.</p>
+              {addBannerBtn}
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {visibleBanners.map(({ b, i }) => {
+                const src = imgSrc(b.image_url);
+                const isActive = b.is_active !== false;
+                return (
+                  <div key={i} className="overflow-hidden rounded-xl border bg-card">
+                    <div className="grid aspect-[16/7] place-items-center bg-muted">
+                      {src ? (
+                        <img src={src} alt={b.title ?? ""} loading="lazy" className="h-full w-full object-cover" />
                       ) : (
-                        <span className="text-[9px] text-muted-foreground">{isSub ? "Sub" : "—"}</span>
-                      )}
-                    </span>
-                    <div className="min-w-0 text-sm font-medium">
-                      {c.name || `Category ${i + 1}`}
-                      {isSub && (
-                        <span className="ml-1 text-xs text-muted-foreground">↳ in {c.parent_name}</span>
+                        <ImageIcon className="h-5 w-5 text-muted-foreground" />
                       )}
                     </div>
+                    <div className="space-y-2 p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="line-clamp-1 text-sm font-medium">{b.title || `Banner ${i + 1}`}</p>
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-full px-2 py-0.5 text-[11px]",
+                            isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
+                          )}
+                        >
+                          {isActive ? "Active" : "Inactive"}
+                        </span>
+                      </div>
+                      <p className="line-clamp-1 text-xs text-muted-foreground">{b.link_url || "No link"}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                          Order {b.sort_order ?? i}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => {
+                              setBIndex(i);
+                              setBOpen(true);
+                            }}
+                            className="rounded p-2 hover:bg-muted"
+                            aria-label="Edit"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (!confirm("Delete banner?")) return;
+                              const updated = { ...form, banners: form.banners.filter((_, j) => j !== i) };
+                              setForm(updated);
+                              persist(updated);
+                            }}
+                            className="rounded p-2 text-destructive hover:bg-destructive/10"
+                            aria-label="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => set("categories", form.categories.filter((_, j) => j !== i))}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {!isSub && (
-                  <div className="space-y-1.5">
-                    <Label>Category icon</Label>
-                    <CategoryIconPicker
-                      folder={TEMPLATE_FOLDER}
-                      iconName={c.icon_name ?? null}
-                      imageUrl={c.image_url || null}
-                      iconStyle={c.icon_style === "colored" ? "colored" : "outline"}
-                      onChangeIcon={(v) => patch({ icon_name: v ?? "" })}
-                      onChangeImage={(v) => patch({ image_url: v ?? "" })}
-                      onChangeIconStyle={(v) => patch({ icon_style: v })}
-                    />
-                  </div>
-                )}
-
-                <div className="space-y-1.5">
-                  <Label>Name</Label>
-                  <Input value={c.name} onChange={(e) => patch({ name: e.target.value })} />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label>Parent category</Label>
-                  <select
-                    value={c.parent_name ?? ""}
-                    onChange={(e) => {
-                      const parent = e.target.value || "";
-                      patch(
-                        parent
-                          ? { parent_name: parent, icon_name: "", image_url: "", icon_style: "outline" }
-                          : { parent_name: "" },
-                      );
-                    }}
-                    className="flex h-9 w-full rounded-md border bg-background px-3 text-sm"
-                  >
-                    <option value="">— None (main category)</option>
-                    {form.categories
-                      .filter((p, j) => j !== i && !p.parent_name && p.name.trim())
-                      .map((p) => (
-                        <option key={p.name} value={p.name}>
-                          {p.name}
-                        </option>
-                      ))}
-                  </select>
-                  <p className="text-xs text-muted-foreground">
-                    Leave empty for a main category. Selecting a parent makes this a text-only subcategory.
-                  </p>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label>Description (optional)</Label>
-                  <Textarea
-                    rows={2}
-                    value={c.description ?? ""}
-                    onChange={(e) => patch({ description: e.target.value })}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label>Display order</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={c.sort_order ?? i}
-                      onChange={(e) => patch({ sort_order: Number(e.target.value) })}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Status</Label>
-                    <select
-                      value={c.is_active === false ? "0" : "1"}
-                      onChange={(e) => patch({ is_active: e.target.value === "1" })}
-                      className="flex h-9 w-full rounded-md border bg-background px-3 text-sm"
-                    >
-                      <option value="1">Active</option>
-                      <option value="0">Inactive</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() =>
-              set("categories", [
-                ...form.categories,
-                {
-                  name: "",
-                  image_url: "",
-                  icon_name: "",
-                  icon_style: "outline",
-                  description: "",
-                  parent_name: "",
-                  sort_order: form.categories.length,
-                  is_active: true,
-                },
-              ])
-            }
-          >
-            <Plus className="mr-2 h-4 w-4" /> Add category
-          </Button>
+                );
+              })}
+            </div>
+          )}
         </TabsContent>
-
-
-        {/* ============ Products ============ */}
-        <TabsContent value="products" className="space-y-4 rounded-xl border bg-card p-4">
-          <Accordion type="multiple" className="space-y-2">
-            {form.products.map((p, i) => (
-              <AccordionItem key={i} value={`p-${i}`} className="rounded-lg border">
-                <AccordionTrigger className="px-3 py-2 text-left">
-                  <span className="truncate">{p.name || `Product ${i + 1}`}</span>
-                </AccordionTrigger>
-                <AccordionContent className="space-y-4 px-3 pb-3">
-                  <ProductEditor
-                    product={p}
-                    onChange={(patch) => updateProduct(i, patch)}
-                    onRemove={() => set("products", form.products.filter((_, j) => j !== i))}
-                  />
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() =>
-              set("products", [
-                ...form.products,
-                { name: "", price: 0, stock: 0, status: "active", gallery: [], variants: [] },
-              ])
-            }
-          >
-            <Plus className="mr-2 h-4 w-4" /> Add product
-          </Button>
-        </TabsContent>
-
       </Tabs>
 
-      <div className="sticky bottom-4 flex justify-end">
-        <Button onClick={save} disabled={saving} size="lg">
-          {saving ? "Saving…" : "Save template"}
-        </Button>
-      </div>
+      {saving && <p className="text-xs text-muted-foreground">Saving…</p>}
+
+      {pOpen && (
+        <ProductDialog
+          storeId={TEMPLATE_FOLDER}
+          editing={editingProduct}
+          categories={categoriesForDialog}
+          productDefaults={null}
+          onClose={() => setPOpen(false)}
+          onSave={async (payload: any) => {
+            await saveProduct(payload);
+          }}
+        />
+      )}
+
+      {cOpen && (
+        <TemplateCategoryDialog
+          editing={cIndex == null ? null : form.categories[cIndex]}
+          nextOrder={form.categories.length}
+          allCategories={form.categories.filter((_, j) => j !== cIndex)}
+          onClose={() => setCOpen(false)}
+          onSave={async (c) => {
+            await saveCategory(c);
+          }}
+        />
+      )}
+
+      {bOpen && (
+        <TemplateBannerDialog
+          editing={bIndex == null ? null : form.banners[bIndex]}
+          nextOrder={form.banners.length}
+          onClose={() => setBOpen(false)}
+          onSave={async (b) => {
+            await saveBanner(b);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-// ============================================================
-// ProductEditor
-// ============================================================
-function ProductEditor({
-  product,
-  onChange,
-  onRemove,
+function TemplateCategoryDialog({
+  editing,
+  nextOrder,
+  allCategories,
+  onClose,
+  onSave,
 }: {
-  product: TemplateProduct;
-  onChange: (patch: Partial<TemplateProduct>) => void;
-  onRemove: () => void;
+  editing: TemplateCategory | null;
+  nextOrder: number;
+  allCategories: TemplateCategory[];
+  onClose: () => void;
+  onSave: (c: TemplateCategory) => Promise<void>;
 }) {
-  const p = product;
-  const tagsStr = (p.tags ?? []).join(", ");
-  const setTags = (s: string) =>
-    onChange({ tags: s.split(",").map((t) => t.trim()).filter(Boolean) });
+  const [name, setName] = useState(editing?.name ?? "");
+  const [image, setImage] = useState<string | null>(editing?.image_url || null);
+  const [iconName, setIconName] = useState<string | null>(editing?.icon_name || null);
+  const [iconStyle, setIconStyle] = useState<"outline" | "colored">(
+    editing?.icon_style === "colored" ? "colored" : "outline",
+  );
+  const [description, setDescription] = useState(editing?.description ?? "");
+  const [sortOrder, setSortOrder] = useState<number>(editing?.sort_order ?? nextOrder);
+  const [isActive, setIsActive] = useState<boolean>(editing?.is_active !== false);
+  const [parentName, setParentName] = useState<string>(editing?.parent_name ?? "");
+  const [saving, setSaving] = useState(false);
 
-  const addVariant = () =>
-    onChange({ variants: [...(p.variants ?? []), { name: "", values: [] }] });
+  const parentOptions = allCategories.filter((c) => !c.parent_name && c.name.trim());
 
-  const updateVariant = (idx: number, patch: Partial<Variant>) => {
-    const arr = [...(p.variants ?? [])];
-    arr[idx] = { ...arr[idx], ...patch };
-    onChange({ variants: arr });
-  };
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) return toast.error("Name is required");
+    setSaving(true);
+    try {
+      const isSub = !!parentName;
+      await onSave({
+        name: name.trim(),
+        image_url: isSub ? "" : image ?? "",
+        icon_name: isSub ? "" : iconName ?? "",
+        icon_style: isSub ? "outline" : iconStyle,
+        description: description.trim(),
+        parent_name: parentName,
+        sort_order: Number(sortOrder) || 0,
+        is_active: isActive,
+      });
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
-    <Tabs defaultValue="basic">
-      <TabsList className="flex flex-wrap">
-        <TabsTrigger value="basic">Basic</TabsTrigger>
-        <TabsTrigger value="images">Images</TabsTrigger>
-        <TabsTrigger value="pricing">Pricing</TabsTrigger>
-        <TabsTrigger value="inventory">Inventory</TabsTrigger>
-        <TabsTrigger value="variants">Variants</TabsTrigger>
-        <TabsTrigger value="shipping">Shipping</TabsTrigger>
-        <TabsTrigger value="media">Media</TabsTrigger>
-        <TabsTrigger value="seo">SEO</TabsTrigger>
-        <TabsTrigger value="visibility">Visibility</TabsTrigger>
-      </TabsList>
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[94dvh] w-[calc(100%-2rem)] max-w-[23rem] gap-2 overflow-x-hidden overflow-y-auto rounded-lg p-3 sm:max-h-[92vh] sm:max-w-lg sm:p-6">
+        <DialogHeader className="min-w-0 pb-1 pr-6 text-left">
+          <DialogTitle className="text-base sm:text-lg">{editing ? "Edit category" : "New category"}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={submit} className="min-w-0 space-y-3 sm:space-y-4">
+          {!parentName && (
+            <div className="space-y-1.5">
+              <Label>Category icon</Label>
+              <CategoryIconPicker
+                folder={TEMPLATE_FOLDER}
+                iconName={iconName}
+                imageUrl={image}
+                iconStyle={iconStyle}
+                onChangeIcon={setIconName}
+                onChangeImage={setImage}
+                onChangeIconStyle={setIconStyle}
+              />
+            </div>
+          )}
 
-      {/* Basic */}
-      <TabsContent value="basic" className="space-y-3 pt-3">
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Field label="Product name">
-            <Input value={p.name} onChange={(e) => onChange({ name: e.target.value })} />
-          </Field>
-          <Field label="Slug">
-            <Input
-              value={p.slug ?? ""}
-              placeholder="auto"
-              onChange={(e) => onChange({ slug: e.target.value })}
-            />
-          </Field>
-          <Field label="SKU / Code">
-            <Input value={p.sku ?? ""} onChange={(e) => onChange({ sku: e.target.value })} />
-          </Field>
-          <Field label="Brand">
-            <Input value={p.brand ?? ""} onChange={(e) => onChange({ brand: e.target.value })} />
-          </Field>
-          <Field label="Category (must match a template category name)">
-            <Input
-              value={p.category_name ?? ""}
-              onChange={(e) => onChange({ category_name: e.target.value })}
-            />
-          </Field>
-          <Field label="Subcategory (optional)">
-            <Input
-              value={p.subcategory_name ?? ""}
-              onChange={(e) => onChange({ subcategory_name: e.target.value })}
-            />
-          </Field>
-        </div>
-        <Field label="Tags (comma-separated)">
-          <Input value={tagsStr} onChange={(e) => setTags(e.target.value)} />
-        </Field>
-        <Field label="Short description">
-          <Textarea
-            rows={2}
-            value={p.short_description ?? ""}
-            onChange={(e) => onChange({ short_description: e.target.value })}
-          />
-        </Field>
-        <Field label="Full description">
-          <Textarea
-            rows={4}
-            value={p.description ?? ""}
-            onChange={(e) => onChange({ description: e.target.value })}
-          />
-        </Field>
-        <Button type="button" variant="ghost" size="sm" onClick={onRemove}>
-          <Trash2 className="mr-2 h-4 w-4" /> Remove product
-        </Button>
-      </TabsContent>
-
-      {/* Images */}
-      <TabsContent value="images" className="space-y-4 pt-3">
-        <Field label="Main product image">
-          <ImageUploader
-            folder={TEMPLATE_FOLDER}
-            value={p.image_url || null}
-            onChange={(v) => onChange({ image_url: v ?? "" })}
-            label="Upload"
-          />
-        </Field>
-        <Field label="Gallery (drag to reorder)">
-          <GalleryUploader
-            folder={TEMPLATE_FOLDER}
-            value={p.gallery ?? []}
-            onChange={(v) => onChange({ gallery: v })}
-          />
-        </Field>
-      </TabsContent>
-
-      {/* Pricing */}
-      <TabsContent value="pricing" className="space-y-3 pt-3">
-        <div className="grid gap-2 sm:grid-cols-3">
-          <Field label="Regular price">
-            <Input
-              type="number"
-              value={p.price ?? ""}
-              onChange={(e) => onChange({ price: e.target.value === "" ? undefined : Number(e.target.value) })}
-            />
-          </Field>
-          <Field label="Sale price">
-            <Input
-              type="number"
-              value={p.sale_price ?? ""}
-              onChange={(e) => onChange({ sale_price: e.target.value === "" ? undefined : Number(e.target.value) })}
-            />
-          </Field>
-          <Field label="Cost price">
-            <Input
-              type="number"
-              value={p.cost_price ?? ""}
-              onChange={(e) => onChange({ cost_price: e.target.value === "" ? undefined : Number(e.target.value) })}
-            />
-          </Field>
-        </div>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Field label="Discount type">
-            <select
-              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-              value={p.discount_type ?? ""}
-              onChange={(e) => onChange({ discount_type: (e.target.value || undefined) as any })}
-            >
-              <option value="">None</option>
-              <option value="percent">Percent (%)</option>
-              <option value="fixed">Fixed</option>
-            </select>
-          </Field>
-          <Field label="Discount value">
-            <Input
-              type="number"
-              value={p.discount_value ?? ""}
-              onChange={(e) =>
-                onChange({ discount_value: e.target.value === "" ? undefined : Number(e.target.value) })
-              }
-            />
-          </Field>
-        </div>
-      </TabsContent>
-
-      {/* Inventory */}
-      <TabsContent value="inventory" className="space-y-3 pt-3">
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Field label="Stock quantity">
-            <Input
-              type="number"
-              value={p.stock ?? ""}
-              disabled={!!p.unlimited_stock}
-              onChange={(e) => onChange({ stock: e.target.value === "" ? undefined : Number(e.target.value) })}
-            />
-          </Field>
-          <Field label="Low-stock alert">
-            <Input
-              type="number"
-              value={p.low_stock_alert ?? ""}
-              onChange={(e) =>
-                onChange({ low_stock_alert: e.target.value === "" ? undefined : Number(e.target.value) })
-              }
-            />
-          </Field>
-        </div>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={!!p.unlimited_stock}
-            onChange={(e) => onChange({ unlimited_stock: e.target.checked })}
-          />
-          Unlimited stock
-        </label>
-        <Field label="Product status">
-          <select
-            className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-            value={p.status ?? "active"}
-            onChange={(e) => onChange({ status: e.target.value as any })}
-          >
-            <option value="active">Active</option>
-            <option value="draft">Draft</option>
-          </select>
-        </Field>
-      </TabsContent>
-
-      {/* Variants */}
-      <TabsContent value="variants" className="space-y-3 pt-3">
-        <p className="text-xs text-muted-foreground">
-          Add attributes like Size, Color, Model, Storage, RAM, or any custom attribute.
-        </p>
-        {(p.variants ?? []).map((v, i) => (
-          <div key={i} className="grid gap-2 rounded-md border p-3 sm:grid-cols-[1fr_2fr_auto]">
-            <Input
-              placeholder="Attribute (Size)"
-              value={v.name}
-              onChange={(e) => updateVariant(i, { name: e.target.value })}
-            />
-            <Input
-              placeholder="Values, comma-separated (S, M, L)"
-              value={(v.values ?? []).join(", ")}
-              onChange={(e) =>
-                updateVariant(i, {
-                  values: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
-                })
-              }
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => onChange({ variants: (p.variants ?? []).filter((_, j) => j !== i) })}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+          <div className="space-y-1.5">
+            <Label htmlFor="tn">Name</Label>
+            <Input id="tn" required value={name} onChange={(e) => setName(e.target.value)} />
           </div>
-        ))}
-        <Button type="button" variant="outline" size="sm" onClick={addVariant}>
-          <Plus className="mr-2 h-4 w-4" /> Add attribute
-        </Button>
-      </TabsContent>
 
-      {/* Shipping */}
-      <TabsContent value="shipping" className="space-y-3 pt-3">
-        <div className="grid gap-2 sm:grid-cols-4">
-          <Field label="Weight (g)">
-            <Input
-              type="number"
-              value={p.weight ?? ""}
-              onChange={(e) => onChange({ weight: e.target.value === "" ? undefined : Number(e.target.value) })}
-            />
-          </Field>
-          <Field label="Length (cm)">
-            <Input
-              type="number"
-              value={p.length ?? ""}
-              onChange={(e) => onChange({ length: e.target.value === "" ? undefined : Number(e.target.value) })}
-            />
-          </Field>
-          <Field label="Width (cm)">
-            <Input
-              type="number"
-              value={p.width ?? ""}
-              onChange={(e) => onChange({ width: e.target.value === "" ? undefined : Number(e.target.value) })}
-            />
-          </Field>
-          <Field label="Height (cm)">
-            <Input
-              type="number"
-              value={p.height ?? ""}
-              onChange={(e) => onChange({ height: e.target.value === "" ? undefined : Number(e.target.value) })}
-            />
-          </Field>
-        </div>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={!!p.free_shipping}
-            onChange={(e) => onChange({ free_shipping: e.target.checked })}
-          />
-          Free shipping
-        </label>
-      </TabsContent>
+          <div className="space-y-1.5">
+            <Label htmlFor="tp">Parent category</Label>
+            <select
+              id="tp"
+              value={parentName}
+              onChange={(e) => setParentName(e.target.value)}
+              className="flex h-9 w-full rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="">— None (main category)</option>
+              {parentOptions.map((c) => (
+                <option key={c.name} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Leave empty to make this a main category. Selecting a parent makes this a text-only subcategory.
+            </p>
+          </div>
 
-      {/* Media */}
-      <TabsContent value="media" className="space-y-3 pt-3">
-        <Field label="YouTube video URL">
-          <Input
-            value={p.youtube_url ?? ""}
-            placeholder="https://youtube.com/watch?v=..."
-            onChange={(e) => onChange({ youtube_url: e.target.value })}
-          />
-        </Field>
-        <Field label="Product video (optional, mp4 up to 25 MB)">
-          <ImageUploader
-            folder={TEMPLATE_FOLDER}
-            value={p.video_url || null}
-            onChange={(v) => onChange({ video_url: v ?? "" })}
-            accept="video/mp4,video/webm"
-            maxBytes={25 * 1024 * 1024}
-            label="Upload video"
-          />
-        </Field>
-      </TabsContent>
+          <div className="space-y-1.5">
+            <Label htmlFor="td">Description</Label>
+            <Textarea id="td" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+          </div>
 
-      {/* SEO */}
-      <TabsContent value="seo" className="space-y-3 pt-3">
-        <Field label="Meta title">
-          <Input value={p.meta_title ?? ""} onChange={(e) => onChange({ meta_title: e.target.value })} />
-        </Field>
-        <Field label="Meta description">
-          <Textarea
-            rows={2}
-            value={p.meta_description ?? ""}
-            onChange={(e) => onChange({ meta_description: e.target.value })}
-          />
-        </Field>
-        <Field label="SEO image (1200×630)">
-          <ImageUploader
-            folder={TEMPLATE_FOLDER}
-            value={p.seo_image || null}
-            onChange={(v) => onChange({ seo_image: v ?? "" })}
-            label="Upload"
-          />
-        </Field>
-      </TabsContent>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="tso">Display order</Label>
+              <Input
+                id="tso"
+                type="number"
+                min={0}
+                value={sortOrder}
+                onChange={(e) => setSortOrder(Number(e.target.value))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tst">Status</Label>
+              <select
+                id="tst"
+                value={isActive ? "1" : "0"}
+                onChange={(e) => setIsActive(e.target.value === "1")}
+                className="flex h-9 w-full rounded-md border bg-background px-3 text-sm"
+              >
+                <option value="1">Active</option>
+                <option value="0">Inactive</option>
+              </select>
+            </div>
+          </div>
 
-      {/* Visibility */}
-      <TabsContent value="visibility" className="space-y-3 pt-3">
-        <div className="grid gap-2 sm:grid-cols-3">
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={!!p.featured}
-              onChange={(e) => onChange({ featured: e.target.checked })}
-            />
-            Featured
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={!!p.new_arrival}
-              onChange={(e) => onChange({ new_arrival: e.target.checked })}
-            />
-            New arrival
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={!!p.best_seller}
-              onChange={(e) => onChange({ best_seller: e.target.checked })}
-            />
-            Best seller
-          </label>
-        </div>
-        <Field label="Visibility">
-          <select
-            className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-            value={p.visibility ?? "published"}
-            onChange={(e) => onChange({ visibility: e.target.value as any })}
-          >
-            <option value="published">Published</option>
-            <option value="draft">Draft</option>
-            <option value="hidden">Hidden</option>
-          </select>
-        </Field>
-      </TabsContent>
-    </Tabs>
+          <Button type="submit" disabled={saving} className="w-full">
+            {saving ? "Saving…" : "Save"}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
+function TemplateBannerDialog({
+  editing,
+  nextOrder,
+  onClose,
+  onSave,
+}: {
+  editing: TemplateBanner | null;
+  nextOrder: number;
+  onClose: () => void;
+  onSave: (b: TemplateBanner) => Promise<void>;
+}) {
+  const [title, setTitle] = useState(editing?.title ?? "");
+  const [image, setImage] = useState<string | null>(editing?.image_url || null);
+  const [link, setLink] = useState(editing?.link_url ?? "");
+  const [sortOrder, setSortOrder] = useState<number>(editing?.sort_order ?? nextOrder);
+  const [isActive, setIsActive] = useState<boolean>(editing?.is_active !== false);
+  const [saving, setSaving] = useState(false);
 
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title.trim()) return toast.error("Title is required");
+    if (!image) return toast.error("Upload an image");
+    setSaving(true);
+    try {
+      await onSave({
+        title: title.trim(),
+        image_url: image,
+        link_url: link.trim(),
+        sort_order: Number(sortOrder) || 0,
+        is_active: isActive,
+      });
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
 
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-1.5">
-      <Label>{label}</Label>
-      {children}
-    </div>
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{editing ? "Edit banner" : "New banner"}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={submit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="tbt">Banner title</Label>
+            <Input id="tbt" required value={title} onChange={(e) => setTitle(e.target.value)} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Banner image</Label>
+            <ImageUploader folder={TEMPLATE_FOLDER} value={image} onChange={setImage} label="Upload banner" />
+            <p className="text-xs text-muted-foreground">Recommended 1600×600 (JPG/PNG/WEBP).</p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="tbl">Link (optional)</Label>
+            <Input id="tbl" value={link} onChange={(e) => setLink(e.target.value)} placeholder="/product/..." />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="tbo">Sort order</Label>
+              <Input
+                id="tbo"
+                type="number"
+                min={0}
+                value={sortOrder}
+                onChange={(e) => setSortOrder(Number(e.target.value))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tbs">Status</Label>
+              <select
+                id="tbs"
+                value={isActive ? "1" : "0"}
+                onChange={(e) => setIsActive(e.target.value === "1")}
+                className="flex h-9 w-full rounded-md border bg-background px-3 text-sm"
+              >
+                <option value="1">Active</option>
+                <option value="0">Inactive</option>
+              </select>
+            </div>
+          </div>
+
+          <Button type="submit" disabled={saving} className="w-full">
+            {saving ? "Saving…" : "Save"}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
