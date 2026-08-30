@@ -17,6 +17,7 @@ export function ImageUploader({
   accept = "image/*",
   maxBytes = DEFAULT_MAX_BYTES,
   label,
+  wide = false,
 }: {
   storeId?: string;
   folder?: string;
@@ -25,6 +26,8 @@ export function ImageUploader({
   accept?: string;
   maxBytes?: number;
   label?: string;
+  /** Wide, non-cropping preview for wordmark/name logos. */
+  wide?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
