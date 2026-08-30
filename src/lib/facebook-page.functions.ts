@@ -922,3 +922,19 @@ export const setFacebookWebhookEnabled = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/** Reads (and can repair) the page -> app webhook subscription. */
+export const facebookWebhookSubscription = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ subscribe: z.boolean().optional() }).optional().parse(d))
+  .handler(async ({ context, data }) => {
+    const storeId = await assertPlan(context.supabase, context.userId, "facebook_page");
+    const { loadPageContext, subscribePageToApp, pageSubscribedFields } = await import(
+      "@/lib/facebook-page.server"
+    );
+    const { row, token } = await loadPageContext(context.supabase, storeId);
+    if (!row?.page_id || !token) throw new Error("Facebook Page is not connected.");
+    if (data?.subscribe) await subscribePageToApp(row.page_id, token);
+    const fields = await pageSubscribedFields(row.page_id, token);
+    return { subscribed: fields.length > 0, fields };
+  });
