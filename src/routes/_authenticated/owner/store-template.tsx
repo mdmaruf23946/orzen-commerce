@@ -588,13 +588,34 @@ function StoreTemplatePage() {
 
         {/* ============ Banners ============ */}
         <TabsContent value="banners" className="space-y-4">
+          <TypeFilterTabs tabs={BANNER_TABS} value={bTab} onChange={(k) => setBTab(k as BannerTabKey)} />
+
           <AdminToolbar
             value={bq}
             onChange={setBq}
             placeholder="Search banners…"
             action={addBannerBtn}
-            trailing={<div className="hidden sm:block">{addBannerBtn}</div>}
+            trailing={
+              <select
+                value={bSort}
+                onChange={(e) => setBSort(e.target.value as BannerSortKey)}
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm sm:w-40"
+                aria-label="Sort banners"
+              >
+                {BANNER_SORTS.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            }
           />
+
+          {bannersFull && (
+            <p className="text-xs text-muted-foreground">
+              You have reached the limit of 3 banners for this product type.
+            </p>
+          )}
 
           {visibleBanners.length === 0 ? (
             <div className="space-y-3 rounded-xl border bg-card p-10 text-center">
@@ -606,6 +627,8 @@ function StoreTemplatePage() {
               {visibleBanners.map(({ b, i }) => {
                 const src = imgSrc(b.image_url);
                 const isActive = b.is_active !== false;
+                const pos =
+                  BANNER_POSITIONS.find((p) => p.value === (b.display_position ?? "hero"))?.label ?? "Hero Banner";
                 return (
                   <div key={i} className="overflow-hidden rounded-xl border bg-card">
                     <div className="grid aspect-[16/7] place-items-center bg-muted">
@@ -627,11 +650,25 @@ function StoreTemplatePage() {
                           {isActive ? "Active" : "Inactive"}
                         </span>
                       </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                          {pos}
+                        </span>
+                        {b.category_name && (
+                          <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                            {b.category_name}
+                          </span>
+                        )}
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] capitalize text-muted-foreground">
+                          {bannerType(b)}
+                        </span>
+                      </div>
                       <p className="line-clamp-1 text-xs text-muted-foreground">{b.link_url || "No link"}</p>
                       <div className="flex items-center justify-between">
                         <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
                           Order {b.sort_order ?? i}
                         </span>
+
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => {
