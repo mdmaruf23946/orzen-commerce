@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Download, Loader2, Plug, PlugZap, RefreshCw, Save, Sparkles } from "lucide-react";
 import {
   getFacebookPage, connectFacebookPage, importMessengerPageCredentials, reverifyFacebookPage,
-  setFacebookWebhookEnabled,
+  setFacebookWebhookEnabled, facebookWebhookSubscription,
   disconnectFacebookPage, getFacebookAiSettings, saveFacebookAiSettings,
 } from "@/lib/facebook-page.functions";
 import { Button } from "@/components/ui/button";
@@ -54,11 +54,17 @@ function SettingsPage() {
   const verifyFn = useServerFn(reverifyFacebookPage);
   const disconnectFn = useServerFn(disconnectFacebookPage);
   const webhookFn = useServerFn(setFacebookWebhookEnabled);
+  const subFn = useServerFn(facebookWebhookSubscription);
   const aiGet = useServerFn(getFacebookAiSettings);
   const aiSave = useServerFn(saveFacebookAiSettings);
 
   const { data: page, isLoading } = useQuery({ queryKey: ["fbpage", "overview"], queryFn: () => pageFn() });
   const { data: ai } = useQuery({ queryKey: ["fbpage", "ai"], queryFn: () => aiGet() });
+  const sub = useQuery({
+    queryKey: ["fbpage", "subscription"],
+    queryFn: () => subFn({ data: {} }),
+    enabled: !!page?.connected,
+  });
 
   const [pageId, setPageId] = useState("");
   const [token, setToken] = useState("");
