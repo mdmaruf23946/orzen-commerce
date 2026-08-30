@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Download, Loader2, Plug, PlugZap, RefreshCw, Save, Sparkles } from "lucide-react";
 import {
   getFacebookPage, connectFacebookPage, importMessengerPageCredentials, reverifyFacebookPage,
-  setFacebookWebhookEnabled,
+  setFacebookWebhookEnabled, facebookWebhookSubscription,
   disconnectFacebookPage, getFacebookAiSettings, saveFacebookAiSettings,
 } from "@/lib/facebook-page.functions";
 import { Button } from "@/components/ui/button";
@@ -54,11 +54,17 @@ function SettingsPage() {
   const verifyFn = useServerFn(reverifyFacebookPage);
   const disconnectFn = useServerFn(disconnectFacebookPage);
   const webhookFn = useServerFn(setFacebookWebhookEnabled);
+  const subFn = useServerFn(facebookWebhookSubscription);
   const aiGet = useServerFn(getFacebookAiSettings);
   const aiSave = useServerFn(saveFacebookAiSettings);
 
   const { data: page, isLoading } = useQuery({ queryKey: ["fbpage", "overview"], queryFn: () => pageFn() });
   const { data: ai } = useQuery({ queryKey: ["fbpage", "ai"], queryFn: () => aiGet() });
+  const sub = useQuery({
+    queryKey: ["fbpage", "subscription"],
+    queryFn: () => subFn({ data: {} }),
+    enabled: !!page?.connected,
+  });
 
   const [pageId, setPageId] = useState("");
   const [token, setToken] = useState("");
@@ -230,12 +236,45 @@ function SettingsPage() {
           <div className="space-y-3">
             <Field label="Callback URL" value={page.webhook.callback_url} />
             <Field label="Verify token" value={page.webhook.verify_token ?? "—"} />
+
+            {!page.has_app_secret && (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] text-amber-700">
+                Live sync needs your <b>App secret</b> — incoming events are signed by Meta and are rejected without it.
+                Disconnect and reconnect the page with the App ID and App secret filled in.
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2 rounded-xl border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-[11px] text-muted-foreground">
+                Page subscription:{" "}
+                <b className={sub.data ? (sub.data.subscribed ? "text-emerald-600" : "text-amber-600") : ""}>
+                  {sub.isFetching ? "checking…" : sub.data ? (sub.data.subscribed ? `active (${sub.data.fields.join(", ")})` : "not subscribed") : "unknown"}
+                </b>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busy !== null}
+                onClick={() =>
+                  act("subscribe", async () => {
+                    await subFn({ data: { subscribe: true } });
+                    await sub.refetch();
+                  }, "Page subscribed to live sync")
+                }
+              >
+                {busy === "subscribe" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1.5 h-4 w-4" />}
+                Subscribe page
+              </Button>
+            </div>
+
             <p className="text-[11px] text-muted-foreground">
               In your Meta app: Webhooks → Page → subscribe to the <b>feed</b> field, then paste the URL and token above.
+              {page.token_expires_at ? ` Page token expires ${formatWhen(page.token_expires_at)}.` : " Page token does not expire."}
               {page.webhook.last_webhook_at
                 ? ` Last event received ${formatWhen(page.webhook.last_webhook_at)}.`
                 : " No events received yet."}
             </p>
+
             <Toggle
               label="Live sync enabled"
               hint="Turn off to ignore incoming Facebook events."

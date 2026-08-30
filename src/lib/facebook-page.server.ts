@@ -170,7 +170,7 @@ export function requireCapability(row: any, cap: Capability) {
 }
 
 export function attachmentOf(post: any): { type: string; url: string | null; thumb: string | null; target: string | null } {
-  const a = post?.attachments?.data?.[0] ?? post?.full_picture ? post?.attachments?.data?.[0] : null;
+  const a = post?.attachments?.data?.[0] ?? null;
   const media = a?.media ?? null;
   return {
     type: a?.type ?? (post?.full_picture ? "photo" : "status"),
@@ -178,4 +178,29 @@ export function attachmentOf(post: any): { type: string; url: string | null; thu
     thumb: media?.image?.src ?? post?.full_picture ?? null,
     target: a?.target?.url ?? a?.url ?? null,
   };
+}
+
+/**
+ * Subscribes the page to our Meta app so webhook events are actually delivered.
+ * Without this, the callback URL + verify token alone never receive anything.
+ */
+export async function subscribePageToApp(pageId: string, token: string) {
+  return graphPost(`/${encodeURIComponent(pageId)}/subscribed_apps`, token, {
+    subscribed_fields: "feed,mention",
+  });
+}
+
+/** Returns the fields the page is currently subscribed to (empty when not subscribed). */
+export async function pageSubscribedFields(pageId: string, token: string): Promise<string[]> {
+  try {
+    const j: any = await graphGet(`/${encodeURIComponent(pageId)}/subscribed_apps`, token, {
+      fields: "subscribed_fields",
+    });
+    const rows: any[] = Array.isArray(j?.data) ? j.data : [];
+    const set = new Set<string>();
+    for (const r of rows) for (const f of r?.subscribed_fields ?? []) set.add(String(f));
+    return [...set];
+  } catch {
+    return [];
+  }
 }
