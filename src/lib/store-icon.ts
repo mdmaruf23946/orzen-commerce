@@ -22,8 +22,20 @@ function toDisplayUrl(v?: string | null): string | null {
   return `/api/img/${v}`;
 }
 
-/** Store identity icon: custom store icon only (letter mark fallback rendered by caller). */
+/**
+ * Store brand icon for header/footer/menu: store icon → store logo → null.
+ * The store logo IS a storefront branding asset, so it is allowed here.
+ */
 export function resolveStoreIcon(store?: StoreLike | null): string | null {
+  if (!store) return null;
+  return toDisplayUrl(store.icon_url) ?? toDisplayUrl(store.logo_url);
+}
+
+/**
+ * App icon / PWA icon: the dedicated Store Icon only.
+ * The store logo must NEVER be used as an app icon.
+ */
+export function resolveStoreAppIcon(store?: StoreLike | null): string | null {
   if (!store) return null;
   return toDisplayUrl(store.icon_url);
 }
