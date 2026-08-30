@@ -170,7 +170,7 @@ export function WelcomeCard(props: WelcomeCardProps) {
 
   const badges = (
     <div
-      className="flex flex-nowrap items-center gap-2 mb-4 overflow-x-auto"
+      className="flex flex-nowrap items-center gap-2 overflow-x-auto md:mb-2 lg:mb-3"
       style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
     >
       <StatusChip tone="emerald">Active Store</StatusChip>
@@ -204,17 +204,17 @@ export function WelcomeCard(props: WelcomeCardProps) {
       <div className="pointer-events-none absolute -bottom-24 right-10 h-56 w-56 rounded-full bg-blue-400/10 blur-3xl" />
 
       {/* ============ DESKTOP / TABLET (md+) ============ */}
-      <div className="relative hidden md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto] md:items-center md:gap-5 md:p-5 lg:p-6">
-        {/* LEFT */}
-        <div className="min-w-0">
-          <h1 className="truncate text-xl font-semibold tracking-tight lg:text-2xl">
+      <div className="relative hidden md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto] md:items-start md:gap-5 md:p-5 lg:p-6">
+        {/* LEFT — welcome + badges pinned to top */}
+        <div className="min-w-0 self-start">
+          <h1 className="truncate text-xl font-semibold tracking-tight lg:text-[26px] lg:leading-tight">
             👋 Welcome back, {ownerName}!
           </h1>
           {badges}
         </div>
 
-        {/* CENTER — 4 stats */}
-        <div className="min-w-0">
+        {/* CENTER — 4 stats pinned to bottom */}
+        <div className="min-w-0 self-end">
           <div className="grid grid-cols-4 gap-2.5">
             {stats.map((s) => (
               <StatTile key={s.label} {...s} />
@@ -222,8 +222,8 @@ export function WelcomeCard(props: WelcomeCardProps) {
           </div>
         </div>
 
-        {/* RIGHT — Illustration + CTA */}
-        <div className="relative flex shrink-0 flex-col items-end gap-2">
+        {/* RIGHT — Illustration + CTA pinned to bottom */}
+        <div className="relative flex shrink-0 flex-col items-end gap-2 self-end">
           <a
             href={storeUrl || "#"}
             target="_blank"
