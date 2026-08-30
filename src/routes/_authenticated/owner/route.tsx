@@ -102,7 +102,10 @@ function OwnerLayout() {
   const ownerCheck = useServerFn(amIOwner);
   const { data, isLoading } = useQuery({ queryKey: ["amIOwner"], queryFn: () => ownerCheck() });
 
-  if (!isLoading && data && !data.isOwner) throw redirect({ to: "/admin" });
+  const notOwner = !isLoading && data && !data.isOwner;
+  useEffect(() => {
+    if (notOwner) navigate({ to: "/admin", replace: true });
+  }, [notOwner, navigate]);
 
   async function signOut() {
     await supabase.auth.signOut();
