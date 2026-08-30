@@ -7,6 +7,7 @@ import {
   PhoneCall, PhoneIncoming, PhoneOutgoing, CheckCircle2, XCircle, Clock, Bot, Sparkles, Lock,
 } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
+import { ComingSoon } from "@/components/owner/ComingSoon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -59,6 +60,20 @@ function StoreAiCallCenter() {
 
   async function refresh() {
     await qc.invalidateQueries({ queryKey: ["store-ai-call"] });
+  }
+
+  const AI_CALL_CENTER_ENABLED = false;
+
+  if (!AI_CALL_CENTER_ENABLED) {
+    return (
+      <div className="space-y-4">
+        <AdminPageHeader title="AI Call Center" description="AI voice agents that confirm orders and answer customer calls." />
+        <ComingSoon
+          title="AI Call Center is coming soon"
+          description="We're building AI voice agents that can confirm orders and answer customer calls around the clock. Setup options, phone numbers, voice selection and call controls will appear here automatically once the feature is live."
+        />
+      </div>
+    );
   }
 
   if (setup.isLoading) {
