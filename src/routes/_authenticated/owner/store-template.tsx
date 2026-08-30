@@ -362,6 +362,7 @@ function StoreTemplatePage() {
   );
   const addBannerBtn = (
     <Button
+      disabled={bannersFull}
       onClick={() => {
         setBIndex(null);
         setBOpen(true);
@@ -370,6 +371,7 @@ function StoreTemplatePage() {
       <Plus className="mr-1 h-4 w-4" /> Add banner
     </Button>
   );
+
 
   return (
     <div className="space-y-4 sm:space-y-5">
