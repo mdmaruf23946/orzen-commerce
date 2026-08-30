@@ -112,7 +112,7 @@ export const ownerListThemes = createServerFn({ method: "GET" })
     await requireThemeOwner(context.supabase, context.userId);
     const { data, error } = await context.supabase
       .from("store_themes")
-      .select("id,name,slug,category,description,preview_url,status,sort_order,definition,locked,created_at,updated_at")
+      .select("id,name,slug,category,description,preview_url,status,sort_order,definition,locked,is_default,created_at,updated_at")
       .order("sort_order", { ascending: true });
     if (error) throw new Error(error.message);
 
@@ -139,3 +139,39 @@ export const ownerSetThemeStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+
+/** Winner Admin: pick the theme applied to every newly created store. */
+export const ownerSetDefaultTheme = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await requireThemeOwner(context.supabase, context.userId);
+    const { error } = await context.supabase
+      .from("store_themes")
+      .update({ is_default: true, status: "published" } as any)
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Winner Admin: rename a theme / edit its short description. Nothing else. */
+export const ownerUpdateThemeMeta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        name: z.string().trim().min(2).max(60),
+        description: z.string().trim().max(200).optional().default(""),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await requireThemeOwner(context.supabase, context.userId);
+    const { error } = await context.supabase
+      .from("store_themes")
+      .update({ name: data.name, description: data.description || null })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
