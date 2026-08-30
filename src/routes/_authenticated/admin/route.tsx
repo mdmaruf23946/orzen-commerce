@@ -25,6 +25,7 @@ import { getMyStore } from "@/lib/admin.functions";
 import { resolveStoreIcon } from "@/lib/store-icon";
 import { recoverFromChunkError } from "@/lib/chunk-recovery";
 import { StoreAccessProvider, useStoreAccess } from "@/lib/use-store-access";
+import { ReadOnlyGuard } from "@/components/admin/ReadOnlyGuard";
 import { sectionForPath } from "@/lib/panel-sections";
 
 
@@ -566,8 +567,15 @@ function AdminLayout() {
                     View only — you can see this section but changes are not allowed.
                   </div>
                 )}
-                <Outlet />
+                <ReadOnlyGuard
+                  active={
+                    access.isEmployee && (!currentSection || !access.can(currentSection.key, "manage"))
+                  }
+                >
+                  <Outlet />
+                </ReadOnlyGuard>
               </>
+
 
             ) : (
               <div className="mx-auto max-w-md rounded-2xl border bg-card p-8 text-center">
