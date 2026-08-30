@@ -133,7 +133,16 @@ export const connectFacebookPage = createServerFn({ method: "POST" })
       { onConflict: "store_id" },
     );
     if (error) throw new Error(error.message);
-    return { ok: true, page_name: page?.name ?? null, permissions };
+    // Best-effort: subscribe the page to the app so webhooks are delivered.
+    const { subscribePageToApp } = await import("@/lib/facebook-page.server");
+    let subscribed = true;
+    try {
+      await subscribePageToApp(data.page_id, data.page_access_token);
+    } catch {
+      subscribed = false;
+    }
+    return { ok: true, page_name: page?.name ?? null, permissions, subscribed };
+
   });
 
 export const importMessengerPageCredentials = createServerFn({ method: "POST" })
