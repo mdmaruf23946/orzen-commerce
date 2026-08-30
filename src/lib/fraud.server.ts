@@ -130,3 +130,105 @@ export function computeRisk(
   if (returnRate <= thresholds.medium_max) return "medium";
   return "high";
 }
+
+// ---------------- Serial API key rotation ----------------
+// Multiple API keys for the same provider are used STRICTLY one at a time,
+// in list order. Key #1 is always tried first; only when it fails (auth /
+// quota / provider error) is it parked for the rest of the day and key #2
+// takes over. The parking resets every day, so each day starts from key #1.
+
+export type FraudApiKey = {
+  id: string;
+  label?: string;
+  key: string;
+  enabled?: boolean;
+  /** YYYY-MM-DD (Asia/Dhaka) the key failed on; cleared automatically next day */
+  failed_on?: string | null;
+  last_error?: string | null;
+  last_used_at?: string | null;
+};
+
+/** Current date in Asia/Dhaka (UTC+6) as YYYY-MM-DD — the rotation reset boundary. */
+export function fraudToday(): string {
+  return new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+export function normalizeFraudKeys(raw: any): FraudApiKey[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((k) => k && typeof k === "object" && typeof k.key === "string" && k.key.length > 0)
+    .map((k, i) => ({
+      id: String(k.id ?? `key_${i}`),
+      label: k.label ? String(k.label) : `Key ${i + 1}`,
+      key: String(k.key),
+      enabled: k.enabled !== false,
+      failed_on: k.failed_on ?? null,
+      last_error: k.last_error ?? null,
+      last_used_at: k.last_used_at ?? null,
+    }));
+}
+
+/** Keys eligible right now, in serial order (skips disabled + today's failed). */
+export function eligibleFraudKeys(keys: FraudApiKey[]): FraudApiKey[] {
+  const today = fraudToday();
+  return keys.filter((k) => k.enabled !== false && k.failed_on !== today);
+}
+
+/**
+ * Calls BD Courier using the key list serially. Returns the result of the
+ * first key that works and persists rotation state back to fraud_settings.
+ */
+export async function callBdCourierRotating(
+  supabaseAdmin: any,
+  phone: string,
+  rawKeys: any,
+  legacyKey?: string | null,
+): Promise<NormalizedFraud & { used_key_id: string | null }> {
+  let keys = normalizeFraudKeys(rawKeys);
+  if (keys.length === 0 && legacyKey) {
+    keys = [{ id: "legacy", label: "Primary key", key: legacyKey, enabled: true, failed_on: null }];
+  }
+  const pool = eligibleFraudKeys(keys);
+  if (pool.length === 0) {
+    throw new Error(
+      keys.length === 0
+        ? "Fraud checker API key is not configured"
+        : "All fraud checker API keys are exhausted or failing today — they retry automatically tomorrow.",
+    );
+  }
+
+  const today = fraudToday();
+  let lastError: Error | null = null;
+
+  for (const k of pool) {
+    try {
+      const stats = await callBdCourier(phone, k.key);
+      const next = keys.map((x) =>
+        x.id === k.id
+          ? { ...x, last_used_at: new Date().toISOString(), last_error: null, failed_on: null }
+          : x,
+      );
+      await persistFraudKeys(supabaseAdmin, next, keys);
+      return { ...stats, used_key_id: k.id };
+    } catch (e) {
+      lastError = e as Error;
+      keys = keys.map((x) =>
+        x.id === k.id ? { ...x, failed_on: today, last_error: lastError!.message } : x,
+      );
+      // continue to the next key in serial order
+    }
+  }
+
+  await persistFraudKeys(supabaseAdmin, keys, null);
+  throw new Error(lastError?.message ?? "All fraud checker API keys failed");
+}
+
+async function persistFraudKeys(supabaseAdmin: any, next: FraudApiKey[], prev: FraudApiKey[] | null) {
+  if (prev && JSON.stringify(prev) === JSON.stringify(next)) return;
+  if (next.some((k) => k.id === "legacy")) return; // nothing stored to update
+  try {
+    await supabaseAdmin.from("fraud_settings").update({ api_keys: next }).eq("id", "global");
+  } catch {
+    /* rotation state is best-effort */
+  }
+}

@@ -49,7 +49,16 @@ export const getFraudSettingsAdmin = createServerFn({ method: "GET" })
       ...row,
       api_key_masked: mask(row.api_key),
       api_secret_masked: mask(row.api_secret),
-      has_api_key: !!row.api_key,
+      has_api_key: !!row.api_key || (Array.isArray(row.api_keys) && row.api_keys.length > 0),
+      api_keys: (Array.isArray(row.api_keys) ? row.api_keys : []).map((k: any, i: number) => ({
+        id: String(k?.id ?? `key_${i}`),
+        label: k?.label ? String(k.label) : `Key ${i + 1}`,
+        key_masked: mask(k?.key),
+        enabled: k?.enabled !== false,
+        failed_on: k?.failed_on ?? null,
+        last_error: k?.last_error ?? null,
+        last_used_at: k?.last_used_at ?? null,
+      })),
       api_key: undefined,
       api_secret: undefined,
     };
@@ -102,6 +111,8 @@ export const testFraudConnection = createServerFn({ method: "POST" })
       .object({
         phone: z.string().trim().min(6).max(20).default("01700000000"),
         api_key: z.string().trim().max(500).optional(),
+        /** Test one specific stored key instead of the serial rotation */
+        key_id: z.string().max(100).optional(),
       })
       .parse(d ?? {}),
   )
@@ -110,11 +121,15 @@ export const testFraudConnection = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: cfg } = await supabaseAdmin
       .from("fraud_settings")
-      .select("api_key")
+      .select("api_key, api_keys")
       .eq("id", "global")
       .maybeSingle();
+    const { normalizeFraudKeys, eligibleFraudKeys } = await import("@/lib/fraud.server");
+    const keys = normalizeFraudKeys((cfg as any)?.api_keys);
     const storedKey = (cfg as any)?.api_key as string | null;
-    const apiKey = (data.api_key && data.api_key.length > 0) ? data.api_key : storedKey;
+    const picked = data.key_id ? keys.find((k) => k.id === data.key_id) : eligibleFraudKeys(keys)[0];
+    const apiKey =
+      (data.api_key && data.api_key.length > 0) ? data.api_key : (picked?.key ?? storedKey);
     const now = new Date().toISOString();
     if (!apiKey) {
       const err = "API key not set — enter a BD Courier token above or save one first";
@@ -166,12 +181,10 @@ async function performFraudCheck(opts: {
 
   const { data: cfg } = await supabaseAdmin
     .from("fraud_settings")
-    .select("enabled, api_key, thresholds")
+    .select("enabled, api_key, api_keys, thresholds")
     .eq("id", "global")
     .maybeSingle();
   if (!cfg || !(cfg as any).enabled) throw new Error("Fraud checker is not enabled by the platform");
-  const apiKey = (cfg as any).api_key as string | null;
-  if (!apiKey) throw new Error("Fraud checker API key is not configured");
   const thresholds = ((cfg as any).thresholds ?? { safe_max: 10, medium_max: 30 }) as {
     safe_max: number; medium_max: number;
   };
@@ -194,8 +207,8 @@ async function performFraudCheck(opts: {
     throw new Error("Maximum Fraud Check limit reached.");
   }
 
-  const { callBdCourier, computeRisk } = await import("@/lib/fraud.server");
-  const stats = await callBdCourier(phone, apiKey);
+  const { callBdCourierRotating, computeRisk } = await import("@/lib/fraud.server");
+  const stats = await callBdCourierRotating(supabaseAdmin, phone, (cfg as any).api_keys, (cfg as any).api_key);
   const risk = computeRisk(stats, thresholds);
   const now = new Date().toISOString();
   const nextCount = cached ? Math.min(((cached as any).check_count ?? 0) + 1, MAX_CHECKS) : 1;
@@ -375,18 +388,16 @@ export const resyncFraudCheck = createServerFn({ method: "POST" })
 
     const { data: cfg } = await supabaseAdmin
       .from("fraud_settings")
-      .select("enabled, api_key, thresholds")
+      .select("enabled, api_key, api_keys, thresholds")
       .eq("id", "global")
       .maybeSingle();
     if (!cfg || !(cfg as any).enabled) throw new Error("Fraud checker is not enabled");
-    const apiKey = (cfg as any).api_key as string | null;
-    if (!apiKey) throw new Error("Fraud checker API key is not configured");
     const thresholds = ((cfg as any).thresholds ?? { safe_max: 10, medium_max: 30 }) as {
       safe_max: number; medium_max: number;
     };
 
-    const { callBdCourier, computeRisk } = await import("@/lib/fraud.server");
-    const stats = await callBdCourier(phone, apiKey);
+    const { callBdCourierRotating, computeRisk } = await import("@/lib/fraud.server");
+    const stats = await callBdCourierRotating(supabaseAdmin, phone, (cfg as any).api_keys, (cfg as any).api_key);
     const risk = computeRisk(stats, thresholds);
     const now = new Date().toISOString();
 
@@ -455,4 +466,124 @@ export const fraudAnalytics = createServerFn({ method: "GET" })
       .filter(([k]) => now - new Date(k).getTime() < 30 * day)
       .sort(([a], [b]) => (a < b ? -1 : 1));
     return { totals, daily: recentDaily, weekly: Object.entries(weekly).sort(), monthly: Object.entries(monthly).sort() };
+  });
+
+
+// ---------------- OWNER: multiple API keys (serial rotation) ----------------
+async function loadKeys(supabaseAdmin: any) {
+  const { data } = await supabaseAdmin
+    .from("fraud_settings")
+    .select("api_key, api_keys")
+    .eq("id", "global")
+    .maybeSingle();
+  const { normalizeFraudKeys } = await import("@/lib/fraud.server");
+  let keys = normalizeFraudKeys((data as any)?.api_keys);
+  // Migrate a legacy single key into the list on first use
+  if (keys.length === 0 && (data as any)?.api_key) {
+    keys = [{
+      id: crypto.randomUUID(),
+      label: "Primary key",
+      key: (data as any).api_key as string,
+      enabled: true,
+      failed_on: null,
+      last_error: null,
+      last_used_at: null,
+    }];
+  }
+  return keys;
+}
+
+async function saveKeys(supabaseAdmin: any, keys: any[]) {
+  const { error } = await supabaseAdmin
+    .from("fraud_settings")
+    .update({ api_keys: keys, api_key: keys[0]?.key ?? null })
+    .eq("id", "global");
+  if (error) throw new Error(error.message);
+  return { ok: true as const, count: keys.length };
+}
+
+export const addFraudApiKey = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      label: z.string().trim().max(80).optional(),
+      key: z.string().trim().min(8).max(500),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await ownerOnly(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const keys = await loadKeys(supabaseAdmin);
+    if (keys.some((k) => k.key === data.key)) throw new Error("This API key is already added");
+    if (keys.length >= 20) throw new Error("Maximum 20 API keys");
+    keys.push({
+      id: crypto.randomUUID(),
+      label: data.label?.trim() || `Key ${keys.length + 1}`,
+      key: data.key,
+      enabled: true,
+      failed_on: null,
+      last_error: null,
+      last_used_at: null,
+    });
+    return saveKeys(supabaseAdmin, keys);
+  });
+
+export const updateFraudApiKey = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      id: z.string().min(1),
+      label: z.string().trim().max(80).optional(),
+      key: z.string().trim().min(8).max(500).optional(),
+      enabled: z.boolean().optional(),
+      /** clear today's failure so the key rejoins the rotation immediately */
+      reset_failure: z.boolean().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await ownerOnly(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const keys = await loadKeys(supabaseAdmin);
+    const idx = keys.findIndex((k) => k.id === data.id);
+    if (idx === -1) throw new Error("Key not found");
+    const cur = keys[idx]!;
+    keys[idx] = {
+      ...cur,
+      label: data.label !== undefined && data.label !== "" ? data.label : cur.label,
+      key: data.key && data.key.length > 0 ? data.key : cur.key,
+      enabled: data.enabled !== undefined ? data.enabled : cur.enabled,
+      ...(data.reset_failure || (data.key && data.key.length > 0)
+        ? { failed_on: null, last_error: null }
+        : {}),
+    };
+    return saveKeys(supabaseAdmin, keys);
+  });
+
+export const deleteFraudApiKey = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().min(1) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await ownerOnly(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const keys = (await loadKeys(supabaseAdmin)).filter((k) => k.id !== data.id);
+    return saveKeys(supabaseAdmin, keys);
+  });
+
+/** Move a key up/down — order IS the serial priority. */
+export const moveFraudApiKey = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ id: z.string().min(1), direction: z.enum(["up", "down"]) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await ownerOnly(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const keys = await loadKeys(supabaseAdmin);
+    const i = keys.findIndex((k) => k.id === data.id);
+    if (i === -1) throw new Error("Key not found");
+    const j = data.direction === "up" ? i - 1 : i + 1;
+    if (j < 0 || j >= keys.length) return { ok: true as const, count: keys.length };
+    const a = keys[i]!, b = keys[j]!;
+    keys[i] = b; keys[j] = a;
+    return saveKeys(supabaseAdmin, keys);
   });
