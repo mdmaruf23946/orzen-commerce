@@ -713,9 +713,10 @@ function ConfigureForm({
           try {
             const setActive = setActiveStorePaymentGateway as any;
             await setActive({ data: { storeId, providerId: g.provider_id } });
-          } catch {
-            /* noop — surface silently, save still succeeded */
+          } catch (e: any) {
+            toast.error(e?.message ?? "Saved, but could not set as default");
           }
+
         }
         onDone();
       } else {
