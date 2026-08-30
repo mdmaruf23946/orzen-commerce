@@ -17,6 +17,7 @@ import { ThemeEditorDrawer, type OwnerThemeRow } from "@/components/owner/ThemeE
 
 export const Route = createFileRoute("/_authenticated/owner/themes")({
   component: OwnerThemes,
+  errorComponent: ThemesError,
   head: () => ({
     meta: [
       { title: "Store Themes — ORZEN Admin" },
