@@ -176,18 +176,16 @@ function FraudPage() {
               <p className="text-xs text-muted-foreground">Default: bd_courier</p>
             </div>
             <div className="space-y-1.5">
-              <Label>API Key</Label>
+              <Label>API Secret (optional)</Label>
               <Input
                 type="password"
                 autoComplete="off"
-                placeholder={cfg.api_key_masked ?? "Enter BD Courier API token"}
-                value={form.api_key}
-                onChange={(e) => set("api_key", e.target.value)}
+                placeholder={cfg.api_secret_masked ?? "Not required for BD Courier"}
+                value={form.api_secret}
+                onChange={(e) => set("api_secret", e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">
-                {cfg.has_api_key ? "A key is stored — leave blank to keep it, or paste a new one." : "No key stored yet — paste your BD Courier token."}
-              </p>
             </div>
+
             <div className="space-y-1.5">
               <Label>API Secret (optional)</Label>
               <Input
