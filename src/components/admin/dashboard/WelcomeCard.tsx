@@ -49,7 +49,7 @@ function Chip({ children, className }: { children: React.ReactNode; className?: 
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-black/5 dark:border-white/10 bg-white/70 dark:bg-white/5 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-medium text-foreground/80",
+        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-black/5 dark:border-white/10 bg-white/70 dark:bg-white/5 px-1.5 py-0.5 sm:px-2 sm:py-1 text-[9px] sm:text-[10px] md:text-[11px] font-medium text-foreground/80",
         className,
       )}
     >
@@ -74,7 +74,7 @@ function StatusChip({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-medium",
+        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-1.5 py-0.5 sm:px-2 sm:py-1 text-[9px] sm:text-[10px] md:text-[11px] font-medium",
         styles,
       )}
     >
