@@ -436,37 +436,42 @@ function ApiKeysManager({ keys, testPhone }: { keys: KeyRow[]; testPhone: string
           const failedToday = k.failed_on === today;
           const isActive = k.id === activeId;
           return (
-            <div key={k.id} className="rounded-lg border bg-card p-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-muted text-[11px] font-semibold">
-                  {i + 1}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-sm font-medium">{k.label}</span>
-                {isActive && (
-                  <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
-                    IN USE
+            <div key={k.id} className="overflow-hidden rounded-lg border bg-card p-3">
+              {/* Mobile-first row: text truncates, widgets stay fixed */}
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:flex sm:flex-wrap">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-muted text-[11px] font-semibold">
+                    {i + 1}
                   </span>
-                )}
-                {!k.enabled && (
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                    DISABLED
-                  </span>
-                )}
-                {failedToday && (
-                  <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
-                    PAUSED TODAY
-                  </span>
-                )}
-                <Switch
-                  checked={k.enabled}
-                  disabled={busy === k.id}
-                  onCheckedChange={(v) =>
-                    run(k.id, () => updFn({ data: { id: k.id, enabled: v } }), v ? "Key enabled" : "Key disabled")
-                  }
-                />
+                  <span className="truncate text-sm font-medium">{k.label}</span>
+                </div>
+                <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+                  {isActive && (
+                    <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
+                      IN USE
+                    </span>
+                  )}
+                  {!k.enabled && (
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                      DISABLED
+                    </span>
+                  )}
+                  {failedToday && (
+                    <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
+                      PAUSED TODAY
+                    </span>
+                  )}
+                  <Switch
+                    checked={k.enabled}
+                    disabled={busy === k.id}
+                    onCheckedChange={(v) =>
+                      run(k.id, () => updFn({ data: { id: k.id, enabled: v } }), v ? "Key enabled" : "Key disabled")
+                    }
+                  />
+                </div>
               </div>
 
-              <div className="mt-1 font-mono text-[11px] text-muted-foreground">{k.key_masked}</div>
+              <div className="mt-1 min-w-0 truncate font-mono text-[11px] text-muted-foreground">{k.key_masked}</div>
               {k.last_used_at && (
                 <div className="text-[11px] text-muted-foreground">
                   Last used {new Date(k.last_used_at).toLocaleString()}
@@ -478,21 +483,21 @@ function ApiKeysManager({ keys, testPhone }: { keys: KeyRow[]; testPhone: string
                 </pre>
               )}
 
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <div className="mt-2 grid grid-cols-4 gap-1.5 sm:flex sm:flex-wrap sm:items-center">
                 <Button
-                  size="sm" variant="ghost" disabled={i === 0 || busy === k.id}
+                  size="sm" variant="ghost" className="px-0 sm:px-3" disabled={i === 0 || busy === k.id}
                   onClick={() => run(k.id, () => moveFn({ data: { id: k.id, direction: "up" } }), "Order updated")}
                 >
                   <ArrowUp className="h-3.5 w-3.5" />
                 </Button>
                 <Button
-                  size="sm" variant="ghost" disabled={i === keys.length - 1 || busy === k.id}
+                  size="sm" variant="ghost" className="px-0 sm:px-3" disabled={i === keys.length - 1 || busy === k.id}
                   onClick={() => run(k.id, () => moveFn({ data: { id: k.id, direction: "down" } }), "Order updated")}
                 >
                   <ArrowDown className="h-3.5 w-3.5" />
                 </Button>
                 <Button
-                  size="sm" variant="outline" disabled={busy === k.id}
+                  size="sm" variant="outline" className="col-span-2 justify-center" disabled={busy === k.id}
                   onClick={() =>
                     run(k.id, async () => {
                       const r = await testFn({ data: { phone: testPhone.trim() || "01700000000", key_id: k.id } });
@@ -504,14 +509,14 @@ function ApiKeysManager({ keys, testPhone }: { keys: KeyRow[]; testPhone: string
                 </Button>
                 {failedToday && (
                   <Button
-                    size="sm" variant="outline" disabled={busy === k.id}
+                    size="sm" variant="outline" className="col-span-2 justify-center" disabled={busy === k.id}
                     onClick={() => run(k.id, () => updFn({ data: { id: k.id, reset_failure: true } }), "Key resumed")}
                   >
                     <RotateCcw className="mr-1 h-3.5 w-3.5" /> Resume
                   </Button>
                 )}
                 <Button
-                  size="sm" variant="ghost" className="ml-auto text-destructive" disabled={busy === k.id}
+                  size="sm" variant="ghost" className="col-span-2 justify-center text-destructive sm:ml-auto" disabled={busy === k.id}
                   onClick={() => run(k.id, () => delFn({ data: { id: k.id } }), "Key removed")}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
