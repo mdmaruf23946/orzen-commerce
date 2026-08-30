@@ -30,6 +30,17 @@ export const Route = createFileRoute("/_authenticated/owner/themes")({
   }),
 });
 
+function ThemesError({ error, reset }: { error: Error; reset: () => void }) {
+  const router = useRouter();
+  return (
+    <div className="mx-auto max-w-md space-y-3 py-12 text-center">
+      <h1 className="text-lg font-semibold">Store Themes could not load</h1>
+      <p className="text-sm text-muted-foreground">{error?.message || "Something went wrong."}</p>
+      <Button size="sm" onClick={() => { router.invalidate(); reset(); }}>Try again</Button>
+    </div>
+  );
+}
+
 function OwnerThemes() {
   const qc = useQueryClient();
   const listFn = useServerFn(ownerListThemes);
