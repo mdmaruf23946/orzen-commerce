@@ -3065,6 +3065,7 @@ export type Database = {
       fraud_settings: {
         Row: {
           api_key: string | null
+          api_keys: Json
           api_secret: string | null
           enable_analytics: boolean
           enable_auto_check_before_courier: boolean
@@ -3082,6 +3083,7 @@ export type Database = {
         }
         Insert: {
           api_key?: string | null
+          api_keys?: Json
           api_secret?: string | null
           enable_analytics?: boolean
           enable_auto_check_before_courier?: boolean
@@ -3099,6 +3101,7 @@ export type Database = {
         }
         Update: {
           api_key?: string | null
+          api_keys?: Json
           api_secret?: string | null
           enable_analytics?: boolean
           enable_auto_check_before_courier?: boolean
