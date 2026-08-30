@@ -23,12 +23,13 @@ function toDisplayUrl(v?: string | null): string | null {
 }
 
 /**
- * Store brand icon for header/footer/menu: store icon → store logo → null.
- * The store logo IS a storefront branding asset, so it is allowed here.
+ * Store brand logo for header/footer/menu: the store logo ONLY.
+ * The Store Icon (icon_url) is reserved for app icon / browser favicon and
+ * must NEVER be used as the store logo.
  */
 export function resolveStoreIcon(store?: StoreLike | null): string | null {
   if (!store) return null;
-  return toDisplayUrl(store.icon_url) ?? toDisplayUrl(store.logo_url);
+  return toDisplayUrl(store.logo_url);
 }
 
 /**
