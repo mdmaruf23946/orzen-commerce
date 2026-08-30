@@ -1,5 +1,9 @@
 // Resolves a store's icon and favicon URLs with graceful fallbacks.
 // Never returns a broken URL - always yields either a real URL or null.
+//
+// IMPORTANT: the store logo (logo_url / name_logo_url) is a storefront brand
+// asset only (header, footer, menu). It is intentionally NOT used as an
+// app icon / favicon fallback - app icons come from icon_url / favicon fields.
 
 export type StoreLike = {
   id?: string;
@@ -18,13 +22,25 @@ function toDisplayUrl(v?: string | null): string | null {
   return `/api/img/${v}`;
 }
 
-/** Store identity icon: custom store icon → legacy store logo → null (caller renders letter mark). */
+/**
+ * Store brand icon for header/footer/menu: store icon → store logo → null.
+ * The store logo IS a storefront branding asset, so it is allowed here.
+ */
 export function resolveStoreIcon(store?: StoreLike | null): string | null {
   if (!store) return null;
   return toDisplayUrl(store.icon_url) ?? toDisplayUrl(store.logo_url);
 }
 
-/** Browser favicon: store favicon → icon → custom favicon → legacy seo.favicon_url → logo → null. */
+/**
+ * App icon / PWA icon: the dedicated Store Icon only.
+ * The store logo must NEVER be used as an app icon.
+ */
+export function resolveStoreAppIcon(store?: StoreLike | null): string | null {
+  if (!store) return null;
+  return toDisplayUrl(store.icon_url);
+}
+
+/** Browser favicon: store favicon → icon → custom favicon → legacy seo.favicon_url → null. */
 export function resolveStoreFavicon(store?: StoreLike | null): string | null {
   if (!store) return null;
   const useIcon = store.use_icon_as_favicon !== false;
@@ -33,15 +49,13 @@ export function resolveStoreFavicon(store?: StoreLike | null): string | null {
       toDisplayUrl(store.favicon_url) ??
       toDisplayUrl(store.icon_url) ??
       toDisplayUrl(store.custom_favicon_url) ??
-      toDisplayUrl(store.seo?.favicon_url) ??
-      toDisplayUrl(store.logo_url)
+      toDisplayUrl(store.seo?.favicon_url)
     );
   }
   return (
     toDisplayUrl(store.custom_favicon_url) ??
     toDisplayUrl(store.favicon_url) ??
     toDisplayUrl(store.icon_url) ??
-    toDisplayUrl(store.seo?.favicon_url) ??
-    toDisplayUrl(store.logo_url)
+    toDisplayUrl(store.seo?.favicon_url)
   );
 }

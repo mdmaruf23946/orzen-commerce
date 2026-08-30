@@ -36,7 +36,7 @@ import { StoreBranding } from "@/components/storefront/StoreBranding";
 import { StoreFooter } from "@/components/storefront/StoreFooter";
 import { GlobalHeaderBanner } from "@/components/storefront/GlobalHeaderBanner";
 
-import { resolveStoreIcon, resolveStoreFavicon } from "@/lib/store-icon";
+import { resolveStoreIcon, resolveStoreFavicon, resolveStoreAppIcon } from "@/lib/store-icon";
 import { useRouteErrorTracking } from "@/hooks/use-error-tracking";
 
 export const storeQuery = (slug: string) =>
@@ -148,7 +148,7 @@ function StoreLayout() {
       <StoreBranding
 
         name={store.name}
-        iconUrl={resolveStoreIcon(s)}
+        iconUrl={resolveStoreAppIcon(s)}
         faviconUrl={resolveStoreFavicon(s)}
         themeColor={s.primary_color ?? null}
       />
