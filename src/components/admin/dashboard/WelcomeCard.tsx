@@ -239,11 +239,11 @@ export function WelcomeCard(props: WelcomeCardProps) {
       {/* ============ MOBILE (<md) — dedicated layout ============ */}
       <div className="relative block space-y-3 p-4 md:hidden">
         {/* Row 1: title with small AI glyph */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-start gap-2">
           <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
             <Bot className="h-4 w-4" />
           </span>
-          <h1 className="min-w-0 truncate text-lg font-semibold tracking-tight">
+          <h1 className="min-w-0 text-base sm:text-lg font-semibold tracking-tight leading-tight break-words whitespace-normal">
             👋 Welcome back, {ownerName}
           </h1>
         </div>
