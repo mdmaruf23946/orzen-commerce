@@ -225,10 +225,12 @@ function PaymentGatewayPage() {
                   <AlertTriangle className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold">No active gateway</div>
+                  <div className="text-sm font-semibold">No default gateway</div>
                   <div className="text-xs text-muted-foreground">
-                    Online payment is hidden at checkout until you connect and activate a gateway.
+                    Online payment appears at checkout for every gateway you connect, test and keep
+                    enabled. Pick one as default to highlight it first.
                   </div>
+
                 </div>
               </div>
             )}
