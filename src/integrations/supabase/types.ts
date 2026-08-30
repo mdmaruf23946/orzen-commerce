@@ -9726,6 +9726,10 @@ export type Database = {
       }
       resolve_domain: { Args: { _host: string }; Returns: Json }
       resolve_host_kind: { Args: { _host: string }; Returns: Json }
+      staff_can: {
+        Args: { _level: string; _section: string; _store_id: string }
+        Returns: boolean
+      }
       staff_store_id: { Args: { _user_id: string }; Returns: string }
       submit_product_review: {
         Args: {
