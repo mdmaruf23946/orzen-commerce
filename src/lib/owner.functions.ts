@@ -1038,6 +1038,139 @@ export const updateGlobalAiKeys = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ---------- PLATFORM GEMINI API KEYS (serial rotation) ----------
+async function loadGeminiKeys(sb: any) {
+  const helpers = await import("@/lib/gemini-keys.server");
+  const { data } = await sb.from("ai_global_settings").select("gemini_api_keys").eq("id", 1).maybeSingle();
+  return { helpers, keys: helpers.normalizeGeminiKeys(data?.gemini_api_keys) };
+}
+
+async function saveGeminiKeys(sb: any, keys: any[]) {
+  // Keep the legacy single-key column in sync with the first usable key.
+  const helpers = await import("@/lib/gemini-keys.server");
+  const active = helpers.pickActiveGeminiKey(keys as any);
+  const { error } = await sb
+    .from("ai_global_settings")
+    .update({ gemini_api_keys: keys, gemini_api_key: active?.key ?? keys[0]?.key ?? null })
+    .eq("id", 1);
+  if (error) throw new Error(error.message);
+}
+
+export const listGlobalGeminiKeys = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const { helpers, keys } = await loadGeminiKeys(sb);
+    const today = helpers.dhakaToday();
+    const active = helpers.pickActiveGeminiKey(keys);
+    return {
+      today,
+      active_id: active?.id ?? null,
+      keys: keys.map((k, i) => ({
+        id: k.id,
+        label: k.label,
+        masked: helpers.maskGeminiKey(k.key),
+        enabled: k.enabled,
+        failed_today: k.failed_on === today,
+        last_error: k.last_error,
+        order: i + 1,
+      })),
+    };
+  });
+
+export const addGlobalGeminiKey = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ label: z.string().max(60).optional(), key: z.string().min(10).max(500) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const { keys } = await loadGeminiKeys(sb);
+    if (keys.length >= 10) throw new Error("Maximum of 10 Gemini keys.");
+    keys.push({
+      id: crypto.randomUUID(),
+      label: (data.label ?? "").trim() || `Key ${keys.length + 1}`,
+      key: data.key.trim(),
+      enabled: true,
+      failed_on: null,
+      last_error: null,
+    });
+    await saveGeminiKeys(sb, keys);
+    return { ok: true };
+  });
+
+export const updateGlobalGeminiKey = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      id: z.string().min(1),
+      label: z.string().max(60).optional(),
+      enabled: z.boolean().optional(),
+      reset_failure: z.boolean().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const { keys } = await loadGeminiKeys(sb);
+    const k = keys.find((x) => x.id === data.id);
+    if (!k) throw new Error("Key not found");
+    if (data.label !== undefined) k.label = data.label.trim() || k.label;
+    if (data.enabled !== undefined) k.enabled = data.enabled;
+    if (data.reset_failure) {
+      k.failed_on = null;
+      k.last_error = null;
+    }
+    await saveGeminiKeys(sb, keys);
+    return { ok: true };
+  });
+
+export const deleteGlobalGeminiKey = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().min(1) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const { keys } = await loadGeminiKeys(sb);
+    await saveGeminiKeys(sb, keys.filter((k) => k.id !== data.id));
+    return { ok: true };
+  });
+
+export const moveGlobalGeminiKey = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().min(1), direction: z.enum(["up", "down"]) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const { keys } = await loadGeminiKeys(sb);
+    const i = keys.findIndex((k) => k.id === data.id);
+    const j = data.direction === "up" ? i - 1 : i + 1;
+    if (i < 0 || j < 0 || j >= keys.length) return { ok: true };
+    [keys[i], keys[j]] = [keys[j]!, keys[i]!];
+    await saveGeminiKeys(sb, keys);
+    return { ok: true };
+  });
+
+export const testGlobalGeminiKey = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().min(1) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const { helpers, keys } = await loadGeminiKeys(sb);
+    const k = keys.find((x) => x.id === data.id);
+    if (!k) throw new Error("Key not found");
+    const res = await helpers.testGeminiKey(k.key);
+    if (res.ok) {
+      k.failed_on = null;
+      k.last_error = null;
+    } else {
+      k.failed_on = helpers.dhakaToday();
+      k.last_error = res.error ?? "Connection failed";
+    }
+    await saveGeminiKeys(sb, keys);
+    return res;
+  });
 
 
 
