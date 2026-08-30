@@ -8285,6 +8285,7 @@ export type Database = {
           definition: Json
           description: string | null
           id: string
+          is_default: boolean
           locked: Json
           name: string
           preview_url: string | null
@@ -8299,6 +8300,7 @@ export type Database = {
           definition?: Json
           description?: string | null
           id?: string
+          is_default?: boolean
           locked?: Json
           name: string
           preview_url?: string | null
@@ -8313,6 +8315,7 @@ export type Database = {
           definition?: Json
           description?: string | null
           id?: string
+          is_default?: boolean
           locked?: Json
           name?: string
           preview_url?: string | null
