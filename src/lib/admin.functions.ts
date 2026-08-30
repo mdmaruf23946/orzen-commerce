@@ -83,6 +83,7 @@ export const getMyStore = createServerFn({ method: "GET" })
           name: `${base.charAt(0).toUpperCase() + base.slice(1)}'s Store`,
           status: "active",
           ...tplFields,
+          theme_id: await defaultThemeId(supabase),
         })
         .select("*")
         .single();
@@ -98,6 +99,24 @@ export const getMyStore = createServerFn({ method: "GET" })
     }
     return store;
   });
+
+// Winner Admin picks one catalog theme as the default for every new store.
+async function defaultThemeId(supabase: any): Promise<string | null> {
+  const { data } = await supabase
+    .from("store_themes")
+    .select("id")
+    .eq("is_default", true)
+    .maybeSingle();
+  if (data?.id) return data.id as string;
+  const { data: first } = await supabase
+    .from("store_themes")
+    .select("id")
+    .eq("status", "published")
+    .order("sort_order", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return (first?.id as string) ?? null;
+}
 
 // Reset the current owner's store to the latest global template.
 // Wipes categories/products/banners and reseeds. Overwrites design/theme/etc.
@@ -181,6 +200,7 @@ export const createMyStoreWithSlug = createServerFn({ method: "POST" })
         name: data.storeName,
         status: "active",
         ...tplFields,
+        theme_id: await defaultThemeId(supabase),
       })
       .select("*")
       .single();
