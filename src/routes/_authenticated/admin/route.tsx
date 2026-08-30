@@ -25,6 +25,7 @@ import { getMyStore } from "@/lib/admin.functions";
 import { resolveStoreIcon } from "@/lib/store-icon";
 import { recoverFromChunkError } from "@/lib/chunk-recovery";
 import { StoreAccessProvider, useStoreAccess } from "@/lib/use-store-access";
+import { ReadOnlyGuard } from "@/components/admin/ReadOnlyGuard";
 import { sectionForPath } from "@/lib/panel-sections";
 
 
