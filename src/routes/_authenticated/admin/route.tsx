@@ -559,7 +559,16 @@ function AdminLayout() {
             {access.loading ? (
               <div className="h-40 animate-pulse rounded-2xl bg-muted/40" />
             ) : pageAllowed ? (
-              <Outlet />
+              <>
+                {access.isEmployee && !!currentSection && !access.can(currentSection.key, "manage") && (
+                  <div className="mb-4 flex items-center gap-2 rounded-xl border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                    <ShieldCheck className="h-4 w-4 shrink-0" />
+                    View only — you can see this section but changes are not allowed.
+                  </div>
+                )}
+                <Outlet />
+              </>
+
             ) : (
               <div className="mx-auto max-w-md rounded-2xl border bg-card p-8 text-center">
                 <ShieldCheck className="mx-auto h-8 w-8 text-muted-foreground" />
