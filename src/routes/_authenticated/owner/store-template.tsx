@@ -53,7 +53,43 @@ type TemplateBanner = {
   link_url?: string;
   sort_order?: number;
   is_active?: boolean;
+  product_type?: string;
+  display_position?: string;
+  category_name?: string;
 };
+
+const BANNER_TABS = [
+  { key: "all", label: "All" },
+  { key: "physical", label: "Physical" },
+  { key: "digital", label: "Digital" },
+  { key: "service", label: "Service" },
+  { key: "subscription", label: "Subscription" },
+] as const;
+
+type BannerTabKey = (typeof BANNER_TABS)[number]["key"];
+
+const BANNER_POSITIONS = [
+  { value: "hero", label: "Hero Banner" },
+  { value: "secondary", label: "Secondary Banner" },
+  { value: "promotional", label: "Promotional Banner" },
+  { value: "category", label: "Category Banner" },
+] as const;
+
+const BANNER_SORTS = [
+  { value: "newest", label: "Newest" },
+  { value: "oldest", label: "Oldest" },
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+] as const;
+
+type BannerSortKey = (typeof BANNER_SORTS)[number]["value"];
+
+function bannerType(b: TemplateBanner): string {
+  const t = (b.product_type ?? "").toString().trim().toLowerCase();
+  if (!t || t === "both" || t === "general") return "physical";
+  return t;
+}
+
 
 type TemplateProduct = {
   name: string;
@@ -127,6 +163,9 @@ function StoreTemplatePage() {
   const [bq, setBq] = useState("");
   const [bOpen, setBOpen] = useState(false);
   const [bIndex, setBIndex] = useState<number | null>(null);
+  const [bTab, setBTab] = useState<BannerTabKey>("all");
+  const [bSort, setBSort] = useState<BannerSortKey>("newest");
+
 
   useEffect(() => {
     if (!data) return;
@@ -268,14 +307,28 @@ function StoreTemplatePage() {
   }
 
   // ---------- banners ----------
+  const bannerActiveType = bTab === "all" ? "physical" : bTab;
+  const bannerTypeCount = useMemo(
+    () => form.banners.filter((b) => bannerType(b) === bannerActiveType).length,
+    [form.banners, bannerActiveType],
+  );
+  const bannersFull = bTab !== "all" && bannerTypeCount >= 3;
+
   const visibleBanners = useMemo(() => {
     const n = bq.trim().toLowerCase();
-    return form.banners
+    let rows = form.banners
       .map((b, i) => ({ b, i }))
-      .filter(({ b }) =>
-        !n ? true : ((b.title ?? "") + " " + (b.link_url ?? "")).toLowerCase().includes(n),
-      );
-  }, [form.banners, bq]);
+      .filter(({ b }) => {
+        if (bTab !== "all" && bannerType(b) !== bTab) return false;
+        if (!n) return true;
+        return ((b.title ?? "") + " " + (b.link_url ?? "")).toLowerCase().includes(n);
+      });
+    if (bSort === "active") rows = rows.filter(({ b }) => b.is_active !== false);
+    if (bSort === "inactive") rows = rows.filter(({ b }) => b.is_active === false);
+    if (bSort === "oldest") rows = rows.slice().reverse();
+    return rows;
+  }, [form.banners, bq, bTab, bSort]);
+
 
   function saveBanner(next: TemplateBanner) {
     const arr = [...form.banners];
@@ -309,6 +362,7 @@ function StoreTemplatePage() {
   );
   const addBannerBtn = (
     <Button
+      disabled={bannersFull}
       onClick={() => {
         setBIndex(null);
         setBOpen(true);
@@ -317,6 +371,7 @@ function StoreTemplatePage() {
       <Plus className="mr-1 h-4 w-4" /> Add banner
     </Button>
   );
+
 
   return (
     <div className="space-y-4 sm:space-y-5">
@@ -533,13 +588,34 @@ function StoreTemplatePage() {
 
         {/* ============ Banners ============ */}
         <TabsContent value="banners" className="space-y-4">
+          <TypeFilterTabs tabs={BANNER_TABS} value={bTab} onChange={(k) => setBTab(k as BannerTabKey)} />
+
           <AdminToolbar
             value={bq}
             onChange={setBq}
             placeholder="Search banners…"
             action={addBannerBtn}
-            trailing={<div className="hidden sm:block">{addBannerBtn}</div>}
+            trailing={
+              <select
+                value={bSort}
+                onChange={(e) => setBSort(e.target.value as BannerSortKey)}
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm sm:w-40"
+                aria-label="Sort banners"
+              >
+                {BANNER_SORTS.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            }
           />
+
+          {bannersFull && (
+            <p className="text-xs text-muted-foreground">
+              You have reached the limit of 3 banners for this product type.
+            </p>
+          )}
 
           {visibleBanners.length === 0 ? (
             <div className="space-y-3 rounded-xl border bg-card p-10 text-center">
@@ -551,6 +627,8 @@ function StoreTemplatePage() {
               {visibleBanners.map(({ b, i }) => {
                 const src = imgSrc(b.image_url);
                 const isActive = b.is_active !== false;
+                const pos =
+                  BANNER_POSITIONS.find((p) => p.value === (b.display_position ?? "hero"))?.label ?? "Hero Banner";
                 return (
                   <div key={i} className="overflow-hidden rounded-xl border bg-card">
                     <div className="grid aspect-[16/7] place-items-center bg-muted">
@@ -572,11 +650,25 @@ function StoreTemplatePage() {
                           {isActive ? "Active" : "Inactive"}
                         </span>
                       </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                          {pos}
+                        </span>
+                        {b.category_name && (
+                          <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                            {b.category_name}
+                          </span>
+                        )}
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] capitalize text-muted-foreground">
+                          {bannerType(b)}
+                        </span>
+                      </div>
                       <p className="line-clamp-1 text-xs text-muted-foreground">{b.link_url || "No link"}</p>
                       <div className="flex items-center justify-between">
                         <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
                           Order {b.sort_order ?? i}
                         </span>
+
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => {
