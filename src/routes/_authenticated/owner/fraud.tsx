@@ -6,9 +6,11 @@ import { toast } from "sonner";
 import {
   ShieldCheck, Settings2, Sliders, BarChart3, KeyRound,
   CheckCircle2, XCircle, Loader2, AlertTriangle, Clock, Zap,
+  Plus, Trash2, ArrowUp, ArrowDown, RotateCcw,
 } from "lucide-react";
 import {
   getFraudSettingsAdmin, updateFraudSettings, testFraudConnection, fraudAnalytics,
+  addFraudApiKey, updateFraudApiKey, deleteFraudApiKey, moveFraudApiKey,
 } from "@/lib/fraud.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -176,19 +178,6 @@ function FraudPage() {
               <p className="text-xs text-muted-foreground">Default: bd_courier</p>
             </div>
             <div className="space-y-1.5">
-              <Label>API Key</Label>
-              <Input
-                type="password"
-                autoComplete="off"
-                placeholder={cfg.api_key_masked ?? "Enter BD Courier API token"}
-                value={form.api_key}
-                onChange={(e) => set("api_key", e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                {cfg.has_api_key ? "A key is stored — leave blank to keep it, or paste a new one." : "No key stored yet — paste your BD Courier token."}
-              </p>
-            </div>
-            <div className="space-y-1.5">
               <Label>API Secret (optional)</Label>
               <Input
                 type="password"
@@ -198,7 +187,9 @@ function FraudPage() {
                 onChange={(e) => set("api_secret", e.target.value)}
               />
             </div>
+
             <div className="space-y-1.5">
+
               <Label>Test phone number</Label>
               <Input
                 inputMode="tel"
@@ -209,6 +200,10 @@ function FraudPage() {
               <p className="text-xs text-muted-foreground">Used only for the Test Connection call.</p>
             </div>
           </div>
+
+          <ApiKeysManager keys={(cfg as any).api_keys ?? []} testPhone={testPhone} />
+
+
 
           <div className="flex flex-wrap items-center gap-2 pt-2">
             <Button type="button" variant="outline" onClick={runTest} disabled={testing || testPhone.trim().length < 6}>
@@ -369,6 +364,182 @@ function BarBlock({ title, rows }: { title: string; rows: [string, number][] }) 
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+
+// ---------------- Multiple API keys (serial rotation) ----------------
+type KeyRow = {
+  id: string;
+  label: string;
+  key_masked: string | null;
+  enabled: boolean;
+  failed_on: string | null;
+  last_error: string | null;
+  last_used_at: string | null;
+};
+
+function dhakaToday() {
+  return new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+function ApiKeysManager({ keys, testPhone }: { keys: KeyRow[]; testPhone: string }) {
+  const addFn = useServerFn(addFraudApiKey);
+  const updFn = useServerFn(updateFraudApiKey);
+  const delFn = useServerFn(deleteFraudApiKey);
+  const moveFn = useServerFn(moveFraudApiKey);
+  const testFn = useServerFn(testFraudConnection);
+  const qc = useQueryClient();
+
+  const [label, setLabel] = useState("");
+  const [value, setValue] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const today = dhakaToday();
+  const activeId = keys.find((k) => k.enabled && k.failed_on !== today)?.id ?? null;
+
+  const refresh = () => qc.invalidateQueries({ queryKey: ["owner", "fraud-cfg"] });
+
+  async function run(id: string, fn: () => Promise<any>, okMsg: string) {
+    setBusy(id);
+    try {
+      await fn();
+      toast.success(okMsg);
+      refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div className="space-y-3 rounded-xl border bg-muted/20 p-3 sm:p-4">
+      <div>
+        <div className="flex items-center gap-2 font-medium">
+          <KeyRound className="h-4 w-4" /> API Keys ({keys.length})
+        </div>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Keys are used one at a time, in this order. Key #1 always runs first; if it stops working,
+          the next key takes over automatically for the rest of the day. Every day starts again from key #1.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        {keys.length === 0 && (
+          <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+            No API key added yet — add your first BD Courier token below.
+          </p>
+        )}
+        {keys.map((k, i) => {
+          const failedToday = k.failed_on === today;
+          const isActive = k.id === activeId;
+          return (
+            <div key={k.id} className="rounded-lg border bg-card p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-muted text-[11px] font-semibold">
+                  {i + 1}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium">{k.label}</span>
+                {isActive && (
+                  <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
+                    IN USE
+                  </span>
+                )}
+                {!k.enabled && (
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                    DISABLED
+                  </span>
+                )}
+                {failedToday && (
+                  <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
+                    PAUSED TODAY
+                  </span>
+                )}
+                <Switch
+                  checked={k.enabled}
+                  disabled={busy === k.id}
+                  onCheckedChange={(v) =>
+                    run(k.id, () => updFn({ data: { id: k.id, enabled: v } }), v ? "Key enabled" : "Key disabled")
+                  }
+                />
+              </div>
+
+              <div className="mt-1 font-mono text-[11px] text-muted-foreground">{k.key_masked}</div>
+              {k.last_used_at && (
+                <div className="text-[11px] text-muted-foreground">
+                  Last used {new Date(k.last_used_at).toLocaleString()}
+                </div>
+              )}
+              {failedToday && k.last_error && (
+                <pre className="mt-1 max-h-20 overflow-auto whitespace-pre-wrap break-words rounded bg-destructive/5 p-2 font-mono text-[11px] text-destructive">
+                  {k.last_error}
+                </pre>
+              )}
+
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <Button
+                  size="sm" variant="ghost" disabled={i === 0 || busy === k.id}
+                  onClick={() => run(k.id, () => moveFn({ data: { id: k.id, direction: "up" } }), "Order updated")}
+                >
+                  <ArrowUp className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  size="sm" variant="ghost" disabled={i === keys.length - 1 || busy === k.id}
+                  onClick={() => run(k.id, () => moveFn({ data: { id: k.id, direction: "down" } }), "Order updated")}
+                >
+                  <ArrowDown className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  size="sm" variant="outline" disabled={busy === k.id}
+                  onClick={() =>
+                    run(k.id, async () => {
+                      const r = await testFn({ data: { phone: testPhone.trim() || "01700000000", key_id: k.id } });
+                      if (!r.ok) throw new Error(r.error ?? "Connection failed");
+                    }, "Key works")
+                  }
+                >
+                  <Zap className="mr-1 h-3.5 w-3.5" /> Test
+                </Button>
+                {failedToday && (
+                  <Button
+                    size="sm" variant="outline" disabled={busy === k.id}
+                    onClick={() => run(k.id, () => updFn({ data: { id: k.id, reset_failure: true } }), "Key resumed")}
+                  >
+                    <RotateCcw className="mr-1 h-3.5 w-3.5" /> Resume
+                  </Button>
+                )}
+                <Button
+                  size="sm" variant="ghost" className="ml-auto text-destructive" disabled={busy === k.id}
+                  onClick={() => run(k.id, () => delFn({ data: { id: k.id } }), "Key removed")}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-[1fr_2fr_auto]">
+        <Input placeholder="Label (optional)" value={label} onChange={(e) => setLabel(e.target.value)} />
+        <Input
+          type="password" autoComplete="off" placeholder="Paste BD Courier API token"
+          value={value} onChange={(e) => setValue(e.target.value)}
+        />
+        <Button
+          disabled={busy === "add" || value.trim().length < 8}
+          onClick={() =>
+            run("add", async () => {
+              await addFn({ data: { key: value.trim(), label: label.trim() || undefined } });
+              setValue(""); setLabel("");
+            }, "API key added")
+          }
+        >
+          <Plus className="mr-1 h-4 w-4" /> Add
+        </Button>
+      </div>
     </div>
   );
 }
