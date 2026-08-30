@@ -49,7 +49,16 @@ export const getFraudSettingsAdmin = createServerFn({ method: "GET" })
       ...row,
       api_key_masked: mask(row.api_key),
       api_secret_masked: mask(row.api_secret),
-      has_api_key: !!row.api_key,
+      has_api_key: !!row.api_key || (Array.isArray(row.api_keys) && row.api_keys.length > 0),
+      api_keys: (Array.isArray(row.api_keys) ? row.api_keys : []).map((k: any, i: number) => ({
+        id: String(k?.id ?? `key_${i}`),
+        label: k?.label ? String(k.label) : `Key ${i + 1}`,
+        key_masked: mask(k?.key),
+        enabled: k?.enabled !== false,
+        failed_on: k?.failed_on ?? null,
+        last_error: k?.last_error ?? null,
+        last_used_at: k?.last_used_at ?? null,
+      })),
       api_key: undefined,
       api_secret: undefined,
     };
@@ -166,12 +175,10 @@ async function performFraudCheck(opts: {
 
   const { data: cfg } = await supabaseAdmin
     .from("fraud_settings")
-    .select("enabled, api_key, thresholds")
+    .select("enabled, api_key, api_keys, thresholds")
     .eq("id", "global")
     .maybeSingle();
   if (!cfg || !(cfg as any).enabled) throw new Error("Fraud checker is not enabled by the platform");
-  const apiKey = (cfg as any).api_key as string | null;
-  if (!apiKey) throw new Error("Fraud checker API key is not configured");
   const thresholds = ((cfg as any).thresholds ?? { safe_max: 10, medium_max: 30 }) as {
     safe_max: number; medium_max: number;
   };
@@ -194,8 +201,8 @@ async function performFraudCheck(opts: {
     throw new Error("Maximum Fraud Check limit reached.");
   }
 
-  const { callBdCourier, computeRisk } = await import("@/lib/fraud.server");
-  const stats = await callBdCourier(phone, apiKey);
+  const { callBdCourierRotating, computeRisk } = await import("@/lib/fraud.server");
+  const stats = await callBdCourierRotating(supabaseAdmin, phone, (cfg as any).api_keys, (cfg as any).api_key);
   const risk = computeRisk(stats, thresholds);
   const now = new Date().toISOString();
   const nextCount = cached ? Math.min(((cached as any).check_count ?? 0) + 1, MAX_CHECKS) : 1;
@@ -375,18 +382,16 @@ export const resyncFraudCheck = createServerFn({ method: "POST" })
 
     const { data: cfg } = await supabaseAdmin
       .from("fraud_settings")
-      .select("enabled, api_key, thresholds")
+      .select("enabled, api_key, api_keys, thresholds")
       .eq("id", "global")
       .maybeSingle();
     if (!cfg || !(cfg as any).enabled) throw new Error("Fraud checker is not enabled");
-    const apiKey = (cfg as any).api_key as string | null;
-    if (!apiKey) throw new Error("Fraud checker API key is not configured");
     const thresholds = ((cfg as any).thresholds ?? { safe_max: 10, medium_max: 30 }) as {
       safe_max: number; medium_max: number;
     };
 
-    const { callBdCourier, computeRisk } = await import("@/lib/fraud.server");
-    const stats = await callBdCourier(phone, apiKey);
+    const { callBdCourierRotating, computeRisk } = await import("@/lib/fraud.server");
+    const stats = await callBdCourierRotating(supabaseAdmin, phone, (cfg as any).api_keys, (cfg as any).api_key);
     const risk = computeRisk(stats, thresholds);
     const now = new Date().toISOString();
 
