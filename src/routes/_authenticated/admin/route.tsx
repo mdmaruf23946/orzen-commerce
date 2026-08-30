@@ -566,8 +566,15 @@ function AdminLayout() {
                     View only — you can see this section but changes are not allowed.
                   </div>
                 )}
-                <Outlet />
+                <ReadOnlyGuard
+                  active={
+                    access.isEmployee && (!currentSection || !access.can(currentSection.key, "manage"))
+                  }
+                >
+                  <Outlet />
+                </ReadOnlyGuard>
               </>
+
 
             ) : (
               <div className="mx-auto max-w-md rounded-2xl border bg-card p-8 text-center">
