@@ -163,6 +163,9 @@ function StoreTemplatePage() {
   const [bq, setBq] = useState("");
   const [bOpen, setBOpen] = useState(false);
   const [bIndex, setBIndex] = useState<number | null>(null);
+  const [bTab, setBTab] = useState<BannerTabKey>("all");
+  const [bSort, setBSort] = useState<BannerSortKey>("newest");
+
 
   useEffect(() => {
     if (!data) return;
