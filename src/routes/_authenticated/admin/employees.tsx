@@ -286,16 +286,16 @@ function EmployeesPage() {
               <div><Label className="text-xs sm:text-sm">Name</Label><Input className="h-9 text-sm" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
 
               <div>
-                <Label>Work email {form.id ? "" : "(login)"}</Label>
-                <Input type="email" value={form.email} disabled={!!form.id}
+                <Label className="text-xs sm:text-sm">Work email {form.id ? "" : "(login)"}</Label>
+                <Input className="h-9 text-sm" type="email" value={form.email} disabled={!!form.id}
                   onChange={(e) => setForm({ ...form, email: e.target.value })} />
               </div>
-              <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+              <div><Label className="text-xs sm:text-sm">Phone</Label><Input className="h-9 text-sm" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
               {!form.id && (
                 <div>
-                  <Label>Temporary password</Label>
+                  <Label className="text-xs sm:text-sm">Temporary password</Label>
                   <div className="flex gap-2">
-                    <Input value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+                    <Input className="h-9 text-sm" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
                     <Button type="button" variant="outline" size="sm" onClick={() => setForm({ ...form, password: randomPassword() })}>
                       New
                     </Button>
@@ -303,9 +303,9 @@ function EmployeesPage() {
                 </div>
               )}
               <div>
-                <Label>Role</Label>
+                <Label className="text-xs sm:text-sm">Role</Label>
                 <Select value={form.role} onValueChange={(v) => setRole(v as EmployeeRole)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {EMPLOYEE_ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
                   </SelectContent>
@@ -315,9 +315,9 @@ function EmployeesPage() {
                 </p>
               </div>
               <div>
-                <Label>Status</Label>
+                <Label className="text-xs sm:text-sm">Status</Label>
                 <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                   </SelectContent>
@@ -327,32 +327,32 @@ function EmployeesPage() {
 
             <div>
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <Label className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4" /> Section permissions</Label>
+                <Label className="flex items-center gap-1.5 text-xs sm:text-sm"><ShieldCheck className="h-3.5 w-3.5" /> Section permissions</Label>
                 <div className="flex gap-1">
-                  <Button type="button" size="sm" variant="outline" onClick={() => bulk("manage")}>All manage</Button>
-                  <Button type="button" size="sm" variant="outline" onClick={() => bulk("view")}>All view</Button>
-                  <Button type="button" size="sm" variant="outline" onClick={() => bulk("none")}>Clear</Button>
+                  <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-[11px]" onClick={() => bulk("manage")}>All manage</Button>
+                  <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-[11px]" onClick={() => bulk("view")}>All view</Button>
+                  <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-[11px]" onClick={() => bulk("none")}>Clear</Button>
                 </div>
               </div>
-              <div className="space-y-3 rounded-xl border p-3">
+              <div className="max-h-[38vh] space-y-2.5 overflow-y-auto rounded-xl border p-2 sm:max-h-none sm:p-3">
                 {groups.map(([group, items]) => (
                   <div key={group}>
-                    <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{group}</div>
-                    <div className="grid gap-1.5">
+                    <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{group}</div>
+                    <div className="grid gap-1">
                       {items.map((s) => {
                         const lvl: PermissionLevel = (form.permissions[s.key] as PermissionLevel) ?? "none";
                         return (
-                          <div key={s.key} className="flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-2.5 py-1.5">
-                            <span className="truncate text-sm">{s.label}</span>
-                            <div className="flex shrink-0 overflow-hidden rounded-md border text-[11px]">
+                          <div key={s.key} className="flex items-center justify-between gap-2 rounded-lg bg-muted/40 px-2 py-1">
+                            <span className="min-w-0 truncate text-[12px] sm:text-sm">{s.label}</span>
+                            <div className="flex shrink-0 overflow-hidden rounded-md border text-[10px] sm:text-[11px]">
                               {(["none", "view", "manage"] as PermissionLevel[]).map((v) => (
                                 <button
                                   key={v}
                                   type="button"
                                   onClick={() => setLevel(s.key, v)}
-                                  className={`px-2 py-1 capitalize transition ${lvl === v ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                                  className={`px-1.5 py-0.5 capitalize transition sm:px-2 sm:py-1 ${lvl === v ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
                                 >
-                                  {v === "none" ? "No access" : v}
+                                  {v === "none" ? "None" : v}
                                 </button>
                               ))}
                             </div>
@@ -363,12 +363,13 @@ function EmployeesPage() {
                   </div>
                 ))}
               </div>
-              <p className="mt-2 text-[11px] text-muted-foreground">
+              <p className="mt-2 text-[10px] text-muted-foreground">
                 Billing, subscription, store settings, domains, payment gateway and this team page always stay owner-only.
               </p>
             </div>
 
-            <div><Label>Notes</Label><Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+            <div><Label className="text-xs sm:text-sm">Notes</Label><Textarea rows={2} className="text-sm" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+
           </div>
 
           <DialogFooter>
