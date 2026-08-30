@@ -204,10 +204,10 @@ export function WelcomeCard(props: WelcomeCardProps) {
       <div className="pointer-events-none absolute -bottom-24 right-10 h-56 w-56 rounded-full bg-blue-400/10 blur-3xl" />
 
       {/* ============ DESKTOP / TABLET (md+) ============ */}
-      <div className="relative hidden md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto] md:items-start md:gap-5 md:p-5 lg:p-6">
+      <div className="relative hidden md:grid md:grid-cols-[minmax(0,1.1fr)_minmax(0,1.3fr)_auto] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto] md:items-start md:gap-4 lg:gap-5 md:p-5 lg:p-6">
         {/* LEFT — welcome + badges pinned to top */}
         <div className="min-w-0 self-start">
-          <h1 className="truncate text-xl font-semibold tracking-tight lg:text-[26px] lg:leading-tight">
+          <h1 className="text-base md:text-lg lg:text-[26px] font-semibold tracking-tight leading-tight break-words whitespace-normal">
             👋 Welcome back, {ownerName}!
           </h1>
           {badges}
@@ -215,7 +215,7 @@ export function WelcomeCard(props: WelcomeCardProps) {
 
         {/* CENTER — 4 stats pinned to bottom */}
         <div className="min-w-0 self-end">
-          <div className="grid grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-2.5">
             {stats.map((s) => (
               <StatTile key={s.label} {...s} />
             ))}
@@ -228,11 +228,11 @@ export function WelcomeCard(props: WelcomeCardProps) {
             href={storeUrl || "#"}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary to-indigo-500 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-primary/30 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/40"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary to-indigo-500 px-3 py-1.5 lg:px-4 lg:py-2 text-[10px] lg:text-xs font-semibold text-white shadow-md shadow-primary/30 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/40"
           >
-            View Store <ExternalLink className="h-3.5 w-3.5" />
+            View Store <ExternalLink className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
           </a>
-          <AiIllustration className="h-24 w-36 md:scale-75 lg:scale-100" />
+          <AiIllustration className="h-20 w-32 lg:h-24 lg:w-36 md:scale-75 lg:scale-100" />
         </div>
       </div>
 
