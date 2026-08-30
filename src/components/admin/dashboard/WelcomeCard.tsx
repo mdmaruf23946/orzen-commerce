@@ -150,9 +150,9 @@ function StatTile({
 }) {
   return (
     <div className="min-w-0 rounded-xl border border-black/5 dark:border-white/10 bg-white/60 dark:bg-white/5 px-2 py-1.5 sm:px-3 sm:py-2">
-      <div className="flex items-center gap-1 text-[9px] sm:text-[10px] md:text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-        <Icon className={cn("h-3 w-3 sm:h-3.5 sm:w-3.5", tone)} />
-        <span className="whitespace-normal leading-tight break-words">{label}</span>
+      <div className="flex min-w-0 items-center gap-1 text-[9px] sm:text-[10px] md:text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        <Icon className={cn("h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0", tone)} />
+        <span className="min-w-0 whitespace-normal leading-tight">{label}</span>
       </div>
       <div className="mt-0.5 truncate text-base sm:text-lg font-semibold tabular-nums">{value}</div>
     </div>
