@@ -122,16 +122,16 @@ function BillingPage() {
     void openSubscriptionInvoice(p, store, invoiceBrand);
   }
 
-  const tierMap = useMemo(() => {
-    const m = new Map<string, Plan>();
-    for (const p of plans) {
-      const t = tierOf(p);
-      if (t && !m.has(t)) m.set(t, p);
-    }
-    return m;
-  }, [plans]);
+  // Cheapest paid plan gets the "Popular" badge and the trial upgrade CTA.
+  const paidPlans = useMemo(
+    () => plans.filter((p) => !p.is_trial && Number(p.price) > 0).sort((a, b) => Number(a.price) - Number(b.price)),
+    [plans],
+  );
+  const popularPlanId = paidPlans[0]?.id ?? null;
+  const upgradePlan = paidPlans[0] ?? null;
 
   const currentTier = pkg ? tierOf(pkg) : isTrialing ? null : "free";
+
   // Expired / cancelled / suspended → the plan is no longer active, so the
   // merchant must be able to renew (update) it manually again.
   const isInactive = ["expired", "cancelled", "suspended", "past_due"].includes(subStatus);
