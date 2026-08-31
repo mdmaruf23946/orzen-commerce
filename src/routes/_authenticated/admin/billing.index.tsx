@@ -215,16 +215,17 @@ function BillingPage() {
                 All Premium Features unlocked.
               </p>
             </div>
-            {tierMap.get("business") && (
+            {upgradePlan && (
               <Link
                 to="/admin/billing/checkout/$packageId"
-                params={{ packageId: tierMap.get("business")!.id }}
+                params={{ packageId: upgradePlan.id }}
                 search={{ cycle } as any}
                 className="shrink-0"
               >
                 <Button size="sm" className="h-8 bg-amber-600 px-2.5 text-xs hover:bg-amber-700 sm:h-9 sm:px-3 sm:text-sm">Upgrade</Button>
               </Link>
             )}
+
           </div>
         </div>
       )}
