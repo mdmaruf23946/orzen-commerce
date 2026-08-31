@@ -306,8 +306,10 @@ export async function generateLandingCopy(
   next.product.features = base.product.features;
   next.product.specs = base.product.specs;
   next.hero.image = base.hero.image;
-  next.header.logo = base.header.logo;
-  next.footer.logo = base.footer.logo;
+  next.header.iconLogo = base.header.iconLogo;
+  next.header.nameLogo = base.header.nameLogo;
+  next.footer.iconLogo = base.footer.iconLogo;
+  next.footer.nameLogo = base.footer.nameLogo;
 
   return next;
 }
