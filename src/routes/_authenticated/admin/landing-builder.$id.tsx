@@ -121,7 +121,7 @@ function LandingEditor() {
           <div className="text-xs text-muted-foreground">/lp/{page.slug} · {page.status}</div>
         </div>
         <div className="ml-auto flex flex-wrap gap-2">
-          <a href={`/lp/${page.slug}?preview=1`} target="_blank" rel="noreferrer">
+          <a href={`/lp/${page.slug}?preview=true`} target="_blank" rel="noreferrer">
             <Button variant="outline" size="sm"><Eye className="mr-1 h-3 w-3" /> Preview</Button>
           </a>
           <Button
