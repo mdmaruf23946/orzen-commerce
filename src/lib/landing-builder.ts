@@ -284,7 +284,12 @@ export function generateContentFromProduct(p: SourceProduct): LandingContent {
       subtitle: "নিচের ফরমটি পূরণ করে অর্ডার কনফার্ম করুন।",
       successMessage: "ধন্যবাদ! আপনার অর্ডার গ্রহণ করা হয়েছে। আমরা শীঘ্রই কল করব।",
     },
-    footer: { text: "", contactText: "", copyright: "" },
+    footer: {
+      text: "", contactText: "", copyright: "", logo: "", storeName: "",
+      phone: "", email: "", address: "", hours: "",
+      facebook: "", instagram: "", youtube: "", tiktok: "", whatsapp: "",
+      links: [],
+    },
   };
 }
 
