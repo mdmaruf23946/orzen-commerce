@@ -21,8 +21,24 @@ export type PublicLandingPage = {
     old_price: number | null;
     stock: number | null;
     status: string;
+    primary_image_url?: string | null;
+    gallery?: unknown;
   } | null;
-  store: { id: string; name: string; slug: string };
+  store: {
+    id: string;
+    name: string;
+    slug: string;
+    logo_url?: string | null;
+    name_logo_url?: string | null;
+    phone?: string | null;
+    whatsapp?: string | null;
+    email?: string | null;
+    address?: string | null;
+    facebook?: string | null;
+    instagram?: string | null;
+    youtube?: string | null;
+    tiktok?: string | null;
+  };
 };
 
 export const getPublicLanding = createServerFn({ method: "GET" })
