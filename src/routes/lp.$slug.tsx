@@ -6,11 +6,24 @@ import {
   Award, Check, Clock, Gift, Heart, Package, Shield, Sparkles, Star,
   ThumbsUp, Truck, Zap, Loader2, ChevronDown,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { getPublicLanding, type PublicLandingPage } from "@/lib/landing-public.functions";
+import { getLandingPreviewBySlug } from "@/lib/landing-builder.functions";
 import { lpImage, type LandingContent, type LandingFormConfig, type LandingTheme } from "@/lib/landing-builder";
 
 export const Route = createFileRoute("/lp/$slug")({
-  loader: async ({ params }) => {
+  validateSearch: (search: Record<string, unknown>) => ({
+    preview:
+      search["preview"] === true || search["preview"] === "true" || search["preview"] === "1"
+        ? true
+        : undefined,
+  }),
+  loaderDeps: ({ search }) => ({ preview: Boolean(search.preview) }),
+  loader: async ({ params, deps }) => {
+    // In preview mode the page may still be a draft — it is fetched client-side
+    // through the owner-authenticated server function instead.
+    if (deps.preview) return null;
     const page = await getPublicLanding({ data: { slug: params.slug } });
     if (!page) throw notFound();
     return page;
@@ -62,7 +75,41 @@ function money(n: number) {
 }
 
 function LandingPageView() {
-  const page = Route.useLoaderData() as PublicLandingPage;
+  const loaded = Route.useLoaderData() as PublicLandingPage | null;
+  const { preview } = Route.useSearch();
+  const previewFn = useServerFn(getLandingPreviewBySlug);
+  const { slug } = Route.useParams();
+
+  const { data: previewPage, isLoading } = useQuery({
+    queryKey: ["lp-preview", slug],
+    queryFn: () => previewFn({ data: { slug } }) as Promise<PublicLandingPage | null>,
+    enabled: Boolean(preview) && !loaded,
+    staleTime: 0,
+  });
+
+  const page = loaded ?? (previewPage as PublicLandingPage | null);
+
+  if (!page) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-8 text-center">
+        {isLoading ? (
+          <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
+        ) : (
+          <div>
+            <div className="text-2xl font-semibold">Page not found</div>
+            <p className="mt-2 text-sm text-neutral-500">
+              This landing page is not available. Sign in as the store owner to preview drafts.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return <LandingPageBody page={page} preview={Boolean(preview)} />;
+}
+
+function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: boolean }) {
   const content = page.content as LandingContent;
   const theme = (page.theme ?? {}) as LandingTheme;
   const form = (page.form_config ?? {}) as LandingFormConfig;
@@ -86,6 +133,11 @@ function LandingPageView() {
       style={style}
       className={dark ? "min-h-screen bg-neutral-950 text-neutral-100" : "min-h-screen bg-white text-neutral-900"}
     >
+      {preview && (
+        <div className="bg-amber-500 px-4 py-1.5 text-center text-xs font-semibold text-black">
+          Preview mode — only you can see this page until it is published.
+        </div>
+      )}
       {content.hero?.enabled !== false && (
         <section className="px-4 pb-10 pt-8 sm:pt-14">
           <div className="mx-auto grid max-w-5xl items-center gap-8 md:grid-cols-2">

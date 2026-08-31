@@ -128,7 +128,7 @@ function LandingPagesList() {
                 <Link to="/admin/landing-builder/$id" params={{ id: p.id }}>
                   <Button size="sm" variant="outline"><Pencil className="mr-1 h-3 w-3" /> Edit</Button>
                 </Link>
-                <a href={`/lp/${p.slug}`} target="_blank" rel="noreferrer">
+                <a href={`/lp/${p.slug}?preview=true`} target="_blank" rel="noreferrer">
                   <Button size="sm" variant="outline"><Eye className="mr-1 h-3 w-3" /> Preview</Button>
                 </a>
                 <Button
