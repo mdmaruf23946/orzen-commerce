@@ -1,5 +1,6 @@
 // Public renderer for builder landing pages.
-// Fully standalone: no storefront chrome, no storefront theme dependency.
+// One fixed, professional template. Section order is always:
+// Header → Hero → Product → Description → FAQ → Reviews → Order form → Footer
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
@@ -10,7 +11,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getPublicLanding, type PublicLandingPage } from "@/lib/landing-public.functions";
 import { getLandingPreviewBySlug } from "@/lib/landing-builder.functions";
-import { lpImage, type LandingContent, type LandingFormConfig, type LandingTheme } from "@/lib/landing-builder";
+import {
+  lpImage, normalizeContent, type LandingContent, type LandingFormConfig,
+} from "@/lib/landing-builder";
 
 export const Route = createFileRoute("/lp/$slug")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -32,10 +35,10 @@ export const Route = createFileRoute("/lp/$slug")({
     if (!loaderData) {
       return { meta: [{ title: "Unavailable" }, { name: "robots", content: "noindex" }] };
     }
+    const content = normalizeContent(loaderData.content);
     const title = loaderData.seo?.title || loaderData.title;
-    const description =
-      loaderData.seo?.description || loaderData.content?.hero?.subheadline || loaderData.title;
-    const image = lpImage(loaderData.content?.hero?.image);
+    const description = loaderData.seo?.description || content.hero.subheadline || loaderData.title;
+    const image = lpImage((loaderData.seo as any)?.image || content.hero.image);
     return {
       meta: [
         { title },
@@ -109,159 +112,153 @@ function LandingPageView() {
   return <LandingPageBody page={page} preview={Boolean(preview)} />;
 }
 
+/** Fixed, system-owned design tokens — merchants cannot change these. */
+const STYLE = {
+  "--lp-primary": "#16a34a",
+  "--lp-accent": "#f59e0b",
+  "--lp-radius": "1rem",
+} as React.CSSProperties;
+
 function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: boolean }) {
-  const content = page.content as LandingContent;
-  const theme = (page.theme ?? {}) as LandingTheme;
+  const content = useMemo(() => normalizeContent(page.content), [page.content]);
   const form = (page.form_config ?? {}) as LandingFormConfig;
 
-  const style = useMemo(
-    () =>
-      ({
-        "--lp-primary": theme.primary || "#16a34a",
-        "--lp-accent": theme.accent || "#f59e0b",
-        "--lp-radius": theme.rounded === false ? "0.25rem" : "1rem",
-      }) as React.CSSProperties,
-    [theme],
-  );
-
-  const dark = Boolean(theme.dark);
-  const price = content.pricing?.price ?? page.product?.price ?? 0;
-  const oldPrice = content.pricing?.oldPrice ?? null;
+  const price = content.pricing.price || page.product?.price || 0;
+  const oldPrice = content.pricing.oldPrice ?? page.product?.old_price ?? null;
+  const discount = oldPrice && oldPrice > price ? Math.round(((oldPrice - price) / oldPrice) * 100) : 0;
+  const storeName = content.header.storeName.trim() || page.store?.name || page.title;
+  const heroImage = content.hero.image || content.product.images[0] || "";
 
   return (
-    <div
-      style={style}
-      className={dark ? "min-h-screen bg-neutral-950 text-neutral-100" : "min-h-screen bg-white text-neutral-900"}
-    >
+    <div style={STYLE} className="min-h-screen bg-white text-neutral-900">
       {preview && (
         <div className="bg-amber-500 px-4 py-1.5 text-center text-xs font-semibold text-black">
           Preview mode — only you can see this page until it is published.
         </div>
       )}
-      {content.hero?.enabled !== false && (
-        <section className="px-4 pb-10 pt-8 sm:pt-14">
-          <div className="mx-auto grid max-w-5xl items-center gap-8 md:grid-cols-2">
-            <div className="order-2 md:order-1">
-              {content.hero?.badge && (
-                <span
-                  className="inline-block rounded-full px-3 py-1 text-xs font-semibold text-white"
-                  style={{ background: "var(--lp-accent)" }}
-                >
-                  {content.hero.badge}
-                </span>
-              )}
-              <h1 className="mt-3 text-3xl font-extrabold leading-tight sm:text-4xl">
-                {content.hero?.headline || page.title}
-              </h1>
-              {content.hero?.subheadline && (
-                <p className="mt-3 text-base opacity-80">{content.hero.subheadline}</p>
-              )}
-              <div className="mt-5 flex flex-wrap items-baseline gap-3">
-                <span className="text-3xl font-bold" style={{ color: "var(--lp-primary)" }}>
-                  {money(price)}
-                </span>
-                {oldPrice && oldPrice > price && (
-                  <span className="text-lg line-through opacity-50">{money(oldPrice)}</span>
-                )}
-                {content.pricing?.note && <span className="text-xs opacity-70">{content.pricing.note}</span>}
-              </div>
-              <a
-                href="#order"
-                className="mt-6 inline-block px-7 py-3 text-base font-semibold text-white shadow-lg"
-                style={{ background: "var(--lp-primary)", borderRadius: "var(--lp-radius)" }}
-              >
-                {content.hero?.ctaText || "অর্ডার করুন"}
-              </a>
-            </div>
-            <div className="order-1 md:order-2">
-              {content.hero?.image && (
-                <img
-                  src={lpImage(content.hero.image)}
-                  alt={content.hero?.headline || page.title}
-                  className="w-full object-cover shadow-xl"
-                  style={{ borderRadius: "var(--lp-radius)" }}
-                  loading="eager"
-                />
-              )}
-            </div>
-          </div>
-        </section>
-      )}
 
-      {content.gallery?.enabled && content.gallery.images?.length > 0 && (
-        <Section title={content.gallery.title} dark={dark}>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-            {content.gallery.images.map((img, i) => (
-              <img
-                key={i}
-                src={lpImage(img)}
-                alt={`${page.title} ${i + 1}`}
-                loading="lazy"
-                className="aspect-square w-full object-cover"
-                style={{ borderRadius: "var(--lp-radius)" }}
-              />
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {content.features?.enabled && content.features.items?.length > 0 && (
-        <Section title={content.features.title} dark={dark}>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {content.features.items.map((f, i) => {
-              const Icon = ICONS[f.icon] ?? Check;
-              return (
-                <div
-                  key={i}
-                  className={`flex gap-3 p-4 ${dark ? "bg-neutral-900" : "bg-neutral-50"}`}
-                  style={{ borderRadius: "var(--lp-radius)" }}
-                >
-                  <span
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white"
-                    style={{ background: "var(--lp-primary)" }}
-                  >
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <div className="font-semibold">{f.title}</div>
-                    {f.text && <div className="mt-1 text-sm opacity-75">{f.text}</div>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Section>
-      )}
-
-      {content.benefits?.enabled && content.benefits.items?.length > 0 && (
-        <Section title={content.benefits.title} dark={dark}>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {content.benefits.items.map((b, i) => (
-              <div key={i} className="flex gap-3">
-                <Check className="mt-1 h-5 w-5 shrink-0" style={{ color: "var(--lp-primary)" }} />
-                <div>
-                  <div className="font-semibold">{b.title}</div>
-                  <div className="text-sm opacity-75">{b.text}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {content.details?.enabled && (content.details.text || content.details.specs?.length > 0) && (
-        <Section title={content.details.title} dark={dark}>
-          {content.details.text && (
-            <p className="whitespace-pre-line text-sm leading-relaxed opacity-85">{content.details.text}</p>
+      {/* 1. Header */}
+      <header className="sticky top-0 z-30 border-b border-neutral-200 bg-white/90 backdrop-blur">
+        <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3">
+          <span className="truncate text-base font-extrabold tracking-tight">{storeName}</span>
+          {content.header.showButton && (
+            <a
+              href="#order"
+              className="ml-auto shrink-0 px-4 py-2 text-sm font-semibold text-white"
+              style={{ background: "var(--lp-primary)", borderRadius: "calc(var(--lp-radius) / 2)" }}
+            >
+              {content.header.buttonText || "Order Now"}
+            </a>
           )}
-          {content.details.specs?.length > 0 && (
-            <div className="mt-5 overflow-hidden" style={{ borderRadius: "var(--lp-radius)" }}>
+        </div>
+      </header>
+
+      {/* 2. Hero */}
+      <section className="px-4 pb-12 pt-8 sm:pt-14">
+        <div className="mx-auto grid max-w-5xl items-center gap-8 md:grid-cols-2">
+          <div className="order-2 md:order-1">
+            {content.hero.offerText && (
+              <span
+                className="inline-block rounded-full px-3 py-1 text-xs font-semibold text-white"
+                style={{ background: "var(--lp-accent)" }}
+              >
+                {content.hero.offerText}
+              </span>
+            )}
+            <h1 className="mt-3 text-3xl font-extrabold leading-tight sm:text-4xl">
+              {content.hero.headline || page.product?.name || page.title}
+            </h1>
+            {content.hero.subheadline && (
+              <p className="mt-3 text-base text-neutral-600">{content.hero.subheadline}</p>
+            )}
+            <div className="mt-4 flex items-center gap-1 text-amber-500">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star key={i} className="h-4 w-4 fill-current" />
+              ))}
+              <span className="ml-1 text-xs text-neutral-500">5.0</span>
+            </div>
+            <div className="mt-4 flex flex-wrap items-baseline gap-3">
+              <span className="text-3xl font-bold" style={{ color: "var(--lp-primary)" }}>{money(price)}</span>
+              {oldPrice && oldPrice > price && (
+                <span className="text-lg text-neutral-400 line-through">{money(oldPrice)}</span>
+              )}
+              {discount > 0 && (
+                <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600">
+                  -{discount}%
+                </span>
+              )}
+              {content.pricing.note && <span className="text-xs text-neutral-500">{content.pricing.note}</span>}
+            </div>
+            <a
+              href="#order"
+              className="mt-6 inline-block px-7 py-3 text-base font-semibold text-white shadow-lg"
+              style={{ background: "var(--lp-primary)", borderRadius: "var(--lp-radius)" }}
+            >
+              {content.hero.ctaText || "Order Now"}
+            </a>
+          </div>
+          <div className="order-1 md:order-2">
+            {heroImage && (
+              <img
+                src={lpImage(heroImage)}
+                alt={content.hero.headline || page.title}
+                className="w-full object-cover shadow-xl"
+                style={{ borderRadius: "var(--lp-radius)" }}
+                loading="eager"
+              />
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Product */}
+      {content.product.enabled && (
+        <Section title={content.product.title} subtitle={content.product.subtitle}>
+          {content.product.images.length > 0 && (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+              {content.product.images.map((img, i) => (
+                <img
+                  key={i}
+                  src={lpImage(img)}
+                  alt={`${page.title} ${i + 1}`}
+                  loading="lazy"
+                  className="aspect-square w-full object-cover"
+                  style={{ borderRadius: "var(--lp-radius)" }}
+                />
+              ))}
+            </div>
+          )}
+
+          {content.product.showFeatures && content.product.features.length > 0 && (
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {content.product.features.map((f, i) => {
+                const Icon = ICONS[f.icon] ?? Check;
+                return (
+                  <div key={i} className="flex gap-3 bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
+                    <span
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white"
+                      style={{ background: "var(--lp-primary)" }}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <div className="font-semibold">{f.title}</div>
+                      {f.text && <div className="mt-1 text-sm text-neutral-600">{f.text}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {content.product.specs.length > 0 && (
+            <div className="mt-6 overflow-hidden" style={{ borderRadius: "var(--lp-radius)" }}>
               <table className="w-full text-sm">
                 <tbody>
-                  {content.details.specs.map((s, i) => (
-                    <tr key={i} className={i % 2 ? (dark ? "bg-neutral-900" : "bg-neutral-50") : ""}>
+                  {content.product.specs.map((s, i) => (
+                    <tr key={i} className={i % 2 ? "bg-neutral-50" : ""}>
                       <td className="w-1/3 p-3 font-medium">{s.label}</td>
-                      <td className="p-3 opacity-80">{s.value}</td>
+                      <td className="p-3 text-neutral-600">{s.value}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -271,15 +268,51 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
         </Section>
       )}
 
-      {content.reviews?.enabled && content.reviews.items?.length > 0 && (
-        <Section title={content.reviews.title} dark={dark}>
+      {/* 4. Description */}
+      {content.description.enabled && (content.description.text || content.description.points.length > 0) && (
+        <Section title={content.description.title}>
+          {content.description.text && (
+            <p className="mx-auto max-w-3xl whitespace-pre-line text-center text-sm leading-relaxed text-neutral-600">
+              {content.description.text}
+            </p>
+          )}
+          {content.description.points.length > 0 && (
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {content.description.points.map((p, i) => (
+                <div key={i} className="bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
+                  <Check className="h-5 w-5" style={{ color: "var(--lp-primary)" }} />
+                  <div className="mt-2 font-semibold">{p.title}</div>
+                  <div className="mt-1 text-sm text-neutral-600">{p.text}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+      )}
+
+      {/* 5. FAQ */}
+      {content.faq.enabled && content.faq.items.length > 0 && (
+        <Section title={content.faq.title}>
+          <div className="mx-auto max-w-3xl space-y-2">
+            {content.faq.items.map((f, i) => (
+              <details key={i} className="group bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
+                <summary className="flex cursor-pointer list-none items-center justify-between font-medium">
+                  {f.q}
+                  <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
+                </summary>
+                <p className="mt-2 text-sm text-neutral-600">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {/* 6. Reviews */}
+      {content.reviews.enabled && content.reviews.items.length > 0 && (
+        <Section title={content.reviews.title}>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {content.reviews.items.map((r, i) => (
-              <div
-                key={i}
-                className={`p-4 ${dark ? "bg-neutral-900" : "bg-neutral-50"}`}
-                style={{ borderRadius: "var(--lp-radius)" }}
-              >
+              <div key={i} className="bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
                 <div className="flex gap-0.5">
                   {Array.from({ length: 5 }).map((_, s) => (
                     <Star
@@ -290,84 +323,43 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
                     />
                   ))}
                 </div>
-                <p className="mt-2 text-sm opacity-85">{r.text}</p>
-                <div className="mt-2 text-xs font-semibold opacity-70">— {r.name}</div>
+                <p className="mt-2 text-sm text-neutral-700">{r.text}</p>
+                <div className="mt-2 text-xs font-semibold text-neutral-500">
+                  — {r.name}{r.location ? `, ${r.location}` : ""}
+                </div>
               </div>
             ))}
           </div>
         </Section>
       )}
 
-      {content.faq?.enabled && content.faq.items?.length > 0 && (
-        <Section title={content.faq.title} dark={dark}>
-          <div className="space-y-2">
-            {content.faq.items.map((f, i) => (
-              <details
-                key={i}
-                className={`group p-4 ${dark ? "bg-neutral-900" : "bg-neutral-50"}`}
-                style={{ borderRadius: "var(--lp-radius)" }}
-              >
-                <summary className="flex cursor-pointer list-none items-center justify-between font-medium">
-                  {f.q}
-                  <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
-                </summary>
-                <p className="mt-2 text-sm opacity-80">{f.a}</p>
-              </details>
-            ))}
-          </div>
-        </Section>
-      )}
+      {/* 7. Order form */}
+      <OrderForm page={page} content={content} form={form} price={price} />
 
-      {content.cta?.enabled && (
-        <section className="px-4 py-10">
-          <div
-            className="mx-auto max-w-5xl p-8 text-center text-white"
-            style={{ background: "var(--lp-primary)", borderRadius: "var(--lp-radius)" }}
-          >
-            <h2 className="text-2xl font-bold">{content.cta.headline}</h2>
-            {content.cta.text && <p className="mt-2 opacity-90">{content.cta.text}</p>}
-            <a
-              href="#order"
-              className="mt-5 inline-block bg-white px-7 py-3 font-semibold"
-              style={{ color: "var(--lp-primary)", borderRadius: "var(--lp-radius)" }}
-            >
-              {content.cta.buttonText}
-            </a>
-          </div>
-        </section>
-      )}
-
-      {content.order?.enabled !== false && (
-        <OrderForm page={page} content={content} form={form} dark={dark} price={price} />
-      )}
-
-      {content.contact?.enabled &&
-        (content.contact.phone || content.contact.email || content.contact.address) && (
-          <Section title={content.contact.title} dark={dark}>
-            <div className="grid gap-2 text-sm opacity-85 sm:grid-cols-2">
-              {content.contact.phone && <div>📞 {content.contact.phone}</div>}
-              {content.contact.email && <div>✉️ {content.contact.email}</div>}
-              {content.contact.address && <div>📍 {content.contact.address}</div>}
-              {content.contact.hours && <div>🕒 {content.contact.hours}</div>}
-            </div>
-          </Section>
-        )}
-
-      {content.footer?.enabled !== false && (
-        <footer className={`px-4 py-8 text-center text-xs opacity-60 ${dark ? "bg-neutral-900" : "bg-neutral-50"}`}>
-          {content.footer?.text || `© ${new Date().getFullYear()} ${page.store?.name ?? ""}`}
-        </footer>
-      )}
+      {/* 8. Footer */}
+      <footer className="bg-neutral-50 px-4 py-10 text-center">
+        <div className="mx-auto max-w-3xl space-y-2">
+          <div className="text-base font-bold">{storeName}</div>
+          {content.footer.text && <p className="text-sm text-neutral-600">{content.footer.text}</p>}
+          {content.footer.contactText && <p className="text-sm text-neutral-600">{content.footer.contactText}</p>}
+          <p className="pt-2 text-xs text-neutral-500">
+            {content.footer.copyright || `© ${new Date().getFullYear()} ${storeName}. All rights reserved.`}
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
 
-function Section({ title, dark, children }: { title?: string; dark: boolean; children: React.ReactNode }) {
+function Section({
+  title, subtitle, children,
+}: { title?: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <section className={`px-4 py-10 ${dark ? "" : ""}`}>
+    <section className="px-4 py-12">
       <div className="mx-auto max-w-5xl">
-        {title && <h2 className="mb-5 text-center text-2xl font-bold">{title}</h2>}
-        {children}
+        {title && <h2 className="text-center text-2xl font-bold">{title}</h2>}
+        {subtitle && <p className="mx-auto mt-2 max-w-2xl text-center text-sm text-neutral-600">{subtitle}</p>}
+        <div className={title || subtitle ? "mt-6" : ""}>{children}</div>
       </div>
     </section>
   );
@@ -377,13 +369,11 @@ function OrderForm({
   page,
   content,
   form,
-  dark,
   price,
 }: {
   page: PublicLandingPage;
   content: LandingContent;
   form: LandingFormConfig;
-  dark: boolean;
   price: number;
 }) {
   const fields = (form.fields ?? []).filter((f) => f.enabled);
@@ -431,18 +421,16 @@ function OrderForm({
     }
   }
 
-  const inputClass = `w-full border px-3 py-2 text-sm outline-none ${
-    dark ? "border-neutral-700 bg-neutral-900" : "border-neutral-300 bg-white"
-  }`;
+  const inputClass = "w-full border border-neutral-300 bg-white px-3 py-2 text-sm outline-none";
 
   return (
-    <section id="order" className="px-4 py-10">
+    <section id="order" className="px-4 py-12">
       <div
-        className={`mx-auto max-w-xl p-5 shadow-lg sm:p-7 ${dark ? "bg-neutral-900" : "bg-white ring-1 ring-neutral-200"}`}
+        className="mx-auto max-w-xl bg-white p-5 shadow-lg ring-1 ring-neutral-200 sm:p-7"
         style={{ borderRadius: "var(--lp-radius)" }}
       >
-        <h2 className="text-xl font-bold">{content.order?.title || "অর্ডার ফরম"}</h2>
-        {content.order?.note && <p className="mt-1 text-sm opacity-70">{content.order.note}</p>}
+        <h2 className="text-xl font-bold">{content.order.title || "Order Now"}</h2>
+        {content.order.subtitle && <p className="mt-1 text-sm text-neutral-600">{content.order.subtitle}</p>}
 
         {done ? (
           <div className="mt-6 text-center">
@@ -452,14 +440,14 @@ function OrderForm({
             >
               <Check className="h-7 w-7" />
             </div>
-            <p className="mt-4 text-sm">{content.order?.successMessage || "ধন্যবাদ! অর্ডার গ্রহণ করা হয়েছে।"}</p>
-            {done.invoice && <p className="mt-1 text-xs opacity-70">Invoice: {done.invoice}</p>}
+            <p className="mt-4 text-sm">{content.order.successMessage || "ধন্যবাদ! অর্ডার গ্রহণ করা হয়েছে।"}</p>
+            {done.invoice && <p className="mt-1 text-xs text-neutral-500">Invoice: {done.invoice}</p>}
           </div>
         ) : (
           <form className="mt-5 space-y-3" onSubmit={submit}>
             {fields.map((f) => (
               <div key={f.key}>
-                <label className="mb-1 block text-xs font-medium opacity-80">
+                <label className="mb-1 block text-xs font-medium text-neutral-600">
                   {f.label}
                   {f.required && <span className="text-red-500"> *</span>}
                 </label>
@@ -488,7 +476,7 @@ function OrderForm({
 
             {methods.length > 1 && (
               <div>
-                <label className="mb-1 block text-xs font-medium opacity-80">পেমেন্ট মেথড</label>
+                <label className="mb-1 block text-xs font-medium text-neutral-600">পেমেন্ট মেথড</label>
                 <div className="flex flex-wrap gap-2">
                   {methods.map((m) => (
                     <button
@@ -496,7 +484,7 @@ function OrderForm({
                       key={m}
                       onClick={() => setMethod(m)}
                       className={`border px-3 py-1.5 text-xs uppercase ${
-                        method === m ? "text-white" : dark ? "border-neutral-700" : "border-neutral-300"
+                        method === m ? "text-white" : "border-neutral-300"
                       }`}
                       style={{
                         background: method === m ? "var(--lp-primary)" : "transparent",
@@ -512,7 +500,7 @@ function OrderForm({
 
             {method !== "cod" && (
               <div>
-                <label className="mb-1 block text-xs font-medium opacity-80">ট্রানজেকশন আইডি</label>
+                <label className="mb-1 block text-xs font-medium text-neutral-600">ট্রানজেকশন আইডি</label>
                 <input
                   className={inputClass}
                   style={{ borderRadius: "calc(var(--lp-radius) / 2)" }}
@@ -523,7 +511,7 @@ function OrderForm({
             )}
 
             <div
-              className={`space-y-1 p-3 text-sm ${dark ? "bg-neutral-950" : "bg-neutral-50"}`}
+              className="space-y-1 bg-neutral-50 p-3 text-sm"
               style={{ borderRadius: "calc(var(--lp-radius) / 2)" }}
             >
               <Row label={`প্রোডাক্ট (${qty})`} value={money(price * qty)} />
@@ -555,7 +543,7 @@ function OrderForm({
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between">
-      <span className="opacity-70">{label}</span>
+      <span className="text-neutral-500">{label}</span>
       <span>{value}</span>
     </div>
   );
