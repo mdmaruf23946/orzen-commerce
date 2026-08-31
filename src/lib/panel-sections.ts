@@ -42,7 +42,7 @@ export const PANEL_SECTIONS: PanelSection[] = [
   { key: "handoff_queue", label: "Handoff Queue", group: "AI & Automation", paths: ["/admin/handoff-queue"] },
   { key: "messenger", label: "Messenger", group: "AI & Automation", paths: ["/admin/messenger"], feature: "ai_messenger" },
   { key: "messenger_inbox", label: "Messenger Inbox", group: "AI & Automation", paths: ["/admin/messenger-inbox"], feature: "ai_messenger" },
-  { key: "whatsapp", label: "WhatsApp Integration", group: "AI & Automation", paths: ["/admin/whatsapp"] },
+  { key: "whatsapp", label: "WhatsApp Integration", group: "AI & Automation", paths: ["/admin/whatsapp"], feature: "whatsapp" }'),
   { key: "whatsapp_inbox", label: "WhatsApp Inbox", group: "AI & Automation", paths: ["/admin/whatsapp-inbox"] },
   { key: "facebook", label: "Facebook Page", group: "Facebook Page", paths: ["/admin/facebook"], feature: "facebook_page" },
 

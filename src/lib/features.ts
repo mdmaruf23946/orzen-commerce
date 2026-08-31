@@ -115,12 +115,24 @@ export function effectivePackage(store: StoreWithPackage): PackageRow {
   return store.subscription_packages ?? null;
 }
 
+/** Older plans only stored the parent flag. */
+const LEGACY_FALLBACK: Partial<Record<FeatureKey, string>> = {
+  landing_page_create: "landing_pages",
+  landing_page_connect: "landing_pages",
+  messenger_inbox: "ai_messenger",
+  whatsapp: "ai_messenger",
+};
+
 export function hasFeature(store: StoreWithPackage, key: FeatureKey): boolean {
   const pkg = effectivePackage(store);
   if (!pkg) return false;
   // Trial unlocks everything
   if (pkg.is_trial) return true;
-  return !!pkg.features?.[key];
+  const f = pkg.features ?? {};
+  if (f[key] !== undefined) return !!f[key];
+  // Backwards compatibility: plans saved before a flag existed.
+  const fallback = LEGACY_FALLBACK[key];
+  return fallback ? !!f[fallback] : false;
 }
 
 /** Kept for the expired/suspended warning banner — the plan itself is downgraded. */
