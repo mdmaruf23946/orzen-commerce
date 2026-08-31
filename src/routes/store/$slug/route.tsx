@@ -146,7 +146,7 @@ function StoreLayout() {
     >
     <StoreUIProvider>
       <StoreBranding
-
+        slug={slug}
         name={store.name}
         iconUrl={resolveStoreAppIcon(s)}
         faviconUrl={resolveStoreFavicon(s)}
