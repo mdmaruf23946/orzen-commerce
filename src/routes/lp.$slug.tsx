@@ -278,13 +278,16 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
           )}
           {content.description.points.length > 0 && (
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {content.description.points.map((p, i) => (
-                <div key={i} className="bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
-                  <Check className="h-5 w-5" style={{ color: "var(--lp-primary)" }} />
-                  <div className="mt-2 font-semibold">{p.title}</div>
-                  <div className="mt-1 text-sm text-neutral-600">{p.text}</div>
-                </div>
-              ))}
+              {content.description.points.map((p, i) => {
+                const PIcon = ICONS[p.icon] ?? Check;
+                return (
+                  <div key={i} className="bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
+                    <PIcon className="h-5 w-5" style={{ color: "var(--lp-primary)" }} />
+                    <div className="mt-2 font-semibold">{p.title}</div>
+                    <div className="mt-1 text-sm text-neutral-600">{p.text}</div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </Section>
