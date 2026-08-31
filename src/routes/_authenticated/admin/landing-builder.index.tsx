@@ -302,6 +302,34 @@ function CreateDialog() {
                 ))
               )}
             </div>
+            {selected && (
+              <div className="rounded-lg border p-3">
+                <div className="text-xs font-medium">Content Language</div>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  Language for the AI-generated landing page content.
+                </p>
+                <div className="mt-2 grid grid-cols-3 gap-1.5">
+                  {([
+                    { v: "bn", label: "বাংলা" },
+                    { v: "en", label: "English" },
+                    { v: "mixed", label: "বাংলা+English" },
+                  ] as const).map((o) => (
+                    <button
+                      key={o.v}
+                      type="button"
+                      onClick={() => setLang(o.v)}
+                      className={`rounded-md border px-2 py-1.5 text-xs transition-colors ${
+                        lang === o.v
+                          ? "border-primary bg-primary/10 font-medium text-primary"
+                          : "hover:bg-accent"
+                      }`}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <Button className="w-full" disabled={!selected} onClick={create}>
               <Sparkles className="mr-1.5 h-4 w-4" /> Create Landing Page
             </Button>
