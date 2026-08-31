@@ -130,6 +130,8 @@ function Page() {
   const saveSlugFn = useServerFn(updateMySubdomain);
   const slugCheckFn = useServerFn(checkSubdomainAvailable);
   const dnsFn = useServerFn(checkDnsResolution);
+  const provisionFn = useServerFn(provisionMySubdomain);
+  const [provisioning, setProvisioning] = useState(false);
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["admin", "domains"], queryFn: () => listFn() });
 
