@@ -1,13 +1,21 @@
 // Section-based content editors for the Landing Page Creator.
-// Merchants edit text only — no colors, fonts, sizes, layout or drag & drop.
+// Merchants edit content + supported media only — no colors, fonts, sizes,
+// layout or drag & drop. The design stays system-owned.
 import { useState } from "react";
-import { ArrowLeft, ChevronRight, Plus, Star, Trash2 } from "lucide-react";
+import {
+  ArrowLeft, Award, Check, ChevronRight, Clock, Gift, Heart, Package, Plus,
+  Shield, Sparkles, Star, ThumbsUp, Trash2, Truck, Zap,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { MAX_KEY_POINTS, type LandingContent } from "@/lib/landing-builder";
+import { ImageUploader } from "@/components/admin/ImageUploader";
+import {
+  FEATURE_ICONS, MAX_KEY_POINTS, lpImage,
+  type LandingContent, type LandingStoreInfo,
+} from "@/lib/landing-builder";
 
 export type SectionKey =
   | "header" | "hero" | "product" | "description"
@@ -38,6 +46,12 @@ export function isSectionVisible(content: LandingContent, key: SectionKey): bool
     default: return null;
   }
 }
+
+export const ICON_MAP: Record<string, typeof Check> = {
+  check: Check, star: Star, shield: Shield, truck: Truck, zap: Zap, heart: Heart,
+  award: Award, clock: Clock, gift: Gift, "thumbs-up": ThumbsUp, package: Package,
+  sparkles: Sparkles,
+};
 
 /* ---------------- shared primitives ---------------- */
 
@@ -88,6 +102,154 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
 function AutoNote({ children }: { children: React.ReactNode }) {
   return (
     <p className="rounded-lg bg-muted/60 p-3 text-[11px] leading-relaxed text-muted-foreground">{children}</p>
+  );
+}
+
+/**
+ * Logo control: "" = use the Store Settings logo, "none" = no logo,
+ * anything else = an uploaded image.
+ */
+function LogoField({
+  label, value, onChange, storeLogo, storeId,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  storeLogo: string;
+  storeId?: string;
+}) {
+  const usingStore = value === "";
+  const shown = value === "none" ? "" : value || storeLogo;
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs">{label}</Label>
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border p-3">
+        <div className="grid h-16 w-28 shrink-0 place-items-center overflow-hidden rounded-md border bg-muted">
+          {shown ? (
+            <img src={lpImage(shown)} alt="" className="max-h-full max-w-full object-contain p-1" />
+          ) : (
+            <span className="text-[10px] text-muted-foreground">No logo</span>
+          )}
+        </div>
+        <div className="min-w-0 flex-1 space-y-2">
+          <ImageUploader
+            storeId={storeId}
+            folder={storeId ? `${storeId}/landing` : undefined}
+            value={value && value !== "none" ? value : null}
+            onChange={(p) => onChange(p ?? "")}
+            label="Change logo"
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" variant={usingStore ? "secondary" : "outline"} onClick={() => onChange("")}>
+              Use store logo
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => onChange("none")}>
+              Remove logo
+            </Button>
+          </div>
+        </div>
+      </div>
+      <p className="text-[11px] text-muted-foreground">
+        {usingStore
+          ? "Using the logo from Store Settings."
+          : value === "none"
+            ? "No logo will be shown."
+            : "Using a custom logo for this landing page."}
+      </p>
+    </div>
+  );
+}
+
+/** Simple media control: current media → Change → Remove, with optional gallery picks. */
+function MediaField({
+  label, value, onChange, choices = [], storeId, hint,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  choices?: string[];
+  storeId?: string;
+  hint?: string;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs">{label}</Label>
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border p-3">
+        <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-md border bg-muted">
+          {value ? (
+            <img src={lpImage(value)} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <span className="text-[10px] text-muted-foreground">None</span>
+          )}
+        </div>
+        <div className="min-w-0 flex-1 space-y-2">
+          <ImageUploader
+            storeId={storeId}
+            folder={storeId ? `${storeId}/landing` : undefined}
+            value={value || null}
+            onChange={(p) => onChange(p ?? "")}
+            label="Change image"
+          />
+        </div>
+      </div>
+      {choices.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[11px] text-muted-foreground">Or choose from the product images:</p>
+          <div className="flex flex-wrap gap-2">
+            {choices.map((img) => (
+              <button
+                key={img}
+                type="button"
+                onClick={() => onChange(img)}
+                className={`h-14 w-14 overflow-hidden rounded-md border-2 ${
+                  value === img ? "border-primary" : "border-transparent"
+                }`}
+              >
+                <img src={lpImage(img)} alt="" className="h-full w-full object-cover" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
+function IconPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const Active = ICON_MAP[value] ?? Check;
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <div className="grid h-9 w-9 place-items-center rounded-md border bg-muted">
+          <Active className="h-4 w-4" />
+        </div>
+        <Button type="button" size="sm" variant="outline" onClick={() => setOpen((o) => !o)}>
+          Change icon
+        </Button>
+      </div>
+      {open && (
+        <div className="flex flex-wrap gap-2 rounded-lg border p-2">
+          {FEATURE_ICONS.map((name) => {
+            const Ico = ICON_MAP[name] ?? Check;
+            return (
+              <button
+                key={name}
+                type="button"
+                aria-label={name}
+                onClick={() => { onChange(name); setOpen(false); }}
+                className={`grid h-9 w-9 place-items-center rounded-md border ${
+                  value === name ? "border-primary bg-accent" : ""
+                }`}
+              >
+                <Ico className="h-4 w-4" />
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -196,15 +358,30 @@ type EditorProps = {
   onBack: () => void;
   onSave: () => void;
   saving: boolean;
+  /** Store branding + contact defaults from Store Settings. */
+  store?: LandingStoreInfo | null;
+  /** Existing images of the linked product. */
+  productImages?: string[];
 };
 
-export function HeaderEditor({ content, patch, onBack, onSave, saving }: EditorProps) {
+function storeLogoOf(store?: LandingStoreInfo | null) {
+  return store?.logo_url || store?.name_logo_url || "";
+}
+
+export function HeaderEditor({ content, patch, onBack, onSave, saving, store }: EditorProps) {
   return (
     <SectionShell name="Header" onBack={onBack} onSave={onSave} saving={saving}>
+      <LogoField
+        label="Store logo"
+        value={content.header.logo}
+        onChange={(v) => patch("header", { logo: v })}
+        storeLogo={storeLogoOf(store)}
+        storeId={store?.id ?? ""}
+      />
       <Field
         label="Store name"
         value={content.header.storeName}
-        placeholder="Your Store Name"
+        placeholder={store?.name || "Your Store Name"}
         onChange={(v) => patch("header", { storeName: v })}
         hint="Leave empty to use your store name from Store Settings."
       />
@@ -219,30 +396,73 @@ export function HeaderEditor({ content, patch, onBack, onSave, saving }: EditorP
         checked={content.header.showButton}
         onChange={(v) => patch("header", { showButton: v })}
       />
-      <AutoNote>Your store logo comes automatically from Store Settings. Header design is fixed and always visible.</AutoNote>
+      <AutoNote>The logo is displayed automatically in the fixed header design. Header is always visible.</AutoNote>
     </SectionShell>
   );
 }
 
-export function HeroEditor({ content, patch, onBack, onSave, saving }: EditorProps) {
+export function HeroEditor({ content, patch, onBack, onSave, saving, store, productImages = [] }: EditorProps) {
   return (
     <SectionShell name="Hero" onBack={onBack} onSave={onSave} saving={saving}>
       <Field label="Headline" value={content.hero.headline} onChange={(v) => patch("hero", { headline: v })} />
       <Area label="Short description" value={content.hero.subheadline} onChange={(v) => patch("hero", { subheadline: v })} />
       <Field label="Offer text" value={content.hero.offerText} placeholder="Special Offer" onChange={(v) => patch("hero", { offerText: v })} />
       <Field label="Button text" value={content.hero.ctaText} placeholder="Order Now" onChange={(v) => patch("hero", { ctaText: v })} />
-      <AutoNote>Product image, name, price, original price, discount and rating come automatically from the selected product.</AutoNote>
+      <MediaField
+        label="Hero product image"
+        value={content.hero.image}
+        onChange={(v) => patch("hero", { image: v })}
+        choices={productImages}
+        storeId={store?.id ?? ""}
+      />
+      <AutoNote>Product name, price, original price, discount and rating come automatically from the selected product.</AutoNote>
     </SectionShell>
   );
 }
 
-export function ProductEditor({ content, patch, onBack, onSave, saving }: EditorProps) {
+export function ProductEditor({ content, patch, onBack, onSave, saving, productImages = [] }: EditorProps) {
+  const all = productImages.length ? productImages : content.product.images;
+  const selected = content.product.selectedImages;
+  const isOn = (img: string) => selected.length === 0 || selected.includes(img);
+  function toggleImage(img: string) {
+    const base = selected.length === 0 ? all : selected;
+    const next = base.includes(img) ? base.filter((i) => i !== img) : [...base, img];
+    patch("product", { selectedImages: next.length === all.length ? [] : next });
+  }
   return (
     <SectionShell name="Product" onBack={onBack} onSave={onSave} saving={saving}>
       <Toggle label="Show this section" checked={content.product.enabled} onChange={(v) => patch("product", { enabled: v })} />
       <Field label="Section title" value={content.product.title} placeholder="Product Details" onChange={(v) => patch("product", { title: v })} />
       <Area label="Short description" value={content.product.subtitle} onChange={(v) => patch("product", { subtitle: v })} />
+
+      {all.length > 0 && (
+        <div className="space-y-2">
+          <Label className="text-xs">Product images</Label>
+          <div className="flex flex-wrap gap-2">
+            {all.map((img) => (
+              <button
+                key={img}
+                type="button"
+                onClick={() => toggleImage(img)}
+                className={`relative h-16 w-16 overflow-hidden rounded-md border-2 ${
+                  isOn(img) ? "border-primary" : "border-transparent opacity-40"
+                }`}
+              >
+                <img src={lpImage(img)} alt="" className="h-full w-full object-cover" />
+                {isOn(img) && (
+                  <span className="absolute right-0.5 top-0.5 grid h-4 w-4 place-items-center rounded-full bg-primary text-primary-foreground">
+                    <Check className="h-3 w-3" />
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-muted-foreground">Tap an image to show or hide it on the landing page.</p>
+        </div>
+      )}
+
       <Toggle label="Show product features" checked={content.product.showFeatures} onChange={(v) => patch("product", { showFeatures: v })} />
+      <Toggle label="Show specifications" checked={content.product.showSpecs} onChange={(v) => patch("product", { showSpecs: v })} />
       <AutoNote>Product name, images, price, features and specifications come automatically from your Product system.</AutoNote>
     </SectionShell>
   );
@@ -250,7 +470,7 @@ export function ProductEditor({ content, patch, onBack, onSave, saving }: Editor
 
 export function DescriptionEditor({ content, patch, onBack, onSave, saving }: EditorProps) {
   const points = content.description.points;
-  function update(i: number, next: { title: string; text: string }) {
+  function update(i: number, next: { title: string; text: string; icon: string }) {
     const list = [...points];
     list[i] = next;
     patch("description", { points: list });
@@ -276,6 +496,7 @@ export function DescriptionEditor({ content, patch, onBack, onSave, saving }: Ed
                 <Trash2 className="h-3.5 w-3.5 text-red-500" />
               </Button>
             </div>
+            <IconPicker value={p.icon} onChange={(icon) => update(i, { ...p, icon })} />
             <Input placeholder="Title" value={p.title} onChange={(e) => update(i, { ...p, title: e.target.value })} />
             <Input placeholder="Description" value={p.text} onChange={(e) => update(i, { ...p, text: e.target.value })} />
           </div>
@@ -285,7 +506,7 @@ export function DescriptionEditor({ content, patch, onBack, onSave, saving }: Ed
             type="button"
             size="sm"
             variant="outline"
-            onClick={() => patch("description", { points: [...points, { title: "", text: "" }] })}
+            onClick={() => patch("description", { points: [...points, { title: "", text: "", icon: "check" }] })}
           >
             <Plus className="mr-1 h-3.5 w-3.5" /> Add key point
           </Button>
@@ -369,7 +590,7 @@ export function FaqEditor({ content, patch, onBack, onSave, saving }: EditorProp
   );
 }
 
-export function ReviewsEditor({ content, patch, onBack, onSave, saving }: EditorProps) {
+export function ReviewsEditor({ content, patch, onBack, onSave, saving, store }: EditorProps) {
   const [open, setOpen] = useState<number | null>(null);
   const items = content.reviews.items;
 
@@ -390,6 +611,13 @@ export function ReviewsEditor({ content, patch, onBack, onSave, saving }: Editor
           <Field label="Customer name" value={item.name} onChange={(v) => set({ name: v })} />
           <Field label="Customer location" value={item.location} onChange={(v) => set({ location: v })} />
           <Area label="Review" value={item.text} onChange={(v) => set({ text: v })} />
+          <MediaField
+            label="Customer photo"
+            value={item.photo}
+            onChange={(v) => set({ photo: v })}
+            storeId={store?.id ?? ""}
+            hint="Optional. The photo uses the fixed review layout automatically."
+          />
           <div className="space-y-1.5">
             <Label className="text-xs">Rating</Label>
             <div className="flex gap-1">
@@ -432,7 +660,7 @@ export function ReviewsEditor({ content, patch, onBack, onSave, saving }: Editor
           size="sm"
           variant="outline"
           onClick={() => {
-            patch("reviews", { items: [...items, { name: "", location: "", rating: 5, text: "" }] });
+            patch("reviews", { items: [...items, { name: "", location: "", rating: 5, text: "", photo: "" }] });
             setOpen(items.length);
           }}
         >
@@ -467,13 +695,78 @@ export function OrderTextEditor({
   );
 }
 
-export function FooterEditor({ content, patch, onBack, onSave, saving }: EditorProps) {
+export function FooterEditor({ content, patch, onBack, onSave, saving, store }: EditorProps) {
+  const f = content.footer;
+  const links = f.links;
+  function setLink(i: number, next: { label: string; url: string }) {
+    const list = [...links];
+    list[i] = next;
+    patch("footer", { links: list });
+  }
   return (
     <SectionShell name="Footer" onBack={onBack} onSave={onSave} saving={saving}>
-      <Area label="Short description" value={content.footer.text} placeholder="Quality products delivered to your doorstep." onChange={(v) => patch("footer", { text: v })} />
-      <Field label="Contact text" value={content.footer.contactText} placeholder="Need help? Contact us anytime." onChange={(v) => patch("footer", { contactText: v })} />
-      <Field label="Copyright text" value={content.footer.copyright} placeholder={`© ${new Date().getFullYear()} Your Store. All rights reserved.`} onChange={(v) => patch("footer", { copyright: v })} />
-      <AutoNote>Phone, email, address and social links come automatically from Store Settings.</AutoNote>
+      <LogoField
+        label="Footer logo"
+        value={f.logo}
+        onChange={(v) => patch("footer", { logo: v })}
+        storeLogo={storeLogoOf(store)}
+        storeId={store?.id ?? ""}
+      />
+      <Field
+        label="Store name"
+        value={f.storeName}
+        placeholder={store?.name || "Your Store"}
+        onChange={(v) => patch("footer", { storeName: v })}
+        hint="Leave empty to use your store name."
+      />
+      <Area label="Short description" value={f.text} placeholder="Quality products delivered to your doorstep." onChange={(v) => patch("footer", { text: v })} />
+      <Field label="Contact text" value={f.contactText} placeholder="Need help? Contact us anytime." onChange={(v) => patch("footer", { contactText: v })} />
+
+      <div className="space-y-3 rounded-lg border p-3">
+        <p className="text-xs font-semibold">Contact information</p>
+        <Field label="Phone number" value={f.phone} placeholder={store?.phone || "Phone from Store Settings"} onChange={(v) => patch("footer", { phone: v })} />
+        <Field label="Email" value={f.email} placeholder={store?.email || "Email from Store Settings"} onChange={(v) => patch("footer", { email: v })} />
+        <Area label="Address" rows={2} value={f.address} placeholder={store?.address || "Address from Store Settings"} onChange={(v) => patch("footer", { address: v })} />
+        <Field label="Business hours" value={f.hours} placeholder="Sat–Thu, 10am – 8pm" onChange={(v) => patch("footer", { hours: v })} />
+      </div>
+
+      <div className="space-y-3 rounded-lg border p-3">
+        <p className="text-xs font-semibold">Social media</p>
+        <Field label="Facebook" value={f.facebook} placeholder={store?.facebook || "https://facebook.com/..."} onChange={(v) => patch("footer", { facebook: v })} />
+        <Field label="Instagram" value={f.instagram} placeholder={store?.instagram || "https://instagram.com/..."} onChange={(v) => patch("footer", { instagram: v })} />
+        <Field label="YouTube" value={f.youtube} placeholder={store?.youtube || "https://youtube.com/..."} onChange={(v) => patch("footer", { youtube: v })} />
+        <Field label="TikTok" value={f.tiktok} placeholder={store?.tiktok || "https://tiktok.com/@..."} onChange={(v) => patch("footer", { tiktok: v })} />
+        <Field label="WhatsApp" value={f.whatsapp} placeholder={store?.whatsapp || "WhatsApp number or link"} onChange={(v) => patch("footer", { whatsapp: v })} />
+      </div>
+
+      <div className="space-y-2 rounded-lg border p-3">
+        <p className="text-xs font-semibold">Important links</p>
+        {links.map((l, i) => (
+          <div key={i} className="flex items-start gap-2">
+            <div className="min-w-0 flex-1 space-y-2">
+              <Input placeholder="Label (e.g. Refund policy)" value={l.label} onChange={(e) => setLink(i, { ...l, label: e.target.value })} />
+              <Input placeholder="https://…" value={l.url} onChange={(e) => setLink(i, { ...l, url: e.target.value })} />
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-9 px-2"
+              onClick={() => patch("footer", { links: links.filter((_, x) => x !== i) })}
+            >
+              <Trash2 className="h-3.5 w-3.5 text-red-500" />
+            </Button>
+          </div>
+        ))}
+        {links.length < 6 && (
+          <Button type="button" size="sm" variant="outline" onClick={() => patch("footer", { links: [...links, { label: "", url: "" }] })}>
+            <Plus className="mr-1 h-3.5 w-3.5" /> Add link
+          </Button>
+        )}
+      </div>
+
+      <Field label="Copyright text" value={f.copyright} placeholder={`© ${new Date().getFullYear()} Your Store. All rights reserved.`} onChange={(v) => patch("footer", { copyright: v })} />
+      <AutoNote>Leave contact, social or logo fields empty to use the values from Store Settings automatically.</AutoNote>
     </SectionShell>
   );
 }

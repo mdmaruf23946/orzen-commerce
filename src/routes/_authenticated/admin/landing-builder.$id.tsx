@@ -135,7 +135,28 @@ function LandingEditor() {
     }
   }
 
-  const editorProps = { content, patch, onBack: () => setSection(null), onSave: saveSection, saving };
+  const storeInfo = (data as any).store ?? null;
+  const productImages = (() => {
+    const p = (data as any).product;
+    if (!p) return content.product.images ?? [];
+    const gal = Array.isArray(p.gallery)
+      ? p.gallery
+          .map((g: any) => (typeof g === "string" ? g : String(g?.url ?? "")))
+          .filter(Boolean)
+      : [];
+    const all = [p.primary_image_url, ...gal, ...(content.product.images ?? [])].filter(Boolean) as string[];
+    return Array.from(new Set(all)).slice(0, 12);
+  })();
+
+  const editorProps = {
+    content,
+    patch,
+    onBack: () => setSection(null),
+    onSave: saveSection,
+    saving,
+    store: storeInfo,
+    productImages,
+  };
 
   return (
     <div className="space-y-5 pb-24">

@@ -124,15 +124,23 @@ export const getLandingPage = createServerFn({ method: "GET" })
       page.product_id
         ? context.supabase
             .from("products")
-            .select("id,name,price,old_price,stock,status,primary_image_url")
+            .select("id,name,price,old_price,stock,status,primary_image_url,gallery")
             .eq("id", page.product_id)
             .maybeSingle()
         : Promise.resolve({ data: null }),
       platformHosts(context.supabase),
     ]);
+    const { data: storeInfo } = await context.supabase
+      .from("stores")
+      .select(
+        "id,name,slug,logo_url,name_logo_url,phone,whatsapp,email,address,facebook,instagram,youtube,tiktok",
+      )
+      .eq("id", store.id)
+      .maybeSingle();
     return {
       page,
       product: productRes.data ?? null,
+      store: storeInfo ?? { id: store.id },
       domains: domainsRes.data ?? [],
       rootDomain: hosts.rootDomain,
       dnsTarget: hosts.dnsTarget,
