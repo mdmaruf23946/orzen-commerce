@@ -40,7 +40,14 @@ export const Route = createFileRoute("/lp/$slug")({
     const title = loaderData.seo?.title || loaderData.title;
     const description = loaderData.seo?.description || content.hero.subheadline || loaderData.title;
     const image = lpImage((loaderData.seo as any)?.image || content.hero.image);
+    const pageIcon = lpImage(String((loaderData.seo as any)?.icon ?? ""));
     return {
+      links: pageIcon
+        ? [
+            { rel: "icon", href: pageIcon },
+            { rel: "apple-touch-icon", href: pageIcon },
+          ]
+        : [],
       meta: [
         { title },
         { name: "description", content: description },
@@ -148,8 +155,10 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
       : productImages;
 
   // Footer values: merchant text wins, Store Settings is the automatic fallback.
-  const headerLogo = content.header.logo === "none" ? "" : content.header.logo || storeLogo;
-  const footerLogo = content.footer.logo === "none" ? "" : content.footer.logo || storeLogo;
+  const headerIcon = content.header.iconLogo;
+  const headerName = content.header.nameLogo;
+  const footerIcon = content.footer.iconLogo;
+  const footerNameLogo = content.footer.nameLogo;
   const footerName = content.footer.storeName.trim() || storeName;
   const contact = {
     phone: content.footer.phone || page.store?.phone || "",
@@ -186,10 +195,14 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
       {/* 1. Header */}
       <header className="sticky top-0 z-30 border-b border-neutral-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3">
-          {headerLogo && (
-            <img src={lpImage(headerLogo)} alt={storeName} className="h-9 w-auto max-w-[140px] shrink-0 object-contain" />
+          {headerIcon && (
+            <img src={lpImage(headerIcon)} alt="" className="h-9 w-9 shrink-0 object-contain" />
           )}
-          <span className="truncate text-base font-extrabold tracking-tight">{storeName}</span>
+          {headerName ? (
+            <img src={lpImage(headerName)} alt={storeName} className="h-8 w-auto max-w-[180px] shrink-0 object-contain" />
+          ) : (
+            <span className="truncate text-base font-extrabold tracking-tight">{storeName}</span>
+          )}
           {content.header.showButton && (
             <a
               href="#order"
@@ -401,10 +414,22 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
       {/* 8. Footer */}
       <footer className="bg-neutral-50 px-4 py-10 text-center">
         <div className="mx-auto max-w-3xl space-y-3">
-          {footerLogo && (
-            <img src={lpImage(footerLogo)} alt={footerName} className="mx-auto h-12 w-auto object-contain" loading="lazy" />
+          {(footerIcon || footerNameLogo) && (
+            <div className="flex items-center justify-center gap-3">
+              {footerIcon && (
+                <img src={lpImage(footerIcon)} alt="" className="h-12 w-12 object-contain" loading="lazy" />
+              )}
+              {footerNameLogo && (
+                <img
+                  src={lpImage(footerNameLogo)}
+                  alt={footerName}
+                  className="h-10 w-auto max-w-[220px] object-contain"
+                  loading="lazy"
+                />
+              )}
+            </div>
           )}
-          <div className="text-base font-bold">{footerName}</div>
+          {!footerNameLogo && <div className="text-base font-bold">{footerName}</div>}
           {content.footer.text && <p className="text-sm text-neutral-600">{content.footer.text}</p>}
           {content.footer.contactText && <p className="text-sm text-neutral-600">{content.footer.contactText}</p>}
 
