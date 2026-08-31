@@ -196,6 +196,8 @@ export const createLandingPage = createServerFn({ method: "POST" })
         title: z.string().trim().max(120).optional(),
         /** Generate the copy with AI before creating the page. */
         useAi: z.boolean().optional(),
+        /** Output language for the AI-generated copy. */
+        contentLang: z.enum(["en", "bn", "mixed"]).optional(),
       })
       .parse(d),
   )
