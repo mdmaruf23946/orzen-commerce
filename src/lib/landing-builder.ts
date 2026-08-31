@@ -57,8 +57,10 @@ export type LandingContent = {
     text: string;
     contactText: string;
     copyright: string;
-    /** "" = use the Store Settings logo, "none" = no logo. */
-    logo: string;
+    /** Square brand mark for this landing page. "" = none. */
+    iconLogo: string;
+    /** Wordmark / name logo image for this landing page. "" = none. */
+    nameLogo: string;
     storeName: string;
     phone: string;
     email: string;
