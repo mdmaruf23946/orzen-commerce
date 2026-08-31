@@ -586,11 +586,7 @@ export function ThemeCustomizer() {
         {/* ---------- live preview ---------- */}
         <div className="min-w-0 space-y-3 xl:sticky xl:top-4 xl:self-start">
           {state?.slug ? (
-            <ThemePreviewFrame
-              slug={state.slug}
-              definition={active?.definition ?? {}}
-              overrides={overrides}
-            />
+            <ThemePreviewFrame slug={state.slug} />
           ) : (
             <div className="rounded-xl border p-6 text-center text-sm text-muted-foreground">
               Create your store to see the live preview.
