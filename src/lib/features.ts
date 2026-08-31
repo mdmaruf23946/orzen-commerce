@@ -6,7 +6,25 @@ export const FEATURE_KEYS = [
   "ai_call_center",
   "call_center",
   "landing_pages",
+  "landing_page_create",
+  "landing_page_connect",
   "facebook_page",
+  "whatsapp",
+  "messenger_inbox",
+  "themes",
+  "custom_pages",
+  "seo",
+  "duplicate_protection",
+  "delivery_zones",
+  "payment_gateways",
+  "customer_accounts",
+  "product_reviews",
+  "quick_order",
+  "notifications",
+  "digital_products",
+  "service_products",
+  "subscription_products",
+  "wallet",
   "pixel",
   "courier",
   "inventory",
@@ -31,7 +49,25 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   ai_call_center: "AI Call Center",
   call_center: "Manual Call Center",
   landing_pages: "Landing Pages",
+  landing_page_create: "Landing Page Builder",
+  landing_page_connect: "Landing Page Integrations",
   facebook_page: "Facebook Page",
+  whatsapp: "WhatsApp Business",
+  messenger_inbox: "Messenger Inbox",
+  themes: "Store Themes",
+  custom_pages: "Custom Pages",
+  seo: "Store SEO",
+  duplicate_protection: "Duplicate Order Protection",
+  delivery_zones: "Delivery Zones",
+  payment_gateways: "Payment Gateways",
+  customer_accounts: "Customer Accounts",
+  product_reviews: "Product Reviews",
+  quick_order: "Quick / Manual Orders",
+  notifications: "Notifications",
+  digital_products: "Digital Products",
+  service_products: "Service Products",
+  subscription_products: "Subscription Products",
+  wallet: "Wallet & Auto-renewal",
   pixel: "Facebook Pixel & Tracking",
   courier: "Courier Integration",
   inventory: "Inventory Management",
@@ -79,12 +115,24 @@ export function effectivePackage(store: StoreWithPackage): PackageRow {
   return store.subscription_packages ?? null;
 }
 
+/** Older plans only stored the parent flag. */
+const LEGACY_FALLBACK: Partial<Record<FeatureKey, string>> = {
+  landing_page_create: "landing_pages",
+  landing_page_connect: "landing_pages",
+  messenger_inbox: "ai_messenger",
+  whatsapp: "ai_messenger",
+};
+
 export function hasFeature(store: StoreWithPackage, key: FeatureKey): boolean {
   const pkg = effectivePackage(store);
   if (!pkg) return false;
   // Trial unlocks everything
   if (pkg.is_trial) return true;
-  return !!pkg.features?.[key];
+  const f = pkg.features ?? {};
+  if (f[key] !== undefined) return !!f[key];
+  // Backwards compatibility: plans saved before a flag existed.
+  const fallback = LEGACY_FALLBACK[key];
+  return fallback ? !!f[fallback] : false;
 }
 
 /** Kept for the expired/suspended warning banner — the plan itself is downgraded. */
@@ -104,7 +152,7 @@ export const BILLING_CYCLES = [
 
 // Rows used by both plan cards and the comparison table.
 export type PlanRow =
-  | { kind: "limit"; key: "product_limit" | "order_limit" | "storage_mb" | "staff_limit"; label: string; unit?: string }
+  | { kind: "limit"; key: "product_limit" | "order_limit" | "storage_mb" | "staff_limit" | "landing_page_limit"; label: string; unit?: string }
   | { kind: "feature"; key: FeatureKey; label: string }
   | { kind: "trial"; label: string }
   | { kind: "support"; label: string };
@@ -115,6 +163,7 @@ export const PLAN_ROWS: PlanRow[] = [
   { kind: "limit", key: "order_limit", label: "Order Limit" },
   { kind: "limit", key: "storage_mb", label: "Storage Limit", unit: "MB" },
   { kind: "limit", key: "staff_limit", label: "Staff Limit" },
+  { kind: "limit", key: "landing_page_limit", label: "Landing Page Limit" },
   { kind: "feature", key: "ai_agent", label: "AI Sales Agent" },
   { kind: "feature", key: "ai_messenger", label: "Messenger AI" },
   { kind: "feature", key: "courier", label: "Courier Integration" },
@@ -123,6 +172,10 @@ export const PLAN_ROWS: PlanRow[] = [
   { kind: "feature", key: "inventory", label: "Inventory" },
   { kind: "feature", key: "invoice", label: "Invoice" },
   { kind: "feature", key: "coupons", label: "Coupon System" },
+  { kind: "feature", key: "landing_page_create", label: "Landing Page Builder" },
+  { kind: "feature", key: "landing_page_connect", label: "Landing Page Integrations" },
+  { kind: "feature", key: "facebook_page", label: "Facebook Page" },
+  { kind: "feature", key: "whatsapp", label: "WhatsApp Business" },
   { kind: "support", label: "Support Type" },
 ];
 

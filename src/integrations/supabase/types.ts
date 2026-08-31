@@ -8792,6 +8792,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_trial: boolean
+          landing_page_limit: number
           name: string
           order_limit: number | null
           plan_tier: string | null
@@ -8813,6 +8814,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_trial?: boolean
+          landing_page_limit?: number
           name: string
           order_limit?: number | null
           plan_tier?: string | null
@@ -8834,6 +8836,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_trial?: boolean
+          landing_page_limit?: number
           name?: string
           order_limit?: number | null
           plan_tier?: string | null
