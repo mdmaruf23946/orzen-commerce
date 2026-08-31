@@ -250,6 +250,45 @@ export const updateLandingPage = createServerFn({ method: "POST" })
     return { ok: true, slug: (patch["slug"] as string) ?? page.slug };
   });
 
+/**
+ * Owner-only preview of a landing page by slug — works for drafts too, so the
+ * merchant can see the page before publishing it publicly.
+ */
+export const getLandingPreviewBySlug = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ slug: z.string().min(1).max(64) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const store = await requireMyStore(context.supabase, context.userId);
+    const { data: page } = await context.supabase
+      .from("landing_pages")
+      .select("*")
+      .eq("store_id", store.id)
+      .eq("slug", data.slug.toLowerCase())
+      .maybeSingle();
+    if (!page) return null;
+
+    const { data: product } = page.product_id
+      ? await context.supabase
+          .from("products")
+          .select("id,name,price,old_price,stock,status")
+          .eq("id", page.product_id)
+          .maybeSingle()
+      : { data: null };
+
+    return {
+      id: page.id,
+      store_id: page.store_id,
+      slug: page.slug,
+      title: page.title,
+      content: page.content,
+      theme: page.theme,
+      form_config: page.form_config,
+      seo: page.seo ?? null,
+      product: product ?? null,
+      store: { id: store.id, name: store.name, slug: store.slug },
+    };
+  });
+
 export const setLandingStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: uuid, status: z.enum(["draft", "published"]) }).parse(d))
