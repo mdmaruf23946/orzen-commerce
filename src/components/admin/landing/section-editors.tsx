@@ -355,19 +355,23 @@ type EditorProps = {
   productImages?: string[];
 };
 
-function storeLogoOf(store?: LandingStoreInfo | null) {
-  return store?.logo_url || store?.name_logo_url || "";
-}
-
 export function HeaderEditor({ content, patch, onBack, onSave, saving, store }: EditorProps) {
   return (
     <SectionShell name="Header" onBack={onBack} onSave={onSave} saving={saving}>
       <LogoField
-        label="Store logo"
-        value={content.header.logo}
-        onChange={(v) => patch("header", { logo: v })}
-        storeLogo={storeLogoOf(store)}
+        label="Icon logo"
+        square
+        value={content.header.iconLogo}
+        onChange={(v) => patch("header", { iconLogo: v })}
         storeId={store?.id ?? ""}
+        hint="Square brand mark shown at the left of the header."
+      />
+      <LogoField
+        label="Name logo (wordmark)"
+        value={content.header.nameLogo}
+        onChange={(v) => patch("header", { nameLogo: v })}
+        storeId={store?.id ?? ""}
+        hint="Image of your store name. Leave empty to show the store name as text."
       />
       <Field
         label="Store name"
