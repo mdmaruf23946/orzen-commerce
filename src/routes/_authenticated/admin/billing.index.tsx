@@ -84,8 +84,16 @@ function BillingPage() {
   const settingsFn = useServerFn(getBillingSettings);
   const search = Route.useSearch();
 
-  const { data: status } = useQuery({ queryKey: ["admin", "billing"], queryFn: () => statusFn() });
-  const { data: plansRaw } = useQuery({ queryKey: ["admin", "billingPlans"], queryFn: () => plansFn() });
+  const { data: status } = useQuery({ queryKey: ["admin", "billing"], queryFn: () => statusFn(), staleTime: 0 });
+  // Plans are edited from the Winner Admin panel — always fetch the latest list.
+  const { data: plansRaw } = useQuery({
+    queryKey: ["admin", "billingPlans"],
+    queryFn: () => plansFn(),
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+  });
+
   const { data: settings } = useQuery({
     queryKey: ["admin", "billingSettings"],
     queryFn: () => settingsFn(),
