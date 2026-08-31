@@ -525,34 +525,29 @@ function BillingPage() {
             <thead className="border-b bg-muted/50 text-left text-xs uppercase text-muted-foreground">
               <tr>
                 <th className="sticky left-0 z-10 bg-muted/50 p-3">Feature</th>
-                {TIER_ORDER.map((t) => (
-                  <th key={t} className="p-3 text-center">
-                    <div className="font-semibold text-foreground">{TIER_NAME[t]}</div>
+                {plans.map((p) => (
+                  <th key={p.id} className="p-3 text-center">
+                    <div className="font-semibold text-foreground">{p.name}</div>
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              <CompareLimitRow label="Products" tierMap={tierMap} accessor={(p) => formatLimit(p.product_limit)} />
-              <CompareLimitRow label="Orders / month" tierMap={tierMap} accessor={(p) => formatLimit(p.order_limit)} />
-              <CompareLimitRow label="Storage" tierMap={tierMap} accessor={(p) => formatLimit(p.storage_mb, "MB")} />
-              <CompareLimitRow label="Staff" tierMap={tierMap} accessor={(p) => formatLimit(p.staff_limit)} />
+              <CompareLimitRow label="Products" plans={plans} accessor={(p) => formatLimit(p.product_limit)} />
+              <CompareLimitRow label="Orders / month" plans={plans} accessor={(p) => formatLimit(p.order_limit)} />
+              <CompareLimitRow label="Storage" plans={plans} accessor={(p) => formatLimit(p.storage_mb, "MB")} />
+              <CompareLimitRow label="Staff" plans={plans} accessor={(p) => formatLimit(p.staff_limit)} />
               {FEATURE_KEYS.map((k) => (
                 <tr key={k} className="border-b last:border-0">
                   <th className="sticky left-0 z-10 bg-card p-3 text-left font-medium">{FEATURE_LABELS[k]}</th>
-                  {TIER_ORDER.map((t) => {
-                    const p = tierMap.get(t);
-                    const on = t === "custom" ? true : !!p?.features?.[k];
+                  {plans.map((p) => {
+                    const on = tierOf(p) === "custom" ? true : !!p.features?.[k];
                     return (
-                      <td key={t} className="p-3 text-center">
-                        {p ? (
-                          on ? (
-                            <Check className="mx-auto h-4 w-4 text-emerald-600" />
-                          ) : (
-                            <X className="mx-auto h-4 w-4 text-muted-foreground/50" />
-                          )
+                      <td key={p.id} className="p-3 text-center">
+                        {on ? (
+                          <Check className="mx-auto h-4 w-4 text-emerald-600" />
                         ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
+                          <X className="mx-auto h-4 w-4 text-muted-foreground/50" />
                         )}
                       </td>
                     );
@@ -566,15 +561,14 @@ function BillingPage() {
 
         {/* Mobile: per-plan accordion */}
         <div className="space-y-2 sm:hidden">
-          {TIER_ORDER.map((t) => {
-            const p = tierMap.get(t);
-            if (!p) return null;
+          {plans.map((p) => {
+            const isCustom = tierOf(p) === "custom";
             return (
-              <details key={t} className="rounded-xl border bg-card p-3" open={currentTier === t}>
+              <details key={p.id} className="rounded-xl border bg-card p-3" open={pkg?.id === p.id}>
                 <summary className="flex cursor-pointer items-center justify-between gap-2 font-semibold">
-                  <span className="truncate">{TIER_NAME[t]}</span>
+                  <span className="truncate">{p.name}</span>
                   <span className="text-xs text-muted-foreground">
-                    {t === "custom" ? "Custom" : t === "free" ? "Free" : `৳${Number(p.price).toFixed(0)}/mo`}
+                    {isCustom ? "Custom" : Number(p.price) === 0 ? "Free" : `৳${Number(p.price).toFixed(0)}/mo`}
                   </span>
                 </summary>
                 <ul className="mt-3 space-y-1.5 text-sm">
@@ -583,7 +577,7 @@ function BillingPage() {
                   <MobileRow label="Storage" value={formatLimit(p.storage_mb, "MB")} />
                   <MobileRow label="Staff" value={formatLimit(p.staff_limit)} />
                   {FEATURE_KEYS.map((k) => {
-                    const on = t === "custom" ? true : !!p.features?.[k];
+                    const on = isCustom ? true : !!p.features?.[k];
                     return (
                       <li key={k} className="flex items-center justify-between gap-3">
                         <span className="text-muted-foreground">{FEATURE_LABELS[k]}</span>
@@ -597,6 +591,7 @@ function BillingPage() {
           })}
         </div>
       </section>
+
 
       {/* 9. Payment history */}
       <section>
@@ -722,25 +717,23 @@ function MobileRow({ label, value }: { label: string; value: string }) {
 }
 
 function CompareLimitRow({
+  plans,
   label,
-  tierMap,
   accessor,
 }: {
+  plans: Plan[];
   label: string;
-  tierMap: Map<string, Plan>;
   accessor: (p: Plan) => string;
 }) {
   return (
     <tr className="border-b last:border-0">
       <th className="sticky left-0 z-10 bg-card p-3 text-left font-medium">{label}</th>
-      {TIER_ORDER.map((t) => {
-        const p = tierMap.get(t);
-        return (
-          <td key={t} className="p-3 text-center text-xs">
-            {p ? accessor(p) : "—"}
-          </td>
-        );
-      })}
+      {plans.map((p) => (
+        <td key={p.id} className="p-3 text-center text-xs">
+          {accessor(p)}
+        </td>
+      ))}
     </tr>
   );
 }
+
