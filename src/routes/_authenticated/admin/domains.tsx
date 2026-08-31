@@ -367,13 +367,29 @@ function Page() {
           <CopyBtn v={subdomainUrl} />
         </div>
 
+        {(data as any).autoSubdomain && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" variant="outline" onClick={reconnectSubdomain} disabled={provisioning}>
+              {provisioning ? (
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-1 h-3.5 w-3.5" />
+              )}
+              Reconnect subdomain
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Re-links this address with the hosting network if it is not loading.
+            </span>
+          </div>
+        )}
+
         {dns && !dns.hostResolves && (
           <div className="flex items-start gap-2 rounded-md bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span className="min-w-0 break-words">
-              এই সাবডোমেইনটি এখনো DNS-এ রিজলভ করছে না — প্ল্যাটফর্মে wildcard
-              (<code>*.{rootDomain}</code>) সেটআপ না থাকলে সাবডোমেইন লিংক কাজ করবে না।
-              প্ল্যাটফর্ম অ্যাডমিনকে জানান; আপনার স্টোর ততক্ষণ কাস্টম ডোমেইনে চালু রাখতে পারেন।
+              এই সাবডোমেইনটি এখনো লাইভ হয়নি। উপরের “Reconnect subdomain” চাপুন —
+              প্ল্যাটফর্মে Cloudflare API সেটআপ থাকলে এটি সাথে সাথে DNS + হোস্টিং-এ
+              যুক্ত হয়ে যাবে (সার্টিফিকেট ইস্যু হতে কয়েক মিনিট লাগতে পারে)।
             </span>
           </div>
         )}
