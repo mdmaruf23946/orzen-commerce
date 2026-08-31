@@ -105,57 +105,48 @@ function AutoNote({ children }: { children: React.ReactNode }) {
   );
 }
 
-/**
- * Logo control: "" = use the Store Settings logo, "none" = no logo,
- * anything else = an uploaded image.
- */
+/** Logo control for this landing page only: upload or remove. "" = no logo. */
 function LogoField({
-  label, value, onChange, storeLogo, storeId,
+  label, value, onChange, storeId, hint, square = false,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
-  storeLogo: string;
   storeId?: string;
+  hint?: string;
+  square?: boolean;
 }) {
-  const usingStore = value === "";
-  const shown = value === "none" ? "" : value || storeLogo;
   return (
     <div className="space-y-2">
       <Label className="text-xs">{label}</Label>
       <div className="flex flex-wrap items-center gap-3 rounded-lg border p-3">
-        <div className="grid h-16 w-28 shrink-0 place-items-center overflow-hidden rounded-md border bg-muted">
-          {shown ? (
-            <img src={lpImage(shown)} alt="" className="max-h-full max-w-full object-contain p-1" />
+        <div
+          className={`grid h-16 shrink-0 place-items-center overflow-hidden rounded-md border bg-muted ${
+            square ? "w-16" : "w-28"
+          }`}
+        >
+          {value ? (
+            <img src={lpImage(value)} alt="" className="max-h-full max-w-full object-contain p-1" />
           ) : (
-            <span className="text-[10px] text-muted-foreground">No logo</span>
+            <span className="text-[10px] text-muted-foreground">None</span>
           )}
         </div>
         <div className="min-w-0 flex-1 space-y-2">
           <ImageUploader
             storeId={storeId}
             folder={storeId ? `${storeId}/landing` : undefined}
-            value={value && value !== "none" ? value : null}
+            value={value || null}
             onChange={(p) => onChange(p ?? "")}
-            label="Change logo"
+            label={value ? "Change logo" : "Upload logo"}
           />
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" size="sm" variant={usingStore ? "secondary" : "outline"} onClick={() => onChange("")}>
-              Use store logo
+          {value && (
+            <Button type="button" size="sm" variant="ghost" onClick={() => onChange("")}>
+              Remove
             </Button>
-            <Button type="button" size="sm" variant="ghost" onClick={() => onChange("none")}>
-              Remove logo
-            </Button>
-          </div>
+          )}
         </div>
       </div>
-      <p className="text-[11px] text-muted-foreground">
-        {usingStore
-          ? "Using the logo from Store Settings."
-          : value === "none"
-            ? "No logo will be shown."
-            : "Using a custom logo for this landing page."}
-      </p>
+      {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
     </div>
   );
 }
