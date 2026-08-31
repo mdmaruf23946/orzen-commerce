@@ -233,14 +233,14 @@ export function generateContentFromProduct(p: SourceProduct): LandingContent {
   const short = p.short_description?.trim() || toPlainText(p.description).slice(0, 180);
 
   const points: LPPoint[] = [
-    p.warranty ? { title: "ওয়ারেন্টি", text: p.warranty } : null,
-    p.delivery_time_days ? { title: "দ্রুত ডেলিভারি", text: `${p.delivery_time_days} দিনের মধ্যে ডেলিভারি` } : null,
-    p.return_policy ? { title: "সহজ রিটার্ন", text: p.return_policy } : null,
-    p.shipping_info ? { title: "শিপিং", text: p.shipping_info } : null,
+    p.warranty ? { title: "ওয়ারেন্টি", text: p.warranty, icon: "shield" } : null,
+    p.delivery_time_days ? { title: "দ্রুত ডেলিভারি", text: `${p.delivery_time_days} দিনের মধ্যে ডেলিভারি`, icon: "truck" } : null,
+    p.return_policy ? { title: "সহজ রিটার্ন", text: p.return_policy, icon: "package" } : null,
+    p.shipping_info ? { title: "শিপিং", text: p.shipping_info, icon: "gift" } : null,
   ].filter(Boolean) as LPPoint[];
 
   return {
-    header: { storeName: "", buttonText: "অর্ডার করুন", showButton: true },
+    header: { storeName: "", buttonText: "অর্ডার করুন", showButton: true, logo: "" },
     hero: {
       headline: p.name,
       subheadline: short,
