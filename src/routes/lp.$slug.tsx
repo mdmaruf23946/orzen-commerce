@@ -12,7 +12,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { getPublicLanding, type PublicLandingPage } from "@/lib/landing-public.functions";
 import { getLandingPreviewBySlug } from "@/lib/landing-builder.functions";
 import {
-  lpImage, normalizeContent, type LandingContent, type LandingFormConfig,
+  lpImage, normalizeContent, normalizeDeliveryZones,
+  type LandingContent, type LandingFormConfig, type LandingDeliveryZone,
 } from "@/lib/landing-builder";
 
 export const Route = createFileRoute("/lp/$slug")({
