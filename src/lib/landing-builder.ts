@@ -19,8 +19,10 @@ export type LandingContent = {
     storeName: string;
     buttonText: string;
     showButton: boolean;
-    /** "" = use the Store Settings logo, "none" = no logo, otherwise a storage path/URL. */
-    logo: string;
+    /** Square brand mark for this landing page. "" = none. */
+    iconLogo: string;
+    /** Wordmark / name logo image for this landing page. "" = none. */
+    nameLogo: string;
   };
   hero: {
     headline: string;
@@ -57,8 +59,10 @@ export type LandingContent = {
     text: string;
     contactText: string;
     copyright: string;
-    /** "" = use the Store Settings logo, "none" = no logo. */
-    logo: string;
+    /** Square brand mark for this landing page. "" = none. */
+    iconLogo: string;
+    /** Wordmark / name logo image for this landing page. "" = none. */
+    nameLogo: string;
     storeName: string;
     phone: string;
     email: string;
@@ -290,7 +294,7 @@ export function generateContentFromProduct(p: SourceProduct): LandingContent {
   ].filter(Boolean) as LPPoint[];
 
   return {
-    header: { storeName: "", buttonText: "অর্ডার করুন", showButton: true, logo: "" },
+    header: { storeName: "", buttonText: "অর্ডার করুন", showButton: true, iconLogo: "", nameLogo: "" },
     hero: {
       headline: p.name,
       subheadline: short,
@@ -335,7 +339,7 @@ export function generateContentFromProduct(p: SourceProduct): LandingContent {
       successMessage: "ধন্যবাদ! আপনার অর্ডার গ্রহণ করা হয়েছে। আমরা শীঘ্রই কল করব।",
     },
     footer: {
-      text: "", contactText: "", copyright: "", logo: "", storeName: "",
+      text: "", contactText: "", copyright: "", iconLogo: "", nameLogo: "", storeName: "",
       phone: "", email: "", address: "", hours: "",
       facebook: "", instagram: "", youtube: "", tiktok: "", whatsapp: "",
       links: [],
@@ -373,7 +377,8 @@ export function normalizeContent(raw: unknown): LandingContent {
       storeName: String(c.header?.storeName ?? ""),
       buttonText: String(c.header?.buttonText ?? hero.ctaText ?? "অর্ডার করুন"),
       showButton: c.header?.showButton !== false,
-      logo: String(c.header?.logo ?? ""),
+      iconLogo: String(c.header?.iconLogo ?? (c.header?.logo && c.header.logo !== "none" ? c.header.logo : "")),
+      nameLogo: String(c.header?.nameLogo ?? ""),
     },
     hero: {
       headline: String(hero.headline ?? ""),
@@ -448,7 +453,8 @@ export function normalizeContent(raw: unknown): LandingContent {
       text: String(footer.text ?? ""),
       contactText: String(footer.contactText ?? contact.title ?? ""),
       copyright: String(footer.copyright ?? ""),
-      logo: String(footer.logo ?? ""),
+      iconLogo: String(footer.iconLogo ?? (footer.logo && footer.logo !== "none" ? footer.logo : "")),
+      nameLogo: String(footer.nameLogo ?? ""),
       storeName: String(footer.storeName ?? ""),
       phone: String(footer.phone ?? contact.phone ?? ""),
       email: String(footer.email ?? contact.email ?? ""),
