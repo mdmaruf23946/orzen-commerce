@@ -239,6 +239,7 @@ function CreateDialog() {
     if (!next) {
       setSelected(null);
       setQ("");
+      setLang("en");
     }
   }
 
