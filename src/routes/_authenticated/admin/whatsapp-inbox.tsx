@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/whatsapp-inbox")({
   component: () => (
-    <FeatureGate feature="ai_messenger">
+    <FeatureGate feature="whatsapp">
       <WhatsappInboxPage />
     </FeatureGate>
   ),

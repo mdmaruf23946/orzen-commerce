@@ -1,8 +1,13 @@
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { createFileRoute } from "@tanstack/react-router";
 import { ThemeCustomizer } from "@/components/admin/theme/ThemeCustomizer";
 
 export const Route = createFileRoute("/_authenticated/admin/theme")({
-  component: ThemeCustomizer,
+  component: () => (
+    <FeatureGate feature="themes">
+      <ThemeCustomizer />
+    </FeatureGate>
+  ),
   head: () => ({
     meta: [
       { title: "Theme Customization — ORZEN Merchant Panel" },

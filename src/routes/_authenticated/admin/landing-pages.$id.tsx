@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/admin/landing-pages/$id")(
       { name: "robots", content: "noindex" },
     ] }),
   component: () => (
-    <FeatureGate feature="landing_pages">
+    <FeatureGate feature="landing_page_connect">
       <Detail />
     </FeatureGate>
   ),

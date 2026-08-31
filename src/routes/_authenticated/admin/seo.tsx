@@ -1,3 +1,4 @@
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -26,7 +27,11 @@ export const Route = createFileRoute("/_authenticated/admin/seo")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: SeoPage,
+  component: () => (
+    <FeatureGate feature="seo">
+      <SeoPage />
+    </FeatureGate>
+  ),
 });
 
 const TABS = [

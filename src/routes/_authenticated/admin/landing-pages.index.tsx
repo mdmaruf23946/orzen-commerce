@@ -35,7 +35,7 @@ export const Route = createFileRoute("/_authenticated/admin/landing-pages/")({
     ],
   }),
   component: () => (
-    <FeatureGate feature="landing_pages">
+    <FeatureGate feature="landing_page_connect">
       <LandingPagesIndex />
     </FeatureGate>
   ),
