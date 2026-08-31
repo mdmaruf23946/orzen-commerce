@@ -127,20 +127,31 @@ function LandingEditor() {
   }
 
   function setZone(i: number, patch: Partial<LandingDeliveryZone>) {
-    setForm({
-      ...form,
-      deliveryZones: (form.deliveryZones ?? []).map((z, xi) => (xi === i ? { ...z, ...patch } : z)),
-    });
+    setForm((f) =>
+      f
+        ? {
+            ...f,
+            deliveryZones: (f.deliveryZones ?? []).map((z, xi) => (xi === i ? { ...z, ...patch } : z)),
+          }
+        : f,
+    );
+  }
+
+  function setZones(next: LandingDeliveryZone[]) {
+    setForm((f) => (f ? { ...f, deliveryZones: next } : f));
   }
 
   function addZone() {
-    const zones = form.deliveryZones ?? [];
-    setForm({
-      ...form,
-      deliveryZones: [
-        ...zones,
-        { id: `zone-${Date.now().toString(36)}`, name: "", charge: 0, isDefault: zones.length === 0 },
-      ],
+    setForm((f) => {
+      if (!f) return f;
+      const zones = f.deliveryZones ?? [];
+      return {
+        ...f,
+        deliveryZones: [
+          ...zones,
+          { id: `zone-${Date.now().toString(36)}`, name: "", charge: 0, isDefault: zones.length === 0 },
+        ],
+      };
     });
   }
 
@@ -151,15 +162,13 @@ function LandingEditor() {
       charge: number;
       is_default?: boolean;
     }[];
-    setForm({
-      ...form,
-      deliveryZones: normalizeDeliveryZones(
+    setZones(
+      normalizeDeliveryZones(
         rows.map((r) => ({ id: r.id, name: r.name, charge: r.charge, isDefault: r.is_default })),
       ),
-    });
+    );
     toast.success("Store delivery zones imported");
   }
-
 
   async function run(fn: () => Promise<unknown>, msg: string) {
     try {
@@ -485,13 +494,9 @@ function LandingEditor() {
                       type="button"
                       title="Default zone"
                       onClick={() =>
-                        setForm({
-                          ...form,
-                          deliveryZones: (form.deliveryZones ?? []).map((x, xi) => ({
-                            ...x,
-                            isDefault: xi === i,
-                          })),
-                        })
+                        setZones(
+                          (form.deliveryZones ?? []).map((x, xi) => ({ ...x, isDefault: xi === i })),
+                        )
                       }
                       className={`rounded-md border px-2 py-1.5 text-[11px] ${
                         z.isDefault ? "border-primary bg-primary/10 text-primary" : ""
@@ -503,12 +508,9 @@ function LandingEditor() {
                       size="icon"
                       variant="ghost"
                       onClick={() =>
-                        setForm({
-                          ...form,
-                          deliveryZones: normalizeDeliveryZones(
-                            (form.deliveryZones ?? []).filter((_, xi) => xi !== i),
-                          ),
-                        })
+                        setZones(
+                          normalizeDeliveryZones((form.deliveryZones ?? []).filter((_, xi) => xi !== i)),
+                        )
                       }
                     >
                       ✕
