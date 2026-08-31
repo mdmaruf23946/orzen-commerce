@@ -701,11 +701,19 @@ export function FooterEditor({ content, patch, onBack, onSave, saving, store }: 
   return (
     <SectionShell name="Footer" onBack={onBack} onSave={onSave} saving={saving}>
       <LogoField
-        label="Footer logo"
-        value={f.logo}
-        onChange={(v) => patch("footer", { logo: v })}
-        storeLogo={storeLogoOf(store)}
+        label="Icon logo"
+        square
+        value={f.iconLogo}
+        onChange={(v) => patch("footer", { iconLogo: v })}
         storeId={store?.id ?? ""}
+        hint="Square brand mark shown in the footer."
+      />
+      <LogoField
+        label="Name logo (wordmark)"
+        value={f.nameLogo}
+        onChange={(v) => patch("footer", { nameLogo: v })}
+        storeId={store?.id ?? ""}
+        hint="Image of your store name. Leave empty to show the store name as text."
       />
       <Field
         label="Store name"
