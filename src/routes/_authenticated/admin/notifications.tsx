@@ -1,3 +1,4 @@
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -27,7 +28,11 @@ export const Route = createFileRoute("/_authenticated/admin/notifications")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: NotificationsPage,
+  component: () => (
+    <FeatureGate feature="notifications">
+      <NotificationsPage />
+    </FeatureGate>
+  ),
 });
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {

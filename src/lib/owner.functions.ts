@@ -125,6 +125,7 @@ export const upsertPackage = createServerFn({ method: "POST" })
         order_limit: z.number().int().min(0).max(10000000).nullish(),
         customer_limit: z.number().int().min(0).max(10000000).nullish(),
         staff_limit: z.number().int().min(0).max(1000).nullish(),
+        landing_page_limit: z.number().int().min(0).max(100000).nullish(),
         storage_mb: z.number().int().min(0).max(1000000).nullish(),
         is_active: z.boolean(),
         is_trial: z.boolean().default(false),

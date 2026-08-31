@@ -1,3 +1,4 @@
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -27,7 +28,11 @@ export const Route = createFileRoute("/_authenticated/admin/customers-accounts")
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: CustomerAccountsPage,
+  component: () => (
+    <FeatureGate feature="customer_accounts">
+      <CustomerAccountsPage />
+    </FeatureGate>
+  ),
 });
 
 const taka = (n: number) => `৳${Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;

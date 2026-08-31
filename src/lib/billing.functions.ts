@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 const PUBLIC_FIELDS =
-  "id,name,description,price,duration_days,billing_cycle,product_limit,order_limit,customer_limit,staff_limit,storage_mb,features,is_trial,trial_days,sort_order,plan_tier,feature_summary";
+  "id,name,description,price,duration_days,billing_cycle,product_limit,order_limit,customer_limit,staff_limit,storage_mb,landing_page_limit,features,is_trial,trial_days,sort_order,plan_tier,feature_summary";
 
 export const CYCLE_MONTHS = { monthly: 1, "3m": 3, "6m": 6, yearly: 12 } as const;
 export type CycleKey = keyof typeof CYCLE_MONTHS;

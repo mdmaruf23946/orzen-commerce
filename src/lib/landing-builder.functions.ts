@@ -5,6 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { myStoreRow } from "@/lib/store-access";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertPlan, assertLimit } from "@/lib/plan-guard";
 import {
   defaultFormConfig,
   defaultTheme,
@@ -199,6 +200,8 @@ export const createLandingPage = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
+    await assertPlan(context.supabase, context.userId, "landing_page_create");
+    await assertLimit(context.supabase, context.userId, "landing_page");
     const store = await requireMyStore(context.supabase, context.userId);
     const product = await loadSourceProduct(context.supabase, store.id, data.productId);
     const title = data.title?.trim() || product.name;

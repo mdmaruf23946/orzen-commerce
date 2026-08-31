@@ -21,7 +21,7 @@ import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/_authenticated/admin/whatsapp")({
   component: () => (
-    <FeatureGate feature="ai_messenger">
+    <FeatureGate feature="whatsapp">
       <WhatsappPage />
     </FeatureGate>
   ),

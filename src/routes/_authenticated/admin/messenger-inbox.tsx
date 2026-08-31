@@ -39,7 +39,7 @@ import { MessengerMark } from "@/components/admin/brand/MessengerMark";
 
 export const Route = createFileRoute("/_authenticated/admin/messenger-inbox")({
   component: () => (
-    <FeatureGate feature="ai_messenger">
+    <FeatureGate feature="messenger_inbox">
       <MessengerInbox />
     </FeatureGate>
   ),

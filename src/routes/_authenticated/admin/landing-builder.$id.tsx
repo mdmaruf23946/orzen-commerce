@@ -59,7 +59,7 @@ export const Route = createFileRoute("/_authenticated/admin/landing-builder/$id"
     ],
   }),
   component: () => (
-    <FeatureGate feature="landing_pages">
+    <FeatureGate feature="landing_page_create">
       <LandingEditor />
     </FeatureGate>
   ),

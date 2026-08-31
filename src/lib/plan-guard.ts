@@ -8,7 +8,7 @@ import { INACTIVE_STATUSES } from "@/lib/features";
 const INACTIVE = new Set<string>(INACTIVE_STATUSES as readonly string[]);
 
 export const FREE_PLAN_FIELDS =
-  "is_trial, features, product_limit, order_limit, staff_limit, storage_mb";
+  "is_trial, features, product_limit, order_limit, staff_limit, storage_mb, landing_page_limit";
 
 /** The active Free plan every store falls back to when its paid plan lapses. */
 export async function loadFreePlan(supabase: any): Promise<any | null> {
@@ -81,18 +81,20 @@ export async function assertPlan(
 }
 
 
-type LimitKind = "product" | "order" | "staff";
+type LimitKind = "product" | "order" | "staff" | "landing_page";
 
 const LIMIT_COLUMN: Record<LimitKind, string> = {
   product: "product_limit",
   order: "order_limit",
   staff: "staff_limit",
+  landing_page: "landing_page_limit",
 };
 
 const LIMIT_LABEL: Record<LimitKind, string> = {
   product: "পণ্য",
   order: "অর্ডার",
   staff: "স্টাফ",
+  landing_page: "ল্যান্ডিং পেজ",
 };
 
 /**
@@ -105,7 +107,7 @@ export async function assertLimit(
   userId: string,
   kind: LimitKind,
 ): Promise<string> {
-  const store = await myStoreRow(supabase, userId, "id, subscription_status, subscription_packages(is_trial, product_limit, order_limit, staff_limit)");
+  const store = await myStoreRow(supabase, userId, "id, subscription_status, subscription_packages(is_trial, product_limit, order_limit, staff_limit, landing_page_limit)");
   if (!store) throw new Error("No store found for this account");
 
   const pkg = await resolveEffectivePlan(supabase, store as any);
@@ -119,6 +121,12 @@ export async function assertLimit(
   if (kind === "product") {
     const { count } = await supabase
       .from("products")
+      .select("id", { count: "exact", head: true })
+      .eq("store_id", storeId);
+    used = count ?? 0;
+  } else if (kind === "landing_page") {
+    const { count } = await supabase
+      .from("landing_pages")
       .select("id", { count: "exact", head: true })
       .eq("store_id", storeId);
     used = count ?? 0;

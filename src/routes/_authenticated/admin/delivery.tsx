@@ -1,3 +1,4 @@
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -35,7 +36,11 @@ export const Route = createFileRoute("/_authenticated/admin/delivery")({
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ] }),
-  component: DeliveryPage,
+  component: () => (
+    <FeatureGate feature="delivery_zones">
+      <DeliveryPage />
+    </FeatureGate>
+  ),
 });
 
 type Zone = {

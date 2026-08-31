@@ -1,3 +1,4 @@
+import { FeatureGate } from "@/components/admin/FeatureGate";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -30,7 +31,11 @@ export const Route = createFileRoute("/_authenticated/admin/pages")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: PagesAdmin,
+  component: () => (
+    <FeatureGate feature="custom_pages">
+      <PagesAdmin />
+    </FeatureGate>
+  ),
 });
 
 type Draft = {
