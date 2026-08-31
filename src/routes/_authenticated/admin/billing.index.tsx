@@ -722,25 +722,23 @@ function MobileRow({ label, value }: { label: string; value: string }) {
 }
 
 function CompareLimitRow({
+  plans,
   label,
-  tierMap,
   accessor,
 }: {
+  plans: Plan[];
   label: string;
-  tierMap: Map<string, Plan>;
   accessor: (p: Plan) => string;
 }) {
   return (
     <tr className="border-b last:border-0">
       <th className="sticky left-0 z-10 bg-card p-3 text-left font-medium">{label}</th>
-      {TIER_ORDER.map((t) => {
-        const p = tierMap.get(t);
-        return (
-          <td key={t} className="p-3 text-center text-xs">
-            {p ? accessor(p) : "—"}
-          </td>
-        );
-      })}
+      {plans.map((p) => (
+        <td key={p.id} className="p-3 text-center text-xs">
+          {accessor(p)}
+        </td>
+      ))}
     </tr>
   );
 }
+
