@@ -127,7 +127,52 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
   const oldPrice = content.pricing.oldPrice ?? page.product?.old_price ?? null;
   const discount = oldPrice && oldPrice > price ? Math.round(((oldPrice - price) / oldPrice) * 100) : 0;
   const storeName = content.header.storeName.trim() || page.store?.name || page.title;
-  const heroImage = content.hero.image || content.product.images[0] || "";
+  const storeLogo = page.store?.logo_url || page.store?.name_logo_url || "";
+
+  const productImages = useMemo(() => {
+    const gallery = Array.isArray(page.product?.gallery)
+      ? (page.product?.gallery as unknown[])
+          .map((g) => (typeof g === "string" ? g : String((g as any)?.url ?? "")))
+          .filter(Boolean)
+      : [];
+    return Array.from(
+      new Set([...(content.product.images ?? []), page.product?.primary_image_url ?? "", ...gallery].filter(Boolean)),
+    ) as string[];
+  }, [content.product.images, page.product]);
+
+  const heroImage = content.hero.image || productImages[0] || "";
+  const shownImages =
+    content.product.selectedImages.length > 0
+      ? productImages.filter((i) => content.product.selectedImages.includes(i))
+      : productImages;
+
+  // Footer values: merchant text wins, Store Settings is the automatic fallback.
+  const headerLogo = content.header.logo === "none" ? "" : content.header.logo || storeLogo;
+  const footerLogo = content.footer.logo === "none" ? "" : content.footer.logo || storeLogo;
+  const footerName = content.footer.storeName.trim() || storeName;
+  const contact = {
+    phone: content.footer.phone || page.store?.phone || "",
+    email: content.footer.email || page.store?.email || "",
+    address: content.footer.address || page.store?.address || "",
+  };
+  const socials = (
+    [
+      ["Facebook", content.footer.facebook || page.store?.facebook || ""],
+      ["Instagram", content.footer.instagram || page.store?.instagram || ""],
+      ["YouTube", content.footer.youtube || page.store?.youtube || ""],
+      ["TikTok", content.footer.tiktok || page.store?.tiktok || ""],
+      ["WhatsApp", content.footer.whatsapp || page.store?.whatsapp || ""],
+    ] as const
+  )
+    .filter(([, v]) => Boolean(v))
+    .map(([label, v]) => ({
+      label,
+      href:
+        label === "WhatsApp" && !String(v).startsWith("http")
+          ? `https://wa.me/${String(v).replace(/[^\d]/g, "")}`
+          : String(v),
+    }));
+
 
   return (
     <div style={STYLE} className="min-h-screen bg-white text-neutral-900">
