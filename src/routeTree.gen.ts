@@ -43,6 +43,7 @@ import { Route as StoreSlugShippingPolicyRouteImport } from './routes/store/$slu
 import { Route as StoreSlugReturnRefundPolicyRouteImport } from './routes/store/$slug/return-refund-policy'
 import { Route as StoreSlugRefundPolicyRouteImport } from './routes/store/$slug/refund-policy'
 import { Route as StoreSlugPrivacyPolicyRouteImport } from './routes/store/$slug/privacy-policy'
+import { Route as StoreSlugManifestDotwebmanifestRouteImport } from './routes/store/$slug/manifest[.]webmanifest'
 import { Route as StoreSlugContactUsRouteImport } from './routes/store/$slug/contact-us'
 import { Route as StoreSlugContactRouteImport } from './routes/store/$slug/contact'
 import { Route as StoreSlugCheckoutRouteImport } from './routes/store/$slug/checkout'
@@ -378,6 +379,12 @@ const StoreSlugPrivacyPolicyRoute = StoreSlugPrivacyPolicyRouteImport.update({
   path: '/privacy-policy',
   getParentRoute: () => StoreSlugRouteRoute,
 } as any)
+const StoreSlugManifestDotwebmanifestRoute =
+  StoreSlugManifestDotwebmanifestRouteImport.update({
+    id: '/manifest.webmanifest',
+    path: '/manifest.webmanifest',
+    getParentRoute: () => StoreSlugRouteRoute,
+  } as any)
 const StoreSlugContactUsRoute = StoreSlugContactUsRouteImport.update({
   id: '/contact-us',
   path: '/contact-us',
@@ -1433,6 +1440,7 @@ export interface FileRoutesByFullPath {
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/store/$slug/contact': typeof StoreSlugContactRoute
   '/store/$slug/contact-us': typeof StoreSlugContactUsRoute
+  '/store/$slug/manifest.webmanifest': typeof StoreSlugManifestDotwebmanifestRoute
   '/store/$slug/privacy-policy': typeof StoreSlugPrivacyPolicyRoute
   '/store/$slug/refund-policy': typeof StoreSlugRefundPolicyRoute
   '/store/$slug/return-refund-policy': typeof StoreSlugReturnRefundPolicyRoute
@@ -1620,6 +1628,7 @@ export interface FileRoutesByTo {
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/store/$slug/contact': typeof StoreSlugContactRoute
   '/store/$slug/contact-us': typeof StoreSlugContactUsRoute
+  '/store/$slug/manifest.webmanifest': typeof StoreSlugManifestDotwebmanifestRoute
   '/store/$slug/privacy-policy': typeof StoreSlugPrivacyPolicyRoute
   '/store/$slug/refund-policy': typeof StoreSlugRefundPolicyRoute
   '/store/$slug/return-refund-policy': typeof StoreSlugReturnRefundPolicyRoute
@@ -1818,6 +1827,7 @@ export interface FileRoutesById {
   '/store/$slug/checkout': typeof StoreSlugCheckoutRoute
   '/store/$slug/contact': typeof StoreSlugContactRoute
   '/store/$slug/contact-us': typeof StoreSlugContactUsRoute
+  '/store/$slug/manifest.webmanifest': typeof StoreSlugManifestDotwebmanifestRoute
   '/store/$slug/privacy-policy': typeof StoreSlugPrivacyPolicyRoute
   '/store/$slug/refund-policy': typeof StoreSlugRefundPolicyRoute
   '/store/$slug/return-refund-policy': typeof StoreSlugReturnRefundPolicyRoute
@@ -2016,6 +2026,7 @@ export interface FileRouteTypes {
     | '/store/$slug/checkout'
     | '/store/$slug/contact'
     | '/store/$slug/contact-us'
+    | '/store/$slug/manifest.webmanifest'
     | '/store/$slug/privacy-policy'
     | '/store/$slug/refund-policy'
     | '/store/$slug/return-refund-policy'
@@ -2203,6 +2214,7 @@ export interface FileRouteTypes {
     | '/store/$slug/checkout'
     | '/store/$slug/contact'
     | '/store/$slug/contact-us'
+    | '/store/$slug/manifest.webmanifest'
     | '/store/$slug/privacy-policy'
     | '/store/$slug/refund-policy'
     | '/store/$slug/return-refund-policy'
@@ -2400,6 +2412,7 @@ export interface FileRouteTypes {
     | '/store/$slug/checkout'
     | '/store/$slug/contact'
     | '/store/$slug/contact-us'
+    | '/store/$slug/manifest.webmanifest'
     | '/store/$slug/privacy-policy'
     | '/store/$slug/refund-policy'
     | '/store/$slug/return-refund-policy'
@@ -2759,6 +2772,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy-policy'
       fullPath: '/store/$slug/privacy-policy'
       preLoaderRoute: typeof StoreSlugPrivacyPolicyRouteImport
+      parentRoute: typeof StoreSlugRouteRoute
+    }
+    '/store/$slug/manifest.webmanifest': {
+      id: '/store/$slug/manifest.webmanifest'
+      path: '/manifest.webmanifest'
+      fullPath: '/store/$slug/manifest.webmanifest'
+      preLoaderRoute: typeof StoreSlugManifestDotwebmanifestRouteImport
       parentRoute: typeof StoreSlugRouteRoute
     }
     '/store/$slug/contact-us': {
@@ -4311,6 +4331,7 @@ interface StoreSlugRouteRouteChildren {
   StoreSlugCheckoutRoute: typeof StoreSlugCheckoutRoute
   StoreSlugContactRoute: typeof StoreSlugContactRoute
   StoreSlugContactUsRoute: typeof StoreSlugContactUsRoute
+  StoreSlugManifestDotwebmanifestRoute: typeof StoreSlugManifestDotwebmanifestRoute
   StoreSlugPrivacyPolicyRoute: typeof StoreSlugPrivacyPolicyRoute
   StoreSlugRefundPolicyRoute: typeof StoreSlugRefundPolicyRoute
   StoreSlugReturnRefundPolicyRoute: typeof StoreSlugReturnRefundPolicyRoute
@@ -4339,6 +4360,7 @@ const StoreSlugRouteRouteChildren: StoreSlugRouteRouteChildren = {
   StoreSlugCheckoutRoute: StoreSlugCheckoutRoute,
   StoreSlugContactRoute: StoreSlugContactRoute,
   StoreSlugContactUsRoute: StoreSlugContactUsRoute,
+  StoreSlugManifestDotwebmanifestRoute: StoreSlugManifestDotwebmanifestRoute,
   StoreSlugPrivacyPolicyRoute: StoreSlugPrivacyPolicyRoute,
   StoreSlugRefundPolicyRoute: StoreSlugRefundPolicyRoute,
   StoreSlugReturnRefundPolicyRoute: StoreSlugReturnRefundPolicyRoute,
