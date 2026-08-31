@@ -221,6 +221,29 @@ function Page() {
   const rootDomain = settings.rootDomain;
   const subdomainUrl = `https://${data.store.slug}.${rootDomain}`;
 
+  async function reconnectSubdomain() {
+    setProvisioning(true);
+    try {
+      const r = await provisionFn();
+      if (r.ok) {
+        toast.success(
+          r.status && r.status !== "active"
+            ? "Subdomain connected — Cloudflare is issuing the certificate (a few minutes)."
+            : "Subdomain is connected and live.",
+        );
+      } else if (r.reason === "not_configured") {
+        toast.error("Automatic subdomain setup is not configured on the platform yet.");
+      } else {
+        toast.error(r.error ?? "Could not connect the subdomain");
+      }
+      qc.invalidateQueries({ queryKey: ["admin", "domains"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setProvisioning(false);
+    }
+  }
+
   async function saveSlug() {
     setSavingSlug(true);
     try {
