@@ -13,9 +13,13 @@ export const Route = createFileRoute("/manifest.webmanifest")({
     handlers: {
       GET: async ({ request }) => {
         const { originFromRequest, slugFromHost } = await import("@/lib/seo.server");
-        const { host } = originFromRequest(request);
+        const { host, origin } = originFromRequest(request);
         const slug = await slugFromHost(host);
-        if (slug) return new Response("Not found", { status: 404 });
+        if (slug) {
+          // Store domain: serve that store's own installable manifest.
+          const { storeManifestResponse } = await import("@/lib/store-manifest.server");
+          return storeManifestResponse(slug, origin, "/");
+        }
 
         let icon192: string | null = null;
         let icon512: string | null = null;
