@@ -135,7 +135,6 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
   const oldPrice = content.pricing.oldPrice ?? page.product?.old_price ?? null;
   const discount = oldPrice && oldPrice > price ? Math.round(((oldPrice - price) / oldPrice) * 100) : 0;
   const storeName = content.header.storeName.trim() || page.store?.name || page.title;
-  const storeLogo = page.store?.logo_url || page.store?.name_logo_url || "";
 
   const productImages = useMemo(() => {
     const gallery = Array.isArray(page.product?.gallery)
