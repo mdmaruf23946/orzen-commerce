@@ -197,6 +197,7 @@ function CreateDialog() {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
+  const [lang, setLang] = useState<"en" | "bn" | "mixed">("en");
   const [step, setStep] = useState(-1);
 
   const { data: products = [], isLoading } = useQuery({
