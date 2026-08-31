@@ -251,7 +251,7 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
             </div>
           )}
 
-          {content.product.specs.length > 0 && (
+          {content.product.showSpecs && content.product.specs.length > 0 && (
             <div className="mt-6 overflow-hidden" style={{ borderRadius: "var(--lp-radius)" }}>
               <table className="w-full text-sm">
                 <tbody>
