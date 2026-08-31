@@ -323,6 +323,7 @@ export function normalizeContent(raw: unknown): LandingContent {
       storeName: String(c.header?.storeName ?? ""),
       buttonText: String(c.header?.buttonText ?? hero.ctaText ?? "অর্ডার করুন"),
       showButton: c.header?.showButton !== false,
+      logo: String(c.header?.logo ?? ""),
     },
     hero: {
       headline: String(hero.headline ?? ""),
