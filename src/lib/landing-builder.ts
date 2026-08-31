@@ -7,24 +7,27 @@
 // Merchants edit text only; the design is owned by the system template.
 
 export type LPFeature = { icon: string; title: string; text: string };
-export type LPPoint = { title: string; text: string };
+export type LPPoint = { title: string; text: string; icon: string };
 export type LPBenefit = LPPoint;
 export type LPSpec = { label: string; value: string };
-export type LPReview = { name: string; location: string; rating: number; text: string };
+export type LPReview = { name: string; location: string; rating: number; text: string; photo: string };
 export type LPFaq = { q: string; a: string };
+export type LPLink = { label: string; url: string };
 
 export type LandingContent = {
   header: {
     storeName: string;
     buttonText: string;
     showButton: boolean;
+    /** "" = use the Store Settings logo, "none" = no logo, otherwise a storage path/URL. */
+    logo: string;
   };
   hero: {
     headline: string;
     subheadline: string;
     offerText: string;
     ctaText: string;
-    /** Auto-filled from the product snapshot — not editable by the merchant. */
+    /** Chosen from the product's existing images (or uploaded). */
     image: string;
   };
   pricing: { price: number; oldPrice: number | null; note: string };
@@ -33,8 +36,11 @@ export type LandingContent = {
     title: string;
     subtitle: string;
     showFeatures: boolean;
+    showSpecs: boolean;
     /** Snapshot data from the product system. */
     images: string[];
+    /** Subset of `images` actually displayed. Empty = show all. */
+    selectedImages: string[];
     features: LPFeature[];
     specs: LPSpec[];
   };
@@ -47,8 +53,45 @@ export type LandingContent = {
   faq: { enabled: boolean; title: string; items: LPFaq[] };
   reviews: { enabled: boolean; title: string; items: LPReview[] };
   order: { title: string; subtitle: string; successMessage: string };
-  footer: { text: string; contactText: string; copyright: string };
+  footer: {
+    text: string;
+    contactText: string;
+    copyright: string;
+    /** "" = use the Store Settings logo, "none" = no logo. */
+    logo: string;
+    storeName: string;
+    phone: string;
+    email: string;
+    address: string;
+    hours: string;
+    facebook: string;
+    instagram: string;
+    youtube: string;
+    tiktok: string;
+    whatsapp: string;
+    links: LPLink[];
+  };
 };
+
+/** Store branding + contact defaults used by the landing page when the merchant leaves a field blank. */
+export type LandingStoreInfo = {
+  id?: string;
+  name?: string | null;
+  slug?: string | null;
+  logo_url?: string | null;
+  name_logo_url?: string | null;
+  phone?: string | null;
+  whatsapp?: string | null;
+  email?: string | null;
+  address?: string | null;
+  facebook?: string | null;
+  instagram?: string | null;
+  youtube?: string | null;
+  tiktok?: string | null;
+};
+
+export const SOCIAL_KEYS = ["facebook", "instagram", "youtube", "tiktok", "whatsapp"] as const;
+export type SocialKey = (typeof SOCIAL_KEYS)[number];
 
 export type LandingTheme = {
   primary: string;
