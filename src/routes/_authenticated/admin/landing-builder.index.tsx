@@ -219,7 +219,9 @@ function CreateDialog() {
       setTimeout(() => setStep(3), 9000),
     ];
     try {
-      const created = (await createFn({ data: { productId: selected, useAi: true } })) as { id: string };
+      const created = (await createFn({
+        data: { productId: selected, useAi: true, contentLang: lang },
+      })) as { id: string };
       toast.success("Landing page generated");
       setOpen(false);
       navigate({ to: "/admin/landing-builder/$id", params: { id: created.id } });
