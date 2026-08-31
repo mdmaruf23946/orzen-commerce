@@ -126,6 +126,41 @@ function LandingEditor() {
     setSection(null);
   }
 
+  function setZone(i: number, patch: Partial<LandingDeliveryZone>) {
+    setForm({
+      ...form,
+      deliveryZones: (form.deliveryZones ?? []).map((z, xi) => (xi === i ? { ...z, ...patch } : z)),
+    });
+  }
+
+  function addZone() {
+    const zones = form.deliveryZones ?? [];
+    setForm({
+      ...form,
+      deliveryZones: [
+        ...zones,
+        { id: `zone-${Date.now().toString(36)}`, name: "", charge: 0, isDefault: zones.length === 0 },
+      ],
+    });
+  }
+
+  function importStoreZones() {
+    const rows = ((data as any).storeZones ?? []) as {
+      id: string;
+      name: string;
+      charge: number;
+      is_default?: boolean;
+    }[];
+    setForm({
+      ...form,
+      deliveryZones: normalizeDeliveryZones(
+        rows.map((r) => ({ id: r.id, name: r.name, charge: r.charge, isDefault: r.is_default })),
+      ),
+    });
+    toast.success("Store delivery zones imported");
+  }
+
+
   async function run(fn: () => Promise<unknown>, msg: string) {
     try {
       await fn();
