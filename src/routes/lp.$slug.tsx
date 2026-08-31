@@ -214,9 +214,9 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
       {/* 3. Product */}
       {content.product.enabled && (
         <Section title={content.product.title} subtitle={content.product.subtitle}>
-          {content.product.images.length > 0 && (
+          {shownImages.length > 0 && (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-              {content.product.images.map((img, i) => (
+              {shownImages.map((img, i) => (
                 <img
                   key={i}
                   src={lpImage(img)}
