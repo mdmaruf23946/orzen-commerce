@@ -338,12 +338,43 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
 
       {/* 8. Footer */}
       <footer className="bg-neutral-50 px-4 py-10 text-center">
-        <div className="mx-auto max-w-3xl space-y-2">
-          <div className="text-base font-bold">{storeName}</div>
+        <div className="mx-auto max-w-3xl space-y-3">
+          {footerLogo && (
+            <img src={lpImage(footerLogo)} alt={footerName} className="mx-auto h-12 w-auto object-contain" loading="lazy" />
+          )}
+          <div className="text-base font-bold">{footerName}</div>
           {content.footer.text && <p className="text-sm text-neutral-600">{content.footer.text}</p>}
           {content.footer.contactText && <p className="text-sm text-neutral-600">{content.footer.contactText}</p>}
+
+          {(contact.phone || contact.email || contact.address || content.footer.hours) && (
+            <div className="space-y-1 pt-2 text-sm text-neutral-600">
+              {contact.phone && <div>{contact.phone}</div>}
+              {contact.email && <div>{contact.email}</div>}
+              {contact.address && <div className="whitespace-pre-line">{contact.address}</div>}
+              {content.footer.hours && <div>{content.footer.hours}</div>}
+            </div>
+          )}
+
+          {socials.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-3 pt-1 text-sm font-medium" style={{ color: "var(--lp-primary)" }}>
+              {socials.map((s) => (
+                <a key={s.label} href={s.href} target="_blank" rel="noreferrer noopener">{s.label}</a>
+              ))}
+            </div>
+          )}
+
+          {content.footer.links.filter((l) => l.label && l.url).length > 0 && (
+            <div className="flex flex-wrap justify-center gap-4 pt-1 text-xs text-neutral-600">
+              {content.footer.links
+                .filter((l) => l.label && l.url)
+                .map((l, i) => (
+                  <a key={i} href={l.url} className="underline" target="_blank" rel="noreferrer noopener">{l.label}</a>
+                ))}
+            </div>
+          )}
+
           <p className="pt-2 text-xs text-neutral-500">
-            {content.footer.copyright || `© ${new Date().getFullYear()} ${storeName}. All rights reserved.`}
+            {content.footer.copyright || `© ${new Date().getFullYear()} ${footerName}. All rights reserved.`}
           </p>
         </div>
       </footer>
