@@ -1,33 +1,53 @@
 // Shared, client-safe types + defaults for the Landing Page builder.
 // A landing page keeps its OWN snapshot of product content; the store product
 // is never mutated and never auto-syncs into a page.
+//
+// The content model is section-based and FIXED:
+//   Header → Hero → Product → Description → FAQ → Reviews → Order form → Footer
+// Merchants edit text only; the design is owned by the system template.
 
 export type LPFeature = { icon: string; title: string; text: string };
-export type LPBenefit = { title: string; text: string };
+export type LPPoint = { title: string; text: string };
+export type LPBenefit = LPPoint;
 export type LPSpec = { label: string; value: string };
-export type LPReview = { name: string; rating: number; text: string };
+export type LPReview = { name: string; location: string; rating: number; text: string };
 export type LPFaq = { q: string; a: string };
 
 export type LandingContent = {
+  header: {
+    storeName: string;
+    buttonText: string;
+    showButton: boolean;
+  };
   hero: {
-    enabled: boolean;
-    badge: string;
     headline: string;
     subheadline: string;
-    image: string;
+    offerText: string;
     ctaText: string;
+    /** Auto-filled from the product snapshot — not editable by the merchant. */
+    image: string;
   };
   pricing: { price: number; oldPrice: number | null; note: string };
-  gallery: { enabled: boolean; title: string; images: string[] };
-  features: { enabled: boolean; title: string; items: LPFeature[] };
-  benefits: { enabled: boolean; title: string; items: LPBenefit[] };
-  details: { enabled: boolean; title: string; text: string; specs: LPSpec[] };
-  reviews: { enabled: boolean; title: string; items: LPReview[] };
+  product: {
+    enabled: boolean;
+    title: string;
+    subtitle: string;
+    showFeatures: boolean;
+    /** Snapshot data from the product system. */
+    images: string[];
+    features: LPFeature[];
+    specs: LPSpec[];
+  };
+  description: {
+    enabled: boolean;
+    title: string;
+    text: string;
+    points: LPPoint[];
+  };
   faq: { enabled: boolean; title: string; items: LPFaq[] };
-  contact: { enabled: boolean; title: string; phone: string; email: string; address: string; hours: string };
-  cta: { enabled: boolean; headline: string; text: string; buttonText: string };
-  order: { enabled: boolean; title: string; note: string; successMessage: string };
-  footer: { enabled: boolean; text: string };
+  reviews: { enabled: boolean; title: string; items: LPReview[] };
+  order: { title: string; subtitle: string; successMessage: string };
+  footer: { text: string; contactText: string; copyright: string };
 };
 
 export type LandingTheme = {
@@ -36,6 +56,8 @@ export type LandingTheme = {
   dark: boolean;
   rounded: boolean;
 };
+
+export const MAX_KEY_POINTS = 5;
 
 export const FORM_FIELDS = [
   { key: "customer_name", label: "Full name" },
@@ -63,6 +85,7 @@ export const FEATURE_ICONS = [
   "gift", "thumbs-up", "package", "sparkles",
 ] as const;
 
+/** The design is system-owned; every page uses this fixed professional theme. */
 export function defaultTheme(): LandingTheme {
   return { primary: "#16a34a", accent: "#f59e0b", dark: false, rounded: true };
 }
@@ -166,46 +189,41 @@ export function generateContentFromProduct(p: SourceProduct): LandingContent {
   const specs = asSpecs(p.specifications);
   const short = p.short_description?.trim() || toPlainText(p.description).slice(0, 180);
 
-  const benefits: LPBenefit[] = [
+  const points: LPPoint[] = [
     p.warranty ? { title: "ওয়ারেন্টি", text: p.warranty } : null,
     p.delivery_time_days ? { title: "দ্রুত ডেলিভারি", text: `${p.delivery_time_days} দিনের মধ্যে ডেলিভারি` } : null,
     p.return_policy ? { title: "সহজ রিটার্ন", text: p.return_policy } : null,
     p.shipping_info ? { title: "শিপিং", text: p.shipping_info } : null,
-  ].filter(Boolean) as LPBenefit[];
+  ].filter(Boolean) as LPPoint[];
 
   return {
+    header: { storeName: "", buttonText: "অর্ডার করুন", showButton: true },
     hero: {
-      enabled: true,
-      badge: p.old_price && p.old_price > p.price ? "বিশেষ ছাড়" : "নতুন",
       headline: p.name,
       subheadline: short,
-      image: p.primary_image_url ?? gallery[0] ?? "",
+      offerText: p.old_price && p.old_price > p.price ? "বিশেষ ছাড়" : "নতুন",
       ctaText: "অর্ডার করুন",
+      image: p.primary_image_url ?? gallery[0] ?? "",
     },
-    pricing: { price: Number(p.price) || 0, oldPrice: p.old_price ? Number(p.old_price) : null, note: "ক্যাশ অন ডেলিভারি" },
-    gallery: { enabled: gallery.length > 0, title: "প্রোডাক্ট ছবি", images: gallery.slice(0, 8) },
-    features: {
-      enabled: features.length > 0,
-      title: "প্রোডাক্ট ফিচার",
-      items: features.length
-        ? features
-        : [{ icon: "check", title: "উন্নত মান", text: "" }],
+    pricing: {
+      price: Number(p.price) || 0,
+      oldPrice: p.old_price ? Number(p.old_price) : null,
+      note: "ক্যাশ অন ডেলিভারি",
     },
-    benefits: {
-      enabled: benefits.length > 0,
-      title: "কেন কিনবেন",
-      items: benefits,
-    },
-    details: {
+    product: {
       enabled: true,
-      title: "বিস্তারিত",
-      text: toPlainText(p.description) || short,
+      title: "প্রোডাক্ট ডিটেইলস",
+      subtitle: short,
+      showFeatures: true,
+      images: gallery.slice(0, 8),
+      features: features.length ? features : [{ icon: "check", title: "উন্নত মান", text: "" }],
       specs,
     },
-    reviews: {
-      enabled: false,
-      title: "কাস্টমার রিভিউ",
-      items: [],
+    description: {
+      enabled: true,
+      title: "কেন এই প্রোডাক্ট?",
+      text: toPlainText(p.description) || short,
+      points: points.slice(0, MAX_KEY_POINTS),
     },
     faq: {
       enabled: true,
@@ -215,20 +233,117 @@ export function generateContentFromProduct(p: SourceProduct): LandingContent {
         { q: "পেমেন্ট কিভাবে করব?", a: "ক্যাশ অন ডেলিভারি — প্রোডাক্ট হাতে পেয়ে টাকা দিন।" },
       ],
     },
-    contact: { enabled: true, title: "যোগাযোগ", phone: "", email: "", address: "", hours: "" },
-    cta: {
-      enabled: true,
-      headline: "আজই অর্ডার করুন",
-      text: "সীমিত স্টক — দ্রুত অর্ডার করে নিন।",
-      buttonText: "এখনই অর্ডার করুন",
-    },
+    reviews: { enabled: false, title: "কাস্টমার রিভিউ", items: [] },
     order: {
-      enabled: true,
       title: "অর্ডার ফরম",
-      note: "নিচের ফরমটি পূরণ করে অর্ডার কনফার্ম করুন।",
+      subtitle: "নিচের ফরমটি পূরণ করে অর্ডার কনফার্ম করুন।",
       successMessage: "ধন্যবাদ! আপনার অর্ডার গ্রহণ করা হয়েছে। আমরা শীঘ্রই কল করব।",
     },
-    footer: { enabled: true, text: "" },
+    footer: { text: "", contactText: "", copyright: "" },
+  };
+}
+
+/**
+ * Accepts any stored content (old multi-section shape or the new one) and
+ * returns the canonical 8-section shape. Existing merchant text is preserved.
+ */
+export function normalizeContent(raw: unknown): LandingContent {
+  const c = (raw ?? {}) as any;
+  const hero = c.hero ?? {};
+  const legacyGallery = c.gallery ?? {};
+  const legacyFeatures = c.features ?? {};
+  const legacyBenefits = c.benefits ?? {};
+  const legacyDetails = c.details ?? {};
+  const product = c.product ?? {};
+  const description = c.description ?? {};
+  const faq = c.faq ?? {};
+  const reviews = c.reviews ?? {};
+  const order = c.order ?? {};
+  const footer = c.footer ?? {};
+  const contact = c.contact ?? {};
+
+  const points: LPPoint[] = Array.isArray(description.points)
+    ? description.points
+    : Array.isArray(legacyBenefits.items)
+      ? legacyBenefits.items
+      : [];
+
+  return {
+    header: {
+      storeName: String(c.header?.storeName ?? ""),
+      buttonText: String(c.header?.buttonText ?? hero.ctaText ?? "অর্ডার করুন"),
+      showButton: c.header?.showButton !== false,
+    },
+    hero: {
+      headline: String(hero.headline ?? ""),
+      subheadline: String(hero.subheadline ?? ""),
+      offerText: String(hero.offerText ?? hero.badge ?? ""),
+      ctaText: String(hero.ctaText ?? "অর্ডার করুন"),
+      image: String(hero.image ?? ""),
+    },
+    pricing: {
+      price: Number(c.pricing?.price ?? 0),
+      oldPrice: c.pricing?.oldPrice != null ? Number(c.pricing.oldPrice) : null,
+      note: String(c.pricing?.note ?? ""),
+    },
+    product: {
+      enabled: product.enabled ?? legacyFeatures.enabled ?? true,
+      title: String(product.title ?? legacyDetails.title ?? "প্রোডাক্ট ডিটেইলস"),
+      subtitle: String(product.subtitle ?? ""),
+      showFeatures: product.showFeatures !== false,
+      images: Array.isArray(product.images)
+        ? product.images
+        : Array.isArray(legacyGallery.images)
+          ? legacyGallery.images
+          : [],
+      features: Array.isArray(product.features)
+        ? product.features
+        : Array.isArray(legacyFeatures.items)
+          ? legacyFeatures.items
+          : [],
+      specs: Array.isArray(product.specs)
+        ? product.specs
+        : Array.isArray(legacyDetails.specs)
+          ? legacyDetails.specs
+          : [],
+    },
+    description: {
+      enabled: description.enabled ?? legacyDetails.enabled ?? true,
+      title: String(description.title ?? legacyBenefits.title ?? "কেন এই প্রোডাক্ট?"),
+      text: String(description.text ?? legacyDetails.text ?? ""),
+      points: points.slice(0, MAX_KEY_POINTS).map((p: any) => ({
+        title: String(p?.title ?? ""),
+        text: String(p?.text ?? ""),
+      })),
+    },
+    faq: {
+      enabled: faq.enabled ?? true,
+      title: String(faq.title ?? "সাধারণ প্রশ্ন"),
+      items: (Array.isArray(faq.items) ? faq.items : []).map((f: any) => ({
+        q: String(f?.q ?? ""),
+        a: String(f?.a ?? ""),
+      })),
+    },
+    reviews: {
+      enabled: reviews.enabled ?? false,
+      title: String(reviews.title ?? "কাস্টমার রিভিউ"),
+      items: (Array.isArray(reviews.items) ? reviews.items : []).map((r: any) => ({
+        name: String(r?.name ?? ""),
+        location: String(r?.location ?? ""),
+        rating: Number(r?.rating ?? 5),
+        text: String(r?.text ?? ""),
+      })),
+    },
+    order: {
+      title: String(order.title ?? "অর্ডার ফরম"),
+      subtitle: String(order.subtitle ?? order.note ?? ""),
+      successMessage: String(order.successMessage ?? "ধন্যবাদ! আপনার অর্ডার গ্রহণ করা হয়েছে।"),
+    },
+    footer: {
+      text: String(footer.text ?? ""),
+      contactText: String(footer.contactText ?? contact.title ?? ""),
+      copyright: String(footer.copyright ?? ""),
+    },
   };
 }
 
