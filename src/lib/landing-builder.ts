@@ -342,6 +342,8 @@ export function normalizeContent(raw: unknown): LandingContent {
       title: String(product.title ?? legacyDetails.title ?? "প্রোডাক্ট ডিটেইলস"),
       subtitle: String(product.subtitle ?? ""),
       showFeatures: product.showFeatures !== false,
+      showSpecs: product.showSpecs !== false,
+      selectedImages: Array.isArray(product.selectedImages) ? product.selectedImages.map(String) : [],
       images: Array.isArray(product.images)
         ? product.images
         : Array.isArray(legacyGallery.images)
