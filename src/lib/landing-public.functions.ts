@@ -22,7 +22,7 @@ export type PublicLandingPage = {
     stock: number | null;
     status: string;
     primary_image_url?: string | null;
-    gallery?: unknown;
+    gallery?: string[] | null;
   } | null;
   store: {
     id: string;
