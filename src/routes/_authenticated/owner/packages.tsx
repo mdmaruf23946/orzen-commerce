@@ -75,6 +75,7 @@ function PackagesPage() {
               <div>Customers: {p.customer_limit ?? "∞"}</div>
               <div>Staff: {p.staff_limit ?? "∞"}</div>
               <div>Storage: {p.storage_mb ? `${p.storage_mb} MB` : "∞"}</div>
+              <div>Landing pages: {p.landing_page_limit ? p.landing_page_limit : "∞"}</div>
               <div>Sort: {p.sort_order ?? 0}</div>
             </div>
             <div className="mt-2 flex flex-wrap gap-1">
@@ -117,6 +118,7 @@ function PackageDialog({ editing, onClose, onSaved }: { editing: any; onClose: (
     customer_limit: editing?.customer_limit ?? 0,
     staff_limit: editing?.staff_limit ?? 0,
     storage_mb: editing?.storage_mb ?? 0,
+    landing_page_limit: editing?.landing_page_limit ?? 0,
     is_active: editing?.is_active ?? true,
     is_trial: editing?.is_trial ?? false,
     trial_days: editing?.trial_days ?? 0,
@@ -143,6 +145,7 @@ function PackageDialog({ editing, onClose, onSaved }: { editing: any; onClose: (
           customer_limit: Number(form.customer_limit) || null,
           staff_limit: Number(form.staff_limit) || null,
           storage_mb: Number(form.storage_mb) || null,
+          landing_page_limit: Number(form.landing_page_limit) || 0,
           trial_days: Number(form.trial_days) || 0,
           sort_order: Number(form.sort_order) || 0,
         },
@@ -195,6 +198,7 @@ function PackageDialog({ editing, onClose, onSaved }: { editing: any; onClose: (
                 ["customer_limit", "Customer limit"],
                 ["staff_limit", "Staff limit"],
                 ["storage_mb", "Storage (MB)"],
+                ["landing_page_limit", "Landing pages"],
               ] as const).map(([k, label]) => (
                 <div key={k} className="space-y-1.5">
                   <Label>{label} <span className="text-xs text-muted-foreground">(0 = unlimited)</span></Label>
