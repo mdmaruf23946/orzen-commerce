@@ -194,6 +194,8 @@ export function defaultFormConfig(): LandingFormConfig {
     ],
     paymentMethods: ["cod"],
     deliveryCharge: 0,
+    deliveryZones: [],
+    deliveryZoneLabel: "ডেলিভারি এলাকা",
     buttonText: "অর্ডার কনফার্ম করুন",
   };
 }

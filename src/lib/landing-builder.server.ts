@@ -14,6 +14,7 @@ export const lpOrderSchema = z.object({
   payment_method: z.enum(["cod", "bkash", "nagad", "rocket", "bank"]).default("cod"),
   txn_id: z.string().trim().max(120).optional().nullable(),
   page_url: z.string().trim().max(500).optional().nullable(),
+  delivery_zone: z.string().trim().max(60).optional().nullable(),
 });
 
 export type LpOrderInput = z.infer<typeof lpOrderSchema>;
@@ -46,7 +47,11 @@ export async function createLandingPageOrder(
     return { status: 422, body: { ok: false, error: "This landing page has no product" } };
   }
 
-  const cfg = (page.form_config ?? {}) as { paymentMethods?: string[]; deliveryCharge?: number };
+  const cfg = (page.form_config ?? {}) as {
+    paymentMethods?: string[];
+    deliveryCharge?: number;
+    deliveryZones?: unknown;
+  };
   const allowed = cfg.paymentMethods?.length ? cfg.paymentMethods : ["cod"];
   const method = allowed.includes(input.payment_method) ? input.payment_method : allowed[0]!;
 
@@ -66,7 +71,8 @@ export async function createLandingPageOrder(
 
   const qty = Math.min(input.quantity, Math.max(1, product.stock ?? 1));
   const price = Number(product.price) || 0;
-  const delivery = Math.max(0, Number(cfg.deliveryCharge ?? 0));
+  const { resolveDeliveryCharge } = await import("@/lib/landing-builder");
+  const { charge: delivery, zone } = resolveDeliveryCharge(cfg, input.delivery_zone ?? null);
 
   const { data: order, error: orderErr } = await sb
     .from("orders")
@@ -75,7 +81,7 @@ export async function createLandingPageOrder(
       customer_name: input.customer_name,
       phone: input.phone,
       address: input.address,
-      area: input.area || null,
+      area: input.area || zone?.name || null,
       email: input.email || null,
       payment_method: method as "cod" | "bkash" | "nagad" | "rocket" | "bank",
       txn_id: input.txn_id || null,
