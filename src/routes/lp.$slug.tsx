@@ -6,7 +6,10 @@ import {
   Award, Check, Clock, Gift, Heart, Package, Shield, Sparkles, Star,
   ThumbsUp, Truck, Zap, Loader2, ChevronDown,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { getPublicLanding, type PublicLandingPage } from "@/lib/landing-public.functions";
+import { getLandingPreviewBySlug } from "@/lib/landing-builder.functions";
 import { lpImage, type LandingContent, type LandingFormConfig, type LandingTheme } from "@/lib/landing-builder";
 
 export const Route = createFileRoute("/lp/$slug")({
