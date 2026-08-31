@@ -137,15 +137,22 @@ export const getLandingPage = createServerFn({ method: "GET" })
       )
       .eq("id", store.id)
       .maybeSingle();
+    const { data: storeZones } = await context.supabase
+      .from("delivery_zones")
+      .select("id,name,charge,is_default,sort_order")
+      .eq("store_id", store.id)
+      .order("sort_order", { ascending: true });
     return {
       page,
       product: productRes.data ?? null,
       store: storeInfo ?? { id: store.id },
+      storeZones: storeZones ?? [],
       domains: domainsRes.data ?? [],
       rootDomain: hosts.rootDomain,
       dnsTarget: hosts.dnsTarget,
       apexIp: hosts.apexIp,
     };
+
   });
 
 export const listLandingProducts = createServerFn({ method: "GET" })
