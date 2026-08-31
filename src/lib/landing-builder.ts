@@ -367,6 +367,7 @@ export function normalizeContent(raw: unknown): LandingContent {
       points: points.slice(0, MAX_KEY_POINTS).map((p: any) => ({
         title: String(p?.title ?? ""),
         text: String(p?.text ?? ""),
+        icon: String(p?.icon ?? "check"),
       })),
     },
     faq: {
