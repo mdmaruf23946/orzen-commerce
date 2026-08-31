@@ -151,6 +151,16 @@ export const updateMySubdomain = createServerFn({ method: "POST" })
 
     const { error } = await supabase.from("stores").update({ slug: data.slug }).eq("id", store.id);
     if (error) throw new Error(error.message);
+
+    // Keep Cloudflare in sync: attach the new host, drop the old one.
+    try {
+      const settings = await platformDomainSettings(supabase);
+      const { ensureSubdomainAttached, detachSubdomain } = await import("@/lib/cloudflare-pages.server");
+      await ensureSubdomainAttached(`${data.slug}.${settings.rootDomain}`);
+      await detachSubdomain(`${store.slug}.${settings.rootDomain}`);
+    } catch {
+      // Non-fatal — merchant can retry with "Reconnect".
+    }
     return { ok: true, slug: data.slug, changed: true, previous: store.slug };
   });
 
