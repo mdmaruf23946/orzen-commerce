@@ -185,6 +185,9 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
       {/* 1. Header */}
       <header className="sticky top-0 z-30 border-b border-neutral-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3">
+          {headerLogo && (
+            <img src={lpImage(headerLogo)} alt={storeName} className="h-9 w-auto max-w-[140px] shrink-0 object-contain" />
+          )}
           <span className="truncate text-base font-extrabold tracking-tight">{storeName}</span>
           {content.header.showButton && (
             <a
