@@ -11,6 +11,25 @@ import {
   wipeStoreChildren,
 } from "@/lib/store-template";
 
+/**
+ * Attach a brand-new store's subdomain to Cloudflare (DNS + Pages custom
+ * domain) so <slug>.<root> is live immediately. Never blocks store creation.
+ */
+async function attachStoreSubdomain(supabase: any, slug: string) {
+  try {
+    const { data } = await supabase
+      .from("platform_settings")
+      .select("settings")
+      .eq("id", 1)
+      .maybeSingle();
+    const root = (((data?.settings as any) ?? {}).root_domain ?? "orzen.top").toLowerCase();
+    const { ensureSubdomainAttached } = await import("@/lib/cloudflare-pages.server");
+    await ensureSubdomainAttached(`${slug}.${root}`);
+  } catch {
+    // Non-fatal — the merchant can retry from Merchant Panel → Domains.
+  }
+}
+
 function slugify(s: string) {
   return s
     .toLowerCase()
@@ -95,6 +114,7 @@ export const getMyStore = createServerFn({ method: "GET" })
           // Non-fatal: store still exists; owner can Reset to Default later.
         }
       }
+      await attachStoreSubdomain(supabase, slug);
       store = created;
     }
     return store;
