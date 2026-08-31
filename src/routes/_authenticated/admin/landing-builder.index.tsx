@@ -197,6 +197,7 @@ function CreateDialog() {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
+  const [lang, setLang] = useState<"en" | "bn" | "mixed">("en");
   const [step, setStep] = useState(-1);
 
   const { data: products = [], isLoading } = useQuery({
@@ -218,7 +219,9 @@ function CreateDialog() {
       setTimeout(() => setStep(3), 9000),
     ];
     try {
-      const created = (await createFn({ data: { productId: selected, useAi: true } })) as { id: string };
+      const created = (await createFn({
+        data: { productId: selected, useAi: true, contentLang: lang },
+      })) as { id: string };
       toast.success("Landing page generated");
       setOpen(false);
       navigate({ to: "/admin/landing-builder/$id", params: { id: created.id } });
@@ -236,6 +239,7 @@ function CreateDialog() {
     if (!next) {
       setSelected(null);
       setQ("");
+      setLang("en");
     }
   }
 
@@ -298,6 +302,34 @@ function CreateDialog() {
                 ))
               )}
             </div>
+            {selected && (
+              <div className="rounded-lg border p-3">
+                <div className="text-xs font-medium">Content Language</div>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  Language for the AI-generated landing page content.
+                </p>
+                <div className="mt-2 grid grid-cols-3 gap-1.5">
+                  {([
+                    { v: "bn", label: "বাংলা" },
+                    { v: "en", label: "English" },
+                    { v: "mixed", label: "বাংলা+English" },
+                  ] as const).map((o) => (
+                    <button
+                      key={o.v}
+                      type="button"
+                      onClick={() => setLang(o.v)}
+                      className={`rounded-md border px-2 py-1.5 text-xs transition-colors ${
+                        lang === o.v
+                          ? "border-primary bg-primary/10 font-medium text-primary"
+                          : "hover:bg-accent"
+                      }`}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <Button className="w-full" disabled={!selected} onClick={create}>
               <Sparkles className="mr-1.5 h-4 w-4" /> Create Landing Page
             </Button>
