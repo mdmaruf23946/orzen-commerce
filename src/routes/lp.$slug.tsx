@@ -470,9 +470,15 @@ function OrderForm({
 }) {
   const fields = (form.fields ?? []).filter((f) => f.enabled);
   const methods = form.paymentMethods?.length ? form.paymentMethods : ["cod"];
-  const delivery = Number(form.deliveryCharge ?? 0);
+  const zones = normalizeDeliveryZones(form.deliveryZones);
 
   const [values, setValues] = useState<Record<string, string>>({ quantity: "1" });
+  const [zoneId, setZoneId] = useState(
+    zones.find((z) => z.isDefault)?.id ?? zones[0]?.id ?? "",
+  );
+  const delivery = zones.length
+    ? (zones.find((z) => z.id === zoneId)?.charge ?? zones[0]!.charge)
+    : Number(form.deliveryCharge ?? 0);
   const [method, setMethod] = useState(methods[0]!);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -499,6 +505,7 @@ function OrderForm({
           note: values["note"] || null,
           quantity: qty,
           payment_method: method,
+          delivery_zone: zones.length ? zoneId : null,
           txn_id: values["txn_id"] || null,
           page_url: typeof window !== "undefined" ? window.location.href : null,
         }),
@@ -565,6 +572,28 @@ function OrderForm({
                 )}
               </div>
             ))}
+
+            {zones.length > 0 && (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-neutral-600">
+                  {form.deliveryZoneLabel || "ডেলিভারি এলাকা"}
+                  <span className="text-red-500"> *</span>
+                </label>
+                <select
+                  className={inputClass}
+                  style={{ borderRadius: "calc(var(--lp-radius) / 2)" }}
+                  value={zoneId}
+                  onChange={(e) => setZoneId(e.target.value)}
+                  required
+                >
+                  {zones.map((z) => (
+                    <option key={z.id} value={z.id}>
+                      {z.name} — {money(z.charge)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {methods.length > 1 && (
               <div>
