@@ -227,7 +227,6 @@ export async function generateLandingCopy(
     "- Never write testimonials, customer quotes or claims about customer experience unless real reviews are provided.",
     "- No fake urgency ('only 2 left', 'offer ends today').",
     "",
-    "STYLE:",
     "LANGUAGE (required):",
     LANG_RULES[contentLang] ?? LANG_RULES.en,
     "- Keep product names, brand names, model numbers and technical terms in their original form; do not translate them.",
