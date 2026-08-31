@@ -127,7 +127,52 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
   const oldPrice = content.pricing.oldPrice ?? page.product?.old_price ?? null;
   const discount = oldPrice && oldPrice > price ? Math.round(((oldPrice - price) / oldPrice) * 100) : 0;
   const storeName = content.header.storeName.trim() || page.store?.name || page.title;
-  const heroImage = content.hero.image || content.product.images[0] || "";
+  const storeLogo = page.store?.logo_url || page.store?.name_logo_url || "";
+
+  const productImages = useMemo(() => {
+    const gallery = Array.isArray(page.product?.gallery)
+      ? (page.product?.gallery as unknown[])
+          .map((g) => (typeof g === "string" ? g : String((g as any)?.url ?? "")))
+          .filter(Boolean)
+      : [];
+    return Array.from(
+      new Set([...(content.product.images ?? []), page.product?.primary_image_url ?? "", ...gallery].filter(Boolean)),
+    ) as string[];
+  }, [content.product.images, page.product]);
+
+  const heroImage = content.hero.image || productImages[0] || "";
+  const shownImages =
+    content.product.selectedImages.length > 0
+      ? productImages.filter((i) => content.product.selectedImages.includes(i))
+      : productImages;
+
+  // Footer values: merchant text wins, Store Settings is the automatic fallback.
+  const headerLogo = content.header.logo === "none" ? "" : content.header.logo || storeLogo;
+  const footerLogo = content.footer.logo === "none" ? "" : content.footer.logo || storeLogo;
+  const footerName = content.footer.storeName.trim() || storeName;
+  const contact = {
+    phone: content.footer.phone || page.store?.phone || "",
+    email: content.footer.email || page.store?.email || "",
+    address: content.footer.address || page.store?.address || "",
+  };
+  const socials = (
+    [
+      ["Facebook", content.footer.facebook || page.store?.facebook || ""],
+      ["Instagram", content.footer.instagram || page.store?.instagram || ""],
+      ["YouTube", content.footer.youtube || page.store?.youtube || ""],
+      ["TikTok", content.footer.tiktok || page.store?.tiktok || ""],
+      ["WhatsApp", content.footer.whatsapp || page.store?.whatsapp || ""],
+    ] as const
+  )
+    .filter(([, v]) => Boolean(v))
+    .map(([label, v]) => ({
+      label,
+      href:
+        label === "WhatsApp" && !String(v).startsWith("http")
+          ? `https://wa.me/${String(v).replace(/[^\d]/g, "")}`
+          : String(v),
+    }));
+
 
   return (
     <div style={STYLE} className="min-h-screen bg-white text-neutral-900">
@@ -140,6 +185,9 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
       {/* 1. Header */}
       <header className="sticky top-0 z-30 border-b border-neutral-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3">
+          {headerLogo && (
+            <img src={lpImage(headerLogo)} alt={storeName} className="h-9 w-auto max-w-[140px] shrink-0 object-contain" />
+          )}
           <span className="truncate text-base font-extrabold tracking-tight">{storeName}</span>
           {content.header.showButton && (
             <a
@@ -214,9 +262,9 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
       {/* 3. Product */}
       {content.product.enabled && (
         <Section title={content.product.title} subtitle={content.product.subtitle}>
-          {content.product.images.length > 0 && (
+          {shownImages.length > 0 && (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-              {content.product.images.map((img, i) => (
+              {shownImages.map((img, i) => (
                 <img
                   key={i}
                   src={lpImage(img)}
@@ -251,7 +299,7 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
             </div>
           )}
 
-          {content.product.specs.length > 0 && (
+          {content.product.showSpecs && content.product.specs.length > 0 && (
             <div className="mt-6 overflow-hidden" style={{ borderRadius: "var(--lp-radius)" }}>
               <table className="w-full text-sm">
                 <tbody>
@@ -278,13 +326,16 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
           )}
           {content.description.points.length > 0 && (
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {content.description.points.map((p, i) => (
-                <div key={i} className="bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
-                  <Check className="h-5 w-5" style={{ color: "var(--lp-primary)" }} />
-                  <div className="mt-2 font-semibold">{p.title}</div>
-                  <div className="mt-1 text-sm text-neutral-600">{p.text}</div>
-                </div>
-              ))}
+              {content.description.points.map((p, i) => {
+                const PIcon = ICONS[p.icon] ?? Check;
+                return (
+                  <div key={i} className="bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
+                    <PIcon className="h-5 w-5" style={{ color: "var(--lp-primary)" }} />
+                    <div className="mt-2 font-semibold">{p.title}</div>
+                    <div className="mt-1 text-sm text-neutral-600">{p.text}</div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </Section>
@@ -324,8 +375,18 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
                   ))}
                 </div>
                 <p className="mt-2 text-sm text-neutral-700">{r.text}</p>
-                <div className="mt-2 text-xs font-semibold text-neutral-500">
-                  — {r.name}{r.location ? `, ${r.location}` : ""}
+                <div className="mt-3 flex items-center gap-2">
+                  {r.photo && (
+                    <img
+                      src={lpImage(r.photo)}
+                      alt={r.name}
+                      loading="lazy"
+                      className="h-9 w-9 shrink-0 rounded-full object-cover"
+                    />
+                  )}
+                  <div className="text-xs font-semibold text-neutral-500">
+                    — {r.name}{r.location ? `, ${r.location}` : ""}
+                  </div>
                 </div>
               </div>
             ))}
@@ -338,12 +399,43 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
 
       {/* 8. Footer */}
       <footer className="bg-neutral-50 px-4 py-10 text-center">
-        <div className="mx-auto max-w-3xl space-y-2">
-          <div className="text-base font-bold">{storeName}</div>
+        <div className="mx-auto max-w-3xl space-y-3">
+          {footerLogo && (
+            <img src={lpImage(footerLogo)} alt={footerName} className="mx-auto h-12 w-auto object-contain" loading="lazy" />
+          )}
+          <div className="text-base font-bold">{footerName}</div>
           {content.footer.text && <p className="text-sm text-neutral-600">{content.footer.text}</p>}
           {content.footer.contactText && <p className="text-sm text-neutral-600">{content.footer.contactText}</p>}
+
+          {(contact.phone || contact.email || contact.address || content.footer.hours) && (
+            <div className="space-y-1 pt-2 text-sm text-neutral-600">
+              {contact.phone && <div>{contact.phone}</div>}
+              {contact.email && <div>{contact.email}</div>}
+              {contact.address && <div className="whitespace-pre-line">{contact.address}</div>}
+              {content.footer.hours && <div>{content.footer.hours}</div>}
+            </div>
+          )}
+
+          {socials.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-3 pt-1 text-sm font-medium" style={{ color: "var(--lp-primary)" }}>
+              {socials.map((s) => (
+                <a key={s.label} href={s.href} target="_blank" rel="noreferrer noopener">{s.label}</a>
+              ))}
+            </div>
+          )}
+
+          {content.footer.links.filter((l) => l.label && l.url).length > 0 && (
+            <div className="flex flex-wrap justify-center gap-4 pt-1 text-xs text-neutral-600">
+              {content.footer.links
+                .filter((l) => l.label && l.url)
+                .map((l, i) => (
+                  <a key={i} href={l.url} className="underline" target="_blank" rel="noreferrer noopener">{l.label}</a>
+                ))}
+            </div>
+          )}
+
           <p className="pt-2 text-xs text-neutral-500">
-            {content.footer.copyright || `© ${new Date().getFullYear()} ${storeName}. All rights reserved.`}
+            {content.footer.copyright || `© ${new Date().getFullYear()} ${footerName}. All rights reserved.`}
           </p>
         </div>
       </footer>
