@@ -182,13 +182,62 @@ async function loadSourceProduct(supabase: any, storeId: string, productId: stri
 export const createLandingPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ productId: uuid, title: z.string().trim().max(120).optional() }).parse(d),
+    z
+      .object({
+        productId: uuid,
+        title: z.string().trim().max(120).optional(),
+        /** Generate the copy with AI before creating the page. */
+        useAi: z.boolean().optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const store = await requireMyStore(context.supabase, context.userId);
     const product = await loadSourceProduct(context.supabase, store.id, data.productId);
     const title = data.title?.trim() || product.name;
     const slug = await uniqueSlug(context.supabase, title);
+
+    let content = generateContentFromProduct(product);
+    let seo: { title: string; description: string } = {
+      title: `${title} — ${store.name}`.slice(0, 70),
+      description: (product.short_description ?? "").slice(0, 160),
+    };
+
+    if (data.useAi) {
+      try {
+        const { data: reviewRows } = await context.supabase
+          .from("product_reviews")
+          .select("name,rating,comment,created_at")
+          .eq("store_id", store.id)
+          .eq("product_id", product.id)
+          .eq("status", "approved")
+          .order("created_at", { ascending: false })
+          .limit(6);
+
+        const reviews = (reviewRows ?? []).map((r: any) => ({
+          name: String(r.name ?? "").slice(0, 60),
+          location: "",
+          rating: Number(r.rating) || 5,
+          text: String(r.comment ?? "").slice(0, 400),
+          photo: "",
+        }));
+
+        const { generateLandingCopy, seoFromContent } = await import("@/lib/landing-ai.server");
+        const generated = await generateLandingCopy(content, {
+          product,
+          storeName: store.name,
+          reviews,
+          hasRealReviews: reviews.length > 0,
+        });
+        if (generated) {
+          content = generated;
+          seo = seoFromContent(generated, title, store.name);
+        }
+      } catch (e) {
+        // AI is best-effort: fall back to the template content.
+        console.warn("Landing AI generation skipped:", (e as Error).message);
+      }
+    }
 
     const { data: created, error } = await context.supabase
       .from("landing_pages")
@@ -198,13 +247,10 @@ export const createLandingPage = createServerFn({ method: "POST" })
         slug,
         title,
         status: "draft",
-        content: generateContentFromProduct(product) as any,
+        content: content as any,
         theme: defaultTheme() as any,
         form_config: defaultFormConfig() as any,
-        seo: {
-          title: `${title} — ${store.name}`,
-          description: (product.short_description ?? "").slice(0, 160),
-        } as any,
+        seo: seo as any,
         synced_at: new Date().toISOString(),
       })
       .select("id,slug")
@@ -212,6 +258,7 @@ export const createLandingPage = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return created;
   });
+
 
 export const updateLandingPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
