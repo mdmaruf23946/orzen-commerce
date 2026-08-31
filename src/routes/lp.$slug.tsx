@@ -14,7 +14,10 @@ import { lpImage, type LandingContent, type LandingFormConfig, type LandingTheme
 
 export const Route = createFileRoute("/lp/$slug")({
   validateSearch: (search: Record<string, unknown>) => ({
-    preview: search["preview"] === "1" || search["preview"] === true ? true : undefined,
+    preview:
+      search["preview"] === true || search["preview"] === "true" || search["preview"] === "1"
+        ? true
+        : undefined,
   }),
   loaderDeps: ({ search }) => ({ preview: Boolean(search.preview) }),
   loader: async ({ params, deps }) => {
