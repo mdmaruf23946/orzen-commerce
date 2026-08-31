@@ -333,23 +333,14 @@ function BillingPage() {
       <section>
         <h2 className="mb-2 text-sm font-semibold sm:mb-3 sm:text-lg">Available plans</h2>
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
-          {TIER_ORDER.map((tier) => {
-            const p = tierMap.get(tier);
-            const isOwnTier = currentTier === tier && !isTrialing;
-            const isCurrent = isOwnTier && !isInactive;
-            const needsRenew = isOwnTier && isInactive;
-            const isPopular = tier === "business";
+          {plans.map((p) => {
+            const tier = tierOf(p);
+            const isOwnPlan = pkg?.id === p.id && !isTrialing;
+            const isCurrent = isOwnPlan && !isInactive;
+            const needsRenew = isOwnPlan && isInactive;
             const isCustom = tier === "custom";
-            const isFree = tier === "free";
-
-            if (!p) {
-              return (
-                <div key={tier} className="rounded-xl border border-dashed bg-card/40 p-3 text-xs text-muted-foreground sm:p-4 sm:text-sm">
-                  <div className="font-semibold text-foreground">{TIER_NAME[tier]}</div>
-                  <p className="mt-1 sm:mt-2">Coming soon.</p>
-                </div>
-              );
-            }
+            const isFree = !isCustom && Number(p.price) === 0;
+            const isPopular = !isCustom && !isFree && popularPlanId === p.id;
 
             const calc = !isFree && !isCustom ? computeCycleTotal(Number(p.price), cycle, s) : null;
 
@@ -357,7 +348,8 @@ function BillingPage() {
 
             return (
               <div
-                key={tier}
+                key={p.id}
+
                 ref={(el) => { cardRefs.current[p.id] = el; }}
                 className={`relative flex flex-col rounded-xl border bg-card p-3 transition sm:p-4 ${
                   isHighlighted ? "border-primary ring-4 ring-primary/40 shadow-lg" : isPopular ? "border-primary ring-2 ring-primary/30" : ""
