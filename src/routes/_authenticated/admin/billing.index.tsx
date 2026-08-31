@@ -56,8 +56,8 @@ type Plan = {
   feature_summary?: string[] | null;
 };
 
-const TIER_ORDER: Array<"free" | "basic" | "business" | "custom"> = ["free", "basic", "business", "custom"];
 const TIER_NAME: Record<string, string> = {
+
   free: "Free Plan",
   basic: "Basic Plan",
   business: "Business Plan",
@@ -84,8 +84,16 @@ function BillingPage() {
   const settingsFn = useServerFn(getBillingSettings);
   const search = Route.useSearch();
 
-  const { data: status } = useQuery({ queryKey: ["admin", "billing"], queryFn: () => statusFn() });
-  const { data: plansRaw } = useQuery({ queryKey: ["admin", "billingPlans"], queryFn: () => plansFn() });
+  const { data: status } = useQuery({ queryKey: ["admin", "billing"], queryFn: () => statusFn(), staleTime: 0 });
+  // Plans are edited from the Winner Admin panel — always fetch the latest list.
+  const { data: plansRaw } = useQuery({
+    queryKey: ["admin", "billingPlans"],
+    queryFn: () => plansFn(),
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+  });
+
   const { data: settings } = useQuery({
     queryKey: ["admin", "billingSettings"],
     queryFn: () => settingsFn(),
@@ -122,16 +130,16 @@ function BillingPage() {
     void openSubscriptionInvoice(p, store, invoiceBrand);
   }
 
-  const tierMap = useMemo(() => {
-    const m = new Map<string, Plan>();
-    for (const p of plans) {
-      const t = tierOf(p);
-      if (t && !m.has(t)) m.set(t, p);
-    }
-    return m;
-  }, [plans]);
+  // Cheapest paid plan gets the "Popular" badge and the trial upgrade CTA.
+  const paidPlans = useMemo(
+    () => plans.filter((p) => !p.is_trial && Number(p.price) > 0).sort((a, b) => Number(a.price) - Number(b.price)),
+    [plans],
+  );
+  const popularPlanId = paidPlans[0]?.id ?? null;
+  const upgradePlan = paidPlans[0] ?? null;
 
   const currentTier = pkg ? tierOf(pkg) : isTrialing ? null : "free";
+
   // Expired / cancelled / suspended → the plan is no longer active, so the
   // merchant must be able to renew (update) it manually again.
   const isInactive = ["expired", "cancelled", "suspended", "past_due"].includes(subStatus);
@@ -215,16 +223,17 @@ function BillingPage() {
                 All Premium Features unlocked.
               </p>
             </div>
-            {tierMap.get("business") && (
+            {upgradePlan && (
               <Link
                 to="/admin/billing/checkout/$packageId"
-                params={{ packageId: tierMap.get("business")!.id }}
+                params={{ packageId: upgradePlan.id }}
                 search={{ cycle } as any}
                 className="shrink-0"
               >
                 <Button size="sm" className="h-8 bg-amber-600 px-2.5 text-xs hover:bg-amber-700 sm:h-9 sm:px-3 sm:text-sm">Upgrade</Button>
               </Link>
             )}
+
           </div>
         </div>
       )}
@@ -241,7 +250,7 @@ function BillingPage() {
             <div className="text-[10px] uppercase tracking-wide text-muted-foreground sm:text-xs">Current plan</div>
             <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
               <span className="truncate text-sm font-bold sm:text-xl">
-                {isTrialing ? "Free Plan" : (currentTier ? TIER_NAME[currentTier] : "Free Plan")}
+                {isTrialing ? "Free Trial" : (pkg?.name ?? "Free Plan")}
               </span>
               <Badge
                 variant={subStatus === "active" ? "default" : isTrialing ? "secondary" : "destructive"}
@@ -333,23 +342,14 @@ function BillingPage() {
       <section>
         <h2 className="mb-2 text-sm font-semibold sm:mb-3 sm:text-lg">Available plans</h2>
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
-          {TIER_ORDER.map((tier) => {
-            const p = tierMap.get(tier);
-            const isOwnTier = currentTier === tier && !isTrialing;
-            const isCurrent = isOwnTier && !isInactive;
-            const needsRenew = isOwnTier && isInactive;
-            const isPopular = tier === "business";
+          {plans.map((p) => {
+            const tier = tierOf(p);
+            const isOwnPlan = pkg?.id === p.id && !isTrialing;
+            const isCurrent = isOwnPlan && !isInactive;
+            const needsRenew = isOwnPlan && isInactive;
             const isCustom = tier === "custom";
-            const isFree = tier === "free";
-
-            if (!p) {
-              return (
-                <div key={tier} className="rounded-xl border border-dashed bg-card/40 p-3 text-xs text-muted-foreground sm:p-4 sm:text-sm">
-                  <div className="font-semibold text-foreground">{TIER_NAME[tier]}</div>
-                  <p className="mt-1 sm:mt-2">Coming soon.</p>
-                </div>
-              );
-            }
+            const isFree = !isCustom && Number(p.price) === 0;
+            const isPopular = !isCustom && !isFree && popularPlanId === p.id;
 
             const calc = !isFree && !isCustom ? computeCycleTotal(Number(p.price), cycle, s) : null;
 
@@ -357,7 +357,8 @@ function BillingPage() {
 
             return (
               <div
-                key={tier}
+                key={p.id}
+
                 ref={(el) => { cardRefs.current[p.id] = el; }}
                 className={`relative flex flex-col rounded-xl border bg-card p-3 transition sm:p-4 ${
                   isHighlighted ? "border-primary ring-4 ring-primary/40 shadow-lg" : isPopular ? "border-primary ring-2 ring-primary/30" : ""
@@ -384,7 +385,7 @@ function BillingPage() {
                   </div>
                 )}
 
-                <div className="mt-0.5 truncate text-sm font-semibold sm:text-base">{TIER_NAME[tier]}</div>
+                <div className="mt-0.5 truncate text-sm font-semibold sm:text-base">{p.name}</div>
                 {p.description && <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-2 sm:text-xs">{p.description}</p>}
 
                 <div className="mt-2 sm:mt-3">
