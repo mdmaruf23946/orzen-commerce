@@ -324,8 +324,18 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
                   ))}
                 </div>
                 <p className="mt-2 text-sm text-neutral-700">{r.text}</p>
-                <div className="mt-2 text-xs font-semibold text-neutral-500">
-                  — {r.name}{r.location ? `, ${r.location}` : ""}
+                <div className="mt-3 flex items-center gap-2">
+                  {r.photo && (
+                    <img
+                      src={lpImage(r.photo)}
+                      alt={r.name}
+                      loading="lazy"
+                      className="h-9 w-9 shrink-0 rounded-full object-cover"
+                    />
+                  )}
+                  <div className="text-xs font-semibold text-neutral-500">
+                    — {r.name}{r.location ? `, ${r.location}` : ""}
+                  </div>
                 </div>
               </div>
             ))}
