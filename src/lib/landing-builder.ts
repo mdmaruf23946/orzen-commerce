@@ -19,8 +19,10 @@ export type LandingContent = {
     storeName: string;
     buttonText: string;
     showButton: boolean;
-    /** "" = use the Store Settings logo, "none" = no logo, otherwise a storage path/URL. */
-    logo: string;
+    /** Square brand mark for this landing page. "" = none. */
+    iconLogo: string;
+    /** Wordmark / name logo image for this landing page. "" = none. */
+    nameLogo: string;
   };
   hero: {
     headline: string;
