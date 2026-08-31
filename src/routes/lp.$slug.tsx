@@ -10,7 +10,14 @@ import { getPublicLanding, type PublicLandingPage } from "@/lib/landing-public.f
 import { lpImage, type LandingContent, type LandingFormConfig, type LandingTheme } from "@/lib/landing-builder";
 
 export const Route = createFileRoute("/lp/$slug")({
-  loader: async ({ params }) => {
+  validateSearch: (search: Record<string, unknown>) => ({
+    preview: search["preview"] === "1" || search["preview"] === true ? true : undefined,
+  }),
+  loaderDeps: ({ search }) => ({ preview: Boolean(search.preview) }),
+  loader: async ({ params, deps }) => {
+    // In preview mode the page may still be a draft — it is fetched client-side
+    // through the owner-authenticated server function instead.
+    if (deps.preview) return null;
     const page = await getPublicLanding({ data: { slug: params.slug } });
     if (!page) throw notFound();
     return page;
