@@ -114,12 +114,60 @@ export const FORM_FIELDS = [
 
 export type FormFieldKey = (typeof FORM_FIELDS)[number]["key"];
 
+/** One selectable delivery area with its own charge. */
+export type LandingDeliveryZone = {
+  id: string;
+  name: string;
+  charge: number;
+  isDefault?: boolean;
+};
+
 export type LandingFormConfig = {
   fields: { key: FormFieldKey; label: string; enabled: boolean; required: boolean }[];
   paymentMethods: string[];
   deliveryCharge: number;
+  /** Optional zone-based delivery pricing. Empty = flat `deliveryCharge`. */
+  deliveryZones?: LandingDeliveryZone[];
+  /** Label shown above the zone selector on the landing page. */
+  deliveryZoneLabel?: string;
   buttonText: string;
 };
+
+/** Cleans stored zones (drops broken rows, clamps charges, keeps order). */
+export function normalizeDeliveryZones(raw: unknown): LandingDeliveryZone[] {
+  if (!Array.isArray(raw)) return [];
+  const out: LandingDeliveryZone[] = [];
+  for (const z of raw) {
+    const r = (z ?? {}) as Record<string, unknown>;
+    const name = String(r["name"] ?? "").trim().slice(0, 60);
+    if (!name) continue;
+    out.push({
+      id: String(r["id"] ?? name.toLowerCase().replace(/\s+/g, "-")).slice(0, 60),
+      name,
+      charge: Math.max(0, Math.round(Number(r["charge"]) || 0)),
+      isDefault: Boolean(r["isDefault"]),
+    });
+    if (out.length >= 20) break;
+  }
+  if (out.length && !out.some((z) => z.isDefault)) out[0]!.isDefault = true;
+  return out;
+}
+
+/** Charge for a chosen zone, falling back to the default zone / flat charge. */
+export function resolveDeliveryCharge(cfg: {
+  deliveryCharge?: number;
+  deliveryZones?: unknown;
+}, zoneId?: string | null): { charge: number; zone: LandingDeliveryZone | null } {
+  const zones = normalizeDeliveryZones(cfg.deliveryZones);
+  if (!zones.length) return { charge: Math.max(0, Number(cfg.deliveryCharge ?? 0)), zone: null };
+  const zone =
+    zones.find((z) => z.id === zoneId) ??
+    zones.find((z) => z.name === zoneId) ??
+    zones.find((z) => z.isDefault) ??
+    zones[0]!;
+  return { charge: zone.charge, zone };
+}
+
 
 export const PAYMENT_METHODS = ["cod", "bkash", "nagad", "rocket", "bank"] as const;
 
@@ -146,6 +194,8 @@ export function defaultFormConfig(): LandingFormConfig {
     ],
     paymentMethods: ["cod"],
     deliveryCharge: 0,
+    deliveryZones: [],
+    deliveryZoneLabel: "ডেলিভারি এলাকা",
     buttonText: "অর্ডার কনফার্ম করুন",
   };
 }

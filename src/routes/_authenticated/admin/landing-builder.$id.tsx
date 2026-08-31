@@ -21,8 +21,10 @@ import {
   FORM_FIELDS,
   PAYMENT_METHODS,
   normalizeContent,
+  normalizeDeliveryZones,
   slugify,
   type LandingContent,
+  type LandingDeliveryZone,
   type LandingFormConfig,
   type LandingTheme,
 } from "@/lib/landing-builder";
@@ -123,6 +125,41 @@ function LandingEditor() {
     await save();
     setSection(null);
   }
+
+  function setZone(i: number, patch: Partial<LandingDeliveryZone>) {
+    setForm({
+      ...form,
+      deliveryZones: (form.deliveryZones ?? []).map((z, xi) => (xi === i ? { ...z, ...patch } : z)),
+    });
+  }
+
+  function addZone() {
+    const zones = form.deliveryZones ?? [];
+    setForm({
+      ...form,
+      deliveryZones: [
+        ...zones,
+        { id: `zone-${Date.now().toString(36)}`, name: "", charge: 0, isDefault: zones.length === 0 },
+      ],
+    });
+  }
+
+  function importStoreZones() {
+    const rows = ((data as any).storeZones ?? []) as {
+      id: string;
+      name: string;
+      charge: number;
+      is_default?: boolean;
+    }[];
+    setForm({
+      ...form,
+      deliveryZones: normalizeDeliveryZones(
+        rows.map((r) => ({ id: r.id, name: r.name, charge: r.charge, isDefault: r.is_default })),
+      ),
+    });
+    toast.success("Store delivery zones imported");
+  }
+
 
   async function run(fn: () => Promise<unknown>, msg: string) {
     try {
@@ -413,6 +450,86 @@ function LandingEditor() {
                 {data.product.price} · stock {data.product.stock ?? 0}
               </div>
             )}
+          </Card>
+
+          <Card title="Delivery zones">
+            <p className="text-xs text-muted-foreground">
+              Add areas with their own delivery charge. Customers pick their area on the
+              landing page and the charge is applied automatically. No zones = the flat
+              delivery charge from the Order Form tab is used.
+            </p>
+            <div>
+              <Label className="text-xs">Selector label</Label>
+              <Input
+                value={form.deliveryZoneLabel ?? ""}
+                placeholder="ডেলিভারি এলাকা"
+                onChange={(e) => setForm({ ...form, deliveryZoneLabel: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              {(form.deliveryZones ?? []).map((z, i) => (
+                <div key={z.id || i} className="grid grid-cols-[minmax(0,1fr)_7rem_auto] items-center gap-2">
+                  <Input
+                    value={z.name}
+                    placeholder="Zone name"
+                    onChange={(e) => setZone(i, { name: e.target.value })}
+                  />
+                  <Input
+                    type="number"
+                    min={0}
+                    value={z.charge}
+                    onChange={(e) => setZone(i, { charge: Number(e.target.value) })}
+                  />
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      title="Default zone"
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          deliveryZones: (form.deliveryZones ?? []).map((x, xi) => ({
+                            ...x,
+                            isDefault: xi === i,
+                          })),
+                        })
+                      }
+                      className={`rounded-md border px-2 py-1.5 text-[11px] ${
+                        z.isDefault ? "border-primary bg-primary/10 text-primary" : ""
+                      }`}
+                    >
+                      Default
+                    </button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          deliveryZones: normalizeDeliveryZones(
+                            (form.deliveryZones ?? []).filter((_, xi) => xi !== i),
+                          ),
+                        })
+                      }
+                    >
+                      ✕
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {!(form.deliveryZones ?? []).length && (
+                <p className="text-xs text-muted-foreground">No zones yet.</p>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={addZone}>
+                Add zone
+              </Button>
+              {!!(data as any).storeZones?.length && (
+                <Button size="sm" variant="outline" onClick={importStoreZones}>
+                  Import store zones
+                </Button>
+              )}
+            </div>
           </Card>
 
           <Card title="SEO">
