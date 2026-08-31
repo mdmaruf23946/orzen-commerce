@@ -240,7 +240,7 @@ export const createLandingPage = createServerFn({ method: "POST" })
           storeName: store.name,
           reviews,
           hasRealReviews: reviews.length > 0,
-        });
+        }, data.contentLang ?? "en");
         if (generated) {
           content = generated;
           seo = seoFromContent(generated, title, store.name);
