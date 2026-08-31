@@ -386,6 +386,7 @@ export function normalizeContent(raw: unknown): LandingContent {
         location: String(r?.location ?? ""),
         rating: Number(r?.rating ?? 5),
         text: String(r?.text ?? ""),
+        photo: String(r?.photo ?? ""),
       })),
     },
     order: {
@@ -397,6 +398,21 @@ export function normalizeContent(raw: unknown): LandingContent {
       text: String(footer.text ?? ""),
       contactText: String(footer.contactText ?? contact.title ?? ""),
       copyright: String(footer.copyright ?? ""),
+      logo: String(footer.logo ?? ""),
+      storeName: String(footer.storeName ?? ""),
+      phone: String(footer.phone ?? contact.phone ?? ""),
+      email: String(footer.email ?? contact.email ?? ""),
+      address: String(footer.address ?? contact.address ?? ""),
+      hours: String(footer.hours ?? contact.hours ?? ""),
+      facebook: String(footer.facebook ?? contact.facebook ?? ""),
+      instagram: String(footer.instagram ?? contact.instagram ?? ""),
+      youtube: String(footer.youtube ?? contact.youtube ?? ""),
+      tiktok: String(footer.tiktok ?? contact.tiktok ?? ""),
+      whatsapp: String(footer.whatsapp ?? contact.whatsapp ?? ""),
+      links: (Array.isArray(footer.links) ? footer.links : []).map((l: any) => ({
+        label: String(l?.label ?? ""),
+        url: String(l?.url ?? ""),
+      })),
     },
   };
 }
