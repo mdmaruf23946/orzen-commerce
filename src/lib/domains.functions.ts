@@ -87,12 +87,28 @@ export const listMyDomains = createServerFn({ method: "GET" })
       .select("*")
       .eq("store_id", store.id)
       .order("created_at", { ascending: false });
+    const { subdomainAutomationConfigured } = await import("@/lib/cloudflare-pages.server");
     return {
       store,
       settings,
       autoSsl: cloudflareConfigured(),
+      autoSubdomain: subdomainAutomationConfigured(),
       domains: (data ?? []) as any[],
     };
+  });
+
+/**
+ * Attach (or re-attach) this store's subdomain to Cloudflare: proxied DNS
+ * record + Pages custom domain, so <slug>.<root> serves the storefront.
+ */
+export const provisionMySubdomain = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const store = await requireMyStore(context.supabase, context.userId);
+    const settings = await platformDomainSettings(context.supabase);
+    const host = `${store.slug}.${settings.rootDomain}`;
+    const { ensureSubdomainAttached } = await import("@/lib/cloudflare-pages.server");
+    return await ensureSubdomainAttached(host);
   });
 
 const slugSchema = z
@@ -135,6 +151,16 @@ export const updateMySubdomain = createServerFn({ method: "POST" })
 
     const { error } = await supabase.from("stores").update({ slug: data.slug }).eq("id", store.id);
     if (error) throw new Error(error.message);
+
+    // Keep Cloudflare in sync: attach the new host, drop the old one.
+    try {
+      const settings = await platformDomainSettings(supabase);
+      const { ensureSubdomainAttached, detachSubdomain } = await import("@/lib/cloudflare-pages.server");
+      await ensureSubdomainAttached(`${data.slug}.${settings.rootDomain}`);
+      await detachSubdomain(`${store.slug}.${settings.rootDomain}`);
+    } catch {
+      // Non-fatal — merchant can retry with "Reconnect".
+    }
     return { ok: true, slug: data.slug, changed: true, previous: store.slug };
   });
 

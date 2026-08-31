@@ -23,7 +23,7 @@ import {
   updateMySubdomain,
   checkSubdomainAvailable,
   checkDnsResolution,
-
+  provisionMySubdomain,
 } from "@/lib/domains.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -130,6 +130,8 @@ function Page() {
   const saveSlugFn = useServerFn(updateMySubdomain);
   const slugCheckFn = useServerFn(checkSubdomainAvailable);
   const dnsFn = useServerFn(checkDnsResolution);
+  const provisionFn = useServerFn(provisionMySubdomain);
+  const [provisioning, setProvisioning] = useState(false);
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["admin", "domains"], queryFn: () => listFn() });
 
@@ -218,6 +220,29 @@ function Page() {
   const settings = data.settings;
   const rootDomain = settings.rootDomain;
   const subdomainUrl = `https://${data.store.slug}.${rootDomain}`;
+
+  async function reconnectSubdomain() {
+    setProvisioning(true);
+    try {
+      const r = await provisionFn();
+      if (r.ok) {
+        toast.success(
+          r.status && r.status !== "active"
+            ? "Subdomain connected — Cloudflare is issuing the certificate (a few minutes)."
+            : "Subdomain is connected and live.",
+        );
+      } else if (r.reason === "not_configured") {
+        toast.error("Automatic subdomain setup is not configured on the platform yet.");
+      } else {
+        toast.error(r.error ?? "Could not connect the subdomain");
+      }
+      qc.invalidateQueries({ queryKey: ["admin", "domains"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setProvisioning(false);
+    }
+  }
 
   async function saveSlug() {
     setSavingSlug(true);
@@ -342,13 +367,29 @@ function Page() {
           <CopyBtn v={subdomainUrl} />
         </div>
 
+        {(data as any).autoSubdomain && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" variant="outline" onClick={reconnectSubdomain} disabled={provisioning}>
+              {provisioning ? (
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-1 h-3.5 w-3.5" />
+              )}
+              Reconnect subdomain
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Re-links this address with the hosting network if it is not loading.
+            </span>
+          </div>
+        )}
+
         {dns && !dns.hostResolves && (
           <div className="flex items-start gap-2 rounded-md bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span className="min-w-0 break-words">
-              এই সাবডোমেইনটি এখনো DNS-এ রিজলভ করছে না — প্ল্যাটফর্মে wildcard
-              (<code>*.{rootDomain}</code>) সেটআপ না থাকলে সাবডোমেইন লিংক কাজ করবে না।
-              প্ল্যাটফর্ম অ্যাডমিনকে জানান; আপনার স্টোর ততক্ষণ কাস্টম ডোমেইনে চালু রাখতে পারেন।
+              এই সাবডোমেইনটি এখনো লাইভ হয়নি। উপরের “Reconnect subdomain” চাপুন —
+              প্ল্যাটফর্মে Cloudflare API সেটআপ থাকলে এটি সাথে সাথে DNS + হোস্টিং-এ
+              যুক্ত হয়ে যাবে (সার্টিফিকেট ইস্যু হতে কয়েক মিনিট লাগতে পারে)।
             </span>
           </div>
         )}

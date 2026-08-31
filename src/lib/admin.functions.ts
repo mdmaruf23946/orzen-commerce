@@ -238,8 +238,11 @@ export const createMyStoreWithSlug = createServerFn({ method: "POST" })
     } catch {
       // Non-fatal
     }
+    // Make <slug>.<root> live on Cloudflare right away.
+    await attachStoreSubdomain(supabase, data.slug);
     return created;
   });
+
 
 export const updateMyStore = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
