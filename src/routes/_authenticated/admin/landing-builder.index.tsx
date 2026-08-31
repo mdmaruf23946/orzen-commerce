@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
-  Copy, ExternalLink, Eye, LayoutTemplate, Loader2, Pencil, Plus, Search, Trash2,
+  Check, Copy, ExternalLink, Eye, LayoutTemplate, Loader2, Pencil, Plus, Search, Sparkles, Trash2,
 } from "lucide-react";
 import {
   createLandingPage,
