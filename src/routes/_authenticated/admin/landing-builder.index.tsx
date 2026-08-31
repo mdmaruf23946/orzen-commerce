@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
-  Copy, ExternalLink, Eye, LayoutTemplate, Loader2, Pencil, Plus, Search, Trash2,
+  Check, Copy, ExternalLink, Eye, LayoutTemplate, Loader2, Pencil, Plus, Search, Sparkles, Trash2,
 } from "lucide-react";
 import {
   createLandingPage,
@@ -183,13 +183,21 @@ function LandingPagesList() {
   );
 }
 
+const AI_STEPS = [
+  "Creating your landing page...",
+  "AI is preparing your product content...",
+  "Building your landing page...",
+  "Finalizing...",
+];
+
 function CreateDialog() {
   const productsFn = useServerFn(listLandingProducts);
   const createFn = useServerFn(createLandingPage);
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
-  const [busy, setBusy] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [step, setStep] = useState(-1);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["lp-builder-products"],
@@ -201,60 +209,105 @@ function CreateDialog() {
     p.name.toLowerCase().includes(q.trim().toLowerCase()),
   );
 
-  async function create(productId: string) {
-    setBusy(productId);
+  async function create() {
+    if (!selected) return;
+    setStep(0);
+    const timers = [
+      setTimeout(() => setStep(1), 900),
+      setTimeout(() => setStep(2), 4000),
+      setTimeout(() => setStep(3), 9000),
+    ];
     try {
-      const created = (await createFn({ data: { productId } })) as { id: string };
+      const created = (await createFn({ data: { productId: selected, useAi: true } })) as { id: string };
       toast.success("Landing page generated");
       setOpen(false);
       navigate({ to: "/admin/landing-builder/$id", params: { id: created.id } });
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
-      setBusy(null);
+      timers.forEach(clearTimeout);
+      setStep(-1);
+    }
+  }
+
+  function change(next: boolean) {
+    if (step >= 0) return;
+    setOpen(next);
+    if (!next) {
+      setSelected(null);
+      setQ("");
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={change}>
       <DialogTrigger asChild>
         <Button size="sm"><Plus className="mr-1 h-4 w-4" /> Create Landing Page</Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle>Select a product</DialogTitle></DialogHeader>
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-8" placeholder="Search products…" value={q} onChange={(e) => setQ(e.target.value)} />
-        </div>
-        <div className="max-h-[50vh] space-y-1 overflow-y-auto">
-          {isLoading ? (
-            <div className="p-6 text-center text-sm text-muted-foreground">Loading products…</div>
-          ) : filtered.length === 0 ? (
-            <div className="p-6 text-center text-sm text-muted-foreground">No physical products found.</div>
-          ) : (
-            filtered.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                disabled={busy !== null}
-                onClick={() => create(p.id)}
-                className="flex w-full items-center gap-3 rounded-lg border p-2 text-left hover:bg-accent disabled:opacity-60"
-              >
-                {p.primary_image_url ? (
-                  <img src={lpImage(p.primary_image_url)} alt={p.name} className="h-10 w-10 rounded object-cover" />
-                ) : (
-                  <div className="h-10 w-10 rounded bg-muted" />
-                )}
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">{p.name}</div>
-                  <div className="text-xs text-muted-foreground">৳{p.price} · stock {p.stock ?? 0}</div>
-                </div>
-                {busy === p.id && <Loader2 className="h-4 w-4 animate-spin" />}
-              </button>
-            ))
-          )}
-        </div>
+
+        {step >= 0 ? (
+          <div className="space-y-4 py-8 text-center">
+            <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+            <div className="text-sm font-medium">{AI_STEPS[Math.min(step, AI_STEPS.length - 1)]}</div>
+            <div className="mx-auto flex max-w-[220px] gap-1.5">
+              {AI_STEPS.map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-1 flex-1 rounded-full transition-colors ${i <= step ? "bg-primary" : "bg-muted"}`}
+                />
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              This takes a few seconds. You can edit everything afterwards.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input className="pl-8" placeholder="Search products…" value={q} onChange={(e) => setQ(e.target.value)} />
+            </div>
+            <div className="max-h-[45vh] space-y-1 overflow-y-auto">
+              {isLoading ? (
+                <div className="p-6 text-center text-sm text-muted-foreground">Loading products…</div>
+              ) : filtered.length === 0 ? (
+                <div className="p-6 text-center text-sm text-muted-foreground">No physical products found.</div>
+              ) : (
+                filtered.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setSelected(p.id)}
+                    className={`flex w-full items-center gap-3 rounded-lg border p-2 text-left transition-colors hover:bg-accent ${
+                      selected === p.id ? "border-primary bg-accent" : ""
+                    }`}
+                  >
+                    {p.primary_image_url ? (
+                      <img src={lpImage(p.primary_image_url)} alt={p.name} className="h-10 w-10 rounded object-cover" />
+                    ) : (
+                      <div className="h-10 w-10 rounded bg-muted" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium">{p.name}</div>
+                      <div className="text-xs text-muted-foreground">৳{p.price} · stock {p.stock ?? 0}</div>
+                    </div>
+                    {selected === p.id && <Check className="h-4 w-4 shrink-0 text-primary" />}
+                  </button>
+                ))
+              )}
+            </div>
+            <Button className="w-full" disabled={!selected} onClick={create}>
+              <Sparkles className="mr-1.5 h-4 w-4" /> Create Landing Page
+            </Button>
+            <p className="-mt-1 text-center text-[11px] text-muted-foreground">
+              AI will write the page content from this product. You can edit it before publishing.
+            </p>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
 }
+
