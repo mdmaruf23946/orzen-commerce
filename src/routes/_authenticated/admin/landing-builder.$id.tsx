@@ -22,6 +22,7 @@ import {
   PAYMENT_METHODS,
   normalizeContent,
   normalizeDeliveryZones,
+  lpImage,
   slugify,
   type LandingContent,
   type LandingDeliveryZone,
@@ -46,6 +47,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ImageUploader } from "@/components/admin/ImageUploader";
 
 export const Route = createFileRoute("/_authenticated/admin/landing-builder/$id")({
   head: () => ({
@@ -80,7 +82,7 @@ function LandingEditor() {
   const [content, setContent] = useState<LandingContent | null>(null);
   const [theme, setTheme] = useState<LandingTheme | null>(null);
   const [form, setForm] = useState<LandingFormConfig | null>(null);
-  const [seo, setSeo] = useState<{ title?: string; description?: string; image?: string }>({});
+  const [seo, setSeo] = useState<{ title?: string; description?: string; image?: string; icon?: string }>({});
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
@@ -94,7 +96,7 @@ function LandingEditor() {
     setContent(normalizeContent(p.content));
     setTheme(p.theme as LandingTheme);
     setForm(p.form_config as LandingFormConfig);
-    setSeo((p.seo ?? {}) as { title?: string; description?: string; image?: string });
+    setSeo((p.seo ?? {}) as { title?: string; description?: string; image?: string; icon?: string });
   }, [data]);
 
   if (isLoading || !data || !content || !theme || !form) {
@@ -538,6 +540,37 @@ function LandingEditor() {
             <Field label="Meta title" value={seo.title ?? ""} onChange={(v) => setSeo({ ...seo, title: v })} />
             <Area label="Meta description" value={seo.description ?? ""} onChange={(v) => setSeo({ ...seo, description: v })} />
             <Field label="Social share image URL" value={seo.image ?? ""} onChange={(v) => setSeo({ ...seo, image: v })} />
+          </Card>
+
+          <Card title="Page icon">
+            <p className="text-xs text-muted-foreground">
+              Used as the browser tab favicon and app (PWA) icon for this landing page only. It is never shown in the
+              header or footer. Square PNG or WebP, 512×512 recommended.
+            </p>
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border p-3">
+              <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-md border bg-muted">
+                {seo.icon ? (
+                  <img src={lpImage(seo.icon)} alt="" className="max-h-full max-w-full object-contain p-1" />
+                ) : (
+                  <span className="text-[10px] text-muted-foreground">None</span>
+                )}
+              </div>
+              <div className="min-w-0 flex-1 space-y-2">
+                <ImageUploader
+                  storeId={storeInfo?.id ?? ""}
+                  folder={storeInfo?.id ? `${storeInfo.id}/landing` : undefined}
+                  value={seo.icon || null}
+                  onChange={(p) => setSeo({ ...seo, icon: p ?? "" })}
+                  accept="image/png,image/webp,image/jpeg"
+                  label={seo.icon ? "Change icon" : "Upload icon"}
+                />
+                {seo.icon && (
+                  <Button size="sm" variant="ghost" onClick={() => setSeo({ ...seo, icon: "" })}>
+                    Remove
+                  </Button>
+                )}
+              </div>
+            </div>
           </Card>
 
           <Button onClick={save} disabled={saving} className="w-full sm:w-auto">
