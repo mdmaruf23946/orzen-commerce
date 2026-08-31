@@ -149,6 +149,7 @@ export async function seedStoreFromTemplate(supabase: SB, storeId: string, tpl: 
 
   const bannerList: any[] = Array.isArray(tpl.banners) ? tpl.banners : [];
   if (bannerList.length) {
+    const allowed = new Set(["hero", "secondary", "promotional", "category"]);
     const rows = bannerList
       .filter((b) => typeof b?.image_url === "string" && b.image_url)
       .map((b, i) => ({
@@ -156,12 +157,16 @@ export async function seedStoreFromTemplate(supabase: SB, storeId: string, tpl: 
         image_url: String(b.image_url),
         link: b.link_url ?? b.link ?? null,
         position: Number.isFinite(Number(b.sort_order)) ? Number(b.sort_order) : i,
+        display_position: allowed.has(String(b.display_position)) ? String(b.display_position) : "hero",
+        sort_order: Number.isFinite(Number(b.sort_order)) ? Number(b.sort_order) : i,
+        is_active: b.is_active === false ? false : true,
       }));
     if (rows.length) {
       const { error } = await supabase.from("banners").insert(rows);
       if (error) throw new Error(error.message);
     }
   }
+
 }
 
 /**
