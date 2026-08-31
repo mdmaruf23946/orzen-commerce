@@ -190,9 +190,19 @@ function manifestSpec(manifest: LandingFieldManifest): string {
  * template content. Never throws for content reasons — the caller keeps the
  * template content when this returns `null`.
  */
+export type LandingContentLang = "en" | "bn" | "mixed";
+
+const LANG_RULES: Record<LandingContentLang, string> = {
+  en: "- Write ALL generated copy in natural, professional English.",
+  bn: "- Write ALL generated copy in natural, professional Bengali (বাংলা). Do not write English sentences.",
+  mixed:
+    "- Write ALL generated copy in natural, professional Bengali (বাংলা), keeping common English commerce/tech terms in English where Bangladeshi shoppers normally use them (e.g. delivery, warranty, order).",
+};
+
 export async function generateLandingCopy(
   base: LandingContent,
   facts: LandingAiFacts,
+  contentLang: LandingContentLang = "en",
 ): Promise<LandingContent | null> {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) return null;
