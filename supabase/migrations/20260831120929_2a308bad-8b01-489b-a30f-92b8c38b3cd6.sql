@@ -1,0 +1,5 @@
+CREATE POLICY "Owners can upload platform-showcase assets" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'store-assets' AND (storage.foldername(name))[1] = 'platform-showcase' AND EXISTS (SELECT 1 FROM public.user_roles ur WHERE ur.user_id = auth.uid() AND ur.role = 'owner'));
+
+CREATE POLICY "Owners can update platform-showcase assets" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'store-assets' AND (storage.foldername(name))[1] = 'platform-showcase' AND EXISTS (SELECT 1 FROM public.user_roles ur WHERE ur.user_id = auth.uid() AND ur.role = 'owner'));
+
+CREATE POLICY "Owners can delete platform-showcase assets" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'store-assets' AND (storage.foldername(name))[1] = 'platform-showcase' AND EXISTS (SELECT 1 FROM public.user_roles ur WHERE ur.user_id = auth.uid() AND ur.role = 'owner'));
