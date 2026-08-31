@@ -56,8 +56,8 @@ type Plan = {
   feature_summary?: string[] | null;
 };
 
-const TIER_ORDER: Array<"free" | "basic" | "business" | "custom"> = ["free", "basic", "business", "custom"];
 const TIER_NAME: Record<string, string> = {
+
   free: "Free Plan",
   basic: "Basic Plan",
   business: "Business Plan",
