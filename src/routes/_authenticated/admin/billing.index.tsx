@@ -376,7 +376,7 @@ function BillingPage() {
                   </div>
                 )}
 
-                <div className="mt-0.5 truncate text-sm font-semibold sm:text-base">{TIER_NAME[tier]}</div>
+                <div className="mt-0.5 truncate text-sm font-semibold sm:text-base">{p.name}</div>
                 {p.description && <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-2 sm:text-xs">{p.description}</p>}
 
                 <div className="mt-2 sm:mt-3">
