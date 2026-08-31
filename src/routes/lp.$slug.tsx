@@ -130,6 +130,11 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
       style={style}
       className={dark ? "min-h-screen bg-neutral-950 text-neutral-100" : "min-h-screen bg-white text-neutral-900"}
     >
+      {preview && (
+        <div className="bg-amber-500 px-4 py-1.5 text-center text-xs font-semibold text-black">
+          Preview mode — only you can see this page until it is published.
+        </div>
+      )}
       {content.hero?.enabled !== false && (
         <section className="px-4 pb-10 pt-8 sm:pt-14">
           <div className="mx-auto grid max-w-5xl items-center gap-8 md:grid-cols-2">
