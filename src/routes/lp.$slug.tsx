@@ -69,7 +69,41 @@ function money(n: number) {
 }
 
 function LandingPageView() {
-  const page = Route.useLoaderData() as PublicLandingPage;
+  const loaded = Route.useLoaderData() as PublicLandingPage | null;
+  const { preview } = Route.useSearch();
+  const previewFn = useServerFn(getLandingPreviewBySlug);
+  const { slug } = Route.useParams();
+
+  const { data: previewPage, isLoading } = useQuery({
+    queryKey: ["lp-preview", slug],
+    queryFn: () => previewFn({ data: { slug } }) as Promise<PublicLandingPage | null>,
+    enabled: Boolean(preview) && !loaded,
+    staleTime: 0,
+  });
+
+  const page = loaded ?? (previewPage as PublicLandingPage | null);
+
+  if (!page) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-8 text-center">
+        {isLoading ? (
+          <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
+        ) : (
+          <div>
+            <div className="text-2xl font-semibold">Page not found</div>
+            <p className="mt-2 text-sm text-neutral-500">
+              This landing page is not available. Sign in as the store owner to preview drafts.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return <LandingPageBody page={page} preview={Boolean(preview)} />;
+}
+
+function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: boolean }) {
   const content = page.content as LandingContent;
   const theme = (page.theme ?? {}) as LandingTheme;
   const form = (page.form_config ?? {}) as LandingFormConfig;
