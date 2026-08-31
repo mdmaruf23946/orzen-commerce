@@ -114,6 +114,7 @@ export const getMyStore = createServerFn({ method: "GET" })
           // Non-fatal: store still exists; owner can Reset to Default later.
         }
       }
+      await attachStoreSubdomain(supabase, slug);
       store = created;
     }
     return store;
