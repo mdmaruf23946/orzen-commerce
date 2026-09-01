@@ -511,13 +511,12 @@ export function normalizeContent(raw: unknown): LandingContent {
     ? c.sectionOrder.map(String).filter((k: string) => !!sectionSpec(k))
     : [];
   const order = [...new Set(storedOrder)];
-  for (const key of DEFAULT_SECTION_ORDER) if (!order.includes(key)) order.push(key);
-  order.sort((a, b) => {
-    const ai = storedOrder.indexOf(a);
-    const bi = storedOrder.indexOf(b);
-    if (ai !== -1 && bi !== -1) return ai - bi;
-    return sectionRank(a) - sectionRank(b);
-  });
+  for (const key of DEFAULT_SECTION_ORDER) {
+    if (order.includes(key)) continue;
+    const at = order.findIndex((k) => sectionRank(k) > sectionRank(key));
+    if (at === -1) order.push(key);
+    else order.splice(at, 0, key);
+  }
   out.sectionOrder = order;
   for (const key of REQUIRED_SECTION_KEYS) out.sectionEnabled[key] = true;
 
