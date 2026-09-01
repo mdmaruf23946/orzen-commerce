@@ -15,6 +15,7 @@ import {
   type LPReview,
   type SourceProduct,
 } from "@/lib/landing-builder";
+import { SECTION_REGISTRY, sectionRank, type LPFieldSpec } from "@/lib/landing-sections";
 
 // ---------- Field manifest ----------
 
@@ -127,8 +128,8 @@ function registryLists(): ListSpec[] {
         maxItems: f.maxItems,
         guidance: f.ai ?? `${f.itemLabel} entries for the ${sec.name} section.`,
         fields: f.fields
-          .filter((x) => x.type !== "list" && x.type !== "image" && x.ai)
-          .map((x) => ({ path: x.key, label: x.label, max: (x as any).max ?? 200, guidance: x.ai! })),
+          .filter((x: LPFieldSpec) => x.type !== "list" && x.type !== "image" && x.ai)
+          .map((x: LPFieldSpec) => ({ path: x.key, label: x.label, max: (x as any).max ?? 200, guidance: x.ai! })),
       });
     }
   }
