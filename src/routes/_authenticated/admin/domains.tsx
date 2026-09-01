@@ -441,9 +441,10 @@ function Page() {
                 ? Math.max(0, Math.ceil((15_000 - (now - new Date(d.last_checked_at).getTime())) / 1000))
                 : 0;
               const live = d.status === "active" || d.ssl_status === "issued";
-              const canBePrimary = data.autoSsl
-                ? live
-                : d.status === "verified" || d.status === "active";
+              const canBePrimary =
+                !d.landing_page_id &&
+                (data.autoSsl ? live : d.status === "verified" || d.status === "active");
+
               return (
                 <div key={d.id} className="space-y-3 rounded-lg border bg-background p-3">
                   <div className="flex flex-wrap items-center gap-2">
