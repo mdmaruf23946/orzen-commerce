@@ -422,9 +422,10 @@ function LandingEditor() {
           <DomainsPanel
             pageId={id}
             rootDomain={data.rootDomain}
-            dnsTarget={data.dnsTarget}
-            apexIp={data.apexIp}
             domains={data.domains as any[]}
+            attachedDomains={(data as any).attachedDomains ?? []}
+            autoSubdomain={Boolean((data as any).autoSubdomain)}
+
             onChanged={() => qc.invalidateQueries({ queryKey: ["lp-builder", id] })}
           />
         </TabsContent>
