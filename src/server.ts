@@ -55,7 +55,8 @@ export default {
         ...(typeof process !== "undefined" ? (process.env as Record<string, string | undefined>) : {}),
         ...((env ?? {}) as Record<string, string | undefined>),
       };
-      const { getRoutingHosts, isRewritablePath, resolveHostTarget } = await getTenantHost();
+      const { getRoutingHosts, isRewritablePath, resolveHostTarget, landingPublicHost } =
+        await getTenantHost();
       const hosts = await getRoutingHosts(envRecord);
       const rootDomain = hosts.rootDomain;
 
@@ -78,6 +79,21 @@ export default {
           target.hostname = `${m[1].toLowerCase()}.${rootDomain}`;
           target.pathname = m[2] ?? "/";
           return Response.redirect(target.toString(), 301);
+        }
+
+        // Same rule for landing pages: a landing page must open on its own host
+        // (custom domain or <slug>.<root>), never inside the platform PWA scope.
+        const lp = url.pathname.match(/^\/lp\/([a-z0-9-]+)\/?$/i);
+        if (lp && !url.searchParams.has("preview")) {
+          const host = await landingPublicHost(lp[1], envRecord);
+          if (host && host !== url.hostname) {
+            const target = new URL(url.toString());
+            target.protocol = "https:";
+            target.port = "";
+            target.hostname = host;
+            target.pathname = "/";
+            return Response.redirect(target.toString(), 301);
+          }
         }
       }
 

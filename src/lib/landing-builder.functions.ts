@@ -59,6 +59,24 @@ async function uniqueSlug(supabase: any, base: string) {
   throw new Error("Could not generate a unique URL");
 }
 
+/**
+ * Canonical public URL of a landing page. A landing page must never be linked
+ * as a path on the platform site (orzen.top/lp/<slug>): that URL is inside the
+ * platform PWA scope, so on a device with the ORZEN app installed the page
+ * opens *inside* the ORZEN app (ORZEN splash + icon). Its own host keeps the
+ * page a separate, independently installable app.
+ */
+function landingPublicUrl(customDomains: any[], subdomains: any[]): string | null {
+  const custom = (customDomains ?? [])
+    .filter((d) => ["verified", "active"].includes(String(d.status)))
+    .sort((a, b) => Number(Boolean(b.is_primary)) - Number(Boolean(a.is_primary)))[0];
+  if (custom) return `https://${String(custom.hostname).toLowerCase()}`;
+  const sub = (subdomains ?? []).find(
+    (d) => d.kind === "subdomain" || ["verified", "active"].includes(String(d.status)),
+  );
+  return sub ? `https://${String(sub.hostname).toLowerCase()}` : null;
+}
+
 // ---------- Reads ----------
 
 export const listLandingPages = createServerFn({ method: "GET" })
@@ -75,11 +93,17 @@ export const listLandingPages = createServerFn({ method: "GET" })
     const ids = (pages ?? []).map((p: any) => p.id);
     const productIds = (pages ?? []).map((p: any) => p.product_id).filter(Boolean);
 
-    const [domainsRes, productsRes, hosts] = await Promise.all([
+    const [domainsRes, customRes, productsRes, hosts] = await Promise.all([
       ids.length
         ? context.supabase
             .from("landing_page_domains")
             .select("id,landing_page_id,hostname,kind,status")
+            .in("landing_page_id", ids)
+        : Promise.resolve({ data: [] }),
+      ids.length
+        ? context.supabase
+            .from("store_domains")
+            .select("id,landing_page_id,hostname,status,is_primary")
             .in("landing_page_id", ids)
         : Promise.resolve({ data: [] }),
       productIds.length
@@ -92,6 +116,10 @@ export const listLandingPages = createServerFn({ method: "GET" })
     for (const d of (domainsRes.data ?? []) as any[]) {
       byPage.set(d.landing_page_id, [...(byPage.get(d.landing_page_id) ?? []), d]);
     }
+    const customByPage = new Map<string, any[]>();
+    for (const d of (customRes.data ?? []) as any[]) {
+      customByPage.set(d.landing_page_id, [...(customByPage.get(d.landing_page_id) ?? []), d]);
+    }
     const products = new Map((productsRes.data ?? []).map((p: any) => [p.id, p]));
 
     return {
@@ -100,6 +128,8 @@ export const listLandingPages = createServerFn({ method: "GET" })
         ...p,
         product: products.get(p.product_id) ?? null,
         domains: byPage.get(p.id) ?? [],
+        customDomains: customByPage.get(p.id) ?? [],
+        publicUrl: landingPublicUrl(customByPage.get(p.id) ?? [], byPage.get(p.id) ?? []),
       })),
     };
   });
@@ -153,6 +183,7 @@ export const getLandingPage = createServerFn({ method: "GET" })
       domains: domainsRes.data ?? [],
       attachedDomains: attached ?? [],
       autoSubdomain: subdomainAutomationConfigured(),
+      publicUrl: landingPublicUrl((attached ?? []) as any[], (domainsRes.data ?? []) as any[]),
       rootDomain: hosts.rootDomain,
       dnsTarget: hosts.dnsTarget,
       apexIp: hosts.apexIp,
@@ -395,8 +426,51 @@ export const setLandingStatus = createServerFn({ method: "POST" })
       } as never)
       .eq("id", page.id);
     if (error) throw new Error(error.message);
+
+    // A published page must be reachable on its own host so it never opens
+    // inside the platform app. Register <slug>.<root> when nothing is attached.
+    if (data.status === "published") {
+      await ensureLandingHost(context.supabase, store.id, page).catch(() => null);
+    }
     return { ok: true };
   });
+
+/** Give a published page its own hostname when it has none yet. */
+async function ensureLandingHost(supabase: any, storeId: string, page: any) {
+  const [{ data: sub }, { data: custom }] = await Promise.all([
+    supabase.from("landing_page_domains").select("id").eq("landing_page_id", page.id).maybeSingle(),
+    supabase.from("store_domains").select("id").eq("landing_page_id", page.id).maybeSingle(),
+  ]);
+  if (sub || custom) return;
+
+  const { rootDomain } = await platformHosts(supabase);
+  let label = slugify(page.slug);
+  if (!LABEL_RE.test(label) || RESERVED_LP_SLUGS.has(label)) return;
+
+  const [{ data: storeClash }, { data: hostClash }] = await Promise.all([
+    supabase.from("stores").select("id").eq("slug", label).maybeSingle(),
+    supabase.from("landing_page_domains").select("id").eq("hostname", `${label}.${rootDomain}`).maybeSingle(),
+  ]);
+  if (storeClash || hostClash) {
+    label = `${label}-${Math.random().toString(36).slice(2, 6)}`;
+  }
+  const hostname = `${label}.${rootDomain}`;
+  const cf = await attachSubdomainToCloudflare(hostname).catch((e) => ({
+    status: "error",
+    error: (e as Error).message,
+  }));
+  await supabase.from("landing_page_domains").insert({
+    landing_page_id: page.id,
+    store_id: storeId,
+    hostname,
+    kind: "subdomain",
+    status: cf.status,
+    ssl_status: cf.status === "active" ? "issued" : "issuing",
+    last_error: cf.error ?? null,
+    last_checked_at: new Date().toISOString(),
+    verified_at: cf.status === "active" ? new Date().toISOString() : null,
+  } as never);
+}
 
 export const duplicateLandingPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
