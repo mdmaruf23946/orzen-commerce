@@ -459,7 +459,13 @@ function Page() {
                         Primary
                       </span>
                     )}
+                    {d.landing_page && (
+                      <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs text-violet-800 dark:bg-violet-900/30 dark:text-violet-200">
+                        Landing page: {d.landing_page.title || d.landing_page.slug}
+                      </span>
+                    )}
                   </div>
+
 
                   {d.status === "verified" && !live && (
                     <div className="rounded-md bg-blue-50 p-2 text-xs text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
