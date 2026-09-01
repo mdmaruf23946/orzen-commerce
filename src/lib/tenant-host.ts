@@ -216,3 +216,22 @@ export async function resolveHostTarget(
   hostCache.set(clean, { target, at: Date.now() });
   return target;
 }
+
+const landingHostCache = new Map<string, { host: string | null; at: number }>();
+
+/**
+ * Public hostname a published landing page lives on (custom domain or platform
+ * subdomain), or null when it only exists under /lp/<slug> on the platform.
+ */
+export async function landingPublicHost(
+  slug: string,
+  env: Record<string, string | undefined>,
+): Promise<string | null> {
+  const key = slug.toLowerCase();
+  const hit = landingHostCache.get(key);
+  if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.host;
+  const host = await rpc<string | null>("landing_public_host", { _slug: key }, env);
+  const value = typeof host === "string" && host ? host.toLowerCase() : null;
+  landingHostCache.set(key, { host: value, at: Date.now() });
+  return value;
+}
