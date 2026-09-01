@@ -384,7 +384,7 @@ export function normalizeContent(raw: unknown): LandingContent {
       ? legacyBenefits.items
       : [];
 
-  return {
+  const out: LandingContent = {
     header: {
       storeName: String(c.header?.storeName ?? ""),
       buttonText: String(c.header?.buttonText ?? hero.ctaText ?? "অর্ডার করুন"),
@@ -482,7 +482,46 @@ export function normalizeContent(raw: unknown): LandingContent {
         url: String(l?.url ?? ""),
       })),
     },
+    sectionOrder: [],
+    sectionEnabled: {},
+    blocks: {},
   };
+
+  // ---- section order / visibility / generic block content ----
+  const storedBlocks = (c.blocks && typeof c.blocks === "object" ? c.blocks : {}) as Record<string, any>;
+  const blocks: Record<string, Record<string, any>> = {};
+  for (const [key, value] of Object.entries(storedBlocks)) {
+    if (sectionSpec(key) && value && typeof value === "object") blocks[key] = { ...value };
+  }
+  out.blocks = blocks;
+
+  const storedEnabled = (c.sectionEnabled && typeof c.sectionEnabled === "object" ? c.sectionEnabled : {}) as Record<string, unknown>;
+  const enabled: Record<string, boolean> = {};
+  for (const [key, value] of Object.entries(storedEnabled)) {
+    if (sectionSpec(key)) enabled[key] = Boolean(value);
+  }
+  // The four builtin optional sections keep their own flag as the source of truth.
+  enabled["product"] = out.product.enabled;
+  enabled["description"] = out.description.enabled;
+  enabled["faq"] = out.faq.enabled;
+  enabled["reviews"] = out.reviews.enabled;
+  out.sectionEnabled = enabled;
+
+  const storedOrder: string[] = Array.isArray(c.sectionOrder)
+    ? c.sectionOrder.map(String).filter((k: string) => !!sectionSpec(k))
+    : [];
+  const order = [...new Set(storedOrder)];
+  for (const key of DEFAULT_SECTION_ORDER) if (!order.includes(key)) order.push(key);
+  order.sort((a, b) => {
+    const ai = storedOrder.indexOf(a);
+    const bi = storedOrder.indexOf(b);
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    return sectionRank(a) - sectionRank(b);
+  });
+  out.sectionOrder = order;
+  for (const key of REQUIRED_SECTION_KEYS) out.sectionEnabled[key] = true;
+
+  return out;
 }
 
 export function slugify(input: string): string {
