@@ -75,7 +75,14 @@ export type LandingContent = {
     whatsapp: string;
     links: LPLink[];
   };
+  /** Section keys in the order they appear on the published page. */
+  sectionOrder: string[];
+  /** Optional sections currently in use. Required sections are always on. */
+  sectionEnabled: Record<string, boolean>;
+  /** Content of the registry-driven (non-builtin) sections. */
+  blocks: Record<string, Record<string, unknown>>;
 };
+
 
 /** Store branding + contact defaults used by the landing page when the merchant leaves a field blank. */
 export type LandingStoreInfo = {
