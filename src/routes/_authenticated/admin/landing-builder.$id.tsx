@@ -5,8 +5,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Eye, Loader2, Monitor, Plus, RefreshCw, Save, Smartphone, Sparkles, Trash2,
+  ArrowLeft, Eye, Loader2, Plus, RefreshCw, Save, Sparkles, Trash2,
 } from "lucide-react";
+import { LandingPreviewFrame } from "@/components/admin/landing/LandingPreviewFrame";
 import {
   attachDomainToLandingPage,
   detachDomainFromLandingPage,
@@ -95,7 +96,6 @@ function LandingEditor() {
   const [seo, setSeo] = useState<{ title?: string; description?: string; image?: string; icon?: string }>({});
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [previewKey, setPreviewKey] = useState(0);
 
   useEffect(() => {
