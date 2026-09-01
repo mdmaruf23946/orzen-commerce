@@ -57,18 +57,27 @@ export function LandingBranding({
     link.href = `/api/public/lp-manifest/${slug}${onOwnHost ? "?root=1" : ""}`;
     document.head.appendChild(link);
 
-    let meta = document.querySelector<HTMLMetaElement>("meta[name='theme-color']");
-    if (!meta) {
-      meta = document.createElement("meta");
-      meta.name = "theme-color";
-      document.head.appendChild(meta);
-    }
-    meta.content = themeColor || "#0f172a";
+    const setMeta = (name: string, content: string) => {
+      let el = document.querySelector<HTMLMetaElement>(`meta[name='${name}']`);
+      if (!el) {
+        el = document.createElement("meta");
+        el.name = name;
+        document.head.appendChild(el);
+      }
+      el.content = content;
+    };
+
+    setMeta("theme-color", themeColor || "#0f172a");
+    // iOS uses these for the home-screen app name/appearance.
+    setMeta("apple-mobile-web-app-capable", "yes");
+    setMeta("apple-mobile-web-app-title", name);
+    setMeta("apple-mobile-web-app-status-bar-style", "default");
+    setMeta("mobile-web-app-capable", "yes");
 
     return () => {
       link.remove();
     };
-  }, [slug, icon, themeColor]);
+  }, [slug, name, icon, themeColor]);
 
   return <LandingInstallPrompt slug={slug} name={name} icon={icon} />;
 }
