@@ -424,7 +424,9 @@ function BillingPage() {
                   <LimitRow label="Orders / month" value={formatLimit(p.order_limit, undefined)} />
                   <LimitRow label="Storage" value={formatLimit(p.storage_mb, "MB")} />
 <LimitRow label="Staff" value={formatLimit(p.staff_limit, undefined)} />
-                  <LimitRow label="Landing Pages" value={formatLimit(p.landing_page_limit, undefined)} />
+                  {(isCustom || !!p.features?.landing_page_create) && (
+                    <LimitRow label="Landing Pages" value={formatLimit(p.landing_page_limit, undefined)} />
+                  )}
                 </ul>
 
                 {/* Summary bullets */}
