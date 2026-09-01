@@ -422,7 +422,8 @@ function BillingPage() {
                   <LimitRow label="Products" value={formatLimit(p.product_limit, undefined)} />
                   <LimitRow label="Orders / month" value={formatLimit(p.order_limit, undefined)} />
                   <LimitRow label="Storage" value={formatLimit(p.storage_mb, "MB")} />
-                  <LimitRow label="Staff" value={formatLimit(p.staff_limit, undefined)} />
+<LimitRow label="Staff" value={formatLimit(p.staff_limit, undefined)} />
+                  <LimitRow label="Landing Pages" value={formatLimit(p.landing_page_limit, undefined)} />
                 </ul>
 
                 {/* Summary bullets */}
@@ -537,7 +538,8 @@ function BillingPage() {
               <CompareLimitRow label="Products" plans={plans} accessor={(p) => formatLimit(p.product_limit)} />
               <CompareLimitRow label="Orders / month" plans={plans} accessor={(p) => formatLimit(p.order_limit)} />
               <CompareLimitRow label="Storage" plans={plans} accessor={(p) => formatLimit(p.storage_mb, "MB")} />
-              <CompareLimitRow label="Staff" plans={plans} accessor={(p) => formatLimit(p.staff_limit)} />
+<CompareLimitRow label="Staff" plans={plans} accessor={(p) => formatLimit(p.staff_limit)} />
+              <CompareLimitRow label="Landing Pages" plans={plans} accessor={(p) => formatLimit(p.landing_page_limit)} />
               {FEATURE_KEYS.map((k) => (
                 <tr key={k} className="border-b last:border-0">
                   <th className="sticky left-0 z-10 bg-card p-3 text-left font-medium">{FEATURE_LABELS[k]}</th>
@@ -576,7 +578,8 @@ function BillingPage() {
                   <MobileRow label="Products" value={formatLimit(p.product_limit)} />
                   <MobileRow label="Orders / month" value={formatLimit(p.order_limit)} />
                   <MobileRow label="Storage" value={formatLimit(p.storage_mb, "MB")} />
-                  <MobileRow label="Staff" value={formatLimit(p.staff_limit)} />
+<MobileRow label="Staff" value={formatLimit(p.staff_limit)} />
+                  <MobileRow label="Landing Pages" value={formatLimit(p.landing_page_limit)} />
                   {FEATURE_KEYS.map((k) => {
                     const on = isCustom ? true : !!p.features?.[k];
                     return (
