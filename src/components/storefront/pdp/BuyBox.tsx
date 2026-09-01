@@ -70,7 +70,7 @@ export function BuyBox({
         <div className="inline-flex items-center rounded-full border">
           <button
             type="button"
-            className="grid h-10 w-10 place-items-center"
+            className="sf-press grid h-10 w-10 place-items-center rounded-full hover:bg-sf-accent-soft hover:text-sf-accent"
             onClick={() => setQty(Math.max(1, qty - 1))}
             aria-label="Decrease"
           >
@@ -79,7 +79,7 @@ export function BuyBox({
           <span className="w-10 text-center text-sm font-semibold">{qty}</span>
           <button
             type="button"
-            className="grid h-10 w-10 place-items-center"
+            className="sf-press grid h-10 w-10 place-items-center rounded-full hover:bg-sf-accent-soft hover:text-sf-accent"
             onClick={() => setQty(stockless ? qty + 1 : Math.min(stock || 1, qty + 1))}
             aria-label="Increase"
           >
@@ -94,7 +94,7 @@ export function BuyBox({
           variant="outline"
           disabled={!inStock}
           onClick={onAdd}
-          className="h-12 border-2 border-sf-accent font-semibold text-sf-accent hover:bg-sf-accent/10 hover:text-sf-accent"
+          className="sf-press h-12 border-2 border-sf-accent font-semibold text-sf-accent hover:bg-sf-accent/10 hover:text-sf-accent"
         >
           {t("pdp.addToCart")}
         </Button>
@@ -102,7 +102,7 @@ export function BuyBox({
           type="button"
           disabled={!inStock}
           onClick={onBuy}
-          className="h-12 bg-sf-accent font-semibold text-white shadow-sm hover:bg-sf-accent-hover"
+          className="sf-press h-12 bg-sf-accent font-semibold text-white shadow-sm hover:bg-sf-accent-hover hover:shadow-[0_12px_26px_-14px_var(--sf-accent)]"
         >
           {t("pdp.buyNow")}
         </Button>
@@ -113,7 +113,7 @@ export function BuyBox({
           href={waHref}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-md bg-emerald-600 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
+          className="mt-3 flex h-12 w-full items-center justify-center gap-2 sf-press rounded-md bg-emerald-600 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 hover:shadow-lg"
         >
           <MessageCircle className="h-4 w-4" />
           Order via WhatsApp

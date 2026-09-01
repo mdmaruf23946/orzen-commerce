@@ -32,7 +32,7 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
     pathname === `${base}/account` && /[?&]tab=orders(?:&|$)/.test(searchStr ?? "");
 
   const itemCls = (active: boolean) =>
-    `relative flex h-16 flex-col items-center justify-center gap-1 text-[10px] font-semibold transition-colors ${
+    `sf-press relative flex h-16 flex-col items-center justify-center gap-1 text-[10px] font-semibold ${
       active ? "text-sf-accent" : "text-sf-muted"
     }`;
 
@@ -54,7 +54,7 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
             params={{ slug }}
             className={itemCls(pathname === `${base}/categories`)}
           >
-            <LayoutGrid className="h-5 w-5 text-sf-accent" />
+            <LayoutGrid className="h-5 w-5 text-sf-accent transition-transform duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-active:scale-90" />
             <span>{t("nav.categories")}</span>
           </Link>
         </li>
@@ -84,7 +84,7 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
             className="-mt-6 flex flex-col items-center gap-1"
           >
             <span
-              className={`grid h-14 w-14 place-items-center rounded-full border-4 border-white text-white shadow-[0_8px_20px_-6px_rgba(255,75,31,0.7)] transition-transform active:scale-95 ${
+              className={`grid h-14 w-14 place-items-center rounded-full border-4 border-white text-white shadow-[0_8px_20px_-6px_rgba(255,75,31,0.7)] transition-all duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-105 active:scale-95 ${
                 isHome ? "bg-sf-accent" : "bg-sf-ink"
               }`}
             >
@@ -109,7 +109,7 @@ export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string 
             <span className="relative">
               <Heart className="h-5 w-5 text-sf-accent" />
               {wish > 0 && (
-                <span className="absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-sf-accent px-1 text-[9px] font-bold text-sf-on-accent">
+                <span key={wish} className="absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center sf-animate-pop rounded-full bg-sf-accent px-1 text-[9px] font-bold text-sf-on-accent">
                   {wish > 99 ? "99+" : wish}
                 </span>
               )}

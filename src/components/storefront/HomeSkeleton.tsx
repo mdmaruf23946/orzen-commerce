@@ -2,7 +2,7 @@
  * layout (banner, category tiles, product grids) so the page never collapses
  * to an empty body while data is being fetched. */
 function Box({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded-2xl bg-sf-surface/70 ${className}`} />;
+  return <div className={`sf-shimmer rounded-2xl bg-sf-surface/70 ${className}`} />;
 }
 
 function ProductGridSkeleton({ count = 10 }: { count?: number }) {

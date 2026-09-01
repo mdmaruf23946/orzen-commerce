@@ -138,8 +138,8 @@ function ShopPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
-          {list.map((p: any) => (
-            <ProductCard key={p.id} slug={slug} p={p} />
+          {list.map((p: any, i: number) => (
+            <ProductCard key={p.id} slug={slug} p={p} index={i} />
           ))}
         </div>
       )}

@@ -59,7 +59,7 @@ function SideRotator({ items, delay }: { items: HeroBanner[]; delay: number }) {
       onMouseLeave={() => (paused.current = false)}
     >
       <div
-        className="flex h-full transition-transform duration-500 ease-out"
+        className="flex h-full transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
         style={{ transform: `translateX(-${idx * 100}%)` }}
       >
         {items.map((b) => (
@@ -70,7 +70,7 @@ function SideRotator({ items, delay }: { items: HeroBanner[]; delay: number }) {
                 alt=""
                 loading="lazy"
                 decoding="async"
-                className="h-full w-full select-none object-cover lg:object-contain"
+                className="h-full w-full select-none object-cover transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-[1.03] lg:object-contain"
               />
             </BannerLink>
           </div>
@@ -142,7 +142,7 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
         onMouseLeave={() => (paused.current = false)}
       >
         <div
-          className="flex h-full transition-transform duration-500 ease-out"
+          className="flex h-full transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
           style={{ transform: `translateX(-${idx * 100}%)` }}
         >
           {main.map((b, i) => (
@@ -155,7 +155,7 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
                   loading={i === 0 ? "eager" : "lazy"}
                   fetchPriority={i === 0 ? "high" : "auto"}
                   decoding="async"
-                  className="h-full w-full select-none object-cover lg:object-contain"
+                  className="h-full w-full select-none object-cover transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-[1.03] lg:object-contain"
                 />
               </BannerLink>
             </div>
@@ -171,7 +171,7 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
                 type="button"
                 onClick={() => setIdx(i)}
                 aria-label={t("home.banner", { n: i + 1 })}
-                className={`h-1.5 rounded-full transition-all ${
+                className={`h-1.5 rounded-full transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-white ${
                   i === idx ? "w-6 bg-white" : "w-1.5 bg-white/60"
                 }`}
               />

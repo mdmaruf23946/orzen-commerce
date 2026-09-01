@@ -37,7 +37,7 @@ export function AIChatLauncher({
               setChatOpen(true);
               setOpen(false);
             }}
-            className="flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 shadow-lg ring-1 ring-black/5 transition-transform hover:scale-[1.02]"
+            className="flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 sf-animate-slide-up sf-press shadow-lg ring-1 ring-black/5 hover:scale-[1.03]"
           >
             <Bot className="h-4 w-4" /> {t("chat.aiChatLabel")}
           </button>
@@ -46,7 +46,7 @@ export function AIChatLauncher({
             target="_blank"
             rel="noreferrer"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 shadow-lg ring-1 ring-black/5 transition-transform hover:scale-[1.02]"
+            className="flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 sf-animate-slide-up sf-press shadow-lg ring-1 ring-black/5 hover:scale-[1.03]"
           >
             <Facebook className="h-4 w-4 text-[#1877F2]" /> {t("chat.messenger")}
           </a>
@@ -56,7 +56,7 @@ export function AIChatLauncher({
       <button
         onClick={toggle}
         aria-label={t("chat.openChat")}
-        className="fixed bottom-20 right-4 z-40 grid h-14 w-14 place-items-center rounded-full text-white shadow-lg transition-transform hover:scale-105 md:bottom-4"
+        className="sf-press sf-float fixed bottom-20 right-4 z-40 grid h-14 w-14 place-items-center rounded-full text-white shadow-lg hover:scale-110 hover:shadow-xl md:bottom-4"
         style={{ backgroundColor: "var(--store-btn-bg, var(--primary))" }}
       >
         {open || chatOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}

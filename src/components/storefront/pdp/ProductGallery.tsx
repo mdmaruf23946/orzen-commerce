@@ -72,7 +72,7 @@ export function ProductGallery({ name, primary, gallery, videoUrl }: Props) {
             alt={name}
             loading="eager"
             decoding="async"
-            className="h-full w-full object-cover transition-transform duration-200"
+            className="h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
             style={
               zoom
                 ? { transform: "scale(2)", transformOrigin: `${zoom.x}% ${zoom.y}%` }
@@ -98,11 +98,11 @@ export function ProductGallery({ name, primary, gallery, videoUrl }: Props) {
               key={i}
               type="button"
               onClick={() => setActive(i)}
-              className={`h-16 w-16 shrink-0 overflow-hidden rounded-md border ${i === active ? "ring-2 ring-primary" : ""}`}
+              className={`sf-press h-16 w-16 shrink-0 overflow-hidden rounded-md border hover:border-sf-accent hover:opacity-100 ${i === active ? "ring-2 ring-sf-accent" : "opacity-80"}`}
               aria-label={s.kind === "video" ? "Play video" : `Image ${i + 1}`}
             >
               {s.kind === "image" ? (
-                <img src={s.src} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
+                <img src={s.src} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-300 hover:scale-110" />
               ) : (
                 <div className="grid h-full w-full place-items-center bg-black text-[10px] font-semibold text-white">
                   ▶ Video

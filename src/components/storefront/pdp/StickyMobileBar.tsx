@@ -33,7 +33,7 @@ export function StickyMobileBar({
 
   return (
     <div
-      className={`fixed inset-x-0 bottom-0 z-40 border-t bg-white/95 px-3 py-2 shadow-[0_-4px_16px_-8px_rgba(0,0,0,0.15)] backdrop-blur transition-transform lg:hidden ${
+      className={`fixed inset-x-0 bottom-0 z-40 border-t bg-white/95 px-3 py-2 shadow-[0_-4px_16px_-8px_rgba(0,0,0,0.15)] backdrop-blur transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:hidden ${
         show ? "translate-y-0" : "translate-y-full"
       }`}
       style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)" }}
@@ -49,7 +49,7 @@ export function StickyMobileBar({
           type="button"
           onClick={onAdd}
           disabled={disabled}
-          className="h-11 flex-1 rounded-full border-2 border-sf-accent bg-white text-sm font-semibold text-sf-accent hover:bg-sf-accent/10 disabled:opacity-50"
+          className="sf-press h-11 flex-1 rounded-full border-2 border-sf-accent bg-white text-sm font-semibold text-sf-accent hover:bg-sf-accent/10 disabled:opacity-50"
         >
           {t("pdp.addToCart")}
         </button>
@@ -57,7 +57,7 @@ export function StickyMobileBar({
           type="button"
           onClick={onBuy}
           disabled={disabled}
-          className="h-11 flex-1 rounded-full bg-sf-accent text-sm font-semibold text-white shadow-sm hover:bg-sf-accent-hover disabled:opacity-50"
+          className="sf-press h-11 flex-1 rounded-full bg-sf-accent text-sm font-semibold text-white shadow-sm hover:bg-sf-accent-hover hover:shadow-[0_10px_22px_-12px_var(--sf-accent)] disabled:opacity-50"
         >
           {t("pdp.buyNow")}
         </button>

@@ -286,8 +286,8 @@ function ProductGrid({
 }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
-      {products.map((p) => (
-        <ProductCard key={p.id} slug={slug} p={p} />
+      {products.map((p, i) => (
+        <ProductCard key={p.id} slug={slug} p={p} index={i} />
       ))}
     </div>
   );
@@ -429,12 +429,12 @@ function ProductCarousel({
         ref={ref}
         className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {products.map((p) => (
+        {products.map((p, i) => (
           <div
             key={p.id}
             className="w-[calc(50%-0.375rem)] shrink-0 snap-start sm:w-[calc(33.333%-0.5rem)] md:w-[calc(25%-0.5625rem)] lg:w-[calc(20%-0.6rem)]"
           >
-            <ProductCard slug={slug} p={p} />
+            <ProductCard slug={slug} p={p} index={i} />
           </div>
         ))}
       </div>
@@ -593,10 +593,10 @@ function CategoryTile({
     <button
       type="button"
       onClick={onClick}
-      className="group flex w-full min-w-0 flex-col items-center gap-1"
+      className="sf-press group flex w-full min-w-0 flex-col items-center gap-1"
     >
       <div
-        className="aspect-square w-full overflow-hidden rounded-2xl border border-sf-line bg-sf-surface transition-all"
+        className="aspect-square w-full overflow-hidden rounded-2xl border border-sf-line bg-sf-surface transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 group-hover:border-sf-accent/40 group-hover:shadow-[0_14px_26px_-18px_rgba(17,17,17,0.5)]"
         style={{ boxShadow: `inset 0 0 0 2px ${ring}` }}
       >
         {PresetIcon ? (
@@ -608,7 +608,7 @@ function CategoryTile({
             src={image}
             alt={label}
             loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-110"
           />
         ) : (
           <span

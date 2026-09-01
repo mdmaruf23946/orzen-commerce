@@ -368,3 +368,141 @@
   flex-direction: column;
   gap: 0.75rem !important;
 }
+
+
+/* ============================================================
+   Storefront motion system (hover, press, scroll reveal)
+   ============================================================ */
+:root {
+  --sf-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --sf-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --sf-dur-fast: 150ms;
+  --sf-dur: 220ms;
+  --sf-dur-slow: 420ms;
+}
+
+@keyframes sf-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes sf-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes sf-pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  60%  { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes sf-shimmer {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+@keyframes sf-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+@keyframes sf-slide-up {
+  from { opacity: 0; transform: translateY(100%); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@utility sf-reveal {
+  opacity: 0;
+  transform: translateY(14px);
+}
+@utility sf-reveal-in {
+  animation: sf-fade-up var(--sf-dur-slow) var(--sf-ease) both;
+  animation-delay: calc(var(--sf-i, 0) * 55ms);
+}
+@utility sf-animate-fade-in {
+  animation: sf-fade-in var(--sf-dur) var(--sf-ease) both;
+}
+@utility sf-animate-pop {
+  animation: sf-pop 320ms var(--sf-ease-spring) both;
+}
+@utility sf-animate-slide-up {
+  animation: sf-slide-up 320ms var(--sf-ease) both;
+}
+@utility sf-float {
+  animation: sf-float 3.6s ease-in-out infinite;
+}
+
+/* Press feedback that works on touch as well as mouse */
+@utility sf-press {
+  transition: transform var(--sf-dur-fast) var(--sf-ease), box-shadow var(--sf-dur) var(--sf-ease),
+    background-color var(--sf-dur) var(--sf-ease), color var(--sf-dur) var(--sf-ease),
+    border-color var(--sf-dur) var(--sf-ease), opacity var(--sf-dur) var(--sf-ease);
+  &:active {
+    transform: scale(0.955);
+  }
+}
+
+@utility sf-lift {
+  transition: transform var(--sf-dur) var(--sf-ease), box-shadow var(--sf-dur) var(--sf-ease),
+    border-color var(--sf-dur) var(--sf-ease);
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 36px -20px rgba(17, 17, 17, 0.45);
+  }
+  &:active {
+    transform: translateY(-1px) scale(0.99);
+  }
+}
+
+/* Shimmer sweep for skeleton placeholders */
+@utility sf-shimmer {
+  position: relative;
+  overflow: hidden;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in oklab, white 65%, transparent) 50%,
+      transparent 100%
+    );
+    animation: sf-shimmer 1.6s var(--sf-ease) infinite;
+  }
+}
+
+/* Animated underline for storefront text links */
+@utility sf-underline {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    height: 1.5px;
+    width: 100%;
+    background: var(--sf-accent);
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform var(--sf-dur) var(--sf-ease);
+  }
+  &:hover::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-reveal,
+  .sf-reveal-in,
+  .sf-animate-fade-in,
+  .sf-animate-pop,
+  .sf-animate-slide-up,
+  .sf-float,
+  .sf-shimmer::after {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .sf-lift:hover,
+  .sf-press:active {
+    transform: none !important;
+  }
+}
