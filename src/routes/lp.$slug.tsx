@@ -1,8 +1,8 @@
 // Public renderer for builder landing pages.
 // One fixed, professional template. Section order is always:
-// Header → Hero → Product → Description → FAQ → Reviews → Order form → Footer
+// Header first, Footer last; everything in between follows content.sectionOrder.
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import {
   Award, Check, Clock, Gift, Heart, Package, Shield, Sparkles, Star,
   ThumbsUp, Truck, Zap, Loader2, ChevronDown,
@@ -11,6 +11,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getPublicLanding, type PublicLandingPage } from "@/lib/landing-public.functions";
 import { LandingBranding } from "@/components/landing/LandingBranding";
+import { GenericSection } from "@/components/landing/GenericSection";
+import { sectionSpec } from "@/lib/landing-sections";
 import { getLandingPreviewBySlug } from "@/lib/landing-builder.functions";
 import {
   lpImage, normalizeContent, normalizeDeliveryZones,
