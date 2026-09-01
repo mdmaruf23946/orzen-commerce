@@ -1,8 +1,8 @@
 // Public renderer for builder landing pages.
 // One fixed, professional template. Section order is always:
-// Header → Hero → Product → Description → FAQ → Reviews → Order form → Footer
+// Header first, Footer last; everything in between follows content.sectionOrder.
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import {
   Award, Check, Clock, Gift, Heart, Package, Shield, Sparkles, Star,
   ThumbsUp, Truck, Zap, Loader2, ChevronDown,
@@ -11,6 +11,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getPublicLanding, type PublicLandingPage } from "@/lib/landing-public.functions";
 import { LandingBranding } from "@/components/landing/LandingBranding";
+import { GenericSection } from "@/components/landing/GenericSection";
+import { sectionSpec } from "@/lib/landing-sections";
 import { getLandingPreviewBySlug } from "@/lib/landing-builder.functions";
 import {
   lpImage, normalizeContent, normalizeDeliveryZones,
@@ -186,6 +188,217 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
     }));
 
 
+      const builtinNodes: Record<string, React.ReactNode> = {
+        hero: (
+          <>
+          <section className="px-4 pb-12 pt-8 sm:pt-14">
+            <div className="mx-auto grid max-w-5xl items-center gap-8 md:grid-cols-2">
+              <div className="order-2 md:order-1">
+                {content.hero.offerText && (
+                  <span
+                    className="inline-block rounded-full px-3 py-1 text-xs font-semibold text-white"
+                    style={{ background: "var(--lp-accent)" }}
+                  >
+                    {content.hero.offerText}
+                  </span>
+                )}
+                <h1 className="mt-3 text-3xl font-extrabold leading-tight sm:text-4xl">
+                  {content.hero.headline || page.product?.name || page.title}
+                </h1>
+                {content.hero.subheadline && (
+                  <p className="mt-3 text-base text-neutral-600">{content.hero.subheadline}</p>
+                )}
+                <div className="mt-4 flex items-center gap-1 text-amber-500">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-current" />
+                  ))}
+                  <span className="ml-1 text-xs text-neutral-500">5.0</span>
+                </div>
+                <div className="mt-4 flex flex-wrap items-baseline gap-3">
+                  <span className="text-3xl font-bold" style={{ color: "var(--lp-primary)" }}>{money(price)}</span>
+                  {oldPrice && oldPrice > price && (
+                    <span className="text-lg text-neutral-400 line-through">{money(oldPrice)}</span>
+                  )}
+                  {discount > 0 && (
+                    <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600">
+                      -{discount}%
+                    </span>
+                  )}
+                  {content.pricing.note && <span className="text-xs text-neutral-500">{content.pricing.note}</span>}
+                </div>
+                <a
+                  href="#order"
+                  className="mt-6 inline-block px-7 py-3 text-base font-semibold text-white shadow-lg"
+                  style={{ background: "var(--lp-primary)", borderRadius: "var(--lp-radius)" }}
+                >
+                  {content.hero.ctaText || "Order Now"}
+                </a>
+              </div>
+              <div className="order-1 md:order-2">
+                {heroImage && (
+                  <img
+                    src={lpImage(heroImage)}
+                    alt={content.hero.headline || page.title}
+                    className="w-full object-cover shadow-xl"
+                    style={{ borderRadius: "var(--lp-radius)" }}
+                    loading="eager"
+                  />
+                )}
+              </div>
+            </div>
+          </section>
+          </>
+        ),
+        product: (
+          <>
+          {content.product.enabled && (
+            <Section title={content.product.title} subtitle={content.product.subtitle}>
+              {shownImages.length > 0 && (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                  {shownImages.map((img, i) => (
+                    <img
+                      key={i}
+                      src={lpImage(img)}
+                      alt={`${page.title} ${i + 1}`}
+                      loading="lazy"
+                      className="aspect-square w-full object-cover"
+                      style={{ borderRadius: "var(--lp-radius)" }}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {content.product.showFeatures && content.product.features.length > 0 && (
+                <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {content.product.features.map((f, i) => {
+                    const Icon = ICONS[f.icon] ?? Check;
+                    return (
+                      <div key={i} className="flex gap-3 bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
+                        <span
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white"
+                          style={{ background: "var(--lp-primary)" }}
+                        >
+                          <Icon className="h-5 w-5" />
+                        </span>
+                        <div>
+                          <div className="font-semibold">{f.title}</div>
+                          {f.text && <div className="mt-1 text-sm text-neutral-600">{f.text}</div>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {content.product.showSpecs && content.product.specs.length > 0 && (
+                <div className="mt-6 overflow-hidden" style={{ borderRadius: "var(--lp-radius)" }}>
+                  <table className="w-full text-sm">
+                    <tbody>
+                      {content.product.specs.map((s, i) => (
+                        <tr key={i} className={i % 2 ? "bg-neutral-50" : ""}>
+                          <td className="w-1/3 p-3 font-medium">{s.label}</td>
+                          <td className="p-3 text-neutral-600">{s.value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Section>
+          )}
+          </>
+        ),
+        description: (
+          <>
+          {content.description.enabled && (content.description.text || content.description.points.length > 0) && (
+            <Section title={content.description.title}>
+              {content.description.text && (
+                <p className="mx-auto max-w-3xl whitespace-pre-line text-center text-sm leading-relaxed text-neutral-600">
+                  {content.description.text}
+                </p>
+              )}
+              {content.description.points.length > 0 && (
+                <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {content.description.points.map((p, i) => {
+                    const PIcon = ICONS[p.icon] ?? Check;
+                    return (
+                      <div key={i} className="bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
+                        <PIcon className="h-5 w-5" style={{ color: "var(--lp-primary)" }} />
+                        <div className="mt-2 font-semibold">{p.title}</div>
+                        <div className="mt-1 text-sm text-neutral-600">{p.text}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Section>
+          )}
+          </>
+        ),
+        faq: (
+          <>
+          {content.faq.enabled && content.faq.items.length > 0 && (
+            <Section title={content.faq.title}>
+              <div className="mx-auto max-w-3xl space-y-2">
+                {content.faq.items.map((f, i) => (
+                  <details key={i} className="group bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
+                    <summary className="flex cursor-pointer list-none items-center justify-between font-medium">
+                      {f.q}
+                      <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
+                    </summary>
+                    <p className="mt-2 text-sm text-neutral-600">{f.a}</p>
+                  </details>
+                ))}
+              </div>
+            </Section>
+          )}
+          </>
+        ),
+        reviews: (
+          <>
+          {content.reviews.enabled && content.reviews.items.length > 0 && (
+            <Section title={content.reviews.title}>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {content.reviews.items.map((r, i) => (
+                  <div key={i} className="bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
+                    <div className="flex gap-0.5">
+                      {Array.from({ length: 5 }).map((_, s) => (
+                        <Star
+                          key={s}
+                          className="h-4 w-4"
+                          style={{ color: s < (r.rating || 5) ? "var(--lp-accent)" : "#d4d4d4" }}
+                          fill={s < (r.rating || 5) ? "currentColor" : "none"}
+                        />
+                      ))}
+                    </div>
+                    <p className="mt-2 text-sm text-neutral-700">{r.text}</p>
+                    <div className="mt-3 flex items-center gap-2">
+                      {r.photo && (
+                        <img
+                          src={lpImage(r.photo)}
+                          alt={r.name}
+                          loading="lazy"
+                          className="h-9 w-9 shrink-0 rounded-full object-cover"
+                        />
+                      )}
+                      <div className="text-xs font-semibold text-neutral-500">
+                        — {r.name}{r.location ? `, ${r.location}` : ""}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
+          </>
+        ),
+        order: (
+          <>
+          <OrderForm page={page} content={content} form={form} price={price} />
+          </>
+        ),
+      };
+
   return (
     <div style={STYLE} className="min-h-screen bg-white text-neutral-900">
       <LandingBranding
@@ -223,201 +436,15 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
         </div>
       </header>
 
-      {/* 2. Hero */}
-      <section className="px-4 pb-12 pt-8 sm:pt-14">
-        <div className="mx-auto grid max-w-5xl items-center gap-8 md:grid-cols-2">
-          <div className="order-2 md:order-1">
-            {content.hero.offerText && (
-              <span
-                className="inline-block rounded-full px-3 py-1 text-xs font-semibold text-white"
-                style={{ background: "var(--lp-accent)" }}
-              >
-                {content.hero.offerText}
-              </span>
-            )}
-            <h1 className="mt-3 text-3xl font-extrabold leading-tight sm:text-4xl">
-              {content.hero.headline || page.product?.name || page.title}
-            </h1>
-            {content.hero.subheadline && (
-              <p className="mt-3 text-base text-neutral-600">{content.hero.subheadline}</p>
-            )}
-            <div className="mt-4 flex items-center gap-1 text-amber-500">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} className="h-4 w-4 fill-current" />
-              ))}
-              <span className="ml-1 text-xs text-neutral-500">5.0</span>
-            </div>
-            <div className="mt-4 flex flex-wrap items-baseline gap-3">
-              <span className="text-3xl font-bold" style={{ color: "var(--lp-primary)" }}>{money(price)}</span>
-              {oldPrice && oldPrice > price && (
-                <span className="text-lg text-neutral-400 line-through">{money(oldPrice)}</span>
-              )}
-              {discount > 0 && (
-                <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600">
-                  -{discount}%
-                </span>
-              )}
-              {content.pricing.note && <span className="text-xs text-neutral-500">{content.pricing.note}</span>}
-            </div>
-            <a
-              href="#order"
-              className="mt-6 inline-block px-7 py-3 text-base font-semibold text-white shadow-lg"
-              style={{ background: "var(--lp-primary)", borderRadius: "var(--lp-radius)" }}
-            >
-              {content.hero.ctaText || "Order Now"}
-            </a>
-          </div>
-          <div className="order-1 md:order-2">
-            {heroImage && (
-              <img
-                src={lpImage(heroImage)}
-                alt={content.hero.headline || page.title}
-                className="w-full object-cover shadow-xl"
-                style={{ borderRadius: "var(--lp-radius)" }}
-                loading="eager"
-              />
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* 3. Product */}
-      {content.product.enabled && (
-        <Section title={content.product.title} subtitle={content.product.subtitle}>
-          {shownImages.length > 0 && (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-              {shownImages.map((img, i) => (
-                <img
-                  key={i}
-                  src={lpImage(img)}
-                  alt={`${page.title} ${i + 1}`}
-                  loading="lazy"
-                  className="aspect-square w-full object-cover"
-                  style={{ borderRadius: "var(--lp-radius)" }}
-                />
-              ))}
-            </div>
-          )}
-
-          {content.product.showFeatures && content.product.features.length > 0 && (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {content.product.features.map((f, i) => {
-                const Icon = ICONS[f.icon] ?? Check;
-                return (
-                  <div key={i} className="flex gap-3 bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
-                    <span
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white"
-                      style={{ background: "var(--lp-primary)" }}
-                    >
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <div>
-                      <div className="font-semibold">{f.title}</div>
-                      {f.text && <div className="mt-1 text-sm text-neutral-600">{f.text}</div>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {content.product.showSpecs && content.product.specs.length > 0 && (
-            <div className="mt-6 overflow-hidden" style={{ borderRadius: "var(--lp-radius)" }}>
-              <table className="w-full text-sm">
-                <tbody>
-                  {content.product.specs.map((s, i) => (
-                    <tr key={i} className={i % 2 ? "bg-neutral-50" : ""}>
-                      <td className="w-1/3 p-3 font-medium">{s.label}</td>
-                      <td className="p-3 text-neutral-600">{s.value}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Section>
-      )}
-
-      {/* 4. Description */}
-      {content.description.enabled && (content.description.text || content.description.points.length > 0) && (
-        <Section title={content.description.title}>
-          {content.description.text && (
-            <p className="mx-auto max-w-3xl whitespace-pre-line text-center text-sm leading-relaxed text-neutral-600">
-              {content.description.text}
-            </p>
-          )}
-          {content.description.points.length > 0 && (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {content.description.points.map((p, i) => {
-                const PIcon = ICONS[p.icon] ?? Check;
-                return (
-                  <div key={i} className="bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
-                    <PIcon className="h-5 w-5" style={{ color: "var(--lp-primary)" }} />
-                    <div className="mt-2 font-semibold">{p.title}</div>
-                    <div className="mt-1 text-sm text-neutral-600">{p.text}</div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </Section>
-      )}
-
-      {/* 5. FAQ */}
-      {content.faq.enabled && content.faq.items.length > 0 && (
-        <Section title={content.faq.title}>
-          <div className="mx-auto max-w-3xl space-y-2">
-            {content.faq.items.map((f, i) => (
-              <details key={i} className="group bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
-                <summary className="flex cursor-pointer list-none items-center justify-between font-medium">
-                  {f.q}
-                  <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
-                </summary>
-                <p className="mt-2 text-sm text-neutral-600">{f.a}</p>
-              </details>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {/* 6. Reviews */}
-      {content.reviews.enabled && content.reviews.items.length > 0 && (
-        <Section title={content.reviews.title}>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {content.reviews.items.map((r, i) => (
-              <div key={i} className="bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
-                <div className="flex gap-0.5">
-                  {Array.from({ length: 5 }).map((_, s) => (
-                    <Star
-                      key={s}
-                      className="h-4 w-4"
-                      style={{ color: s < (r.rating || 5) ? "var(--lp-accent)" : "#d4d4d4" }}
-                      fill={s < (r.rating || 5) ? "currentColor" : "none"}
-                    />
-                  ))}
-                </div>
-                <p className="mt-2 text-sm text-neutral-700">{r.text}</p>
-                <div className="mt-3 flex items-center gap-2">
-                  {r.photo && (
-                    <img
-                      src={lpImage(r.photo)}
-                      alt={r.name}
-                      loading="lazy"
-                      className="h-9 w-9 shrink-0 rounded-full object-cover"
-                    />
-                  )}
-                  <div className="text-xs font-semibold text-neutral-500">
-                    — {r.name}{r.location ? `, ${r.location}` : ""}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {/* 7. Order form */}
-      <OrderForm page={page} content={content} form={form} price={price} />
+      {/* 2–7. Ordered sections */}
+      {content.sectionOrder
+        .filter((key) => key !== "header" && key !== "footer" && content.sectionEnabled[key] !== false)
+        .map((key) => {
+          const spec = sectionSpec(key);
+          if (!spec) return null;
+          if (spec.builtin) return <Fragment key={key}>{builtinNodes[key] ?? null}</Fragment>;
+          return <GenericSection key={key} spec={spec} data={content.blocks[key] ?? {}} />;
+        })}
 
       {/* 8. Footer */}
       <footer className="bg-neutral-50 px-4 py-10 text-center">

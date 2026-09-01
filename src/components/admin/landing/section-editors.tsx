@@ -16,6 +16,7 @@ import {
   FEATURE_ICONS, MAX_KEY_POINTS, lpImage,
   type LandingContent, type LandingStoreInfo,
 } from "@/lib/landing-builder";
+import { librarySectionKeys, sectionSpec, usedSectionKeys } from "@/lib/landing-sections";
 
 export type SectionKey =
   | "header" | "hero" | "product" | "description"
@@ -287,59 +288,101 @@ export function ItemRow({ label, sub, onOpen }: { label: string; sub?: string; o
   );
 }
 
-/* ---------------- section list ---------------- */
+/* ---------------- used sections + section library ---------------- */
 
 export function SectionList({
-  content, onOpen,
+  content, onOpen, onAdd, onRemove,
 }: {
   content: LandingContent;
-  onOpen: (key: SectionKey) => void;
+  onOpen: (key: string) => void;
+  onAdd: (key: string) => void;
+  onRemove: (key: string) => void;
 }) {
+  const used = usedSectionKeys(content.sectionOrder, content.sectionEnabled);
+  const library = librarySectionKeys(content.sectionOrder, content.sectionEnabled);
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-base font-semibold">Content</h2>
-        <p className="text-xs text-muted-foreground">Manage your landing page sections.</p>
-      </div>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {SECTIONS.map((s) => {
-          const visible = isSectionVisible(content, s.key);
-          return (
-            <button
-              key={s.key}
-              type="button"
-              onClick={() => onOpen(s.key)}
-              className="flex items-center gap-3 rounded-xl border bg-card p-4 text-left transition hover:bg-accent"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="truncate text-sm font-semibold">{s.name}</span>
-                  {visible === null ? (
-                    <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                      Always visible
-                    </span>
-                  ) : (
+        <h2 className="text-base font-semibold">Used sections</h2>
+        <p className="text-xs text-muted-foreground">
+          These sections appear on your landing page, in this order.
+        </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {used.map((key) => {
+            const spec = sectionSpec(key)!;
+            return (
+              <div
+                key={key}
+                className="flex items-center gap-3 rounded-xl border bg-card p-4 text-left transition hover:bg-accent"
+              >
+                <button type="button" onClick={() => onOpen(key)} className="min-w-0 flex-1 text-left">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-sm font-semibold">{spec.name}</span>
                     <span
                       className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] ${
-                        visible
-                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
-                          : "bg-muted text-muted-foreground"
+                        spec.required
+                          ? "bg-muted text-muted-foreground"
+                          : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
                       }`}
                     >
-                      {visible ? "Visible" : "Hidden"}
+                      {spec.required ? "Always visible" : "Visible"}
                     </span>
-                  )}
-                </div>
-                <div className="mt-0.5 truncate text-xs text-muted-foreground">{s.description}</div>
+                  </div>
+                  <div className="mt-0.5 truncate text-xs text-muted-foreground">{spec.description}</div>
+                </button>
+                {!spec.required && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => onRemove(key)}
+                  >
+                    Remove
+                  </Button>
+                )}
+                <button type="button" onClick={() => onOpen(key)} aria-label={`Edit ${spec.name}`}>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </button>
               </div>
-              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-            </button>
-          );
-        })}
+            );
+          })}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-base font-semibold">Section library</h2>
+        <p className="text-xs text-muted-foreground">
+          Available sections you can add to this page. Design stays automatic.
+        </p>
+        {library.length === 0 ? (
+          <p className="mt-3 rounded-xl border bg-muted/40 p-4 text-xs text-muted-foreground">
+            Every available section is already used on this page.
+          </p>
+        ) : (
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {library.map((key) => {
+              const spec = sectionSpec(key)!;
+              return (
+                <div key={key} className="flex items-center gap-3 rounded-xl border bg-card p-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold">{spec.name}</div>
+                    <div className="mt-0.5 truncate text-xs text-muted-foreground">{spec.description}</div>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={() => onAdd(key)}>
+                    <Plus className="mr-1 h-3.5 w-3.5" /> Add
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
 
 /* ---------------- individual editors ---------------- */
 

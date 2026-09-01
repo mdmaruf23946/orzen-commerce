@@ -15,6 +15,7 @@ import {
   type LPReview,
   type SourceProduct,
 } from "@/lib/landing-builder";
+import { SECTION_REGISTRY, sectionRank, type LPFieldSpec } from "@/lib/landing-sections";
 
 // ---------- Field manifest ----------
 
@@ -65,8 +66,10 @@ export function landingFieldManifest(): LandingFieldManifest {
       { path: "footer.text", label: "Footer text", max: 220, guidance: "Short about-the-store line." },
       { path: "footer.contactText", label: "Footer contact heading", max: 60, guidance: "Heading above contact details." },
       { path: "footer.copyright", label: "Footer copyright", max: 90, guidance: "Copyright line with the store name and the current year." },
+      ...registryTexts(),
     ],
     lists: [
+      ...registryLists(),
       {
         path: "description.points",
         label: "Key points",
@@ -92,6 +95,45 @@ export function landingFieldManifest(): LandingFieldManifest {
       },
     ],
   };
+}
+
+
+/** Optional library sections: every AI-writable field becomes `blocks.<section>.<field>`. */
+function registryTexts(): TextField[] {
+  const out: TextField[] = [];
+  for (const sec of SECTION_REGISTRY) {
+    if (sec.builtin) continue;
+    for (const f of sec.fields) {
+      if (f.type === "list" || f.type === "image" || !f.ai) continue;
+      out.push({
+        path: `blocks.${sec.key}.${f.key}`,
+        label: `${sec.name} — ${f.label}`,
+        max: f.max ?? 200,
+        guidance: f.ai,
+      });
+    }
+  }
+  return out;
+}
+
+function registryLists(): ListSpec[] {
+  const out: ListSpec[] = [];
+  for (const sec of SECTION_REGISTRY) {
+    if (sec.builtin) continue;
+    for (const f of sec.fields) {
+      if (f.type !== "list") continue;
+      out.push({
+        path: `blocks.${sec.key}.${f.key}`,
+        label: `${sec.name} — ${f.label}`,
+        maxItems: f.maxItems,
+        guidance: f.ai ?? `${f.itemLabel} entries for the ${sec.name} section.`,
+        fields: f.fields
+          .filter((x: LPFieldSpec) => x.type !== "list" && x.type !== "image" && x.ai)
+          .map((x: LPFieldSpec) => ({ path: x.key, label: x.label, max: (x as any).max ?? 200, guidance: x.ai! })),
+      });
+    }
+  }
+  return out;
 }
 
 // ---------- Path helpers ----------
@@ -240,6 +282,8 @@ export async function generateLandingCopy(
   const prompt = [
     `<facts>\n${factSheet(facts)}\n</facts>`,
     "",
+    "Optional sections start with `blocks.<section>.`. Choose ONLY the optional sections that genuinely suit this product and leave every field of the other optional sections out of your answer entirely. Never partially fill an optional section.",
+    "",
     "Fill these fields (return an array of {path, value}):",
     manifestSpec(manifest),
   ].join("\n");
@@ -310,6 +354,23 @@ export async function generateLandingCopy(
   } else {
     next.reviews = { ...base.reviews, enabled: false, items: [] };
   }
+
+  // AI picks the optional sections: keep the ones it wrote content for.
+  next.blocks = next.blocks ?? {};
+  for (const sec of SECTION_REGISTRY) {
+    if (sec.builtin) continue;
+    const data = (next.blocks as any)[sec.key];
+    const filled =
+      !!data &&
+      Object.values(data).some((v) =>
+        Array.isArray(v)
+          ? v.some((it: any) => Object.values(it ?? {}).some((x) => String(x ?? "").trim()))
+          : String(v ?? "").trim(),
+      );
+    next.sectionEnabled[sec.key] = filled;
+    if (filled && !next.sectionOrder.includes(sec.key)) next.sectionOrder.push(sec.key);
+  }
+  next.sectionOrder = [...next.sectionOrder].sort((a, b) => sectionRank(a) - sectionRank(b));
 
   // Facts owned by the product snapshot always win.
   next.pricing.price = base.pricing.price;

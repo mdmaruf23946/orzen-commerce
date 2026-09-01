@@ -46,8 +46,9 @@ import {
   ProductEditor,
   ReviewsEditor,
   SectionList,
-  type SectionKey,
 } from "@/components/admin/landing/section-editors";
+import { GenericSectionEditor } from "@/components/admin/landing/GenericSectionEditor";
+import { REQUIRED_SECTION_KEYS, sectionRank, sectionSpec } from "@/lib/landing-sections";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -87,7 +88,7 @@ function LandingEditor() {
 
 
   const [tab, setTab] = useState("content");
-  const [section, setSection] = useState<SectionKey | null>(null);
+  const [section, setSection] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [content, setContent] = useState<LandingContent | null>(null);
@@ -117,6 +118,26 @@ function LandingEditor() {
 
   function patch<K extends keyof LandingContent>(key: K, value: Partial<LandingContent[K]>) {
     setContent((c) => (c ? { ...c, [key]: { ...(c[key] as object), ...value } } : c));
+  }
+
+  function setSectionEnabled(key: string, on: boolean) {
+    setContent((c) => {
+      if (!c) return c;
+      const next: LandingContent = {
+        ...c,
+        sectionEnabled: { ...c.sectionEnabled, [key]: on },
+        sectionOrder: c.sectionOrder.includes(key) ? c.sectionOrder : insertByRank(c.sectionOrder, key),
+      };
+      if (key === "product") next.product = { ...c.product, enabled: on };
+      if (key === "description") next.description = { ...c.description, enabled: on };
+      if (key === "faq") next.faq = { ...c.faq, enabled: on };
+      if (key === "reviews") next.reviews = { ...c.reviews, enabled: on };
+      return next;
+    });
+  }
+
+  function patchBlock(key: string, value: Record<string, any>) {
+    setContent((c) => (c ? { ...c, blocks: { ...c.blocks, [key]: value } } : c));
   }
 
   async function save() {
@@ -282,7 +303,14 @@ function LandingEditor() {
 
         {/* -------- Content: section based -------- */}
         <TabsContent value="content" className="space-y-4 pt-4">
-          {section === null && <SectionList content={content} onOpen={setSection} />}
+          {section === null && (
+            <SectionList
+              content={content}
+              onOpen={setSection}
+              onAdd={(key) => { setSectionEnabled(key, true); setSection(key); }}
+              onRemove={(key) => setSectionEnabled(key, false)}
+            />
+          )}
           {section === "header" && <HeaderEditor {...editorProps} />}
           {section === "hero" && <HeroEditor {...editorProps} />}
           {section === "product" && <ProductEditor {...editorProps} />}
@@ -298,6 +326,18 @@ function LandingEditor() {
             />
           )}
           {section === "footer" && <FooterEditor {...editorProps} />}
+          {section !== null && sectionSpec(section) && !sectionSpec(section)!.builtin && (
+            <GenericSectionEditor
+              spec={sectionSpec(section)!}
+              data={content.blocks[section] ?? {}}
+              onChange={(next) => patchBlock(section, next)}
+              onBack={() => setSection(null)}
+              onSave={saveSection}
+              saving={saving}
+              storeId={storeInfo?.id}
+              productImages={productImages}
+            />
+          )}
         </TabsContent>
 
         {/* -------- Order form -------- */}
@@ -797,4 +837,13 @@ function Area({
       <Textarea rows={rows} value={value ?? ""} onChange={(e) => onChange(e.target.value)} />
     </div>
   );
+}
+
+/** Insert a section key at its recommended position in the page order. */
+function insertByRank(order: string[], key: string): string[] {
+  const next = [...order];
+  const at = next.findIndex((k) => sectionRank(k) > sectionRank(key));
+  if (at === -1) next.push(key);
+  else next.splice(at, 0, key);
+  return next;
 }

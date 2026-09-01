@@ -6,6 +6,8 @@
 //   Header → Hero → Product → Description → FAQ → Reviews → Order form → Footer
 // Merchants edit text only; the design is owned by the system template.
 
+import { DEFAULT_SECTION_ORDER, REQUIRED_SECTION_KEYS, sectionSpec, sectionRank } from "./landing-sections";
+
 export type LPFeature = { icon: string; title: string; text: string };
 export type LPPoint = { title: string; text: string; icon: string };
 export type LPBenefit = LPPoint;
@@ -80,7 +82,7 @@ export type LandingContent = {
   /** Optional sections currently in use. Required sections are always on. */
   sectionEnabled: Record<string, boolean>;
   /** Content of the registry-driven (non-builtin) sections. */
-  blocks: Record<string, Record<string, unknown>>;
+  blocks: Record<string, Record<string, any>>;
 };
 
 
@@ -351,6 +353,9 @@ export function generateContentFromProduct(p: SourceProduct): LandingContent {
       facebook: "", instagram: "", youtube: "", tiktok: "", whatsapp: "",
       links: [],
     },
+    sectionOrder: [...DEFAULT_SECTION_ORDER],
+    sectionEnabled: { product: true, description: true, faq: true, reviews: false },
+    blocks: {},
   };
 }
 
@@ -379,7 +384,7 @@ export function normalizeContent(raw: unknown): LandingContent {
       ? legacyBenefits.items
       : [];
 
-  return {
+  const out: LandingContent = {
     header: {
       storeName: String(c.header?.storeName ?? ""),
       buttonText: String(c.header?.buttonText ?? hero.ctaText ?? "অর্ডার করুন"),
@@ -477,7 +482,45 @@ export function normalizeContent(raw: unknown): LandingContent {
         url: String(l?.url ?? ""),
       })),
     },
+    sectionOrder: [],
+    sectionEnabled: {},
+    blocks: {},
   };
+
+  // ---- section order / visibility / generic block content ----
+  const storedBlocks = (c.blocks && typeof c.blocks === "object" ? c.blocks : {}) as Record<string, any>;
+  const blocks: Record<string, Record<string, any>> = {};
+  for (const [key, value] of Object.entries(storedBlocks)) {
+    if (sectionSpec(key) && value && typeof value === "object") blocks[key] = { ...value };
+  }
+  out.blocks = blocks;
+
+  const storedEnabled = (c.sectionEnabled && typeof c.sectionEnabled === "object" ? c.sectionEnabled : {}) as Record<string, unknown>;
+  const enabled: Record<string, boolean> = {};
+  for (const [key, value] of Object.entries(storedEnabled)) {
+    if (sectionSpec(key)) enabled[key] = Boolean(value);
+  }
+  // The four builtin optional sections keep their own flag as the source of truth.
+  enabled["product"] = out.product.enabled;
+  enabled["description"] = out.description.enabled;
+  enabled["faq"] = out.faq.enabled;
+  enabled["reviews"] = out.reviews.enabled;
+  out.sectionEnabled = enabled;
+
+  const storedOrder: string[] = Array.isArray(c.sectionOrder)
+    ? c.sectionOrder.map(String).filter((k: string) => !!sectionSpec(k))
+    : [];
+  const finalOrder: string[] = [...new Set(storedOrder)];
+  for (const key of DEFAULT_SECTION_ORDER) {
+    if (finalOrder.includes(key)) continue;
+    const at = finalOrder.findIndex((k: string) => sectionRank(k) > sectionRank(key));
+    if (at === -1) finalOrder.push(key);
+    else finalOrder.splice(at, 0, key);
+  }
+  out.sectionOrder = finalOrder;
+  for (const key of REQUIRED_SECTION_KEYS) out.sectionEnabled[key] = true;
+
+  return out;
 }
 
 export function slugify(input: string): string {
