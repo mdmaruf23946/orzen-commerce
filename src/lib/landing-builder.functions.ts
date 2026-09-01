@@ -137,16 +137,27 @@ export const getLandingPage = createServerFn({ method: "GET" })
       .select("id,name,charge,is_default,sort_order")
       .eq("store_id", store.id)
       .order("sort_order", { ascending: true });
+    // Custom domains connected in Domain settings and attached to this page.
+    const { data: attached } = await context.supabase
+      .from("store_domains")
+      .select("id,hostname,status,ssl_status,last_error,dns_target")
+      .eq("store_id", store.id)
+      .eq("landing_page_id", page.id)
+      .order("hostname", { ascending: true });
+    const { subdomainAutomationConfigured } = await import("@/lib/cloudflare-pages.server");
     return {
       page,
       product: productRes.data ?? null,
       store: storeInfo ?? { id: store.id },
       storeZones: storeZones ?? [],
       domains: domainsRes.data ?? [],
+      attachedDomains: attached ?? [],
+      autoSubdomain: subdomainAutomationConfigured(),
       rootDomain: hosts.rootDomain,
       dnsTarget: hosts.dnsTarget,
       apexIp: hosts.apexIp,
     };
+
 
   });
 
