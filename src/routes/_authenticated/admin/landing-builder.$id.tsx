@@ -12,6 +12,9 @@ import {
   detachDomainFromLandingPage,
   getLandingPage,
   listAttachableDomains,
+  listLandingProducts,
+  setLandingProduct,
+
   removeLandingDomain,
   resyncLandingPage,
   retryLandingSubdomain,
@@ -74,9 +77,13 @@ function LandingEditor() {
   const saveFn = useServerFn(updateLandingPage);
   const statusFn = useServerFn(setLandingStatus);
   const resyncFn = useServerFn(resyncLandingPage);
+  const linkProductFn = useServerFn(setLandingProduct);
+  const productsFn = useServerFn(listLandingProducts);
   const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({ queryKey: ["lp-builder", id], queryFn: () => getFn({ data: { id } }) });
+  const { data: productList } = useQuery({ queryKey: ["lp-products"], queryFn: () => productsFn() });
+
 
   const [tab, setTab] = useState("content");
   const [section, setSection] = useState<SectionKey | null>(null);
@@ -459,12 +466,32 @@ function LandingEditor() {
                 {page.status === "published" ? "Unpublish" : "Publish"}
               </Button>
             </div>
-            {data.product && (
+            {data.product ? (
               <div className="rounded-lg border p-3 text-xs text-muted-foreground">
                 Source product: <span className="font-medium text-foreground">{data.product.name}</span> · ৳
                 {data.product.price} · stock {data.product.stock ?? 0}
               </div>
+            ) : (
+              <div className="space-y-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3">
+                <div className="text-xs font-medium text-destructive">
+                  No product linked — the page cannot be published until you pick one.
+                </div>
+                <select
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  value=""
+                  onChange={(e) => {
+                    const productId = e.target.value;
+                    if (productId) run(() => linkProductFn({ data: { id, productId } }), "Product linked");
+                  }}
+                >
+                  <option value="">Select a product…</option>
+                  {(productList ?? []).map((p: any) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
             )}
+
           </Card>
 
           <Card title="Delivery zones">
