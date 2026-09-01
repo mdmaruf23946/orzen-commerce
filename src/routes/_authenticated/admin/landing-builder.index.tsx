@@ -59,8 +59,9 @@ function LandingPagesList() {
   }
 
   function pageUrl(p: any) {
-    const domain = p.domains?.find((d: any) => d.status === "active" || d.status === "verified");
-    if (domain) return `https://${domain.hostname}`;
+    // Always prefer the page's own host: /lp/<slug> on the platform site sits
+    // inside the ORZEN app scope and would open inside the ORZEN app.
+    if (p.publicUrl) return p.publicUrl;
     const base = typeof window !== "undefined" ? window.location.origin : "";
     return `${base}/lp/${p.slug}`;
   }

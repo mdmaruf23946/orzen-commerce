@@ -271,7 +271,15 @@ function LandingEditor() {
               <Button size="sm" variant={device === "mobile" ? "default" : "outline"} onClick={() => setDevice("mobile")}>
                 <Smartphone className="mr-1 h-3.5 w-3.5" /> Mobile
               </Button>
-              <a href={`/lp/${page.slug}?preview=true`} target="_blank" rel="noreferrer">
+              <a
+                href={
+                  page.status === "published" && data?.publicUrl
+                    ? data.publicUrl
+                    : `/lp/${page.slug}?preview=true`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Button size="sm" variant="outline">Open</Button>
               </a>
             </div>
