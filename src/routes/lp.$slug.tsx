@@ -10,6 +10,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getPublicLanding, type PublicLandingPage } from "@/lib/landing-public.functions";
+import { LandingBranding } from "@/components/landing/LandingBranding";
 import { getLandingPreviewBySlug } from "@/lib/landing-builder.functions";
 import {
   lpImage, normalizeContent, normalizeDeliveryZones,
