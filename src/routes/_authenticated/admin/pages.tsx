@@ -1,3 +1,4 @@
+import { storeHref } from "@/lib/store-link";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -112,7 +113,7 @@ function PagesAdmin() {
   });
 
   const slug = data?.store?.slug;
-  const publicPath = `/store/${slug}/${activeKey}`;
+  const publicPath = storeHref(slug ?? "", `/${activeKey}`);
 
   return (
     <div className="w-full min-w-0 max-w-full space-y-5 overflow-x-clip p-4 sm:p-6">

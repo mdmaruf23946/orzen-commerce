@@ -1,6 +1,7 @@
 // Dedicated 15-step Subscription product form. Completely isolated from the
 // physical / digital / service forms — no stock, shipping, variants, weight,
 // digital files or booking fields. Everything lives in meta.subscription.
+import { storeHref } from "@/lib/store-link";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -1111,7 +1112,7 @@ export function SubscriptionProductDialog({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => window.open(`/store/${(editing as any).store_slug ?? ""}/product/${editing.id}`, "_blank")}
+              onClick={() => window.open(storeHref((editing as any).store_slug ?? "", `/product/${editing.id}`), "_blank", "noopener")}
             >
               Preview on storefront
             </Button>
