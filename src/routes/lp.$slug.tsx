@@ -187,6 +187,12 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
 
   return (
     <div style={STYLE} className="min-h-screen bg-white text-neutral-900">
+      <LandingBranding
+        slug={page.slug}
+        name={page.seo?.title || page.title}
+        icon={lpImage(String((page.seo as any)?.icon ?? "") || headerIcon) || null}
+        themeColor={(page.theme as any)?.primary ?? "#16a34a"}
+      />
       {preview && (
         <div className="bg-amber-500 px-4 py-1.5 text-center text-xs font-semibold text-black">
           Preview mode — only you can see this page until it is published.
