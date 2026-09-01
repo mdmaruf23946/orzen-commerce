@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { assertPlan, assertLimit } from "@/lib/plan-guard";
 import { myStoreRow } from "@/lib/store-access";
+import { storePublicUrl } from "@/lib/store-public-url";
 import {
   fetchTemplate,
   templateStoreFields,
@@ -1521,6 +1522,7 @@ export const myDashboardOverview = createServerFn({ method: "GET" })
 
     if (!store) {
       return {
+        publicUrl: "",
         store: null,
         owner: { name: ownerName },
         today: { sales: 0, orders: 0, visitors: 0, pendingOrders: 0, salesPct: 0, ordersPct: 0 },
@@ -1672,7 +1674,10 @@ export const myDashboardOverview = createServerFn({ method: "GET" })
       }
     }
 
+    const publicUrl = await storePublicUrl(supabase, store.id, store.slug);
+
     return {
+      publicUrl,
       store: {
         name: store.name,
         slug: store.slug,

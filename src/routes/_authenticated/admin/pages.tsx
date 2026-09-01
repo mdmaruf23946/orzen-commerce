@@ -1,3 +1,4 @@
+import { storeHref } from "@/lib/store-link";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -112,7 +113,7 @@ function PagesAdmin() {
   });
 
   const slug = data?.store?.slug;
-  const publicPath = `/store/${slug}/${activeKey}`;
+  const publicPath = storeHref(slug ?? "", `/${activeKey}`);
 
   return (
     <div className="w-full min-w-0 max-w-full space-y-5 overflow-x-clip p-4 sm:p-6">
@@ -188,7 +189,7 @@ function PagesAdmin() {
                   type="button"
                   onClick={async () => {
                     try {
-                      await navigator.clipboard.writeText(`${window.location.origin}${publicPath}`);
+                      await navigator.clipboard.writeText(publicPath.startsWith("http") ? publicPath : `${window.location.origin}${publicPath}`);
                       toast.success("Page URL copied");
                     } catch {
                       toast.error("Could not copy the URL");

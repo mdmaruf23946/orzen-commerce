@@ -65,6 +65,24 @@ export default {
         return Response.redirect(url.toString(), 301);
       }
 
+      // A storefront must never be served under the platform host: that URL is
+      // inside the platform PWA scope, so an installed ORZEN app would open the
+      // store inside itself (ORZEN splash + icon). Send it to the store's own
+      // host, where the store's own manifest/branding applies.
+      if (url.hostname === rootDomain) {
+        const m = url.pathname.match(/^\/store\/([a-z0-9-]+)(\/.*)?$/i);
+        if (m && !url.searchParams.has("theme_preview")) {
+          const target = new URL(url.toString());
+          target.protocol = "https:";
+          target.port = "";
+          target.hostname = `${m[1].toLowerCase()}.${rootDomain}`;
+          target.pathname = m[2] ?? "/";
+          return Response.redirect(target.toString(), 301);
+        }
+      }
+
+
+
       // Multi-tenant: serve store subdomains and verified custom domains at
       // clean root URLs by rewriting the path internally (browser URL is kept).
       let workRequest = request;

@@ -226,7 +226,7 @@ export function WelcomeCard(props: WelcomeCardProps) {
             <a
               href={storeUrl || "#"}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary to-indigo-500 px-3 py-1.5 lg:px-4 lg:py-2 text-[10px] lg:text-xs font-semibold text-white shadow-md shadow-primary/30 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/40"
             >
               View Store <ExternalLink className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
@@ -263,7 +263,7 @@ export function WelcomeCard(props: WelcomeCardProps) {
           <a
             href={storeUrl}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="flex w-full items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-primary to-indigo-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary/30 active:scale-[0.98]"
           >
             View Store <ExternalLink className="h-4 w-4" />

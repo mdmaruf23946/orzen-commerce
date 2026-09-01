@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { storeHref } from "@/lib/store-link";
 import {
   TrendingUp, ShoppingBag, Users, Clock, ArrowUpRight, ArrowDownRight,
   Package, PackageCheck, PackageX, AlertTriangle,
@@ -74,11 +75,14 @@ function Dashboard() {
   const [range, setRange] = useState<Range>("7d");
   const [metric, setMetric] = useState<Metric>("sales");
 
+  // Never a path on the platform site: that URL is inside the platform PWA
+  // scope, so an installed ORZEN app would swallow the storefront.
   const storeUrl = useMemo(() => {
     if (!data?.store) return "";
-    if (typeof window === "undefined") return `/store/${data.store.slug}`;
-    return `${window.location.origin}/store/${data.store.slug}`;
-  }, [data?.store]);
+    const href = storeHref(data.store.slug, "", (data as any).publicUrl);
+    if (href.startsWith("http") || typeof window === "undefined") return href;
+    return `${window.location.origin}${href}`;
+  }, [data]);
 
   const [quickOrderOpen, setQuickOrderOpen] = useState(false);
   const shareStore = async () => {
