@@ -189,7 +189,7 @@ function PagesAdmin() {
                   type="button"
                   onClick={async () => {
                     try {
-                      await navigator.clipboard.writeText(`${window.location.origin}${publicPath}`);
+                      await navigator.clipboard.writeText(publicPath.startsWith("http") ? publicPath : `${window.location.origin}${publicPath}`);
                       toast.success("Page URL copied");
                     } catch {
                       toast.error("Could not copy the URL");

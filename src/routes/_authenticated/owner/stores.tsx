@@ -1,3 +1,4 @@
+import { storeHref } from "@/lib/store-link";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -165,9 +166,9 @@ function OwnerStores() {
                 {s.status === "active" ? "Suspend" : "Activate"}
               </Button>
               <a
-                href={`/store/${s.slug}`}
+                href={storeHref(s.slug)}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="inline-flex h-7 items-center rounded-md border px-2 text-xs hover:bg-muted"
               >
                 <ExternalLink className="mr-1 h-3.5 w-3.5" /> Open
@@ -223,9 +224,9 @@ function OwnerStores() {
                       <Eye className="h-4 w-4" />
                     </Button>
                     <a
-                      href={`/store/${s.slug}`}
+                      href={storeHref(s.slug)}
                       target="_blank"
-                      rel="noreferrer"
+                      rel="noopener noreferrer"
                       className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-muted"
                     >
                       <ExternalLink className="h-4 w-4" />
@@ -282,9 +283,9 @@ function StoreDrawer({ storeId, onClose }: { storeId: string | null; onClose: ()
               <div className="flex items-center justify-between">
                 <div className="font-mono text-xs text-muted-foreground">/{data.store.slug}</div>
                 <a
-                  href={`/store/${data.store.slug}`}
+                  href={storeHref(data.store.slug)}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
                 >
                   Open <ExternalLink className="h-3 w-3" />
