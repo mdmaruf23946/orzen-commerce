@@ -69,7 +69,7 @@ function MediaField({
 function ScalarField({
   spec, value, onChange, storeId, productImages,
 }: {
-  spec: LPFieldSpec;
+  spec: Exclude<LPFieldSpec, { type: "list" }>;
   value: any;
   onChange: (v: string) => void;
   storeId?: string;
