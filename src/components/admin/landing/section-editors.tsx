@@ -16,6 +16,7 @@ import {
   FEATURE_ICONS, MAX_KEY_POINTS, lpImage,
   type LandingContent, type LandingStoreInfo,
 } from "@/lib/landing-builder";
+import { librarySectionKeys, sectionSpec, usedSectionKeys } from "@/lib/landing-sections";
 
 export type SectionKey =
   | "header" | "hero" | "product" | "description"
