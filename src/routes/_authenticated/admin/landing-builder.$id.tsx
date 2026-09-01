@@ -8,15 +8,18 @@ import {
   ArrowLeft, Eye, Loader2, Monitor, Plus, RefreshCw, Save, Smartphone, Sparkles, Trash2,
 } from "lucide-react";
 import {
-  addLandingCustomDomain,
+  attachDomainToLandingPage,
+  detachDomainFromLandingPage,
   getLandingPage,
+  listAttachableDomains,
   removeLandingDomain,
   resyncLandingPage,
+  retryLandingSubdomain,
   setLandingStatus,
   setLandingSubdomain,
   updateLandingPage,
-  verifyLandingDomain,
 } from "@/lib/landing-builder.functions";
+
 import {
   FORM_FIELDS,
   PAYMENT_METHODS,
