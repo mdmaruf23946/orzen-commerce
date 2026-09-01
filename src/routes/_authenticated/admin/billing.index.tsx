@@ -584,7 +584,9 @@ function BillingPage() {
                   <MobileRow label="Orders / month" value={formatLimit(p.order_limit)} />
                   <MobileRow label="Storage" value={formatLimit(p.storage_mb, "MB")} />
 <MobileRow label="Staff" value={formatLimit(p.staff_limit)} />
-                  <MobileRow label="Landing Pages" value={formatLimit(p.landing_page_limit)} />
+                  {(isCustom || !!p.features?.landing_page_create) && (
+                    <MobileRow label="Landing Pages" value={formatLimit(p.landing_page_limit)} />
+                  )}
                   {FEATURE_KEYS.map((k) => {
                     const on = isCustom ? true : !!p.features?.[k];
                     return (
