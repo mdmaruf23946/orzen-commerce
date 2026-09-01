@@ -46,6 +46,24 @@ export async function slugFromHost(host: string): Promise<string | null> {
   return r?.slug ?? null;
 }
 
+/**
+ * Resolve a hostname to whatever tenant owns it — a storefront or a builder
+ * landing page. Used so each host serves its own PWA manifest.
+ */
+export async function hostTargetFromHost(
+  host: string,
+): Promise<{ kind: "store" | "landing"; slug: string } | null> {
+  if (!host) return null;
+  const sb = publicSb();
+  const { data } = await sb.rpc("resolve_host_kind", { _host: host } as any);
+  const r = data as any;
+  if (r?.slug && (r.kind === "landing" || r.kind === "store")) {
+    return { kind: r.kind, slug: String(r.slug) };
+  }
+  const slug = await slugFromHost(host);
+  return slug ? { kind: "store", slug } : null;
+}
+
 export async function storeBySlug(slug: string) {
   const sb = publicSb();
   const { data } = await sb.rpc("get_public_store_by_slug", { _slug: slug });
