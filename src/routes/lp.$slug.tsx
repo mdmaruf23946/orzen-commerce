@@ -67,8 +67,10 @@ export const Route = createFileRoute("/lp/$slug")({
   notFoundComponent: () => (
     <div className="flex min-h-screen items-center justify-center p-8 text-center">
       <div>
-        <div className="text-2xl font-semibold">Page not found</div>
-        <p className="mt-2 text-sm text-neutral-500">This landing page is not available.</p>
+        <div className="text-2xl font-semibold">Page not published</div>
+        <p className="mt-2 text-sm text-neutral-500">
+          This landing page is not published yet. Publish it from the Merchant Panel to make it live.
+        </p>
       </div>
     </div>
   ),
