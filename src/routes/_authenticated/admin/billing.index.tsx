@@ -52,6 +52,7 @@ type Plan = {
   order_limit?: number | null;
   storage_mb?: number | null;
   staff_limit?: number | null;
+  landing_page_limit?: number | null;
   features?: Record<string, any> | null;
   feature_summary?: string[] | null;
 };
