@@ -542,7 +542,9 @@ function BillingPage() {
               <CompareLimitRow label="Orders / month" plans={plans} accessor={(p) => formatLimit(p.order_limit)} />
               <CompareLimitRow label="Storage" plans={plans} accessor={(p) => formatLimit(p.storage_mb, "MB")} />
 <CompareLimitRow label="Staff" plans={plans} accessor={(p) => formatLimit(p.staff_limit)} />
-              <CompareLimitRow label="Landing Pages" plans={plans} accessor={(p) => formatLimit(p.landing_page_limit)} />
+              {plans.some((p) => tierOf(p) === "custom" || !!p.features?.landing_page_create) && (
+                <CompareLimitRow label="Landing Pages" plans={plans} accessor={(p) => formatLimit(p.landing_page_limit)} />
+              )}
               {FEATURE_KEYS.map((k) => (
                 <tr key={k} className="border-b last:border-0">
                   <th className="sticky left-0 z-10 bg-card p-3 text-left font-medium">{FEATURE_LABELS[k]}</th>
