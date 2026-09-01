@@ -361,7 +361,24 @@ export const getLandingPreviewBySlug = createServerFn({ method: "GET" })
     };
   });
 
+/** Link (or re-link) a landing page to one of the store's products. */
+export const setLandingProduct = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: uuid, productId: uuid }).parse(d))
+  .handler(async ({ data, context }) => {
+    const store = await requireMyStore(context.supabase, context.userId);
+    const page = await ownedPage(context.supabase, store.id, data.id);
+    const product = await loadSourceProduct(context.supabase, store.id, data.productId);
+    const { error } = await context.supabase
+      .from("landing_pages")
+      .update({ product_id: product.id } as never)
+      .eq("id", page.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const setLandingStatus = createServerFn({ method: "POST" })
+
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: uuid, status: z.enum(["draft", "published"]) }).parse(d))
   .handler(async ({ data, context }) => {
