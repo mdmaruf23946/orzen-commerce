@@ -22,7 +22,14 @@ export async function landingManifestResponse(
 
   const seo = (page.seo ?? {}) as Record<string, string | undefined>;
   const content = (page.content ?? {}) as any;
-  const rawIcon = seo["icon"] || content?.header?.iconLogo || "";
+  // Icon priority: page icon → header icon logo → store logo → hero image, so a
+  // published page always installs with a real icon instead of a blank tile.
+  const rawIcon =
+    seo["icon"] ||
+    content?.header?.iconLogo ||
+    page.store?.logo_url ||
+    content?.hero?.image ||
+    "";
   const icon = absolute(rawIcon ? lpImage(String(rawIcon)) : null, origin);
   const name: string = seo["title"] || page.title || "Landing page";
   const themeColor: string = (page.theme?.primary as string) || "#0f172a";
