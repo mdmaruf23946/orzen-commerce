@@ -415,7 +415,12 @@ function Page() {
               <li>"Check now" চাপুন — verify হলে status "Verified" হবে (DNS ছড়াতে ৫ মিনিট–২৪ ঘণ্টা লাগতে পারে)।</li>
               <li>SSL issue হওয়ার পর "Make primary" দিয়ে সেট করলে ওই ডোমেইনে স্টোর ওপেন হবে।</li>
             </ol>
+            <p className="mt-2">
+              এখানে যত খুশি custom domain যোগ করা যাবে। Verify হওয়া domain গুলো Landing Pages এর
+              Domains ট্যাব থেকে search করে যেকোনো landing page এর সাথে connect করা যাবে।
+            </p>
           </div>
+
 
           <div className="flex flex-col gap-2 sm:flex-row">
             <Input
@@ -441,9 +446,10 @@ function Page() {
                 ? Math.max(0, Math.ceil((15_000 - (now - new Date(d.last_checked_at).getTime())) / 1000))
                 : 0;
               const live = d.status === "active" || d.ssl_status === "issued";
-              const canBePrimary = data.autoSsl
-                ? live
-                : d.status === "verified" || d.status === "active";
+              const canBePrimary =
+                !d.landing_page_id &&
+                (data.autoSsl ? live : d.status === "verified" || d.status === "active");
+
               return (
                 <div key={d.id} className="space-y-3 rounded-lg border bg-background p-3">
                   <div className="flex flex-wrap items-center gap-2">
@@ -459,7 +465,13 @@ function Page() {
                         Primary
                       </span>
                     )}
+                    {d.landing_page && (
+                      <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs text-violet-800 dark:bg-violet-900/30 dark:text-violet-200">
+                        Landing page: {d.landing_page.title || d.landing_page.slug}
+                      </span>
+                    )}
                   </div>
+
 
                   {d.status === "verified" && !live && (
                     <div className="rounded-md bg-blue-50 p-2 text-xs text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">

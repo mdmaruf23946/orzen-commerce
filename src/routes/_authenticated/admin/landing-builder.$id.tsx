@@ -8,15 +8,18 @@ import {
   ArrowLeft, Eye, Loader2, Monitor, Plus, RefreshCw, Save, Smartphone, Sparkles, Trash2,
 } from "lucide-react";
 import {
-  addLandingCustomDomain,
+  attachDomainToLandingPage,
+  detachDomainFromLandingPage,
   getLandingPage,
+  listAttachableDomains,
   removeLandingDomain,
   resyncLandingPage,
+  retryLandingSubdomain,
   setLandingStatus,
   setLandingSubdomain,
   updateLandingPage,
-  verifyLandingDomain,
 } from "@/lib/landing-builder.functions";
+
 import {
   FORM_FIELDS,
   PAYMENT_METHODS,
@@ -419,9 +422,10 @@ function LandingEditor() {
           <DomainsPanel
             pageId={id}
             rootDomain={data.rootDomain}
-            dnsTarget={data.dnsTarget}
-            apexIp={data.apexIp}
             domains={data.domains as any[]}
+            attachedDomains={(data as any).attachedDomains ?? []}
+            autoSubdomain={Boolean((data as any).autoSubdomain)}
+
             onChanged={() => qc.invalidateQueries({ queryKey: ["lp-builder", id] })}
           />
         </TabsContent>
@@ -584,25 +588,43 @@ function LandingEditor() {
 
 /* ---------- Domains ---------- */
 
+function StatusPill({ status }: { status: string }) {
+  const tone =
+    status === "active"
+      ? "bg-emerald-500/10 text-emerald-600"
+      : status === "error"
+        ? "bg-red-500/10 text-red-600"
+        : "bg-amber-500/10 text-amber-600";
+  const label =
+    status === "active" ? "Live" : status === "error" ? "Failed" : status === "verified" ? "Verified" : "Provisioning";
+  return <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase ${tone}`}>{label}</span>;
+}
+
 function DomainsPanel({
-  pageId, rootDomain, dnsTarget, apexIp, domains, onChanged,
+  pageId, rootDomain, domains, attachedDomains, autoSubdomain, onChanged,
 }: {
   pageId: string;
   rootDomain: string;
-  dnsTarget: string;
-  apexIp: string;
   domains: any[];
+  attachedDomains: any[];
+  autoSubdomain: boolean;
   onChanged: () => void;
 }) {
   const subFn = useServerFn(setLandingSubdomain);
-  const addFn = useServerFn(addLandingCustomDomain);
-  const verifyFn = useServerFn(verifyLandingDomain);
+  const retryFn = useServerFn(retryLandingSubdomain);
   const delFn = useServerFn(removeLandingDomain);
+  const attachFn = useServerFn(attachDomainToLandingPage);
+  const detachFn = useServerFn(detachDomainFromLandingPage);
 
   const sub = domains.find((d) => d.kind === "subdomain");
   const [label, setLabel] = useState(sub ? String(sub.hostname).split(".")[0]! : "");
-  const [host, setHost] = useState("");
   const [busy, setBusy] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const available = useQuery({
+    queryKey: ["lp-attachable-domains"],
+    queryFn: () => listAttachableDomains(),
+  });
 
   async function run(fn: () => Promise<unknown>, msg: string) {
     setBusy(true);
@@ -610,6 +632,7 @@ function DomainsPanel({
       await fn();
       toast.success(msg);
       onChanged();
+      available.refetch();
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -617,12 +640,26 @@ function DomainsPanel({
     }
   }
 
+  const pool = ((available.data as any[]) ?? []).filter(
+    (d) => !d.landing_page_id && ["verified", "active"].includes(d.status),
+  );
+  const filtered = search.trim()
+    ? pool.filter((d) => d.hostname.includes(search.trim().toLowerCase()))
+    : pool;
+
   return (
     <>
       <Card title="Subdomain">
         <p className="text-xs text-muted-foreground">
-          Serve this landing page on its own subdomain of {rootDomain}.
+          Serve this landing page on its own subdomain of {rootDomain}. Saving registers the
+          hostname on Cloudflare automatically.
         </p>
+        {!autoSubdomain && (
+          <p className="rounded-lg bg-amber-500/10 p-2 text-xs text-amber-700">
+            Cloudflare automation is not configured on this platform, so the subdomain will stay
+            in “Provisioning” until an administrator connects it.
+          </p>
+        )}
         <div className="flex flex-wrap items-center gap-2">
           <Input className="max-w-56" value={label} onChange={(e) => setLabel(slugify(e.target.value))} placeholder="my-offer" />
           <span className="text-sm text-muted-foreground">.{rootDomain}</span>
@@ -631,63 +668,95 @@ function DomainsPanel({
           </Button>
         </div>
         {sub && (
-          <div className="flex items-center gap-2 text-xs">
-            <a className="font-medium underline" href={`https://${sub.hostname}`} target="_blank" rel="noreferrer">
-              {sub.hostname}
-            </a>
-            <Button size="sm" variant="ghost" onClick={() => run(() => delFn({ data: { domainId: sub.id } }), "Removed")}>
-              <Trash2 className="h-3.5 w-3.5 text-red-500" />
-            </Button>
+          <div className="rounded-lg border p-3 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <a className="font-medium underline" href={`https://${sub.hostname}`} target="_blank" rel="noreferrer">
+                {sub.hostname}
+              </a>
+              <StatusPill status={sub.status} />
+              <div className="ml-auto flex gap-1">
+                <Button size="sm" variant="outline" disabled={busy} onClick={() => run(() => retryFn({ data: { domainId: sub.id } }), "Reconnected")}>
+                  <RefreshCw className="mr-1 h-3 w-3" /> Retry
+                </Button>
+                <Button size="sm" variant="ghost" disabled={busy} onClick={() => run(() => delFn({ data: { domainId: sub.id } }), "Removed")}>
+                  <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                </Button>
+              </div>
+            </div>
+            {sub.last_error && <div className="mt-2 text-red-500">{sub.last_error}</div>}
           </div>
         )}
       </Card>
 
       <Card title="Custom domain">
         <p className="text-xs text-muted-foreground">
-          Point your own domain at this landing page. Add a CNAME to <code>{dnsTarget}</code> (or an A record to{" "}
-          <code>{apexIp}</code> for a root domain), plus the TXT record shown after adding.
+          Custom domains are connected once in{" "}
+          <Link to="/admin/domains" className="font-medium underline">
+            Domain settings
+          </Link>
+          . Search a connected domain here and link it to this landing page.
         </p>
-        <div className="flex flex-wrap items-center gap-2">
-          <Input className="max-w-72" value={host} placeholder="offer.mybrand.com" onChange={(e) => setHost(e.target.value)} />
-          <Button
-            size="sm"
-            disabled={busy || host.length < 4}
-            onClick={() => run(async () => { await addFn({ data: { id: pageId, hostname: host } }); setHost(""); }, "Domain added")}
-          >
-            <Plus className="mr-1 h-3 w-3" /> Add
-          </Button>
-        </div>
+
+        {attachedDomains.length > 0 && (
+          <div className="space-y-2">
+            {attachedDomains.map((d) => (
+              <div key={d.id} className="flex flex-wrap items-center gap-2 rounded-lg border p-3 text-xs">
+                <a className="font-medium underline" href={`https://${d.hostname}`} target="_blank" rel="noreferrer">
+                  {d.hostname}
+                </a>
+                <StatusPill status={d.status} />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="ml-auto"
+                  disabled={busy}
+                  onClick={() => run(() => detachFn({ data: { domainId: d.id } }), "Disconnected")}
+                >
+                  Disconnect
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="space-y-2">
-          {domains.filter((d) => d.kind === "custom").map((d) => (
-            <div key={d.id} className="rounded-lg border p-3 text-xs">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-medium">{d.hostname}</span>
-                <span className="rounded-full bg-muted px-2 py-0.5 uppercase">{d.status}</span>
-                <div className="ml-auto flex gap-1">
-                  <Button size="sm" variant="outline" disabled={busy} onClick={() => run(async () => {
-                    const r = (await verifyFn({ data: { domainId: d.id } })) as { ok: boolean; reason: string };
-                    if (!r.ok) throw new Error(r.reason);
-                  }, "Domain verified")}>
-                    <RefreshCw className="mr-1 h-3 w-3" /> Check
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => run(() => delFn({ data: { domainId: d.id } }), "Removed")}>
-                    <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                  </Button>
-                </div>
-              </div>
-              <div className="mt-2 space-y-1 text-muted-foreground">
-                <div>CNAME <code>{d.hostname}</code> → <code>{d.dns_target ?? dnsTarget}</code></div>
-                <div>TXT <code>_orzen-verify.{d.hostname}</code> → <code>{d.verification_token}</code></div>
-                {d.last_error && <div className="text-red-500">{d.last_error}</div>}
-              </div>
+          <Input
+            value={search}
+            placeholder="Search your connected domains…"
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {available.isLoading ? (
+            <div className="text-xs text-muted-foreground">Loading domains…</div>
+          ) : filtered.length === 0 ? (
+            <div className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+              No verified domain available.{" "}
+              <Link to="/admin/domains" className="font-medium underline">
+                Add a domain in Domain settings
+              </Link>{" "}
+              first, point its DNS, then come back here.
             </div>
-          ))}
+          ) : (
+            filtered.map((d) => (
+              <div key={d.id} className="flex flex-wrap items-center gap-2 rounded-lg border p-3 text-xs">
+                <span className="font-medium">{d.hostname}</span>
+                <StatusPill status={d.status} />
+                <Button
+                  size="sm"
+                  className="ml-auto"
+                  disabled={busy}
+                  onClick={() => run(() => attachFn({ data: { id: pageId, domainId: d.id } }), "Domain connected")}
+                >
+                  <Plus className="mr-1 h-3 w-3" /> Connect
+                </Button>
+              </div>
+            ))
+          )}
         </div>
       </Card>
     </>
   );
 }
+
 
 /* ---------- small building blocks ---------- */
 

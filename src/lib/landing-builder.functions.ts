@@ -17,14 +17,8 @@ import {
 
 const uuid = z.string().uuid();
 
-const HOSTNAME_RE =
-  /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/;
-
 const LABEL_RE = /^[a-z0-9](?:[a-z0-9-]{1,46}[a-z0-9])?$/;
 
-function normalizeHost(h: string) {
-  return h.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/:\d+$/, "");
-}
 
 async function requireMyStore(supabase: any, userId: string) {
   const data = await myStoreRow(supabase, userId, "id, slug, name", "landing_builder");
@@ -143,16 +137,27 @@ export const getLandingPage = createServerFn({ method: "GET" })
       .select("id,name,charge,is_default,sort_order")
       .eq("store_id", store.id)
       .order("sort_order", { ascending: true });
+    // Custom domains connected in Domain settings and attached to this page.
+    const { data: attached } = await context.supabase
+      .from("store_domains")
+      .select("id,hostname,status,ssl_status,last_error,dns_target")
+      .eq("store_id", store.id)
+      .eq("landing_page_id", page.id)
+      .order("hostname", { ascending: true });
+    const { subdomainAutomationConfigured } = await import("@/lib/cloudflare-pages.server");
     return {
       page,
       product: productRes.data ?? null,
       store: storeInfo ?? { id: store.id },
       storeZones: storeZones ?? [],
       domains: domainsRes.data ?? [],
+      attachedDomains: attached ?? [],
+      autoSubdomain: subdomainAutomationConfigured(),
       rootDomain: hosts.rootDomain,
       dnsTarget: hosts.dnsTarget,
       apexIp: hosts.apexIp,
     };
+
 
   });
 
@@ -436,6 +441,23 @@ export const resyncLandingPage = createServerFn({ method: "POST" })
 
 // ---------- Domains ----------
 
+/** Register (or refresh) a landing subdomain as a Cloudflare Worker hostname. */
+async function attachSubdomainToCloudflare(hostname: string, previous?: string | null) {
+  const { ensureSubdomainAttached, detachSubdomain, subdomainAutomationConfigured } = await import(
+    "@/lib/cloudflare-pages.server"
+  );
+  if (!subdomainAutomationConfigured()) {
+    return { status: "pending", error: "Cloudflare automation is not configured on this platform yet." };
+  }
+  const res = await ensureSubdomainAttached(hostname);
+  if (previous && previous !== hostname) {
+    await detachSubdomain(previous).catch(() => null);
+  }
+  return res.ok
+    ? { status: "active", error: null as string | null }
+    : { status: "error", error: res.error ?? "Cloudflare could not attach this subdomain." };
+}
+
 export const setLandingSubdomain = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: uuid, label: z.string().trim().min(3).max(48) }).parse(d))
@@ -449,25 +471,40 @@ export const setLandingSubdomain = createServerFn({ method: "POST" })
     const { rootDomain } = await platformHosts(context.supabase);
     const hostname = `${label}.${rootDomain}`;
 
-    const [{ data: storeClash }, { data: existing }] = await Promise.all([
+    const [{ data: storeClash }, { data: existing }, { data: hostClash }] = await Promise.all([
       context.supabase.from("stores").select("id").eq("slug", label).maybeSingle(),
       context.supabase
         .from("landing_page_domains")
-        .select("id")
+        .select("id,hostname")
         .eq("landing_page_id", page.id)
         .eq("kind", "subdomain")
         .maybeSingle(),
+      context.supabase
+        .from("landing_page_domains")
+        .select("id,landing_page_id")
+        .eq("hostname", hostname)
+        .maybeSingle(),
     ]);
     if (storeClash) throw new Error("A store already uses this subdomain");
+    if (hostClash && hostClash.landing_page_id !== page.id) {
+      throw new Error("Another landing page already uses this subdomain");
+    }
+
+    const cf = await attachSubdomainToCloudflare(hostname, existing?.hostname ?? null).catch((e) => ({
+      status: "error",
+      error: (e as Error).message,
+    }));
 
     const payload = {
       landing_page_id: page.id,
       store_id: store.id,
       hostname,
       kind: "subdomain",
-      status: "active",
-      ssl_status: "issued",
-      verified_at: new Date().toISOString(),
+      status: cf.status,
+      ssl_status: cf.status === "active" ? "issued" : "issuing",
+      last_error: cf.error ?? null,
+      last_checked_at: new Date().toISOString(),
+      verified_at: cf.status === "active" ? new Date().toISOString() : null,
     };
 
     const res = existing
@@ -477,107 +514,112 @@ export const setLandingSubdomain = createServerFn({ method: "POST" })
       if (/duplicate|unique/i.test(res.error.message)) throw new Error("This subdomain is already taken");
       throw new Error(res.error.message);
     }
-    return { hostname };
+    return { hostname, status: cf.status, error: cf.error ?? null };
   });
 
-export const addLandingCustomDomain = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ id: uuid, hostname: z.string().min(3).max(253) }).parse(d))
-  .handler(async ({ data, context }) => {
-    const store = await requireMyStore(context.supabase, context.userId);
-    const page = await ownedPage(context.supabase, store.id, data.id);
-    const host = normalizeHost(data.hostname);
-    if (!HOSTNAME_RE.test(host)) throw new Error("Invalid hostname format");
-
-    const { rootDomain, dnsTarget } = await platformHosts(context.supabase);
-    if (host === rootDomain || host.endsWith(`.${rootDomain}`)) {
-      throw new Error("This hostname is on the platform root — use the subdomain option instead.");
-    }
-
-    let cf: any = null;
-    let cfError = "";
-    if (process.env["CF_API_TOKEN"] && process.env["CF_ZONE_ID"]) {
-      try {
-        const { attachCustomHostname } = await import("./cloudflare-ssl.server");
-        cf = await attachCustomHostname(host);
-      } catch (e) {
-        cfError = (e as Error).message;
-      }
-    }
-
-    const { data: created, error } = await context.supabase
-      .from("landing_page_domains")
-      .insert({
-        landing_page_id: page.id,
-        store_id: store.id,
-        hostname: host,
-        kind: "custom",
-        status: "pending",
-        dns_target: dnsTarget,
-        last_error: cfError || null,
-        cf_hostname_id: cf?.id ?? null,
-        cf_status: cf?.status ?? null,
-        cf_ssl_status: cf?.ssl?.status ?? null,
-        cf_ownership: cf?.ownership_verification ?? null,
-        cf_ssl_validation: cf?.ssl?.validation_records ?? null,
-      })
-      .select("*")
-      .single();
-    if (error) {
-      if (/duplicate|unique/i.test(error.message)) throw new Error("This domain is already connected");
-      throw new Error(error.message);
-    }
-    return created;
-  });
-
-export const verifyLandingDomain = createServerFn({ method: "POST" })
+/** Retry the Cloudflare attachment for an existing landing subdomain. */
+export const retryLandingSubdomain = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ domainId: uuid }).parse(d))
   .handler(async ({ data, context }) => {
     const store = await requireMyStore(context.supabase, context.userId);
     const { data: row } = await context.supabase
       .from("landing_page_domains")
-      .select("*")
+      .select("id,hostname,kind")
       .eq("id", data.domainId)
       .eq("store_id", store.id)
       .maybeSingle();
-    if (!row) throw new Error("Not found");
-    if (row.last_checked_at && Date.now() - new Date(row.last_checked_at).getTime() < 15_000) {
-      throw new Error("Please wait a few seconds before checking again");
-    }
+    if (!row || row.kind !== "subdomain") throw new Error("Not found");
 
-    const { dnsTarget, apexIp } = await platformHosts(context.supabase);
-    const target = (row.dns_target ?? dnsTarget).toLowerCase();
-    const { resolveTxt, resolveCname, resolveA } = await import("./dns-lookup.server");
-
-    const [txt, cname, aRecords] = await Promise.all([
-      resolveTxt(`_orzen-verify.${row.hostname}`),
-      resolveCname(row.hostname),
-      resolveA(row.hostname),
-    ]);
-    const txtOk = txt.some((t) => t === row.verification_token);
-    const pointedOk =
-      cname.some((c) => c.toLowerCase() === target) || aRecords.includes(apexIp);
-
-    const patch: Record<string, unknown> = { last_checked_at: new Date().toISOString() };
-    let reason = "";
-    const ok = txtOk && pointedOk;
-    if (ok) {
-      patch["status"] = "verified";
-      patch["ssl_status"] = "issuing";
-      patch["verified_at"] = new Date().toISOString();
-      patch["last_error"] = null;
-    } else {
-      reason = !pointedOk
-        ? `Point ${row.hostname} to ${target} (CNAME) or ${apexIp} (A record).`
-        : `Add TXT record _orzen-verify.${row.hostname} with value ${row.verification_token}.`;
-      patch["last_error"] = reason;
-    }
-
-    await context.supabase.from("landing_page_domains").update(patch as never).eq("id", row.id);
-    return { ok, reason };
+    const cf = await attachSubdomainToCloudflare(row.hostname).catch((e) => ({
+      status: "error",
+      error: (e as Error).message,
+    }));
+    await context.supabase
+      .from("landing_page_domains")
+      .update({
+        status: cf.status,
+        ssl_status: cf.status === "active" ? "issued" : "issuing",
+        last_error: cf.error ?? null,
+        last_checked_at: new Date().toISOString(),
+        verified_at: cf.status === "active" ? new Date().toISOString() : null,
+      } as never)
+      .eq("id", row.id);
+    return { status: cf.status, error: cf.error ?? null };
   });
 
+/**
+ * Custom domains the merchant already connected in Domain settings, with the
+ * landing page each one is attached to (if any). Used by the search + connect
+ * picker inside the landing builder.
+ */
+export const listAttachableDomains = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const store = await requireMyStore(context.supabase, context.userId);
+    const { data } = await context.supabase
+      .from("store_domains")
+      .select("id,hostname,status,ssl_status,landing_page_id,last_error")
+      .eq("store_id", store.id)
+      .eq("kind", "custom")
+      .order("hostname", { ascending: true });
+
+    const rows = (data ?? []) as any[];
+    const pageIds = [...new Set(rows.map((r) => r.landing_page_id).filter(Boolean))];
+    const { data: pages } = pageIds.length
+      ? await context.supabase.from("landing_pages").select("id,title,slug").in("id", pageIds)
+      : { data: [] as any[] };
+    const byId = new Map((pages ?? []).map((p: any) => [p.id, p]));
+    return rows.map((r) => ({ ...r, landing_page: r.landing_page_id ? byId.get(r.landing_page_id) ?? null : null }));
+  });
+
+export const attachDomainToLandingPage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: uuid, domainId: uuid }).parse(d))
+  .handler(async ({ data, context }) => {
+    const store = await requireMyStore(context.supabase, context.userId);
+    const page = await ownedPage(context.supabase, store.id, data.id);
+    const { data: row } = await context.supabase
+      .from("store_domains")
+      .select("id,hostname,status,landing_page_id")
+      .eq("id", data.domainId)
+      .eq("store_id", store.id)
+      .maybeSingle();
+    if (!row) throw new Error("Domain not found");
+    if (!["verified", "active"].includes(row.status)) {
+      throw new Error("Verify this domain in Domain settings before connecting it");
+    }
+    if (row.landing_page_id && row.landing_page_id !== page.id) {
+      throw new Error("This domain is already connected to another landing page");
+    }
+    const { error } = await context.supabase
+      .from("store_domains")
+      .update({ landing_page_id: page.id } as never)
+      .eq("id", row.id);
+    if (error) throw new Error(error.message);
+    // A landing-page domain can never be the storefront's primary host.
+    await context.supabase
+      .from("stores")
+      .update({ primary_domain_id: null })
+      .eq("primary_domain_id", row.id);
+    await context.supabase.from("store_domains").update({ is_primary: false } as never).eq("id", row.id);
+    return { ok: true, hostname: row.hostname };
+  });
+
+export const detachDomainFromLandingPage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ domainId: uuid }).parse(d))
+  .handler(async ({ data, context }) => {
+    const store = await requireMyStore(context.supabase, context.userId);
+    const { error } = await context.supabase
+      .from("store_domains")
+      .update({ landing_page_id: null } as never)
+      .eq("id", data.domainId)
+      .eq("store_id", store.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+/** Remove a landing subdomain (custom domains are managed in Domain settings). */
 export const removeLandingDomain = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ domainId: uuid }).parse(d))
@@ -585,15 +627,15 @@ export const removeLandingDomain = createServerFn({ method: "POST" })
     const store = await requireMyStore(context.supabase, context.userId);
     const { data: row } = await context.supabase
       .from("landing_page_domains")
-      .select("id,cf_hostname_id")
+      .select("id,hostname,kind")
       .eq("id", data.domainId)
       .eq("store_id", store.id)
       .maybeSingle();
     if (!row) throw new Error("Not found");
-    if (row.cf_hostname_id && process.env["CF_API_TOKEN"] && process.env["CF_ZONE_ID"]) {
+    if (row.kind === "subdomain") {
       try {
-        const { detachCustomHostname } = await import("./cloudflare-ssl.server");
-        await detachCustomHostname(row.cf_hostname_id);
+        const { detachSubdomain } = await import("@/lib/cloudflare-pages.server");
+        await detachSubdomain(row.hostname);
       } catch {
         /* keep going — the DB row must still be removed */
       }
@@ -602,3 +644,4 @@ export const removeLandingDomain = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
