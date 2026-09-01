@@ -6919,6 +6919,7 @@ export type Database = {
           id: string
           is_primary: boolean
           kind: string
+          landing_page_id: string | null
           last_checked_at: string | null
           last_error: string | null
           previous_state: Json | null
@@ -6944,6 +6945,7 @@ export type Database = {
           id?: string
           is_primary?: boolean
           kind?: string
+          landing_page_id?: string | null
           last_checked_at?: string | null
           last_error?: string | null
           previous_state?: Json | null
@@ -6969,6 +6971,7 @@ export type Database = {
           id?: string
           is_primary?: boolean
           kind?: string
+          landing_page_id?: string | null
           last_checked_at?: string | null
           last_error?: string | null
           previous_state?: Json | null
@@ -6981,6 +6984,13 @@ export type Database = {
           verified_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "store_domains_landing_page_id_fkey"
+            columns: ["landing_page_id"]
+            isOneToOne: false
+            referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "store_domains_store_id_fkey"
             columns: ["store_id"]
