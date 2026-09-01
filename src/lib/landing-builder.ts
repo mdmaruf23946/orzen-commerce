@@ -80,7 +80,7 @@ export type LandingContent = {
   /** Optional sections currently in use. Required sections are always on. */
   sectionEnabled: Record<string, boolean>;
   /** Content of the registry-driven (non-builtin) sections. */
-  blocks: Record<string, Record<string, unknown>>;
+  blocks: Record<string, Record<string, any>>;
 };
 
 
