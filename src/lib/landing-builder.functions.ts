@@ -17,14 +17,8 @@ import {
 
 const uuid = z.string().uuid();
 
-const HOSTNAME_RE =
-  /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/;
-
 const LABEL_RE = /^[a-z0-9](?:[a-z0-9-]{1,46}[a-z0-9])?$/;
 
-function normalizeHost(h: string) {
-  return h.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/:\d+$/, "");
-}
 
 async function requireMyStore(supabase: any, userId: string) {
   const data = await myStoreRow(supabase, userId, "id, slug, name", "landing_builder");
