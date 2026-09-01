@@ -87,14 +87,25 @@ export const listMyDomains = createServerFn({ method: "GET" })
       .select("*")
       .eq("store_id", store.id)
       .order("created_at", { ascending: false });
+    const rows = (data ?? []) as any[];
+    // Which landing page (if any) each custom domain is connected to.
+    const pageIds = [...new Set(rows.map((r) => r.landing_page_id).filter(Boolean))];
+    const { data: pages } = pageIds.length
+      ? await context.supabase.from("landing_pages").select("id,title,slug").in("id", pageIds)
+      : { data: [] as any[] };
+    const byId = new Map((pages ?? []).map((p: any) => [p.id, p]));
     const { subdomainAutomationConfigured } = await import("@/lib/cloudflare-pages.server");
     return {
       store,
       settings,
       autoSsl: cloudflareConfigured(),
       autoSubdomain: subdomainAutomationConfigured(),
-      domains: (data ?? []) as any[],
+      domains: rows.map((r) => ({
+        ...r,
+        landing_page: r.landing_page_id ? (byId.get(r.landing_page_id) ?? null) : null,
+      })),
     };
+
   });
 
 /**
