@@ -5,8 +5,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Eye, Loader2, Monitor, Plus, RefreshCw, Save, Smartphone, Sparkles, Trash2,
+  ArrowLeft, Eye, Loader2, Plus, RefreshCw, Save, Sparkles, Trash2,
 } from "lucide-react";
+import { LandingPreviewFrame } from "@/components/admin/landing/LandingPreviewFrame";
 import {
   attachDomainToLandingPage,
   detachDomainFromLandingPage,
@@ -95,7 +96,6 @@ function LandingEditor() {
   const [seo, setSeo] = useState<{ title?: string; description?: string; image?: string; icon?: string }>({});
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [previewKey, setPreviewKey] = useState(0);
 
   useEffect(() => {
@@ -260,40 +260,15 @@ function LandingEditor() {
       </div>
 
       {showPreview && (
-        <div className="space-y-2 rounded-xl border bg-card p-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold">Live preview</span>
-            <span className="text-xs text-muted-foreground">View only · reflects saved content</span>
-            <div className="ml-auto flex gap-1">
-              <Button size="sm" variant={device === "desktop" ? "default" : "outline"} onClick={() => setDevice("desktop")}>
-                <Monitor className="mr-1 h-3.5 w-3.5" /> Desktop
-              </Button>
-              <Button size="sm" variant={device === "mobile" ? "default" : "outline"} onClick={() => setDevice("mobile")}>
-                <Smartphone className="mr-1 h-3.5 w-3.5" /> Mobile
-              </Button>
-              <a
-                href={
-                  page.status === "published" && data?.publicUrl
-                    ? data.publicUrl
-                    : `/lp/${page.slug}?preview=true`
-                }
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button size="sm" variant="outline">Open</Button>
-              </a>
-            </div>
-          </div>
-          <div className="overflow-x-auto rounded-lg border bg-muted/40 p-2">
-            <iframe
-              key={previewKey}
-              title="Landing page preview"
-              src={`/lp/${page.slug}?preview=true`}
-              className="mx-auto block h-[70vh] border-0 bg-white"
-              style={{ width: device === "mobile" ? 390 : "100%", pointerEvents: "none" }}
-            />
-          </div>
-        </div>
+        <LandingPreviewFrame
+          key={previewKey}
+          previewSrc={`/lp/${page.slug}?preview=true`}
+          openUrl={
+            page.status === "published" && data?.publicUrl
+              ? data.publicUrl
+              : `/lp/${page.slug}?preview=true`
+          }
+        />
       )}
 
       <Tabs value={tab} onValueChange={(v) => { setTab(v); setSection(null); }}>
