@@ -74,9 +74,13 @@ function LandingEditor() {
   const saveFn = useServerFn(updateLandingPage);
   const statusFn = useServerFn(setLandingStatus);
   const resyncFn = useServerFn(resyncLandingPage);
+  const linkProductFn = useServerFn(setLandingProduct);
+  const productsFn = useServerFn(listLandingProducts);
   const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({ queryKey: ["lp-builder", id], queryFn: () => getFn({ data: { id } }) });
+  const { data: productList } = useQuery({ queryKey: ["lp-products"], queryFn: () => productsFn() });
+
 
   const [tab, setTab] = useState("content");
   const [section, setSection] = useState<SectionKey | null>(null);
