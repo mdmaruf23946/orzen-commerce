@@ -6,6 +6,8 @@
 //   Header → Hero → Product → Description → FAQ → Reviews → Order form → Footer
 // Merchants edit text only; the design is owned by the system template.
 
+import { DEFAULT_SECTION_ORDER, REQUIRED_SECTION_KEYS, sectionSpec, sectionRank } from "./landing-sections";
+
 export type LPFeature = { icon: string; title: string; text: string };
 export type LPPoint = { title: string; text: string; icon: string };
 export type LPBenefit = LPPoint;
@@ -351,6 +353,9 @@ export function generateContentFromProduct(p: SourceProduct): LandingContent {
       facebook: "", instagram: "", youtube: "", tiktok: "", whatsapp: "",
       links: [],
     },
+    sectionOrder: [...DEFAULT_SECTION_ORDER],
+    sectionEnabled: { product: true, description: true, faq: true, reviews: false },
+    blocks: {},
   };
 }
 
