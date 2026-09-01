@@ -415,7 +415,12 @@ function Page() {
               <li>"Check now" চাপুন — verify হলে status "Verified" হবে (DNS ছড়াতে ৫ মিনিট–২৪ ঘণ্টা লাগতে পারে)।</li>
               <li>SSL issue হওয়ার পর "Make primary" দিয়ে সেট করলে ওই ডোমেইনে স্টোর ওপেন হবে।</li>
             </ol>
+            <p className="mt-2">
+              এখানে যত খুশি custom domain যোগ করা যাবে। Verify হওয়া domain গুলো Landing Pages এর
+              Domains ট্যাব থেকে search করে যেকোনো landing page এর সাথে connect করা যাবে।
+            </p>
           </div>
+
 
           <div className="flex flex-col gap-2 sm:flex-row">
             <Input
