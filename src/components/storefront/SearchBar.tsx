@@ -5,20 +5,20 @@ export function SearchBar({ className = "" }: { className?: string }) {
   const { query, setQuery } = useStoreUI();
   return (
     <div className={`relative ${className}`}>
-      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sf-muted" />
+      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sf-muted transition-colors duration-200" />
       <input
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search products…"
-        className="h-10 w-full rounded-full border border-sf-line bg-sf-card pl-9 pr-9 text-sm shadow-sm outline-none transition-shadow focus:border-sf-line focus:ring-2 focus:ring-sf-accent/15"
+        className="h-10 w-full rounded-full border border-sf-line bg-sf-card pl-9 pr-9 text-sm shadow-sm outline-none transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-sf-accent/40 focus:border-sf-accent/60 focus:shadow-[0_6px_20px_-12px_var(--sf-accent)] focus:ring-4 focus:ring-sf-accent/15"
       />
       {query && (
         <button
           type="button"
           onClick={() => setQuery("")}
           aria-label="Clear search"
-          className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full text-sf-muted hover:bg-sf-accent-soft hover:text-sf-text"
+          className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 sf-press place-items-center rounded-full text-sf-muted hover:rotate-90 hover:bg-sf-accent-soft hover:text-sf-accent"
         >
           <X className="h-3.5 w-3.5" />
         </button>
