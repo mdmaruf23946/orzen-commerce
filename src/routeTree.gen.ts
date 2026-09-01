@@ -166,6 +166,7 @@ import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/publi
 import { Route as ApiPublicTiktokTrackRouteImport } from './routes/api/public/tiktok/track'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
 import { Route as ApiPublicLpOrderRouteImport } from './routes/api/public/lp.order'
+import { Route as ApiPublicLpManifestSlugRouteImport } from './routes/api/public/lp-manifest.$slug'
 import { Route as ApiPublicGa4TrackRouteImport } from './routes/api/public/ga4/track'
 import { Route as ApiPublicFbCapiTrackRouteImport } from './routes/api/public/fb-capi/track'
 import { Route as ApiPublicFacebookWebhookRouteImport } from './routes/api/public/facebook/webhook'
@@ -1085,6 +1086,11 @@ const ApiPublicLpOrderRoute = ApiPublicLpOrderRouteImport.update({
   path: '/api/public/lp/order',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicLpManifestSlugRoute = ApiPublicLpManifestSlugRouteImport.update({
+  id: '/api/public/lp-manifest/$slug',
+  path: '/api/public/lp-manifest/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicGa4TrackRoute = ApiPublicGa4TrackRouteImport.update({
   id: '/api/public/ga4/track',
   path: '/api/public/ga4/track',
@@ -1483,6 +1489,7 @@ export interface FileRoutesByFullPath {
   '/api/public/facebook/webhook': typeof ApiPublicFacebookWebhookRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
+  '/api/public/lp-manifest/$slug': typeof ApiPublicLpManifestSlugRoute
   '/api/public/lp/order': typeof ApiPublicLpOrderRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
@@ -1671,6 +1678,7 @@ export interface FileRoutesByTo {
   '/api/public/facebook/webhook': typeof ApiPublicFacebookWebhookRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
+  '/api/public/lp-manifest/$slug': typeof ApiPublicLpManifestSlugRoute
   '/api/public/lp/order': typeof ApiPublicLpOrderRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
@@ -1870,6 +1878,7 @@ export interface FileRoutesById {
   '/api/public/facebook/webhook': typeof ApiPublicFacebookWebhookRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
+  '/api/public/lp-manifest/$slug': typeof ApiPublicLpManifestSlugRoute
   '/api/public/lp/order': typeof ApiPublicLpOrderRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
@@ -2069,6 +2078,7 @@ export interface FileRouteTypes {
     | '/api/public/facebook/webhook'
     | '/api/public/fb-capi/track'
     | '/api/public/ga4/track'
+    | '/api/public/lp-manifest/$slug'
     | '/api/public/lp/order'
     | '/api/public/messenger/webhook'
     | '/api/public/tiktok/track'
@@ -2257,6 +2267,7 @@ export interface FileRouteTypes {
     | '/api/public/facebook/webhook'
     | '/api/public/fb-capi/track'
     | '/api/public/ga4/track'
+    | '/api/public/lp-manifest/$slug'
     | '/api/public/lp/order'
     | '/api/public/messenger/webhook'
     | '/api/public/tiktok/track'
@@ -2455,6 +2466,7 @@ export interface FileRouteTypes {
     | '/api/public/facebook/webhook'
     | '/api/public/fb-capi/track'
     | '/api/public/ga4/track'
+    | '/api/public/lp-manifest/$slug'
     | '/api/public/lp/order'
     | '/api/public/messenger/webhook'
     | '/api/public/tiktok/track'
@@ -2520,6 +2532,7 @@ export interface RootRouteChildren {
   ApiPublicFacebookWebhookRoute: typeof ApiPublicFacebookWebhookRoute
   ApiPublicFbCapiTrackRoute: typeof ApiPublicFbCapiTrackRoute
   ApiPublicGa4TrackRoute: typeof ApiPublicGa4TrackRoute
+  ApiPublicLpManifestSlugRoute: typeof ApiPublicLpManifestSlugRoute
   ApiPublicLpOrderRoute: typeof ApiPublicLpOrderRoute
   ApiPublicMessengerWebhookRoute: typeof ApiPublicMessengerWebhookRoute
   ApiPublicTiktokTrackRoute: typeof ApiPublicTiktokTrackRoute
@@ -3635,6 +3648,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicLpOrderRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/lp-manifest/$slug': {
+      id: '/api/public/lp-manifest/$slug'
+      path: '/api/public/lp-manifest/$slug'
+      fullPath: '/api/public/lp-manifest/$slug'
+      preLoaderRoute: typeof ApiPublicLpManifestSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/ga4/track': {
       id: '/api/public/ga4/track'
       path: '/api/public/ga4/track'
@@ -4421,6 +4441,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicFacebookWebhookRoute: ApiPublicFacebookWebhookRoute,
   ApiPublicFbCapiTrackRoute: ApiPublicFbCapiTrackRoute,
   ApiPublicGa4TrackRoute: ApiPublicGa4TrackRoute,
+  ApiPublicLpManifestSlugRoute: ApiPublicLpManifestSlugRoute,
   ApiPublicLpOrderRoute: ApiPublicLpOrderRoute,
   ApiPublicMessengerWebhookRoute: ApiPublicMessengerWebhookRoute,
   ApiPublicTiktokTrackRoute: ApiPublicTiktokTrackRoute,
