@@ -837,6 +837,64 @@ async function attachSubdomainToCloudflare(hostname: string, previous?: string |
     : { status: "error", error: res.error ?? "Cloudflare could not attach this subdomain." };
 }
 
+/** Availability of a subdomain label across stores, landing pages and reserved words. */
+async function labelAvailable(supabase: any, label: string, rootDomain: string, pageId?: string) {
+  if (!LABEL_RE.test(label) || RESERVED_LP_SLUGS.has(label)) return false;
+  const hostname = `${label}.${rootDomain}`;
+  const [{ data: storeClash }, { data: hostClash }] = await Promise.all([
+    supabase.from("stores").select("id").eq("slug", label).maybeSingle(),
+    supabase.from("landing_page_domains").select("id,landing_page_id").eq("hostname", hostname).maybeSingle(),
+  ]);
+  if (storeClash) return false;
+  if (hostClash && hostClash.landing_page_id !== pageId) return false;
+  return true;
+}
+
+/**
+ * Professional subdomain ideas for a landing page. The AI proposes short,
+ * brandable labels from the product + store name; every candidate is checked
+ * for availability before it is offered.
+ */
+export const suggestLandingSubdomains = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: uuid }).parse(d))
+  .handler(async ({ data, context }) => {
+    const store = await requireMyStore(context.supabase, context.userId);
+    const page = await ownedPage(context.supabase, store.id, data.id);
+    const { rootDomain } = await platformHosts(context.supabase);
+
+    const base = slugify(page.title || store.name) || "offer";
+    const short = base.split("-").slice(0, 2).join("-");
+    const candidates: string[] = [
+      base,
+      short,
+      `${short}-bd`,
+      `${short}-offer`,
+      `${slugify(store.name)}-${short}`.slice(0, 48),
+    ];
+
+    try {
+      const { suggestSubdomainLabels } = await import("@/lib/landing-ai.server");
+      const ai = await suggestSubdomainLabels(page.title || store.name, store.name);
+      candidates.unshift(...ai);
+    } catch {
+      // Deterministic candidates are enough.
+    }
+
+    const seen = new Set<string>();
+    const options: { label: string; hostname: string }[] = [];
+    for (const raw of candidates) {
+      const label = slugify(String(raw)).slice(0, 48);
+      if (!label || seen.has(label)) continue;
+      seen.add(label);
+      if (!(await labelAvailable(context.supabase, label, rootDomain, page.id))) continue;
+      options.push({ label, hostname: `${label}.${rootDomain}` });
+      if (options.length >= 4) break;
+    }
+
+    return { rootDomain, options };
+  });
+
 export const setLandingSubdomain = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: uuid, label: z.string().trim().min(3).max(48) }).parse(d))
