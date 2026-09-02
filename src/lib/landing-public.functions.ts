@@ -26,20 +26,32 @@ export type PublicLandingPage = {
     primary_image_url?: string | null;
     gallery?: string[] | null;
   } | null;
+  store_pages?: { key: string; title: string }[];
   store: {
     id: string;
     name: string;
     slug: string;
     logo_url?: string | null;
     name_logo_url?: string | null;
+    description?: string | null;
     phone?: string | null;
     whatsapp?: string | null;
     email?: string | null;
     address?: string | null;
+    website?: string | null;
+    business_hours?: string | null;
+    trade_license?: string | null;
     facebook?: string | null;
     instagram?: string | null;
     youtube?: string | null;
     tiktok?: string | null;
+    linkedin?: string | null;
+    telegram?: string | null;
+    messenger?: string | null;
+    twitter?: string | null;
+    pinterest?: string | null;
+    snapchat?: string | null;
+    threads?: string | null;
   };
 };
 
