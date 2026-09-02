@@ -287,6 +287,43 @@ export const createLandingPage = createServerFn({ method: "POST" })
       }
     }
 
+    // Generate the AI color palettes ONCE, here at creation. They are stored
+    // with the page and reused forever after, so the Design tab never shuffles.
+    let theme: Record<string, unknown> = defaultTheme() as any;
+    try {
+      const { suggestThemes } = await import("@/lib/landing-theme.server");
+      const gallery = Array.isArray((product as any).gallery)
+        ? (product as any).gallery
+            .map((g: any) => (typeof g === "string" ? g : String(g?.url ?? "")))
+            .filter(Boolean)
+        : [];
+      const presets = await suggestThemes({
+        name: product.name,
+        category: null,
+        description: (product as any).short_description || (product as any).description || null,
+        images: [(product as any).primary_image_url, ...gallery].filter(Boolean).slice(0, 4),
+      });
+      const first = presets[0];
+      theme = {
+        ...theme,
+        presets,
+        presetsAt: new Date().toISOString(),
+        ...(first
+          ? {
+              primary: first.primary,
+              secondary: first.secondary,
+              accent: first.accent,
+              background: first.background,
+              text: first.text,
+              themeId: first.id,
+              themeName: first.name,
+            }
+          : {}),
+      };
+    } catch (e) {
+      console.warn("Landing theme generation skipped:", (e as Error).message);
+    }
+
     const { data: created, error } = await context.supabase
       .from("landing_pages")
       .insert({
@@ -296,7 +333,7 @@ export const createLandingPage = createServerFn({ method: "POST" })
         title,
         status: "draft",
         content: content as any,
-        theme: defaultTheme() as any,
+        theme: theme as any,
         form_config: defaultFormConfig() as any,
         seo: seo as any,
         synced_at: new Date().toISOString(),

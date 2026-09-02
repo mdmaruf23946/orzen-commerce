@@ -118,6 +118,13 @@ export type LandingTheme = {
   /** Selected preset identity, so the Design tab can show what is active. */
   themeId?: string;
   themeName?: string;
+  /**
+   * AI palettes generated once (at page creation). They are stored with the
+   * page so the Design tab always shows the same list — never regenerated
+   * unless the merchant explicitly asks for it.
+   */
+  presets?: import("@/lib/landing-theme").LandingThemePreset[];
+  presetsAt?: string;
 };
 
 export const MAX_KEY_POINTS = 5;
