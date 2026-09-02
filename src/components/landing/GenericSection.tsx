@@ -1,18 +1,21 @@
 // Renders any non-builtin landing-page section from the registry schema.
 // The design is system-owned: merchants only supply text and images.
 
-import { Check } from "lucide-react";
 import type { LPFieldSpec, LPSectionSpec } from "@/lib/landing-sections";
 import { lpImage } from "@/lib/landing-builder";
+import { lpIcon } from "@/lib/landing-icons";
 import { BeforeAfter } from "@/components/landing/sections/BeforeAfter";
 import { VideoEmbed } from "@/components/landing/sections/VideoEmbed";
 import { Gallery } from "@/components/landing/sections/Gallery";
 import { ProductGrid, type LandingProductCard } from "@/components/landing/sections/ProductGrid";
 
 type Data = Record<string, any>;
+type ScalarField = Exclude<LPFieldSpec, { type: "list" }>;
 
-function scalarFields(spec: LPSectionSpec) {
-  return spec.fields.filter((f) => f.type !== "list") as Exclude<LPFieldSpec, { type: "list" }>[];
+function scalarFields(spec: LPSectionSpec): ScalarField[] {
+  // "products" fields hold picked product IDs — only the ProductGrid renderer
+  // consumes them; they must never reach the generic text output.
+  return spec.fields.filter((f) => f.type !== "list" && f.type !== "products") as ScalarField[];
 }
 function listFields(spec: LPSectionSpec) {
   return spec.fields.filter((f) => f.type === "list") as Extract<LPFieldSpec, { type: "list" }>[];
