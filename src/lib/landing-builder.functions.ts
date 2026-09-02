@@ -246,7 +246,7 @@ async function loadBusinessContext(supabase: any, storeId: string, productId: st
       .eq("id", storeId)
       .maybeSingle(),
     supabase.from("products").select("variants,stock").eq("id", productId).maybeSingle(),
-    supabase.from("store_pages").select("title").eq("store_id", storeId).eq("published", true).limit(12),
+    supabase.from("store_pages").select("title").eq("store_id", storeId).eq("is_published", true).limit(12),
     supabase
       .from("product_reviews")
       .select("rating")
