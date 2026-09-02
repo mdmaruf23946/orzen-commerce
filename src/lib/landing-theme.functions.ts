@@ -50,5 +50,34 @@ export const suggestLandingThemes = createServerFn({ method: "POST" })
     }
 
     const { suggestThemes } = await import("@/lib/landing-theme.server");
-    return { themes: await suggestThemes(facts) };
+    const themes = await suggestThemes(facts);
+
+    // Persist the generated list so it stays stable: the Design tab reads it
+    // back instead of asking the AI again on every visit.
+    const existing = ((page as any).theme ?? {}) as Record<string, unknown>;
+    const first = themes[0];
+    const nextTheme: Record<string, unknown> = {
+      ...existing,
+      presets: themes,
+      presetsAt: new Date().toISOString(),
+      ...(first && !existing["themeId"]
+        ? {
+            primary: first.primary,
+            secondary: first.secondary,
+            accent: first.accent,
+            background: first.background,
+            text: first.text,
+            themeId: first.id,
+            themeName: first.name,
+          }
+        : {}),
+    };
+
+    await context.supabase
+      .from("landing_pages")
+      .update({ theme: nextTheme as any })
+      .eq("id", (page as any).id)
+      .eq("store_id", (store as any).id);
+
+    return { themes, theme: nextTheme };
   });
