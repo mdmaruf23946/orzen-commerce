@@ -895,6 +895,10 @@ export const attachDomainToLandingPage = createServerFn({ method: "POST" })
       .update({ primary_domain_id: null })
       .eq("primary_domain_id", row.id);
     await context.supabase.from("store_domains").update({ is_primary: false } as never).eq("id", row.id);
+    // Custom domain live -> the free subdomain is released from Cloudflare.
+    if (row.status === "active") {
+      await retireLandingSubdomainIfCustomLive(context.supabase, page.id).catch(() => null);
+    }
     return { ok: true, hostname: row.hostname };
   });
 
