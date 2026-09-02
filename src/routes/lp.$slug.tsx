@@ -96,7 +96,7 @@ function money(n: number) {
 
 function LandingPageView() {
   const loaded = Route.useLoaderData() as PublicLandingPage | null;
-  const { preview } = Route.useSearch();
+  const { preview, draftTheme } = Route.useSearch();
   const previewFn = useServerFn(getLandingPreviewBySlug);
   const { slug } = Route.useParams();
 
@@ -126,17 +126,18 @@ function LandingPageView() {
     );
   }
 
-  return <LandingPageBody page={page} preview={Boolean(preview)} />;
+  return <LandingPageBody page={page} preview={Boolean(preview)} draftTheme={draftTheme} />;
 }
 
-/** Fixed, system-owned design tokens — merchants cannot change these. */
-const STYLE = {
-  "--lp-primary": "#16a34a",
-  "--lp-accent": "#f59e0b",
-  "--lp-radius": "1rem",
-} as React.CSSProperties;
-
-function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: boolean }) {
+function LandingPageBody({
+  page,
+  preview,
+  draftTheme,
+}: {
+  page: PublicLandingPage;
+  preview: boolean;
+  draftTheme?: Record<string, string> | undefined;
+}) {
   const content = useMemo(() => normalizeContent(page.content), [page.content]);
   const form = (page.form_config ?? {}) as LandingFormConfig;
 
