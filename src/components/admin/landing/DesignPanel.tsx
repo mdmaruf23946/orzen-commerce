@@ -130,18 +130,23 @@ export function DesignPanel({
 
   const hasSelection = Boolean((theme as any)?.themeId);
 
-  // AI default: when nothing was ever selected, apply the first suggestion.
+  // AI default: when nothing was ever selected, apply the first suggestion and
+  // push it to the parent so "Save design" actually persists what is shown.
   useEffect(() => {
     if (hasSelection || !themes.length) return;
     const first = themes[0]!;
-    setPalette({
+    const next: LandingPalette = {
       primary: first.primary,
       secondary: first.secondary,
       accent: first.accent,
       background: first.background,
       text: first.text,
-    });
+    };
+    setPalette(next);
     setSelectedId(first.id);
+    onChange({ ...(theme ?? {}), ...next, themeId: first.id, themeName: first.name });
+    setPreviewKey((k) => k + 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasSelection, themes]);
 
   function apply(next: LandingPalette, id: string, name: string) {
