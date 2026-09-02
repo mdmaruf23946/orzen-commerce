@@ -20,12 +20,20 @@ import {
 } from "@/lib/landing-builder";
 
 export const Route = createFileRoute("/lp/$slug")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    preview:
-      search["preview"] === true || search["preview"] === "true" || search["preview"] === "1"
-        ? true
-        : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>) => {
+    const draft: Record<string, string> = {};
+    for (const role of ["primary", "secondary", "accent", "background", "text"]) {
+      const v = search[`c_${role}`];
+      if (typeof v === "string" && v) draft[role] = v.startsWith("#") ? v : `#${v}`;
+    }
+    return {
+      preview:
+        search["preview"] === true || search["preview"] === "true" || search["preview"] === "1"
+          ? true
+          : undefined,
+      draftTheme: Object.keys(draft).length ? draft : undefined,
+    };
+  },
   loaderDeps: ({ search }) => ({ preview: Boolean(search.preview) }),
   loader: async ({ params, deps }) => {
     // In preview mode the page may still be a draft — it is fetched client-side
