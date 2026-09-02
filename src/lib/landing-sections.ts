@@ -585,6 +585,27 @@ export const SECTION_REGISTRY: LPSectionSpec[] = [
     ],
   },
   {
+    key: "return_refund",
+    name: "Return / Refund",
+    description: "Return and refund policy highlights",
+    required: false,
+    builtin: false,
+    note: "Only state what the store's real return/refund policy allows.",
+    fields: [
+      t("title", "Title", 60, "Heading for the return/refund section."),
+      ta("text", "Policy summary", 300, "Only return/refund terms stated in the supplied policy facts."),
+      {
+        key: "items", type: "list", label: "Policy points", itemLabel: "Point", maxItems: 6,
+        ai: "Short policy points supported by the supplied facts (e.g. return window, condition, refund method).",
+        fields: [
+          t("icon", "Icon", 20, "One icon name: check, shield, truck, star, clock, award, package, zap, gift, heart."),
+          t("title", "Title", 50),
+          ta("text", "Description", 140),
+        ],
+      },
+    ],
+  },
+  {
     key: "brand_story",
     name: "Brand Story",
     description: "The story behind the store or brand",
