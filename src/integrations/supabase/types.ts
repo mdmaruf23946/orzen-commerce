@@ -3363,6 +3363,8 @@ export type Database = {
           landing_page_id: string
           last_checked_at: string | null
           last_error: string | null
+          release_reason: string | null
+          released_at: string | null
           ssl_status: string
           status: string
           store_id: string
@@ -3384,6 +3386,8 @@ export type Database = {
           landing_page_id: string
           last_checked_at?: string | null
           last_error?: string | null
+          release_reason?: string | null
+          released_at?: string | null
           ssl_status?: string
           status?: string
           store_id: string
@@ -3405,6 +3409,8 @@ export type Database = {
           landing_page_id?: string
           last_checked_at?: string | null
           last_error?: string | null
+          release_reason?: string | null
+          released_at?: string | null
           ssl_status?: string
           status?: string
           store_id?: string
@@ -3590,7 +3596,11 @@ export type Database = {
           design_code: string | null
           design_code_at: string | null
           form_config: Json
+          hosts_released_at: string | null
           id: string
+          idle_warned_at: string | null
+          last_activity_at: string
+          last_visit_at: string | null
           orders_count: number
           product_id: string | null
           published_at: string | null
@@ -3610,7 +3620,11 @@ export type Database = {
           design_code?: string | null
           design_code_at?: string | null
           form_config?: Json
+          hosts_released_at?: string | null
           id?: string
+          idle_warned_at?: string | null
+          last_activity_at?: string
+          last_visit_at?: string | null
           orders_count?: number
           product_id?: string | null
           published_at?: string | null
@@ -3630,7 +3644,11 @@ export type Database = {
           design_code?: string | null
           design_code_at?: string | null
           form_config?: Json
+          hosts_released_at?: string | null
           id?: string
+          idle_warned_at?: string | null
+          last_activity_at?: string
+          last_visit_at?: string | null
           orders_count?: number
           product_id?: string | null
           published_at?: string | null
@@ -6929,6 +6947,8 @@ export type Database = {
           last_checked_at: string | null
           last_error: string | null
           previous_state: Json | null
+          release_reason: string | null
+          released_at: string | null
           ssl_status: string
           status: string
           store_id: string
@@ -6955,6 +6975,8 @@ export type Database = {
           last_checked_at?: string | null
           last_error?: string | null
           previous_state?: Json | null
+          release_reason?: string | null
+          released_at?: string | null
           ssl_status?: string
           status?: string
           store_id: string
@@ -6981,6 +7003,8 @@ export type Database = {
           last_checked_at?: string | null
           last_error?: string | null
           previous_state?: Json | null
+          release_reason?: string | null
+          released_at?: string | null
           ssl_status?: string
           status?: string
           store_id?: string
@@ -8399,6 +8423,8 @@ export type Database = {
           store_mode_changed_at: string | null
           storefront_default_lang: string
           storefront_lang_switcher: boolean
+          subdomain_release_reason: string | null
+          subdomain_released_at: string | null
           subscription_status: string
           tax_number: string | null
           telegram: string | null
@@ -8468,6 +8494,8 @@ export type Database = {
           store_mode_changed_at?: string | null
           storefront_default_lang?: string
           storefront_lang_switcher?: boolean
+          subdomain_release_reason?: string | null
+          subdomain_released_at?: string | null
           subscription_status?: string
           tax_number?: string | null
           telegram?: string | null
@@ -8537,6 +8565,8 @@ export type Database = {
           store_mode_changed_at?: string | null
           storefront_default_lang?: string
           storefront_lang_switcher?: boolean
+          subdomain_release_reason?: string | null
+          subdomain_released_at?: string | null
           subscription_status?: string
           tax_number?: string | null
           telegram?: string | null
@@ -9771,6 +9801,10 @@ export type Database = {
           _store_id: string
         }
         Returns: Json
+      }
+      touch_landing_activity: {
+        Args: { _page_id: string; _visit?: boolean }
+        Returns: undefined
       }
       validate_coupon: {
         Args: { _code: string; _store_id: string; _subtotal: number }
