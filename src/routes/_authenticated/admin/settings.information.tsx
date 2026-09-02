@@ -246,6 +246,10 @@ function StoreInformationPage() {
               ["whatsapp", "WhatsApp number / link", "https://wa.me/8801XXXXXXXXX"],
               ["messenger", "Messenger link", "https://m.me/yourpage"],
               ["telegram", "Telegram username / link", "https://t.me/yourhandle"],
+              ["twitter", "X (Twitter)", "https://x.com/yourhandle"],
+              ["pinterest", "Pinterest", "https://pinterest.com/yourbrand"],
+              ["snapchat", "Snapchat", "https://snapchat.com/add/yourhandle"],
+              ["threads", "Threads", "https://threads.net/@yourhandle"],
               ["website", "Website (optional)", "https://yourdomain.com"],
             ].map(([k, label, ph]) => (
               <Field key={k} label={label} htmlFor={`soc-${k}`}>
