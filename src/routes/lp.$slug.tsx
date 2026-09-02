@@ -13,6 +13,7 @@ import { readRecent } from "@/lib/recently-viewed";
 import { LandingBranding } from "@/components/landing/LandingBranding";
 import { GenericSection } from "@/components/landing/GenericSection";
 import { sectionSpec } from "@/lib/landing-sections";
+import { normalizePalette, themeTokens } from "@/lib/landing-theme";
 import { getLandingPreviewBySlug } from "@/lib/landing-builder.functions";
 import {
   lpImage, normalizeContent, normalizeDeliveryZones,
@@ -449,7 +450,21 @@ function LandingPageBody({
       };
 
   return (
-    <div style={STYLE} className="min-h-screen bg-white text-neutral-900">
+    <div
+      style={{ ...STYLE, background: "var(--lp-bg)", color: "var(--lp-text)" }}
+      className="lp-root min-h-screen"
+    >
+      {/* Maps the template's neutral utilities onto the merchant's saved palette. */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+.lp-root .bg-white,.lp-root .bg-neutral-50,.lp-root .bg-neutral-100{background-color:var(--lp-surface)!important}
+.lp-root .text-neutral-900,.lp-root .text-neutral-800{color:var(--lp-text)!important}
+.lp-root .text-neutral-700,.lp-root .text-neutral-600,.lp-root .text-neutral-500,.lp-root .text-neutral-400{color:var(--lp-muted)!important}
+.lp-root .border-neutral-200,.lp-root .border-neutral-100,.lp-root .border-neutral-300{border-color:var(--lp-border)!important}
+`,
+        }}
+      />
       <LandingBranding
         slug={page.slug}
         name={page.seo?.title || page.title}
@@ -463,7 +478,10 @@ function LandingPageBody({
       )}
 
       {/* 1. Header */}
-      <header className="sticky top-0 z-30 border-b border-neutral-200 bg-white/90 backdrop-blur">
+      <header
+        className="sticky top-0 z-30 border-b backdrop-blur"
+        style={{ borderColor: "var(--lp-border)", background: "color-mix(in srgb, var(--lp-bg) 90%, transparent)" }}
+      >
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3">
           {headerIcon && (
             <img src={lpImage(headerIcon)} alt="" className="h-9 w-9 shrink-0 object-contain" />
@@ -504,7 +522,7 @@ function LandingPageBody({
         })}
 
       {/* 8. Footer */}
-      <footer className="bg-neutral-50 px-4 py-10 text-center">
+      <footer className="px-4 py-10 text-center" style={{ background: "var(--lp-surface)" }}>
         <div className="mx-auto max-w-3xl space-y-3">
           {(footerIcon || footerNameLogo) && (
             <div className="flex items-center justify-center gap-3">
