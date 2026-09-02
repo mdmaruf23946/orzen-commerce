@@ -141,6 +141,13 @@ function LandingPageBody({
   const content = useMemo(() => normalizeContent(page.content), [page.content]);
   const form = (page.form_config ?? {}) as LandingFormConfig;
 
+  // Saved merchant design (draft colors win while previewing from the builder).
+  const palette = useMemo(
+    () => normalizePalette({ ...((page.theme ?? {}) as object), ...(draftTheme ?? {}) }),
+    [page.theme, draftTheme],
+  );
+  const STYLE = useMemo(() => themeTokens(palette) as React.CSSProperties, [palette]);
+
   // ----- Catalogue-driven sections (Recommended / Related / Recently viewed) -----
   const productSections = useMemo(
     () =>
