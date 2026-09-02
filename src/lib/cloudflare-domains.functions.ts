@@ -95,6 +95,11 @@ export const syncCustomHostname = createServerFn({ method: "POST" })
       patch.ssl_status = "issued";
     }
     await supabase.from("store_domains").update(patch).eq("id", row.id);
+    // Custom domain live -> release the now-redundant platform subdomain.
+    if (patch.status === "active" && row.landing_page_id) {
+      const { releaseLandingSubdomain } = await import("./domain-lifecycle.server");
+      await releaseLandingSubdomain(supabase, row.landing_page_id, "custom_domain_live").catch(() => null);
+    }
     return { status: cf.status, ssl: cf.ssl.status };
   });
 

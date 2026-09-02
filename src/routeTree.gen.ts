@@ -173,6 +173,7 @@ import { Route as ApiPublicFacebookWebhookRouteImport } from './routes/api/publi
 import { Route as ApiPublicCronSyncParcelsRouteImport } from './routes/api/public/cron/sync-parcels'
 import { Route as ApiPublicCronSubscriptionRenewalsRouteImport } from './routes/api/public/cron/subscription-renewals'
 import { Route as ApiPublicCronNotifyOrdersRouteImport } from './routes/api/public/cron/notify-orders'
+import { Route as ApiPublicCronDomainIdleRouteImport } from './routes/api/public/cron/domain-idle'
 import { Route as ApiPublicCronAiCallsRouteImport } from './routes/api/public/cron/ai-calls'
 import { Route as ApiPublicAiCallsWebhookRouteImport } from './routes/api/public/ai-calls/webhook'
 import { Route as ApiPublicAiCallsToolRouteImport } from './routes/api/public/ai-calls/tool'
@@ -1125,6 +1126,11 @@ const ApiPublicCronNotifyOrdersRoute =
     path: '/api/public/cron/notify-orders',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicCronDomainIdleRoute = ApiPublicCronDomainIdleRouteImport.update({
+  id: '/api/public/cron/domain-idle',
+  path: '/api/public/cron/domain-idle',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCronAiCallsRoute = ApiPublicCronAiCallsRouteImport.update({
   id: '/api/public/cron/ai-calls',
   path: '/api/public/cron/ai-calls',
@@ -1483,6 +1489,7 @@ export interface FileRoutesByFullPath {
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
   '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
+  '/api/public/cron/domain-idle': typeof ApiPublicCronDomainIdleRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
@@ -1672,6 +1679,7 @@ export interface FileRoutesByTo {
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
   '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
+  '/api/public/cron/domain-idle': typeof ApiPublicCronDomainIdleRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
@@ -1872,6 +1880,7 @@ export interface FileRoutesById {
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
   '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
+  '/api/public/cron/domain-idle': typeof ApiPublicCronDomainIdleRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
@@ -2072,6 +2081,7 @@ export interface FileRouteTypes {
     | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
     | '/api/public/cron/ai-calls'
+    | '/api/public/cron/domain-idle'
     | '/api/public/cron/notify-orders'
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
@@ -2261,6 +2271,7 @@ export interface FileRouteTypes {
     | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
     | '/api/public/cron/ai-calls'
+    | '/api/public/cron/domain-idle'
     | '/api/public/cron/notify-orders'
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
@@ -2460,6 +2471,7 @@ export interface FileRouteTypes {
     | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
     | '/api/public/cron/ai-calls'
+    | '/api/public/cron/domain-idle'
     | '/api/public/cron/notify-orders'
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
@@ -2526,6 +2538,7 @@ export interface RootRouteChildren {
   ApiPublicAiCallsToolRoute: typeof ApiPublicAiCallsToolRoute
   ApiPublicAiCallsWebhookRoute: typeof ApiPublicAiCallsWebhookRoute
   ApiPublicCronAiCallsRoute: typeof ApiPublicCronAiCallsRoute
+  ApiPublicCronDomainIdleRoute: typeof ApiPublicCronDomainIdleRoute
   ApiPublicCronNotifyOrdersRoute: typeof ApiPublicCronNotifyOrdersRoute
   ApiPublicCronSubscriptionRenewalsRoute: typeof ApiPublicCronSubscriptionRenewalsRoute
   ApiPublicCronSyncParcelsRoute: typeof ApiPublicCronSyncParcelsRoute
@@ -3697,6 +3710,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronNotifyOrdersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cron/domain-idle': {
+      id: '/api/public/cron/domain-idle'
+      path: '/api/public/cron/domain-idle'
+      fullPath: '/api/public/cron/domain-idle'
+      preLoaderRoute: typeof ApiPublicCronDomainIdleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/cron/ai-calls': {
       id: '/api/public/cron/ai-calls'
       path: '/api/public/cron/ai-calls'
@@ -4434,6 +4454,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicAiCallsToolRoute: ApiPublicAiCallsToolRoute,
   ApiPublicAiCallsWebhookRoute: ApiPublicAiCallsWebhookRoute,
   ApiPublicCronAiCallsRoute: ApiPublicCronAiCallsRoute,
+  ApiPublicCronDomainIdleRoute: ApiPublicCronDomainIdleRoute,
   ApiPublicCronNotifyOrdersRoute: ApiPublicCronNotifyOrdersRoute,
   ApiPublicCronSubscriptionRenewalsRoute:
     ApiPublicCronSubscriptionRenewalsRoute,

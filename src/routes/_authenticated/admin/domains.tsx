@@ -57,6 +57,7 @@ const STATUS_LABEL: Record<string, string> = {
   verified: "Verified (DNS OK)",
   active: "Active",
   failed: "Failed",
+  released: "Disconnected",
 };
 
 /** Live state combines the DNS status with the certificate status. */
@@ -379,6 +380,17 @@ function Page() {
             </Button>
             <span className="text-xs text-muted-foreground">
               Re-links this address with the hosting network if it is not loading.
+            </span>
+          </div>
+        )}
+
+        {(data as any).store?.subdomain_released_at && (
+          <div className="flex items-start gap-2 rounded-md bg-muted/60 p-2 text-xs">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span className="min-w-0 break-words">
+              {(data as any).store.subdomain_release_reason === "custom_domain_live"
+                ? "আপনার কাস্টম ডোমেইন লাইভ হওয়ায় এই ফ্রি সাবডোমেইনটি হোস্টিং থেকে সরিয়ে নেওয়া হয়েছে। দরকার হলে “Reconnect subdomain” চাপুন।"
+                : "এই সাবডোমেইনটি বর্তমানে হোস্টিং থেকে সরানো আছে। “Reconnect subdomain” চাপলে আবার চালু হবে।"}
             </span>
           </div>
         )}

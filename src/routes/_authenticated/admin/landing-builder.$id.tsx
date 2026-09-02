@@ -19,6 +19,7 @@ import {
   removeLandingDomain,
   resyncLandingPage,
   retryLandingSubdomain,
+  reconnectLandingDomain,
   setLandingStatus,
   setLandingSubdomain,
   updateLandingPage,
@@ -656,9 +657,19 @@ function StatusPill({ status }: { status: string }) {
       ? "bg-emerald-500/10 text-emerald-600"
       : status === "error"
         ? "bg-red-500/10 text-red-600"
-        : "bg-amber-500/10 text-amber-600";
+        : status === "released"
+          ? "bg-muted text-muted-foreground"
+          : "bg-amber-500/10 text-amber-600";
   const label =
-    status === "active" ? "Live" : status === "error" ? "Failed" : status === "verified" ? "Verified" : "Provisioning";
+    status === "active"
+      ? "Live"
+      : status === "error"
+        ? "Failed"
+        : status === "released"
+          ? "Disconnected"
+          : status === "verified"
+            ? "Verified"
+            : "Provisioning";
   return <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase ${tone}`}>{label}</span>;
 }
 
@@ -674,6 +685,7 @@ function DomainsPanel({
 }) {
   const subFn = useServerFn(setLandingSubdomain);
   const retryFn = useServerFn(retryLandingSubdomain);
+  const reconnectFn = useServerFn(reconnectLandingDomain);
   const delFn = useServerFn(removeLandingDomain);
   const attachFn = useServerFn(attachDomainToLandingPage);
   const detachFn = useServerFn(detachDomainFromLandingPage);
@@ -737,14 +749,36 @@ function DomainsPanel({
               </a>
               <StatusPill status={sub.status} />
               <div className="ml-auto flex gap-1">
-                <Button size="sm" variant="outline" disabled={busy} onClick={() => run(() => retryFn({ data: { domainId: sub.id } }), "Reconnected")}>
-                  <RefreshCw className="mr-1 h-3 w-3" /> Retry
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() =>
+                    run(
+                      () =>
+                        sub.status === "released"
+                          ? reconnectFn({ data: { domainId: sub.id, kind: "subdomain" } })
+                          : retryFn({ data: { domainId: sub.id } }),
+                      "Reconnected",
+                    )
+                  }
+                >
+                  <RefreshCw className="mr-1 h-3 w-3" /> {sub.status === "released" ? "Reconnect" : "Retry"}
                 </Button>
                 <Button size="sm" variant="ghost" disabled={busy} onClick={() => run(() => delFn({ data: { domainId: sub.id } }), "Removed")}>
                   <Trash2 className="h-3.5 w-3.5 text-red-500" />
                 </Button>
               </div>
             </div>
+            {sub.status === "released" && (
+              <div className="mt-2 text-muted-foreground">
+                {sub.release_reason === "custom_domain_live"
+                  ? "Disconnected automatically because a custom domain is live. Press Reconnect to bring it back."
+                  : sub.release_reason === "idle"
+                    ? "Disconnected after 30 days without activity. Press Reconnect to bring it back."
+                    : "Disconnected. Press Reconnect to bring it back."}
+              </div>
+            )}
             {sub.last_error && <div className="mt-2 text-red-500">{sub.last_error}</div>}
           </div>
         )}
@@ -767,6 +801,16 @@ function DomainsPanel({
                   {d.hostname}
                 </a>
                 <StatusPill status={d.status} />
+                {d.status === "released" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => run(() => reconnectFn({ data: { domainId: d.id, kind: "custom" } }), "Reconnected")}
+                  >
+                    <RefreshCw className="mr-1 h-3 w-3" /> Reconnect
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="ghost"

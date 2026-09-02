@@ -143,6 +143,14 @@ function LandingPageBody({
   const content = useMemo(() => normalizeContent(page.content), [page.content]);
   const form = (page.form_config ?? {}) as LandingFormConfig;
 
+  // Keep the page "in use" so the idle sweep never releases a live page's hosts.
+  useEffect(() => {
+    if (preview) return;
+    import("@/integrations/supabase/client")
+      .then(({ supabase }) => supabase.rpc("touch_landing_activity", { _page_id: page.id, _visit: true }))
+      .catch(() => null);
+  }, [preview, page.id]);
+
   // Saved merchant design (draft colors win while previewing from the builder).
   const palette = useMemo(
     () => normalizePalette({ ...((page.theme ?? {}) as object), ...(draftTheme ?? {}) }),
