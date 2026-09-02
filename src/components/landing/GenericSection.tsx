@@ -117,12 +117,18 @@ export function GenericSection({
             Object.values(it ?? {}).some((v) => str(v)),
           );
           if (!items.length) return null;
-          const itemFields = lf.fields.filter((f) => f.type !== "list") as Exclude<LPFieldSpec, { type: "list" }>[];
+          const itemFields = lf.fields.filter((f) => f.type !== "list") as ScalarField[];
           return (
             <div key={lf.key} className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((it, i) => {
                 const image = itemFields.find((f) => f.type === "image" && str(it[f.key]));
-                const texts = itemFields.filter((f) => f.type !== "image" && str(it[f.key]));
+                // An "icon" field stores an icon NAME — resolve it to a real
+                // icon and never print the raw name as text.
+                const iconField = itemFields.find((f) => f.key === "icon" && str(it[f.key]));
+                const Icon = iconField ? lpIcon(it[iconField.key]) : null;
+                const texts = itemFields.filter(
+                  (f) => f.type !== "image" && f.key !== "icon" && f.type !== "products" && str(it[f.key]),
+                );
                 const [head, ...body] = texts;
                 return (
                   <div key={i} className="bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
@@ -135,9 +141,14 @@ export function GenericSection({
                         style={{ borderRadius: "calc(var(--lp-radius) / 1.5)" }}
                       />
                     )}
+                    {Icon && !image && (
+                      <Icon className="mb-2 h-5 w-5" style={{ color: "var(--lp-primary)" }} />
+                    )}
                     {head && (
                       <div className="flex items-start gap-2">
-                        {!image && <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "var(--lp-primary)" }} />}
+                        {!image && !Icon && (
+                          (() => { const Fallback = lpIcon("check"); return <Fallback className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "var(--lp-primary)" }} />; })()
+                        )}
                         <div className="font-semibold">{str(it[head.key])}</div>
                       </div>
                     )}
