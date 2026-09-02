@@ -70,11 +70,19 @@ export type LandingContent = {
     email: string;
     address: string;
     hours: string;
+    website?: string;
     facebook: string;
     instagram: string;
     youtube: string;
     tiktok: string;
     whatsapp: string;
+    linkedin?: string;
+    telegram?: string;
+    messenger?: string;
+    twitter?: string;
+    pinterest?: string;
+    snapchat?: string;
+    threads?: string;
     links: LPLink[];
   };
   /** Section keys in the order they appear on the published page. */
