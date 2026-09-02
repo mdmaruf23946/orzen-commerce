@@ -2,7 +2,7 @@
 // One fixed, professional template. Section order is always:
 // Header first, Footer last; everything in between follows content.sectionOrder.
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, Star, Loader2, ChevronDown } from "lucide-react";
 import { LP_ICONS } from "@/lib/landing-icons";
 import { useQuery } from "@tanstack/react-query";
