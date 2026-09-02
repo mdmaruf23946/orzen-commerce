@@ -336,6 +336,7 @@ function LandingEditor() {
               saving={saving}
               storeId={storeInfo?.id}
               productImages={productImages}
+              products={(productList ?? []) as any}
             />
           )}
         </TabsContent>

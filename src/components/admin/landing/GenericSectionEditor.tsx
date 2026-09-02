@@ -66,6 +66,58 @@ function MediaField({
   );
 }
 
+export type PickableProduct = { id: string; name: string; primary_image_url?: string | null };
+
+function ProductPicker({
+  label, value, onChange, products, maxItems,
+}: {
+  label: string;
+  value: string[];
+  onChange: (ids: string[]) => void;
+  products: PickableProduct[];
+  maxItems: number;
+}) {
+  function toggle(id: string) {
+    if (value.includes(id)) onChange(value.filter((x) => x !== id));
+    else if (value.length < maxItems) onChange([...value, id]);
+  }
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <Label className="text-xs">{label}</Label>
+        <span className="text-[11px] text-muted-foreground">{value.length}/{maxItems}</span>
+      </div>
+      {products.length === 0 ? (
+        <p className="rounded-lg border p-3 text-xs text-muted-foreground">
+          No products found in your store yet.
+        </p>
+      ) : (
+        <div className="max-h-72 space-y-1.5 overflow-y-auto rounded-lg border p-2">
+          {products.map((p) => {
+            const on = value.includes(p.id);
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => toggle(p.id)}
+                className={`flex w-full items-center gap-2 rounded-md border p-2 text-left text-xs ${on ? "border-primary bg-primary/5" : "bg-background"}`}
+              >
+                <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded border bg-muted">
+                  {p.primary_image_url ? (
+                    <img src={lpImage(p.primary_image_url)} alt="" className="h-full w-full object-cover" />
+                  ) : null}
+                </span>
+                <span className="min-w-0 flex-1 truncate">{p.name}</span>
+                {on && <span className="shrink-0 text-[10px] font-semibold text-primary">Selected</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ScalarField({
   spec, value, onChange, storeId, productImages,
 }: {
@@ -174,7 +226,7 @@ function ListField({
 }
 
 export function GenericSectionEditor({
-  spec, data, onChange, onBack, onSave, saving, storeId, productImages = [],
+  spec, data, onChange, onBack, onSave, saving, storeId, productImages = [], products = [],
 }: {
   spec: LPSectionSpec;
   data: BlockData;
@@ -184,6 +236,7 @@ export function GenericSectionEditor({
   saving: boolean;
   storeId?: string;
   productImages?: string[];
+  products?: PickableProduct[];
 }) {
   return (
     <SectionShell name={spec.name} onBack={onBack} onSave={onSave} saving={saving}>
@@ -192,7 +245,16 @@ export function GenericSectionEditor({
         <p className="rounded-lg bg-muted/60 p-3 text-[11px] leading-relaxed text-muted-foreground">{spec.note}</p>
       )}
       {spec.fields.map((f) =>
-        f.type === "list" ? (
+        f.type === "products" ? (
+          <ProductPicker
+            key={f.key}
+            label={f.label}
+            value={Array.isArray(data[f.key]) ? (data[f.key] as string[]) : []}
+            onChange={(ids) => onChange({ ...data, [f.key]: ids })}
+            products={products}
+            maxItems={f.maxItems ?? 8}
+          />
+        ) : f.type === "list" ? (
           <ListField
             key={f.key}
             spec={f}
