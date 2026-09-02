@@ -48,6 +48,7 @@ import {
   SectionList,
 } from "@/components/admin/landing/section-editors";
 import { GenericSectionEditor } from "@/components/admin/landing/GenericSectionEditor";
+import { DesignPanel } from "@/components/admin/landing/DesignPanel";
 import { REQUIRED_SECTION_KEYS, sectionRank, sectionSpec } from "@/lib/landing-sections";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -432,20 +433,14 @@ function LandingEditor() {
 
         {/* -------- Design (system controlled) -------- */}
         <TabsContent value="design" className="space-y-4 pt-4">
-          <div className="rounded-xl border bg-card p-6">
-            <div className="flex items-start gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Sparkles className="h-5 w-5" />
-              </span>
-              <div className="min-w-0">
-                <h3 className="text-sm font-semibold">Professional Landing Page</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Your landing page uses the platform's professional design system.
-                  Design customization is managed automatically — you only edit the content.
-                </p>
-              </div>
-            </div>
-          </div>
+          <DesignPanel
+            pageId={id}
+            slug={page.slug}
+            theme={theme as any}
+            saving={saving}
+            onChange={(next) => setTheme(next as any)}
+            onSave={save}
+          />
         </TabsContent>
 
         {/* -------- Domains -------- */}
