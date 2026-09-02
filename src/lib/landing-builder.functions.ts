@@ -422,6 +422,7 @@ export const getLandingPreviewBySlug = createServerFn({ method: "GET" })
       title: page.title,
       content: page.content,
       theme: page.theme,
+      design_code: page.design_code ?? null,
       form_config: page.form_config,
       seo: page.seo ?? null,
       product: product ?? null,

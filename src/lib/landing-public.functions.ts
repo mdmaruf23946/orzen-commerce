@@ -13,6 +13,7 @@ export type PublicLandingPage = {
   title: string;
   content: LandingContent;
   theme: LandingTheme;
+  design_code?: string | null;
   form_config: LandingFormConfig;
   seo: { title?: string; description?: string } | null;
   product: {
