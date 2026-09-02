@@ -1,14 +1,13 @@
 // Landing Page → Design tab: AI recommended themes, five-role color
-// customization with automatic derived states + contrast checking, live
-// preview and save. Content / sections / order form are never touched here.
+// customization with automatic derived states + contrast checking, and save.
+// Content / sections / order form are never touched here.
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Eye, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { Check, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LandingPreviewFrame } from "@/components/admin/landing/LandingPreviewFrame";
 import { suggestLandingThemes } from "@/lib/landing-theme.functions";
 import {
   COLOR_ROLES,
@@ -21,17 +20,6 @@ import {
   type LandingPalette,
   type LandingThemePreset,
 } from "@/lib/landing-theme";
-
-/** Encodes the draft palette so the preview iframe renders unsaved colors. */
-export function paletteQuery(p: LandingPalette): string {
-  return new URLSearchParams({
-    c_primary: p.primary.slice(1),
-    c_secondary: p.secondary.slice(1),
-    c_accent: p.accent.slice(1),
-    c_background: p.background.slice(1),
-    c_text: p.text.slice(1),
-  }).toString();
-}
 
 function MiniPreview({ palette }: { palette: LandingPalette }) {
   const t = themeTokens(palette) as Record<string, string>;
@@ -108,8 +96,6 @@ export function DesignPanel({
 }) {
   const suggestFn = useServerFn(suggestLandingThemes);
   const [nonce, setNonce] = useState(0);
-  const [showPreview, setShowPreview] = useState(false);
-  const [previewKey, setPreviewKey] = useState(0);
 
   const saved = useMemo(() => normalizePalette(theme ?? {}), [theme]);
   const [palette, setPalette] = useState<LandingPalette>(saved);
@@ -169,7 +155,6 @@ export function DesignPanel({
       setPalette(next);
       setSelectedId(first.id);
       Object.assign(base, next, { themeId: first.id, themeName: first.name });
-      setPreviewKey((k) => k + 1);
     }
     onChange(base);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -180,7 +165,6 @@ export function DesignPanel({
     setSelectedId(id);
     setDrafts({});
     onChange({ ...(theme ?? {}), ...next, themeId: id, themeName: name });
-    setPreviewKey((k) => k + 1);
   }
 
   function setRole(key: keyof LandingPalette, raw: string) {
@@ -201,8 +185,6 @@ export function DesignPanel({
     ["Surface", tokens["--lp-surface"]!],
     ["Muted text", tokens["--lp-muted"]!],
   ];
-
-  const previewSrc = `/lp/${slug}?preview=1&${paletteQuery(palette)}&k=${previewKey}`;
 
   return (
     <div className="space-y-4">
@@ -336,16 +318,6 @@ export function DesignPanel({
 
         <div className="mt-4 flex flex-wrap gap-2">
           <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setShowPreview((s) => !s);
-              setPreviewKey((k) => k + 1);
-            }}
-          >
-            <Eye className="mr-1.5 h-4 w-4" /> {showPreview ? "Hide live preview" : "Live preview"}
-          </Button>
-          <Button
             variant="ghost"
             size="sm"
             onClick={() => {
@@ -353,7 +325,6 @@ export function DesignPanel({
               setDrafts({});
               onChange({ ...(theme ?? {}), ...DEFAULT_PALETTE, themeId: "default", themeName: "Default" });
               setSelectedId("default");
-              setPreviewKey((k) => k + 1);
             }}
           >
             Reset to default
@@ -363,14 +334,6 @@ export function DesignPanel({
           </Button>
         </div>
       </div>
-
-      {showPreview && (
-        <LandingPreviewFrame
-          key={previewKey}
-          previewSrc={previewSrc}
-          openUrl={`/lp/${slug}?preview=1`}
-        />
-      )}
     </div>
   );
 }
