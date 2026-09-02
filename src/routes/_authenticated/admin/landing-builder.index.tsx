@@ -5,10 +5,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
-  Check, Copy, ExternalLink, Eye, LayoutTemplate, Loader2, Pencil, Plus, Search, Sparkles, Trash2,
+  Check, Copy, ExternalLink, Eye, Globe, LayoutTemplate, Loader2, Pencil, Plus, Search, Sparkles, Trash2,
 } from "lucide-react";
 import {
   createLandingPage,
+  setLandingSubdomain,
+  suggestLandingSubdomains,
   deleteLandingPage,
   duplicateLandingPage,
   listLandingPages,
@@ -194,12 +196,19 @@ const AI_STEPS = [
 function CreateDialog() {
   const productsFn = useServerFn(listLandingProducts);
   const createFn = useServerFn(createLandingPage);
+  const suggestFn = useServerFn(suggestLandingSubdomains);
+  const subFn = useServerFn(setLandingSubdomain);
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [lang, setLang] = useState<"en" | "bn" | "mixed">("en");
   const [step, setStep] = useState(-1);
+  /** Phase 2: created page waiting for its web address. */
+  const [createdId, setCreatedId] = useState<string | null>(null);
+  const [domainOptions, setDomainOptions] = useState<{ label: string; hostname: string }[]>([]);
+  const [domainPick, setDomainPick] = useState<string>("");
+  const [connecting, setConnecting] = useState(false);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["lp-builder-products"],
@@ -224,8 +233,16 @@ function CreateDialog() {
         data: { productId: selected, useAi: true, contentLang: lang },
       })) as { id: string };
       toast.success("Landing page generated");
-      setOpen(false);
-      navigate({ to: "/admin/landing-builder/$id", params: { id: created.id } });
+      setCreatedId(created.id);
+      try {
+        const res = (await suggestFn({ data: { id: created.id } })) as {
+          options: { label: string; hostname: string }[];
+        };
+        setDomainOptions(res.options ?? []);
+        setDomainPick(res.options?.[0]?.label ?? "");
+      } catch {
+        setDomainOptions([]);
+      }
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -234,8 +251,40 @@ function CreateDialog() {
     }
   }
 
+  function openEditor(id: string) {
+    setOpen(false);
+    setCreatedId(null);
+    setDomainOptions([]);
+    setSelected(null);
+    setQ("");
+    navigate({ to: "/admin/landing-builder/$id", params: { id } });
+  }
+
+  async function connectDomain() {
+    if (!createdId || !domainPick.trim()) return;
+    setConnecting(true);
+    try {
+      const res = (await subFn({ data: { id: createdId, label: domainPick.trim() } })) as {
+        hostname: string;
+        status: string;
+        error: string | null;
+      };
+      if (res.status === "active") toast.success(`Connected ${res.hostname}`);
+      else toast.warning(res.error ?? `${res.hostname} saved — activation pending`);
+      openEditor(createdId);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setConnecting(false);
+    }
+  }
+
   function change(next: boolean) {
-    if (step >= 0) return;
+    if (step >= 0 || connecting) return;
+    if (!next && createdId) {
+      openEditor(createdId);
+      return;
+    }
     setOpen(next);
     if (!next) {
       setSelected(null);
@@ -250,9 +299,54 @@ function CreateDialog() {
         <Button size="sm"><Plus className="mr-1 h-4 w-4" /> Create Landing Page</Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg">
-        <DialogHeader><DialogTitle>Select a product</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>{createdId ? "Choose your web address" : "Select a product"}</DialogTitle>
+        </DialogHeader>
 
-        {step >= 0 ? (
+        {createdId ? (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              AI suggested these professional addresses for this page. Pick one, or type your own.
+              You can change it later in Domains.
+            </p>
+            <div className="space-y-1.5">
+              {domainOptions.map((o) => (
+                <button
+                  key={o.label}
+                  type="button"
+                  onClick={() => setDomainPick(o.label)}
+                  className={`flex w-full items-center gap-2 rounded-lg border p-2.5 text-left text-sm transition-colors hover:bg-accent ${
+                    domainPick === o.label ? "border-primary bg-accent" : ""
+                  }`}
+                >
+                  <Globe className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 flex-1 truncate">{o.hostname}</span>
+                  {domainPick === o.label && <Check className="h-4 w-4 shrink-0 text-primary" />}
+                </button>
+              ))}
+              {domainOptions.length === 0 && (
+                <div className="rounded-lg border p-3 text-xs text-muted-foreground">
+                  No suggestions available — type an address below.
+                </div>
+              )}
+            </div>
+            <Input
+              value={domainPick}
+              onChange={(e) => setDomainPick(e.target.value)}
+              placeholder="my-product"
+              disabled={connecting}
+            />
+            <div className="flex gap-2">
+              <Button className="flex-1" onClick={connectDomain} disabled={connecting || !domainPick.trim()}>
+                {connecting ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Globe className="mr-1.5 h-4 w-4" />}
+                Connect &amp; open editor
+              </Button>
+              <Button variant="outline" disabled={connecting} onClick={() => openEditor(createdId)}>
+                Skip
+              </Button>
+            </div>
+          </div>
+        ) : step >= 0 ? (
           <div className="space-y-4 py-8 text-center">
             <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
             <div className="text-sm font-medium">{AI_STEPS[Math.min(step, AI_STEPS.length - 1)]}</div>
