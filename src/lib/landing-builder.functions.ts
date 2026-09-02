@@ -230,6 +230,77 @@ async function loadSourceProduct(supabase: any, storeId: string, productId: stri
   return data as SourceProduct;
 }
 
+/**
+ * Read-only business context for the AI creator: store identity, contact and
+ * social presence, published policies, brand colors, verified rating and sales
+ * numbers, plus real product options. Everything here is factual; the AI is
+ * told it may not invent anything beyond it.
+ */
+async function loadBusinessContext(supabase: any, storeId: string, productId: string) {
+  const [storeRes, productRes, pagesRes, reviewRes, soldRes] = await Promise.all([
+    supabase
+      .from("stores")
+      .select(
+        "name,description,address,phone,whatsapp,email,website,facebook,instagram,youtube,tiktok,linkedin,telegram,messenger,twitter,pinterest,snapchat,threads,primary_color,button_color,header_color",
+      )
+      .eq("id", storeId)
+      .maybeSingle(),
+    supabase.from("products").select("variants,stock").eq("id", productId).maybeSingle(),
+    supabase.from("store_pages").select("title").eq("store_id", storeId).eq("published", true).limit(12),
+    supabase
+      .from("product_reviews")
+      .select("rating")
+      .eq("store_id", storeId)
+      .eq("product_id", productId)
+      .eq("status", "approved")
+      .limit(500),
+    supabase.from("order_items").select("quantity").eq("product_id", productId).limit(1000),
+  ]);
+
+  const st = (storeRes?.data ?? {}) as any;
+  const socialKeys = [
+    "facebook", "instagram", "youtube", "tiktok", "linkedin",
+    "telegram", "messenger", "twitter", "pinterest", "snapchat", "threads",
+  ];
+  const ratings = ((reviewRes?.data ?? []) as any[]).map((r) => Number(r.rating)).filter((n) => n > 0);
+  const unitsSold = ((soldRes?.data ?? []) as any[]).reduce((a, r) => a + (Number(r.quantity) || 0), 0);
+
+  const variantValues: string[] = [];
+  const rawVariants = (productRes?.data as any)?.variants;
+  if (Array.isArray(rawVariants)) {
+    for (const v of rawVariants) {
+      if (typeof v === "string") variantValues.push(v);
+      else if (v && typeof v === "object") {
+        const label = String((v as any).name ?? (v as any).title ?? "").trim();
+        const value = String((v as any).value ?? (v as any).option ?? "").trim();
+        const merged = [label, value].filter(Boolean).join(": ");
+        if (merged) variantValues.push(merged.slice(0, 60));
+      }
+    }
+  }
+
+  return {
+    business: {
+      description: st.description ?? null,
+      address: st.address ?? null,
+      phone: st.phone ?? null,
+      whatsapp: st.whatsapp ?? null,
+      email: st.email ?? null,
+      website: st.website ?? null,
+      socials: socialKeys.filter((k) => String(st[k] ?? "").trim()),
+      policies: ((pagesRes?.data ?? []) as any[]).map((p) => String(p.title ?? "")).filter(Boolean),
+      brandColors: [st.primary_color, st.button_color, st.header_color].filter(Boolean),
+    },
+    stats: {
+      ratingAvg: ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : null,
+      ratingCount: ratings.length || null,
+      unitsSold: unitsSold || null,
+    },
+    variants: Array.from(new Set(variantValues)).slice(0, 20),
+    inStock: typeof (productRes?.data as any)?.stock === "number" ? (productRes!.data as any).stock > 0 : null,
+  };
+}
+
 export const createLandingPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
@@ -258,6 +329,10 @@ export const createLandingPage = createServerFn({ method: "POST" })
       description: (product.short_description ?? "").slice(0, 160),
     };
 
+    // Business context: everything the AI is allowed to know about this
+    // merchant. Facts only — never used to invent claims.
+    const biz = await loadBusinessContext(context.supabase, store.id, product.id);
+
     if (data.useAi) {
       try {
         const { data: reviewRows } = await context.supabase
@@ -283,6 +358,10 @@ export const createLandingPage = createServerFn({ method: "POST" })
           storeName: store.name,
           reviews,
           hasRealReviews: reviews.length > 0,
+          business: biz.business,
+          stats: biz.stats,
+          variants: biz.variants,
+          inStock: biz.inStock,
         }, data.contentLang ?? "en");
         if (generated) {
           content = generated;
@@ -309,6 +388,7 @@ export const createLandingPage = createServerFn({ method: "POST" })
         category: null,
         description: (product as any).short_description || (product as any).description || null,
         images: [(product as any).primary_image_url, ...gallery].filter(Boolean).slice(0, 4),
+        brandColors: biz.business.brandColors,
       });
       const first = presets[0];
       theme = {
