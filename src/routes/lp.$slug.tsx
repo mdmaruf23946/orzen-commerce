@@ -150,10 +150,12 @@ function LandingPageBody({
   const STYLE = useMemo(() => themeTokens(palette) as React.CSSProperties, [palette]);
 
   // ----- Catalogue-driven sections (Recommended / Related / Recently viewed) -----
+  // Catalogue-backed grids are opt-in: they only render when the merchant
+  // explicitly added them (flag === true), never on an `undefined` flag.
   const productSections = useMemo(
     () =>
       content.sectionOrder.filter(
-        (k) => content.sectionEnabled[k] !== false && sectionSpec(k)?.render === "products",
+        (k) => content.sectionEnabled[k] === true && sectionSpec(k)?.render === "products",
       ),
     [content.sectionOrder, content.sectionEnabled],
   );
@@ -505,7 +507,14 @@ function LandingPageBody({
 
       {/* 2–7. Ordered sections */}
       {content.sectionOrder
-        .filter((key) => key !== "header" && key !== "footer" && content.sectionEnabled[key] !== false)
+        .filter((key) => {
+          if (key === "header" || key === "footer") return false;
+          if (content.sectionEnabled[key] === false) return false;
+          // Product grids pull from the catalogue, so an unset flag must not
+          // opt the page in — require an explicit enable.
+          if (sectionSpec(key)?.render === "products") return content.sectionEnabled[key] === true;
+          return true;
+        })
         .map((key) => {
           const spec = sectionSpec(key);
           if (!spec) return null;
