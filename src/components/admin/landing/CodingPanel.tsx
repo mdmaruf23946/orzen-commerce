@@ -39,8 +39,6 @@ export function CodingPanel({
   const [code, setCode] = useState<string>(savedCode || fallback);
   const [saving, setSaving] = useState(false);
   const [fixing, setFixing] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [previewKey, setPreviewKey] = useState(0);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const gutterRef = useRef<HTMLDivElement>(null);
 
@@ -70,19 +68,12 @@ export function CodingPanel({
       await saveFn({ data: { id: pageId, code } });
       writeDraft(code);
       toast.success("Design code saved");
-      setPreviewKey((k) => k + 1);
       onSaved();
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
       setSaving(false);
     }
-  }
-
-  function preview() {
-    writeDraft(code);
-    setShowPreview(true);
-    setPreviewKey((k) => k + 1);
   }
 
   async function fixWithAi() {
@@ -120,9 +111,6 @@ export function CodingPanel({
           <div className="ml-auto flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={reset}>
               <RotateCcw className="mr-1 h-3 w-3" /> Reset to default
-            </Button>
-            <Button variant="outline" size="sm" onClick={preview}>
-              <Eye className="mr-1 h-3 w-3" /> Preview
             </Button>
             <Button size="sm" onClick={save} disabled={saving || !check.ok}>
               {saving ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Save className="mr-1 h-3 w-3" />}
@@ -194,14 +182,6 @@ export function CodingPanel({
           resources are blocked. Maximum 60 KB.
         </p>
       </div>
-
-      {showPreview && (
-        <LandingPreviewFrame
-          key={previewKey}
-          previewSrc={`/lp/${slug}?preview=true&code=draft`}
-          openUrl={`/lp/${slug}?preview=true`}
-        />
-      )}
 
       <div className="rounded-xl border p-4">
         <h3 className="text-sm font-semibold">Style hooks on this page</h3>
