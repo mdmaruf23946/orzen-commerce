@@ -49,6 +49,8 @@ import {
 } from "@/components/admin/landing/section-editors";
 import { GenericSectionEditor } from "@/components/admin/landing/GenericSectionEditor";
 import { DesignPanel } from "@/components/admin/landing/DesignPanel";
+import { CodingPanel } from "@/components/admin/landing/CodingPanel";
+
 import { REQUIRED_SECTION_KEYS, sectionRank, sectionSpec } from "@/lib/landing-sections";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
