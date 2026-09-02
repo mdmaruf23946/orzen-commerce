@@ -422,6 +422,7 @@ export const getLandingPreviewBySlug = createServerFn({ method: "GET" })
       title: page.title,
       content: page.content,
       theme: page.theme,
+      design_code: page.design_code ?? null,
       form_config: page.form_config,
       seo: page.seo ?? null,
       product: product ?? null,
@@ -429,7 +430,61 @@ export const getLandingPreviewBySlug = createServerFn({ method: "GET" })
     };
   });
 
+/**
+ * Save the page's frontend design code (CSS only — the "Coding" tab).
+ * Content, orders, payments and settings are never touched from here.
+ */
+export const setLandingDesignCode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ id: uuid, code: z.string().max(120_000) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const store = await requireMyStore(context.supabase, context.userId);
+    const page = await ownedPage(context.supabase, store.id, data.id);
+    const { validateDesignCode } = await import("@/lib/landing-code");
+    const check = validateDesignCode(data.code);
+    if (!check.ok) throw new Error(check.error);
+    const { error } = await context.supabase
+      .from("landing_pages")
+      .update({
+        design_code: check.css || null,
+        design_code_at: new Date().toISOString(),
+      } as never)
+      .eq("id", page.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/**
+ * AI repair for broken design code. Returns corrected CSS only — it never
+ * writes to the page, so the merchant still decides whether to save it.
+ */
+export const fixLandingDesignCode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        id: uuid,
+        code: z.string().max(120_000),
+        error: z.string().max(500).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const store = await requireMyStore(context.supabase, context.userId);
+    const page = await ownedPage(context.supabase, store.id, data.id);
+    const { normalizeContent } = await import("@/lib/landing-builder");
+    const content = normalizeContent(page.content);
+    const sections = content.sectionOrder.filter((k) => content.sectionEnabled[k] !== false);
+    const { fixDesignCode } = await import("@/lib/landing-code.server");
+    const fixed = await fixDesignCode(data.code, data.error ?? "", sections);
+    if (!fixed) throw new Error("AI could not repair this code. Please fix it manually or reset to default.");
+    return { code: fixed };
+  });
+
 /** Link (or re-link) a landing page to one of the store's products. */
+
 export const setLandingProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: uuid, productId: uuid }).parse(d))

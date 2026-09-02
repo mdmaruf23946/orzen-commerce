@@ -2,7 +2,7 @@
 // One fixed, professional template. Section order is always:
 // Header first, Footer last; everything in between follows content.sectionOrder.
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, Star, Loader2, ChevronDown } from "lucide-react";
 import { LP_ICONS } from "@/lib/landing-icons";
 import { useQuery } from "@tanstack/react-query";
@@ -14,6 +14,7 @@ import { LandingBranding } from "@/components/landing/LandingBranding";
 import { GenericSection } from "@/components/landing/GenericSection";
 import { sectionSpec } from "@/lib/landing-sections";
 import { normalizePalette, themeTokens } from "@/lib/landing-theme";
+import { safeDesignCss } from "@/lib/landing-code";
 import { getLandingPreviewBySlug } from "@/lib/landing-builder.functions";
 import {
   lpImage, normalizeContent, normalizeDeliveryZones,
@@ -148,6 +149,22 @@ function LandingPageBody({
     [page.theme, draftTheme],
   );
   const STYLE = useMemo(() => themeTokens(palette) as React.CSSProperties, [palette]);
+
+  // Saved "Coding" tab design. In builder preview the unsaved draft (kept in
+  // sessionStorage by the Coding tab) wins so changes can be checked first.
+  const [draftCode, setDraftCode] = useState<string | null>(null);
+  useEffect(() => {
+    if (!preview) return;
+    try {
+      setDraftCode(sessionStorage.getItem(`lp-draft-code:${page.slug}`));
+    } catch {
+      setDraftCode(null);
+    }
+  }, [preview, page.slug]);
+  const designCss = useMemo(
+    () => safeDesignCss(draftCode ?? (page as any).design_code ?? ""),
+    [draftCode, page],
+  );
 
   // ----- Catalogue-driven sections (Recommended / Related / Recently viewed) -----
   // Catalogue-backed grids are opt-in: they only render when the merchant
@@ -467,6 +484,8 @@ function LandingPageBody({
 `,
         }}
       />
+      {/* Merchant design code (Coding tab) — presentation only, page-scoped. */}
+      {designCss && <style dangerouslySetInnerHTML={{ __html: designCss }} />}
       <LandingBranding
         slug={page.slug}
         name={page.seo?.title || page.title}
@@ -481,6 +500,7 @@ function LandingPageBody({
 
       {/* 1. Header */}
       <header
+        data-lp-section="header"
         className="sticky top-0 z-30 border-b backdrop-blur"
         style={{ borderColor: "var(--lp-border)", background: "color-mix(in srgb, var(--lp-bg) 90%, transparent)" }}
       >
@@ -518,20 +538,27 @@ function LandingPageBody({
         .map((key) => {
           const spec = sectionSpec(key);
           if (!spec) return null;
-          if (spec.builtin) return <Fragment key={key}>{builtinNodes[key] ?? null}</Fragment>;
+          if (spec.builtin) {
+            return (
+              <div key={key} data-lp-section={key}>
+                {builtinNodes[key] ?? null}
+              </div>
+            );
+          }
           return (
-            <GenericSection
-              key={key}
-              spec={spec}
-              data={content.blocks[key] ?? {}}
-              products={spec.render === "products" ? productsForSection(key) : []}
-              storeUrl={catalogue?.storeUrl ?? ""}
-            />
+            <div key={key} data-lp-section={key}>
+              <GenericSection
+                spec={spec}
+                data={content.blocks[key] ?? {}}
+                products={spec.render === "products" ? productsForSection(key) : []}
+                storeUrl={catalogue?.storeUrl ?? ""}
+              />
+            </div>
           );
         })}
 
       {/* 8. Footer */}
-      <footer className="px-4 py-10 text-center" style={{ background: "var(--lp-surface)" }}>
+      <footer data-lp-section="footer" className="px-4 py-10 text-center" style={{ background: "var(--lp-surface)" }}>
         <div className="mx-auto max-w-3xl space-y-3">
           {(footerIcon || footerNameLogo) && (
             <div className="flex items-center justify-center gap-3">
