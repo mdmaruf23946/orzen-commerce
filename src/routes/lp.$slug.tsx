@@ -150,10 +150,12 @@ function LandingPageBody({
   const STYLE = useMemo(() => themeTokens(palette) as React.CSSProperties, [palette]);
 
   // ----- Catalogue-driven sections (Recommended / Related / Recently viewed) -----
+  // Catalogue-backed grids are opt-in: they only render when the merchant
+  // explicitly added them (flag === true), never on an `undefined` flag.
   const productSections = useMemo(
     () =>
       content.sectionOrder.filter(
-        (k) => content.sectionEnabled[k] !== false && sectionSpec(k)?.render === "products",
+        (k) => content.sectionEnabled[k] === true && sectionSpec(k)?.render === "products",
       ),
     [content.sectionOrder, content.sectionEnabled],
   );
