@@ -10,7 +10,7 @@ const uuid = z.string().uuid();
 export const suggestLandingThemes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: uuid }).parse(d))
-  .handler(async ({ data, context }): Promise<{ themes: LandingThemePreset[] }> => {
+  .handler(async ({ data, context }): Promise<{ themes: LandingThemePreset[]; theme: Record<string, unknown> }> => {
     const store = await myStoreRow(context.supabase, context.userId, "id", "landing_builder");
     if (!store) throw new Error("No store found for this account");
 
