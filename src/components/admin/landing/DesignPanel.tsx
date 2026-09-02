@@ -271,7 +271,7 @@ export function DesignPanel({
         )}
         {!hasSelection && themes.length > 0 && (
           <p className="mt-3 text-xs text-muted-foreground">
-            No theme saved yet — the first AI theme is used as the default until you save.
+            The first AI theme is applied as the default — press Save design to keep it.
           </p>
         )}
       </div>
