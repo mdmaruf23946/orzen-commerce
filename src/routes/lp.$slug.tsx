@@ -507,7 +507,14 @@ function LandingPageBody({
 
       {/* 2–7. Ordered sections */}
       {content.sectionOrder
-        .filter((key) => key !== "header" && key !== "footer" && content.sectionEnabled[key] !== false)
+        .filter((key) => {
+          if (key === "header" || key === "footer") return false;
+          if (content.sectionEnabled[key] === false) return false;
+          // Product grids pull from the catalogue, so an unset flag must not
+          // opt the page in — require an explicit enable.
+          if (sectionSpec(key)?.render === "products") return content.sectionEnabled[key] === true;
+          return true;
+        })
         .map((key) => {
           const spec = sectionSpec(key);
           if (!spec) return null;
