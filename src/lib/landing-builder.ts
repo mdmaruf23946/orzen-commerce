@@ -101,17 +101,31 @@ export type LandingStoreInfo = {
   slug?: string | null;
   logo_url?: string | null;
   name_logo_url?: string | null;
+  description?: string | null;
   phone?: string | null;
   whatsapp?: string | null;
   email?: string | null;
   address?: string | null;
+  website?: string | null;
+  business_hours?: string | null;
+  trade_license?: string | null;
   facebook?: string | null;
   instagram?: string | null;
   youtube?: string | null;
   tiktok?: string | null;
+  linkedin?: string | null;
+  telegram?: string | null;
+  messenger?: string | null;
+  twitter?: string | null;
+  pinterest?: string | null;
+  snapchat?: string | null;
+  threads?: string | null;
 };
 
-export const SOCIAL_KEYS = ["facebook", "instagram", "youtube", "tiktok", "whatsapp"] as const;
+export const SOCIAL_KEYS = [
+  "facebook", "instagram", "whatsapp", "youtube", "tiktok", "linkedin",
+  "twitter", "telegram", "messenger", "pinterest", "snapchat", "threads",
+] as const;
 export type SocialKey = (typeof SOCIAL_KEYS)[number];
 
 export type LandingTheme = {
