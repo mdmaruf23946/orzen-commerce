@@ -111,6 +111,13 @@ export type LandingTheme = {
   accent: string;
   dark: boolean;
   rounded: boolean;
+  /** Merchant-editable color roles (Design tab). Older pages omit these. */
+  secondary?: string;
+  background?: string;
+  text?: string;
+  /** Selected preset identity, so the Design tab can show what is active. */
+  themeId?: string;
+  themeName?: string;
 };
 
 export const MAX_KEY_POINTS = 5;
@@ -189,9 +196,17 @@ export const FEATURE_ICONS = [
   "gift", "thumbs-up", "package", "sparkles",
 ] as const;
 
-/** The design is system-owned; every page uses this fixed professional theme. */
+/** Starting design for a new page; merchants refine it in the Design tab. */
 export function defaultTheme(): LandingTheme {
-  return { primary: "#16a34a", accent: "#f59e0b", dark: false, rounded: true };
+  return {
+    primary: "#16a34a",
+    accent: "#f59e0b",
+    dark: false,
+    rounded: true,
+    secondary: "#0f172a",
+    background: "#ffffff",
+    text: "#171717",
+  };
 }
 
 export function defaultFormConfig(): LandingFormConfig {

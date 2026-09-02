@@ -131,7 +131,7 @@ export function GenericSection({
                 );
                 const [head, ...body] = texts;
                 return (
-                  <div key={i} className="bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
+                  <div key={i} className="p-4" style={{ borderRadius: "var(--lp-radius)", background: "var(--lp-surface)" }}>
                     {image && (
                       <img
                         src={lpImage(str(it[image.key]))}
