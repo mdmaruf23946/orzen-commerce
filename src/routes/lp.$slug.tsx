@@ -12,6 +12,7 @@ import type { LandingProductCard } from "@/components/landing/sections/ProductGr
 import { readRecent } from "@/lib/recently-viewed";
 import { LandingBranding } from "@/components/landing/LandingBranding";
 import { GenericSection } from "@/components/landing/GenericSection";
+import { LandingFooter } from "@/components/landing/LandingFooter";
 import { sectionSpec } from "@/lib/landing-sections";
 import { normalizePalette, themeTokens } from "@/lib/landing-theme";
 import { safeDesignCss } from "@/lib/landing-code";
@@ -238,31 +239,7 @@ function LandingPageBody({
   // Footer values: merchant text wins, Store Settings is the automatic fallback.
   const headerIcon = content.header.iconLogo;
   const headerName = content.header.nameLogo;
-  const footerIcon = content.footer.iconLogo;
-  const footerNameLogo = content.footer.nameLogo;
-  const footerName = content.footer.storeName.trim() || storeName;
-  const contact = {
-    phone: content.footer.phone || page.store?.phone || "",
-    email: content.footer.email || page.store?.email || "",
-    address: content.footer.address || page.store?.address || "",
-  };
-  const socials = (
-    [
-      ["Facebook", content.footer.facebook || page.store?.facebook || ""],
-      ["Instagram", content.footer.instagram || page.store?.instagram || ""],
-      ["YouTube", content.footer.youtube || page.store?.youtube || ""],
-      ["TikTok", content.footer.tiktok || page.store?.tiktok || ""],
-      ["WhatsApp", content.footer.whatsapp || page.store?.whatsapp || ""],
-    ] as const
-  )
-    .filter(([, v]) => Boolean(v))
-    .map(([label, v]) => ({
-      label,
-      href:
-        label === "WhatsApp" && !String(v).startsWith("http")
-          ? `https://wa.me/${String(v).replace(/[^\d]/g, "")}`
-          : String(v),
-    }));
+
 
 
       const builtinNodes: Record<string, React.ReactNode> = {
@@ -566,59 +543,14 @@ function LandingPageBody({
         })}
 
       {/* 8. Footer */}
-      <footer data-lp-section="footer" className="px-4 py-10 text-center" style={{ background: "var(--lp-surface)" }}>
-        <div className="mx-auto max-w-3xl space-y-3">
-          {(footerIcon || footerNameLogo) && (
-            <div className="flex items-center justify-center gap-3">
-              {footerIcon && (
-                <img src={lpImage(footerIcon)} alt="" className="h-12 w-12 object-contain" loading="lazy" />
-              )}
-              {footerNameLogo && (
-                <img
-                  src={lpImage(footerNameLogo)}
-                  alt={footerName}
-                  className="h-10 w-auto max-w-[220px] object-contain"
-                  loading="lazy"
-                />
-              )}
-            </div>
-          )}
-          {!footerNameLogo && <div className="text-base font-bold">{footerName}</div>}
-          {content.footer.text && <p className="text-sm text-neutral-600">{content.footer.text}</p>}
-          {content.footer.contactText && <p className="text-sm text-neutral-600">{content.footer.contactText}</p>}
+      <LandingFooter
+        footer={content.footer}
+        store={page.store as any}
+        storePages={(page as any).store_pages ?? []}
+        storeUrl={catalogue?.storeUrl ?? ""}
+        fallbackName={storeName}
+      />
 
-          {(contact.phone || contact.email || contact.address || content.footer.hours) && (
-            <div className="space-y-1 pt-2 text-sm text-neutral-600">
-              {contact.phone && <div>{contact.phone}</div>}
-              {contact.email && <div>{contact.email}</div>}
-              {contact.address && <div className="whitespace-pre-line">{contact.address}</div>}
-              {content.footer.hours && <div>{content.footer.hours}</div>}
-            </div>
-          )}
-
-          {socials.length > 0 && (
-            <div className="flex flex-wrap justify-center gap-3 pt-1 text-sm font-medium" style={{ color: "var(--lp-primary)" }}>
-              {socials.map((s) => (
-                <a key={s.label} href={s.href} target="_blank" rel="noreferrer noopener">{s.label}</a>
-              ))}
-            </div>
-          )}
-
-          {content.footer.links.filter((l) => l.label && l.url).length > 0 && (
-            <div className="flex flex-wrap justify-center gap-4 pt-1 text-xs text-neutral-600">
-              {content.footer.links
-                .filter((l) => l.label && l.url)
-                .map((l, i) => (
-                  <a key={i} href={l.url} className="underline" target="_blank" rel="noreferrer noopener">{l.label}</a>
-                ))}
-            </div>
-          )}
-
-          <p className="pt-2 text-xs text-neutral-500">
-            {content.footer.copyright || `© ${new Date().getFullYear()} ${footerName}. All rights reserved.`}
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }
