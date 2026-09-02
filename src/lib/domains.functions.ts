@@ -119,7 +119,31 @@ export const provisionMySubdomain = createServerFn({ method: "POST" })
     const settings = await platformDomainSettings(context.supabase);
     const host = `${store.slug}.${settings.rootDomain}`;
     const { ensureSubdomainAttached } = await import("@/lib/cloudflare-pages.server");
-    return await ensureSubdomainAttached(host);
+    const res = await ensureSubdomainAttached(host);
+    if (res.ok) {
+      await context.supabase
+        .from("stores")
+        .update({ subdomain_released_at: null, subdomain_release_reason: null } as never)
+        .eq("id", store.id);
+    }
+    return res;
+  });
+
+/** Bring back a store subdomain that was released from Cloudflare. */
+export const reconnectMySubdomain = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const store = await requireMyStore(context.supabase, context.userId);
+    const settings = await platformDomainSettings(context.supabase);
+    const host = `${store.slug}.${settings.rootDomain}`;
+    const { reattachSubdomainHost } = await import("@/lib/domain-lifecycle.server");
+    const res = await reattachSubdomainHost(host);
+    if (!res.ok) throw new Error(res.error ?? "Could not reconnect this subdomain");
+    await context.supabase
+      .from("stores")
+      .update({ subdomain_released_at: null, subdomain_release_reason: null } as never)
+      .eq("id", store.id);
+    return { ok: true, hostname: host };
   });
 
 const slugSchema = z
@@ -333,6 +357,27 @@ export const checkDomainVerification = createServerFn({ method: "POST" })
     if (!ok && row.status !== "active") patch.status = patch.status ?? "pending";
 
     await supabase.from("store_domains").update(patch as never).eq("id", row.id);
+
+    // The custom domain is live -> the free platform subdomain is no longer
+    // needed. Release it from Cloudflare (kept in the database, reconnectable).
+    if (ok && patch.status === "active") {
+      try {
+        if (row.landing_page_id) {
+          const { releaseLandingSubdomain } = await import("@/lib/domain-lifecycle.server");
+          await releaseLandingSubdomain(supabase, row.landing_page_id, "custom_domain_live");
+        } else {
+          const { releaseStoreSubdomain } = await import("@/lib/domain-lifecycle.server");
+          await releaseStoreSubdomain(
+            supabase,
+            store.id,
+            `${store.slug}.${(await platformDomainSettings(supabase)).rootDomain}`,
+            "custom_domain_live",
+          );
+        }
+      } catch {
+        // Cleanup is best-effort; verification itself already succeeded.
+      }
+    }
     return { ok, reason, status: patch.status ?? row.status };
   });
 
