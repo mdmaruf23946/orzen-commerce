@@ -12,7 +12,7 @@ export const Route = createFileRoute("/api/public/version")({
         const url = new URL(request.url);
         return new Response(
           JSON.stringify({
-            builtAt: BUILT_AT,
+            bootedAt: (BUILT_AT ??= new Date().toISOString()),
             commit:
               process.env["CF_PAGES_COMMIT_SHA"] ??
               process.env["COMMIT_SHA"] ??
