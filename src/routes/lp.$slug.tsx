@@ -2,14 +2,16 @@
 // One fixed, professional template. Section order is always:
 // Header first, Footer last; everything in between follows content.sectionOrder.
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import {
   Award, Check, Clock, Gift, Heart, Package, Shield, Sparkles, Star,
   ThumbsUp, Truck, Zap, Loader2, ChevronDown,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getPublicLanding, type PublicLandingPage } from "@/lib/landing-public.functions";
+import { getPublicLanding, getLandingStoreProducts, type PublicLandingPage } from "@/lib/landing-public.functions";
+import type { LandingProductCard } from "@/components/landing/sections/ProductGrid";
+import { readRecent } from "@/lib/recently-viewed";
 import { LandingBranding } from "@/components/landing/LandingBranding";
 import { GenericSection } from "@/components/landing/GenericSection";
 import { sectionSpec } from "@/lib/landing-sections";
@@ -480,7 +482,15 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
           const spec = sectionSpec(key);
           if (!spec) return null;
           if (spec.builtin) return <Fragment key={key}>{builtinNodes[key] ?? null}</Fragment>;
-          return <GenericSection key={key} spec={spec} data={content.blocks[key] ?? {}} />;
+          return (
+            <GenericSection
+              key={key}
+              spec={spec}
+              data={content.blocks[key] ?? {}}
+              products={spec.render === "products" ? productsForSection(key) : []}
+              storeUrl={catalogue?.storeUrl ?? ""}
+            />
+          );
         })}
 
       {/* 8. Footer */}
