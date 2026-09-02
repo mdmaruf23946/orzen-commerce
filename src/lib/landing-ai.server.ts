@@ -189,15 +189,52 @@ export type LandingAiFacts = {
   reviews: LPReview[];
   hasRealReviews: boolean;
   currency?: string;
+  /** Business context so the AI writes on-brand, trust-building copy. */
+  business?: {
+    tagline?: string | null;
+    description?: string | null;
+    address?: string | null;
+    phone?: string | null;
+    whatsapp?: string | null;
+    email?: string | null;
+    website?: string | null;
+    socials?: string[];
+    policies?: string[];
+    brandColors?: string[];
+  };
+  /** Verified numbers only — omitted when unknown. */
+  stats?: {
+    ratingAvg?: number | null;
+    ratingCount?: number | null;
+    unitsSold?: number | null;
+  };
+  /** Real variant options (size/colour…) copied from the product. */
+  variants?: string[];
+  inStock?: boolean | null;
 };
 
 function factSheet(f: LandingAiFacts): string {
   const p = f.product;
+  const b = f.business ?? {};
+  const s = f.stats ?? {};
   const lines: string[] = [
     `Store name: ${f.storeName}`,
+    b.description ? `About the store: ${String(b.description).slice(0, 600)}` : "",
+    b.address ? `Store address: ${b.address}` : "",
+    [b.phone && `phone ${b.phone}`, b.whatsapp && `whatsapp ${b.whatsapp}`, b.email && `email ${b.email}`]
+      .filter(Boolean)
+      .join(", ")
+      ? `Store contact: ${[b.phone && `phone ${b.phone}`, b.whatsapp && `whatsapp ${b.whatsapp}`, b.email && `email ${b.email}`].filter(Boolean).join(", ")}`
+      : "",
+    b.socials?.length ? `Store is active on: ${b.socials.join(", ")}` : "",
+    b.policies?.length ? `Published store policies: ${b.policies.join(", ")}` : "",
+    b.brandColors?.length ? `Brand colors: ${b.brandColors.join(", ")}` : "",
+    "",
     `Product name: ${p.name}`,
     `Price: ${p.price} BDT`,
     p.old_price ? `Old price: ${p.old_price} BDT` : "",
+    f.inStock === false ? "Stock: currently out of stock" : f.inStock === true ? "Stock: in stock" : "",
+    f.variants?.length ? `Available options: ${f.variants.slice(0, 20).join(", ")}` : "",
     p.short_description ? `Short description: ${p.short_description}` : "",
     p.description ? `Full description: ${String(p.description).replace(/<[^>]+>/g, " ").slice(0, 2500)}` : "",
     p.warranty ? `Warranty: ${p.warranty}` : "",
@@ -206,12 +243,19 @@ function factSheet(f: LandingAiFacts): string {
     p.delivery_time_days ? `Delivery time (days): ${p.delivery_time_days}` : "",
     Array.isArray(p.features) && p.features.length ? `Features: ${JSON.stringify(p.features).slice(0, 1200)}` : "",
     p.specifications ? `Specifications: ${JSON.stringify(p.specifications).slice(0, 1200)}` : "",
+    s.ratingCount
+      ? `Verified rating: ${s.ratingAvg?.toFixed(1)} out of 5 from ${s.ratingCount} reviews (this number is real and may be used).`
+      : "No verified rating exists. Never state a rating or star score.",
+    typeof s.unitsSold === "number" && s.unitsSold > 0
+      ? `Verified units sold: ${s.unitsSold} (real; may be used once, modestly).`
+      : "No verified sales count exists. Never claim how many customers bought this.",
     f.hasRealReviews
       ? `Real customer reviews exist (${f.reviews.length}). Do NOT write new reviews.`
       : "No real customer reviews exist. Never write testimonials or claim customer experiences.",
   ];
   return lines.filter(Boolean).join("\n");
 }
+
 
 function manifestSpec(manifest: LandingFieldManifest): string {
   const rows: string[] = [];
