@@ -300,7 +300,9 @@ function LandingEditor() {
           <TabsTrigger value="design">Design</TabsTrigger>
           <TabsTrigger value="domains">Domains</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="coding">Coding</TabsTrigger>
         </TabsList>
+
 
         {/* -------- Content: section based -------- */}
         <TabsContent value="content" className="space-y-4 pt-4">
@@ -442,6 +444,18 @@ function LandingEditor() {
             onSave={save}
           />
         </TabsContent>
+
+        {/* -------- Coding (visual design layer) -------- */}
+        <TabsContent value="coding" className="space-y-4 pt-4">
+          <CodingPanel
+            pageId={id}
+            slug={page.slug}
+            content={content}
+            savedCode={(page.design_code as string | null) ?? null}
+            onSaved={() => qc.invalidateQueries({ queryKey: ["lp-builder", id] })}
+          />
+        </TabsContent>
+
 
         {/* -------- Domains -------- */}
         <TabsContent value="domains" className="space-y-4 pt-4">

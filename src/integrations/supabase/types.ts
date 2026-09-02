@@ -3587,6 +3587,8 @@ export type Database = {
         Row: {
           content: Json
           created_at: string
+          design_code: string | null
+          design_code_at: string | null
           form_config: Json
           id: string
           orders_count: number
@@ -3605,6 +3607,8 @@ export type Database = {
         Insert: {
           content?: Json
           created_at?: string
+          design_code?: string | null
+          design_code_at?: string | null
           form_config?: Json
           id?: string
           orders_count?: number
@@ -3623,6 +3627,8 @@ export type Database = {
         Update: {
           content?: Json
           created_at?: string
+          design_code?: string | null
+          design_code_at?: string | null
           form_config?: Json
           id?: string
           orders_count?: number
