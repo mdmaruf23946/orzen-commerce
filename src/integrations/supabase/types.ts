@@ -8413,12 +8413,14 @@ export type Database = {
           package_id: string | null
           payments_config: Json
           phone: string | null
+          pinterest: string | null
           primary_color: string
           primary_domain_id: string | null
           product_defaults: Json
           require_customer_login: boolean
           seo: Json
           slug: string
+          snapchat: string | null
           status: Database["public"]["Enums"]["store_status"]
           store_mode_changed_at: string | null
           storefront_default_lang: string
@@ -8433,11 +8435,13 @@ export type Database = {
           theme_draft: Json
           theme_id: string | null
           theme_overrides: Json
+          threads: string | null
           tiktok: string | null
           timezone: string
           title_bar_color: string | null
           trade_license: string | null
           trial_ends_at: string | null
+          twitter: string | null
           updated_at: string
           use_icon_as_favicon: boolean
           website: string | null
@@ -8484,12 +8488,14 @@ export type Database = {
           package_id?: string | null
           payments_config?: Json
           phone?: string | null
+          pinterest?: string | null
           primary_color?: string
           primary_domain_id?: string | null
           product_defaults?: Json
           require_customer_login?: boolean
           seo?: Json
           slug: string
+          snapchat?: string | null
           status?: Database["public"]["Enums"]["store_status"]
           store_mode_changed_at?: string | null
           storefront_default_lang?: string
@@ -8504,11 +8510,13 @@ export type Database = {
           theme_draft?: Json
           theme_id?: string | null
           theme_overrides?: Json
+          threads?: string | null
           tiktok?: string | null
           timezone?: string
           title_bar_color?: string | null
           trade_license?: string | null
           trial_ends_at?: string | null
+          twitter?: string | null
           updated_at?: string
           use_icon_as_favicon?: boolean
           website?: string | null
@@ -8555,12 +8563,14 @@ export type Database = {
           package_id?: string | null
           payments_config?: Json
           phone?: string | null
+          pinterest?: string | null
           primary_color?: string
           primary_domain_id?: string | null
           product_defaults?: Json
           require_customer_login?: boolean
           seo?: Json
           slug?: string
+          snapchat?: string | null
           status?: Database["public"]["Enums"]["store_status"]
           store_mode_changed_at?: string | null
           storefront_default_lang?: string
@@ -8575,11 +8585,13 @@ export type Database = {
           theme_draft?: Json
           theme_id?: string | null
           theme_overrides?: Json
+          threads?: string | null
           tiktok?: string | null
           timezone?: string
           title_bar_color?: string | null
           trade_license?: string | null
           trial_ends_at?: string | null
+          twitter?: string | null
           updated_at?: string
           use_icon_as_favicon?: boolean
           website?: string | null
