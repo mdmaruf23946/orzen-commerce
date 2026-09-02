@@ -132,9 +132,11 @@ export default {
       const response = await handler.fetch(workRequest, env, ctx);
       const normalized = await normalizeCatastrophicSsrResponse(response);
 
+      const isHtml = (normalized.headers.get("content-type") ?? "").includes("text/html");
+
       // Tell the client router which tenant this host serves, so it keeps
       // rendering the storefront instead of hydrating the platform landing page.
-      if (injectedTenant && (normalized.headers.get("content-type") ?? "").includes("text/html")) {
+      if (injectedTenant && isHtml) {
         const script = `<script>window.__ORZEN_TENANT__=${JSON.stringify(
           injectedTenant,
         )};window.__ORZEN_ROOT_DOMAIN__=${JSON.stringify(rootDomain)};</script>`;
@@ -144,7 +146,17 @@ export default {
           : `${script}${html}`;
         const headers = new Headers(normalized.headers);
         headers.delete("content-length");
+        // Storefront / landing HTML is merchant-editable: never let a CDN or
+        // browser reuse it, or a freshly published edit stays invisible.
+        headers.set("cache-control", "no-store, must-revalidate");
         return new Response(patched, { status: normalized.status, headers });
+      }
+
+      // Same rule for landing/store HTML reached through a platform path.
+      if (isHtml && /^\/(lp|store)\//i.test(url.pathname)) {
+        const headers = new Headers(normalized.headers);
+        headers.set("cache-control", "no-store, must-revalidate");
+        return new Response(normalized.body, { status: normalized.status, headers });
       }
       return normalized;
     } catch (error) {
