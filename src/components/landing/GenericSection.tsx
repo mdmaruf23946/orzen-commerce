@@ -4,6 +4,10 @@
 import { Check } from "lucide-react";
 import type { LPFieldSpec, LPSectionSpec } from "@/lib/landing-sections";
 import { lpImage } from "@/lib/landing-builder";
+import { BeforeAfter } from "@/components/landing/sections/BeforeAfter";
+import { VideoEmbed } from "@/components/landing/sections/VideoEmbed";
+import { Gallery } from "@/components/landing/sections/Gallery";
+import { ProductGrid, type LandingProductCard } from "@/components/landing/sections/ProductGrid";
 
 type Data = Record<string, any>;
 
@@ -20,6 +24,7 @@ function str(v: unknown): string {
 
 /** True when the merchant/AI left the whole section empty. */
 export function isBlockEmpty(spec: LPSectionSpec, data: Data): boolean {
+  if (spec.render === "products") return false; // products come from the catalogue
   const hasScalar = scalarFields(spec).some((f) => str(data[f.key]));
   const hasList = listFields(spec).some(
     (f) => Array.isArray(data[f.key]) && data[f.key].some((it: Data) => Object.values(it ?? {}).some((v) => str(v))),
@@ -27,8 +32,43 @@ export function isBlockEmpty(spec: LPSectionSpec, data: Data): boolean {
   return !hasScalar && !hasList;
 }
 
-export function GenericSection({ spec, data }: { spec: LPSectionSpec; data: Data }) {
+export function GenericSection({
+  spec, data, products = [], storeUrl = "",
+}: {
+  spec: LPSectionSpec;
+  data: Data;
+  /** Resolved product cards for `render: "products"` sections. */
+  products?: LandingProductCard[];
+  storeUrl?: string;
+}) {
   if (isBlockEmpty(spec, data)) return null;
+
+  if (spec.render === "before_after") {
+    return (
+      <BeforeAfter
+        title={str(data.title)}
+        text={str(data.text)}
+        items={Array.isArray(data.items) ? data.items : []}
+      />
+    );
+  }
+  if (spec.render === "video") {
+    return (
+      <VideoEmbed
+        title={str(data.title)}
+        text={str(data.text)}
+        videoUrl={str(data.videoUrl)}
+        poster={str(data.poster)}
+      />
+    );
+  }
+  if (spec.render === "gallery") {
+    return <Gallery title={str(data.title)} items={Array.isArray(data.items) ? data.items : []} />;
+  }
+  if (spec.render === "products") {
+    return <ProductGrid title={str(data.title)} products={products} storeUrl={storeUrl} />;
+  }
+
 
   const scalars = scalarFields(spec);
   const title = str(data[scalars.find((f) => /title|headline/i.test(f.key))?.key ?? ""]);
