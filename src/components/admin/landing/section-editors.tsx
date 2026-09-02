@@ -773,17 +773,41 @@ export function FooterEditor({ content, patch, onBack, onSave, saving, store }: 
         <Field label="Phone number" value={f.phone} placeholder={store?.phone || "Phone from Store Settings"} onChange={(v) => patch("footer", { phone: v })} />
         <Field label="Email" value={f.email} placeholder={store?.email || "Email from Store Settings"} onChange={(v) => patch("footer", { email: v })} />
         <Area label="Address" rows={2} value={f.address} placeholder={store?.address || "Address from Store Settings"} onChange={(v) => patch("footer", { address: v })} />
-        <Field label="Business hours" value={f.hours} placeholder="Sat–Thu, 10am – 8pm" onChange={(v) => patch("footer", { hours: v })} />
+        <Field label="Business hours" value={f.hours} placeholder={(store as any)?.business_hours || "Sat–Thu, 10am – 8pm"} onChange={(v) => patch("footer", { hours: v })} />
+        <Field label="Website" value={(f as any).website ?? ""} placeholder={(store as any)?.website || "https://..."} onChange={(v) => patch("footer", { website: v } as any)} />
       </div>
 
       <div className="space-y-3 rounded-lg border p-3">
         <p className="text-xs font-semibold">Social media</p>
-        <Field label="Facebook" value={f.facebook} placeholder={store?.facebook || "https://facebook.com/..."} onChange={(v) => patch("footer", { facebook: v })} />
-        <Field label="Instagram" value={f.instagram} placeholder={store?.instagram || "https://instagram.com/..."} onChange={(v) => patch("footer", { instagram: v })} />
-        <Field label="YouTube" value={f.youtube} placeholder={store?.youtube || "https://youtube.com/..."} onChange={(v) => patch("footer", { youtube: v })} />
-        <Field label="TikTok" value={f.tiktok} placeholder={store?.tiktok || "https://tiktok.com/@..."} onChange={(v) => patch("footer", { tiktok: v })} />
-        <Field label="WhatsApp" value={f.whatsapp} placeholder={store?.whatsapp || "WhatsApp number or link"} onChange={(v) => patch("footer", { whatsapp: v })} />
+        <p className="text-[11px] text-muted-foreground">
+          Left blank, each platform is pulled automatically from your Store Settings. Only platforms with a link are shown on the page.
+        </p>
+        {(
+          [
+            ["facebook", "Facebook", "https://facebook.com/..."],
+            ["instagram", "Instagram", "https://instagram.com/..."],
+            ["whatsapp", "WhatsApp", "WhatsApp number or link"],
+            ["youtube", "YouTube", "https://youtube.com/..."],
+            ["tiktok", "TikTok", "https://tiktok.com/@..."],
+            ["linkedin", "LinkedIn", "https://linkedin.com/company/..."],
+            ["twitter", "X (Twitter)", "https://x.com/..."],
+            ["telegram", "Telegram", "https://t.me/..."],
+            ["messenger", "Messenger", "https://m.me/..."],
+            ["pinterest", "Pinterest", "https://pinterest.com/..."],
+            ["snapchat", "Snapchat", "https://snapchat.com/add/..."],
+            ["threads", "Threads", "https://threads.net/@..."],
+          ] as const
+        ).map(([key, label, ph]) => (
+          <Field
+            key={key}
+            label={label}
+            value={(f as any)[key] ?? ""}
+            placeholder={(store as any)?.[key] || ph}
+            onChange={(v) => patch("footer", { [key]: v } as any)}
+          />
+        ))}
       </div>
+
 
       <div className="space-y-2 rounded-lg border p-3">
         <p className="text-xs font-semibold">Important links</p>
