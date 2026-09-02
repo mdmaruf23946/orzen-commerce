@@ -3,10 +3,8 @@
 // Header first, Footer last; everything in between follows content.sectionOrder.
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { Fragment, useEffect, useMemo, useState } from "react";
-import {
-  Award, Check, Clock, Gift, Heart, Package, Shield, Sparkles, Star,
-  ThumbsUp, Truck, Zap, Loader2, ChevronDown,
-} from "lucide-react";
+import { Check, Star, Loader2, ChevronDown } from "lucide-react";
+import { LP_ICONS } from "@/lib/landing-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getPublicLanding, getLandingStoreProducts, type PublicLandingPage } from "@/lib/landing-public.functions";
@@ -82,11 +80,7 @@ export const Route = createFileRoute("/lp/$slug")({
   component: LandingPageView,
 });
 
-const ICONS: Record<string, typeof Check> = {
-  check: Check, star: Star, shield: Shield, truck: Truck, zap: Zap, heart: Heart,
-  award: Award, clock: Clock, gift: Gift, "thumbs-up": ThumbsUp, package: Package,
-  sparkles: Sparkles,
-};
+const ICONS = LP_ICONS;
 
 function money(n: number) {
   return `৳${Number(n || 0).toLocaleString("en-US")}`;
