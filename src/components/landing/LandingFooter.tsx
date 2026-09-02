@@ -55,7 +55,7 @@ export function LandingFooter({ footer, store, storePages = [], storeUrl = "", f
   const whatsapp = s((footer as any).whatsapp) || s(store?.whatsapp);
   const website = s((footer as any).website) || s(store?.website);
 
-  const socials = resolveSocials(footer as any, (store ?? {}) as any);
+  const socials = resolveSocials(footer as any, (store ?? {}) as any).filter((s) => s.key !== "website");
 
   const links = footer.links.filter((l) => s(l.label) && s(l.url));
 
