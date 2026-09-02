@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-// Build stamp baked in at bundle time, so a single request tells us which
-// build a given host (platform, storefront subdomain, landing host) is running.
-const BUILT_AT = new Date().toISOString();
+// Stamp of when this worker instance first served a request: together with the
+// commit below it tells us which build a given host is running.
+let BUILT_AT: string | null = null;
 
 /** Public build-version probe: GET /api/public/version */
 export const Route = createFileRoute("/api/public/version")({
