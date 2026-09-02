@@ -121,33 +121,59 @@ export function DesignPanel({
     setSelectedId(String((theme as any)?.themeId ?? ""));
   }, [saved, theme]);
 
+  // Themes stored with the page (generated once, at creation). They never
+  // change on their own — only an explicit "Regenerate" replaces them.
+  const stored: LandingThemePreset[] = Array.isArray((theme as any)?.presets)
+    ? ((theme as any).presets as LandingThemePreset[])
+    : [];
+
+  // Backfill only: pages created before themes were stored get one generation
+  // (also triggered manually via Regenerate, which bumps `nonce`).
+  const needsBackfill = stored.length === 0;
   const { data, isFetching } = useQuery({
     queryKey: ["lp-themes", pageId, nonce],
     queryFn: () => suggestFn({ data: { id: pageId } }),
-    staleTime: 30 * 60_000,
+    enabled: needsBackfill || nonce > 0,
+    staleTime: Infinity,
+    gcTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
-  const themes: LandingThemePreset[] = data?.themes ?? [];
+  const themes: LandingThemePreset[] = stored.length ? stored : (data?.themes ?? []);
 
   const hasSelection = Boolean((theme as any)?.themeId);
 
-  // AI default: when nothing was ever selected, apply the first suggestion and
-  // push it to the parent so "Save design" actually persists what is shown.
+  // Persist a freshly generated list onto the page theme so it stays fixed,
+  // applying the first palette when the page has no theme chosen yet.
   useEffect(() => {
-    if (hasSelection || !themes.length) return;
-    const first = themes[0]!;
-    const next: LandingPalette = {
-      primary: first.primary,
-      secondary: first.secondary,
-      accent: first.accent,
-      background: first.background,
-      text: first.text,
+    const fresh = data?.themes ?? [];
+    if (!fresh.length) return;
+    const current = Array.isArray((theme as any)?.presets) ? ((theme as any).presets as LandingThemePreset[]) : [];
+    if (current.length && current[0]?.id === fresh[0]?.id) return;
+
+    const base: Record<string, unknown> = {
+      ...(theme ?? {}),
+      presets: fresh,
+      presetsAt: new Date().toISOString(),
     };
-    setPalette(next);
-    setSelectedId(first.id);
-    onChange({ ...(theme ?? {}), ...next, themeId: first.id, themeName: first.name });
-    setPreviewKey((k) => k + 1);
+    if (!hasSelection) {
+      const first = fresh[0]!;
+      const next: LandingPalette = {
+        primary: first.primary,
+        secondary: first.secondary,
+        accent: first.accent,
+        background: first.background,
+        text: first.text,
+      };
+      setPalette(next);
+      setSelectedId(first.id);
+      Object.assign(base, next, { themeId: first.id, themeName: first.name });
+      setPreviewKey((k) => k + 1);
+    }
+    onChange(base);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasSelection, themes]);
+  }, [data]);
 
   function apply(next: LandingPalette, id: string, name: string) {
     setPalette(next);
