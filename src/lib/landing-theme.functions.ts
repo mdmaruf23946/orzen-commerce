@@ -16,7 +16,7 @@ export const suggestLandingThemes = createServerFn({ method: "POST" })
 
     const { data: page } = await context.supabase
       .from("landing_pages")
-      .select("id,title,product_id")
+      .select("id,title,product_id,theme")
       .eq("id", data.id)
       .eq("store_id", (store as any).id)
       .maybeSingle();
