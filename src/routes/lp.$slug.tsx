@@ -136,6 +136,43 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
   const content = useMemo(() => normalizeContent(page.content), [page.content]);
   const form = (page.form_config ?? {}) as LandingFormConfig;
 
+  // ----- Catalogue-driven sections (Recommended / Related / Recently viewed) -----
+  const productSections = useMemo(
+    () =>
+      content.sectionOrder.filter(
+        (k) => content.sectionEnabled[k] !== false && sectionSpec(k)?.render === "products",
+      ),
+    [content.sectionOrder, content.sectionEnabled],
+  );
+  const catalogueFn = useServerFn(getLandingStoreProducts);
+  const { data: catalogue } = useQuery({
+    queryKey: ["lp-catalogue", page.store.id],
+    queryFn: () => catalogueFn({ data: { storeId: page.store.id, storeSlug: page.store.slug } }),
+    enabled: productSections.length > 0,
+    staleTime: 5 * 60_000,
+  });
+  const [recentIds, setRecentIds] = useState<string[]>([]);
+  useEffect(() => {
+    if (productSections.includes("recently_viewed")) setRecentIds(readRecent(page.store.slug, page.product?.id));
+  }, [productSections, page.store.slug, page.product?.id]);
+
+  function productsForSection(key: string): LandingProductCard[] {
+    const all = catalogue?.products ?? [];
+    if (!all.length) return [];
+    const others = all.filter((p) => p.id !== page.product?.id);
+    if (key === "recommended_products") {
+      const picked: string[] = Array.isArray((content.blocks[key] as any)?.productIds)
+        ? ((content.blocks[key] as any).productIds as string[])
+        : [];
+      const chosen = picked.map((id) => all.find((p) => p.id === id)).filter(Boolean) as LandingProductCard[];
+      return (chosen.length ? chosen : others).slice(0, 8);
+    }
+    if (key === "recently_viewed") {
+      return recentIds.map((id) => all.find((p) => p.id === id)).filter(Boolean).slice(0, 8) as LandingProductCard[];
+    }
+    return others.slice(0, 8);
+  }
+
   const price = content.pricing.price || page.product?.price || 0;
   const oldPrice = content.pricing.oldPrice ?? page.product?.old_price ?? null;
   const discount = oldPrice && oldPrice > price ? Math.round(((oldPrice - price) / oldPrice) * 100) : 0;
