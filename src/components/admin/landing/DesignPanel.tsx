@@ -215,7 +215,7 @@ export function DesignPanel({
           <div className="min-w-0">
             <h3 className="text-sm font-semibold">AI recommended themes</h3>
             <p className="text-xs text-muted-foreground">
-              Generated from your product images, category and content.
+              Created once from your product when this page was made. They stay the same.
             </p>
           </div>
           <Button
@@ -223,10 +223,13 @@ export function DesignPanel({
             variant="outline"
             className="ml-auto"
             disabled={isFetching}
-            onClick={() => setNonce((n) => n + 1)}
+            onClick={() => {
+              if (themes.length && !window.confirm("Replace the saved themes with a new AI set?")) return;
+              setNonce((n) => n + 1);
+            }}
           >
             {isFetching ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-1.5 h-3.5 w-3.5" />}
-            Regenerate
+            Regenerate themes
           </Button>
         </div>
 
