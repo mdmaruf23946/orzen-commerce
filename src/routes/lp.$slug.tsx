@@ -2,14 +2,16 @@
 // One fixed, professional template. Section order is always:
 // Header first, Footer last; everything in between follows content.sectionOrder.
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import {
   Award, Check, Clock, Gift, Heart, Package, Shield, Sparkles, Star,
   ThumbsUp, Truck, Zap, Loader2, ChevronDown,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getPublicLanding, type PublicLandingPage } from "@/lib/landing-public.functions";
+import { getPublicLanding, getLandingStoreProducts, type PublicLandingPage } from "@/lib/landing-public.functions";
+import type { LandingProductCard } from "@/components/landing/sections/ProductGrid";
+import { readRecent } from "@/lib/recently-viewed";
 import { LandingBranding } from "@/components/landing/LandingBranding";
 import { GenericSection } from "@/components/landing/GenericSection";
 import { sectionSpec } from "@/lib/landing-sections";
@@ -135,6 +137,43 @@ const STYLE = {
 function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: boolean }) {
   const content = useMemo(() => normalizeContent(page.content), [page.content]);
   const form = (page.form_config ?? {}) as LandingFormConfig;
+
+  // ----- Catalogue-driven sections (Recommended / Related / Recently viewed) -----
+  const productSections = useMemo(
+    () =>
+      content.sectionOrder.filter(
+        (k) => content.sectionEnabled[k] !== false && sectionSpec(k)?.render === "products",
+      ),
+    [content.sectionOrder, content.sectionEnabled],
+  );
+  const catalogueFn = useServerFn(getLandingStoreProducts);
+  const { data: catalogue } = useQuery({
+    queryKey: ["lp-catalogue", page.store.id],
+    queryFn: () => catalogueFn({ data: { storeId: page.store.id, storeSlug: page.store.slug } }),
+    enabled: productSections.length > 0,
+    staleTime: 5 * 60_000,
+  });
+  const [recentIds, setRecentIds] = useState<string[]>([]);
+  useEffect(() => {
+    if (productSections.includes("recently_viewed")) setRecentIds(readRecent(page.store.slug, page.product?.id));
+  }, [productSections, page.store.slug, page.product?.id]);
+
+  function productsForSection(key: string): LandingProductCard[] {
+    const all = catalogue?.products ?? [];
+    if (!all.length) return [];
+    const others = all.filter((p) => p.id !== page.product?.id);
+    if (key === "recommended_products") {
+      const picked: string[] = Array.isArray((content.blocks[key] as any)?.productIds)
+        ? ((content.blocks[key] as any).productIds as string[])
+        : [];
+      const chosen = picked.map((id) => all.find((p) => p.id === id)).filter(Boolean) as LandingProductCard[];
+      return (chosen.length ? chosen : others).slice(0, 8);
+    }
+    if (key === "recently_viewed") {
+      return recentIds.map((id) => all.find((p) => p.id === id)).filter(Boolean).slice(0, 8) as LandingProductCard[];
+    }
+    return others.slice(0, 8);
+  }
 
   const price = content.pricing.price || page.product?.price || 0;
   const oldPrice = content.pricing.oldPrice ?? page.product?.old_price ?? null;
@@ -443,7 +482,15 @@ function LandingPageBody({ page, preview }: { page: PublicLandingPage; preview: 
           const spec = sectionSpec(key);
           if (!spec) return null;
           if (spec.builtin) return <Fragment key={key}>{builtinNodes[key] ?? null}</Fragment>;
-          return <GenericSection key={key} spec={spec} data={content.blocks[key] ?? {}} />;
+          return (
+            <GenericSection
+              key={key}
+              spec={spec}
+              data={content.blocks[key] ?? {}}
+              products={spec.render === "products" ? productsForSection(key) : []}
+              storeUrl={catalogue?.storeUrl ?? ""}
+            />
+          );
         })}
 
       {/* 8. Footer */}
