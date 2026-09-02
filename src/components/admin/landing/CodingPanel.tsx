@@ -6,9 +6,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { AlertTriangle, Check, Eye, Loader2, RotateCcw, Save, Sparkles } from "lucide-react";
+import { AlertTriangle, Check, Loader2, RotateCcw, Save, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { LandingPreviewFrame } from "@/components/admin/landing/LandingPreviewFrame";
 import { fixLandingDesignCode, setLandingDesignCode } from "@/lib/landing-builder.functions";
 import { defaultDesignCode, designHooks, validateDesignCode } from "@/lib/landing-code";
 import type { LandingContent } from "@/lib/landing-builder";

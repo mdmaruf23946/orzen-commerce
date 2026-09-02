@@ -4,11 +4,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Eye, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { Check, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LandingPreviewFrame } from "@/components/admin/landing/LandingPreviewFrame";
 import { suggestLandingThemes } from "@/lib/landing-theme.functions";
 import {
   COLOR_ROLES,
@@ -21,17 +20,6 @@ import {
   type LandingPalette,
   type LandingThemePreset,
 } from "@/lib/landing-theme";
-
-/** Encodes the draft palette so the preview iframe renders unsaved colors. */
-export function paletteQuery(p: LandingPalette): string {
-  return new URLSearchParams({
-    c_primary: p.primary.slice(1),
-    c_secondary: p.secondary.slice(1),
-    c_accent: p.accent.slice(1),
-    c_background: p.background.slice(1),
-    c_text: p.text.slice(1),
-  }).toString();
-}
 
 function MiniPreview({ palette }: { palette: LandingPalette }) {
   const t = themeTokens(palette) as Record<string, string>;
