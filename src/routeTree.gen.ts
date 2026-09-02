@@ -53,6 +53,7 @@ import { Route as StoreSlugBlogsRouteImport } from './routes/store/$slug/blogs'
 import { Route as StoreSlugAccountRouteImport } from './routes/store/$slug/account'
 import { Route as StoreSlugAboutUsRouteImport } from './routes/store/$slug/about-us'
 import { Route as StoreSlugAboutRouteImport } from './routes/store/$slug/about'
+import { Route as ApiPublicVersionRouteImport } from './routes/api/public/version'
 import { Route as ApiImgSplatRouteImport } from './routes/api/img.$'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
 import { Route as AuthenticatedOwnerWebhooksRouteImport } from './routes/_authenticated/owner/webhooks'
@@ -431,6 +432,11 @@ const StoreSlugAboutRoute = StoreSlugAboutRouteImport.update({
   id: '/about',
   path: '/about',
   getParentRoute: () => StoreSlugRouteRoute,
+} as any)
+const ApiPublicVersionRoute = ApiPublicVersionRouteImport.update({
+  id: '/api/public/version',
+  path: '/api/public/version',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiImgSplatRoute = ApiImgSplatRouteImport.update({
   id: '/api/img/$',
@@ -1443,6 +1449,7 @@ export interface FileRoutesByFullPath {
   '/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
+  '/api/public/version': typeof ApiPublicVersionRoute
   '/store/$slug/about': typeof StoreSlugAboutRoute
   '/store/$slug/about-us': typeof StoreSlugAboutUsRoute
   '/store/$slug/account': typeof StoreSlugAccountRoute
@@ -1633,6 +1640,7 @@ export interface FileRoutesByTo {
   '/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
+  '/api/public/version': typeof ApiPublicVersionRoute
   '/store/$slug/about': typeof StoreSlugAboutRoute
   '/store/$slug/about-us': typeof StoreSlugAboutUsRoute
   '/store/$slug/account': typeof StoreSlugAccountRoute
@@ -1834,6 +1842,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
+  '/api/public/version': typeof ApiPublicVersionRoute
   '/store/$slug/about': typeof StoreSlugAboutRoute
   '/store/$slug/about-us': typeof StoreSlugAboutUsRoute
   '/store/$slug/account': typeof StoreSlugAccountRoute
@@ -2035,6 +2044,7 @@ export interface FileRouteTypes {
     | '/owner/webhooks'
     | '/api/ai/chat'
     | '/api/img/$'
+    | '/api/public/version'
     | '/store/$slug/about'
     | '/store/$slug/about-us'
     | '/store/$slug/account'
@@ -2225,6 +2235,7 @@ export interface FileRouteTypes {
     | '/owner/webhooks'
     | '/api/ai/chat'
     | '/api/img/$'
+    | '/api/public/version'
     | '/store/$slug/about'
     | '/store/$slug/about-us'
     | '/store/$slug/account'
@@ -2425,6 +2436,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/webhooks'
     | '/api/ai/chat'
     | '/api/img/$'
+    | '/api/public/version'
     | '/store/$slug/about'
     | '/store/$slug/about-us'
     | '/store/$slug/account'
@@ -2535,6 +2547,7 @@ export interface RootRouteChildren {
   DotwellKnownOrzenDomainVerificationTokenRoute: typeof DotwellKnownOrzenDomainVerificationTokenRoute
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiImgSplatRoute: typeof ApiImgSplatRoute
+  ApiPublicVersionRoute: typeof ApiPublicVersionRoute
   ApiPublicAiCallsToolRoute: typeof ApiPublicAiCallsToolRoute
   ApiPublicAiCallsWebhookRoute: typeof ApiPublicAiCallsWebhookRoute
   ApiPublicCronAiCallsRoute: typeof ApiPublicCronAiCallsRoute
@@ -2869,6 +2882,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/store/$slug/about'
       preLoaderRoute: typeof StoreSlugAboutRouteImport
       parentRoute: typeof StoreSlugRouteRoute
+    }
+    '/api/public/version': {
+      id: '/api/public/version'
+      path: '/api/public/version'
+      fullPath: '/api/public/version'
+      preLoaderRoute: typeof ApiPublicVersionRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/img/$': {
       id: '/api/img/$'
@@ -4451,6 +4471,7 @@ const rootRouteChildren: RootRouteChildren = {
     DotwellKnownOrzenDomainVerificationTokenRoute,
   ApiAiChatRoute: ApiAiChatRoute,
   ApiImgSplatRoute: ApiImgSplatRoute,
+  ApiPublicVersionRoute: ApiPublicVersionRoute,
   ApiPublicAiCallsToolRoute: ApiPublicAiCallsToolRoute,
   ApiPublicAiCallsWebhookRoute: ApiPublicAiCallsWebhookRoute,
   ApiPublicCronAiCallsRoute: ApiPublicCronAiCallsRoute,
