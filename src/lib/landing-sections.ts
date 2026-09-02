@@ -469,6 +469,25 @@ export const SECTION_REGISTRY: LPSectionSpec[] = [
   },
   { key: "reviews", name: "Reviews", description: "Customer reviews and ratings", required: false, builtin: true, fields: [] },
   {
+    key: "ratings",
+    name: "Ratings",
+    description: "Overall rating summary and score breakdown",
+    required: false,
+    builtin: false,
+    note: "Left blank, the score is summarised from your Reviews section.",
+    fields: [
+      t("title", "Section title", 60, "Heading for the ratings section."),
+      t("score", "Average score (0-5)", 4, "Only the real average from the supplied review data. Never invent a number."),
+      t("count", "Total review count", 10, "Only the real review count from the supplied data."),
+      ta("text", "Summary", 200, "One short line summarising the real reviews."),
+      {
+        key: "items", type: "list", label: "Rating rows", itemLabel: "Rating row", maxItems: 5,
+        ai: "Only breakdowns supported by the supplied review data.",
+        fields: [t("label", "Label", 40), t("score", "Score (0-5)", 4)],
+      },
+    ],
+  },
+  {
     key: "customer_stories",
     name: "Customer Stories",
     description: "Longer stories from real customers",
@@ -539,6 +558,7 @@ export const SECTION_REGISTRY: LPSectionSpec[] = [
     description: "Photos from real customers",
     required: false,
     builtin: false,
+    render: "gallery",
     fields: [
       t("title", "Section title", 60, "Heading for the customer photos."),
       {
