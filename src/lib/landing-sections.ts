@@ -12,9 +12,11 @@
 export type LPFieldSpec =
   | {
       key: string;
-      type: "text" | "textarea" | "image";
+      type: "text" | "textarea" | "image" | "products";
       label: string;
       max?: number;
+      /** Max picked products (products field only). */
+      maxItems?: number;
       placeholder?: string;
       /** Guidance handed to the AI generator. Omit to hide the field from AI. */
       ai?: string;
@@ -29,6 +31,9 @@ export type LPFieldSpec =
       fields: LPFieldSpec[];
     };
 
+/** Specialised public renderers. Undefined = the standard generic layout. */
+export type LPRender = "before_after" | "video" | "gallery" | "products";
+
 export type LPSectionSpec = {
   key: string;
   name: string;
@@ -39,6 +44,10 @@ export type LPSectionSpec = {
   builtin: boolean;
   /** Shown inside the editor: where the data comes from. */
   note?: string;
+  /** Specialised frontend renderer for this section. */
+  render?: LPRender;
+  /** Where the product cards come from (render: "products" only). */
+  productSource?: "picked" | "related" | "recent";
   fields: LPFieldSpec[];
 };
 
