@@ -326,7 +326,13 @@ export async function generateLandingCopy(
   const prompt = [
     `<facts>\n${factSheet(facts)}\n</facts>`,
     "",
-    "Optional sections start with `blocks.<section>.`. Choose ONLY the optional sections that genuinely suit this product and leave every field of the other optional sections out of your answer entirely. Never partially fill an optional section.",
+    "SECTION STRATEGY (act as a landing page strategist, not just a copywriter):",
+    "- Optional sections start with `blocks.<section>.`. Choose ONLY the optional sections that genuinely suit this product and leave every field of the other optional sections out of your answer entirely. Never partially fill an optional section.",
+    "- Aim for 4-7 optional sections that build a natural buying journey: attention → what it is → why it is better → proof/trust → objections → action.",
+    "- Match the sections to the product category: technical products favour specifications/comparison sections, beauty & apparel favour visual/benefit sections, gifts favour emotional/story sections.",
+    "- Only pick trust sections (guarantee, delivery, payment, contact) when the facts actually support them.",
+    "- Keep the copy hierarchy clear: short punchy headlines, one idea per block, scannable supporting lines.",
+
     "",
     "Fill these fields (return an array of {path, value}):",
     manifestSpec(manifest),
