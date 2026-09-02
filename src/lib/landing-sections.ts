@@ -12,9 +12,11 @@
 export type LPFieldSpec =
   | {
       key: string;
-      type: "text" | "textarea" | "image";
+      type: "text" | "textarea" | "image" | "products";
       label: string;
       max?: number;
+      /** Max picked products (products field only). */
+      maxItems?: number;
       placeholder?: string;
       /** Guidance handed to the AI generator. Omit to hide the field from AI. */
       ai?: string;
@@ -29,6 +31,9 @@ export type LPFieldSpec =
       fields: LPFieldSpec[];
     };
 
+/** Specialised public renderers. Undefined = the standard generic layout. */
+export type LPRender = "before_after" | "video" | "gallery" | "products";
+
 export type LPSectionSpec = {
   key: string;
   name: string;
@@ -39,6 +44,10 @@ export type LPSectionSpec = {
   builtin: boolean;
   /** Shown inside the editor: where the data comes from. */
   note?: string;
+  /** Specialised frontend renderer for this section. */
+  render?: LPRender;
+  /** Where the product cards come from (render: "products" only). */
+  productSource?: "picked" | "related" | "recent";
   fields: LPFieldSpec[];
 };
 
@@ -128,6 +137,26 @@ export const SECTION_REGISTRY: LPSectionSpec[] = [
       },
     ],
   },
+  {
+    key: "use_cases",
+    name: "Use Cases",
+    description: "Where and how the product is used",
+    required: false,
+    builtin: false,
+    fields: [
+      t("title", "Section title", 60, "Heading for the use cases section."),
+      {
+        key: "items", type: "list", label: "Use cases", itemLabel: "Use case", maxItems: 8,
+        ai: "Realistic situations this product is used in, based on the product facts only.",
+        fields: [
+          t("icon", "Icon", 20, "One icon name: check, star, zap, package, heart, award, clock, sparkles."),
+          t("title", "Title", 50, "Short use case title."),
+          ta("text", "Description", 160, "One short sentence."),
+          img("image", "Image (optional)"),
+        ],
+      },
+    ],
+  },
   { key: "description", name: "Description", description: "Product benefits and information", required: false, builtin: true, fields: [] },
   {
     key: "features",
@@ -145,6 +174,48 @@ export const SECTION_REGISTRY: LPSectionSpec[] = [
           t("icon", "Icon", 20, "One icon name: check, star, shield, truck, zap, award, package, sparkles."),
           t("title", "Feature title", 60, "Short feature name."),
           ta("text", "Description", 180, "One short explanation."),
+        ],
+      },
+    ],
+  },
+  {
+    key: "technology",
+    name: "Technology / Components",
+    description: "The technology or components inside the product",
+    required: false,
+    builtin: false,
+    note: "Use only technology facts from the product record.",
+    fields: [
+      t("title", "Section title", 60, "Heading for the technology section."),
+      ta("text", "Intro", 220, "One or two factual sentences. Never invent technology."),
+      {
+        key: "items", type: "list", label: "Technologies", itemLabel: "Technology", maxItems: 8,
+        ai: "Only technologies or components confirmed by the product facts.",
+        fields: [
+          t("icon", "Icon", 20, "One icon name: zap, shield, sparkles, package, check, award."),
+          t("title", "Name", 50, "Technology or component name."),
+          ta("text", "Description", 160, "One short explanation."),
+        ],
+      },
+    ],
+  },
+  {
+    key: "ingredients",
+    name: "Ingredients / Materials",
+    description: "What the product is made of",
+    required: false,
+    builtin: false,
+    note: "Only list materials or ingredients confirmed by the product record.",
+    fields: [
+      t("title", "Section title", 60, "Heading for the ingredients or materials section."),
+      ta("text", "Intro", 220, "One short factual introduction."),
+      {
+        key: "items", type: "list", label: "Ingredients / materials", itemLabel: "Item", maxItems: 12,
+        ai: "Only ingredients or materials given in the product facts. Never invent any.",
+        fields: [
+          t("name", "Name", 60, "Ingredient or material name."),
+          ta("text", "Description", 140, "What it does or why it is used."),
+          img("image", "Image (optional)"),
         ],
       },
     ],
@@ -200,6 +271,51 @@ export const SECTION_REGISTRY: LPSectionSpec[] = [
     ],
   },
   {
+    key: "before_after",
+    name: "Before & After",
+    description: "Visual comparison of results",
+    required: false,
+    builtin: false,
+    render: "before_after",
+    note: "Only use real, unedited customer or product photos.",
+    fields: [
+      t("title", "Section title", 60, "Heading for the before and after section."),
+      ta("text", "Intro", 200, "One short honest sentence. Never promise guaranteed results."),
+      {
+        key: "items", type: "list", label: "Comparisons", itemLabel: "Comparison", maxItems: 6,
+        ai: "Short, honest captions for each before and after pair.",
+        fields: [
+          t("label", "Caption", 60, "Short caption for the pair."),
+          img("beforeImage", "Before image"),
+          img("afterImage", "After image"),
+          t("beforeLabel", "Before label", 24, "Label for the first image, e.g. Before."),
+          t("afterLabel", "After label", 24, "Label for the second image, e.g. After."),
+        ],
+      },
+    ],
+  },
+  {
+    key: "results",
+    name: "Results / Outcomes",
+    description: "What customers can expect",
+    required: false,
+    builtin: false,
+    note: "Only use outcomes supported by real facts. Never invent numbers.",
+    fields: [
+      t("title", "Section title", 60, "Heading for the results section."),
+      ta("text", "Intro", 220, "Honest expectation-setting sentence."),
+      {
+        key: "items", type: "list", label: "Results", itemLabel: "Result", maxItems: 6,
+        ai: "Realistic outcomes only. Never invent statistics or medical claims.",
+        fields: [
+          t("value", "Highlight", 24, "Short highlight, only when supported by facts."),
+          t("title", "Title", 50, "Short outcome title."),
+          ta("text", "Description", 160, "One short sentence."),
+        ],
+      },
+    ],
+  },
+  {
     key: "box_contents",
     name: "What's In The Box",
     description: "Everything included with the product",
@@ -246,6 +362,27 @@ export const SECTION_REGISTRY: LPSectionSpec[] = [
     ],
   },
   {
+    key: "product_variants",
+    name: "Product Variants",
+    description: "Selectable variants of this product",
+    required: false,
+    builtin: false,
+    note: "Variants are taken from the linked product record where available.",
+    fields: [
+      t("title", "Section title", 60, "Heading for the product variants section."),
+      {
+        key: "items", type: "list", label: "Variants", itemLabel: "Variant", maxItems: 12,
+        ai: "Only variants present in the product facts.",
+        fields: [
+          t("name", "Variant name", 50),
+          ta("text", "Description", 140, "One short line about this variant."),
+          t("price", "Price label", 40),
+          img("image", "Variant image"),
+        ],
+      },
+    ],
+  },
+  {
     key: "comparison",
     name: "Comparison",
     description: "How this product compares",
@@ -277,6 +414,44 @@ export const SECTION_REGISTRY: LPSectionSpec[] = [
     ],
   },
   {
+    key: "package_bundle",
+    name: "Package / Bundle",
+    description: "Bundle options and what each includes",
+    required: false,
+    builtin: false,
+    note: "Prices must match your real product and offer pricing.",
+    fields: [
+      t("title", "Section title", 60, "Heading for the bundle section."),
+      ta("text", "Intro", 200, "One short line about the packages."),
+      {
+        key: "items", type: "list", label: "Packages", itemLabel: "Package", maxItems: 4,
+        ai: "Only packages supported by the supplied pricing facts.",
+        fields: [
+          t("name", "Package name", 50),
+          t("price", "Price label", 40),
+          ta("text", "What is included", 200, "Short list of what the package includes."),
+          t("badge", "Badge", 24, "Optional short badge, e.g. Popular."),
+          img("image", "Image (optional)"),
+        ],
+      },
+    ],
+  },
+  {
+    key: "limited_offer",
+    name: "Limited Time Offer",
+    description: "A time-limited promotion",
+    required: false,
+    builtin: false,
+    note: "Only use this when the offer is genuinely limited.",
+    fields: [
+      t("title", "Offer title", 60, "Short offer heading. Never invent fake urgency."),
+      ta("text", "Offer details", 220, "Only real offer facts."),
+      t("badge", "Badge", 24, "Short badge text."),
+      t("deadline", "Ends on", 40, "Only when a real end date is supplied."),
+      t("ctaText", "Button text", 24, "Order button label."),
+    ],
+  },
+  {
     key: "social_proof",
     name: "Social Proof",
     description: "Trust and popularity signals",
@@ -293,6 +468,71 @@ export const SECTION_REGISTRY: LPSectionSpec[] = [
     ],
   },
   { key: "reviews", name: "Reviews", description: "Customer reviews and ratings", required: false, builtin: true, fields: [] },
+  {
+    key: "customer_stories",
+    name: "Customer Stories",
+    description: "Longer stories from real customers",
+    required: false,
+    builtin: false,
+    note: "Only publish real customer stories with permission.",
+    fields: [
+      t("title", "Section title", 60, "Heading for the customer stories section."),
+      {
+        key: "items", type: "list", label: "Stories", itemLabel: "Story",
+        maxItems: 6,
+        fields: [
+          t("name", "Customer name", 50),
+          t("location", "Location", 50),
+          ta("text", "Story", 400),
+          img("image", "Photo"),
+        ],
+      },
+    ],
+  },
+  {
+    key: "video_showcase",
+    name: "Video Showcase",
+    description: "A product video from YouTube or Vimeo",
+    required: false,
+    builtin: false,
+    render: "video",
+    fields: [
+      t("title", "Section title", 60, "Heading for the video section."),
+      ta("text", "Intro", 200, "One short supporting line."),
+      { key: "videoUrl", type: "text", label: "Video URL (YouTube or Vimeo)", max: 300, placeholder: "https://youtube.com/watch?v=..." },
+      img("poster", "Thumbnail (optional)"),
+    ],
+  },
+  {
+    key: "product_demo",
+    name: "Product Demo",
+    description: "A demo video showing the product in use",
+    required: false,
+    builtin: false,
+    render: "video",
+    fields: [
+      t("title", "Section title", 60, "Heading for the product demo."),
+      ta("text", "Intro", 200, "One short line describing the demo."),
+      { key: "videoUrl", type: "text", label: "Demo video URL (YouTube or Vimeo)", max: 300, placeholder: "https://youtube.com/watch?v=..." },
+      img("poster", "Thumbnail (optional)"),
+    ],
+  },
+  {
+    key: "image_gallery",
+    name: "Image Gallery",
+    description: "A gallery of product images",
+    required: false,
+    builtin: false,
+    render: "gallery",
+    note: "Product images are available in the image picker.",
+    fields: [
+      t("title", "Section title", 60, "Heading for the gallery."),
+      {
+        key: "items", type: "list", label: "Images", itemLabel: "Image", maxItems: 12,
+        fields: [img("image", "Image"), t("caption", "Caption", 80)],
+      },
+    ],
+  },
   {
     key: "customer_photos",
     name: "Customer Photos",
@@ -325,6 +565,49 @@ export const SECTION_REGISTRY: LPSectionSpec[] = [
     ],
   },
   {
+    key: "brand_story",
+    name: "Brand Story",
+    description: "The story behind the store or brand",
+    required: false,
+    builtin: false,
+    note: "Left blank, this falls back to your Store Settings information.",
+    fields: [
+      t("title", "Section title", 60, "Heading for the brand story."),
+      ta("text", "Story", 600, "Two or three short paragraphs about the brand, using supplied facts only."),
+      img("image", "Brand image"),
+    ],
+  },
+  {
+    key: "certifications",
+    name: "Certifications / Awards",
+    description: "Certificates, awards and approvals",
+    required: false,
+    builtin: false,
+    note: "Only list certifications the store can prove.",
+    fields: [
+      t("title", "Section title", 60, "Heading for the certifications section."),
+      {
+        key: "items", type: "list", label: "Certifications", itemLabel: "Certification", maxItems: 8,
+        ai: "Only certifications or awards confirmed by the supplied facts.",
+        fields: [t("name", "Name", 60), ta("text", "Description", 140), img("image", "Logo or certificate")],
+      },
+    ],
+  },
+  {
+    key: "partners",
+    name: "Partners / Brands",
+    description: "Partner or brand logos",
+    required: false,
+    builtin: false,
+    fields: [
+      t("title", "Section title", 60, "Heading for the partners section."),
+      {
+        key: "items", type: "list", label: "Partners", itemLabel: "Partner", maxItems: 12,
+        fields: [t("name", "Name", 50), img("image", "Logo")],
+      },
+    ],
+  },
+  {
     key: "shipping",
     name: "Shipping & Delivery",
     description: "Delivery information and areas",
@@ -350,6 +633,42 @@ export const SECTION_REGISTRY: LPSectionSpec[] = [
     ],
   },
   { key: "faq", name: "FAQ", description: "Frequently asked questions", required: false, builtin: true, fields: [] },
+  {
+    key: "recommended_products",
+    name: "Recommended Products",
+    description: "Hand-picked products from your store",
+    required: false,
+    builtin: false,
+    render: "products",
+    productSource: "picked",
+    note: "Products come from your store catalogue and open on your storefront.",
+    fields: [
+      t("title", "Section title", 60, "Heading for the recommended products section."),
+      { key: "productIds", type: "products", label: "Choose products", maxItems: 8 },
+    ],
+  },
+  {
+    key: "related_products",
+    name: "Related Products",
+    description: "Other products from your store",
+    required: false,
+    builtin: false,
+    render: "products",
+    productSource: "related",
+    note: "Filled automatically from your store catalogue.",
+    fields: [t("title", "Section title", 60, "Heading for the related products section.")],
+  },
+  {
+    key: "recently_viewed",
+    name: "Recently Viewed",
+    description: "Products the visitor viewed on your storefront",
+    required: false,
+    builtin: false,
+    render: "products",
+    productSource: "recent",
+    note: "Shown only to visitors who already browsed your storefront.",
+    fields: [t("title", "Section title", 60, "Heading for the recently viewed section.")],
+  },
   {
     key: "final_cta",
     name: "Final CTA",
