@@ -597,10 +597,119 @@ export const deleteLandingPage = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const store = await requireMyStore(context.supabase, context.userId);
     await ownedPage(context.supabase, store.id, data.id);
+    // Clean Cloudflare first: the subdomain disappears entirely, custom domains
+    // go back to Domain settings unattached.
+    const { releaseLandingSubdomain, releaseLandingCustomDomains } = await import(
+      "@/lib/domain-lifecycle.server"
+    );
+    await releaseLandingSubdomain(context.supabase, data.id, "manual", true).catch(() => null);
+    await releaseLandingCustomDomains(context.supabase, data.id, "manual", true).catch(() => null);
     const { error } = await context.supabase.from("landing_pages").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/**
+ * When a landing page's custom domain is live, the free subdomain is no longer
+ * needed — release it from Cloudflare (row kept so it can be reconnected).
+ */
+export async function retireLandingSubdomainIfCustomLive(supabase: any, pageId: string) {
+  const { data: live } = await supabase
+    .from("store_domains")
+    .select("id")
+    .eq("landing_page_id", pageId)
+    .eq("status", "active")
+    .maybeSingle();
+  if (!live) return false;
+  const { releaseLandingSubdomain } = await import("@/lib/domain-lifecycle.server");
+  const n = await releaseLandingSubdomain(supabase, pageId, "custom_domain_live");
+  return n > 0;
+}
+
+/** Bring a released landing subdomain or custom domain back online. */
+export const reconnectLandingDomain = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ domainId: uuid, kind: z.enum(["subdomain", "custom"]) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const store = await requireMyStore(context.supabase, context.userId);
+
+    if (data.kind === "subdomain") {
+      const { data: row } = await context.supabase
+        .from("landing_page_domains")
+        .select("id,hostname,landing_page_id")
+        .eq("id", data.domainId)
+        .eq("store_id", store.id)
+        .maybeSingle();
+      if (!row) throw new Error("Not found");
+      const { reattachSubdomainHost } = await import("@/lib/domain-lifecycle.server");
+      const res = await reattachSubdomainHost(row.hostname);
+      await context.supabase
+        .from("landing_page_domains")
+        .update({
+          status: res.ok ? "active" : "error",
+          ssl_status: res.ok ? "issued" : "none",
+          released_at: null,
+          release_reason: null,
+          last_error: res.error,
+          last_checked_at: new Date().toISOString(),
+          verified_at: res.ok ? new Date().toISOString() : null,
+        } as never)
+        .eq("id", row.id);
+      if (row.landing_page_id) {
+        await context.supabase
+          .from("landing_pages")
+          .update({
+            last_activity_at: new Date().toISOString(),
+            idle_warned_at: null,
+            hosts_released_at: null,
+          } as never)
+          .eq("id", row.landing_page_id);
+      }
+      if (!res.ok) throw new Error(res.error ?? "Could not reconnect this subdomain");
+      return { ok: true, hostname: row.hostname };
+    }
+
+    const { data: row } = await context.supabase
+      .from("store_domains")
+      .select("id,hostname,landing_page_id")
+      .eq("id", data.domainId)
+      .eq("store_id", store.id)
+      .maybeSingle();
+    if (!row) throw new Error("Not found");
+    const { reattachCustomHost } = await import("@/lib/domain-lifecycle.server");
+    const res = await reattachCustomHost(row.hostname);
+    if (!res.ok) throw new Error(res.error ?? "Could not reconnect this domain");
+    await context.supabase
+      .from("store_domains")
+      .update({
+        cf_hostname_id: res.cf.id,
+        cf_status: res.cf.status,
+        cf_ssl_status: res.cf.ssl?.status ?? null,
+        cf_ownership: res.cf.ownership_verification ?? null,
+        cf_ssl_validation: res.cf.ssl?.validation_records ?? null,
+        status: res.cf.status === "active" ? "active" : "pending",
+        ssl_status: res.cf.ssl?.status === "active" ? "issued" : "issuing",
+        released_at: null,
+        release_reason: null,
+        last_error: null,
+        last_checked_at: new Date().toISOString(),
+      } as never)
+      .eq("id", row.id);
+    if (row.landing_page_id) {
+      await context.supabase
+        .from("landing_pages")
+        .update({
+          last_activity_at: new Date().toISOString(),
+          idle_warned_at: null,
+          hosts_released_at: null,
+        } as never)
+        .eq("id", row.landing_page_id);
+    }
+    return { ok: true, hostname: row.hostname };
+  });
+
 
 /** Explicit, admin-triggered re-sync of content from the source product. */
 export const resyncLandingPage = createServerFn({ method: "POST" })
