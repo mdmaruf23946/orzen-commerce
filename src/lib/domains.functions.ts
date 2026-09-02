@@ -95,8 +95,13 @@ export const listMyDomains = createServerFn({ method: "GET" })
       : { data: [] as any[] };
     const byId = new Map((pages ?? []).map((p: any) => [p.id, p]));
     const { subdomainAutomationConfigured } = await import("@/lib/cloudflare-pages.server");
+    const { data: releaseInfo } = await context.supabase
+      .from("stores")
+      .select("subdomain_released_at, subdomain_release_reason")
+      .eq("id", store.id)
+      .maybeSingle();
     return {
-      store,
+      store: { ...store, ...(releaseInfo ?? {}) },
       settings,
       autoSsl: cloudflareConfigured(),
       autoSubdomain: subdomainAutomationConfigured(),

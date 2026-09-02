@@ -140,6 +140,13 @@ export const getLandingPage = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const store = await requireMyStore(context.supabase, context.userId);
     const page = await ownedPage(context.supabase, store.id, data.id);
+    // Opening the builder counts as activity (keeps the idle sweep away).
+    await context.supabase
+      .rpc("touch_landing_activity", { _page_id: page.id, _visit: false })
+      .then(
+        () => null,
+        () => null,
+      );
     const [domainsRes, productRes, hosts] = await Promise.all([
       context.supabase
         .from("landing_page_domains")
