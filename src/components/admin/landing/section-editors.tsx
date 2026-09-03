@@ -291,94 +291,105 @@ export function ItemRow({ label, sub, onOpen }: { label: string; sub?: string; o
 /* ---------------- used sections + section library ---------------- */
 
 export function SectionList({
-  content, onOpen, onAdd, onRemove,
+  content, onOpen, onAdd,
 }: {
   content: LandingContent;
   onOpen: (key: string) => void;
   onAdd: (key: string) => void;
-  onRemove: (key: string) => void;
 }) {
   const used = usedSectionKeys(content.sectionOrder, content.sectionEnabled);
   const library = librarySectionKeys(content.sectionOrder, content.sectionEnabled);
+  const [phase, setPhase] = useState<"used" | "library">("used");
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-base font-semibold">Used sections</h2>
-        <p className="text-xs text-muted-foreground">
-          These sections appear on your landing page, in this order.
-        </p>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          {used.map((key) => {
-            const spec = sectionSpec(key)!;
-            return (
-              <div
-                key={key}
-                className="flex items-center gap-3 rounded-xl border bg-card p-4 text-left transition hover:bg-accent"
-              >
-                <button type="button" onClick={() => onOpen(key)} className="min-w-0 flex-1 text-left">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate text-sm font-semibold">{spec.name}</span>
-                    <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] ${
-                        spec.required
-                          ? "bg-muted text-muted-foreground"
-                          : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
-                      }`}
-                    >
-                      {spec.required ? "Always visible" : "Visible"}
-                    </span>
-                  </div>
-                  <div className="mt-0.5 truncate text-xs text-muted-foreground">{spec.description}</div>
-                </button>
-                {!spec.required && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="shrink-0"
-                    onClick={() => onRemove(key)}
-                  >
-                    Remove
-                  </Button>
-                )}
-                <button type="button" onClick={() => onOpen(key)} aria-label={`Edit ${spec.name}`}>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                </button>
-              </div>
-            );
-          })}
-        </div>
+    <div className="space-y-4">
+      {/* two phases: used sections / section library */}
+      <div className="inline-flex rounded-lg bg-muted p-1">
+        <button
+          type="button"
+          onClick={() => setPhase("used")}
+          className={`rounded-md px-4 py-1.5 text-sm font-medium transition ${
+            phase === "used" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Used sections ({used.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setPhase("library")}
+          className={`rounded-md px-4 py-1.5 text-sm font-medium transition ${
+            phase === "library" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Section library ({library.length})
+        </button>
       </div>
 
-      <div>
-        <h2 className="text-base font-semibold">Section library</h2>
-        <p className="text-xs text-muted-foreground">
-          Available sections you can add to this page. Design stays automatic.
-        </p>
-        {library.length === 0 ? (
-          <p className="mt-3 rounded-xl border bg-muted/40 p-4 text-xs text-muted-foreground">
-            Every available section is already used on this page.
+      {phase === "used" ? (
+        <div>
+          <p className="text-xs text-muted-foreground">
+            These sections appear on your landing page, in this order.
           </p>
-        ) : (
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            {library.map((key) => {
+            {used.map((key) => {
               const spec = sectionSpec(key)!;
               return (
-                <div key={key} className="flex items-center gap-3 rounded-xl border bg-card p-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-semibold">{spec.name}</div>
+                <div
+                  key={key}
+                  className="flex items-center gap-3 rounded-xl border bg-card p-4 text-left transition hover:bg-accent"
+                >
+                  <button type="button" onClick={() => onOpen(key)} className="min-w-0 flex-1 text-left">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-sm font-semibold">{spec.name}</span>
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] ${
+                          spec.required
+                            ? "bg-muted text-muted-foreground"
+                            : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                        }`}
+                      >
+                        {spec.required ? "Always visible" : "Visible"}
+                      </span>
+                    </div>
                     <div className="mt-0.5 truncate text-xs text-muted-foreground">{spec.description}</div>
-                  </div>
-                  <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={() => onAdd(key)}>
-                    <Plus className="mr-1 h-3.5 w-3.5" /> Add
-                  </Button>
+                  </button>
+                  <button type="button" onClick={() => onOpen(key)} aria-label={`Edit ${spec.name}`}>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </button>
                 </div>
               );
             })}
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div>
+          <p className="text-xs text-muted-foreground">
+            Available sections you can add to this page. Design stays automatic.
+          </p>
+          {library.length === 0 ? (
+            <p className="mt-3 rounded-xl border bg-muted/40 p-4 text-xs text-muted-foreground">
+              Every available section is already used on this page.
+            </p>
+          ) : (
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {library.map((key) => {
+                const spec = sectionSpec(key)!;
+                return (
+                  <div key={key} className="flex items-center gap-3 rounded-xl border bg-card p-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold">{spec.name}</div>
+                      <div className="mt-0.5 truncate text-xs text-muted-foreground">{spec.description}</div>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={() => onAdd(key)}>
+                      <Plus className="mr-1 h-3.5 w-3.5" /> Add
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
