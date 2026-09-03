@@ -66,6 +66,8 @@ export function CodingPanel({
     setSaving(true);
     try {
       await saveFn({ data: { id: pageId, code } });
+      // The preview iframe reads this draft key, so it always shows exactly
+      // what was just saved — no stale stylesheet.
       writeDraft(code);
       toast.success("Design code saved");
       onSaved();

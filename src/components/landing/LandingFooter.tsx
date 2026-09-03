@@ -34,7 +34,7 @@ function s(v: unknown) {
 function Column({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold tracking-wide" style={{ color: "var(--lp-text)" }}>
+      <h3 className="text-sm font-semibold tracking-wide lp-text">
         {title}
       </h3>
       {children}
@@ -97,7 +97,7 @@ export function LandingFooter({ footer, store, storePages = [], storeUrl = "", f
     columns.push(
       <Column key="contact" title="Contact">
         {s(footer.contactText) && (
-          <p className="text-sm" style={{ color: "var(--lp-muted)" }}>{footer.contactText}</p>
+          <p className="text-sm lp-muted-text">{footer.contactText}</p>
         )}
         <ul className="space-y-2.5">
           {contactRows.map((row, i) => {
@@ -106,8 +106,8 @@ export function LandingFooter({ footer, store, storePages = [], storeUrl = "", f
               <span className="whitespace-pre-line break-words">{row.label}</span>
             );
             return (
-              <li key={i} className="flex items-start gap-2.5 text-sm" style={{ color: "var(--lp-muted)" }}>
-                <Icon className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "var(--lp-primary)" }} />
+              <li key={i} className="flex items-start gap-2.5 text-sm lp-muted-text">
+                <Icon className="mt-0.5 h-4 w-4 shrink-0 lp-primary-text" />
                 {row.href ? (
                   <a
                     href={row.href}
@@ -131,7 +131,7 @@ export function LandingFooter({ footer, store, storePages = [], storeUrl = "", f
   if (links.length || quickPages.length) {
     columns.push(
       <Column key="quick" title="Quick Links">
-        <ul className="space-y-2 text-sm" style={{ color: "var(--lp-muted)" }}>
+        <ul className="space-y-2 text-sm lp-muted-text">
           {links.map((l, i) => (
             <li key={`l${i}`}>
               <a href={l.url} target="_blank" rel="noreferrer noopener" className="transition-colors hover:opacity-80">
@@ -154,7 +154,7 @@ export function LandingFooter({ footer, store, storePages = [], storeUrl = "", f
   if (policyPages.length) {
     columns.push(
       <Column key="policies" title="Policies">
-        <ul className="space-y-2 text-sm" style={{ color: "var(--lp-muted)" }}>
+        <ul className="space-y-2 text-sm lp-muted-text">
           {policyPages.map((p) => (
             <li key={p.key}>
               <a href={p.href} target="_blank" rel="noreferrer noopener" className="transition-colors hover:opacity-80">
@@ -173,8 +173,7 @@ export function LandingFooter({ footer, store, storePages = [], storeUrl = "", f
   return (
     <footer
       data-lp-section="footer"
-      className="px-4 pt-12 pb-6"
-      style={{ background: "var(--lp-surface)", color: "var(--lp-text)", borderTop: "1px solid var(--lp-border)" }}
+      className="px-4 pt-12 pb-6 lp-footer"
     >
       <div className="mx-auto max-w-6xl">
         <div className={`grid gap-10 ${gridCols}`}>
@@ -195,7 +194,7 @@ export function LandingFooter({ footer, store, storePages = [], storeUrl = "", f
             )}
             {!nameLogo && <div className="text-lg font-bold">{name}</div>}
             {description && (
-              <p className="max-w-sm text-sm leading-relaxed" style={{ color: "var(--lp-muted)" }}>
+              <p className="max-w-sm text-sm leading-relaxed lp-muted-text">
                 {description}
               </p>
             )}
@@ -231,8 +230,7 @@ export function LandingFooter({ footer, store, storePages = [], storeUrl = "", f
         </div>
 
         <div
-          className="mt-10 flex flex-col items-center justify-between gap-2 pt-5 text-center text-xs sm:flex-row sm:text-left"
-          style={{ borderTop: "1px solid var(--lp-border)", color: "var(--lp-muted)" }}
+          className="mt-10 flex flex-col items-center justify-between gap-2 pt-5 text-center text-xs sm:flex-row sm:text-left lp-footer-bottom"
         >
           <p>{s(footer.copyright) || `© ${new Date().getFullYear()} ${name}. All rights reserved.`}</p>
           {s(store?.trade_license) && <p>Trade License: {s(store?.trade_license)}</p>}

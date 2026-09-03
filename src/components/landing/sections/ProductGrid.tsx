@@ -34,8 +34,7 @@ export function ProductGrid({
               href={`${storeUrl}/product/${p.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="group block overflow-hidden bg-white ring-1 ring-neutral-200 transition-shadow hover:shadow-lg"
-              style={{ borderRadius: "var(--lp-radius)" }}
+              className="group block overflow-hidden bg-white ring-1 ring-neutral-200 transition-shadow hover:shadow-lg lp-round"
             >
               <div className="aspect-square w-full overflow-hidden bg-neutral-100">
                 {p.primary_image_url && (
@@ -50,7 +49,7 @@ export function ProductGrid({
               <div className="space-y-1 p-3">
                 <div className="line-clamp-2 text-sm font-medium text-neutral-800">{p.name}</div>
                 <div className="flex items-baseline gap-2">
-                  <span className="font-bold" style={{ color: "var(--lp-primary)" }}>{money(p.price)}</span>
+                  <span className="font-bold lp-primary-text">{money(p.price)}</span>
                   {p.old_price != null && Number(p.old_price) > Number(p.price) && (
                     <span className="text-xs text-neutral-400 line-through">{money(Number(p.old_price))}</span>
                   )}

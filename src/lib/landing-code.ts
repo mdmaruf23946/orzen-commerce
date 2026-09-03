@@ -211,17 +211,25 @@ export function designHooks(sectionKeys: string[]): { selector: string; label: s
   const base = [
     { selector: ".lp-root", label: "Page root (background, base font)" },
     { selector: "[data-lp-section]", label: "Every section wrapper" },
+    { selector: "[data-lp-section] > section", label: "Section inner block (padding, width)" },
     { selector: "[data-lp-section] h2", label: "Section headings" },
     { selector: '[data-lp-section="header"]', label: "Header" },
+    { selector: ".lp-header", label: "Header bar surface" },
     { selector: '[data-lp-section="hero"]', label: "Hero" },
     { selector: '[data-lp-section="order"]', label: "Order form" },
-    { selector: '[data-lp-section="footer"]', label: "Footer" },
+    { selector: ".lp-btn", label: "Primary buttons" },
+    { selector: ".lp-btn-sm", label: "Small buttons" },
+    { selector: ".lp-card", label: "Cards / surfaces" },
+    { selector: ".lp-input", label: "Form inputs" },
+    { selector: ".lp-badge", label: "Offer badge" },
+    { selector: ".lp-footer", label: "Footer" },
   ];
   const extra = sectionKeys
     .filter((k) => !["header", "hero", "order", "footer"].includes(k))
     .map((k) => ({ selector: `[data-lp-section="${k}"]`, label: `Section: ${k}` }));
   return [...base, ...extra];
 }
+
 
 /**
  * The system design that a page starts from. It is real, working CSS — the
@@ -243,6 +251,11 @@ export function defaultDesignCode(sectionKeys: string[] = []): string {
      var(--lp-muted)    var(--lp-border)     var(--lp-radius)
 
    Target a section with:  [data-lp-section="hero"] { ... }
+
+   Reusable element hooks:
+     .lp-header  .lp-card  .lp-btn  .lp-btn-sm  .lp-input
+     .lp-badge   .lp-footer  .lp-round  .lp-round-sm  .lp-round-xs
+
 ------------------------------------------------------------------ */
 
 /* Base typography ------------------------------------------------- */
@@ -280,6 +293,7 @@ export function defaultDesignCode(sectionKeys: string[] = []): string {
 }
 
 /* Cards ------------------------------------------------------------ */
+[data-lp-section] .lp-card,
 [data-lp-section] .rounded-xl,
 [data-lp-section] .rounded-2xl {
   border-radius: var(--lp-radius);
@@ -287,12 +301,14 @@ export function defaultDesignCode(sectionKeys: string[] = []): string {
 }
 
 @media (hover: hover) {
+  [data-lp-section] .lp-card:hover,
   [data-lp-section] .rounded-xl:hover,
   [data-lp-section] .rounded-2xl:hover {
     transform: translateY(-2px);
     box-shadow: 0 18px 40px -28px color-mix(in srgb, var(--lp-text) 60%, transparent);
   }
 }
+
 
 /* Buttons ---------------------------------------------------------- */
 .lp-root a[href="#order"],

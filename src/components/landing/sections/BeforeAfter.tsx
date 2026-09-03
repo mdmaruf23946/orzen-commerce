@@ -22,7 +22,7 @@ export function BeforeAfter({
         )}
         <div className="mt-6 grid gap-6 sm:grid-cols-2">
           {pairs.map((it, i) => (
-            <figure key={i} className="overflow-hidden bg-neutral-50 p-3" style={{ borderRadius: "var(--lp-radius)" }}>
+            <figure key={i} className="overflow-hidden bg-neutral-50 p-3 lp-round">
               <div className="grid grid-cols-2 gap-2">
                 {(["before", "after"] as const).map((side) => {
                   const src = String(it[`${side}Image`] ?? "");
@@ -34,13 +34,11 @@ export function BeforeAfter({
                           src={lpImage(src)}
                           alt={label}
                           loading="lazy"
-                          className="aspect-square w-full object-cover"
-                          style={{ borderRadius: "calc(var(--lp-radius) / 1.5)" }}
+                          className="aspect-square w-full object-cover lp-round-sm"
                         />
                       ) : (
                         <div
-                          className="aspect-square w-full bg-neutral-200"
-                          style={{ borderRadius: "calc(var(--lp-radius) / 1.5)" }}
+                          className="aspect-square w-full bg-neutral-200 lp-round-sm"
                         />
                       )}
                       <span className="absolute left-2 top-2 bg-black/70 px-2 py-0.5 text-[11px] font-semibold text-white">

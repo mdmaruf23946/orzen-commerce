@@ -20,8 +20,7 @@ export function Gallery({ title, items }: { title: string; items: Item[] }) {
               key={i}
               type="button"
               onClick={() => setOpen(i)}
-              className="group overflow-hidden bg-neutral-100"
-              style={{ borderRadius: "calc(var(--lp-radius) / 1.5)" }}
+              className="group overflow-hidden bg-neutral-100 lp-round-sm"
             >
               <img
                 src={lpImage(String(it.image))}

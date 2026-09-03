@@ -35,8 +35,7 @@ export function VideoEmbed({
           <p className="mx-auto mt-2 max-w-2xl text-center text-sm leading-relaxed text-neutral-600">{text}</p>
         )}
         <div
-          className="relative mt-6 aspect-video w-full overflow-hidden bg-neutral-900"
-          style={{ borderRadius: "var(--lp-radius)" }}
+          className="relative mt-6 aspect-video w-full overflow-hidden bg-neutral-900 lp-round"
         >
           {poster && !playing ? (
             <button
@@ -48,8 +47,7 @@ export function VideoEmbed({
               <img src={lpImage(poster)} alt="" loading="lazy" className="h-full w-full object-cover" />
               <span className="absolute inset-0 grid place-items-center bg-black/30">
                 <span
-                  className="grid h-16 w-16 place-items-center rounded-full text-white transition-transform group-hover:scale-110"
-                  style={{ background: "var(--lp-primary)" }}
+                  className="grid h-16 w-16 place-items-center rounded-full text-white transition-transform group-hover:scale-110 lp-primary-bg"
                 >
                   <Play className="h-7 w-7" />
                 </span>
