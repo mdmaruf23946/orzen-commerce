@@ -18,6 +18,8 @@ import {
   setLandingStatus,
 } from "@/lib/landing-builder.functions";
 import { lpImage } from "@/lib/landing-builder";
+import { OfferBuilder, OfferTypePicker } from "@/components/admin/landing/OfferBuilder";
+import { defaultTiers, emptyOffer, type LandingOffer, type OfferType } from "@/lib/landing-offer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -193,6 +195,13 @@ const AI_STEPS = [
   "Finalizing...",
 ];
 
+const WIZ_TITLES = [
+  "Select the main product",
+  "Choose the content language",
+  "Choose an offer type",
+  "Configure the offer",
+];
+
 function CreateDialog() {
   const productsFn = useServerFn(listLandingProducts);
   const createFn = useServerFn(createLandingPage);
@@ -203,6 +212,8 @@ function CreateDialog() {
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [lang, setLang] = useState<"en" | "bn" | "mixed">("en");
+  const [wiz, setWiz] = useState(0);
+  const [offer, setOffer] = useState<LandingOffer>(emptyOffer());
   const [step, setStep] = useState(-1);
   /** Phase 2: created page waiting for its web address. */
   const [createdId, setCreatedId] = useState<string | null>(null);
@@ -215,6 +226,8 @@ function CreateDialog() {
     queryFn: () => productsFn(),
     enabled: open,
   });
+
+  const mainProduct = (products as any[]).find((p) => p.id === selected) ?? null;
 
   const filtered = (products as any[]).filter((p) =>
     p.name.toLowerCase().includes(q.trim().toLowerCase()),
@@ -230,7 +243,7 @@ function CreateDialog() {
     ];
     try {
       const created = (await createFn({
-        data: { productId: selected, useAi: true, contentLang: lang },
+        data: { productId: selected, useAi: true, contentLang: lang, offer },
       })) as { id: string };
       toast.success("Landing page generated");
       setCreatedId(created.id);
@@ -290,6 +303,8 @@ function CreateDialog() {
       setSelected(null);
       setQ("");
       setLang("en");
+      setWiz(0);
+      setOffer(emptyOffer());
     }
   }
 
@@ -300,7 +315,9 @@ function CreateDialog() {
       </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{createdId ? "Choose your web address" : "Select a product"}</DialogTitle>
+          <DialogTitle>
+            {createdId ? "Choose your web address" : WIZ_TITLES[wiz]}
+          </DialogTitle>
         </DialogHeader>
 
         {createdId ? (
@@ -364,72 +381,123 @@ function CreateDialog() {
           </div>
         ) : (
           <>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input className="pl-8" placeholder="Search products…" value={q} onChange={(e) => setQ(e.target.value)} />
+            <div className="flex gap-1">
+              {WIZ_TITLES.map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-1 flex-1 rounded-full ${i <= wiz ? "bg-primary" : "bg-muted"}`}
+                />
+              ))}
             </div>
-            <div className="max-h-[45vh] space-y-1 overflow-y-auto">
-              {isLoading ? (
-                <div className="p-6 text-center text-sm text-muted-foreground">Loading products…</div>
-              ) : filtered.length === 0 ? (
-                <div className="p-6 text-center text-sm text-muted-foreground">No physical products found.</div>
-              ) : (
-                filtered.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setSelected(p.id)}
-                    className={`flex w-full items-center gap-3 rounded-lg border p-2 text-left transition-colors hover:bg-accent ${
-                      selected === p.id ? "border-primary bg-accent" : ""
-                    }`}
-                  >
-                    {p.primary_image_url ? (
-                      <img src={lpImage(p.primary_image_url)} alt={p.name} className="h-10 w-10 rounded object-cover" />
-                    ) : (
-                      <div className="h-10 w-10 rounded bg-muted" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium">{p.name}</div>
-                      <div className="text-xs text-muted-foreground">৳{p.price} · stock {p.stock ?? 0}</div>
-                    </div>
-                    {selected === p.id && <Check className="h-4 w-4 shrink-0 text-primary" />}
-                  </button>
-                ))
-              )}
-            </div>
-            {selected && (
-              <div className="rounded-lg border p-3">
-                <div className="text-xs font-medium">Content Language</div>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  Language for the AI-generated landing page content.
+
+            {wiz === 0 && (
+              <>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input className="pl-8" placeholder="Search products…" value={q} onChange={(e) => setQ(e.target.value)} />
+                </div>
+                <div className="max-h-[45vh] space-y-1 overflow-y-auto">
+                  {isLoading ? (
+                    <div className="p-6 text-center text-sm text-muted-foreground">Loading products…</div>
+                  ) : filtered.length === 0 ? (
+                    <div className="p-6 text-center text-sm text-muted-foreground">No physical products found.</div>
+                  ) : (
+                    filtered.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setSelected(p.id)}
+                        className={`flex w-full items-center gap-3 rounded-lg border p-2 text-left transition-colors hover:bg-accent ${
+                          selected === p.id ? "border-primary bg-accent" : ""
+                        }`}
+                      >
+                        {p.primary_image_url ? (
+                          <img src={lpImage(p.primary_image_url)} alt={p.name} className="h-10 w-10 rounded object-cover" />
+                        ) : (
+                          <div className="h-10 w-10 rounded bg-muted" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-medium">{p.name}</div>
+                          <div className="text-xs text-muted-foreground">৳{p.price} · stock {p.stock ?? 0}</div>
+                        </div>
+                        {selected === p.id && <Check className="h-4 w-4 shrink-0 text-primary" />}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </>
+            )}
+
+            {wiz === 1 && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Language for every piece of AI-written content on this page.
                 </p>
-                <div className="mt-2 grid grid-cols-3 gap-1.5">
+                <div className="grid gap-1.5">
                   {([
-                    { v: "bn", label: "বাংলা" },
-                    { v: "en", label: "English" },
-                    { v: "mixed", label: "বাংলা+English" },
+                    { v: "bn", label: "বাংলা", hint: "Full Bengali copy" },
+                    { v: "en", label: "English", hint: "Full English copy" },
+                    { v: "mixed", label: "বাংলা + English", hint: "Bengali with common English commerce terms" },
                   ] as const).map((o) => (
                     <button
                       key={o.v}
                       type="button"
                       onClick={() => setLang(o.v)}
-                      className={`rounded-md border px-2 py-1.5 text-xs transition-colors ${
-                        lang === o.v
-                          ? "border-primary bg-primary/10 font-medium text-primary"
-                          : "hover:bg-accent"
+                      className={`rounded-lg border p-2.5 text-left transition-colors hover:bg-accent ${
+                        lang === o.v ? "border-primary bg-accent" : ""
                       }`}
                     >
-                      {o.label}
+                      <div className="text-sm font-medium">{o.label}</div>
+                      <div className="text-[11px] text-muted-foreground">{o.hint}</div>
                     </button>
                   ))}
                 </div>
               </div>
             )}
-            <Button className="w-full" disabled={!selected} onClick={create}>
-              <Sparkles className="mr-1.5 h-4 w-4" /> Create Landing Page
-            </Button>
+
+            {wiz === 2 && (
+              <OfferTypePicker
+                value={offer.type}
+                onChange={(t: OfferType) =>
+                  setOffer({
+                    ...offer,
+                    type: t,
+                    enabled: t !== "single",
+                    tiers: t === "single" ? [] : defaultTiers(t),
+                  })
+                }
+              />
+            )}
+
+            {wiz === 3 && mainProduct && (
+              <div className="max-h-[55vh] overflow-y-auto pr-1">
+                <OfferBuilder
+                  offer={offer}
+                  onChange={setOffer}
+                  mainProduct={mainProduct}
+                  catalog={products as any[]}
+                />
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              {wiz > 0 && (
+                <Button variant="outline" onClick={() => setWiz(wiz - 1)}>
+                  Back
+                </Button>
+              )}
+              {wiz < 3 ? (
+                <Button className="flex-1" disabled={!selected} onClick={() => setWiz(wiz + 1)}>
+                  Continue
+                </Button>
+              ) : (
+                <Button className="flex-1" disabled={!selected} onClick={create}>
+                  <Sparkles className="mr-1.5 h-4 w-4" /> Generate Landing Page
+                </Button>
+              )}
+            </div>
             <p className="-mt-1 text-center text-[11px] text-muted-foreground">
-              AI will write the page content from this product. You can edit it before publishing.
+              AI writes the content and the design from your real product, offer and store data.
             </p>
           </>
         )}

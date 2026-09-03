@@ -96,17 +96,33 @@ export async function fixDesignCode(
  */
 export async function generateDesignCode(input: {
   productName?: string;
-  category?: string;
+  category?: string | null;
   sections: string[];
   hints?: string;
+  /** Page palette, so the generated CSS matches the chosen theme. */
+  palette?: Partial<Record<"primary" | "secondary" | "accent" | "background" | "text", string>>;
+  /** Offer model driving the page, when it sells more than one product. */
+  offerType?: string | null;
+  tierCount?: number;
 }): Promise<string | null> {
+  const palette = input.palette
+    ? Object.entries(input.palette)
+        .filter(([, v]) => v)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(", ")
+    : "";
+
   const prompt = [
     `Product: ${input.productName || "unknown"}`,
     `Category: ${input.category || "unknown"}`,
     `Sections on this page (in order): ${input.sections.join(", ")}`,
+    palette ? `Page palette (already applied as CSS variables): ${palette}` : "",
+    input.offerType && input.offerType !== "single"
+      ? `This page sells a multi-product offer of type "${input.offerType}" with ${input.tierCount ?? 0} purchase options rendered inside .lp-offer as .lp-offer-tier cards (one has .is-featured). Give the offer block premium treatment: clear price hierarchy (.lp-price, .lp-price-old, .lp-save-badge), comparable tier cards, a highlighted recommended tier, and an obvious selected state (.lp-offer-tier[aria-pressed="true"]).`
+      : "",
     input.hints ? `Merchant notes: ${input.hints}` : "",
     "",
-    "Write a professional, modern design for this landing page: typography scale, section rhythm and spacing, card and button styling, image presentation, hover states, subtle entrance animation, and mobile rules. Style only the sections listed above.",
+    "Write a premium, modern e-commerce design for this landing page. Cover: page background and section backgrounds (subtle gradients allowed), typography scale and weights, section rhythm and spacing, container widths, product and offer cards with borders/radius/shadows, pricing presentation, primary and secondary buttons, image presentation, visual hierarchy, hover states, smooth transitions, tasteful entrance animation, and full mobile rules under 768px. Style only the sections listed above. Aim for a rich, complete stylesheet, not a few colour tweaks.",
   ]
     .filter(Boolean)
     .join("\n");

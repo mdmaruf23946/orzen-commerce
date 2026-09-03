@@ -312,6 +312,8 @@ export const createLandingPage = createServerFn({ method: "POST" })
         useAi: z.boolean().optional(),
         /** Output language for the AI-generated copy. */
         contentLang: z.enum(["en", "bn", "mixed"]).optional(),
+        /** Multi-product offer configuration (offer type, extras, tiers). */
+        offer: z.any().optional(),
       })
       .parse(d),
   )
@@ -322,6 +324,36 @@ export const createLandingPage = createServerFn({ method: "POST" })
     const product = await loadSourceProduct(context.supabase, store.id, data.productId);
     const title = data.title?.trim() || product.name;
     const slug = await uniqueSlug(context.supabase, title);
+    const contentLang = data.contentLang ?? "en";
+
+    // Offer: only products that really belong to this store, priced from the
+    // live catalog. The merchant's submitted prices are never trusted.
+    const { normalizeOffer } = await import("@/lib/landing-offer");
+    const offer = normalizeOffer(data.offer);
+    if (offer.products.length) {
+      const { data: extraRows } = await context.supabase
+        .from("products")
+        .select("id,name,price,primary_image_url")
+        .eq("store_id", store.id)
+        .in("id", offer.products.map((p) => p.productId));
+      const byId = new Map((extraRows ?? []).map((r: any) => [r.id, r]));
+      offer.products = offer.products
+        .filter((p) => byId.has(p.productId))
+        .map((p) => {
+          const row: any = byId.get(p.productId);
+          return {
+            ...p,
+            name: String(row.name),
+            price: Number(row.price) || 0,
+            image: String(row.primary_image_url ?? ""),
+          };
+        });
+      const allowed = new Set(offer.products.map((p) => p.productId));
+      offer.tiers = offer.tiers.map((t) => ({
+        ...t,
+        items: t.items.filter((i) => allowed.has(i.productId)),
+      }));
+    }
 
     let content = generateContentFromProduct(product);
     let seo: { title: string; description: string } = {
@@ -362,7 +394,32 @@ export const createLandingPage = createServerFn({ method: "POST" })
           stats: biz.stats,
           variants: biz.variants,
           inStock: biz.inStock,
-        }, data.contentLang ?? "en");
+          offer: offer.enabled
+            ? {
+                type: offer.type,
+                title: offer.title,
+                subtitle: offer.subtitle,
+                extras: offer.products.map((p) => `${p.name} (৳${p.price}, ${p.role})`),
+                tiers: (await import("@/lib/landing-offer"))
+                  .computeOfferPrices(offer, {
+                    main: { productId: product.id, name: product.name, price: Number((product as any).price) || 0 },
+                    others: Object.fromEntries(
+                      offer.products.map((p) => [p.productId, { name: p.name, price: p.price }]),
+                    ),
+                  })
+                  .map(
+                    (t) =>
+                      `${t.label || `${t.quantity} × ${product.name}`}: ৳${t.price}` +
+                      (t.savings > 0 ? ` (was ৳${t.original}, save ৳${t.savings})` : "") +
+                      (t.lines.length > 1
+                        ? ` — includes ${t.lines
+                            .map((l) => `${l.qty}× ${l.name}${l.free ? " free" : ""}`)
+                            .join(", ")}`
+                        : ""),
+                  ),
+              }
+            : null,
+        }, contentLang);
         if (generated) {
           content = generated;
           seo = seoFromContent(generated, title, store.name);
@@ -411,11 +468,41 @@ export const createLandingPage = createServerFn({ method: "POST" })
       console.warn("Landing theme generation skipped:", (e as Error).message);
     }
 
+    // Premium, offer-aware design code generated once at creation. The Coding
+    // tab owns it afterwards; failure here just leaves the base design.
+    let designCode: string | null = null;
+    try {
+      const { generateDesignCode } = await import("@/lib/landing-code.server");
+      const c = content as any;
+      const sections: string[] = Array.isArray(c.sectionOrder)
+        ? c.sectionOrder.filter((k: string) => c.sectionEnabled?.[k] !== false)
+        : [];
+      designCode = await generateDesignCode({
+        productName: product.name,
+        category: null,
+        sections,
+        palette: {
+          primary: String((theme as any).primary ?? ""),
+          secondary: String((theme as any).secondary ?? ""),
+          accent: String((theme as any).accent ?? ""),
+          background: String((theme as any).background ?? ""),
+          text: String((theme as any).text ?? ""),
+        },
+        offerType: offer.enabled ? offer.type : null,
+        tierCount: offer.enabled ? offer.tiers.length : 0,
+      });
+    } catch (e) {
+      console.warn("Landing design code generation skipped:", (e as Error).message);
+    }
+
     const { data: created, error } = await context.supabase
       .from("landing_pages")
       .insert({
         store_id: store.id,
         product_id: product.id,
+        offer: offer as any,
+        content_lang: contentLang,
+        ...(designCode ? { design_code: designCode, design_code_at: new Date().toISOString() } : {}),
         slug,
         title,
         status: "draft",
@@ -512,6 +599,9 @@ export const getLandingPreviewBySlug = createServerFn({ method: "GET" })
       design_code: page.design_code ?? null,
       form_config: page.form_config,
       seo: page.seo ?? null,
+      offer: page.offer ?? null,
+      content_lang: page.content_lang ?? "en",
+      offer_products: await offerProductRows(context.supabase, store.id, page.offer),
       product: product ?? null,
       store: { id: store.id, name: store.name, slug: store.slug },
     };
@@ -1086,3 +1176,57 @@ export const removeLandingDomain = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+
+
+/** Live rows for every secondary product referenced by an offer. */
+async function offerProductRows(supabase: any, storeId: string, rawOffer: unknown) {
+  const { normalizeOffer } = await import("@/lib/landing-offer");
+  const offer = normalizeOffer(rawOffer);
+  if (!offer.products.length) return [];
+  const { data } = await supabase
+    .from("products")
+    .select("id,name,price,old_price,stock,status,primary_image_url")
+    .eq("store_id", storeId)
+    .in("id", offer.products.map((p) => p.productId));
+  return data ?? [];
+}
+
+/**
+ * Save the offer configuration of an existing page (Offer tab). Prices are
+ * always re-read from the live catalog, never taken from the browser.
+ */
+export const setLandingOffer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: uuid, offer: z.any() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const store = await requireMyStore(context.supabase, context.userId);
+    const page = await ownedPage(context.supabase, store.id, data.id);
+    const { normalizeOffer } = await import("@/lib/landing-offer");
+    const offer = normalizeOffer(data.offer);
+
+    if (offer.products.length) {
+      const { data: rows } = await context.supabase
+        .from("products")
+        .select("id,name,price,primary_image_url")
+        .eq("store_id", store.id)
+        .in("id", offer.products.map((p) => p.productId));
+      const byId = new Map((rows ?? []).map((r: any) => [r.id, r]));
+      offer.products = offer.products
+        .filter((p) => byId.has(p.productId))
+        .map((p) => {
+          const row: any = byId.get(p.productId);
+          return { ...p, name: String(row.name), price: Number(row.price) || 0, image: String(row.primary_image_url ?? "") };
+        });
+      const allowed = new Set(offer.products.map((p) => p.productId));
+      offer.tiers = offer.tiers.map((t) => ({ ...t, items: t.items.filter((i) => allowed.has(i.productId)) }));
+    } else {
+      offer.tiers = offer.tiers.map((t) => ({ ...t, items: [] }));
+    }
+
+    const { error } = await context.supabase
+      .from("landing_pages")
+      .update({ offer: offer as any, updated_at: new Date().toISOString() } as never)
+      .eq("id", page.id);
+    if (error) throw new Error(error.message);
+    return { ok: true, offer };
+  });
