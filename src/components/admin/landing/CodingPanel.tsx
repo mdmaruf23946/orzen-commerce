@@ -80,26 +80,40 @@ export function CodingPanel({
 
   async function fixWithAi() {
     setFixing(true);
+    setFixNote(null);
     try {
-      // Instant deterministic repair first — no round-trip needed for the
-      // usual paste problems (fences, stray markup, unbalanced braces).
-      const local = autoFixDesignCode(code);
-      if (validateDesignCode(local).ok) {
-        setCode(local);
-        toast.success("Code repaired — review it, then save");
+      // 1) Deterministic repair — handles fences, stray markup, disallowed
+      //    declarations and unbalanced braces without any round-trip.
+      const local = repairDesignCode(code);
+      if (local.ok) {
+        setCode(local.code);
+        setFixNote("Fixed automatically — the code is valid now. Press “Save code” to apply it.");
+        toast.success("Code repaired — press Save code to apply it");
         return;
       }
+
+      // 2) AI repair, then verify the result instead of trusting it.
       const res = (await fixFn({
         data: { id: pageId, code, error: check.ok ? "" : check.error },
       })) as { code: string };
-      setCode(res.code);
-      toast.success("AI repaired the design code — review it, then save");
+      const verified = repairDesignCode(res.code || code);
+      if (verified.ok) {
+        setCode(verified.code);
+        setFixNote("AI repaired the code — it is valid now. Press “Save code” to apply it.");
+        toast.success("AI repaired the design code — press Save code to apply it");
+        return;
+      }
+
+      setCode(verified.code);
+      setFixNote(null);
+      toast.error(`Could not fully repair the code: ${verified.error ?? "still invalid"}`);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
       setFixing(false);
     }
   }
+
 
 
   function reset() {
