@@ -23,19 +23,26 @@ const FORBIDDEN: { re: RegExp; msg: string }[] = [
   { re: /@import\b/i, msg: "@import is not allowed. Paste the styles directly instead." },
   { re: /@charset\b/i, msg: "@charset is not allowed." },
   { re: /expression\s*\(/i, msg: "expression() is not allowed." },
-  { re: /\bbehavior\s*:/i, msg: "The behavior property is not allowed." },
+  // Only the legacy IE `behavior:` property — never `scroll-behavior`,
+  // `-webkit-...-behavior`, `overscroll-behavior` and friends.
+  { re: /(?<![\w-])behavior\s*:/i, msg: "The behavior property is not allowed." },
   { re: /javascript\s*:/i, msg: "javascript: URLs are not allowed." },
-  { re: /<\/?[a-z]/i, msg: "HTML or <script> markup is not allowed — this editor accepts CSS only." },
+  {
+    re: /<\/?[a-z][a-z0-9-]*(\s[^<>]*)?>/i,
+    msg: "HTML or <script> markup is not allowed — this editor accepts CSS only.",
+  },
   { re: /-moz-binding/i, msg: "-moz-binding is not allowed." },
 ];
 
+/** Removes comments but keeps line numbers identical to the original source. */
 function stripComments(css: string): string {
-  return css.replace(/\/\*[\s\S]*?\*\//g, "");
+  return css.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "));
 }
 
 function lineOf(css: string, index: number): number {
   return css.slice(0, index).split("\n").length;
 }
+
 
 /** Validates raw design CSS. Returns the cleaned (comment-preserving) source. */
 export function validateDesignCode(raw: string): DesignCodeCheck {
