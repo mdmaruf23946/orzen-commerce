@@ -314,7 +314,6 @@ function LandingEditor() {
               content={content}
               onOpen={setSection}
               onAdd={(key) => { setSectionEnabled(key, true); setSection(key); }}
-              onRemove={(key) => setSectionEnabled(key, false)}
             />
           )}
           {section === "header" && <HeaderEditor {...editorProps} />}
