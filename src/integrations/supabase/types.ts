@@ -3592,6 +3592,7 @@ export type Database = {
       landing_pages: {
         Row: {
           content: Json
+          content_lang: string
           created_at: string
           design_code: string | null
           design_code_at: string | null
@@ -3601,6 +3602,7 @@ export type Database = {
           idle_warned_at: string | null
           last_activity_at: string
           last_visit_at: string | null
+          offer: Json
           orders_count: number
           product_id: string | null
           published_at: string | null
@@ -3616,6 +3618,7 @@ export type Database = {
         }
         Insert: {
           content?: Json
+          content_lang?: string
           created_at?: string
           design_code?: string | null
           design_code_at?: string | null
@@ -3625,6 +3628,7 @@ export type Database = {
           idle_warned_at?: string | null
           last_activity_at?: string
           last_visit_at?: string | null
+          offer?: Json
           orders_count?: number
           product_id?: string | null
           published_at?: string | null
@@ -3640,6 +3644,7 @@ export type Database = {
         }
         Update: {
           content?: Json
+          content_lang?: string
           created_at?: string
           design_code?: string | null
           design_code_at?: string | null
@@ -3649,6 +3654,7 @@ export type Database = {
           idle_warned_at?: string | null
           last_activity_at?: string
           last_visit_at?: string | null
+          offer?: Json
           orders_count?: number
           product_id?: string | null
           published_at?: string | null
