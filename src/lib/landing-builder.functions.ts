@@ -473,11 +473,14 @@ export const createLandingPage = createServerFn({ method: "POST" })
     let designCode: string | null = null;
     try {
       const { generateDesignCode } = await import("@/lib/landing-code.server");
-      const { landingSectionKeys } = await import("@/lib/landing-builder");
+      const c = content as any;
+      const sections: string[] = Array.isArray(c.sectionOrder)
+        ? c.sectionOrder.filter((k: string) => c.sectionEnabled?.[k] !== false)
+        : [];
       designCode = await generateDesignCode({
         productName: product.name,
         category: null,
-        sections: landingSectionKeys(content as any),
+        sections,
         palette: {
           primary: String((theme as any).primary ?? ""),
           secondary: String((theme as any).secondary ?? ""),
