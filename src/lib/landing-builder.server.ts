@@ -15,6 +15,8 @@ export const lpOrderSchema = z.object({
   txn_id: z.string().trim().max(120).optional().nullable(),
   page_url: z.string().trim().max(500).optional().nullable(),
   delivery_zone: z.string().trim().max(60).optional().nullable(),
+  /** Selected offer tier id, when the page sells a multi-product offer. */
+  offer_tier: z.string().trim().max(60).optional().nullable(),
 });
 
 export type LpOrderInput = z.infer<typeof lpOrderSchema>;
@@ -36,7 +38,7 @@ export async function createLandingPageOrder(
 
   const { data: page } = await sb
     .from("landing_pages")
-    .select("id,store_id,product_id,status,slug,form_config,orders_count")
+    .select("id,store_id,product_id,status,slug,form_config,orders_count,offer")
     .eq("id", landingPageId)
     .maybeSingle();
 
@@ -69,10 +71,64 @@ export async function createLandingPageOrder(
     return { status: 409, body: { ok: false, error: "Out of stock" } };
   }
 
-  const qty = Math.min(input.quantity, Math.max(1, product.stock ?? 1));
-  const price = Number(product.price) || 0;
   const { resolveDeliveryCharge } = await import("@/lib/landing-builder");
   const { charge: delivery, zone } = resolveDeliveryCharge(cfg, input.delivery_zone ?? null);
+
+  // ---- Basket: single product, or the selected offer tier ----
+  const { normalizeOffer, computeTierPrice, offerIsUsable } = await import("@/lib/landing-offer");
+  const offer = normalizeOffer(page.offer);
+  const tier = offerIsUsable(offer)
+    ? offer.tiers.find((t) => t.id === input.offer_tier) ?? offer.tiers[0]!
+    : null;
+
+  type Line = { productId: string; name: string; qty: number; unit: number; free: boolean };
+  let lines: Line[];
+  let subtotal: number;
+
+  if (tier) {
+    // Live prices only — never trust anything priced on the client.
+    const ids = Array.from(new Set(tier.items.map((i) => i.productId))).filter(
+      (id) => id !== product.id,
+    );
+    const { data: secondary } = ids.length
+      ? await sb
+          .from("products")
+          .select("id,name,price,stock,status")
+          .eq("store_id", page.store_id)
+          .in("id", ids)
+      : { data: [] as any[] };
+
+    const others: Record<string, { name: string; price: number }> = {};
+    for (const row of (secondary ?? []) as any[]) {
+      if (row.status === "draft" || (row.stock ?? 0) <= 0) continue;
+      others[row.id] = { name: String(row.name), price: Number(row.price) || 0 };
+    }
+
+    const priced = computeTierPrice(tier, {
+      main: { productId: product.id, name: product.name, price: Number(product.price) || 0 },
+      others,
+    });
+
+    if ((product.stock ?? 0) < priced.quantity) {
+      return { status: 409, body: { ok: false, error: "Not enough stock" } };
+    }
+
+    subtotal = priced.price;
+    const payable = priced.lines.reduce((s, l) => s + (l.free ? 0 : l.unitPrice * l.qty), 0);
+    const factor = payable > 0 ? subtotal / payable : 1;
+    lines = priced.lines.map((l) => ({
+      productId: l.productId,
+      name: l.name,
+      qty: l.qty,
+      unit: l.free ? 0 : Math.round(l.unitPrice * factor),
+      free: l.free,
+    }));
+  } else {
+    const qty = Math.min(input.quantity, Math.max(1, product.stock ?? 1));
+    const price = Number(product.price) || 0;
+    lines = [{ productId: product.id, name: product.name, qty, unit: price, free: false }];
+    subtotal = price * qty;
+  }
 
   const { data: order, error: orderErr } = await sb
     .from("orders")
@@ -86,7 +142,7 @@ export async function createLandingPageOrder(
       payment_method: method as "cod" | "bkash" | "nagad" | "rocket" | "bank",
       txn_id: input.txn_id || null,
       notes: input.note || null,
-      subtotal: price * qty,
+      subtotal,
       delivery_amount: delivery,
       status: "pending",
       source: "landing_page",
@@ -100,13 +156,15 @@ export async function createLandingPageOrder(
     return { status: 500, body: { ok: false, error: "Could not create order" } };
   }
 
-  const { error: itemErr } = await sb.from("order_items").insert({
-    order_id: order.id,
-    product_id: product.id,
-    name_snapshot: product.name,
-    price_snapshot: price,
-    qty,
-  });
+  const { error: itemErr } = await sb.from("order_items").insert(
+    lines.map((l) => ({
+      order_id: order.id,
+      product_id: l.productId,
+      name_snapshot: l.free ? `${l.name} (free)` : l.name,
+      price_snapshot: l.unit,
+      qty: l.qty,
+    })),
+  );
   if (itemErr) {
     return { status: 500, body: { ok: false, error: "Order created but item failed" } };
   }
