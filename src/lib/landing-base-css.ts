@@ -44,6 +44,22 @@ ${LP_LAYER_ORDER}
   }
 
   /* Buttons */
+  /* Offer / purchase options — defaults the merchant CSS can override. */
+  .lp-root .lp-offer { display: block; }
+  .lp-root .lp-offer-tier {
+    background: #fff;
+    transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+  }
+  .lp-root .lp-offer-tier:hover { transform: translateY(-1px); }
+  .lp-root .lp-offer-tier.is-selected { box-shadow: 0 0 0 1px var(--lp-primary, #111) inset; }
+  .lp-root .lp-offer-tier.is-featured { border-color: var(--lp-primary, #111); }
+  .lp-root .lp-offer-badge {
+    background: var(--lp-primary, #111);
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 999px;
+  }
+  .lp-root .lp-price { color: inherit; }
   .lp-root .lp-btn {
     background: var(--lp-primary);
     color: #fff;

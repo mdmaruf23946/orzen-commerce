@@ -6,6 +6,8 @@ import type { Database } from "@/integrations/supabase/types";
 import type { LandingContent, LandingFormConfig, LandingTheme } from "@/lib/landing-builder";
 import { storePublicUrl } from "@/lib/store-public-url";
 
+import type { LandingOffer } from "@/lib/landing-offer";
+
 export type PublicLandingPage = {
   id: string;
   store_id: string;
@@ -26,6 +28,19 @@ export type PublicLandingPage = {
     primary_image_url?: string | null;
     gallery?: string[] | null;
   } | null;
+  /** Multi-product offer configuration (may be empty). */
+  offer?: LandingOffer | null;
+  content_lang?: string;
+  /** Live rows for the secondary products used by the offer. */
+  offer_products?: {
+    id: string;
+    name: string;
+    price: number;
+    old_price: number | null;
+    stock: number | null;
+    status: string;
+    primary_image_url?: string | null;
+  }[];
   store_pages?: { key: string; title: string }[];
   store: {
     id: string;

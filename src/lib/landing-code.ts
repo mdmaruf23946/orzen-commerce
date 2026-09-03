@@ -222,6 +222,13 @@ export function designHooks(sectionKeys: string[]): { selector: string; label: s
     { selector: ".lp-card", label: "Cards / surfaces" },
     { selector: ".lp-input", label: "Form inputs" },
     { selector: ".lp-badge", label: "Offer badge" },
+    { selector: ".lp-offer", label: "Offer block (purchase options)" },
+    { selector: ".lp-offer-tier", label: "Offer option card" },
+    { selector: ".lp-offer-tier.is-selected", label: "Selected offer option" },
+    { selector: ".lp-offer-tier.is-featured", label: "Highlighted offer option" },
+    { selector: ".lp-price", label: "Price" },
+    { selector: ".lp-price-old", label: "Original (struck) price" },
+    { selector: ".lp-save-badge", label: "Savings badge" },
     { selector: ".lp-footer", label: "Footer" },
   ];
   const extra = sectionKeys

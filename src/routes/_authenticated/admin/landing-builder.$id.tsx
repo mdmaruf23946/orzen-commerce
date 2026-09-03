@@ -14,6 +14,7 @@ import {
   getLandingPage,
   listAttachableDomains,
   listLandingProducts,
+  setLandingOffer,
   setLandingProduct,
 
   removeLandingDomain,
@@ -51,6 +52,8 @@ import {
 import { GenericSectionEditor } from "@/components/admin/landing/GenericSectionEditor";
 import { DesignPanel } from "@/components/admin/landing/DesignPanel";
 import { CodingPanel } from "@/components/admin/landing/CodingPanel";
+import { OfferBuilder, OfferTypePicker } from "@/components/admin/landing/OfferBuilder";
+import { normalizeOffer, type LandingOffer, type OfferType, defaultTiers } from "@/lib/landing-offer";
 
 import { REQUIRED_SECTION_KEYS, sectionRank, sectionSpec } from "@/lib/landing-sections";
 import { Button } from "@/components/ui/button";
@@ -300,12 +303,21 @@ function LandingEditor() {
         <TabsList className="flex-wrap">
           <TabsTrigger value="content">Content</TabsTrigger>
           <TabsTrigger value="form">Order form</TabsTrigger>
+          <TabsTrigger value="offer">Offer</TabsTrigger>
           <TabsTrigger value="design">Design</TabsTrigger>
           <TabsTrigger value="domains">Domains</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="coding">Coding</TabsTrigger>
         </TabsList>
 
+
+        {/* -------- Offer: multi-product pricing -------- */}
+        <TabsContent value="offer" className="space-y-4 pt-4">
+          <OfferTab id={id} page={page} product={(data as any).product} onSaved={() => {
+            setPreviewKey((k) => k + 1);
+            qc.invalidateQueries({ queryKey: ["lp-builder", id] });
+          }} />
+        </TabsContent>
 
         {/* -------- Content: section based -------- */}
         <TabsContent value="content" className="space-y-4 pt-4">
@@ -905,4 +917,82 @@ function insertByRank(order: string[], key: string): string[] {
   if (at === -1) next.push(key);
   else next.splice(at, 0, key);
   return next;
+}
+
+
+/** Offer tab — edits the multi-product offer of an existing page. */
+function OfferTab({
+  id,
+  page,
+  product,
+  onSaved,
+}: {
+  id: string;
+  page: any;
+  product: any;
+  onSaved: () => void;
+}) {
+  const listFn = useServerFn(listLandingProducts);
+  const saveFn = useServerFn(setLandingOffer);
+  const [offer, setOffer] = useState<LandingOffer>(() => normalizeOffer(page.offer));
+  const [saving, setSaving] = useState(false);
+
+  const { data: catalog = [] } = useQuery({
+    queryKey: ["lp-builder-products"],
+    queryFn: () => listFn(),
+  });
+
+  if (!product) {
+    return (
+      <div className="rounded-lg border p-6 text-center text-sm text-muted-foreground">
+        Connect a product to this page first.
+      </div>
+    );
+  }
+
+  async function save() {
+    setSaving(true);
+    try {
+      await saveFn({ data: { id, offer } });
+      toast.success("Offer saved");
+      onSaved();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border p-3">
+        <div className="text-sm font-medium">Offer type</div>
+        <p className="mb-2 text-[11px] text-muted-foreground">
+          How this page sells: one product, a bundle, quantity deals, or packages.
+        </p>
+        <OfferTypePicker
+          value={offer.type}
+          onChange={(t: OfferType) =>
+            setOffer({
+              ...offer,
+              type: t,
+              enabled: t !== "single",
+              tiers: offer.tiers.length ? offer.tiers : defaultTiers(t),
+            })
+          }
+        />
+      </div>
+
+      <OfferBuilder
+        offer={offer}
+        onChange={setOffer}
+        mainProduct={{ id: product.id, name: product.name, price: Number(product.price) || 0, primary_image_url: product.primary_image_url }}
+        catalog={catalog as any[]}
+      />
+
+      <Button onClick={save} disabled={saving}>
+        {saving ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Save className="mr-1 h-3 w-3" />} Save offer
+      </Button>
+    </div>
+  );
 }
