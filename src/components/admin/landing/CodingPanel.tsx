@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { AlertTriangle, Check, Loader2, RotateCcw, Save, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fixLandingDesignCode, setLandingDesignCode } from "@/lib/landing-builder.functions";
-import { autoFixDesignCode, defaultDesignCode, designHooks, validateDesignCode } from "@/lib/landing-code";
+import { defaultDesignCode, designHooks, repairDesignCode, validateDesignCode } from "@/lib/landing-code";
 import type { LandingContent } from "@/lib/landing-builder";
 
 export const LP_DRAFT_CODE_KEY = (slug: string) => `lp-draft-code:${slug}`;
@@ -39,11 +39,13 @@ export function CodingPanel({
   const [code, setCode] = useState<string>(savedCode || fallback);
   const [saving, setSaving] = useState(false);
   const [fixing, setFixing] = useState(false);
+  const [fixNote, setFixNote] = useState<string | null>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const gutterRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setCode(savedCode || fallback);
+    setFixNote(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedCode]);
 
@@ -149,7 +151,7 @@ export function CodingPanel({
           {check.ok ? (
             <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-400">
               <Check className="h-3.5 w-3.5 shrink-0" />
-              Valid design code · {lineCount} lines
+              {fixNote ?? `Valid design code · ${lineCount} lines`}
             </div>
           ) : (
             <div className="flex flex-wrap items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
@@ -160,7 +162,7 @@ export function CodingPanel({
               </span>
               <Button size="sm" variant="outline" onClick={fixWithAi} disabled={fixing}>
                 {fixing ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />}
-                Fix with AI
+                {fixing ? "Fixing…" : "Fix with AI"}
               </Button>
             </div>
           )}
