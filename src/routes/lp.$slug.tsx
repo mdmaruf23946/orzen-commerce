@@ -17,6 +17,7 @@ import { sectionSpec } from "@/lib/landing-sections";
 import { normalizePalette, themeTokens } from "@/lib/landing-theme";
 import { safeDesignCss } from "@/lib/landing-code";
 import { LP_BASE_CSS, wrapUserLayer } from "@/lib/landing-base-css";
+import { computeOfferPrices, normalizeOffer, offerIsUsable } from "@/lib/landing-offer";
 import { getLandingPreviewBySlug } from "@/lib/landing-builder.functions";
 import {
   lpImage, normalizeContent, normalizeDeliveryZones,
@@ -569,7 +570,28 @@ function OrderForm({
   form: LandingFormConfig;
   price: number;
 }) {
-  const fields = (form.fields ?? []).filter((f) => f.enabled);
+  // Offer: purchase options priced from the same catalog data the server uses.
+  const offer = useMemo(() => normalizeOffer(page.offer), [page.offer]);
+  const offerPrices = useMemo(() => {
+    if (!offerIsUsable(offer) || !page.product) return [];
+    const others: Record<string, { name: string; price: number }> = {};
+    for (const row of page.offer_products ?? []) {
+      others[row.id] = { name: row.name, price: Number(row.price) || 0 };
+    }
+    return computeOfferPrices(offer, {
+      main: { productId: page.product.id, name: page.product.name, price },
+      others,
+    });
+  }, [offer, page.offer_products, page.product, price]);
+
+  const [tierId, setTierId] = useState<string>("");
+  const activeTier =
+    offerPrices.find((t) => t.tierId === tierId) ??
+    offerPrices.find((t) => t.featured) ??
+    offerPrices[0] ??
+    null;
+
+  const fields = (form.fields ?? []).filter((f) => f.enabled).filter((f) => !(activeTier && f.key === "quantity"));
   const methods = form.paymentMethods?.length ? form.paymentMethods : ["cod"];
   const zones = normalizeDeliveryZones(form.deliveryZones);
 
@@ -585,8 +607,9 @@ function OrderForm({
   const [error, setError] = useState("");
   const [done, setDone] = useState<{ invoice: string | null } | null>(null);
 
-  const qty = Math.max(1, Number(values["quantity"] || 1));
-  const total = price * qty + delivery;
+  const qty = activeTier ? activeTier.quantity : Math.max(1, Number(values["quantity"] || 1));
+  const goods = activeTier ? activeTier.price : price * qty;
+  const total = goods + delivery;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -605,6 +628,7 @@ function OrderForm({
           email: values["email"] || null,
           note: values["note"] || null,
           quantity: qty,
+          offer_tier: activeTier?.tierId ?? null,
           payment_method: method,
           delivery_zone: zones.length ? zoneId : null,
           txn_id: values["txn_id"] || null,
@@ -630,6 +654,48 @@ function OrderForm({
       >
         <h2 className="text-xl font-bold">{content.order.title || "Order Now"}</h2>
         {content.order.subtitle && <p className="mt-1 text-sm text-neutral-600">{content.order.subtitle}</p>}
+
+        {!done && offerPrices.length > 0 && (
+          <div className="lp-offer mt-5">
+            {offer.title && <div className="lp-offer-title text-base font-semibold">{offer.title}</div>}
+            {offer.subtitle && <div className="lp-offer-subtitle text-xs text-neutral-600">{offer.subtitle}</div>}
+            <div className="lp-offer-tiers mt-3 grid gap-2">
+              {offerPrices.map((t) => {
+                const selected = activeTier?.tierId === t.tierId;
+                return (
+                  <button
+                    type="button"
+                    key={t.tierId}
+                    aria-pressed={selected}
+                    onClick={() => setTierId(t.tierId)}
+                    className={`lp-offer-tier lp-round-xs flex w-full items-center gap-3 border p-3 text-left ${
+                      selected ? "is-selected border-neutral-900" : "border-neutral-300"
+                    } ${t.featured ? "is-featured" : ""}`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="lp-offer-tier-label text-sm font-semibold">
+                        {t.label || `${t.quantity} × ${page.product?.name ?? ""}`}
+                        {t.badge && <span className="lp-offer-badge ml-2 text-[10px] uppercase">{t.badge}</span>}
+                      </div>
+                      <div className="lp-offer-tier-items text-[11px] text-neutral-500">
+                        {t.lines.map((l) => `${l.qty}× ${l.name}${l.free ? " (free)" : ""}`).join(" + ")}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {t.savings > 0 && (
+                        <div className="lp-price-old text-[11px] text-neutral-400 line-through">{money(t.original)}</div>
+                      )}
+                      <div className="lp-price text-sm font-bold">{money(t.price)}</div>
+                      {t.savings > 0 && (
+                        <div className="lp-save-badge text-[10px] text-emerald-600">save {money(t.savings)}</div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {done ? (
           <div className="mt-6 text-center">
@@ -725,7 +791,10 @@ function OrderForm({
             <div
               className="space-y-1 bg-neutral-50 p-3 text-sm lp-round-xs"
             >
-              <Row label={`প্রোডাক্ট (${qty})`} value={money(price * qty)} />
+              <Row
+                label={activeTier ? activeTier.label || `প্যাকেজ (${activeTier.quantity})` : `প্রোডাক্ট (${qty})`}
+                value={money(goods)}
+              />
               <Row label="ডেলিভারি চার্জ" value={money(delivery)} />
               <div className="flex justify-between border-t pt-1 font-bold">
                 <span>সর্বমোট</span>
