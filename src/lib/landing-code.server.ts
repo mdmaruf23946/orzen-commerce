@@ -5,7 +5,7 @@
 // never introduce scripts, imports or anything outside the visual layer.
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { generateText } from "ai";
-import { validateDesignCode, MAX_DESIGN_CODE_BYTES } from "@/lib/landing-code";
+import { autoFixDesignCode, validateDesignCode, MAX_DESIGN_CODE_BYTES } from "@/lib/landing-code";
 
 function model() {
   const apiKey = process.env["LOVABLE_API_KEY"];
