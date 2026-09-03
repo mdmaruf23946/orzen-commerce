@@ -184,7 +184,10 @@ export function CodingPanel({
               ref={taRef}
               value={code}
               spellCheck={false}
-              onChange={(e) => setCode(e.target.value)}
+              onChange={(e) => {
+                setCode(e.target.value);
+                setFixNote(null);
+              }}
               onScroll={() => {
                 if (gutterRef.current && taRef.current) {
                   gutterRef.current.scrollTop = taRef.current.scrollTop;
