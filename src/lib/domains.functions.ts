@@ -363,26 +363,19 @@ export const checkDomainVerification = createServerFn({ method: "POST" })
 
     await supabase.from("store_domains").update(patch as never).eq("id", row.id);
 
-    // The custom domain is live -> the free platform subdomain is no longer
-    // needed. Release it from Cloudflare (kept in the database, reconnectable).
-    if (ok && patch.status === "active") {
+    // A landing page's custom domain replaces its temporary platform
+    // subdomain, so that one is released. A store's own free subdomain
+    // (<slug>.<root>) always stays live — old links, bookmarks and installed
+    // store apps must keep working alongside the custom domain.
+    if (ok && patch.status === "active" && row.landing_page_id) {
       try {
-        if (row.landing_page_id) {
-          const { releaseLandingSubdomain } = await import("@/lib/domain-lifecycle.server");
-          await releaseLandingSubdomain(supabase, row.landing_page_id, "custom_domain_live");
-        } else {
-          const { releaseStoreSubdomain } = await import("@/lib/domain-lifecycle.server");
-          await releaseStoreSubdomain(
-            supabase,
-            store.id,
-            `${store.slug}.${(await platformDomainSettings(supabase)).rootDomain}`,
-            "custom_domain_live",
-          );
-        }
+        const { releaseLandingSubdomain } = await import("@/lib/domain-lifecycle.server");
+        await releaseLandingSubdomain(supabase, row.landing_page_id, "custom_domain_live");
       } catch {
         // Cleanup is best-effort; verification itself already succeeded.
       }
     }
+
     return { ok, reason, status: patch.status ?? row.status };
   });
 
