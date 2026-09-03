@@ -423,3 +423,40 @@ export function autoFixDesignCode(raw: string): string {
 
   return css.replace(/\n{3,}/g, "\n\n").trim() + "\n";
 }
+
+/**
+ * Repairs design CSS until it actually validates.
+ *
+ * `autoFixDesignCode` handles the usual paste damage in one pass, but a badly
+ * mangled file can still contain something the validator rejects. This loop
+ * keeps repairing, and as a last resort removes the exact offending line the
+ * validator points at, so the merchant always ends up with usable CSS instead
+ * of a "fixed" message on top of the same error.
+ */
+export function repairDesignCode(raw: string): { code: string; ok: boolean; error?: string } {
+  let css = String(raw ?? "");
+  for (let pass = 0; pass < 12; pass++) {
+    const fixed = autoFixDesignCode(css);
+    let check = validateDesignCode(fixed);
+    if (check.ok) return { code: fixed, ok: true };
+
+    css = fixed;
+    if (check.line && check.line > 0) {
+      // Drop only the line the validator complained about, then re-balance.
+      const lines = css.split("\n");
+      if (check.line <= lines.length) {
+        lines.splice(check.line - 1, 1);
+        css = lines.join("\n");
+        continue;
+      }
+    }
+    // No line info (size / brace count) — autoFix already handled those; if it
+    // did not converge, stop and report honestly.
+    check = validateDesignCode(autoFixDesignCode(css));
+    return check.ok
+      ? { code: autoFixDesignCode(css), ok: true }
+      : { code: css, ok: false, error: check.ok ? undefined : check.error };
+  }
+  const final = validateDesignCode(css);
+  return final.ok ? { code: css, ok: true } : { code: css, ok: false, error: final.error };
+}
