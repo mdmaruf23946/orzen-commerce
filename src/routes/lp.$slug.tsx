@@ -16,6 +16,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { sectionSpec } from "@/lib/landing-sections";
 import { normalizePalette, themeTokens } from "@/lib/landing-theme";
 import { safeDesignCss } from "@/lib/landing-code";
+import { LP_BASE_CSS, wrapUserLayer } from "@/lib/landing-base-css";
 import { getLandingPreviewBySlug } from "@/lib/landing-builder.functions";
 import {
   lpImage, normalizeContent, normalizeDeliveryZones,
@@ -170,10 +171,11 @@ function LandingPageBody({
       setDraftCode(null);
     }
   }, [preview, page.slug]);
-  const designCss = useMemo(
-    () => safeDesignCss(draftCode ?? (page as any).design_code ?? ""),
-    [draftCode, page],
-  );
+  const designSource = draftCode ?? ((page as any).design_code as string | null) ?? "";
+  const designCss = useMemo(() => wrapUserLayer(safeDesignCss(designSource)), [designSource]);
+  // Keying the <style> on the saved code guarantees the old stylesheet is
+  // removed, never merged, when new CSS is saved.
+  const designKey = useMemo(() => `${designSource.length}-${hashCode(designSource)}`, [designSource]);
 
   // ----- Catalogue-driven sections (Recommended / Related / Recently viewed) -----
   // Catalogue-backed grids are opt-in: they only render when the merchant
@@ -250,8 +252,7 @@ function LandingPageBody({
               <div className="order-2 md:order-1">
                 {content.hero.offerText && (
                   <span
-                    className="inline-block rounded-full px-3 py-1 text-xs font-semibold text-white"
-                    style={{ background: "var(--lp-accent)" }}
+                    className="inline-block rounded-full px-3 py-1 text-xs font-semibold text-white lp-accent-bg"
                   >
                     {content.hero.offerText}
                   </span>
@@ -269,7 +270,7 @@ function LandingPageBody({
                   <span className="ml-1 text-xs text-neutral-500">5.0</span>
                 </div>
                 <div className="mt-4 flex flex-wrap items-baseline gap-3">
-                  <span className="text-3xl font-bold" style={{ color: "var(--lp-primary)" }}>{money(price)}</span>
+                  <span className="text-3xl font-bold lp-primary-text">{money(price)}</span>
                   {oldPrice && oldPrice > price && (
                     <span className="text-lg text-neutral-400 line-through">{money(oldPrice)}</span>
                   )}
@@ -282,8 +283,7 @@ function LandingPageBody({
                 </div>
                 <a
                   href="#order"
-                  className="mt-6 inline-block px-7 py-3 text-base font-semibold text-white shadow-lg"
-                  style={{ background: "var(--lp-primary)", borderRadius: "var(--lp-radius)" }}
+                  className="mt-6 inline-block px-7 py-3 text-base font-semibold text-white shadow-lg lp-btn"
                 >
                   {content.hero.ctaText || "Order Now"}
                 </a>
@@ -293,8 +293,7 @@ function LandingPageBody({
                   <img
                     src={lpImage(heroImage)}
                     alt={content.hero.headline || page.title}
-                    className="w-full object-cover shadow-xl"
-                    style={{ borderRadius: "var(--lp-radius)" }}
+                    className="w-full object-cover shadow-xl lp-round"
                     loading="eager"
                   />
                 )}
@@ -315,8 +314,7 @@ function LandingPageBody({
                       src={lpImage(img)}
                       alt={`${page.title} ${i + 1}`}
                       loading="lazy"
-                      className="aspect-square w-full object-cover"
-                      style={{ borderRadius: "var(--lp-radius)" }}
+                      className="aspect-square w-full object-cover lp-round"
                     />
                   ))}
                 </div>
@@ -327,10 +325,9 @@ function LandingPageBody({
                   {content.product.features.map((f, i) => {
                     const Icon = ICONS[f.icon] ?? Check;
                     return (
-                      <div key={i} className="flex gap-3 bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
+                      <div key={i} className="flex gap-3 bg-neutral-50 p-4 lp-round">
                         <span
-                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white"
-                          style={{ background: "var(--lp-primary)" }}
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white lp-primary-bg"
                         >
                           <Icon className="h-5 w-5" />
                         </span>
@@ -345,7 +342,7 @@ function LandingPageBody({
               )}
 
               {content.product.showSpecs && content.product.specs.length > 0 && (
-                <div className="mt-6 overflow-hidden" style={{ borderRadius: "var(--lp-radius)" }}>
+                <div className="mt-6 overflow-hidden lp-round">
                   <table className="w-full text-sm">
                     <tbody>
                       {content.product.specs.map((s, i) => (
@@ -376,8 +373,8 @@ function LandingPageBody({
                   {content.description.points.map((p, i) => {
                     const PIcon = ICONS[p.icon] ?? Check;
                     return (
-                      <div key={i} className="bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
-                        <PIcon className="h-5 w-5" style={{ color: "var(--lp-primary)" }} />
+                      <div key={i} className="bg-neutral-50 p-4 lp-round">
+                        <PIcon className="h-5 w-5 lp-primary-text" />
                         <div className="mt-2 font-semibold">{p.title}</div>
                         <div className="mt-1 text-sm text-neutral-600">{p.text}</div>
                       </div>
@@ -395,7 +392,7 @@ function LandingPageBody({
             <Section title={content.faq.title}>
               <div className="mx-auto max-w-3xl space-y-2">
                 {content.faq.items.map((f, i) => (
-                  <details key={i} className="group bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
+                  <details key={i} className="group bg-neutral-50 p-4 lp-round">
                     <summary className="flex cursor-pointer list-none items-center justify-between font-medium">
                       {f.q}
                       <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
@@ -414,7 +411,7 @@ function LandingPageBody({
             <Section title={content.reviews.title}>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {content.reviews.items.map((r, i) => (
-                  <div key={i} className="bg-neutral-50 p-4" style={{ borderRadius: "var(--lp-radius)" }}>
+                  <div key={i} className="bg-neutral-50 p-4 lp-round">
                     <div className="flex gap-0.5">
                       {Array.from({ length: 5 }).map((_, s) => (
                         <Star
@@ -455,22 +452,16 @@ function LandingPageBody({
 
   return (
     <div
-      style={{ ...STYLE, background: "var(--lp-bg)", color: "var(--lp-text)" }}
+      style={STYLE}
       className="lp-root min-h-screen"
     >
-      {/* Maps the template's neutral utilities onto the merchant's saved palette. */}
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-.lp-root .bg-white,.lp-root .bg-neutral-50,.lp-root .bg-neutral-100{background-color:var(--lp-surface)!important}
-.lp-root .text-neutral-900,.lp-root .text-neutral-800{color:var(--lp-text)!important}
-.lp-root .text-neutral-700,.lp-root .text-neutral-600,.lp-root .text-neutral-500,.lp-root .text-neutral-400{color:var(--lp-muted)!important}
-.lp-root .border-neutral-200,.lp-root .border-neutral-100,.lp-root .border-neutral-300{border-color:var(--lp-border)!important}
-`,
-        }}
-      />
-      {/* Merchant design code (Coding tab) — presentation only, page-scoped. */}
-      {designCss && <style dangerouslySetInnerHTML={{ __html: designCss }} />}
+      {/* Base presentation layer — defaults the merchant CSS can override. */}
+      <style dangerouslySetInnerHTML={{ __html: LP_BASE_CSS }} />
+      {/* Merchant design code (Coding tab) — presentation only, page-scoped,
+          and last in the cascade so it wins over every default. */}
+      {designCss && (
+        <style key={designKey} data-lp-design={designKey} dangerouslySetInnerHTML={{ __html: designCss }} />
+      )}
       <LandingBranding
         slug={page.slug}
         name={page.seo?.title || page.title}
@@ -486,8 +477,7 @@ function LandingPageBody({
       {/* 1. Header */}
       <header
         data-lp-section="header"
-        className="sticky top-0 z-30 border-b backdrop-blur"
-        style={{ borderColor: "var(--lp-border)", background: "color-mix(in srgb, var(--lp-bg) 90%, transparent)" }}
+        className="sticky top-0 z-30 border-b backdrop-blur lp-header"
       >
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3">
           {headerIcon && (
@@ -501,8 +491,7 @@ function LandingPageBody({
           {content.header.showButton && (
             <a
               href="#order"
-              className="ml-auto shrink-0 px-4 py-2 text-sm font-semibold text-white"
-              style={{ background: "var(--lp-primary)", borderRadius: "calc(var(--lp-radius) / 2)" }}
+              className="ml-auto shrink-0 px-4 py-2 text-sm font-semibold text-white lp-btn-sm"
             >
               {content.header.buttonText || "Order Now"}
             </a>
@@ -632,13 +621,12 @@ function OrderForm({
     }
   }
 
-  const inputClass = "w-full border border-neutral-300 bg-white px-3 py-2 text-sm outline-none";
+  const inputClass = "lp-input w-full border border-neutral-300 bg-white px-3 py-2 text-sm outline-none";
 
   return (
     <section id="order" className="px-4 py-12">
       <div
-        className="mx-auto max-w-xl bg-white p-5 shadow-lg ring-1 ring-neutral-200 sm:p-7"
-        style={{ borderRadius: "var(--lp-radius)" }}
+        className="mx-auto max-w-xl bg-white p-5 shadow-lg ring-1 ring-neutral-200 sm:p-7 lp-round"
       >
         <h2 className="text-xl font-bold">{content.order.title || "Order Now"}</h2>
         {content.order.subtitle && <p className="mt-1 text-sm text-neutral-600">{content.order.subtitle}</p>}
@@ -646,8 +634,7 @@ function OrderForm({
         {done ? (
           <div className="mt-6 text-center">
             <div
-              className="mx-auto flex h-14 w-14 items-center justify-center rounded-full text-white"
-              style={{ background: "var(--lp-primary)" }}
+              className="mx-auto flex h-14 w-14 items-center justify-center rounded-full text-white lp-primary-bg"
             >
               <Check className="h-7 w-7" />
             </div>
@@ -665,7 +652,6 @@ function OrderForm({
                 {f.key === "address" || f.key === "note" ? (
                   <textarea
                     className={inputClass}
-                    style={{ borderRadius: "calc(var(--lp-radius) / 2)" }}
                     rows={2}
                     required={f.required}
                     value={values[f.key] ?? ""}
@@ -674,7 +660,6 @@ function OrderForm({
                 ) : (
                   <input
                     className={inputClass}
-                    style={{ borderRadius: "calc(var(--lp-radius) / 2)" }}
                     type={f.key === "quantity" ? "number" : f.key === "email" ? "email" : "text"}
                     min={f.key === "quantity" ? 1 : undefined}
                     required={f.required}
@@ -693,7 +678,6 @@ function OrderForm({
                 </label>
                 <select
                   className={inputClass}
-                  style={{ borderRadius: "calc(var(--lp-radius) / 2)" }}
                   value={zoneId}
                   onChange={(e) => setZoneId(e.target.value)}
                   required
@@ -716,13 +700,9 @@ function OrderForm({
                       type="button"
                       key={m}
                       onClick={() => setMethod(m)}
-                      className={`border px-3 py-1.5 text-xs uppercase ${
-                        method === m ? "text-white" : "border-neutral-300"
+                      className={`lp-round-xs border px-3 py-1.5 text-xs uppercase ${
+                        method === m ? "lp-primary-bg text-white" : "border-neutral-300 bg-transparent"
                       }`}
-                      style={{
-                        background: method === m ? "var(--lp-primary)" : "transparent",
-                        borderRadius: "calc(var(--lp-radius) / 2)",
-                      }}
                     >
                       {m}
                     </button>
@@ -736,7 +716,6 @@ function OrderForm({
                 <label className="mb-1 block text-xs font-medium text-neutral-600">ট্রানজেকশন আইডি</label>
                 <input
                   className={inputClass}
-                  style={{ borderRadius: "calc(var(--lp-radius) / 2)" }}
                   value={values["txn_id"] ?? ""}
                   onChange={(e) => setValues((v) => ({ ...v, txn_id: e.target.value }))}
                 />
@@ -744,14 +723,13 @@ function OrderForm({
             )}
 
             <div
-              className="space-y-1 bg-neutral-50 p-3 text-sm"
-              style={{ borderRadius: "calc(var(--lp-radius) / 2)" }}
+              className="space-y-1 bg-neutral-50 p-3 text-sm lp-round-xs"
             >
               <Row label={`প্রোডাক্ট (${qty})`} value={money(price * qty)} />
               <Row label="ডেলিভারি চার্জ" value={money(delivery)} />
               <div className="flex justify-between border-t pt-1 font-bold">
                 <span>সর্বমোট</span>
-                <span style={{ color: "var(--lp-primary)" }}>{money(total)}</span>
+                <span className="lp-primary-text">{money(total)}</span>
               </div>
             </div>
 
@@ -760,8 +738,7 @@ function OrderForm({
             <button
               type="submit"
               disabled={busy}
-              className="flex w-full items-center justify-center gap-2 py-3 font-semibold text-white disabled:opacity-60"
-              style={{ background: "var(--lp-primary)", borderRadius: "var(--lp-radius)" }}
+              className="flex w-full items-center justify-center gap-2 py-3 font-semibold text-white disabled:opacity-60 lp-btn"
             >
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
               {form.buttonText || "অর্ডার কনফার্ম করুন"}
@@ -780,4 +757,11 @@ function Row({ label, value }: { label: string; value: string }) {
       <span>{value}</span>
     </div>
   );
+}
+
+/** Tiny stable hash used to key the merchant stylesheet element. */
+function hashCode(v: string): number {
+  let h = 0;
+  for (let i = 0; i < v.length; i++) h = (Math.imul(31, h) + v.charCodeAt(i)) | 0;
+  return h >>> 0;
 }

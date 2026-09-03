@@ -99,8 +99,7 @@ export function GenericSection({
             src={lpImage(heroImage)}
             alt={title || spec.name}
             loading="lazy"
-            className="mx-auto mt-6 w-full max-w-3xl object-cover"
-            style={{ borderRadius: "var(--lp-radius)" }}
+            className="mx-auto mt-6 w-full max-w-3xl object-cover lp-round"
           />
         )}
 
@@ -131,23 +130,22 @@ export function GenericSection({
                 );
                 const [head, ...body] = texts;
                 return (
-                  <div key={i} className="p-4" style={{ borderRadius: "var(--lp-radius)", background: "var(--lp-surface)" }}>
+                  <div key={i} className="p-4 lp-card">
                     {image && (
                       <img
                         src={lpImage(str(it[image.key]))}
                         alt=""
                         loading="lazy"
-                        className="mb-3 aspect-square w-full object-cover"
-                        style={{ borderRadius: "calc(var(--lp-radius) / 1.5)" }}
+                        className="mb-3 aspect-square w-full object-cover lp-round-sm"
                       />
                     )}
                     {Icon && !image && (
-                      <Icon className="mb-2 h-5 w-5" style={{ color: "var(--lp-primary)" }} />
+                      <Icon className="mb-2 h-5 w-5 lp-primary-text" />
                     )}
                     {head && (
                       <div className="flex items-start gap-2">
                         {!image && !Icon && (
-                          (() => { const Fallback = lpIcon("check"); return <Fallback className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "var(--lp-primary)" }} />; })()
+                          (() => { const Fallback = lpIcon("check"); return <Fallback className="mt-0.5 h-4 w-4 shrink-0 lp-primary-text" />; })()
                         )}
                         <div className="font-semibold">{str(it[head.key])}</div>
                       </div>

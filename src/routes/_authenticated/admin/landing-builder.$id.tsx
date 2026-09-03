@@ -454,7 +454,11 @@ function LandingEditor() {
             slug={page.slug}
             content={content}
             savedCode={(page.design_code as string | null) ?? null}
-            onSaved={() => qc.invalidateQueries({ queryKey: ["lp-builder", id] })}
+            onSaved={() => {
+              qc.invalidateQueries({ queryKey: ["lp-builder", id] });
+              // Repaint the top preview immediately with the new design code.
+              setPreviewKey((k) => k + 1);
+            }}
           />
         </TabsContent>
 
