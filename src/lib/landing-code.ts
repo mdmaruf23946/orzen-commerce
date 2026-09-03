@@ -23,19 +23,26 @@ const FORBIDDEN: { re: RegExp; msg: string }[] = [
   { re: /@import\b/i, msg: "@import is not allowed. Paste the styles directly instead." },
   { re: /@charset\b/i, msg: "@charset is not allowed." },
   { re: /expression\s*\(/i, msg: "expression() is not allowed." },
-  { re: /\bbehavior\s*:/i, msg: "The behavior property is not allowed." },
+  // Only the legacy IE `behavior:` property — never `scroll-behavior`,
+  // `-webkit-...-behavior`, `overscroll-behavior` and friends.
+  { re: /(?<![\w-])behavior\s*:/i, msg: "The behavior property is not allowed." },
   { re: /javascript\s*:/i, msg: "javascript: URLs are not allowed." },
-  { re: /<\/?[a-z]/i, msg: "HTML or <script> markup is not allowed — this editor accepts CSS only." },
+  {
+    re: /<\/?[a-z][a-z0-9-]*(\s[^<>]*)?>/i,
+    msg: "HTML or <script> markup is not allowed — this editor accepts CSS only.",
+  },
   { re: /-moz-binding/i, msg: "-moz-binding is not allowed." },
 ];
 
+/** Removes comments but keeps line numbers identical to the original source. */
 function stripComments(css: string): string {
-  return css.replace(/\/\*[\s\S]*?\*\//g, "");
+  return css.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "));
 }
 
 function lineOf(css: string, index: number): number {
   return css.slice(0, index).split("\n").length;
 }
+
 
 /** Validates raw design CSS. Returns the cleaned (comment-preserving) source. */
 export function validateDesignCode(raw: string): DesignCodeCheck {
@@ -324,4 +331,72 @@ export function defaultDesignCode(sectionKeys: string[] = []): string {
   [data-lp-section="hero"] h1 { font-size: 1.75rem; }
 }
 `;
+}
+
+/* ------------------------------------------------------------------ */
+/* Deterministic repair (no AI needed)                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Repairs the mistakes that pasted CSS normally has: markdown fences,
+ * disallowed declarations/at-rules, bad url() values and unbalanced braces.
+ * Design intent is preserved — only the offending pieces are removed.
+ */
+export function autoFixDesignCode(raw: string): string {
+  let css = String(raw ?? "");
+
+  // Markdown fences from chat tools.
+  css = css.replace(/```[a-z]*\s*/gi, "");
+
+  // Stray HTML markup (e.g. a pasted <style> wrapper).
+  css = css.replace(/<\/?[a-z][a-z0-9-]*(\s[^<>]*)?>/gi, "");
+
+  // Disallowed at-rules (whole statement).
+  css = css.replace(/@(?:import|charset)[^;{}]*;?/gi, "");
+
+  // Disallowed declarations.
+  css = css.replace(/(?<![\w-])behavior\s*:[^;{}]*;?/gi, "");
+  css = css.replace(/[^;{}]*-moz-binding\s*:[^;{}]*;?/gi, "");
+  css = css.replace(/[^;{}]*expression\s*\([^;{}]*\)[^;{}]*;?/gi, "");
+  css = css.replace(/[^;{}]*javascript\s*:[^;{}]*;?/gi, "");
+
+  // url() values that are not allowed → drop the whole declaration.
+  css = css.replace(/[^;{}]*url\(\s*(['"]?)([^'")]*)\1\s*\)[^;{}]*;?/gi, (decl, _q, value: string) => {
+    const v = String(value).trim();
+    const ok =
+      v.startsWith("https://") ||
+      v.startsWith("/api/img/") ||
+      v.startsWith("data:image/") ||
+      v.startsWith("#");
+    return ok ? decl : "";
+  });
+
+  // Brace balance.
+  const bare = stripComments(css);
+  let depth = 0;
+  let cut = "";
+  for (let i = 0; i < bare.length; i++) {
+    const ch = bare[i];
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      if (depth === 0) continue; // drop the extra closing brace
+      depth--;
+    }
+    cut += css[i];
+  }
+  css = cut;
+  if (depth > 0) css += `\n${"}".repeat(depth)}\n`;
+
+  // Size guard: keep the leading (most important) rules.
+  const enc = new TextEncoder();
+  if (enc.encode(css).length > MAX_DESIGN_CODE_BYTES) {
+    let end = css.length;
+    while (end > 0 && enc.encode(css.slice(0, end)).length > MAX_DESIGN_CODE_BYTES - 200) {
+      end = Math.floor(end * 0.9);
+    }
+    const lastClose = css.lastIndexOf("}", end);
+    css = css.slice(0, lastClose > 0 ? lastClose + 1 : end);
+  }
+
+  return css.replace(/\n{3,}/g, "\n\n").trim() + "\n";
 }

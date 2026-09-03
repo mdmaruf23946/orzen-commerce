@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { AlertTriangle, Check, Loader2, RotateCcw, Save, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fixLandingDesignCode, setLandingDesignCode } from "@/lib/landing-builder.functions";
-import { defaultDesignCode, designHooks, validateDesignCode } from "@/lib/landing-code";
+import { autoFixDesignCode, defaultDesignCode, designHooks, validateDesignCode } from "@/lib/landing-code";
 import type { LandingContent } from "@/lib/landing-builder";
 
 export const LP_DRAFT_CODE_KEY = (slug: string) => `lp-draft-code:${slug}`;
@@ -79,6 +79,14 @@ export function CodingPanel({
   async function fixWithAi() {
     setFixing(true);
     try {
+      // Instant deterministic repair first — no round-trip needed for the
+      // usual paste problems (fences, stray markup, unbalanced braces).
+      const local = autoFixDesignCode(code);
+      if (validateDesignCode(local).ok) {
+        setCode(local);
+        toast.success("Code repaired — review it, then save");
+        return;
+      }
       const res = (await fixFn({
         data: { id: pageId, code, error: check.ok ? "" : check.error },
       })) as { code: string };
@@ -90,6 +98,7 @@ export function CodingPanel({
       setFixing(false);
     }
   }
+
 
   function reset() {
     if (!confirm("Replace the current design code with the system default design?")) return;

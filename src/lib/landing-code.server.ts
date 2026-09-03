@@ -5,7 +5,7 @@
 // never introduce scripts, imports or anything outside the visual layer.
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { generateText } from "ai";
-import { validateDesignCode, MAX_DESIGN_CODE_BYTES } from "@/lib/landing-code";
+import { autoFixDesignCode, validateDesignCode, MAX_DESIGN_CODE_BYTES } from "@/lib/landing-code";
 
 function model() {
   const apiKey = process.env["LOVABLE_API_KEY"];
@@ -43,9 +43,10 @@ async function run(system: string, prompt: string): Promise<string | null> {
   const m = model();
   if (!m) return null;
   try {
-    const { text } = await generateText({ model: m, system, prompt });
-    const css = cleanOutput(text ?? "");
+    const { text } = await generateText({ model: m, system, prompt, maxOutputTokens: 32_000 });
+    let css = cleanOutput(text ?? "");
     if (!css) return null;
+    if (!validateDesignCode(css).ok) css = autoFixDesignCode(css);
     if (new TextEncoder().encode(css).length > MAX_DESIGN_CODE_BYTES) return null;
     const check = validateDesignCode(css);
     return check.ok ? check.css : null;
@@ -54,12 +55,22 @@ async function run(system: string, prompt: string): Promise<string | null> {
   }
 }
 
-/** Repairs broken design CSS while preserving the merchant's design intent. */
+/**
+ * Repairs broken design CSS while preserving the merchant's design intent.
+ *
+ * A deterministic repair runs first — it fixes the mistakes pasted code
+ * normally has (fences, disallowed rules, unbalanced braces) without any
+ * model call. The AI is only used when that is not enough, and the
+ * deterministic result is still returned if the AI is unavailable.
+ */
 export async function fixDesignCode(
   code: string,
   errorMessage: string,
   sections: string[],
 ): Promise<string | null> {
+  const local = autoFixDesignCode(code);
+  if (validateDesignCode(local).ok) return local;
+
   const prompt = [
     `Sections present on this page: ${sections.join(", ") || "header, hero, product, order, footer"}`,
     errorMessage ? `Reported problem: ${errorMessage}` : "The code fails validation.",
@@ -70,8 +81,14 @@ export async function fixDesignCode(
     code,
     "</css>",
   ].join("\n");
-  return run(RULES, prompt);
+  const ai = await run(RULES, prompt);
+  if (ai) return ai;
+
+  // Last resort: keep only the parts of the merchant's code that are valid.
+  const salvaged = autoFixDesignCode(local);
+  return validateDesignCode(salvaged).ok ? salvaged : null;
 }
+
 
 /**
  * Generates a complete product-specific design for a page. Used by the
