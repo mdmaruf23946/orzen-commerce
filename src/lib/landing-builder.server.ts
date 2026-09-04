@@ -96,12 +96,25 @@ export async function createLandingPageOrder(
           .select("id,name,price,stock,status")
           .eq("store_id", page.store_id)
           .in("id", ids)
-      : { data: [] as any[] };
+        : { data: [] as any[] };
 
     const others: Record<string, { name: string; price: number }> = {};
-    for (const row of (secondary ?? []) as any[]) {
-      if (row.status === "draft" || (row.stock ?? 0) <= 0) continue;
+    const rows = (secondary ?? []) as any[];
+    for (const row of rows) {
       others[row.id] = { name: String(row.name), price: Number(row.price) || 0 };
+    }
+
+    // Every item in the chosen package must be available, otherwise the buyer
+    // would be charged for a basket that differs from what the page showed.
+    for (const it of tier.items) {
+      if (it.productId === product.id) continue;
+      const row = rows.find((r) => r.id === it.productId);
+      if (!row || row.status === "draft") {
+        return { status: 409, body: { ok: false, error: "This package is currently unavailable" } };
+      }
+      if ((row.stock ?? 0) < it.qty) {
+        return { status: 409, body: { ok: false, error: `Out of stock: ${row.name}` } };
+      }
     }
 
     const priced = computeTierPrice(tier, {
@@ -123,7 +136,15 @@ export async function createLandingPageOrder(
       unit: l.free ? 0 : Math.round(l.unitPrice * factor),
       free: l.free,
     }));
+    // Keep the line snapshots summing exactly to the stored subtotal.
+    const linesTotal = lines.reduce((s, l) => s + l.unit * l.qty, 0);
+    const drift = subtotal - linesTotal;
+    if (drift !== 0) {
+      const target = lines.find((l) => !l.free && l.qty > 0);
+      if (target) target.unit = Math.max(0, target.unit + Math.round(drift / target.qty));
+    }
   } else {
+
     const qty = Math.min(input.quantity, Math.max(1, product.stock ?? 1));
     const price = Number(product.price) || 0;
     lines = [{ productId: product.id, name: product.name, qty, unit: price, free: false }];
