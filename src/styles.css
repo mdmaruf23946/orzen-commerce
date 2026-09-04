@@ -411,18 +411,23 @@
   opacity: 0;
   transform: translateY(14px);
 }
+/* Use `backwards` fill (not `both`) so no transform/opacity is retained after
+   the animation ends — a lingering `translateY(0)`/`scale(1)` would keep every
+   card composited forever and let it paint over the sticky header during
+   touch scroll on Android Chrome. The element's natural end state (visible,
+   untransformed) is identical, so visuals don't change. */
 @utility sf-reveal-in {
-  animation: sf-fade-up var(--sf-dur-slow) var(--sf-ease) both;
+  animation: sf-fade-up var(--sf-dur-slow) var(--sf-ease) backwards;
   animation-delay: calc(var(--sf-i, 0) * 55ms);
 }
 @utility sf-animate-fade-in {
-  animation: sf-fade-in var(--sf-dur) var(--sf-ease) both;
+  animation: sf-fade-in var(--sf-dur) var(--sf-ease) backwards;
 }
 @utility sf-animate-pop {
-  animation: sf-pop 320ms var(--sf-ease-spring) both;
+  animation: sf-pop 320ms var(--sf-ease-spring) backwards;
 }
 @utility sf-animate-slide-up {
-  animation: sf-slide-up 320ms var(--sf-ease) both;
+  animation: sf-slide-up 320ms var(--sf-ease) backwards;
 }
 @utility sf-float {
   animation: sf-float 3.6s ease-in-out infinite;
