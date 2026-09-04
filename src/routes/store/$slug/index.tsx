@@ -233,7 +233,7 @@ function HomeContent() {
 
       {theme.section_order.map((k) => blocks[k] ?? null)}
 
-      <section id="all-products" className="scroll-mt-32 space-y-4">
+      <section id="all-products" className="sf-cv scroll-mt-32 space-y-4">
         <div className="flex items-center gap-2">
           <Grid3x3 className="h-4 w-4 text-sf-accent" />
           <h2 className="text-lg font-bold tracking-tight text-sf-primary sm:text-xl">
@@ -427,7 +427,7 @@ function ProductCarousel({
     <div className="relative">
       <div
         ref={ref}
-        className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {products.map((p, i) => (
           <div
@@ -543,7 +543,7 @@ function CategoryStrip({
     <div className="relative">
       <div
         ref={scrollRef}
-        className="flex flex-nowrap gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory sm:grid sm:grid-cols-6 sm:gap-4 sm:pb-1 md:grid-cols-8"
+        className="flex flex-nowrap gap-2 overflow-x-auto overscroll-x-contain scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory sm:grid sm:grid-cols-6 sm:gap-4 sm:pb-1 md:grid-cols-8"
       >
         <div className="w-[calc(25%-0.5rem)] shrink-0 snap-start sm:w-auto">
           <CategoryTile

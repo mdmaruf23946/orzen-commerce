@@ -383,12 +383,12 @@ function StoreHeader({
         style={{ transform: "translateZ(0)" }}
       >
       <header
-        className={`border-b border-sf-line md:backdrop-blur-md`}
+        className={`border-b border-sf-line`}
 
         style={{
           backgroundColor: theme.header.transparent
             ? "transparent"
-            : "var(--store-header-bg, rgba(255,255,255,0.9))",
+            : "var(--store-header-bg, #ffffff)",
         }}
       >
 
@@ -646,7 +646,7 @@ function HeaderCategoryBar({
         style={{ maxWidth: "var(--store-container, 64rem)" }}
       >
         {/* একই Unified Structure — সব Tax ভিত্তিক Category একই container-এ */}
-        <div className="flex flex-wrap items-center gap-1 rounded-2xl border border-sf-line bg-sf-accent-soft p-1.5 backdrop-blur">
+        <div className="flex flex-wrap items-center gap-1 rounded-2xl border border-sf-line bg-sf-accent-soft p-1.5">
           <button
             type="button"
             onClick={() => selectMain(null, "header")}
