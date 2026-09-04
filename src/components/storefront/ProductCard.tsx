@@ -94,8 +94,10 @@ export function ProductCard({ slug, p, index = 0 }: { slug: string; p: Product; 
           <img
             src={p.primary_image_url}
             alt={p.name}
-            loading="lazy"
+            loading={index < 4 ? "eager" : "lazy"}
             decoding="async"
+            width={480}
+            height={480}
             className="theme-card-img h-full w-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.08]"
           />
         ) : (
@@ -118,7 +120,7 @@ export function ProductCard({ slug, p, index = 0 }: { slug: string; p: Product; 
           onClick={handleWish}
           aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
           aria-pressed={wished}
-          className={`absolute ${outOfStock ? "right-2 top-9" : "right-2 top-2"} sf-press grid h-7 w-7 place-items-center rounded-full bg-sf-card/90 shadow-sm backdrop-blur hover:scale-110 hover:bg-sf-card sm:h-8 sm:w-8`}
+          className={`absolute ${outOfStock ? "right-2 top-9" : "right-2 top-2"} sf-press grid h-7 w-7 place-items-center rounded-full bg-sf-card shadow-sm hover:scale-110 hover:bg-sf-card sm:h-8 sm:w-8`}
         >
           <Heart
             key={pulse}
