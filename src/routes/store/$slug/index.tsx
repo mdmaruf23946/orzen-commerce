@@ -406,6 +406,7 @@ function ProductCarousel({
 
     const id = setInterval(() => {
       if (paused || !visible) return;
+      if (typeof document !== "undefined" && document.hidden) return;
       if (Date.now() - pageScrolling < 800) return;
       const step = Math.max(200, el.clientWidth * 0.5);
       const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 8;

@@ -511,3 +511,27 @@
     transform: none !important;
   }
 }
+
+/* Skip below-the-fold layout/paint work for long product lists. */
+@utility sf-cv {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
+}
+
+/* Touch devices: no hover lift, no entry animation, no composited layers —
+   these are the main cause of stop-and-go scrolling on phones. */
+@media (hover: none) {
+  .sf-lift:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  .sf-reveal,
+  .sf-reveal-in {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .theme-card-img {
+    transition: none !important;
+  }
+}
