@@ -574,15 +574,27 @@ function OrderForm({
   const offer = useMemo(() => normalizeOffer(page.offer), [page.offer]);
   const offerPrices = useMemo(() => {
     if (!offerIsUsable(offer) || !page.product) return [];
-    const others: Record<string, { name: string; price: number }> = {};
+    const others: Record<string, { name: string; price: number; stock: number }> = {};
     for (const row of page.offer_products ?? []) {
-      others[row.id] = { name: row.name, price: Number(row.price) || 0 };
+      // Only sellable products count — the server refuses packages with a
+      // missing item, so an unavailable extra must not be shown or priced.
+      if (row.status === "draft" || (row.stock ?? 0) <= 0) continue;
+      others[row.id] = { name: row.name, price: Number(row.price) || 0, stock: row.stock ?? 0 };
     }
-    return computeOfferPrices(offer, {
+    const usable = {
+      ...offer,
+      tiers: offer.tiers.filter((t) =>
+        t.items.every(
+          (it) => it.productId === page.product!.id || (others[it.productId]?.stock ?? 0) >= it.qty,
+        ),
+      ),
+    };
+    return computeOfferPrices(usable, {
       main: { productId: page.product.id, name: page.product.name, price },
       others,
     });
   }, [offer, page.offer_products, page.product, price]);
+
 
   const [tierId, setTierId] = useState<string>("");
   const activeTier =
