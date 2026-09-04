@@ -379,7 +379,7 @@ function StoreHeader({
   return (
     <>
       <div
-        className={`${theme.header.sticky ? "sticky top-0" : ""} z-40 bg-background`}
+        className={`${theme.header.sticky ? "sticky top-0" : ""} isolate z-40 bg-background`}
         style={{ transform: "translateZ(0)" }}
       >
       <header
