@@ -81,7 +81,7 @@ export async function createLandingPageOrder(
   // and submitted a normal single-product order. Never remap that to the
   // first (possibly unavailable) package.
   const tier = offerIsUsable(offer) && input.offer_tier
-    ? offer.tiers.find((t) => t.id === input.offer_tier) ?? null
+    ? offer.tiers.find((t) => t.id === input.offer_tier) ?? offer.tiers[0]!
     : null;
 
   type Line = { productId: string; name: string; qty: number; unit: number; free: boolean };
