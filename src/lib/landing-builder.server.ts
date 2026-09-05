@@ -77,7 +77,10 @@ export async function createLandingPageOrder(
   // ---- Basket: single product, or the selected offer tier ----
   const { normalizeOffer, computeTierPrice, offerIsUsable } = await import("@/lib/landing-offer");
   const offer = normalizeOffer(page.offer);
-  const tier = offerIsUsable(offer)
+  // A missing tier means the storefront found no currently sellable package
+  // and submitted a normal single-product order. Never remap that to the
+  // first (possibly unavailable) package.
+  const tier = offerIsUsable(offer) && input.offer_tier
     ? offer.tiers.find((t) => t.id === input.offer_tier) ?? offer.tiers[0]!
     : null;
 
