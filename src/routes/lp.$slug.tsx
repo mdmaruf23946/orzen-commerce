@@ -738,14 +738,64 @@ function OrderForm({
         )}
 
         {done ? (
-          <div className="mt-6 text-center">
-            <div
-              className="mx-auto flex h-14 w-14 items-center justify-center rounded-full text-white lp-primary-bg"
-            >
-              <Check className="h-7 w-7" />
+          <div className="lp-confirm mt-6">
+            <div className="text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full text-white lp-primary-bg">
+                <Check className="h-7 w-7" />
+              </div>
+              <p className="mt-4 text-sm font-medium">
+                {content.order.successMessage || "ধন্যবাদ! অর্ডার গ্রহণ করা হয়েছে।"}
+              </p>
+              {done.invoice && (
+                <p className="mt-1 text-xs text-neutral-500">ইনভয়েস নম্বর: {done.invoice}</p>
+              )}
             </div>
-            <p className="mt-4 text-sm">{content.order.successMessage || "ধন্যবাদ! অর্ডার গ্রহণ করা হয়েছে।"}</p>
-            {done.invoice && <p className="mt-1 text-xs text-neutral-500">Invoice: {done.invoice}</p>}
+
+            <div className="lp-confirm-card mt-5 space-y-2 bg-neutral-50 p-3 text-sm lp-round-xs">
+              <div className="text-xs font-semibold uppercase text-neutral-500">অর্ডার বিবরণ</div>
+              {done.packageLabel && (
+                <div className="text-sm font-medium">{done.packageLabel}</div>
+              )}
+              {done.lines.map((l, i) => (
+                <Row
+                  key={`${l.name}-${i}`}
+                  label={`${l.qty} × ${l.name}${l.free ? " (ফ্রি)" : ""}`}
+                  value={l.free ? "ফ্রি" : ""}
+                />
+              ))}
+              <div className="border-t pt-2">
+                <Row label="পণ্যমূল্য" value={money(done.goods)} />
+                <Row label="ডেলিভারি চার্জ" value={money(done.delivery)} />
+              </div>
+              <div className="flex justify-between border-t pt-2 font-bold">
+                <span>সর্বমোট</span>
+                <span className="lp-primary-text">{money(done.total)}</span>
+              </div>
+            </div>
+
+            <div className="lp-confirm-card mt-3 space-y-1 bg-neutral-50 p-3 text-sm lp-round-xs">
+              <div className="text-xs font-semibold uppercase text-neutral-500">ডেলিভারি তথ্য</div>
+              <Row label="নাম" value={done.name} />
+              <Row label="মোবাইল" value={done.phone} />
+              {done.area && <Row label="এলাকা" value={done.area} />}
+              {done.address && (
+                <div className="text-neutral-700">
+                  <span className="text-neutral-500">ঠিকানা: </span>
+                  {done.address}
+                </div>
+              )}
+            </div>
+
+            <div className="lp-confirm-pay mt-3 space-y-1 bg-neutral-50 p-3 text-sm lp-round-xs">
+              <div className="text-xs font-semibold uppercase text-neutral-500">পেমেন্ট নির্দেশনা</div>
+              <Row label="পেমেন্ট মেথড" value={done.method.toUpperCase()} />
+              {done.txnId && <Row label="ট্রানজেকশন আইডি" value={done.txnId} />}
+              <p className="pt-1 text-neutral-700">{paymentInstruction(done.method, done.total)}</p>
+            </div>
+
+            <p className="mt-3 text-center text-xs text-neutral-500">
+              আমাদের প্রতিনিধি শীঘ্রই কল করে অর্ডারটি কনফার্ম করবেন।
+            </p>
           </div>
         ) : (
           <form className="mt-5 space-y-3" onSubmit={submit}>
