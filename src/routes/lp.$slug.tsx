@@ -647,9 +647,37 @@ function OrderForm({
           page_url: typeof window !== "undefined" ? window.location.href : null,
         }),
       });
-      const json = (await res.json()) as { ok?: boolean; error?: string; invoice_no?: string | null };
+      const json = (await res.json()) as {
+        ok?: boolean;
+        error?: string;
+        invoice_no?: string | null;
+        order_id?: string | null;
+      };
       if (!res.ok || !json.ok) throw new Error(json.error ?? "Order failed");
-      setDone({ invoice: json.invoice_no ?? null });
+      setDone({
+        invoice: json.invoice_no ?? null,
+        orderId: json.order_id ?? null,
+        name: values["customer_name"] ?? "",
+        phone: values["phone"] ?? "",
+        address: values["address"] ?? "",
+        area: (zones.length ? zones.find((z) => z.id === zoneId)?.name : values["area"]) || null,
+        method,
+        txnId: values["txn_id"] || null,
+        lines: activeTier
+          ? activeTier.lines.map((l) => ({
+              name: l.name,
+              qty: l.qty,
+              free: l.free,
+            }))
+          : [{ name: page.product?.name ?? "Product", qty, free: false }],
+        packageLabel: activeTier ? activeTier.label || `প্যাকেজ (${activeTier.quantity})` : null,
+        goods,
+        delivery,
+        total,
+      });
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: document.getElementById("order")?.offsetTop ?? 0, behavior: "smooth" });
+      }
     } catch (err) {
       setError((err as Error).message);
     } finally {
