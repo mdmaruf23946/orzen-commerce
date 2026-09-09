@@ -909,6 +909,40 @@ function OrderForm({
   );
 }
 
+/** Snapshot of a placed order, shown on the confirmation panel. */
+type OrderConfirmation = {
+  invoice: string | null;
+  orderId: string | null;
+  name: string;
+  phone: string;
+  address: string;
+  area: string | null;
+  method: string;
+  txnId: string | null;
+  lines: { name: string; qty: number; free: boolean }[];
+  packageLabel: string | null;
+  goods: number;
+  delivery: number;
+  total: number;
+};
+
+/** Presentation-only guidance for how the buyer should settle the order. */
+function paymentInstruction(method: string, total: number) {
+  const amount = money(total);
+  switch (method) {
+    case "bkash":
+      return `bKash-এ ${amount} পাঠিয়ে ট্রানজেকশন আইডি সংরক্ষণ করুন। আমাদের প্রতিনিধি পেমেন্ট যাচাই করে অর্ডার কনফার্ম করবেন।`;
+    case "nagad":
+      return `Nagad-এ ${amount} পাঠিয়ে ট্রানজেকশন আইডি সংরক্ষণ করুন। পেমেন্ট যাচাইয়ের পর অর্ডার প্রসেস করা হবে।`;
+    case "rocket":
+      return `Rocket-এ ${amount} পাঠিয়ে ট্রানজেকশন আইডি সংরক্ষণ করুন। পেমেন্ট যাচাইয়ের পর অর্ডার প্রসেস করা হবে।`;
+    case "bank":
+      return `ব্যাংক ট্রান্সফারে ${amount} পাঠান। ট্রান্সফার সম্পন্ন হলে আমাদের প্রতিনিধি যাচাই করে অর্ডার কনফার্ম করবেন।`;
+    default:
+      return `ক্যাশ অন ডেলিভারি: পণ্য হাতে পেয়ে ডেলিভারি ম্যানকে ${amount} পরিশোধ করুন। এখন কোনো অগ্রিম পেমেন্ট লাগবে না।`;
+  }
+}
+
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between">
