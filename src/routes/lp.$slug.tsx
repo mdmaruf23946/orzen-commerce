@@ -617,7 +617,7 @@ function OrderForm({
   const [method, setMethod] = useState(methods[0]!);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [done, setDone] = useState<{ invoice: string | null } | null>(null);
+  const [done, setDone] = useState<OrderConfirmation | null>(null);
 
   const qty = activeTier ? activeTier.quantity : Math.max(1, Number(values["quantity"] || 1));
   const goods = activeTier ? activeTier.price : price * qty;
