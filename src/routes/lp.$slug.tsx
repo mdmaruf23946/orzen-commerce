@@ -617,7 +617,7 @@ function OrderForm({
   const [method, setMethod] = useState(methods[0]!);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [done, setDone] = useState<{ invoice: string | null } | null>(null);
+  const [done, setDone] = useState<OrderConfirmation | null>(null);
 
   const qty = activeTier ? activeTier.quantity : Math.max(1, Number(values["quantity"] || 1));
   const goods = activeTier ? activeTier.price : price * qty;
@@ -647,9 +647,37 @@ function OrderForm({
           page_url: typeof window !== "undefined" ? window.location.href : null,
         }),
       });
-      const json = (await res.json()) as { ok?: boolean; error?: string; invoice_no?: string | null };
+      const json = (await res.json()) as {
+        ok?: boolean;
+        error?: string;
+        invoice_no?: string | null;
+        order_id?: string | null;
+      };
       if (!res.ok || !json.ok) throw new Error(json.error ?? "Order failed");
-      setDone({ invoice: json.invoice_no ?? null });
+      setDone({
+        invoice: json.invoice_no ?? null,
+        orderId: json.order_id ?? null,
+        name: values["customer_name"] ?? "",
+        phone: values["phone"] ?? "",
+        address: values["address"] ?? "",
+        area: (zones.length ? zones.find((z) => z.id === zoneId)?.name : values["area"]) || null,
+        method,
+        txnId: values["txn_id"] || null,
+        lines: activeTier
+          ? activeTier.lines.map((l) => ({
+              name: l.name,
+              qty: l.qty,
+              free: l.free,
+            }))
+          : [{ name: page.product?.name ?? "Product", qty, free: false }],
+        packageLabel: activeTier ? activeTier.label || `প্যাকেজ (${activeTier.quantity})` : null,
+        goods,
+        delivery,
+        total,
+      });
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: document.getElementById("order")?.offsetTop ?? 0, behavior: "smooth" });
+      }
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -710,14 +738,64 @@ function OrderForm({
         )}
 
         {done ? (
-          <div className="mt-6 text-center">
-            <div
-              className="mx-auto flex h-14 w-14 items-center justify-center rounded-full text-white lp-primary-bg"
-            >
-              <Check className="h-7 w-7" />
+          <div className="lp-confirm mt-6">
+            <div className="text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full text-white lp-primary-bg">
+                <Check className="h-7 w-7" />
+              </div>
+              <p className="mt-4 text-sm font-medium">
+                {content.order.successMessage || "ধন্যবাদ! অর্ডার গ্রহণ করা হয়েছে।"}
+              </p>
+              {done.invoice && (
+                <p className="mt-1 text-xs text-neutral-500">ইনভয়েস নম্বর: {done.invoice}</p>
+              )}
             </div>
-            <p className="mt-4 text-sm">{content.order.successMessage || "ধন্যবাদ! অর্ডার গ্রহণ করা হয়েছে।"}</p>
-            {done.invoice && <p className="mt-1 text-xs text-neutral-500">Invoice: {done.invoice}</p>}
+
+            <div className="lp-confirm-card mt-5 space-y-2 bg-neutral-50 p-3 text-sm lp-round-xs">
+              <div className="text-xs font-semibold uppercase text-neutral-500">অর্ডার বিবরণ</div>
+              {done.packageLabel && (
+                <div className="text-sm font-medium">{done.packageLabel}</div>
+              )}
+              {done.lines.map((l, i) => (
+                <Row
+                  key={`${l.name}-${i}`}
+                  label={`${l.qty} × ${l.name}${l.free ? " (ফ্রি)" : ""}`}
+                  value={l.free ? "ফ্রি" : ""}
+                />
+              ))}
+              <div className="border-t pt-2">
+                <Row label="পণ্যমূল্য" value={money(done.goods)} />
+                <Row label="ডেলিভারি চার্জ" value={money(done.delivery)} />
+              </div>
+              <div className="flex justify-between border-t pt-2 font-bold">
+                <span>সর্বমোট</span>
+                <span className="lp-primary-text">{money(done.total)}</span>
+              </div>
+            </div>
+
+            <div className="lp-confirm-card mt-3 space-y-1 bg-neutral-50 p-3 text-sm lp-round-xs">
+              <div className="text-xs font-semibold uppercase text-neutral-500">ডেলিভারি তথ্য</div>
+              <Row label="নাম" value={done.name} />
+              <Row label="মোবাইল" value={done.phone} />
+              {done.area && <Row label="এলাকা" value={done.area} />}
+              {done.address && (
+                <div className="text-neutral-700">
+                  <span className="text-neutral-500">ঠিকানা: </span>
+                  {done.address}
+                </div>
+              )}
+            </div>
+
+            <div className="lp-confirm-pay mt-3 space-y-1 bg-neutral-50 p-3 text-sm lp-round-xs">
+              <div className="text-xs font-semibold uppercase text-neutral-500">পেমেন্ট নির্দেশনা</div>
+              <Row label="পেমেন্ট মেথড" value={done.method.toUpperCase()} />
+              {done.txnId && <Row label="ট্রানজেকশন আইডি" value={done.txnId} />}
+              <p className="pt-1 text-neutral-700">{paymentInstruction(done.method, done.total)}</p>
+            </div>
+
+            <p className="mt-3 text-center text-xs text-neutral-500">
+              আমাদের প্রতিনিধি শীঘ্রই কল করে অর্ডারটি কনফার্ম করবেন।
+            </p>
           </div>
         ) : (
           <form className="mt-5 space-y-3" onSubmit={submit}>
@@ -829,6 +907,40 @@ function OrderForm({
       </div>
     </section>
   );
+}
+
+/** Snapshot of a placed order, shown on the confirmation panel. */
+type OrderConfirmation = {
+  invoice: string | null;
+  orderId: string | null;
+  name: string;
+  phone: string;
+  address: string;
+  area: string | null;
+  method: string;
+  txnId: string | null;
+  lines: { name: string; qty: number; free: boolean }[];
+  packageLabel: string | null;
+  goods: number;
+  delivery: number;
+  total: number;
+};
+
+/** Presentation-only guidance for how the buyer should settle the order. */
+function paymentInstruction(method: string, total: number) {
+  const amount = money(total);
+  switch (method) {
+    case "bkash":
+      return `bKash-এ ${amount} পাঠিয়ে ট্রানজেকশন আইডি সংরক্ষণ করুন। আমাদের প্রতিনিধি পেমেন্ট যাচাই করে অর্ডার কনফার্ম করবেন।`;
+    case "nagad":
+      return `Nagad-এ ${amount} পাঠিয়ে ট্রানজেকশন আইডি সংরক্ষণ করুন। পেমেন্ট যাচাইয়ের পর অর্ডার প্রসেস করা হবে।`;
+    case "rocket":
+      return `Rocket-এ ${amount} পাঠিয়ে ট্রানজেকশন আইডি সংরক্ষণ করুন। পেমেন্ট যাচাইয়ের পর অর্ডার প্রসেস করা হবে।`;
+    case "bank":
+      return `ব্যাংক ট্রান্সফারে ${amount} পাঠান। ট্রান্সফার সম্পন্ন হলে আমাদের প্রতিনিধি যাচাই করে অর্ডার কনফার্ম করবেন।`;
+    default:
+      return `ক্যাশ অন ডেলিভারি: পণ্য হাতে পেয়ে ডেলিভারি ম্যানকে ${amount} পরিশোধ করুন। এখন কোনো অগ্রিম পেমেন্ট লাগবে না।`;
+  }
 }
 
 function Row({ label, value }: { label: string; value: string }) {
