@@ -4,6 +4,7 @@ import { z } from "zod";
 
 const bodySchema = z.object({
   store_slug: z.string().min(1).max(120),
+  landing_page_id: z.string().uuid().optional().nullable(),
   event: z.string().min(1).max(60),
   event_id: z.string().min(1).max(120),
   event_source_url: z.string().max(2000).optional(),
@@ -37,10 +38,21 @@ export const Route = createFileRoute("/api/public/tiktok/track")({
           .eq("status", "active")
           .maybeSingle();
 
-        const t: any = ((store as any)?.marketing ?? {}).tiktok ?? {};
-        const pixelId = t.pixel_id as string | undefined;
-        const token = t.access_token as string | undefined;
-        if (!store || !t.events_api_enabled || !pixelId || !token) {
+        const marketing: any = (store as any)?.marketing ?? {};
+        const t: any = marketing.tiktok ?? {};
+        let pixelId = t.pixel_id as string | undefined;
+        let token = t.access_token as string | undefined;
+        let enabled = !!t.events_api_enabled;
+        if (payload.landing_page_id) {
+          const { readTrackingTargets } = await import("@/lib/marketing.server");
+          const tt: any = readTrackingTargets(marketing)[payload.landing_page_id];
+          if (tt?.tiktok) {
+            pixelId = tt.tiktok.pixel_id || undefined;
+            token = tt.tiktok.access_token || undefined;
+            enabled = !!tt.tiktok.active;
+          }
+        }
+        if (!store || !enabled || !pixelId || !token) {
           return Response.json({ ok: true, skipped: true });
         }
 

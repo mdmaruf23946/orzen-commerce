@@ -4,6 +4,7 @@ import { z } from "zod";
 
 const bodySchema = z.object({
   store_slug: z.string().min(1).max(120),
+  landing_page_id: z.string().uuid().optional().nullable(),
   event: z.string().min(1).max(60),
   event_id: z.string().min(1).max(120),
   client_id: z.string().min(1).max(120),
@@ -31,10 +32,21 @@ export const Route = createFileRoute("/api/public/ga4/track")({
           .eq("status", "active")
           .maybeSingle();
 
-        const g: any = ((store as any)?.marketing ?? {}).google ?? {};
-        const measurementId = g.ga4_id as string | undefined;
+        const marketing: any = (store as any)?.marketing ?? {};
+        const g: any = marketing.google ?? {};
+        let measurementId = g.ga4_id as string | undefined;
+        let enabled = !!g.ga4_enabled;
         const apiSecret = g.ga4_api_secret as string | undefined;
-        if (!store || !g.ga4_enabled || !measurementId || !apiSecret) {
+        if (payload.landing_page_id) {
+          const { readTrackingTargets } = await import("@/lib/marketing.server");
+          const t: any = readTrackingTargets(marketing)[payload.landing_page_id];
+          if (t?.google) {
+            const tag = String(t.google.tag_id ?? "");
+            measurementId = /^G-/i.test(tag) ? tag : undefined;
+            enabled = !!t.google.active;
+          }
+        }
+        if (!store || !enabled || !measurementId || !apiSecret) {
           return Response.json({ ok: true, skipped: true });
         }
 
