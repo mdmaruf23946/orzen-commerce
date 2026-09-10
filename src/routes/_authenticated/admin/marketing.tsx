@@ -43,6 +43,11 @@ function MarketingPage() {
           Tracking &amp; analytics for your storefront. Each platform is saved separately.
         </p>
       </div>
+      <TrackingSetup />
+      <div>
+        <h2 className="text-sm font-semibold">Advanced platform settings</h2>
+        <p className="mt-0.5 text-xs text-muted-foreground">Main Store only — server-side events and testing tools.</p>
+      </div>
       <TypeFilterTabs tabs={TABS} value={tab} onChange={(k) => setTab(k)} />
       {tab === "facebook" && <FacebookTab />}
       {tab === "google" && <GoogleTab />}
