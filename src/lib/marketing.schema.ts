@@ -90,3 +90,54 @@ export const facebookDefaults = {
   fb_capi_enabled: false,
   fb_test_event_code: "",
 };
+
+// ---------------------------------------------------------------------------
+// Target-based tracking setup (Main Store + individual Landing Pages)
+// ---------------------------------------------------------------------------
+
+export const TRACKING_PLATFORMS = ["facebook", "google", "tiktok"] as const;
+export type TrackingPlatform = (typeof TRACKING_PLATFORMS)[number];
+
+/** "main" or a landing page uuid. */
+export const trackingTargetKey = z
+  .string()
+  .trim()
+  .min(1)
+  .max(64)
+  .refine((v) => v === "main" || /^[0-9a-f-]{36}$/i.test(v), "Invalid target");
+
+export const trackingFacebookSchema = z.object({
+  active: z.boolean().optional(),
+  pixel_id: z.string().trim().max(60).optional().nullable(),
+  capi_token: z.string().trim().max(400).optional().nullable(),
+  test_event_code: z.string().trim().max(60).optional().nullable(),
+});
+
+export const trackingGoogleSchema = z.object({
+  active: z.boolean().optional(),
+  tag_id: z.string().trim().max(60).optional().nullable(),
+});
+
+export const trackingTiktokSchema = z.object({
+  active: z.boolean().optional(),
+  pixel_id: z.string().trim().max(60).optional().nullable(),
+  access_token: z.string().trim().max(400).optional().nullable(),
+});
+
+export const saveTrackingSetupSchema = z.discriminatedUnion("platform", [
+  z.object({ target: trackingTargetKey, platform: z.literal("facebook"), config: trackingFacebookSchema }),
+  z.object({ target: trackingTargetKey, platform: z.literal("google"), config: trackingGoogleSchema }),
+  z.object({ target: trackingTargetKey, platform: z.literal("tiktok"), config: trackingTiktokSchema }),
+]);
+
+export type TrackingFacebook = z.infer<typeof trackingFacebookSchema>;
+export type TrackingGoogle = z.infer<typeof trackingGoogleSchema>;
+export type TrackingTiktok = z.infer<typeof trackingTiktokSchema>;
+
+export const trackingDefaults = {
+  facebook: { active: false, pixel_id: "", capi_token: "", test_event_code: "" },
+  google: { active: false, tag_id: "" },
+  tiktok: { active: false, pixel_id: "", access_token: "" },
+} as const;
+
+export const GOOGLE_TAG_RE = /^(G-[A-Z0-9]{4,15}|AW-\d{6,15}|GT-[A-Z0-9]{4,15})$/i;

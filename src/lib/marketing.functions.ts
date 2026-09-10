@@ -1,7 +1,8 @@
 // Marketing settings server functions — Google + TikTok (Facebook lives in admin.functions.ts).
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { facebookSchema, googleSchema, tiktokSchema } from "@/lib/marketing.schema";
+import { z } from "zod";
+import { facebookSchema, googleSchema, tiktokSchema, saveTrackingSetupSchema } from "@/lib/marketing.schema";
 
 export const updateMarketingGoogle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -156,4 +157,76 @@ export const updateMarketingFacebook = createServerFn({ method: "POST" })
     await assertPlan(context.supabase, context.userId, "pixel");
     const { saveMarketingNamespace } = await import("@/lib/marketing.server");
     return saveMarketingNamespace(context.supabase, context.userId, null, data as Record<string, unknown>);
+  });
+
+// ---------------------------------------------------------------------------
+// Target-based tracking setup (Main Store + Landing Pages)
+// ---------------------------------------------------------------------------
+
+export const getTrackingSetups = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { loadOwnerMarketing, readTrackingTargets } = await import("@/lib/marketing.server");
+    const { marketing, store } = await loadOwnerMarketing(context.supabase, context.userId);
+    let pages: { id: string; title: string; slug: string }[] = [];
+    if (store?.id) {
+      const { data } = await context.supabase
+        .from("landing_pages")
+        .select("id,title,slug")
+        .eq("store_id", store.id)
+        .order("created_at", { ascending: false });
+      pages = (data ?? []) as any;
+    }
+    return { targets: readTrackingTargets(marketing), pages };
+  });
+
+export const saveTrackingSetup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => saveTrackingSetupSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { assertPlan } = await import("@/lib/plan-guard");
+    await assertPlan(context.supabase, context.userId, "pixel");
+    const { saveTrackingTarget } = await import("@/lib/marketing.server");
+    return saveTrackingTarget(
+      context.supabase,
+      context.userId,
+      data.target,
+      data.platform,
+      data.config as Record<string, unknown>,
+    );
+  });
+
+/** Public, browser-safe pixel IDs for one landing page (no server tokens). */
+export const getLandingTracking = createServerFn({ method: "GET" })
+  .inputValidator((d: { landing_page_id: string }) =>
+    z.object({ landing_page_id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: page } = await supabaseAdmin
+      .from("landing_pages")
+      .select("id, store_id")
+      .eq("id", data.landing_page_id)
+      .maybeSingle();
+    if (!page) return null;
+    const { data: store } = await supabaseAdmin
+      .from("stores")
+      .select("slug, marketing")
+      .eq("id", (page as any).store_id)
+      .maybeSingle();
+    if (!store) return null;
+    const { readTrackingTargets } = await import("@/lib/marketing.server");
+    const targets = readTrackingTargets((store as any).marketing);
+    const t = targets[data.landing_page_id] ?? targets.main ?? {};
+    const fb: any = t.facebook ?? {};
+    const g: any = t.google ?? {};
+    const tt: any = t.tiktok ?? {};
+    return {
+      store_slug: (store as any).slug as string,
+      fb_pixel_id: fb.active && fb.pixel_id ? String(fb.pixel_id) : null,
+      fb_server: !!(fb.active && fb.capi_token),
+      google_tag_id: g.active && g.tag_id ? String(g.tag_id) : null,
+      tiktok_pixel_id: tt.active && tt.pixel_id ? String(tt.pixel_id) : null,
+      tiktok_server: !!(tt.active && tt.access_token),
+    };
   });

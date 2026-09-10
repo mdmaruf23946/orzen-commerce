@@ -5,6 +5,7 @@ import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
 import { FacebookTab } from "@/components/admin/marketing/FacebookTab";
 import { GoogleTab } from "@/components/admin/marketing/GoogleTab";
 import { TiktokTab } from "@/components/admin/marketing/TiktokTab";
+import { TrackingSetup } from "@/components/admin/marketing/TrackingSetup";
 
 export const Route = createFileRoute("/_authenticated/admin/marketing")({
   head: () => ({
@@ -42,6 +43,11 @@ function MarketingPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           Tracking &amp; analytics for your storefront. Each platform is saved separately.
         </p>
+      </div>
+      <TrackingSetup />
+      <div>
+        <h2 className="text-sm font-semibold">Advanced platform settings</h2>
+        <p className="mt-0.5 text-xs text-muted-foreground">Main Store only — server-side events and testing tools.</p>
       </div>
       <TypeFilterTabs tabs={TABS} value={tab} onChange={(k) => setTab(k)} />
       {tab === "facebook" && <FacebookTab />}
