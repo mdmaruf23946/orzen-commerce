@@ -5,6 +5,7 @@ import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
 import { FacebookTab } from "@/components/admin/marketing/FacebookTab";
 import { GoogleTab } from "@/components/admin/marketing/GoogleTab";
 import { TiktokTab } from "@/components/admin/marketing/TiktokTab";
+import { TrackingSetup } from "@/components/admin/marketing/TrackingSetup";
 
 export const Route = createFileRoute("/_authenticated/admin/marketing")({
   head: () => ({
