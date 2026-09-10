@@ -13,6 +13,7 @@ import { readRecent } from "@/lib/recently-viewed";
 import { LandingBranding } from "@/components/landing/LandingBranding";
 import { GenericSection } from "@/components/landing/GenericSection";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import { LandingPixels } from "@/components/landing/LandingPixels";
 import { sectionSpec } from "@/lib/landing-sections";
 import { normalizePalette, themeTokens } from "@/lib/landing-theme";
 import { safeDesignCss } from "@/lib/landing-code";
