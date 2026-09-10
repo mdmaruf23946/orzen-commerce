@@ -7,6 +7,7 @@ import { sendFbEvents, extractClientIp, type FbEventInput } from "@/lib/fb-capi.
 
 const bodySchema = z.object({
   store_slug: z.string().min(1).max(120),
+  landing_page_id: z.string().uuid().optional().nullable(),
   event: z.string().min(1).max(60),
   event_id: z.string().min(1).max(120),
   event_source_url: z.string().max(2000).optional(),
@@ -42,10 +43,21 @@ export const Route = createFileRoute("/api/public/fb-capi/track")({
           .maybeSingle();
 
         const m: any = (store as any)?.marketing ?? {};
-        const pixelId = m.fb_pixel_id as string | undefined;
-        const token = m.fb_capi_token as string | undefined;
-        const capiEnabled = m.fb_capi_enabled !== false;
-        const testCode = (m.fb_test_event_code as string | undefined) || null;
+        let pixelId = m.fb_pixel_id as string | undefined;
+        let token = m.fb_capi_token as string | undefined;
+        let capiEnabled = m.fb_capi_enabled !== false;
+        let testCode = (m.fb_test_event_code as string | undefined) || null;
+
+        if (payload.landing_page_id) {
+          const { readTrackingTargets } = await import("@/lib/marketing.server");
+          const t: any = readTrackingTargets(m)[payload.landing_page_id];
+          if (t?.facebook) {
+            pixelId = t.facebook.pixel_id || undefined;
+            token = t.facebook.capi_token || undefined;
+            capiEnabled = !!t.facebook.active;
+            testCode = t.facebook.test_event_code || null;
+          }
+        }
 
         if (!store || !pixelId || !token || !capiEnabled) {
           return Response.json({ ok: true, skipped: true });
