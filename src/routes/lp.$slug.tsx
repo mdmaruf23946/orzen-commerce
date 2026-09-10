@@ -131,7 +131,12 @@ function LandingPageView() {
     );
   }
 
-  return <LandingPageBody page={page} preview={Boolean(preview)} draftTheme={draftTheme} />;
+  return (
+    <>
+      {!preview && <LandingPixels pageId={page.id} />}
+      <LandingPageBody page={page} preview={Boolean(preview)} draftTheme={draftTheme} />
+    </>
+  );
 }
 
 function LandingPageBody({
