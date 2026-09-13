@@ -469,7 +469,7 @@ export const decideAiAdminPending = createServerFn({ method: "POST" })
         channel: "console",
         actor: context.userId,
       });
-      return { ok: true, executed: true, result };
+      return { ok: true, executed: true, summary: pending.summary, result: JSON.stringify(result).slice(0, 2000) };
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       await supabaseAdmin.from("ai_admin_pending_actions").update({ status: "failed" }).eq("id", pending.id);
