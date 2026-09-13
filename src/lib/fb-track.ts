@@ -15,6 +15,7 @@ declare global {
 
 export type TrackInit = {
   slug: string;
+  landingPageId?: string;
   fbPixel?: boolean;
   ga4?: boolean;
   ga4Server?: boolean;
@@ -128,6 +129,7 @@ export function track(
   const fbInit = window.__fbInit;
   if (!init && !fbInit) return;
   const slug = init?.slug ?? fbInit?.slug ?? "";
+  const landingPageId = init?.landingPageId;
   const eventId = opts?.eventId ?? uuid();
   const user = opts?.userData ?? readCustomerForTracking(slug);
   const p = params ?? {};
@@ -141,6 +143,7 @@ export function track(
     }
     post("/api/public/fb-capi/track", {
       store_slug: slug,
+      landing_page_id: landingPageId,
       event,
       event_id: eventId,
       event_source_url: typeof location !== "undefined" ? location.href : undefined,
@@ -163,6 +166,7 @@ export function track(
   if (init.ga4Server) {
     post("/api/public/ga4/track", {
       store_slug: slug,
+      landing_page_id: landingPageId,
       event: gaName,
       event_id: eventId,
       client_id: ga4ClientId(),
@@ -196,6 +200,7 @@ export function track(
   if (init.tiktokServer) {
     post("/api/public/tiktok/track", {
       store_slug: slug,
+      landing_page_id: landingPageId,
       event: ttName,
       event_id: eventId,
       event_source_url: typeof location !== "undefined" ? location.href : undefined,

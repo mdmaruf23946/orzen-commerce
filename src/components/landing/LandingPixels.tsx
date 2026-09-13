@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getLandingTracking } from "@/lib/marketing.functions";
+import { track } from "@/lib/fb-track";
 
 export function LandingPixels({ pageId }: { pageId: string }) {
   const fetchTracking = useServerFn(getLandingTracking);
@@ -15,12 +16,14 @@ export function LandingPixels({ pageId }: { pageId: string }) {
 
   const fbPixel = data?.fb_pixel_id ?? "";
   const googleTag = data?.google_tag_id ?? "";
+  const googleServer = data?.google_server ?? false;
   const ttPixel = data?.tiktok_pixel_id ?? "";
+  const ttServer = data?.tiktok_server ?? false;
   const slug = data?.store_slug ?? "";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!fbPixel && !googleTag && !ttPixel) return;
+    if (!fbPixel && !googleTag && !googleServer && !ttPixel && !ttServer) return;
     const added: HTMLScriptElement[] = [];
     const add = (src: string, inline?: string) => {
       const s = document.createElement("script");
@@ -29,6 +32,17 @@ export function LandingPixels({ pageId }: { pageId: string }) {
       if (inline) s.text = inline;
       document.head.appendChild(s);
       added.push(s);
+    };
+
+    (window as any).__trackInit = {
+      slug,
+      landingPageId: pageId,
+      fbPixel: !!fbPixel,
+      ga4: /^G-/i.test(googleTag),
+      ga4Server: googleServer,
+      ads: /^AW-/i.test(googleTag) ? { id: googleTag, purchase: true } : null,
+      tiktokPixel: !!ttPixel,
+      tiktokServer: ttServer,
     };
 
     if (googleTag) {
@@ -54,10 +68,13 @@ export function LandingPixels({ pageId }: { pageId: string }) {
     if (googleTag) {
       (window as any).gtag?.("event", "page_view");
     }
+    track("ViewContent", { content_type: "product" });
     return () => {
       for (const s of added) s.remove();
+      (window as any).__trackInit = null;
+      (window as any).__fbInit = null;
     };
-  }, [fbPixel, googleTag, ttPixel, slug]);
+  }, [fbPixel, googleTag, googleServer, pageId, ttPixel, ttServer, slug]);
 
   return null;
 }
