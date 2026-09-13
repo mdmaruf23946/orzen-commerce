@@ -180,6 +180,7 @@ import { Route as ApiPublicCronAiCallsRouteImport } from './routes/api/public/cr
 import { Route as ApiPublicAiCallsWebhookRouteImport } from './routes/api/public/ai-calls/webhook'
 import { Route as ApiPublicAiCallsToolRouteImport } from './routes/api/public/ai-calls/tool'
 import { Route as ApiPublicAiAdminWebhookRouteImport } from './routes/api/public/ai-admin/webhook'
+import { Route as ApiPublicAiAdminMessengerWebhookRouteImport } from './routes/api/public/ai-admin/messenger-webhook'
 import { Route as AuthenticatedOwnerSubscriptionPayProvidersRouteImport } from './routes/_authenticated/owner/subscription-pay.providers'
 import { Route as AuthenticatedOwnerNotificationCenterTemplatesRouteImport } from './routes/_authenticated/owner/notification-center.templates'
 import { Route as AuthenticatedOwnerNotificationCenterComposeRouteImport } from './routes/_authenticated/owner/notification-center.compose'
@@ -1172,6 +1173,12 @@ const ApiPublicAiAdminWebhookRoute = ApiPublicAiAdminWebhookRouteImport.update({
   path: '/api/public/ai-admin/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAiAdminMessengerWebhookRoute =
+  ApiPublicAiAdminMessengerWebhookRouteImport.update({
+    id: '/api/public/ai-admin/messenger-webhook',
+    path: '/api/public/ai-admin/messenger-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedOwnerSubscriptionPayProvidersRoute =
   AuthenticatedOwnerSubscriptionPayProvidersRouteImport.update({
     id: '/providers',
@@ -1562,6 +1569,7 @@ export interface FileRoutesByFullPath {
   '/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
   '/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/ai-admin/messenger-webhook': typeof ApiPublicAiAdminMessengerWebhookRoute
   '/api/public/ai-admin/webhook': typeof ApiPublicAiAdminWebhookRoute
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
@@ -1762,6 +1770,7 @@ export interface FileRoutesByTo {
   '/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
   '/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/ai-admin/messenger-webhook': typeof ApiPublicAiAdminMessengerWebhookRoute
   '/api/public/ai-admin/webhook': typeof ApiPublicAiAdminWebhookRoute
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
@@ -1973,6 +1982,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
   '/_authenticated/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/_authenticated/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/ai-admin/messenger-webhook': typeof ApiPublicAiAdminMessengerWebhookRoute
   '/api/public/ai-admin/webhook': typeof ApiPublicAiAdminWebhookRoute
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
@@ -2184,6 +2194,7 @@ export interface FileRouteTypes {
     | '/owner/notification-center/compose'
     | '/owner/notification-center/templates'
     | '/owner/subscription-pay/providers'
+    | '/api/public/ai-admin/messenger-webhook'
     | '/api/public/ai-admin/webhook'
     | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
@@ -2384,6 +2395,7 @@ export interface FileRouteTypes {
     | '/owner/notification-center/compose'
     | '/owner/notification-center/templates'
     | '/owner/subscription-pay/providers'
+    | '/api/public/ai-admin/messenger-webhook'
     | '/api/public/ai-admin/webhook'
     | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
@@ -2594,6 +2606,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/notification-center/compose'
     | '/_authenticated/owner/notification-center/templates'
     | '/_authenticated/owner/subscription-pay/providers'
+    | '/api/public/ai-admin/messenger-webhook'
     | '/api/public/ai-admin/webhook'
     | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
@@ -2664,6 +2677,7 @@ export interface RootRouteChildren {
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiImgSplatRoute: typeof ApiImgSplatRoute
   ApiPublicVersionRoute: typeof ApiPublicVersionRoute
+  ApiPublicAiAdminMessengerWebhookRoute: typeof ApiPublicAiAdminMessengerWebhookRoute
   ApiPublicAiAdminWebhookRoute: typeof ApiPublicAiAdminWebhookRoute
   ApiPublicAiCallsToolRoute: typeof ApiPublicAiCallsToolRoute
   ApiPublicAiCallsWebhookRoute: typeof ApiPublicAiCallsWebhookRoute
@@ -3889,6 +3903,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicAiAdminWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/ai-admin/messenger-webhook': {
+      id: '/api/public/ai-admin/messenger-webhook'
+      path: '/api/public/ai-admin/messenger-webhook'
+      fullPath: '/api/public/ai-admin/messenger-webhook'
+      preLoaderRoute: typeof ApiPublicAiAdminMessengerWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/owner/subscription-pay/providers': {
       id: '/_authenticated/owner/subscription-pay/providers'
       path: '/providers'
@@ -4673,6 +4694,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiChatRoute: ApiAiChatRoute,
   ApiImgSplatRoute: ApiImgSplatRoute,
   ApiPublicVersionRoute: ApiPublicVersionRoute,
+  ApiPublicAiAdminMessengerWebhookRoute: ApiPublicAiAdminMessengerWebhookRoute,
   ApiPublicAiAdminWebhookRoute: ApiPublicAiAdminWebhookRoute,
   ApiPublicAiCallsToolRoute: ApiPublicAiCallsToolRoute,
   ApiPublicAiCallsWebhookRoute: ApiPublicAiCallsWebhookRoute,
