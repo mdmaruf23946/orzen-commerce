@@ -177,6 +177,355 @@ export type Database = {
           },
         ]
       }
+      ai_admin_action_logs: {
+        Row: {
+          action_key: string
+          actor: string | null
+          args: Json
+          channel: string
+          command: string | null
+          created_at: string
+          id: string
+          result: string
+          result_detail: string | null
+          risk: string
+          target_label: string | null
+        }
+        Insert: {
+          action_key: string
+          actor?: string | null
+          args?: Json
+          channel?: string
+          command?: string | null
+          created_at?: string
+          id?: string
+          result?: string
+          result_detail?: string | null
+          risk?: string
+          target_label?: string | null
+        }
+        Update: {
+          action_key?: string
+          actor?: string | null
+          args?: Json
+          channel?: string
+          command?: string | null
+          created_at?: string
+          id?: string
+          result?: string
+          result_detail?: string | null
+          risk?: string
+          target_label?: string | null
+        }
+        Relationships: []
+      }
+      ai_admin_connections: {
+        Row: {
+          created_at: string
+          credentials_enc: string | null
+          credentials_hint: string | null
+          display_number: string | null
+          id: string
+          last_error: string | null
+          last_verified_at: string | null
+          phone_number_id: string | null
+          singleton: boolean
+          status: string
+          updated_at: string
+          verify_token: string | null
+          waba_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          credentials_enc?: string | null
+          credentials_hint?: string | null
+          display_number?: string | null
+          id?: string
+          last_error?: string | null
+          last_verified_at?: string | null
+          phone_number_id?: string | null
+          singleton?: boolean
+          status?: string
+          updated_at?: string
+          verify_token?: string | null
+          waba_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          credentials_enc?: string | null
+          credentials_hint?: string | null
+          display_number?: string | null
+          id?: string
+          last_error?: string | null
+          last_verified_at?: string | null
+          phone_number_id?: string | null
+          singleton?: boolean
+          status?: string
+          updated_at?: string
+          verify_token?: string | null
+          waba_id?: string | null
+        }
+        Relationships: []
+      }
+      ai_admin_messages: {
+        Row: {
+          actions: Json
+          channel: string
+          content: string
+          created_at: string
+          id: string
+          role: string
+          thread_id: string
+        }
+        Insert: {
+          actions?: Json
+          channel?: string
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          thread_id: string
+        }
+        Update: {
+          actions?: Json
+          channel?: string
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_admin_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "ai_admin_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_admin_notification_rules: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          event_key: string
+          id: string
+          recipient: string | null
+          template: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          event_key: string
+          id?: string
+          recipient?: string | null
+          template?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          event_key?: string
+          id?: string
+          recipient?: string | null
+          template?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_admin_pending_actions: {
+        Row: {
+          action_key: string
+          args: Json
+          created_at: string
+          expires_at: string
+          id: string
+          risk: string
+          status: string
+          summary: string
+          thread_id: string | null
+          updated_at: string
+          wa_id: string | null
+        }
+        Insert: {
+          action_key: string
+          args?: Json
+          created_at?: string
+          expires_at?: string
+          id?: string
+          risk?: string
+          status?: string
+          summary: string
+          thread_id?: string | null
+          updated_at?: string
+          wa_id?: string | null
+        }
+        Update: {
+          action_key?: string
+          args?: Json
+          created_at?: string
+          expires_at?: string
+          id?: string
+          risk?: string
+          status?: string
+          summary?: string
+          thread_id?: string | null
+          updated_at?: string
+          wa_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_admin_pending_actions_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "ai_admin_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_admin_permissions: {
+        Row: {
+          action_key: string
+          created_at: string
+          enabled: boolean
+          group_key: string
+          id: string
+          risk: string
+          updated_at: string
+        }
+        Insert: {
+          action_key: string
+          created_at?: string
+          enabled?: boolean
+          group_key: string
+          id?: string
+          risk?: string
+          updated_at?: string
+        }
+        Update: {
+          action_key?: string
+          created_at?: string
+          enabled?: boolean
+          group_key?: string
+          id?: string
+          risk?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_admin_settings: {
+        Row: {
+          admin_numbers: string[]
+          agent_enabled: boolean
+          confirm_high_risk: boolean
+          confirm_medium_risk: boolean
+          created_at: string
+          daily_digest_enabled: boolean
+          daily_digest_hour: number
+          id: string
+          model: string
+          pending_alert_enabled: boolean
+          rate_limit_per_minute: number
+          reply_language: string
+          singleton: boolean
+          test_mode: boolean
+          updated_at: string
+        }
+        Insert: {
+          admin_numbers?: string[]
+          agent_enabled?: boolean
+          confirm_high_risk?: boolean
+          confirm_medium_risk?: boolean
+          created_at?: string
+          daily_digest_enabled?: boolean
+          daily_digest_hour?: number
+          id?: string
+          model?: string
+          pending_alert_enabled?: boolean
+          rate_limit_per_minute?: number
+          reply_language?: string
+          singleton?: boolean
+          test_mode?: boolean
+          updated_at?: string
+        }
+        Update: {
+          admin_numbers?: string[]
+          agent_enabled?: boolean
+          confirm_high_risk?: boolean
+          confirm_medium_risk?: boolean
+          created_at?: string
+          daily_digest_enabled?: boolean
+          daily_digest_hour?: number
+          id?: string
+          model?: string
+          pending_alert_enabled?: boolean
+          rate_limit_per_minute?: number
+          reply_language?: string
+          singleton?: boolean
+          test_mode?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_admin_threads: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          last_message_at: string
+          updated_at: string
+          wa_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          last_message_at?: string
+          updated_at?: string
+          wa_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          last_message_at?: string
+          updated_at?: string
+          wa_id?: string
+        }
+        Relationships: []
+      }
+      ai_admin_webhook_events: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          message_id: string | null
+          payload: Json
+          processed: boolean
+          wa_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          message_id?: string | null
+          payload?: Json
+          processed?: boolean
+          wa_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          message_id?: string | null
+          payload?: Json
+          processed?: boolean
+          wa_id?: string | null
+        }
+        Relationships: []
+      }
       ai_call_agents: {
         Row: {
           created_at: string
