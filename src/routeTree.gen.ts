@@ -189,8 +189,11 @@ import { Route as AuthenticatedOwnerCommunicationHistoryRouteImport } from './ro
 import { Route as AuthenticatedOwnerCommunicationGmailRouteImport } from './routes/_authenticated/owner/communication.gmail'
 import { Route as AuthenticatedOwnerCommunicationComposeRouteImport } from './routes/_authenticated/owner/communication.compose'
 import { Route as AuthenticatedOwnerAiAdminWhatsappRouteImport } from './routes/_authenticated/owner/ai-admin.whatsapp'
+import { Route as AuthenticatedOwnerAiAdminSettingsRouteImport } from './routes/_authenticated/owner/ai-admin.settings'
 import { Route as AuthenticatedOwnerAiAdminPermissionsRouteImport } from './routes/_authenticated/owner/ai-admin.permissions'
 import { Route as AuthenticatedOwnerAiAdminNotificationsRouteImport } from './routes/_authenticated/owner/ai-admin.notifications'
+import { Route as AuthenticatedOwnerAiAdminLogsRouteImport } from './routes/_authenticated/owner/ai-admin.logs'
+import { Route as AuthenticatedOwnerAiAdminAutomationRouteImport } from './routes/_authenticated/owner/ai-admin.automation'
 import { Route as AuthenticatedOwnerAiAdminAgentRouteImport } from './routes/_authenticated/owner/ai-admin.agent'
 import { Route as AuthenticatedAdminSettingsWorkflowRouteImport } from './routes/_authenticated/admin/settings.workflow'
 import { Route as AuthenticatedAdminSettingsSubscriptionRouteImport } from './routes/_authenticated/admin/settings.subscription'
@@ -1223,6 +1226,12 @@ const AuthenticatedOwnerAiAdminWhatsappRoute =
     path: '/ai-admin/whatsapp',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
+const AuthenticatedOwnerAiAdminSettingsRoute =
+  AuthenticatedOwnerAiAdminSettingsRouteImport.update({
+    id: '/ai-admin/settings',
+    path: '/ai-admin/settings',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
 const AuthenticatedOwnerAiAdminPermissionsRoute =
   AuthenticatedOwnerAiAdminPermissionsRouteImport.update({
     id: '/ai-admin/permissions',
@@ -1233,6 +1242,18 @@ const AuthenticatedOwnerAiAdminNotificationsRoute =
   AuthenticatedOwnerAiAdminNotificationsRouteImport.update({
     id: '/ai-admin/notifications',
     path: '/ai-admin/notifications',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerAiAdminLogsRoute =
+  AuthenticatedOwnerAiAdminLogsRouteImport.update({
+    id: '/ai-admin/logs',
+    path: '/ai-admin/logs',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerAiAdminAutomationRoute =
+  AuthenticatedOwnerAiAdminAutomationRouteImport.update({
+    id: '/ai-admin/automation',
+    path: '/ai-admin/automation',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
 const AuthenticatedOwnerAiAdminAgentRoute =
@@ -1527,8 +1548,11 @@ export interface FileRoutesByFullPath {
   '/admin/settings/subscription': typeof AuthenticatedAdminSettingsSubscriptionRoute
   '/admin/settings/workflow': typeof AuthenticatedAdminSettingsWorkflowRoute
   '/owner/ai-admin/agent': typeof AuthenticatedOwnerAiAdminAgentRoute
+  '/owner/ai-admin/automation': typeof AuthenticatedOwnerAiAdminAutomationRoute
+  '/owner/ai-admin/logs': typeof AuthenticatedOwnerAiAdminLogsRoute
   '/owner/ai-admin/notifications': typeof AuthenticatedOwnerAiAdminNotificationsRoute
   '/owner/ai-admin/permissions': typeof AuthenticatedOwnerAiAdminPermissionsRoute
+  '/owner/ai-admin/settings': typeof AuthenticatedOwnerAiAdminSettingsRoute
   '/owner/ai-admin/whatsapp': typeof AuthenticatedOwnerAiAdminWhatsappRoute
   '/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
   '/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
@@ -1724,8 +1748,11 @@ export interface FileRoutesByTo {
   '/admin/settings/subscription': typeof AuthenticatedAdminSettingsSubscriptionRoute
   '/admin/settings/workflow': typeof AuthenticatedAdminSettingsWorkflowRoute
   '/owner/ai-admin/agent': typeof AuthenticatedOwnerAiAdminAgentRoute
+  '/owner/ai-admin/automation': typeof AuthenticatedOwnerAiAdminAutomationRoute
+  '/owner/ai-admin/logs': typeof AuthenticatedOwnerAiAdminLogsRoute
   '/owner/ai-admin/notifications': typeof AuthenticatedOwnerAiAdminNotificationsRoute
   '/owner/ai-admin/permissions': typeof AuthenticatedOwnerAiAdminPermissionsRoute
+  '/owner/ai-admin/settings': typeof AuthenticatedOwnerAiAdminSettingsRoute
   '/owner/ai-admin/whatsapp': typeof AuthenticatedOwnerAiAdminWhatsappRoute
   '/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
   '/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
@@ -1932,8 +1959,11 @@ export interface FileRoutesById {
   '/_authenticated/admin/settings/subscription': typeof AuthenticatedAdminSettingsSubscriptionRoute
   '/_authenticated/admin/settings/workflow': typeof AuthenticatedAdminSettingsWorkflowRoute
   '/_authenticated/owner/ai-admin/agent': typeof AuthenticatedOwnerAiAdminAgentRoute
+  '/_authenticated/owner/ai-admin/automation': typeof AuthenticatedOwnerAiAdminAutomationRoute
+  '/_authenticated/owner/ai-admin/logs': typeof AuthenticatedOwnerAiAdminLogsRoute
   '/_authenticated/owner/ai-admin/notifications': typeof AuthenticatedOwnerAiAdminNotificationsRoute
   '/_authenticated/owner/ai-admin/permissions': typeof AuthenticatedOwnerAiAdminPermissionsRoute
+  '/_authenticated/owner/ai-admin/settings': typeof AuthenticatedOwnerAiAdminSettingsRoute
   '/_authenticated/owner/ai-admin/whatsapp': typeof AuthenticatedOwnerAiAdminWhatsappRoute
   '/_authenticated/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
   '/_authenticated/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
@@ -2140,8 +2170,11 @@ export interface FileRouteTypes {
     | '/admin/settings/subscription'
     | '/admin/settings/workflow'
     | '/owner/ai-admin/agent'
+    | '/owner/ai-admin/automation'
+    | '/owner/ai-admin/logs'
     | '/owner/ai-admin/notifications'
     | '/owner/ai-admin/permissions'
+    | '/owner/ai-admin/settings'
     | '/owner/ai-admin/whatsapp'
     | '/owner/communication/compose'
     | '/owner/communication/gmail'
@@ -2337,8 +2370,11 @@ export interface FileRouteTypes {
     | '/admin/settings/subscription'
     | '/admin/settings/workflow'
     | '/owner/ai-admin/agent'
+    | '/owner/ai-admin/automation'
+    | '/owner/ai-admin/logs'
     | '/owner/ai-admin/notifications'
     | '/owner/ai-admin/permissions'
+    | '/owner/ai-admin/settings'
     | '/owner/ai-admin/whatsapp'
     | '/owner/communication/compose'
     | '/owner/communication/gmail'
@@ -2544,8 +2580,11 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/settings/subscription'
     | '/_authenticated/admin/settings/workflow'
     | '/_authenticated/owner/ai-admin/agent'
+    | '/_authenticated/owner/ai-admin/automation'
+    | '/_authenticated/owner/ai-admin/logs'
     | '/_authenticated/owner/ai-admin/notifications'
     | '/_authenticated/owner/ai-admin/permissions'
+    | '/_authenticated/owner/ai-admin/settings'
     | '/_authenticated/owner/ai-admin/whatsapp'
     | '/_authenticated/owner/communication/compose'
     | '/_authenticated/owner/communication/gmail'
@@ -3913,6 +3952,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerAiAdminWhatsappRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
+    '/_authenticated/owner/ai-admin/settings': {
+      id: '/_authenticated/owner/ai-admin/settings'
+      path: '/ai-admin/settings'
+      fullPath: '/owner/ai-admin/settings'
+      preLoaderRoute: typeof AuthenticatedOwnerAiAdminSettingsRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
     '/_authenticated/owner/ai-admin/permissions': {
       id: '/_authenticated/owner/ai-admin/permissions'
       path: '/ai-admin/permissions'
@@ -3925,6 +3971,20 @@ declare module '@tanstack/react-router' {
       path: '/ai-admin/notifications'
       fullPath: '/owner/ai-admin/notifications'
       preLoaderRoute: typeof AuthenticatedOwnerAiAdminNotificationsRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/ai-admin/logs': {
+      id: '/_authenticated/owner/ai-admin/logs'
+      path: '/ai-admin/logs'
+      fullPath: '/owner/ai-admin/logs'
+      preLoaderRoute: typeof AuthenticatedOwnerAiAdminLogsRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/ai-admin/automation': {
+      id: '/_authenticated/owner/ai-admin/automation'
+      path: '/ai-admin/automation'
+      fullPath: '/owner/ai-admin/automation'
+      preLoaderRoute: typeof AuthenticatedOwnerAiAdminAutomationRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/owner/ai-admin/agent': {
@@ -4426,8 +4486,11 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerWebhooksRoute: typeof AuthenticatedOwnerWebhooksRoute
   AuthenticatedOwnerIndexRoute: typeof AuthenticatedOwnerIndexRoute
   AuthenticatedOwnerAiAdminAgentRoute: typeof AuthenticatedOwnerAiAdminAgentRoute
+  AuthenticatedOwnerAiAdminAutomationRoute: typeof AuthenticatedOwnerAiAdminAutomationRoute
+  AuthenticatedOwnerAiAdminLogsRoute: typeof AuthenticatedOwnerAiAdminLogsRoute
   AuthenticatedOwnerAiAdminNotificationsRoute: typeof AuthenticatedOwnerAiAdminNotificationsRoute
   AuthenticatedOwnerAiAdminPermissionsRoute: typeof AuthenticatedOwnerAiAdminPermissionsRoute
+  AuthenticatedOwnerAiAdminSettingsRoute: typeof AuthenticatedOwnerAiAdminSettingsRoute
   AuthenticatedOwnerAiAdminWhatsappRoute: typeof AuthenticatedOwnerAiAdminWhatsappRoute
   AuthenticatedOwnerAiAdminIndexRoute: typeof AuthenticatedOwnerAiAdminIndexRoute
 }
@@ -4487,10 +4550,15 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerWebhooksRoute: AuthenticatedOwnerWebhooksRoute,
     AuthenticatedOwnerIndexRoute: AuthenticatedOwnerIndexRoute,
     AuthenticatedOwnerAiAdminAgentRoute: AuthenticatedOwnerAiAdminAgentRoute,
+    AuthenticatedOwnerAiAdminAutomationRoute:
+      AuthenticatedOwnerAiAdminAutomationRoute,
+    AuthenticatedOwnerAiAdminLogsRoute: AuthenticatedOwnerAiAdminLogsRoute,
     AuthenticatedOwnerAiAdminNotificationsRoute:
       AuthenticatedOwnerAiAdminNotificationsRoute,
     AuthenticatedOwnerAiAdminPermissionsRoute:
       AuthenticatedOwnerAiAdminPermissionsRoute,
+    AuthenticatedOwnerAiAdminSettingsRoute:
+      AuthenticatedOwnerAiAdminSettingsRoute,
     AuthenticatedOwnerAiAdminWhatsappRoute:
       AuthenticatedOwnerAiAdminWhatsappRoute,
     AuthenticatedOwnerAiAdminIndexRoute: AuthenticatedOwnerAiAdminIndexRoute,
