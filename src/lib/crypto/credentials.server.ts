@@ -6,10 +6,13 @@ import { createCipheriv, createDecipheriv, randomBytes, createHash } from "node:
 // One shared server-side encryption mechanism. The generic name is preferred;
 // the legacy payment-specific name stays supported so already-stored
 // credentials keep decrypting.
-const KEY_ENV_NAMES = ["CREDENTIALS_ENCRYPTION_KEY", "PAYMENT_CREDENTIALS_KEY"] as const;
-
 function keyMaterials(): Buffer[] {
-  const raws = KEY_ENV_NAMES.map((n) => process.env[n]).filter(
+  // Keep these as explicit reads. The production worker binds known secret
+  // names at request time and cannot reliably discover computed env keys.
+  const raws = [
+    process.env["CREDENTIALS_ENCRYPTION_KEY"],
+    process.env["PAYMENT_CREDENTIALS_KEY"],
+  ].filter(
     (v): v is string => typeof v === "string" && v.length > 0,
   );
   if (raws.length === 0) {
@@ -22,7 +25,9 @@ function keyMaterials(): Buffer[] {
 }
 
 function key(): Buffer {
-  return keyMaterials()[0]!;
+  const primary = keyMaterials()[0];
+  if (!primary) throw new Error("Credential encryption key is unavailable.");
+  return primary;
 }
 
 export function encryptJSON(obj: unknown): string {
