@@ -512,8 +512,7 @@ export const getAiAdminMessenger = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertOwner(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin
+    const { data } = await context.supabase
       .from("ai_admin_messenger_connections")
       .select(
         "status, page_id, page_name, verify_token, admin_psids, credentials_hint, last_verified_at, last_error, updated_at",
@@ -538,10 +537,9 @@ export const saveAiAdminMessenger = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { encryptJSON, decryptJSON } = await import("@/lib/crypto/credentials.server");
 
-    const { data: existing } = await supabaseAdmin
+    const { data: existing } = await context.supabase
       .from("ai_admin_messenger_connections")
       .select("id, credentials_enc")
       .eq("singleton", true)
@@ -564,8 +562,8 @@ export const saveAiAdminMessenger = createServerFn({ method: "POST" })
       credentials_hint: "••••" + creds.page_access_token.slice(-4),
       last_error: null,
     };
-    if (existing) await supabaseAdmin.from("ai_admin_messenger_connections").update(patch).eq("id", existing.id);
-    else await supabaseAdmin.from("ai_admin_messenger_connections").insert({ singleton: true, ...patch });
+    if (existing) await context.supabase.from("ai_admin_messenger_connections").update(patch).eq("id", existing.id);
+    else await context.supabase.from("ai_admin_messenger_connections").insert({ singleton: true, ...patch });
     return { ok: true };
   });
 
@@ -573,17 +571,16 @@ export const generateAiAdminMessengerToken = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertOwner(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { randomBytes } = await import("node:crypto");
     const token = `orzen_msgr_${randomBytes(24).toString("hex")}`;
-    const { data: existing } = await supabaseAdmin
+    const { data: existing } = await context.supabase
       .from("ai_admin_messenger_connections")
       .select("id")
       .eq("singleton", true)
       .maybeSingle();
     if (existing)
-      await supabaseAdmin.from("ai_admin_messenger_connections").update({ verify_token: token }).eq("id", existing.id);
-    else await supabaseAdmin.from("ai_admin_messenger_connections").insert({ singleton: true, verify_token: token });
+      await context.supabase.from("ai_admin_messenger_connections").update({ verify_token: token }).eq("id", existing.id);
+    else await context.supabase.from("ai_admin_messenger_connections").insert({ singleton: true, verify_token: token });
     return { ok: true, verify_token: token };
   });
 
@@ -591,9 +588,8 @@ export const verifyAiAdminMessenger = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertOwner(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { loadMessengerConnection, readMessengerCreds } = await import("@/lib/ai-admin/messenger.server");
-    const conn = await loadMessengerConnection();
+    const conn = await loadMessengerConnection(context.supabase);
     const creds = readMessengerCreds(conn);
     if (!conn || !creds?.page_access_token) throw new Error("Add credentials first.");
     const res = await fetch("https://graph.facebook.com/v20.0/me?fields=id,name", {
@@ -602,13 +598,13 @@ export const verifyAiAdminMessenger = createServerFn({ method: "POST" })
     const body = (await res.json().catch(() => ({}))) as any;
     if (!res.ok) {
       const msg = body?.error?.message || `HTTP ${res.status}`;
-      await supabaseAdmin
+      await context.supabase
         .from("ai_admin_messenger_connections")
         .update({ status: "error", last_error: String(msg).slice(0, 300) })
         .eq("id", conn.id);
       return { ok: false, error: String(msg) };
     }
-    await supabaseAdmin
+    await context.supabase
       .from("ai_admin_messenger_connections")
       .update({
         status: "connected",
@@ -638,8 +634,7 @@ export const disconnectAiAdminMessenger = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertOwner(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin
+    await context.supabase
       .from("ai_admin_messenger_connections")
       .update({
         status: "disconnected",
