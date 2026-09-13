@@ -83,6 +83,10 @@ export const Route = createFileRoute("/api/public/ai-admin/messenger-webhook")({
         }
 
         if (!settings?.agent_enabled) {
+          await sendAdminMessengerMessage(
+            psid,
+            "🔕 AI Admin is currently turned off. Enable it in Winner Admin → AI Admin Control → AI Agent.",
+          ).catch(() => {});
           if (messageId) {
             await supabaseAdmin
               .from("ai_admin_webhook_events")
