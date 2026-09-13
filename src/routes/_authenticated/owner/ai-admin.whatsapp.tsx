@@ -124,7 +124,33 @@ function Page() {
             </div>
             <div>
               <Label>Verify Token</Label>
-              <Input value={form.verify_token} onChange={(e) => setForm({ ...form, verify_token: e.target.value })} />
+              <div className="flex gap-2">
+                <Input value={form.verify_token} onChange={(e) => setForm({ ...form, verify_token: e.target.value })} />
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={busy === "gen"}
+                  onClick={async () => {
+                    setBusy("gen");
+                    try {
+                      const res = await generateToken();
+                      setForm((f) => ({ ...f, verify_token: res.verify_token }));
+                      qc.invalidateQueries({ queryKey: ["ai-admin"] });
+                      toast.success("New verify token generated and saved");
+                    } catch (e) {
+                      toast.error((e as Error).message);
+                    } finally {
+                      setBusy("");
+                    }
+                  }}
+                >
+                  <RefreshCw className="mr-1 h-4 w-4" /> Generate
+                </Button>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Generate creates and saves a new token instantly — paste this exact token in your Meta app's webhook
+                settings.
+              </p>
             </div>
             <div className="flex flex-wrap gap-2 pt-1">
               <Button
