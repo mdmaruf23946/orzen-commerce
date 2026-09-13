@@ -305,6 +305,54 @@ export type Database = {
           },
         ]
       }
+      ai_admin_messenger_connections: {
+        Row: {
+          admin_psids: string[]
+          created_at: string
+          credentials_enc: string | null
+          credentials_hint: string | null
+          id: string
+          last_error: string | null
+          last_verified_at: string | null
+          page_id: string | null
+          page_name: string | null
+          singleton: boolean
+          status: string
+          updated_at: string
+          verify_token: string | null
+        }
+        Insert: {
+          admin_psids?: string[]
+          created_at?: string
+          credentials_enc?: string | null
+          credentials_hint?: string | null
+          id?: string
+          last_error?: string | null
+          last_verified_at?: string | null
+          page_id?: string | null
+          page_name?: string | null
+          singleton?: boolean
+          status?: string
+          updated_at?: string
+          verify_token?: string | null
+        }
+        Update: {
+          admin_psids?: string[]
+          created_at?: string
+          credentials_enc?: string | null
+          credentials_hint?: string | null
+          id?: string
+          last_error?: string | null
+          last_verified_at?: string | null
+          page_id?: string | null
+          page_name?: string | null
+          singleton?: boolean
+          status?: string
+          updated_at?: string
+          verify_token?: string | null
+        }
+        Relationships: []
+      }
       ai_admin_notification_rules: {
         Row: {
           created_at: string
