@@ -38,10 +38,19 @@ export function decryptJSON<T = unknown>(stored: string): T {
   const iv = buf.subarray(0, 12);
   const tag = buf.subarray(12, 28);
   const ct = buf.subarray(28);
-  const decipher = createDecipheriv("aes-256-gcm", key(), iv);
-  decipher.setAuthTag(tag);
-  const plain = Buffer.concat([decipher.update(ct), decipher.final()]).toString("utf8");
-  return JSON.parse(plain) as T;
+  let lastError: unknown;
+  // Try every configured key so credentials stored under the legacy key still open.
+  for (const k of keyMaterials()) {
+    try {
+      const decipher = createDecipheriv("aes-256-gcm", k, iv);
+      decipher.setAuthTag(tag);
+      const plain = Buffer.concat([decipher.update(ct), decipher.final()]).toString("utf8");
+      return JSON.parse(plain) as T;
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Unable to decrypt stored credentials");
 }
 
 // Build a masked preview like "••••1234" from the most identifying credential
