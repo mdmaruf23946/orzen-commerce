@@ -3,13 +3,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, Copy, Plug, Send, XCircle } from "lucide-react";
+import { CheckCircle2, Copy, Plug, RefreshCw, Send, XCircle } from "lucide-react";
 import {
   getAiAdminConnection,
   saveAiAdminConnection,
   verifyAiAdminConnection,
   testAiAdminConnection,
   disconnectAiAdmin,
+  generateAiAdminVerifyToken,
 } from "@/lib/ai-admin.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
