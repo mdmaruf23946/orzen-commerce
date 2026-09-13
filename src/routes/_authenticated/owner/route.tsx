@@ -87,6 +87,7 @@ const groups: NavGroup[] = [
   { label: "AI Admin Control", links: [
     { to: "/owner/ai-admin", label: "Overview", icon: LayoutDashboard, exact: true },
     { to: "/owner/ai-admin/whatsapp", label: "WhatsApp Connection", icon: MessageCircle },
+    { to: "/owner/ai-admin/messenger", label: "Messenger Connection", icon: MessageCircle },
     { to: "/owner/ai-admin/agent", label: "AI Agent", icon: Bot },
     { to: "/owner/ai-admin/notifications", label: "Notifications", icon: Bell },
     { to: "/owner/ai-admin/permissions", label: "Commands & Permissions", icon: ShieldCheck },
