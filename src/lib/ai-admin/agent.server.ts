@@ -1,5 +1,5 @@
 // AI Admin agent: natural-language admin commands -> allow-listed tool actions.
-import { generateText, tool, stepCountIs, jsonSchema } from "ai";
+import { generateText, tool, stepCountIs } from "ai";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
@@ -243,6 +243,3 @@ export async function runAdminAgent(args: {
 
   return { reply: text?.trim() || "I could not produce a reply.", actions: executed };
 }
-
-// Referenced so the import stays meaningful if schemas move to raw JSON schema later.
-export const __jsonSchema = jsonSchema;

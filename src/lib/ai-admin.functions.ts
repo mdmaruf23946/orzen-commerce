@@ -450,7 +450,7 @@ export const decideAiAdminPending = createServerFn({ method: "POST" })
         channel: "console",
         actor: context.userId,
       });
-      return { ok: true, executed: false };
+      return { ok: true, executed: false, summary: pending.summary, result: "" };
     }
 
     const tool = TOOL_BY_KEY[pending.action_key];
