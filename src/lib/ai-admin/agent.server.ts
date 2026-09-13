@@ -27,7 +27,7 @@ type BuildArgs = {
   waId?: string | null;
   threadId?: string | null;
   actor: string;
-  channel: "whatsapp" | "console";
+  channel: "whatsapp" | "console" | "messenger";
 };
 
 /** Wrap the allow-listed action layer as AI SDK tools with permission + confirmation gating. */
@@ -117,7 +117,7 @@ export async function resolvePendingDecision(args: {
   threadId?: string | null;
   text: string;
   actor: string;
-  channel: "whatsapp" | "console";
+  channel: "whatsapp" | "console" | "messenger";
 }): Promise<string | null> {
   const text = args.text.trim();
   const isYes = YES.test(text);
@@ -203,7 +203,7 @@ export async function runAdminAgent(args: {
   waId?: string | null;
   threadId?: string | null;
   actor: string;
-  channel: "whatsapp" | "console";
+  channel: "whatsapp" | "console" | "messenger";
 }): Promise<AgentResult> {
   const decision = await resolvePendingDecision({
     waId: args.waId,
