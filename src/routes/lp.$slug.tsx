@@ -19,6 +19,7 @@ import { normalizePalette, themeTokens } from "@/lib/landing-theme";
 import { safeDesignCss } from "@/lib/landing-code";
 import { LP_BASE_CSS, wrapUserLayer } from "@/lib/landing-base-css";
 import { computeOfferPrices, normalizeOffer, offerIsUsable } from "@/lib/landing-offer";
+import { purchaseEventId, track } from "@/lib/fb-track";
 import { getLandingPreviewBySlug } from "@/lib/landing-builder.functions";
 import {
   lpImage, normalizeContent, normalizeDeliveryZones,
@@ -633,6 +634,21 @@ function OrderForm({
     e.preventDefault();
     setError("");
     setBusy(true);
+    const trackingItems = activeTier
+      ? activeTier.lines.map((line) => ({ id: line.productId, quantity: line.qty }))
+      : [{ id: page.product?.id ?? page.id, quantity: qty }];
+    track("InitiateCheckout", {
+      content_ids: trackingItems.map((item) => item.id),
+      contents: trackingItems,
+      num_items: trackingItems.reduce((sum, item) => sum + item.quantity, 0),
+      value: total,
+      currency: "BDT",
+    }, {
+      userData: {
+        email: values["email"] || undefined,
+        phone: values["phone"] || undefined,
+      },
+    });
     try {
       const res = await fetch("/api/public/lp/order", {
         method: "POST",
@@ -660,6 +676,23 @@ function OrderForm({
         order_id?: string | null;
       };
       if (!res.ok || !json.ok) throw new Error(json.error ?? "Order failed");
+      const orderId = json.order_id ?? json.invoice_no ?? `landing-${page.id}-${Date.now()}`;
+      track("Purchase", {
+        content_ids: trackingItems.map((item) => item.id),
+        contents: trackingItems,
+        num_items: trackingItems.reduce((sum, item) => sum + item.quantity, 0),
+        value: total,
+        currency: "BDT",
+        transaction_id: orderId,
+        order_id: json.order_id ?? undefined,
+      }, {
+        eventId: purchaseEventId(orderId),
+        userData: {
+          email: values["email"] || undefined,
+          phone: values["phone"] || undefined,
+          external_id: json.order_id ?? undefined,
+        },
+      });
       setDone({
         invoice: json.invoice_no ?? null,
         orderId: json.order_id ?? null,

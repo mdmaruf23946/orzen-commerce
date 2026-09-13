@@ -226,6 +226,7 @@ export const getLandingTracking = createServerFn({ method: "GET" })
       fb_pixel_id: fb.active && fb.pixel_id ? String(fb.pixel_id) : null,
       fb_server: !!(fb.active && fb.capi_token),
       google_tag_id: g.active && g.tag_id ? String(g.tag_id) : null,
+      google_server: !!(g.active && g.tag_id && ((store as any).marketing?.google?.ga4_api_secret)),
       tiktok_pixel_id: tt.active && tt.pixel_id ? String(tt.pixel_id) : null,
       tiktok_server: !!(tt.active && tt.access_token),
     };
