@@ -1,12 +1,28 @@
-// Server-only AES-256-GCM helpers for encrypting store payment credentials.
+// Server-only AES-256-GCM helpers for encrypting every kind of sensitive
+// credential (payments, WhatsApp, Messenger, notification providers).
 // Never import from client-reachable modules at module scope.
 import { createCipheriv, createDecipheriv, randomBytes, createHash } from "node:crypto";
 
-function key(): Buffer {
-  const raw = process.env.PAYMENT_CREDENTIALS_KEY;
-  if (!raw) throw new Error("PAYMENT_CREDENTIALS_KEY is not set");
+// One shared server-side encryption mechanism. The generic name is preferred;
+// the legacy payment-specific name stays supported so already-stored
+// credentials keep decrypting.
+const KEY_ENV_NAMES = ["CREDENTIALS_ENCRYPTION_KEY", "PAYMENT_CREDENTIALS_KEY"] as const;
+
+function keyMaterials(): Buffer[] {
+  const raws = KEY_ENV_NAMES.map((n) => process.env[n]).filter(
+    (v): v is string => typeof v === "string" && v.length > 0,
+  );
+  if (raws.length === 0) {
+    throw new Error(
+      "Credential encryption key is not configured on the server. Set CREDENTIALS_ENCRYPTION_KEY.",
+    );
+  }
   // Derive a stable 32-byte key regardless of the source length/encoding.
-  return createHash("sha256").update(raw).digest();
+  return raws.map((raw) => createHash("sha256").update(raw).digest());
+}
+
+function key(): Buffer {
+  return keyMaterials()[0]!;
 }
 
 export function encryptJSON(obj: unknown): string {
@@ -22,10 +38,19 @@ export function decryptJSON<T = unknown>(stored: string): T {
   const iv = buf.subarray(0, 12);
   const tag = buf.subarray(12, 28);
   const ct = buf.subarray(28);
-  const decipher = createDecipheriv("aes-256-gcm", key(), iv);
-  decipher.setAuthTag(tag);
-  const plain = Buffer.concat([decipher.update(ct), decipher.final()]).toString("utf8");
-  return JSON.parse(plain) as T;
+  let lastError: unknown;
+  // Try every configured key so credentials stored under the legacy key still open.
+  for (const k of keyMaterials()) {
+    try {
+      const decipher = createDecipheriv("aes-256-gcm", k, iv);
+      decipher.setAuthTag(tag);
+      const plain = Buffer.concat([decipher.update(ct), decipher.final()]).toString("utf8");
+      return JSON.parse(plain) as T;
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Unable to decrypt stored credentials");
 }
 
 // Build a masked preview like "••••1234" from the most identifying credential
