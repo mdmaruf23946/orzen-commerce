@@ -151,6 +151,7 @@ import { Route as AuthenticatedAdminBillingRouteRouteImport } from './routes/_au
 import { Route as AuthenticatedOwnerSubscriptionPayIndexRouteImport } from './routes/_authenticated/owner/subscription-pay.index'
 import { Route as AuthenticatedOwnerNotificationCenterIndexRouteImport } from './routes/_authenticated/owner/notification-center.index'
 import { Route as AuthenticatedOwnerCommunicationIndexRouteImport } from './routes/_authenticated/owner/communication.index'
+import { Route as AuthenticatedOwnerAiAdminIndexRouteImport } from './routes/_authenticated/owner/ai-admin.index'
 import { Route as AuthenticatedAdminSettingsIndexRouteImport } from './routes/_authenticated/admin/settings.index'
 import { Route as AuthenticatedAdminLandingPagesIndexRouteImport } from './routes/_authenticated/admin/landing-pages.index'
 import { Route as AuthenticatedAdminLandingBuilderIndexRouteImport } from './routes/_authenticated/admin/landing-builder.index'
@@ -1005,6 +1006,12 @@ const AuthenticatedOwnerCommunicationIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedOwnerCommunicationRouteRoute,
   } as any)
+const AuthenticatedOwnerAiAdminIndexRoute =
+  AuthenticatedOwnerAiAdminIndexRouteImport.update({
+    id: '/ai-admin/',
+    path: '/ai-admin/',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
 const AuthenticatedAdminSettingsIndexRoute =
   AuthenticatedAdminSettingsIndexRouteImport.update({
     id: '/',
@@ -1527,6 +1534,7 @@ export interface FileRoutesByFullPath {
   '/admin/landing-builder/': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/admin/settings/': typeof AuthenticatedAdminSettingsIndexRoute
+  '/owner/ai-admin/': typeof AuthenticatedOwnerAiAdminIndexRoute
   '/owner/communication/': typeof AuthenticatedOwnerCommunicationIndexRoute
   '/owner/notification-center/': typeof AuthenticatedOwnerNotificationCenterIndexRoute
   '/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
@@ -1719,6 +1727,7 @@ export interface FileRoutesByTo {
   '/admin/landing-builder': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/admin/landing-pages': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsIndexRoute
+  '/owner/ai-admin': typeof AuthenticatedOwnerAiAdminIndexRoute
   '/owner/communication': typeof AuthenticatedOwnerCommunicationIndexRoute
   '/owner/notification-center': typeof AuthenticatedOwnerNotificationCenterIndexRoute
   '/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
@@ -1922,6 +1931,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/landing-builder/': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/_authenticated/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/_authenticated/admin/settings/': typeof AuthenticatedAdminSettingsIndexRoute
+  '/_authenticated/owner/ai-admin/': typeof AuthenticatedOwnerAiAdminIndexRoute
   '/_authenticated/owner/communication/': typeof AuthenticatedOwnerCommunicationIndexRoute
   '/_authenticated/owner/notification-center/': typeof AuthenticatedOwnerNotificationCenterIndexRoute
   '/_authenticated/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
@@ -2125,6 +2135,7 @@ export interface FileRouteTypes {
     | '/admin/landing-builder/'
     | '/admin/landing-pages/'
     | '/admin/settings/'
+    | '/owner/ai-admin/'
     | '/owner/communication/'
     | '/owner/notification-center/'
     | '/owner/subscription-pay/'
@@ -2317,6 +2328,7 @@ export interface FileRouteTypes {
     | '/admin/landing-builder'
     | '/admin/landing-pages'
     | '/admin/settings'
+    | '/owner/ai-admin'
     | '/owner/communication'
     | '/owner/notification-center'
     | '/owner/subscription-pay'
@@ -2519,6 +2531,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/landing-builder/'
     | '/_authenticated/admin/landing-pages/'
     | '/_authenticated/admin/settings/'
+    | '/_authenticated/owner/ai-admin/'
     | '/_authenticated/owner/communication/'
     | '/_authenticated/owner/notification-center/'
     | '/_authenticated/owner/subscription-pay/'
@@ -3582,6 +3595,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerCommunicationIndexRouteImport
       parentRoute: typeof AuthenticatedOwnerCommunicationRouteRoute
     }
+    '/_authenticated/owner/ai-admin/': {
+      id: '/_authenticated/owner/ai-admin/'
+      path: '/ai-admin'
+      fullPath: '/owner/ai-admin/'
+      preLoaderRoute: typeof AuthenticatedOwnerAiAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
     '/_authenticated/admin/settings/': {
       id: '/_authenticated/admin/settings/'
       path: '/'
@@ -4325,6 +4345,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerUsersRoute: typeof AuthenticatedOwnerUsersRoute
   AuthenticatedOwnerWebhooksRoute: typeof AuthenticatedOwnerWebhooksRoute
   AuthenticatedOwnerIndexRoute: typeof AuthenticatedOwnerIndexRoute
+  AuthenticatedOwnerAiAdminIndexRoute: typeof AuthenticatedOwnerAiAdminIndexRoute
 }
 
 const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren =
@@ -4381,6 +4402,7 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerUsersRoute: AuthenticatedOwnerUsersRoute,
     AuthenticatedOwnerWebhooksRoute: AuthenticatedOwnerWebhooksRoute,
     AuthenticatedOwnerIndexRoute: AuthenticatedOwnerIndexRoute,
+    AuthenticatedOwnerAiAdminIndexRoute: AuthenticatedOwnerAiAdminIndexRoute,
   }
 
 const AuthenticatedOwnerRouteRouteWithChildren =
