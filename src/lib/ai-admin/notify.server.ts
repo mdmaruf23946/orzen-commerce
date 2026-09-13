@@ -35,12 +35,21 @@ export async function notifyAdminEvent(
       loadConnection(),
     ]);
     if (!rule || !rule.enabled) return { sent: false, reason: "Notification disabled" };
-    if (!conn || conn.status !== "connected") return { sent: false, reason: "WhatsApp not connected" };
+
+    const { loadMessengerConnection, sendAdminMessengerMessage } = await import("./messenger.server");
+    const messenger = await loadMessengerConnection();
+
+    const whatsappLive = conn?.status === "connected";
+    const messengerLive = messenger?.status === "connected";
+    if (!whatsappLive && !messengerLive) return { sent: false, reason: "No channel connected" };
 
     const recipients = rule.recipient
       ? [rule.recipient]
       : ((settings?.admin_numbers as string[] | null) ?? []);
-    if (recipients.length === 0) return { sent: false, reason: "No admin number configured" };
+    const psids = messengerLive ? (messenger?.admin_psids ?? []) : [];
+    if (recipients.length === 0 && psids.length === 0) {
+      return { sent: false, reason: "No admin recipient configured" };
+    }
 
     const body = render(rule.template || "{{message}}", {
       time: new Date().toLocaleString("en-GB", { timeZone: "Asia/Dhaka" }),
@@ -48,10 +57,22 @@ export async function notifyAdminEvent(
     });
     const text = opts?.test ? `🧪 TEST EVENT\n\n${body}` : body;
 
-    for (const to of recipients) {
-      await sendAdminMessage(to, text);
+    let sent = false;
+    if (whatsappLive) {
+      for (const to of recipients) {
+        await sendAdminMessage(to, text);
+        sent = true;
+      }
     }
-    return { sent: true };
+    for (const psid of psids) {
+      try {
+        await sendAdminMessengerMessage(psid, text);
+        sent = true;
+      } catch {
+        /* messenger delivery is best effort */
+      }
+    }
+    return sent ? { sent: true } : { sent: false, reason: "No admin recipient configured" };
   } catch (e) {
     return { sent: false, reason: e instanceof Error ? e.message : String(e) };
   }
