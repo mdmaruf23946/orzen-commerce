@@ -314,7 +314,11 @@ export const TOOLS: ToolDef[] = [
         .maybeSingle();
       if (!pay) throw new Error(`No pending payment for ${s.name}.`);
       await sb.from("payments").update({ status: "paid", verified_at: new Date().toISOString() }).eq("id", pay.id);
-      const patch: Record<string, unknown> = { subscription_status: "active" };
+      const patch: {
+        subscription_status: string;
+        package_id?: string;
+        expires_at?: string;
+      } = { subscription_status: "active" };
       if (pay.package_id) {
         const { data: pkg } = await sb
           .from("subscription_packages")
