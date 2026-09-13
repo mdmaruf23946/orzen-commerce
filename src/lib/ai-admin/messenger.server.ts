@@ -18,8 +18,9 @@ export type AdminMessengerConnection = {
   last_error: string | null;
 };
 
-export async function loadMessengerConnection(): Promise<AdminMessengerConnection | null> {
-  const { data } = await supabaseAdmin
+export async function loadMessengerConnection(client?: any): Promise<AdminMessengerConnection | null> {
+  const db = client ?? supabaseAdmin;
+  const { data } = await db
     .from("ai_admin_messenger_connections")
     .select("*")
     .eq("singleton", true)
