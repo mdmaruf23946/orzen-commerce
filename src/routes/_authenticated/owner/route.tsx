@@ -84,6 +84,16 @@ const groups: NavGroup[] = [
     { to: "/owner/logs", label: "Login Logs", icon: FileText },
     { to: "/owner/backups", label: "Backups", icon: HardDrive },
   ]},
+  { label: "AI Admin Control", links: [
+    { to: "/owner/ai-admin", label: "Overview", icon: LayoutDashboard, exact: true },
+    { to: "/owner/ai-admin/whatsapp", label: "WhatsApp Connection", icon: MessageCircle },
+    { to: "/owner/ai-admin/agent", label: "AI Agent", icon: Bot },
+    { to: "/owner/ai-admin/notifications", label: "Notifications", icon: Bell },
+    { to: "/owner/ai-admin/permissions", label: "Commands & Permissions", icon: ShieldCheck },
+    { to: "/owner/ai-admin/automation", label: "Automation", icon: ToggleLeft },
+    { to: "/owner/ai-admin/logs", label: "Activity Logs", icon: FileText },
+    { to: "/owner/ai-admin/settings", label: "Settings", icon: Settings },
+  ]},
   { label: "Developer", links: [
     { to: "/owner/api", label: "API Keys", icon: KeyRound },
     { to: "/owner/webhooks", label: "Webhooks", icon: Webhook },
