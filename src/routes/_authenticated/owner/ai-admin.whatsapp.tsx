@@ -27,6 +27,7 @@ function Page() {
   const verify = useServerFn(verifyAiAdminConnection);
   const test = useServerFn(testAiAdminConnection);
   const disconnect = useServerFn(disconnectAiAdmin);
+  const generateToken = useServerFn(generateAiAdminVerifyToken);
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["ai-admin", "connection"], queryFn: () => get() });
 
