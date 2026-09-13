@@ -22,6 +22,9 @@ import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/owner/ai-admin/messenger")({ component: Page });
 
+const MESSENGER_WEBHOOK_URL =
+  "https://orzen-commerce.lovable.app/api/public/ai-admin/messenger-webhook";
+
 function Page() {
   const get = useServerFn(getAiAdminMessenger);
   const save = useServerFn(saveAiAdminMessenger);
@@ -52,10 +55,6 @@ function Page() {
     setPsids((data.admin_psids ?? []).join("\n"));
   }, [data]);
 
-  const webhookUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/api/public/ai-admin/messenger-webhook`
-      : "/api/public/ai-admin/messenger-webhook";
   const connected = data?.status === "connected";
 
   async function run(key: string, fn: () => Promise<any>, ok: string) {
@@ -206,12 +205,12 @@ function Page() {
               <div>
                 <Label>Callback URL</Label>
                 <div className="flex gap-2">
-                  <Input readOnly value={webhookUrl} />
+                  <Input readOnly value={MESSENGER_WEBHOOK_URL} />
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={() => {
-                      navigator.clipboard.writeText(webhookUrl);
+                      navigator.clipboard.writeText(MESSENGER_WEBHOOK_URL);
                       toast.success("Copied");
                     }}
                   >
@@ -220,8 +219,9 @@ function Page() {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Paste this URL and your Verify Token into the Messenger product webhook settings of your Meta app, then
-                subscribe the page to the <b>messages</b> and <b>messaging_postbacks</b> fields.
+                Use this exact permanent callback URL, not the custom domain. Paste it with your Verify Token into the
+                Messenger product webhook settings of your Meta app, then subscribe the page to the <b>messages</b> and
+                <b> messaging_postbacks</b> fields.
               </p>
             </CardContent>
           </Card>
