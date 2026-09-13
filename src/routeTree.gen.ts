@@ -178,6 +178,7 @@ import { Route as ApiPublicCronDomainIdleRouteImport } from './routes/api/public
 import { Route as ApiPublicCronAiCallsRouteImport } from './routes/api/public/cron/ai-calls'
 import { Route as ApiPublicAiCallsWebhookRouteImport } from './routes/api/public/ai-calls/webhook'
 import { Route as ApiPublicAiCallsToolRouteImport } from './routes/api/public/ai-calls/tool'
+import { Route as ApiPublicAiAdminWebhookRouteImport } from './routes/api/public/ai-admin/webhook'
 import { Route as AuthenticatedOwnerSubscriptionPayProvidersRouteImport } from './routes/_authenticated/owner/subscription-pay.providers'
 import { Route as AuthenticatedOwnerNotificationCenterTemplatesRouteImport } from './routes/_authenticated/owner/notification-center.templates'
 import { Route as AuthenticatedOwnerNotificationCenterComposeRouteImport } from './routes/_authenticated/owner/notification-center.compose'
@@ -1152,6 +1153,11 @@ const ApiPublicAiCallsToolRoute = ApiPublicAiCallsToolRouteImport.update({
   path: '/api/public/ai-calls/tool',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAiAdminWebhookRoute = ApiPublicAiAdminWebhookRouteImport.update({
+  id: '/api/public/ai-admin/webhook',
+  path: '/api/public/ai-admin/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedOwnerSubscriptionPayProvidersRoute =
   AuthenticatedOwnerSubscriptionPayProvidersRouteImport.update({
     id: '/providers',
@@ -1493,6 +1499,7 @@ export interface FileRoutesByFullPath {
   '/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
   '/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/ai-admin/webhook': typeof ApiPublicAiAdminWebhookRoute
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
   '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
@@ -1684,6 +1691,7 @@ export interface FileRoutesByTo {
   '/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
   '/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/ai-admin/webhook': typeof ApiPublicAiAdminWebhookRoute
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
   '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
@@ -1886,6 +1894,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
   '/_authenticated/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/_authenticated/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/ai-admin/webhook': typeof ApiPublicAiAdminWebhookRoute
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
   '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
@@ -2088,6 +2097,7 @@ export interface FileRouteTypes {
     | '/owner/notification-center/compose'
     | '/owner/notification-center/templates'
     | '/owner/subscription-pay/providers'
+    | '/api/public/ai-admin/webhook'
     | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
     | '/api/public/cron/ai-calls'
@@ -2279,6 +2289,7 @@ export interface FileRouteTypes {
     | '/owner/notification-center/compose'
     | '/owner/notification-center/templates'
     | '/owner/subscription-pay/providers'
+    | '/api/public/ai-admin/webhook'
     | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
     | '/api/public/cron/ai-calls'
@@ -2480,6 +2491,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/notification-center/compose'
     | '/_authenticated/owner/notification-center/templates'
     | '/_authenticated/owner/subscription-pay/providers'
+    | '/api/public/ai-admin/webhook'
     | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
     | '/api/public/cron/ai-calls'
@@ -2548,6 +2560,7 @@ export interface RootRouteChildren {
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiImgSplatRoute: typeof ApiImgSplatRoute
   ApiPublicVersionRoute: typeof ApiPublicVersionRoute
+  ApiPublicAiAdminWebhookRoute: typeof ApiPublicAiAdminWebhookRoute
   ApiPublicAiCallsToolRoute: typeof ApiPublicAiCallsToolRoute
   ApiPublicAiCallsWebhookRoute: typeof ApiPublicAiCallsWebhookRoute
   ApiPublicCronAiCallsRoute: typeof ApiPublicCronAiCallsRoute
@@ -3758,6 +3771,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicAiCallsToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/ai-admin/webhook': {
+      id: '/api/public/ai-admin/webhook'
+      path: '/api/public/ai-admin/webhook'
+      fullPath: '/api/public/ai-admin/webhook'
+      preLoaderRoute: typeof ApiPublicAiAdminWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/owner/subscription-pay/providers': {
       id: '/_authenticated/owner/subscription-pay/providers'
       path: '/providers'
@@ -4472,6 +4492,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiChatRoute: ApiAiChatRoute,
   ApiImgSplatRoute: ApiImgSplatRoute,
   ApiPublicVersionRoute: ApiPublicVersionRoute,
+  ApiPublicAiAdminWebhookRoute: ApiPublicAiAdminWebhookRoute,
   ApiPublicAiCallsToolRoute: ApiPublicAiCallsToolRoute,
   ApiPublicAiCallsWebhookRoute: ApiPublicAiCallsWebhookRoute,
   ApiPublicCronAiCallsRoute: ApiPublicCronAiCallsRoute,
