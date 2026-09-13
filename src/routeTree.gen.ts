@@ -151,6 +151,7 @@ import { Route as AuthenticatedAdminBillingRouteRouteImport } from './routes/_au
 import { Route as AuthenticatedOwnerSubscriptionPayIndexRouteImport } from './routes/_authenticated/owner/subscription-pay.index'
 import { Route as AuthenticatedOwnerNotificationCenterIndexRouteImport } from './routes/_authenticated/owner/notification-center.index'
 import { Route as AuthenticatedOwnerCommunicationIndexRouteImport } from './routes/_authenticated/owner/communication.index'
+import { Route as AuthenticatedOwnerAiAdminIndexRouteImport } from './routes/_authenticated/owner/ai-admin.index'
 import { Route as AuthenticatedAdminSettingsIndexRouteImport } from './routes/_authenticated/admin/settings.index'
 import { Route as AuthenticatedAdminLandingPagesIndexRouteImport } from './routes/_authenticated/admin/landing-pages.index'
 import { Route as AuthenticatedAdminLandingBuilderIndexRouteImport } from './routes/_authenticated/admin/landing-builder.index'
@@ -178,6 +179,7 @@ import { Route as ApiPublicCronDomainIdleRouteImport } from './routes/api/public
 import { Route as ApiPublicCronAiCallsRouteImport } from './routes/api/public/cron/ai-calls'
 import { Route as ApiPublicAiCallsWebhookRouteImport } from './routes/api/public/ai-calls/webhook'
 import { Route as ApiPublicAiCallsToolRouteImport } from './routes/api/public/ai-calls/tool'
+import { Route as ApiPublicAiAdminWebhookRouteImport } from './routes/api/public/ai-admin/webhook'
 import { Route as AuthenticatedOwnerSubscriptionPayProvidersRouteImport } from './routes/_authenticated/owner/subscription-pay.providers'
 import { Route as AuthenticatedOwnerNotificationCenterTemplatesRouteImport } from './routes/_authenticated/owner/notification-center.templates'
 import { Route as AuthenticatedOwnerNotificationCenterComposeRouteImport } from './routes/_authenticated/owner/notification-center.compose'
@@ -186,6 +188,7 @@ import { Route as AuthenticatedOwnerCommunicationTemplatesRouteImport } from './
 import { Route as AuthenticatedOwnerCommunicationHistoryRouteImport } from './routes/_authenticated/owner/communication.history'
 import { Route as AuthenticatedOwnerCommunicationGmailRouteImport } from './routes/_authenticated/owner/communication.gmail'
 import { Route as AuthenticatedOwnerCommunicationComposeRouteImport } from './routes/_authenticated/owner/communication.compose'
+import { Route as AuthenticatedOwnerAiAdminWhatsappRouteImport } from './routes/_authenticated/owner/ai-admin.whatsapp'
 import { Route as AuthenticatedAdminSettingsWorkflowRouteImport } from './routes/_authenticated/admin/settings.workflow'
 import { Route as AuthenticatedAdminSettingsSubscriptionRouteImport } from './routes/_authenticated/admin/settings.subscription'
 import { Route as AuthenticatedAdminSettingsInformationRouteImport } from './routes/_authenticated/admin/settings.information'
@@ -1004,6 +1007,12 @@ const AuthenticatedOwnerCommunicationIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedOwnerCommunicationRouteRoute,
   } as any)
+const AuthenticatedOwnerAiAdminIndexRoute =
+  AuthenticatedOwnerAiAdminIndexRouteImport.update({
+    id: '/ai-admin/',
+    path: '/ai-admin/',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
 const AuthenticatedAdminSettingsIndexRoute =
   AuthenticatedAdminSettingsIndexRouteImport.update({
     id: '/',
@@ -1152,6 +1161,11 @@ const ApiPublicAiCallsToolRoute = ApiPublicAiCallsToolRouteImport.update({
   path: '/api/public/ai-calls/tool',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAiAdminWebhookRoute = ApiPublicAiAdminWebhookRouteImport.update({
+  id: '/api/public/ai-admin/webhook',
+  path: '/api/public/ai-admin/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedOwnerSubscriptionPayProvidersRoute =
   AuthenticatedOwnerSubscriptionPayProvidersRouteImport.update({
     id: '/providers',
@@ -1199,6 +1213,12 @@ const AuthenticatedOwnerCommunicationComposeRoute =
     id: '/compose',
     path: '/compose',
     getParentRoute: () => AuthenticatedOwnerCommunicationRouteRoute,
+  } as any)
+const AuthenticatedOwnerAiAdminWhatsappRoute =
+  AuthenticatedOwnerAiAdminWhatsappRouteImport.update({
+    id: '/ai-admin/whatsapp',
+    path: '/ai-admin/whatsapp',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
 const AuthenticatedAdminSettingsWorkflowRoute =
   AuthenticatedAdminSettingsWorkflowRouteImport.update({
@@ -1485,6 +1505,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
   '/admin/settings/subscription': typeof AuthenticatedAdminSettingsSubscriptionRoute
   '/admin/settings/workflow': typeof AuthenticatedAdminSettingsWorkflowRoute
+  '/owner/ai-admin/whatsapp': typeof AuthenticatedOwnerAiAdminWhatsappRoute
   '/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
   '/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
   '/owner/communication/history': typeof AuthenticatedOwnerCommunicationHistoryRouteWithChildren
@@ -1493,6 +1514,7 @@ export interface FileRoutesByFullPath {
   '/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
   '/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/ai-admin/webhook': typeof ApiPublicAiAdminWebhookRoute
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
   '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
@@ -1520,6 +1542,7 @@ export interface FileRoutesByFullPath {
   '/admin/landing-builder/': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/admin/settings/': typeof AuthenticatedAdminSettingsIndexRoute
+  '/owner/ai-admin/': typeof AuthenticatedOwnerAiAdminIndexRoute
   '/owner/communication/': typeof AuthenticatedOwnerCommunicationIndexRoute
   '/owner/notification-center/': typeof AuthenticatedOwnerNotificationCenterIndexRoute
   '/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
@@ -1676,6 +1699,7 @@ export interface FileRoutesByTo {
   '/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
   '/admin/settings/subscription': typeof AuthenticatedAdminSettingsSubscriptionRoute
   '/admin/settings/workflow': typeof AuthenticatedAdminSettingsWorkflowRoute
+  '/owner/ai-admin/whatsapp': typeof AuthenticatedOwnerAiAdminWhatsappRoute
   '/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
   '/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
   '/owner/communication/history': typeof AuthenticatedOwnerCommunicationHistoryRouteWithChildren
@@ -1684,6 +1708,7 @@ export interface FileRoutesByTo {
   '/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
   '/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/ai-admin/webhook': typeof ApiPublicAiAdminWebhookRoute
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
   '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
@@ -1711,6 +1736,7 @@ export interface FileRoutesByTo {
   '/admin/landing-builder': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/admin/landing-pages': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsIndexRoute
+  '/owner/ai-admin': typeof AuthenticatedOwnerAiAdminIndexRoute
   '/owner/communication': typeof AuthenticatedOwnerCommunicationIndexRoute
   '/owner/notification-center': typeof AuthenticatedOwnerNotificationCenterIndexRoute
   '/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
@@ -1878,6 +1904,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
   '/_authenticated/admin/settings/subscription': typeof AuthenticatedAdminSettingsSubscriptionRoute
   '/_authenticated/admin/settings/workflow': typeof AuthenticatedAdminSettingsWorkflowRoute
+  '/_authenticated/owner/ai-admin/whatsapp': typeof AuthenticatedOwnerAiAdminWhatsappRoute
   '/_authenticated/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
   '/_authenticated/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
   '/_authenticated/owner/communication/history': typeof AuthenticatedOwnerCommunicationHistoryRouteWithChildren
@@ -1886,6 +1913,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
   '/_authenticated/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
   '/_authenticated/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/public/ai-admin/webhook': typeof ApiPublicAiAdminWebhookRoute
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
   '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
@@ -1913,6 +1941,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/landing-builder/': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/_authenticated/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/_authenticated/admin/settings/': typeof AuthenticatedAdminSettingsIndexRoute
+  '/_authenticated/owner/ai-admin/': typeof AuthenticatedOwnerAiAdminIndexRoute
   '/_authenticated/owner/communication/': typeof AuthenticatedOwnerCommunicationIndexRoute
   '/_authenticated/owner/notification-center/': typeof AuthenticatedOwnerNotificationCenterIndexRoute
   '/_authenticated/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
@@ -2080,6 +2109,7 @@ export interface FileRouteTypes {
     | '/admin/settings/information'
     | '/admin/settings/subscription'
     | '/admin/settings/workflow'
+    | '/owner/ai-admin/whatsapp'
     | '/owner/communication/compose'
     | '/owner/communication/gmail'
     | '/owner/communication/history'
@@ -2088,6 +2118,7 @@ export interface FileRouteTypes {
     | '/owner/notification-center/compose'
     | '/owner/notification-center/templates'
     | '/owner/subscription-pay/providers'
+    | '/api/public/ai-admin/webhook'
     | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
     | '/api/public/cron/ai-calls'
@@ -2115,6 +2146,7 @@ export interface FileRouteTypes {
     | '/admin/landing-builder/'
     | '/admin/landing-pages/'
     | '/admin/settings/'
+    | '/owner/ai-admin/'
     | '/owner/communication/'
     | '/owner/notification-center/'
     | '/owner/subscription-pay/'
@@ -2271,6 +2303,7 @@ export interface FileRouteTypes {
     | '/admin/settings/information'
     | '/admin/settings/subscription'
     | '/admin/settings/workflow'
+    | '/owner/ai-admin/whatsapp'
     | '/owner/communication/compose'
     | '/owner/communication/gmail'
     | '/owner/communication/history'
@@ -2279,6 +2312,7 @@ export interface FileRouteTypes {
     | '/owner/notification-center/compose'
     | '/owner/notification-center/templates'
     | '/owner/subscription-pay/providers'
+    | '/api/public/ai-admin/webhook'
     | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
     | '/api/public/cron/ai-calls'
@@ -2306,6 +2340,7 @@ export interface FileRouteTypes {
     | '/admin/landing-builder'
     | '/admin/landing-pages'
     | '/admin/settings'
+    | '/owner/ai-admin'
     | '/owner/communication'
     | '/owner/notification-center'
     | '/owner/subscription-pay'
@@ -2472,6 +2507,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/settings/information'
     | '/_authenticated/admin/settings/subscription'
     | '/_authenticated/admin/settings/workflow'
+    | '/_authenticated/owner/ai-admin/whatsapp'
     | '/_authenticated/owner/communication/compose'
     | '/_authenticated/owner/communication/gmail'
     | '/_authenticated/owner/communication/history'
@@ -2480,6 +2516,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/notification-center/compose'
     | '/_authenticated/owner/notification-center/templates'
     | '/_authenticated/owner/subscription-pay/providers'
+    | '/api/public/ai-admin/webhook'
     | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
     | '/api/public/cron/ai-calls'
@@ -2507,6 +2544,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/landing-builder/'
     | '/_authenticated/admin/landing-pages/'
     | '/_authenticated/admin/settings/'
+    | '/_authenticated/owner/ai-admin/'
     | '/_authenticated/owner/communication/'
     | '/_authenticated/owner/notification-center/'
     | '/_authenticated/owner/subscription-pay/'
@@ -2548,6 +2586,7 @@ export interface RootRouteChildren {
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiImgSplatRoute: typeof ApiImgSplatRoute
   ApiPublicVersionRoute: typeof ApiPublicVersionRoute
+  ApiPublicAiAdminWebhookRoute: typeof ApiPublicAiAdminWebhookRoute
   ApiPublicAiCallsToolRoute: typeof ApiPublicAiCallsToolRoute
   ApiPublicAiCallsWebhookRoute: typeof ApiPublicAiCallsWebhookRoute
   ApiPublicCronAiCallsRoute: typeof ApiPublicCronAiCallsRoute
@@ -3569,6 +3608,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerCommunicationIndexRouteImport
       parentRoute: typeof AuthenticatedOwnerCommunicationRouteRoute
     }
+    '/_authenticated/owner/ai-admin/': {
+      id: '/_authenticated/owner/ai-admin/'
+      path: '/ai-admin'
+      fullPath: '/owner/ai-admin/'
+      preLoaderRoute: typeof AuthenticatedOwnerAiAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
     '/_authenticated/admin/settings/': {
       id: '/_authenticated/admin/settings/'
       path: '/'
@@ -3758,6 +3804,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicAiCallsToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/ai-admin/webhook': {
+      id: '/api/public/ai-admin/webhook'
+      path: '/api/public/ai-admin/webhook'
+      fullPath: '/api/public/ai-admin/webhook'
+      preLoaderRoute: typeof ApiPublicAiAdminWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/owner/subscription-pay/providers': {
       id: '/_authenticated/owner/subscription-pay/providers'
       path: '/providers'
@@ -3813,6 +3866,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/owner/communication/compose'
       preLoaderRoute: typeof AuthenticatedOwnerCommunicationComposeRouteImport
       parentRoute: typeof AuthenticatedOwnerCommunicationRouteRoute
+    }
+    '/_authenticated/owner/ai-admin/whatsapp': {
+      id: '/_authenticated/owner/ai-admin/whatsapp'
+      path: '/ai-admin/whatsapp'
+      fullPath: '/owner/ai-admin/whatsapp'
+      preLoaderRoute: typeof AuthenticatedOwnerAiAdminWhatsappRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/admin/settings/workflow': {
       id: '/_authenticated/admin/settings/workflow'
@@ -4305,6 +4365,8 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerUsersRoute: typeof AuthenticatedOwnerUsersRoute
   AuthenticatedOwnerWebhooksRoute: typeof AuthenticatedOwnerWebhooksRoute
   AuthenticatedOwnerIndexRoute: typeof AuthenticatedOwnerIndexRoute
+  AuthenticatedOwnerAiAdminWhatsappRoute: typeof AuthenticatedOwnerAiAdminWhatsappRoute
+  AuthenticatedOwnerAiAdminIndexRoute: typeof AuthenticatedOwnerAiAdminIndexRoute
 }
 
 const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren =
@@ -4361,6 +4423,9 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerUsersRoute: AuthenticatedOwnerUsersRoute,
     AuthenticatedOwnerWebhooksRoute: AuthenticatedOwnerWebhooksRoute,
     AuthenticatedOwnerIndexRoute: AuthenticatedOwnerIndexRoute,
+    AuthenticatedOwnerAiAdminWhatsappRoute:
+      AuthenticatedOwnerAiAdminWhatsappRoute,
+    AuthenticatedOwnerAiAdminIndexRoute: AuthenticatedOwnerAiAdminIndexRoute,
   }
 
 const AuthenticatedOwnerRouteRouteWithChildren =
@@ -4472,6 +4537,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiChatRoute: ApiAiChatRoute,
   ApiImgSplatRoute: ApiImgSplatRoute,
   ApiPublicVersionRoute: ApiPublicVersionRoute,
+  ApiPublicAiAdminWebhookRoute: ApiPublicAiAdminWebhookRoute,
   ApiPublicAiCallsToolRoute: ApiPublicAiCallsToolRoute,
   ApiPublicAiCallsWebhookRoute: ApiPublicAiCallsWebhookRoute,
   ApiPublicCronAiCallsRoute: ApiPublicCronAiCallsRoute,

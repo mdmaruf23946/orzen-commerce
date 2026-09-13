@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Store as StoreIcon, Package, LogOut, Menu, ArrowLeft, ShieldCheck,
   Sparkles, Wallet, Users, CreditCard, Activity, Truck, Megaphone, ToggleLeft, Settings,
   UserCog, BarChart3, LifeBuoy, Bell, FileText, KeyRound, Webhook, Terminal, HardDrive,
-  ChevronDown, ChevronRight, Globe, Palette, PhoneCall, Star,
+  ChevronDown, ChevronRight, Globe, Palette, PhoneCall, Star, MessageCircle, Bot,
 } from "lucide-react";
 import { amIOwner } from "@/lib/owner.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -83,6 +83,16 @@ const groups: NavGroup[] = [
   { label: "Security", links: [
     { to: "/owner/logs", label: "Login Logs", icon: FileText },
     { to: "/owner/backups", label: "Backups", icon: HardDrive },
+  ]},
+  { label: "AI Admin Control", links: [
+    { to: "/owner/ai-admin", label: "Overview", icon: LayoutDashboard, exact: true },
+    { to: "/owner/ai-admin/whatsapp", label: "WhatsApp Connection", icon: MessageCircle },
+    { to: "/owner/ai-admin/agent", label: "AI Agent", icon: Bot },
+    { to: "/owner/ai-admin/notifications", label: "Notifications", icon: Bell },
+    { to: "/owner/ai-admin/permissions", label: "Commands & Permissions", icon: ShieldCheck },
+    { to: "/owner/ai-admin/automation", label: "Automation", icon: ToggleLeft },
+    { to: "/owner/ai-admin/logs", label: "Activity Logs", icon: FileText },
+    { to: "/owner/ai-admin/settings", label: "Settings", icon: Settings },
   ]},
   { label: "Developer", links: [
     { to: "/owner/api", label: "API Keys", icon: KeyRound },

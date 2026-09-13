@@ -450,7 +450,7 @@ export const decideAiAdminPending = createServerFn({ method: "POST" })
         channel: "console",
         actor: context.userId,
       });
-      return { ok: true, executed: false };
+      return { ok: true, executed: false, summary: pending.summary, result: "" };
     }
 
     const tool = TOOL_BY_KEY[pending.action_key];
@@ -469,7 +469,7 @@ export const decideAiAdminPending = createServerFn({ method: "POST" })
         channel: "console",
         actor: context.userId,
       });
-      return { ok: true, executed: true, result };
+      return { ok: true, executed: true, summary: pending.summary, result: JSON.stringify(result).slice(0, 2000) };
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       await supabaseAdmin.from("ai_admin_pending_actions").update({ status: "failed" }).eq("id", pending.id);
