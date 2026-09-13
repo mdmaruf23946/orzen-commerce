@@ -104,6 +104,25 @@ export const saveAiAdminConnection = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Generate a new verify token and save it immediately, so the same value
+ *  works for Meta's webhook verification challenge without extra steps. */
+export const generateAiAdminVerifyToken = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { randomBytes } = await import("node:crypto");
+    const token = `orzen_${randomBytes(24).toString("hex")}`;
+    const { data: existing } = await supabaseAdmin
+      .from("ai_admin_connections")
+      .select("id")
+      .eq("singleton", true)
+      .maybeSingle();
+    if (existing) await supabaseAdmin.from("ai_admin_connections").update({ verify_token: token }).eq("id", existing.id);
+    else await supabaseAdmin.from("ai_admin_connections").insert({ singleton: true, verify_token: token });
+    return { ok: true, verify_token: token };
+  });
+
 export const verifyAiAdminConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

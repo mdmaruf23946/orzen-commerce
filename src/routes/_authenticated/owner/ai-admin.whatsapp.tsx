@@ -3,13 +3,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, Copy, Plug, Send, XCircle } from "lucide-react";
+import { CheckCircle2, Copy, Plug, RefreshCw, Send, XCircle } from "lucide-react";
 import {
   getAiAdminConnection,
   saveAiAdminConnection,
   verifyAiAdminConnection,
   testAiAdminConnection,
   disconnectAiAdmin,
+  generateAiAdminVerifyToken,
 } from "@/lib/ai-admin.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +27,7 @@ function Page() {
   const verify = useServerFn(verifyAiAdminConnection);
   const test = useServerFn(testAiAdminConnection);
   const disconnect = useServerFn(disconnectAiAdmin);
+  const generateToken = useServerFn(generateAiAdminVerifyToken);
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["ai-admin", "connection"], queryFn: () => get() });
 
@@ -122,7 +124,33 @@ function Page() {
             </div>
             <div>
               <Label>Verify Token</Label>
-              <Input value={form.verify_token} onChange={(e) => setForm({ ...form, verify_token: e.target.value })} />
+              <div className="flex gap-2">
+                <Input value={form.verify_token} onChange={(e) => setForm({ ...form, verify_token: e.target.value })} />
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={busy === "gen"}
+                  onClick={async () => {
+                    setBusy("gen");
+                    try {
+                      const res = await generateToken();
+                      setForm((f) => ({ ...f, verify_token: res.verify_token }));
+                      qc.invalidateQueries({ queryKey: ["ai-admin"] });
+                      toast.success("New verify token generated and saved");
+                    } catch (e) {
+                      toast.error((e as Error).message);
+                    } finally {
+                      setBusy("");
+                    }
+                  }}
+                >
+                  <RefreshCw className="mr-1 h-4 w-4" /> Generate
+                </Button>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Generate creates and saves a new token instantly — paste this exact token in your Meta app's webhook
+                settings.
+              </p>
             </div>
             <div className="flex flex-wrap gap-2 pt-1">
               <Button
