@@ -291,6 +291,8 @@ const fbHideComment: ActionHandler = async ({ db, storeId }, input) => {
   const { row, token } = await loadPageContext(db, storeId);
   if (!row || !token) throw new Error("Facebook Page is not connected.");
   const commentId = String(input?.commentId ?? "");
+  const { assertOwnedRow } = await import("./core.server");
+  await assertOwnedRow(db, "facebook_comments", storeId, "comment_id", commentId);
   await graphPost(`/${commentId}`, token, { is_hidden: "true" });
   await db
     .from("facebook_comments")
