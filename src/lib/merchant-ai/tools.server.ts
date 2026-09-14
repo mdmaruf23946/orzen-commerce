@@ -275,6 +275,8 @@ const fbReplyComment: ActionHandler = async ({ db, storeId }, input) => {
   const commentId = String(input?.commentId ?? "");
   const message = String(input?.message ?? "").slice(0, 1000);
   if (!commentId || !message) throw new Error("Comment id and reply text are required.");
+  const { assertOwnedRow } = await import("./core.server");
+  await assertOwnedRow(db, "facebook_comments", storeId, "comment_id", commentId);
   await graphPost(`/${commentId}/comments`, token, { message });
   await db
     .from("facebook_comments")
