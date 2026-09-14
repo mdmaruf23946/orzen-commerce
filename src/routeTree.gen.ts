@@ -157,6 +157,7 @@ import { Route as AuthenticatedAdminLandingPagesIndexRouteImport } from './route
 import { Route as AuthenticatedAdminLandingBuilderIndexRouteImport } from './routes/_authenticated/admin/landing-builder.index'
 import { Route as AuthenticatedAdminFacebookIndexRouteImport } from './routes/_authenticated/admin/facebook.index'
 import { Route as AuthenticatedAdminBillingIndexRouteImport } from './routes/_authenticated/admin/billing.index'
+import { Route as AuthenticatedAdminAiIndexRouteImport } from './routes/_authenticated/admin/ai.index'
 import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
 import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/order.$orderId'
 import { Route as StoreSlugAuthSignupRouteImport } from './routes/store/$slug/auth.signup'
@@ -213,6 +214,11 @@ import { Route as AuthenticatedAdminFacebookModerationRouteImport } from './rout
 import { Route as AuthenticatedAdminFacebookComposeRouteImport } from './routes/_authenticated/admin/facebook.compose'
 import { Route as AuthenticatedAdminFacebookCommentsRouteImport } from './routes/_authenticated/admin/facebook.comments'
 import { Route as AuthenticatedAdminBillingReturnRouteImport } from './routes/_authenticated/admin/billing.return'
+import { Route as AuthenticatedAdminAiSettingsRouteImport } from './routes/_authenticated/admin/ai.settings'
+import { Route as AuthenticatedAdminAiLogsRouteImport } from './routes/_authenticated/admin/ai.logs'
+import { Route as AuthenticatedAdminAiIdentityRouteImport } from './routes/_authenticated/admin/ai.identity'
+import { Route as AuthenticatedAdminAiApprovalsRouteImport } from './routes/_authenticated/admin/ai.approvals'
+import { Route as AuthenticatedAdminAiAgentsRouteImport } from './routes/_authenticated/admin/ai.agents'
 import { Route as ApiPublicSubscriptionPayWebhookProviderRouteImport } from './routes/api/public/subscription-pay/webhook.$provider'
 import { Route as ApiPublicLandingPagesConnectionIdOrdersRouteImport } from './routes/api/public/landing-pages/$connectionId/orders'
 import { Route as ApiPublicCallsTwilioStatusStoreRouteImport } from './routes/api/public/calls/twilio-status.$store'
@@ -1054,6 +1060,12 @@ const AuthenticatedAdminBillingIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedAdminBillingRouteRoute,
   } as any)
+const AuthenticatedAdminAiIndexRoute =
+  AuthenticatedAdminAiIndexRouteImport.update({
+    id: '/ai/',
+    path: '/ai/',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const StoreSlugProductProductIdRoute =
   StoreSlugProductProductIdRouteImport.update({
     id: '/product/$productId',
@@ -1375,6 +1387,36 @@ const AuthenticatedAdminBillingReturnRoute =
     path: '/return',
     getParentRoute: () => AuthenticatedAdminBillingRouteRoute,
   } as any)
+const AuthenticatedAdminAiSettingsRoute =
+  AuthenticatedAdminAiSettingsRouteImport.update({
+    id: '/ai/settings',
+    path: '/ai/settings',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminAiLogsRoute =
+  AuthenticatedAdminAiLogsRouteImport.update({
+    id: '/ai/logs',
+    path: '/ai/logs',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminAiIdentityRoute =
+  AuthenticatedAdminAiIdentityRouteImport.update({
+    id: '/ai/identity',
+    path: '/ai/identity',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminAiApprovalsRoute =
+  AuthenticatedAdminAiApprovalsRouteImport.update({
+    id: '/ai/approvals',
+    path: '/ai/approvals',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminAiAgentsRoute =
+  AuthenticatedAdminAiAgentsRouteImport.update({
+    id: '/ai/agents',
+    path: '/ai/agents',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const ApiPublicSubscriptionPayWebhookProviderRoute =
   ApiPublicSubscriptionPayWebhookProviderRouteImport.update({
     id: '/api/public/subscription-pay/webhook/$provider',
@@ -1569,6 +1611,11 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/owner/': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
+  '/admin/ai/agents': typeof AuthenticatedAdminAiAgentsRoute
+  '/admin/ai/approvals': typeof AuthenticatedAdminAiApprovalsRoute
+  '/admin/ai/identity': typeof AuthenticatedAdminAiIdentityRoute
+  '/admin/ai/logs': typeof AuthenticatedAdminAiLogsRoute
+  '/admin/ai/settings': typeof AuthenticatedAdminAiSettingsRoute
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
   '/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
@@ -1625,6 +1672,7 @@ export interface FileRoutesByFullPath {
   '/store/$slug/auth/signup': typeof StoreSlugAuthSignupRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
+  '/admin/ai/': typeof AuthenticatedAdminAiIndexRoute
   '/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
   '/admin/facebook/': typeof AuthenticatedAdminFacebookIndexRoute
   '/admin/landing-builder/': typeof AuthenticatedAdminLandingBuilderIndexRoute
@@ -1774,6 +1822,11 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/owner': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug': typeof StoreSlugIndexRoute
+  '/admin/ai/agents': typeof AuthenticatedAdminAiAgentsRoute
+  '/admin/ai/approvals': typeof AuthenticatedAdminAiApprovalsRoute
+  '/admin/ai/identity': typeof AuthenticatedAdminAiIdentityRoute
+  '/admin/ai/logs': typeof AuthenticatedAdminAiLogsRoute
+  '/admin/ai/settings': typeof AuthenticatedAdminAiSettingsRoute
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
   '/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
@@ -1830,6 +1883,7 @@ export interface FileRoutesByTo {
   '/store/$slug/auth/signup': typeof StoreSlugAuthSignupRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
+  '/admin/ai': typeof AuthenticatedAdminAiIndexRoute
   '/admin/billing': typeof AuthenticatedAdminBillingIndexRoute
   '/admin/facebook': typeof AuthenticatedAdminFacebookIndexRoute
   '/admin/landing-builder': typeof AuthenticatedAdminLandingBuilderIndexRoute
@@ -1990,6 +2044,11 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/owner/': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
+  '/_authenticated/admin/ai/agents': typeof AuthenticatedAdminAiAgentsRoute
+  '/_authenticated/admin/ai/approvals': typeof AuthenticatedAdminAiApprovalsRoute
+  '/_authenticated/admin/ai/identity': typeof AuthenticatedAdminAiIdentityRoute
+  '/_authenticated/admin/ai/logs': typeof AuthenticatedAdminAiLogsRoute
+  '/_authenticated/admin/ai/settings': typeof AuthenticatedAdminAiSettingsRoute
   '/_authenticated/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/_authenticated/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
   '/_authenticated/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
@@ -2046,6 +2105,7 @@ export interface FileRoutesById {
   '/store/$slug/auth/signup': typeof StoreSlugAuthSignupRoute
   '/store/$slug/order/$orderId': typeof StoreSlugOrderOrderIdRoute
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
+  '/_authenticated/admin/ai/': typeof AuthenticatedAdminAiIndexRoute
   '/_authenticated/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
   '/_authenticated/admin/facebook/': typeof AuthenticatedAdminFacebookIndexRoute
   '/_authenticated/admin/landing-builder/': typeof AuthenticatedAdminLandingBuilderIndexRoute
@@ -2206,6 +2266,11 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/owner/'
     | '/store/$slug/'
+    | '/admin/ai/agents'
+    | '/admin/ai/approvals'
+    | '/admin/ai/identity'
+    | '/admin/ai/logs'
+    | '/admin/ai/settings'
     | '/admin/billing/return'
     | '/admin/facebook/comments'
     | '/admin/facebook/compose'
@@ -2262,6 +2327,7 @@ export interface FileRouteTypes {
     | '/store/$slug/auth/signup'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
+    | '/admin/ai/'
     | '/admin/billing/'
     | '/admin/facebook/'
     | '/admin/landing-builder/'
@@ -2411,6 +2477,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/owner'
     | '/store/$slug'
+    | '/admin/ai/agents'
+    | '/admin/ai/approvals'
+    | '/admin/ai/identity'
+    | '/admin/ai/logs'
+    | '/admin/ai/settings'
     | '/admin/billing/return'
     | '/admin/facebook/comments'
     | '/admin/facebook/compose'
@@ -2467,6 +2538,7 @@ export interface FileRouteTypes {
     | '/store/$slug/auth/signup'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
+    | '/admin/ai'
     | '/admin/billing'
     | '/admin/facebook'
     | '/admin/landing-builder'
@@ -2626,6 +2698,11 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/owner/'
     | '/store/$slug/'
+    | '/_authenticated/admin/ai/agents'
+    | '/_authenticated/admin/ai/approvals'
+    | '/_authenticated/admin/ai/identity'
+    | '/_authenticated/admin/ai/logs'
+    | '/_authenticated/admin/ai/settings'
     | '/_authenticated/admin/billing/return'
     | '/_authenticated/admin/facebook/comments'
     | '/_authenticated/admin/facebook/compose'
@@ -2682,6 +2759,7 @@ export interface FileRouteTypes {
     | '/store/$slug/auth/signup'
     | '/store/$slug/order/$orderId'
     | '/store/$slug/product/$productId'
+    | '/_authenticated/admin/ai/'
     | '/_authenticated/admin/billing/'
     | '/_authenticated/admin/facebook/'
     | '/_authenticated/admin/landing-builder/'
@@ -3794,6 +3872,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminBillingIndexRouteImport
       parentRoute: typeof AuthenticatedAdminBillingRouteRoute
     }
+    '/_authenticated/admin/ai/': {
+      id: '/_authenticated/admin/ai/'
+      path: '/ai'
+      fullPath: '/admin/ai/'
+      preLoaderRoute: typeof AuthenticatedAdminAiIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/store/$slug/product/$productId': {
       id: '/store/$slug/product/$productId'
       path: '/product/$productId'
@@ -4186,6 +4271,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminBillingReturnRouteImport
       parentRoute: typeof AuthenticatedAdminBillingRouteRoute
     }
+    '/_authenticated/admin/ai/settings': {
+      id: '/_authenticated/admin/ai/settings'
+      path: '/ai/settings'
+      fullPath: '/admin/ai/settings'
+      preLoaderRoute: typeof AuthenticatedAdminAiSettingsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/ai/logs': {
+      id: '/_authenticated/admin/ai/logs'
+      path: '/ai/logs'
+      fullPath: '/admin/ai/logs'
+      preLoaderRoute: typeof AuthenticatedAdminAiLogsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/ai/identity': {
+      id: '/_authenticated/admin/ai/identity'
+      path: '/ai/identity'
+      fullPath: '/admin/ai/identity'
+      preLoaderRoute: typeof AuthenticatedAdminAiIdentityRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/ai/approvals': {
+      id: '/_authenticated/admin/ai/approvals'
+      path: '/ai/approvals'
+      fullPath: '/admin/ai/approvals'
+      preLoaderRoute: typeof AuthenticatedAdminAiApprovalsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/ai/agents': {
+      id: '/_authenticated/admin/ai/agents'
+      path: '/ai/agents'
+      fullPath: '/admin/ai/agents'
+      preLoaderRoute: typeof AuthenticatedAdminAiAgentsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/api/public/subscription-pay/webhook/$provider': {
       id: '/api/public/subscription-pay/webhook/$provider'
       path: '/api/public/subscription-pay/webhook/$provider'
@@ -4374,9 +4494,15 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminWhatsappRoute: typeof AuthenticatedAdminWhatsappRoute
   AuthenticatedAdminWhatsappInboxRoute: typeof AuthenticatedAdminWhatsappInboxRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+  AuthenticatedAdminAiAgentsRoute: typeof AuthenticatedAdminAiAgentsRoute
+  AuthenticatedAdminAiApprovalsRoute: typeof AuthenticatedAdminAiApprovalsRoute
+  AuthenticatedAdminAiIdentityRoute: typeof AuthenticatedAdminAiIdentityRoute
+  AuthenticatedAdminAiLogsRoute: typeof AuthenticatedAdminAiLogsRoute
+  AuthenticatedAdminAiSettingsRoute: typeof AuthenticatedAdminAiSettingsRoute
   AuthenticatedAdminInvoiceOrderIdRoute: typeof AuthenticatedAdminInvoiceOrderIdRoute
   AuthenticatedAdminLandingBuilderIdRoute: typeof AuthenticatedAdminLandingBuilderIdRoute
   AuthenticatedAdminLandingPagesIdRoute: typeof AuthenticatedAdminLandingPagesIdRoute
+  AuthenticatedAdminAiIndexRoute: typeof AuthenticatedAdminAiIndexRoute
   AuthenticatedAdminLandingBuilderIndexRoute: typeof AuthenticatedAdminLandingBuilderIndexRoute
   AuthenticatedAdminLandingPagesIndexRoute: typeof AuthenticatedAdminLandingPagesIndexRoute
 }
@@ -4441,12 +4567,18 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminWhatsappRoute: AuthenticatedAdminWhatsappRoute,
     AuthenticatedAdminWhatsappInboxRoute: AuthenticatedAdminWhatsappInboxRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+    AuthenticatedAdminAiAgentsRoute: AuthenticatedAdminAiAgentsRoute,
+    AuthenticatedAdminAiApprovalsRoute: AuthenticatedAdminAiApprovalsRoute,
+    AuthenticatedAdminAiIdentityRoute: AuthenticatedAdminAiIdentityRoute,
+    AuthenticatedAdminAiLogsRoute: AuthenticatedAdminAiLogsRoute,
+    AuthenticatedAdminAiSettingsRoute: AuthenticatedAdminAiSettingsRoute,
     AuthenticatedAdminInvoiceOrderIdRoute:
       AuthenticatedAdminInvoiceOrderIdRoute,
     AuthenticatedAdminLandingBuilderIdRoute:
       AuthenticatedAdminLandingBuilderIdRoute,
     AuthenticatedAdminLandingPagesIdRoute:
       AuthenticatedAdminLandingPagesIdRoute,
+    AuthenticatedAdminAiIndexRoute: AuthenticatedAdminAiIndexRoute,
     AuthenticatedAdminLandingBuilderIndexRoute:
       AuthenticatedAdminLandingBuilderIndexRoute,
     AuthenticatedAdminLandingPagesIndexRoute:

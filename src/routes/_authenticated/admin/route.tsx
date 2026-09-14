@@ -78,6 +78,18 @@ const links: LinkDef[] = [
 
 
   
+  {
+    to: "/admin/ai",
+    label: "AI Command Center",
+    icon: Bot,
+    children: [
+      { to: "/admin/ai/agents", label: "Agents" },
+      { to: "/admin/ai/approvals", label: "Approvals" },
+      { to: "/admin/ai/identity", label: "Merchant Identity" },
+      { to: "/admin/ai/settings", label: "AI Settings" },
+      { to: "/admin/ai/logs", label: "Activity Log" },
+    ],
+  },
   { to: "/admin/ai-agent", label: "AI Sales Agent", icon: Bot },
   { to: "/admin/ai-recommendations", label: "AI Recommendations", icon: Sparkles, badgeKey: "ai_recommendations" },
   { to: "/admin/handoff-queue", label: "Handoff Queue", icon: UserCog, badgeKey: "handoff" },
@@ -130,7 +142,7 @@ const groupDefs: { label: string; paths: string[] }[] = [
   { label: "Products", paths: ["/admin/products", "/admin/categories", "/admin/inventory", "/admin/product-defaults"] },
   { label: "Customers", paths: ["/admin/customers", "/admin/customers-accounts", "/admin/duplicate-protection"] },
   { label: "Call Center", paths: ["/admin/call-center", "/admin/ai-call-center"] },
-  { label: "AI & Automation", paths: ["/admin/ai-agent", "/admin/ai-recommendations", "/admin/handoff-queue", "/admin/low-stock", "/admin/messenger", "/admin/messenger-inbox", "/admin/whatsapp", "/admin/whatsapp-inbox"] },
+  { label: "AI & Automation", paths: ["/admin/ai", "/admin/ai-agent", "/admin/ai-recommendations", "/admin/handoff-queue", "/admin/low-stock", "/admin/messenger", "/admin/messenger-inbox", "/admin/whatsapp", "/admin/whatsapp-inbox"] },
   { label: "Facebook Page", paths: ["/admin/facebook"] },
   { label: "Marketing", paths: ["/admin/marketing", "/admin/coupons", "/admin/seo", "/admin/banners", "/admin/theme", "/admin/notifications"] },
   { label: "Finance", paths: ["/admin/payment-gateway", "/admin/finance", "/admin/analytics"] },

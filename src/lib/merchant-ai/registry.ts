@@ -1,4 +1,6 @@
 // Client-safe registry for the Merchant AI Command Center.
+import type { FeatureKey } from "@/lib/features";
+
 // Adding a new agent = one entry here + one tool group in tools.server.ts.
 
 export type AgentKey =
@@ -24,7 +26,7 @@ export type AgentMeta = {
   /** Channel agents need an external connection before they can work. */
   channel?: "messenger" | "whatsapp" | "facebook";
   /** Plan feature that unlocks this agent (undefined = always available). */
-  feature?: string;
+  feature?: FeatureKey;
 };
 
 export const AGENTS: AgentMeta[] = [
