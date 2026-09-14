@@ -50,6 +50,9 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    // Cloudflare delivers secrets as a per-request binding; share them with
+    // every server module before any handler runs.
+    captureServerEnv(env);
     try {
       const url = new URL(request.url);
       const envRecord = {
