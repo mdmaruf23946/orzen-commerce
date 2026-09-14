@@ -16,6 +16,36 @@ export async function adminDb(): Promise<Db> {
 }
 
 /* ------------------------------------------------------------------ */
+/* Tenant guard                                                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Hard tenant guard for the AI layer. The agent runs with service-role rights,
+ * so every row it touches by id MUST be proven to belong to the merchant's own
+ * store first. Throws instead of returning another merchant's data.
+ */
+export async function assertOwnedRow(
+  db: Db,
+  table: string,
+  storeId: string,
+  column: string,
+  value: string,
+): Promise<any> {
+  if (!storeId) throw new Error("Tenant check failed: no store in context.");
+  const id = String(value ?? "").trim();
+  if (!id) throw new Error("Tenant check failed: no record id given.");
+  const { data, error } = await db
+    .from(table)
+    .select("*")
+    .eq("store_id", storeId)
+    .eq(column, id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Record not found in your store.");
+  return data;
+}
+
+/* ------------------------------------------------------------------ */
 /* Permissions                                                         */
 /* ------------------------------------------------------------------ */
 
