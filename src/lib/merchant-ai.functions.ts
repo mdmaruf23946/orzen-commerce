@@ -135,7 +135,7 @@ export const aiSendCommand = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ text: z.string().min(1).max(2000) }).parse(d))
   .handler(async ({ data, context }) => {
     const { db, storeId, userId } = await ctxOf(context);
-    const { data: store } = await db.from("stores").select("*").eq("id", storeId).maybeSingle();
+    const store = await loadStoreWithPlan(db, storeId);
     if (!hasFeature(store, "ai_agent")) {
       throw new Error("AI Command Center is not included in your current plan.");
     }
