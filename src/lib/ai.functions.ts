@@ -560,11 +560,21 @@ export const connectMessenger = createServerFn({ method: "POST" })
       privacy_policy_url: data.privacy_policy_url,
       terms_of_service_url: data.terms_of_service_url || null,
     };
+    // Without an app subscription Meta never delivers inbox messages to the
+    // webhook, so do it as part of connecting.
+    const { ensurePageSubscribed } = await import("@/lib/messenger-subscribe.server");
+    const sub = await ensurePageSubscribed(data.page_id, data.page_access_token);
+    if (!sub.ok) {
+      upsertRow.last_error =
+        sub.error ??
+        "Facebook Page is connected but message delivery could not be enabled. Grant pages_messaging and reconnect.";
+    }
+
     const { error } = await context.supabase
       .from("messenger_integrations")
       .upsert(upsertRow, { onConflict: "store_id" });
     if (error) throw new Error(error.message);
-    return { ok: true, verify_token };
+    return { ok: true, verify_token, subscribed: sub.ok, subscribed_fields: sub.fields };
   });
 
 export const disconnectMessenger = createServerFn({ method: "POST" })
@@ -611,13 +621,28 @@ export const verifyMessengerWebhook = createServerFn({ method: "POST" })
         });
         diag.post_status = rp.status;
       } catch {}
-      const ok = diag.token_match;
+      // Repair the page → app subscription; this is what makes Meta actually
+      // deliver inbox messages to the webhook.
+      diag.subscribed = false;
+      diag.subscribed_fields = [];
+      const token = (await decryptToken(row.page_access_token_encrypted)) || row.page_access_token;
+      if (row.page_id && token) {
+        const { ensurePageSubscribed } = await import("@/lib/messenger-subscribe.server");
+        const sub = await ensurePageSubscribed(row.page_id, token);
+        diag.subscribed = sub.ok;
+        diag.subscribed_fields = sub.fields;
+        if (!sub.ok && sub.error) diag.subscribe_error = sub.error;
+      }
+
+      const ok = diag.token_match && diag.subscribed;
       await context.supabase
         .from("messenger_integrations")
         .update({
           last_verified_at: ok ? new Date().toISOString() : row.last_verified_at,
-          last_error: ok
-            ? null
+          last_error: diag.token_match
+            ? ok
+              ? null
+              : `Message delivery is not enabled on the Page${diag.subscribe_error ? `: ${diag.subscribe_error}` : ". Grant pages_messaging and reconnect."}`
             : `Webhook verify failed (GET ${diag.get_status}: ${diag.get_body || "no body"})`,
         })
         .eq("store_id", storeId);
