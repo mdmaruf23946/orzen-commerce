@@ -236,7 +236,7 @@ export async function runAdminAgent(args: {
       SYSTEM +
       (settings?.reply_language && settings.reply_language !== "auto"
         ? `\nAlways reply in ${settings.reply_language}.`
-        : ""),
+        : `\n${detectLanguageInstruction(args.text)}`),
     messages: [
       ...(args.history ?? []).slice(-10).map((m) => ({ role: m.role, content: m.content })),
       { role: "user" as const, content: args.text },
