@@ -7672,6 +7672,35 @@ export type Database = {
           },
         ]
       }
+      store_customer_counters: {
+        Row: {
+          created_at: string
+          next_no: number
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          next_no?: number
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          next_no?: number
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_customer_counters_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_customer_credentials: {
         Row: {
           created_at: string
@@ -7795,6 +7824,7 @@ export type Database = {
         Row: {
           ai_memory: Json
           created_at: string
+          customer_code: string | null
           email: string | null
           full_name: string
           id: string
@@ -7809,6 +7839,7 @@ export type Database = {
         Insert: {
           ai_memory?: Json
           created_at?: string
+          customer_code?: string | null
           email?: string | null
           full_name: string
           id?: string
@@ -7823,6 +7854,7 @@ export type Database = {
         Update: {
           ai_memory?: Json
           created_at?: string
+          customer_code?: string | null
           email?: string | null
           full_name?: string
           id?: string
@@ -9318,6 +9350,7 @@ export type Database = {
           linkedin: string | null
           logo_url: string | null
           marketing: Json
+          merchant_code: string
           messenger: string | null
           nagad_number: string | null
           name: string
@@ -9393,6 +9426,7 @@ export type Database = {
           linkedin?: string | null
           logo_url?: string | null
           marketing?: Json
+          merchant_code?: string
           messenger?: string | null
           nagad_number?: string | null
           name: string
@@ -9468,6 +9502,7 @@ export type Database = {
           linkedin?: string | null
           logo_url?: string | null
           marketing?: Json
+          merchant_code?: string
           messenger?: string | null
           nagad_number?: string | null
           name?: string
@@ -10570,6 +10605,7 @@ export type Database = {
         Returns: number
       }
       expire_trials: { Args: never; Returns: undefined }
+      format_merchant_code: { Args: { _n: number }; Returns: string }
       generate_invoice_no: {
         Args: { _order_type?: string; _store_id: string }
         Returns: string
