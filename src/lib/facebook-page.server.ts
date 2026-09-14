@@ -183,16 +183,33 @@ export function attachmentOf(post: any): { type: string; url: string | null; thu
 /**
  * Subscribes the page to our Meta app so webhook events are actually delivered.
  * Without this, the callback URL + verify token alone never receive anything.
+ * Feed/mention need `pages_manage_metadata`; when that scope is missing Meta
+ * rejects the whole call (#200), so we retry with the fields we can keep.
  */
 export async function subscribePageToApp(pageId: string, token: string) {
   // Merge with whatever the page is already subscribed to, so enabling Page
   // events never removes Messenger's `messages` subscription (and vice versa).
   const existing = await pageSubscribedFields(pageId, token);
-  const fields = [...new Set([...existing, "feed", "mention"])];
-  return graphPost(`/${encodeURIComponent(pageId)}/subscribed_apps`, token, {
-    subscribed_fields: fields.join(","),
-  });
+  const attempts = [
+    [...new Set([...existing, "feed", "mention"])],
+    [...new Set([...existing, "feed"])],
+    existing,
+  ].filter((f) => f.length);
+
+  const { explainGraphError } = await import("@/lib/facebook-errors.server");
+  let lastError: unknown = new Error("Could not enable event delivery for this Page.");
+  for (const fields of attempts) {
+    try {
+      return await graphPost(`/${encodeURIComponent(pageId)}/subscribed_apps`, token, {
+        subscribed_fields: fields.join(","),
+      });
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw new Error(explainGraphError(lastError, "subscribe"));
 }
+
 
 /** Returns the fields the page is currently subscribed to (empty when not subscribed). */
 export async function pageSubscribedFields(pageId: string, token: string): Promise<string[]> {

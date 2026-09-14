@@ -23,42 +23,66 @@ export async function getSubscribedFields(pageId: string, token: string): Promis
   return [...set];
 }
 
+async function postSubscription(pageId: string, token: string, fields: string[]) {
+  const body = new URLSearchParams({ subscribed_fields: fields.join(","), access_token: token });
+  const r = await fetch(`${GRAPH}/${encodeURIComponent(pageId)}/subscribed_apps`, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  const j: any = await r.json().catch(() => ({}));
+  if (!r.ok || j?.error) {
+    const err = j?.error ?? {};
+    const e = new Error(err.message || `Subscribe failed (${r.status})`) as Error & { code?: number };
+    e.code = err.code;
+    throw e;
+  }
+  return true;
+}
+
 /**
  * Subscribes the page to our app, keeping any fields it is already subscribed
  * to (so the Facebook Page module's feed/mention subscription is not lost).
+ * When Meta rejects the full list because a permission is missing (error #200),
+ * we retry with only the Messenger fields so inbox messages still arrive.
  */
 export async function ensurePageSubscribed(
   pageId: string,
   token: string,
   extraFields: string[] = [],
 ): Promise<{ ok: boolean; fields: string[]; error?: string }> {
+  const { explainGraphError } = await import("@/lib/facebook-errors.server");
+  let existing: string[] = [];
   try {
-    let existing: string[] = [];
-    try {
-      existing = await getSubscribedFields(pageId, token);
-    } catch {
-      existing = [];
-    }
-    const wanted = [...new Set([...existing, ...MESSENGER_FIELDS, ...extraFields])];
-    const body = new URLSearchParams({
-      subscribed_fields: wanted.join(","),
-      access_token: token,
-    });
-    const r = await fetch(`${GRAPH}/${encodeURIComponent(pageId)}/subscribed_apps`, {
-      method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      body,
-    });
-    const j: any = await r.json().catch(() => ({}));
-    if (!r.ok || j?.error) {
-      return { ok: false, fields: existing, error: j?.error?.message || `Subscribe failed (${r.status})` };
-    }
-    let after: string[] = wanted;
-    try {
-      after = await getSubscribedFields(pageId, token);
-    } catch {}
-    return { ok: after.includes("messages"), fields: after };
-  } catch (e) {
-    return { ok: false, fields: [], error: (e as Error).message };
+    existing = await getSubscribedFields(pageId, token);
+  } catch {
+    existing = [];
   }
+
+  const attempts = [
+    [...new Set([...existing, ...MESSENGER_FIELDS, ...extraFields])],
+    [...new Set([...MESSENGER_FIELDS])],
+    ["messages", "messaging_postbacks"],
+    ["messages"],
+  ];
+
+  let lastError = "";
+  for (const fields of attempts) {
+    try {
+      await postSubscription(pageId, token, fields);
+      let after: string[] = fields;
+      try {
+        after = await getSubscribedFields(pageId, token);
+      } catch {}
+      return {
+        ok: after.includes("messages"),
+        fields: after,
+        ...(after.includes("messages") ? {} : { error: lastError || undefined }),
+      };
+    } catch (e) {
+      lastError = explainGraphError(e, "subscribe");
+    }
+  }
+  return { ok: false, fields: existing, error: lastError };
 }
+
