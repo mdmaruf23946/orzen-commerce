@@ -27,7 +27,17 @@ export function captureServerEnv(env: unknown): void {
   if (!env || typeof env !== "object") return;
   const target = store();
   for (const [key, value] of Object.entries(env as Record<string, unknown>)) {
-    if (typeof value === "string" && value.length > 0) target[key] = value;
+    if (typeof value !== "string" || value.length === 0) continue;
+    target[key] = value;
+    // Also mirror into process.env so the many modules that read it directly
+    // keep working unchanged on Cloudflare. Best effort: never throw here.
+    try {
+      if (typeof process !== "undefined" && process.env && !process.env[key]) {
+        (process.env as EnvRecord)[key] = value;
+      }
+    } catch {
+      /* read-only env in some runtimes — the store above still covers us */
+    }
   }
 }
 
