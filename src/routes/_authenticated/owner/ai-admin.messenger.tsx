@@ -19,17 +19,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { DeploymentHealth } from "@/components/owner/DeploymentHealth";
 
 export const Route = createFileRoute("/_authenticated/owner/ai-admin/messenger")({ component: Page });
 
 const WEBHOOK_PATH = "/api/public/ai-admin/messenger-webhook";
 // Always-available endpoint; kept as the fallback so the URL never goes blank.
 const FALLBACK_WEBHOOK_URL = `https://orzen-commerce.lovable.app${WEBHOOK_PATH}`;
-// One endpoint, derived from the deployment the owner is actually using.
-const MESSENGER_WEBHOOK_URL =
-  typeof window !== "undefined" ? `${window.location.origin}${WEBHOOK_PATH}` : FALLBACK_WEBHOOK_URL;
 
 function Page() {
+  // Derived after mount so server and first client render match.
+  const [MESSENGER_WEBHOOK_URL, setWebhookUrl] = useState(FALLBACK_WEBHOOK_URL);
+  useEffect(() => {
+    setWebhookUrl(`${window.location.origin}${WEBHOOK_PATH}`);
+  }, []);
   const get = useServerFn(getAiAdminMessenger);
   const save = useServerFn(saveAiAdminMessenger);
   const verify = useServerFn(verifyAiAdminMessenger);
