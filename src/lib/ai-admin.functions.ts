@@ -647,3 +647,211 @@ export const disconnectAiAdminMessenger = createServerFn({ method: "POST" })
       .eq("singleton", true);
     return { ok: true };
   });
+
+// ============================== AI Agents =================================
+// Dual-agent overview, public knowledge base, and customer support handoff.
+
+export const aiAgentsOverview = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [messenger, settings, kb, openReq, threads, lastEvent, lastCustomer, adminCmds] = await Promise.all([
+      supabaseAdmin
+        .from("ai_admin_messenger_connections")
+        .select("status, page_name, page_id, admin_psids, last_verified_at, last_error")
+        .eq("singleton", true)
+        .maybeSingle(),
+      supabaseAdmin.from("ai_admin_settings").select("*").eq("singleton", true).maybeSingle(),
+      supabaseAdmin.from("ai_admin_kb_entries").select("*", { count: "exact", head: true }).eq("published", true),
+      supabaseAdmin.from("ai_admin_support_requests").select("*", { count: "exact", head: true }).eq("status", "open"),
+      supabaseAdmin.from("ai_admin_customer_threads").select("*", { count: "exact", head: true }),
+      supabaseAdmin
+        .from("ai_admin_webhook_events")
+        .select("created_at, processed, error, wa_id")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabaseAdmin
+        .from("ai_admin_customer_messages")
+        .select("content, role, created_at")
+        .order("created_at", { ascending: false })
+        .limit(8),
+      supabaseAdmin
+        .from("ai_admin_action_logs")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", new Date(Date.now() - 86400000).toISOString()),
+    ]);
+    return {
+      messenger: messenger.data ?? null,
+      settings: settings.data ?? null,
+      kbCount: kb.count ?? 0,
+      openSupport: openReq.count ?? 0,
+      customerThreads: threads.count ?? 0,
+      lastEvent: lastEvent.data ?? null,
+      recentCustomerMessages: lastCustomer.data ?? [],
+      adminActions24h: adminCmds.count ?? 0,
+    };
+  });
+
+export const setCustomerAgentEnabled = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ enabled: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row } = await supabaseAdmin
+      .from("ai_admin_settings")
+      .select("id")
+      .eq("singleton", true)
+      .maybeSingle();
+    if (row) {
+      await supabaseAdmin.from("ai_admin_settings").update({ customer_agent_enabled: data.enabled }).eq("id", row.id);
+    } else {
+      await supabaseAdmin.from("ai_admin_settings").insert({ singleton: true, customer_agent_enabled: data.enabled });
+    }
+    return { ok: true };
+  });
+
+// ---------------------------- Knowledge base -------------------------------
+
+export const listKnowledgeEntries = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { data } = await context.supabase
+      .from("ai_admin_kb_entries")
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+    return data ?? [];
+  });
+
+const kbInput = z.object({
+  id: z.string().uuid().optional(),
+  category: z.string().min(1),
+  title: z.string().min(1),
+  body: z.string().default(""),
+  published: z.boolean().default(true),
+  sort_order: z.number().int().default(0),
+});
+
+export const saveKnowledgeEntry = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => kbInput.parse(d))
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const patch = {
+      category: data.category,
+      title: data.title,
+      body: data.body,
+      published: data.published,
+      sort_order: data.sort_order,
+    };
+    if (data.id) {
+      const { error } = await context.supabase.from("ai_admin_kb_entries").update(patch).eq("id", data.id);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await context.supabase.from("ai_admin_kb_entries").insert(patch);
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true };
+  });
+
+export const deleteKnowledgeEntry = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { error } = await context.supabase.from("ai_admin_kb_entries").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// --------------------------- Customer support ------------------------------
+
+export const listSupportRequests = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { data } = await context.supabase
+      .from("ai_admin_support_requests")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    return data ?? [];
+  });
+
+export const getCustomerConversation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ thread_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const [thread, messages] = await Promise.all([
+      context.supabase.from("ai_admin_customer_threads").select("*").eq("id", data.thread_id).maybeSingle(),
+      context.supabase
+        .from("ai_admin_customer_messages")
+        .select("role, content, created_at")
+        .eq("thread_id", data.thread_id)
+        .order("created_at", { ascending: true })
+        .limit(200),
+    ]);
+    return { thread: thread.data ?? null, messages: messages.data ?? [] };
+  });
+
+export const replyToCustomer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ thread_id: z.string().uuid(), message: z.string().min(1).max(1800) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: thread } = await supabaseAdmin
+      .from("ai_admin_customer_threads")
+      .select("id, psid")
+      .eq("id", data.thread_id)
+      .maybeSingle();
+    if (!thread) throw new Error("Conversation not found.");
+
+    const { sendAdminMessengerMessage } = await import("@/lib/ai-admin/messenger.server");
+    await sendAdminMessengerMessage(thread.psid, data.message);
+
+    const { appendCustomerMessage } = await import("@/lib/ai-admin/support.server");
+    await appendCustomerMessage(thread.id, "admin", data.message);
+    await supabaseAdmin.from("ai_admin_customer_threads").update({ status: "human" }).eq("id", thread.id);
+    await supabaseAdmin
+      .from("ai_admin_support_requests")
+      .update({ status: "answered" })
+      .eq("thread_id", thread.id)
+      .eq("status", "open");
+    return { ok: true };
+  });
+
+export const setCustomerThreadMode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ thread_id: z.string().uuid(), mode: z.enum(["ai", "human", "closed"]) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { error } = await context.supabase
+      .from("ai_admin_customer_threads")
+      .update({ status: data.mode })
+      .eq("id", data.thread_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const closeSupportRequest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { error } = await context.supabase
+      .from("ai_admin_support_requests")
+      .update({ status: "closed", resolved_at: new Date().toISOString() })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
