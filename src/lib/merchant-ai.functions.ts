@@ -52,8 +52,8 @@ export const aiGetOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { db, storeId } = await ctxOf(context);
-    const [{ data: store }, state, perms, pending, logs, identities] = await Promise.all([
-      db.from("stores").select("*").eq("id", storeId).maybeSingle(),
+    const [store, state, perms, pending, logs, identities] = await Promise.all([
+      loadStoreWithPlan(db, storeId),
       db.from("store_ai_agent_state").select("*").eq("store_id", storeId),
       db.from("store_ai_permissions").select("action_key, level").eq("store_id", storeId),
       db
