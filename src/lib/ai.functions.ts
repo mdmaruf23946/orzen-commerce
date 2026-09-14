@@ -690,12 +690,19 @@ export const sendMessengerTestMessage = createServerFn({ method: "POST" })
     );
     const j = await r.json().catch(() => ({}));
     if (!r.ok) {
+      const { explainGraphError } = await import("@/lib/facebook-errors.server");
+      const err = Object.assign(new Error(j?.error?.message || `Send failed (${r.status})`), {
+        code: j?.error?.code,
+        subcode: j?.error?.error_subcode,
+      });
+      const friendly = explainGraphError(err, "send");
       await context.supabase
         .from("messenger_integrations")
-        .update({ last_error: j?.error?.message || `Send failed (${r.status})` })
+        .update({ last_error: friendly })
         .eq("store_id", storeId);
-      throw new Error(j?.error?.message || `Send failed (${r.status})`);
+      throw new Error(friendly);
     }
+
     return { ok: true };
   });
 
