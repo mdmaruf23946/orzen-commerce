@@ -87,9 +87,10 @@ function CustomerAccountsPage() {
   }
 
   function exportCsv() {
-    const head = ["Name", "Email", "Phone", "Orders", "Total spent", "Last order", "Status", "Joined"];
+    const head = ["Customer code", "Name", "Email", "Phone", "Orders", "Total spent", "Last order", "Status", "Joined"];
     const lines = rows.map((c) =>
       [
+        (c as any).customer_code ?? "",
         c.full_name ?? "",
         c.email ?? "",
         c.phone ?? "",
@@ -184,6 +185,11 @@ function CustomerAccountsPage() {
                           <span className="truncate text-sm font-medium">{c.full_name}</span>
                           <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${t.cls}`}>{t.label}</span>
                         </div>
+                        {(c as any).customer_code && (
+                          <div className="truncate font-mono text-[11px] text-muted-foreground">
+                            {(c as any).customer_code}
+                          </div>
+                        )}
                         <div className="truncate text-xs text-muted-foreground">
                           {c.email || c.phone}
                         </div>
@@ -231,6 +237,9 @@ function CustomerAccountsPage() {
                           {c.full_name}
                           <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${t.cls}`}>{t.label}</span>
                         </div>
+                        {c.customer_code && (
+                          <div className="font-mono text-[11px] font-normal text-muted-foreground">{c.customer_code}</div>
+                        )}
                       </td>
                       <td className="p-3 text-muted-foreground">
                         <div>{c.email}</div>

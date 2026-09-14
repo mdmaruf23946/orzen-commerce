@@ -120,6 +120,14 @@ function StoreInformationPage() {
               />
             </Field>
           </div>
+          {(form as any).merchant_code && (
+            <Field
+              label="Merchant code"
+              hint="Your permanent identification code. Used for identifying your store and your customers only — never as an invoice or payment number."
+            >
+              <Input readOnly disabled className="font-mono" value={(form as any).merchant_code} />
+            </Field>
+          )}
           <Field label="Description" htmlFor="s-desc">
             <Textarea id="s-desc" rows={3} maxLength={1000} value={form.description ?? ""} onChange={(e) => set("description", e.target.value)} />
           </Field>

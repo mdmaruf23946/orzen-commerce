@@ -230,6 +230,9 @@ const courierReady: ActionHandler = async ({ db, storeId }) => {
 const courierSubmit: ActionHandler = async ({ db, storeId }, input) => {
   const { data: store } = await db.from("stores").select("*").eq("id", storeId).maybeSingle();
   if (!store) throw new Error("Store not found.");
+  // Tenant guard: the order must belong to this merchant before it is dispatched.
+  const { assertOwnedRow } = await import("./core.server");
+  await assertOwnedRow(db, "orders", storeId, "id", String(input?.orderId ?? ""));
   const { dispatchParcel } = await import("@/lib/courier-parcels.functions");
   const res = await dispatchParcel(db, store, {
     orderId: String(input?.orderId),
@@ -272,6 +275,8 @@ const fbReplyComment: ActionHandler = async ({ db, storeId }, input) => {
   const commentId = String(input?.commentId ?? "");
   const message = String(input?.message ?? "").slice(0, 1000);
   if (!commentId || !message) throw new Error("Comment id and reply text are required.");
+  const { assertOwnedRow } = await import("./core.server");
+  await assertOwnedRow(db, "facebook_comments", storeId, "comment_id", commentId);
   await graphPost(`/${commentId}/comments`, token, { message });
   await db
     .from("facebook_comments")
@@ -286,6 +291,8 @@ const fbHideComment: ActionHandler = async ({ db, storeId }, input) => {
   const { row, token } = await loadPageContext(db, storeId);
   if (!row || !token) throw new Error("Facebook Page is not connected.");
   const commentId = String(input?.commentId ?? "");
+  const { assertOwnedRow } = await import("./core.server");
+  await assertOwnedRow(db, "facebook_comments", storeId, "comment_id", commentId);
   await graphPost(`/${commentId}`, token, { is_hidden: "true" });
   await db
     .from("facebook_comments")
