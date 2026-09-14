@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   listSubscriptionStores,
-  extendSubscription,
+  setSubscriptionStatus,
   setSubscriptionStatus,
   assignPackage,
   listPackages,
@@ -47,7 +47,7 @@ const TABS: { v: TabKey; label: string; icon: any }[] = [
   { v: "suspended", label: "Suspended", icon: Ban },
 ];
 
-const QUICK_EXTEND = [7, 15, 30, 90];
+
 
 function fmtDate(v?: string | null) {
   return v ? new Date(v).toLocaleDateString() : "—";
@@ -70,7 +70,6 @@ function statusBadge(s: string) {
 function SubscriptionsPage() {
   const listFn = useServerFn(listSubscriptionStores);
   const pkgFn = useServerFn(listPackages);
-  const extend = useServerFn(extendSubscription);
   const setStatus = useServerFn(setSubscriptionStatus);
   const assign = useServerFn(assignPackage);
   const qc = useQueryClient();
@@ -120,13 +119,6 @@ function SubscriptionsPage() {
 
   function invalidate() {
     qc.invalidateQueries({ queryKey: ["owner", "subscriptions"] });
-  }
-  async function doExtend(id: string, days: number) {
-    try {
-      await extend({ data: { storeId: id, days } });
-      toast.success(`Extended by ${days} days`);
-      invalidate();
-    } catch (e) { toast.error((e as Error).message); }
   }
   async function setS(id: string, status: any) {
     try {
