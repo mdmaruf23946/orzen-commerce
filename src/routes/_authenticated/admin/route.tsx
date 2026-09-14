@@ -78,6 +78,18 @@ const links: LinkDef[] = [
 
 
   
+  {
+    to: "/admin/ai",
+    label: "AI Command Center",
+    icon: Bot,
+    children: [
+      { to: "/admin/ai/agents", label: "Agents" },
+      { to: "/admin/ai/approvals", label: "Approvals" },
+      { to: "/admin/ai/identity", label: "Merchant Identity" },
+      { to: "/admin/ai/settings", label: "AI Settings" },
+      { to: "/admin/ai/logs", label: "Activity Log" },
+    ],
+  },
   { to: "/admin/ai-agent", label: "AI Sales Agent", icon: Bot },
   { to: "/admin/ai-recommendations", label: "AI Recommendations", icon: Sparkles, badgeKey: "ai_recommendations" },
   { to: "/admin/handoff-queue", label: "Handoff Queue", icon: UserCog, badgeKey: "handoff" },
