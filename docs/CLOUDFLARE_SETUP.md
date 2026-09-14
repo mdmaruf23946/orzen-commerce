@@ -75,8 +75,21 @@ And these as **secrets** (never commit them):
 
 | Secret | Purpose |
 |---|---|
-| `SUPABASE_SERVICE_ROLE_KEY` | optional — privileged server-side operations |
-| `LOVABLE_API_KEY` | AI Gateway (AI agent, product builder) |
+| `SUPABASE_SERVICE_ROLE_KEY` | **required** — admin panel, Winner Admin, all agent reads/writes |
+| `CREDENTIALS_ENCRYPTION_KEY` | **required** — decrypts saved WhatsApp/Messenger/payment credentials |
+| `LOVABLE_API_KEY` | **required** — AI Gateway (AI agents, product builder) |
+
+> Without these three, the site still renders, but every Agent connection
+> (Messenger, WhatsApp, Winner Admin) fails with a server error on this host
+> while continuing to work on the Lovable URL. `CREDENTIALS_ENCRYPTION_KEY`
+> must be the **same value** as on the Lovable deployment, or already-saved
+> Page tokens cannot be decrypted.
+>
+> Secrets are read per request from the worker binding as well as
+> `process.env`, so no compatibility-flag tweak is needed for them to be
+> picked up. Owner → AI Admin Control shows a **Deployment health** panel that
+> reports, for the host you are on, whether database access, credential
+> decryption and the AI key are available (names only, never values).
 
 `SUPABASE_SERVICE_ROLE_KEY` is **not required for images**. The `/api/img`
 proxy now reads store media with the publishable key, backed by a storage rule

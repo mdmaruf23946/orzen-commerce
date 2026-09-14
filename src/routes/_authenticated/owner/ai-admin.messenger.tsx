@@ -19,13 +19,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { DeploymentHealth } from "@/components/owner/DeploymentHealth";
 
 export const Route = createFileRoute("/_authenticated/owner/ai-admin/messenger")({ component: Page });
 
-const MESSENGER_WEBHOOK_URL =
-  "https://orzen-commerce.lovable.app/api/public/ai-admin/messenger-webhook";
+const WEBHOOK_PATH = "/api/public/ai-admin/messenger-webhook";
+// Always-available endpoint; kept as the fallback so the URL never goes blank.
+const FALLBACK_WEBHOOK_URL = `https://orzen-commerce.lovable.app${WEBHOOK_PATH}`;
 
 function Page() {
+  // Derived after mount so server and first client render match.
+  const [MESSENGER_WEBHOOK_URL, setWebhookUrl] = useState(FALLBACK_WEBHOOK_URL);
+  useEffect(() => {
+    setWebhookUrl(`${window.location.origin}${WEBHOOK_PATH}`);
+  }, []);
   const get = useServerFn(getAiAdminMessenger);
   const save = useServerFn(saveAiAdminMessenger);
   const verify = useServerFn(verifyAiAdminMessenger);
@@ -219,12 +226,19 @@ function Page() {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Use this exact permanent callback URL, not the custom domain. Paste it with your Verify Token into the
-                Messenger product webhook settings of your Meta app, then subscribe the page to the <b>messages</b> and
-                <b> messaging_postbacks</b> fields.
+                Paste this URL with your Verify Token into the Messenger product webhook settings of your Meta app, then
+                subscribe the page to the <b>messages</b> and <b>messaging_postbacks</b> fields. Keep one callback URL
+                only — never register a second endpoint.
               </p>
+              {MESSENGER_WEBHOOK_URL !== FALLBACK_WEBHOOK_URL ? (
+                <p className="text-xs text-muted-foreground">
+                  Always-available alternative: <span className="break-all">{FALLBACK_WEBHOOK_URL}</span>
+                </p>
+              ) : null}
             </CardContent>
           </Card>
+
+          <DeploymentHealth />
 
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-base">Test connection</CardTitle></CardHeader>

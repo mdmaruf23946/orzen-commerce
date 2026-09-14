@@ -2,6 +2,7 @@
 // credential (payments, WhatsApp, Messenger, notification providers).
 // Never import from client-reachable modules at module scope.
 import { createCipheriv, createDecipheriv, randomBytes, createHash } from "node:crypto";
+import { serverEnv } from "@/lib/server-env";
 
 // One shared server-side encryption mechanism. The generic name is preferred;
 // the legacy payment-specific name stays supported so already-stored
@@ -10,14 +11,14 @@ function keyMaterials(): Buffer[] {
   // Keep these as explicit reads. The production worker binds known secret
   // names at request time and cannot reliably discover computed env keys.
   const raws = [
-    process.env["CREDENTIALS_ENCRYPTION_KEY"],
-    process.env["PAYMENT_CREDENTIALS_KEY"],
+    serverEnv("CREDENTIALS_ENCRYPTION_KEY"),
+    serverEnv("PAYMENT_CREDENTIALS_KEY"),
   ].filter(
     (v): v is string => typeof v === "string" && v.length > 0,
   );
   if (raws.length === 0) {
     throw new Error(
-      "Credential encryption key is not configured on the server. Set CREDENTIALS_ENCRYPTION_KEY.",
+      "Server key CREDENTIALS_ENCRYPTION_KEY is missing on this deployment. Add it to the hosting environment (Cloudflare Pages → Settings → Variables and Secrets) and redeploy.",
     );
   }
   // Derive a stable 32-byte key regardless of the source length/encoding.

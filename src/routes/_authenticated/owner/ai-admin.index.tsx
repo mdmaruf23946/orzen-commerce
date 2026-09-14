@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Activity, AlertTriangle, Bot, CheckCircle2, Clock, MessageCircle, XCircle } from "lucide-react";
 import { aiAdminOverview } from "@/lib/ai-admin.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
+import { DeploymentHealth } from "@/components/owner/DeploymentHealth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -71,6 +72,8 @@ function Page() {
           </CardContent>
         </Card>
       </div>
+
+      <DeploymentHealth className="mt-4" />
 
       <Card className="mt-4">
         <CardHeader className="pb-2"><CardTitle className="text-base">Recent actions</CardTitle></CardHeader>

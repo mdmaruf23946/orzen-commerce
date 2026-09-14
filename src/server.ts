@@ -1,4 +1,5 @@
 import "./lib/error-capture";
+import { captureServerEnv } from "./lib/server-env";
 // Loaded lazily inside the handler: the worker bundle has been observed to
 // evaluate this entry before the statically-imported tenant-host module
 // bindings are initialised ("isRewritablePath is not defined" → 500).
@@ -49,6 +50,9 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    // Cloudflare delivers secrets as a per-request binding; share them with
+    // every server module before any handler runs.
+    captureServerEnv(env);
     try {
       const url = new URL(request.url);
       const envRecord = {
