@@ -855,3 +855,51 @@ export const closeSupportRequest = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// --------------------------- Deployment health ----------------------------
+// Presence-only report for the host the owner is currently on. Never returns
+// or logs any secret value.
+
+export const deploymentHealth = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { serverEnvReport } = await import("@/lib/server-env");
+    const keys = serverEnvReport();
+    const has = (n: string) => keys.find((k) => k.name === n)?.present ?? false;
+
+    let database = false;
+    let databaseError: string | null = null;
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error } = await supabaseAdmin
+        .from("ai_admin_settings")
+        .select("singleton")
+        .eq("singleton", true)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      database = true;
+    } catch (e: any) {
+      databaseError = e?.message ?? "Database access failed.";
+    }
+
+    let credentials = false;
+    let credentialsError: string | null = null;
+    try {
+      const { encryptJSON, decryptJSON } = await import("@/lib/crypto/credentials.server");
+      const probe = decryptJSON<{ ok: boolean }>(encryptJSON({ ok: true }));
+      credentials = probe?.ok === true;
+    } catch (e: any) {
+      credentialsError = e?.message ?? "Credential encryption is unavailable.";
+    }
+
+    return {
+      keys,
+      database,
+      databaseError,
+      credentials,
+      credentialsError,
+      ai: has("LOVABLE_API_KEY"),
+      ok: database && credentials && has("LOVABLE_API_KEY"),
+    };
+  });
