@@ -22,8 +22,12 @@ import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/owner/ai-admin/messenger")({ component: Page });
 
+const WEBHOOK_PATH = "/api/public/ai-admin/messenger-webhook";
+// Always-available endpoint; kept as the fallback so the URL never goes blank.
+const FALLBACK_WEBHOOK_URL = `https://orzen-commerce.lovable.app${WEBHOOK_PATH}`;
+// One endpoint, derived from the deployment the owner is actually using.
 const MESSENGER_WEBHOOK_URL =
-  "https://orzen-commerce.lovable.app/api/public/ai-admin/messenger-webhook";
+  typeof window !== "undefined" ? `${window.location.origin}${WEBHOOK_PATH}` : FALLBACK_WEBHOOK_URL;
 
 function Page() {
   const get = useServerFn(getAiAdminMessenger);
@@ -219,12 +223,19 @@ function Page() {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Use this exact permanent callback URL, not the custom domain. Paste it with your Verify Token into the
-                Messenger product webhook settings of your Meta app, then subscribe the page to the <b>messages</b> and
-                <b> messaging_postbacks</b> fields.
+                Paste this URL with your Verify Token into the Messenger product webhook settings of your Meta app, then
+                subscribe the page to the <b>messages</b> and <b>messaging_postbacks</b> fields. Keep one callback URL
+                only — never register a second endpoint.
               </p>
+              {MESSENGER_WEBHOOK_URL !== FALLBACK_WEBHOOK_URL ? (
+                <p className="text-xs text-muted-foreground">
+                  Always-available alternative: <span className="break-all">{FALLBACK_WEBHOOK_URL}</span>
+                </p>
+              ) : null}
             </CardContent>
           </Card>
+
+          <DeploymentHealth />
 
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-base">Test connection</CardTitle></CardHeader>
