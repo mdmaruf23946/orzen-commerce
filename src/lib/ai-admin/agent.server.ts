@@ -9,6 +9,14 @@ import { loadSettings } from "./connection.server";
 
 export type AgentResult = { reply: string; actions: string[] };
 
+/** Pick the reply language from the admin's own message (auto mode). */
+function detectLanguageInstruction(text: string): string {
+  if (/[\u0980-\u09FF]/.test(text ?? "")) {
+    return "The admin wrote in Bengali script. Reply entirely in natural Bengali (বাংলা).";
+  }
+  return "The admin wrote in Latin script. Reply in the same language/style they used (English or Banglish).";
+}
+
 const SYSTEM = `You are the ORZEN platform AI Admin Assistant for the platform owner (Winner Admin).
 You operate over WhatsApp and the admin console.
 
