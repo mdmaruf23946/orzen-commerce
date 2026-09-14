@@ -175,7 +175,7 @@ function Page() {
           </Card>
         ) : (
           (data as any[]).map((e) =>
-            editing?.id === e.id ? (
+            editing && editing.id === e.id ? (
               <EntryForm key={e.id} value={editing} onDone={() => setEditing(null)} />
             ) : (
               <Card key={e.id}>
