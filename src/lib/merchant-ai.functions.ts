@@ -12,6 +12,34 @@ import {
   type PermissionLevel,
 } from "@/lib/merchant-ai/registry";
 
+const PLAN_FIELDS =
+  "id,name,price,features,is_trial,plan_tier,product_limit,order_limit,staff_limit,landing_page_limit";
+
+/**
+ * The store row WITH its plan joined — `hasFeature` needs the package, and an
+ * expired plan falls back to the active Free plan.
+ */
+async function loadStoreWithPlan(db: any, storeId: string) {
+  const { data: store } = await db
+    .from("stores")
+    .select(`*, subscription_packages(${PLAN_FIELDS})`)
+    .eq("id", storeId)
+    .maybeSingle();
+  if (!store) return null;
+  if (["expired", "suspended", "cancelled"].includes(store.subscription_status ?? "active")) {
+    const { data: freePkg } = await db
+      .from("subscription_packages")
+      .select(PLAN_FIELDS)
+      .eq("is_active", true)
+      .eq("is_trial", false)
+      .eq("plan_tier", "free")
+      .limit(1)
+      .maybeSingle();
+    (store as any).free_package = freePkg ?? null;
+  }
+  return store;
+}
+
 async function ctxOf(context: any) {
   const access = await resolveStoreAccess(context.supabase, context.userId);
   if (!access?.storeId) throw new Error("No store found for this account.");
@@ -24,8 +52,8 @@ export const aiGetOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { db, storeId } = await ctxOf(context);
-    const [{ data: store }, state, perms, pending, logs, identities] = await Promise.all([
-      db.from("stores").select("*").eq("id", storeId).maybeSingle(),
+    const [store, state, perms, pending, logs, identities] = await Promise.all([
+      loadStoreWithPlan(db, storeId),
       db.from("store_ai_agent_state").select("*").eq("store_id", storeId),
       db.from("store_ai_permissions").select("action_key, level").eq("store_id", storeId),
       db
@@ -107,7 +135,7 @@ export const aiSendCommand = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ text: z.string().min(1).max(2000) }).parse(d))
   .handler(async ({ data, context }) => {
     const { db, storeId, userId } = await ctxOf(context);
-    const { data: store } = await db.from("stores").select("*").eq("id", storeId).maybeSingle();
+    const store = await loadStoreWithPlan(db, storeId);
     if (!hasFeature(store, "ai_agent")) {
       throw new Error("AI Command Center is not included in your current plan.");
     }
