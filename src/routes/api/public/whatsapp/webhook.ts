@@ -339,6 +339,30 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                 text = `[${msg.type}]`;
               }
 
+              // Merchant command path: only a verified merchant identity of THIS
+              // store reaches the Master Agent; everyone else keeps the existing
+              // customer flow.
+              if (text.trim()) {
+                try {
+                  const { handleMerchantChannelMessage } = await import(
+                    "@/lib/merchant-ai/router.server"
+                  );
+                  const merchant = await handleMerchantChannelMessage(
+                    sb,
+                    storeId,
+                    "whatsapp",
+                    waId,
+                    text,
+                  );
+                  if (merchant?.handled) {
+                    if (token) await sendWaText(phoneNumberId, token, waId, merchant.reply);
+                    continue;
+                  }
+                } catch {
+                  // the command router must never break customer messaging
+                }
+              }
+
               await logInbound(sb, conv.id, { text, type, attachments, mid: msg.id ?? null });
               await sb
                 .from("ai_conversations")

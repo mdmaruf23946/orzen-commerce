@@ -5,6 +5,7 @@ import { buildSystemPrompt, generateAgentReply, loadAiContext, resolveFocusProdu
 import {
   sendProductCard,
   sendProductCarousel,
+  sendText,
   sendViewSiteButton,
   type ProductCardInput,
 } from "@/lib/messenger-send.server";

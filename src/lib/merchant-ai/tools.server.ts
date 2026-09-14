@@ -19,10 +19,10 @@ const productSearch: ActionHandler = async ({ db, storeId }, input) => {
   const q = String(input?.query ?? "").trim();
   let sel = db
     .from("products")
-    .select("id, name, price, sale_price, stock, status, sku, product_type")
+    .select("id, name, price, old_price, stock, status, sku, product_type")
     .eq("store_id", storeId)
     .limit(8);
-  if (q) sel = sel.or(`name.ilike.%${q}%,sku.ilike.%${q}%`);
+  if (q) sel = sel.or(`name.ilike.%${q}%,sku.ilike.%${q}%,product_code.ilike.%${q}%`);
   const { data, error } = await sel;
   if (error) throw new Error(error.message);
   return { products: data ?? [] };
@@ -31,7 +31,7 @@ const productSearch: ActionHandler = async ({ db, storeId }, input) => {
 const productDetails: ActionHandler = async ({ db, storeId }, input) => {
   const { data, error } = await db
     .from("products")
-    .select("id, name, price, sale_price, stock, status, sku, product_type, description, variants")
+    .select("id, name, price, old_price, stock, status, sku, product_type, short_description, variants")
     .eq("store_id", storeId)
     .eq("id", String(input?.productId))
     .maybeSingle();
@@ -55,7 +55,7 @@ const bestsellers: ActionHandler = async ({ db, storeId }) => {
 /* ----------------------------- orders ----------------------------- */
 
 const ORDER_COLS =
-  "id, invoice_no, customer_name, customer_phone, customer_address, total, status, stage, payment_method, payment_status, created_at";
+  "id, invoice_no, customer_name, phone, address, subtotal, delivery_amount, discount_amount, paid_amount, due_amount, status, payment_method, payment_status, created_at";
 
 const orderSearch: ActionHandler = async ({ db, storeId }, input) => {
   const q = String(input?.query ?? "").trim();
@@ -67,7 +67,7 @@ const orderSearch: ActionHandler = async ({ db, storeId }, input) => {
     .limit(8);
   if (q) {
     sel = sel.or(
-      `customer_name.ilike.%${q}%,customer_phone.ilike.%${q}%,invoice_no.ilike.%${q}%`,
+      `customer_name.ilike.%${q}%,phone.ilike.%${q}%,invoice_no.ilike.%${q}%`,
     );
   }
   const { data, error } = await sel;
@@ -91,13 +91,16 @@ const orderToday: ActionHandler = async ({ db, storeId }) => {
   since.setHours(0, 0, 0, 0);
   const { data } = await db
     .from("orders")
-    .select("total, status")
+    .select("subtotal, delivery_amount, discount_amount, status")
     .eq("store_id", storeId)
     .gte("created_at", since.toISOString());
   const rows = data ?? [];
   return {
     count: rows.length,
-    total: rows.reduce((s: number, r: any) => s + money(r.total), 0),
+    total: rows.reduce(
+      (s: number, r: any) => s + money(r.subtotal) + money(r.delivery_amount) - money(r.discount_amount),
+      0,
+    ),
     byStatus: rows.reduce((acc: Record<string, number>, r: any) => {
       acc[r.status] = (acc[r.status] ?? 0) + 1;
       return acc;
@@ -110,7 +113,7 @@ const orderCreate: ActionHandler = async ({ db, storeId }, input) => {
   if (!items.length) throw new Error("At least one product is required.");
   const { data: products, error: pErr } = await db
     .from("products")
-    .select("id, name, price, sale_price, stock, status")
+    .select("id, name, price, stock, status")
     .eq("store_id", storeId)
     .in("id", items.map((i) => i.productId));
   if (pErr) throw new Error(pErr.message);
@@ -121,7 +124,7 @@ const orderCreate: ActionHandler = async ({ db, storeId }, input) => {
     const p = (products ?? []).find((x: any) => x.id === i.productId);
     if (p.status !== "active") throw new Error(`${p.name} is not available right now.`);
     const qty = Math.max(1, Number(i.qty ?? 1));
-    const price = money(p.sale_price ?? p.price);
+    const price = money(p.price);
     subtotal += price * qty;
     return { product_id: p.id, name_snapshot: p.name, price_snapshot: price, qty };
   });
@@ -132,16 +135,16 @@ const orderCreate: ActionHandler = async ({ db, storeId }, input) => {
     .insert({
       store_id: storeId,
       customer_name: String(input?.customerName ?? "").slice(0, 120),
-      customer_phone: String(input?.customerPhone ?? "").slice(0, 40),
-      customer_address: String(input?.address ?? "").slice(0, 400),
+      phone: String(input?.customerPhone ?? "").slice(0, 40),
+      address: String(input?.address ?? "").slice(0, 400),
       subtotal,
-      delivery_charge: delivery,
-      total: subtotal + delivery,
+      delivery_amount: delivery,
+      due_amount: subtotal + delivery,
       payment_method: "cod",
       status: "pending",
       source: "ai_agent",
     })
-    .select("id, invoice_no, total")
+    .select("id, invoice_no, subtotal, delivery_amount")
     .maybeSingle();
   if (error) throw new Error(error.message);
   await db.from("order_items").insert(lines.map((l) => ({ ...l, order_id: order.id })));
@@ -192,7 +195,7 @@ const customerOrders: ActionHandler = async ({ db, storeId }, input) => {
     .from("orders")
     .select(ORDER_COLS)
     .eq("store_id", storeId)
-    .ilike("customer_phone", `%${phone}%`)
+    .ilike("phone", `%${phone}%`)
     .order("created_at", { ascending: false })
     .limit(10);
   return { orders: data ?? [] };
@@ -216,7 +219,7 @@ const customerDetails: ActionHandler = async (ctx, input) => {
 const courierReady: ActionHandler = async ({ db, storeId }) => {
   const { data } = await db
     .from("orders")
-    .select("id, invoice_no, customer_name, customer_phone, customer_address, total, status, stage")
+    .select("id, invoice_no, customer_name, phone, address, subtotal, delivery_amount, status")
     .eq("store_id", storeId)
     .in("status", ["confirmed", "processing"])
     .order("created_at", { ascending: false })
@@ -240,7 +243,7 @@ const courierSubmit: ActionHandler = async ({ db, storeId }, input) => {
 const courierTrack: ActionHandler = async ({ db, storeId }, input) => {
   const { data } = await db
     .from("courier_parcels")
-    .select("order_id, courier_key, tracking_id, consignment_id, status, last_status_at")
+    .select("order_id, courier_key, tracking_code, tracking_url, consignment_id, status, last_synced_at")
     .eq("store_id", storeId)
     .eq("order_id", String(input?.orderId))
     .order("created_at", { ascending: false })
