@@ -9426,7 +9426,7 @@ export type Database = {
           linkedin?: string | null
           logo_url?: string | null
           marketing?: Json
-          merchant_code: string
+          merchant_code?: string
           messenger?: string | null
           nagad_number?: string | null
           name: string
