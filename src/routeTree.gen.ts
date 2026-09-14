@@ -195,7 +195,9 @@ import { Route as AuthenticatedOwnerAiAdminPermissionsRouteImport } from './rout
 import { Route as AuthenticatedOwnerAiAdminNotificationsRouteImport } from './routes/_authenticated/owner/ai-admin.notifications'
 import { Route as AuthenticatedOwnerAiAdminMessengerRouteImport } from './routes/_authenticated/owner/ai-admin.messenger'
 import { Route as AuthenticatedOwnerAiAdminLogsRouteImport } from './routes/_authenticated/owner/ai-admin.logs'
+import { Route as AuthenticatedOwnerAiAdminKnowledgeRouteImport } from './routes/_authenticated/owner/ai-admin.knowledge'
 import { Route as AuthenticatedOwnerAiAdminAutomationRouteImport } from './routes/_authenticated/owner/ai-admin.automation'
+import { Route as AuthenticatedOwnerAiAdminAgentsRouteImport } from './routes/_authenticated/owner/ai-admin.agents'
 import { Route as AuthenticatedOwnerAiAdminAgentRouteImport } from './routes/_authenticated/owner/ai-admin.agent'
 import { Route as AuthenticatedAdminSettingsWorkflowRouteImport } from './routes/_authenticated/admin/settings.workflow'
 import { Route as AuthenticatedAdminSettingsSubscriptionRouteImport } from './routes/_authenticated/admin/settings.subscription'
@@ -1264,10 +1266,22 @@ const AuthenticatedOwnerAiAdminLogsRoute =
     path: '/ai-admin/logs',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
+const AuthenticatedOwnerAiAdminKnowledgeRoute =
+  AuthenticatedOwnerAiAdminKnowledgeRouteImport.update({
+    id: '/ai-admin/knowledge',
+    path: '/ai-admin/knowledge',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
 const AuthenticatedOwnerAiAdminAutomationRoute =
   AuthenticatedOwnerAiAdminAutomationRouteImport.update({
     id: '/ai-admin/automation',
     path: '/ai-admin/automation',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerAiAdminAgentsRoute =
+  AuthenticatedOwnerAiAdminAgentsRouteImport.update({
+    id: '/ai-admin/agents',
+    path: '/ai-admin/agents',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
 const AuthenticatedOwnerAiAdminAgentRoute =
@@ -1562,7 +1576,9 @@ export interface FileRoutesByFullPath {
   '/admin/settings/subscription': typeof AuthenticatedAdminSettingsSubscriptionRoute
   '/admin/settings/workflow': typeof AuthenticatedAdminSettingsWorkflowRoute
   '/owner/ai-admin/agent': typeof AuthenticatedOwnerAiAdminAgentRoute
+  '/owner/ai-admin/agents': typeof AuthenticatedOwnerAiAdminAgentsRoute
   '/owner/ai-admin/automation': typeof AuthenticatedOwnerAiAdminAutomationRoute
+  '/owner/ai-admin/knowledge': typeof AuthenticatedOwnerAiAdminKnowledgeRoute
   '/owner/ai-admin/logs': typeof AuthenticatedOwnerAiAdminLogsRoute
   '/owner/ai-admin/messenger': typeof AuthenticatedOwnerAiAdminMessengerRoute
   '/owner/ai-admin/notifications': typeof AuthenticatedOwnerAiAdminNotificationsRoute
@@ -1764,7 +1780,9 @@ export interface FileRoutesByTo {
   '/admin/settings/subscription': typeof AuthenticatedAdminSettingsSubscriptionRoute
   '/admin/settings/workflow': typeof AuthenticatedAdminSettingsWorkflowRoute
   '/owner/ai-admin/agent': typeof AuthenticatedOwnerAiAdminAgentRoute
+  '/owner/ai-admin/agents': typeof AuthenticatedOwnerAiAdminAgentsRoute
   '/owner/ai-admin/automation': typeof AuthenticatedOwnerAiAdminAutomationRoute
+  '/owner/ai-admin/knowledge': typeof AuthenticatedOwnerAiAdminKnowledgeRoute
   '/owner/ai-admin/logs': typeof AuthenticatedOwnerAiAdminLogsRoute
   '/owner/ai-admin/messenger': typeof AuthenticatedOwnerAiAdminMessengerRoute
   '/owner/ai-admin/notifications': typeof AuthenticatedOwnerAiAdminNotificationsRoute
@@ -1977,7 +1995,9 @@ export interface FileRoutesById {
   '/_authenticated/admin/settings/subscription': typeof AuthenticatedAdminSettingsSubscriptionRoute
   '/_authenticated/admin/settings/workflow': typeof AuthenticatedAdminSettingsWorkflowRoute
   '/_authenticated/owner/ai-admin/agent': typeof AuthenticatedOwnerAiAdminAgentRoute
+  '/_authenticated/owner/ai-admin/agents': typeof AuthenticatedOwnerAiAdminAgentsRoute
   '/_authenticated/owner/ai-admin/automation': typeof AuthenticatedOwnerAiAdminAutomationRoute
+  '/_authenticated/owner/ai-admin/knowledge': typeof AuthenticatedOwnerAiAdminKnowledgeRoute
   '/_authenticated/owner/ai-admin/logs': typeof AuthenticatedOwnerAiAdminLogsRoute
   '/_authenticated/owner/ai-admin/messenger': typeof AuthenticatedOwnerAiAdminMessengerRoute
   '/_authenticated/owner/ai-admin/notifications': typeof AuthenticatedOwnerAiAdminNotificationsRoute
@@ -2190,7 +2210,9 @@ export interface FileRouteTypes {
     | '/admin/settings/subscription'
     | '/admin/settings/workflow'
     | '/owner/ai-admin/agent'
+    | '/owner/ai-admin/agents'
     | '/owner/ai-admin/automation'
+    | '/owner/ai-admin/knowledge'
     | '/owner/ai-admin/logs'
     | '/owner/ai-admin/messenger'
     | '/owner/ai-admin/notifications'
@@ -2392,7 +2414,9 @@ export interface FileRouteTypes {
     | '/admin/settings/subscription'
     | '/admin/settings/workflow'
     | '/owner/ai-admin/agent'
+    | '/owner/ai-admin/agents'
     | '/owner/ai-admin/automation'
+    | '/owner/ai-admin/knowledge'
     | '/owner/ai-admin/logs'
     | '/owner/ai-admin/messenger'
     | '/owner/ai-admin/notifications'
@@ -2604,7 +2628,9 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/settings/subscription'
     | '/_authenticated/admin/settings/workflow'
     | '/_authenticated/owner/ai-admin/agent'
+    | '/_authenticated/owner/ai-admin/agents'
     | '/_authenticated/owner/ai-admin/automation'
+    | '/_authenticated/owner/ai-admin/knowledge'
     | '/_authenticated/owner/ai-admin/logs'
     | '/_authenticated/owner/ai-admin/messenger'
     | '/_authenticated/owner/ai-admin/notifications'
@@ -4021,11 +4047,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerAiAdminLogsRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
+    '/_authenticated/owner/ai-admin/knowledge': {
+      id: '/_authenticated/owner/ai-admin/knowledge'
+      path: '/ai-admin/knowledge'
+      fullPath: '/owner/ai-admin/knowledge'
+      preLoaderRoute: typeof AuthenticatedOwnerAiAdminKnowledgeRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
     '/_authenticated/owner/ai-admin/automation': {
       id: '/_authenticated/owner/ai-admin/automation'
       path: '/ai-admin/automation'
       fullPath: '/owner/ai-admin/automation'
       preLoaderRoute: typeof AuthenticatedOwnerAiAdminAutomationRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/ai-admin/agents': {
+      id: '/_authenticated/owner/ai-admin/agents'
+      path: '/ai-admin/agents'
+      fullPath: '/owner/ai-admin/agents'
+      preLoaderRoute: typeof AuthenticatedOwnerAiAdminAgentsRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/owner/ai-admin/agent': {
@@ -4527,7 +4567,9 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerWebhooksRoute: typeof AuthenticatedOwnerWebhooksRoute
   AuthenticatedOwnerIndexRoute: typeof AuthenticatedOwnerIndexRoute
   AuthenticatedOwnerAiAdminAgentRoute: typeof AuthenticatedOwnerAiAdminAgentRoute
+  AuthenticatedOwnerAiAdminAgentsRoute: typeof AuthenticatedOwnerAiAdminAgentsRoute
   AuthenticatedOwnerAiAdminAutomationRoute: typeof AuthenticatedOwnerAiAdminAutomationRoute
+  AuthenticatedOwnerAiAdminKnowledgeRoute: typeof AuthenticatedOwnerAiAdminKnowledgeRoute
   AuthenticatedOwnerAiAdminLogsRoute: typeof AuthenticatedOwnerAiAdminLogsRoute
   AuthenticatedOwnerAiAdminMessengerRoute: typeof AuthenticatedOwnerAiAdminMessengerRoute
   AuthenticatedOwnerAiAdminNotificationsRoute: typeof AuthenticatedOwnerAiAdminNotificationsRoute
@@ -4592,8 +4634,11 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerWebhooksRoute: AuthenticatedOwnerWebhooksRoute,
     AuthenticatedOwnerIndexRoute: AuthenticatedOwnerIndexRoute,
     AuthenticatedOwnerAiAdminAgentRoute: AuthenticatedOwnerAiAdminAgentRoute,
+    AuthenticatedOwnerAiAdminAgentsRoute: AuthenticatedOwnerAiAdminAgentsRoute,
     AuthenticatedOwnerAiAdminAutomationRoute:
       AuthenticatedOwnerAiAdminAutomationRoute,
+    AuthenticatedOwnerAiAdminKnowledgeRoute:
+      AuthenticatedOwnerAiAdminKnowledgeRoute,
     AuthenticatedOwnerAiAdminLogsRoute: AuthenticatedOwnerAiAdminLogsRoute,
     AuthenticatedOwnerAiAdminMessengerRoute:
       AuthenticatedOwnerAiAdminMessengerRoute,
