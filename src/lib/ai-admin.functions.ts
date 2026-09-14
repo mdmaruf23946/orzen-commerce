@@ -893,6 +893,16 @@ export const deploymentHealth = createServerFn({ method: "GET" })
       credentialsError = e?.message ?? "Credential encryption is unavailable.";
     }
 
+    let forwardedFrom: string | null = null;
+    try {
+      const { getRequestHeader } = await import("@tanstack/react-start/server");
+      if (getRequestHeader("x-orzen-forwarded")) {
+        forwardedFrom = getRequestHeader("x-forwarded-host") ?? "custom domain";
+      }
+    } catch {
+      /* header access unavailable — not critical */
+    }
+
     return {
       keys,
       database,
@@ -900,6 +910,8 @@ export const deploymentHealth = createServerFn({ method: "GET" })
       credentials,
       credentialsError,
       ai: has("LOVABLE_API_KEY"),
+      forwarded: Boolean(forwardedFrom),
+      forwardedFrom,
       ok: database && credentials && has("LOVABLE_API_KEY"),
     };
   });

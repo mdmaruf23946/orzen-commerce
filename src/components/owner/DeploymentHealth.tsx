@@ -51,6 +51,13 @@ export function DeploymentHealth({ className }: { className?: string }) {
         <p className="text-xs text-muted-foreground">
           Checks for the address you are on right now{host ? ` (${host})` : ""}.
         </p>
+        {data?.forwarded ? (
+          <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-2 text-xs">
+            Secure internal forwarding is active: this address serves the site, while private
+            actions (agents, admin controls, database) run on the Lovable backend. No redirect and
+            no second domain is visible to visitors.
+          </div>
+        ) : null}
         <Row label="Database access" ok={Boolean(data?.database)} hint={data?.databaseError} />
         <Row
           label="Credential decryption"

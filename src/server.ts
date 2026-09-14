@@ -55,6 +55,16 @@ export default {
     captureServerEnv(env);
     try {
       const url = new URL(request.url);
+
+      // When this deployment has no private server keys (Cloudflare Pages),
+      // forward server-only requests to the Lovable deployment that does.
+      // Invisible to the browser: same URL, no redirect, cookies preserved.
+      {
+        const { shouldForward, forwardToUpstream } = await import("./lib/origin-forward");
+        if (shouldForward(request, url)) {
+          return await forwardToUpstream(request, url);
+        }
+      }
       const envRecord = {
         ...(typeof process !== "undefined" ? (process.env as Record<string, string | undefined>) : {}),
         ...((env ?? {}) as Record<string, string | undefined>),
