@@ -1333,6 +1333,30 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                 if (transcript) effectiveText = transcript;
               }
 
+              // Merchant command path: only a verified merchant identity of THIS
+              // store reaches the Master Agent. Everyone else falls through to
+              // the existing customer flow untouched.
+              if (effectiveText) {
+                try {
+                  const { handleMerchantChannelMessage } = await import(
+                    "@/lib/merchant-ai/router.server"
+                  );
+                  const merchant = await handleMerchantChannelMessage(
+                    sb,
+                    integ.store_id,
+                    "messenger",
+                    senderId,
+                    effectiveText,
+                  );
+                  if (merchant?.handled) {
+                    if (token) await sendText(token, senderId, merchant.reply);
+                    continue;
+                  }
+                } catch {
+                  // never break the customer flow because of the command router
+                }
+              }
+
               const preview = effectiveText.slice(0, 200) || `[${parsed.message_type}]`;
 
               await sb.from("ai_messages").insert({
