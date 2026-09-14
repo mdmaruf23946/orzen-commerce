@@ -159,7 +159,17 @@ export const Route = createFileRoute("/api/public/ai-admin/messenger-webhook")({
           reply = result.reply;
           actions = result.actions;
         } catch (e) {
-          reply = `⚠️ ${e instanceof Error ? e.message : "Something went wrong."}`;
+          const detail = e instanceof Error ? e.message : "Unknown error";
+          const friendly = /forbidden|unauthorized|401|403/i.test(detail)
+            ? "⚠️ AI service authorization failed. Please re-publish the app so the latest AI key is applied, then try again."
+            : `⚠️ Could not process that right now (${detail}).`;
+          reply = friendly;
+          if (messageId) {
+            await supabaseAdmin
+              .from("ai_admin_webhook_events")
+              .update({ error: detail.slice(0, 300) })
+              .eq("message_id", messageId);
+          }
         }
 
         if (threadId) {
