@@ -12,6 +12,34 @@ import {
   type PermissionLevel,
 } from "@/lib/merchant-ai/registry";
 
+const PLAN_FIELDS =
+  "id,name,price,features,is_trial,plan_tier,product_limit,order_limit,staff_limit,landing_page_limit";
+
+/**
+ * The store row WITH its plan joined — `hasFeature` needs the package, and an
+ * expired plan falls back to the active Free plan.
+ */
+async function loadStoreWithPlan(db: any, storeId: string) {
+  const { data: store } = await db
+    .from("stores")
+    .select(`*, subscription_packages(${PLAN_FIELDS})`)
+    .eq("id", storeId)
+    .maybeSingle();
+  if (!store) return null;
+  if (["expired", "suspended", "cancelled"].includes(store.subscription_status ?? "active")) {
+    const { data: freePkg } = await db
+      .from("subscription_packages")
+      .select(PLAN_FIELDS)
+      .eq("is_active", true)
+      .eq("is_trial", false)
+      .eq("plan_tier", "free")
+      .limit(1)
+      .maybeSingle();
+    (store as any).free_package = freePkg ?? null;
+  }
+  return store;
+}
+
 async function ctxOf(context: any) {
   const access = await resolveStoreAccess(context.supabase, context.userId);
   if (!access?.storeId) throw new Error("No store found for this account.");
