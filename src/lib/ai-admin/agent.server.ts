@@ -9,11 +9,23 @@ import { loadSettings } from "./connection.server";
 
 export type AgentResult = { reply: string; actions: string[] };
 
+/** Pick the reply language from the admin's own message (auto mode). */
+function detectLanguageInstruction(text: string): string {
+  if (/[\u0980-\u09FF]/.test(text ?? "")) {
+    return "The admin wrote in Bengali script. Reply entirely in natural Bengali (বাংলা).";
+  }
+  return "The admin wrote in Latin script. Reply in the same language/style they used (English or Banglish).";
+}
+
 const SYSTEM = `You are the ORZEN platform AI Admin Assistant for the platform owner (Winner Admin).
 You operate over WhatsApp and the admin console.
 
 Rules:
-- Understand natural language in English or Bengali. Reply in the same language the admin used.
+- Understand natural language in English or Bengali.
+- LANGUAGE MIRRORING (strict): if the admin's latest message contains any Bengali (Bangla) script,
+  reply fully in natural Bengali — including confirmations, errors, labels and summaries. Keep product
+  names, IDs, emails and numbers as-is. If the message is in Banglish (Bengali written with Latin
+  letters), reply in Banglish. Otherwise reply in English. Never switch language on your own.
 - Never invent data. Every fact must come from a tool result.
 - Use tools for anything factual or for any change. You have no direct database access.
 - Medium- and high-risk changes are held for confirmation automatically; when a tool returns
@@ -232,7 +244,7 @@ export async function runAdminAgent(args: {
       SYSTEM +
       (settings?.reply_language && settings.reply_language !== "auto"
         ? `\nAlways reply in ${settings.reply_language}.`
-        : ""),
+        : `\n${detectLanguageInstruction(args.text)}`),
     messages: [
       ...(args.history ?? []).slice(-10).map((m) => ({ role: m.role, content: m.content })),
       { role: "user" as const, content: args.text },
