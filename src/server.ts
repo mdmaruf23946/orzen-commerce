@@ -1,4 +1,5 @@
 import "./lib/error-capture";
+import { captureServerEnv } from "./lib/server-env";
 // Loaded lazily inside the handler: the worker bundle has been observed to
 // evaluate this entry before the statically-imported tenant-host module
 // bindings are initialised ("isRewritablePath is not defined" → 500).
