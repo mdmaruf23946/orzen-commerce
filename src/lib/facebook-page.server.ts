@@ -185,8 +185,12 @@ export function attachmentOf(post: any): { type: string; url: string | null; thu
  * Without this, the callback URL + verify token alone never receive anything.
  */
 export async function subscribePageToApp(pageId: string, token: string) {
+  // Merge with whatever the page is already subscribed to, so enabling Page
+  // events never removes Messenger's `messages` subscription (and vice versa).
+  const existing = await pageSubscribedFields(pageId, token);
+  const fields = [...new Set([...existing, "feed", "mention"])];
   return graphPost(`/${encodeURIComponent(pageId)}/subscribed_apps`, token, {
-    subscribed_fields: "feed,mention",
+    subscribed_fields: fields.join(","),
   });
 }
 
