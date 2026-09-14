@@ -6992,6 +6992,97 @@ export type Database = {
           },
         ]
       }
+      store_ai_activity_logs: {
+        Row: {
+          action_key: string | null
+          agent_key: string | null
+          created_at: string
+          id: string
+          level: string
+          message: string
+          meta: Json
+          store_id: string
+          thread_id: string | null
+        }
+        Insert: {
+          action_key?: string | null
+          agent_key?: string | null
+          created_at?: string
+          id?: string
+          level?: string
+          message: string
+          meta?: Json
+          store_id: string
+          thread_id?: string | null
+        }
+        Update: {
+          action_key?: string | null
+          agent_key?: string | null
+          created_at?: string
+          id?: string
+          level?: string
+          message?: string
+          meta?: Json
+          store_id?: string
+          thread_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_ai_activity_logs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_ai_agent_state: {
+        Row: {
+          agent_key: string
+          config: Json
+          created_at: string
+          enabled: boolean
+          id: string
+          last_activity_at: string | null
+          last_error: string | null
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          agent_key: string
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          last_activity_at?: string | null
+          last_error?: string | null
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          agent_key?: string
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          last_activity_at?: string | null
+          last_error?: string | null
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_ai_agent_state_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_ai_agents: {
         Row: {
           agent_name: string
@@ -7210,6 +7301,280 @@ export type Database = {
             foreignKeyName: "store_ai_config_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_ai_identities: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          identifier: string
+          label: string | null
+          last_seen_at: string | null
+          store_id: string
+          updated_at: string
+          verified: boolean
+          verify_code: string | null
+          verify_expires_at: string | null
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          id?: string
+          identifier: string
+          label?: string | null
+          last_seen_at?: string | null
+          store_id: string
+          updated_at?: string
+          verified?: boolean
+          verify_code?: string | null
+          verify_expires_at?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          identifier?: string
+          label?: string | null
+          last_seen_at?: string | null
+          store_id?: string
+          updated_at?: string
+          verified?: boolean
+          verify_code?: string | null
+          verify_expires_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_ai_identities_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_ai_notification_rules: {
+        Row: {
+          channels: string[]
+          created_at: string
+          enabled: boolean
+          event_key: string
+          id: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          channels?: string[]
+          created_at?: string
+          enabled?: boolean
+          event_key: string
+          id?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          channels?: string[]
+          created_at?: string
+          enabled?: boolean
+          event_key?: string
+          id?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_ai_notification_rules_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_ai_pending_actions: {
+        Row: {
+          action_key: string
+          agent_key: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          error: string | null
+          expires_at: string
+          id: string
+          payload: Json
+          requested_by: string | null
+          requested_via: string
+          result: Json | null
+          status: string
+          store_id: string
+          summary: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_key: string
+          agent_key: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          error?: string | null
+          expires_at?: string
+          id?: string
+          payload?: Json
+          requested_by?: string | null
+          requested_via?: string
+          result?: Json | null
+          status?: string
+          store_id: string
+          summary?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_key?: string
+          agent_key?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          error?: string | null
+          expires_at?: string
+          id?: string
+          payload?: Json
+          requested_by?: string | null
+          requested_via?: string
+          result?: Json | null
+          status?: string
+          store_id?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_ai_pending_actions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_ai_permissions: {
+        Row: {
+          action_key: string
+          created_at: string
+          id: string
+          level: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          action_key: string
+          created_at?: string
+          id?: string
+          level?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          action_key?: string
+          created_at?: string
+          id?: string
+          level?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_ai_permissions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_ai_thread_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          meta: Json
+          role: string
+          store_id: string
+          thread_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          meta?: Json
+          role: string
+          store_id: string
+          thread_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          meta?: Json
+          role?: string
+          store_id?: string
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_ai_thread_messages_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_ai_thread_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "store_ai_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_ai_threads: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          identity_ref: string | null
+          last_message_at: string
+          store_id: string
+          title: string | null
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          id?: string
+          identity_ref?: string | null
+          last_message_at?: string
+          store_id: string
+          title?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          identity_ref?: string | null
+          last_message_at?: string
+          store_id?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_ai_threads_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
