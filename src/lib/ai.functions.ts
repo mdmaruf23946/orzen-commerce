@@ -621,13 +621,28 @@ export const verifyMessengerWebhook = createServerFn({ method: "POST" })
         });
         diag.post_status = rp.status;
       } catch {}
-      const ok = diag.token_match;
+      // Repair the page → app subscription; this is what makes Meta actually
+      // deliver inbox messages to the webhook.
+      diag.subscribed = false;
+      diag.subscribed_fields = [];
+      const token = (await decryptToken(row.page_access_token_encrypted)) || row.page_access_token;
+      if (row.page_id && token) {
+        const { ensurePageSubscribed } = await import("@/lib/messenger-subscribe.server");
+        const sub = await ensurePageSubscribed(row.page_id, token);
+        diag.subscribed = sub.ok;
+        diag.subscribed_fields = sub.fields;
+        if (!sub.ok && sub.error) diag.subscribe_error = sub.error;
+      }
+
+      const ok = diag.token_match && diag.subscribed;
       await context.supabase
         .from("messenger_integrations")
         .update({
           last_verified_at: ok ? new Date().toISOString() : row.last_verified_at,
-          last_error: ok
-            ? null
+          last_error: diag.token_match
+            ? ok
+              ? null
+              : `Message delivery is not enabled on the Page${diag.subscribe_error ? `: ${diag.subscribe_error}` : ". Grant pages_messaging and reconnect."}`
             : `Webhook verify failed (GET ${diag.get_status}: ${diag.get_body || "no body"})`,
         })
         .eq("store_id", storeId);
