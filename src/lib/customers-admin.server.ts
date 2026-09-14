@@ -64,6 +64,7 @@ export async function loadOrders(supabase: AnyClient, storeId: string) {
 
 export type AccountRow = {
   id: string;
+  customer_code: string | null;
   full_name: string | null;
   email: string | null;
   phone: string | null;
@@ -75,7 +76,7 @@ export type AccountRow = {
 export async function loadAccounts(supabase: AnyClient, storeId: string) {
   const { data } = await supabase
     .from("store_customers")
-    .select(sel("id,full_name,email,phone,is_active,last_login_at,created_at"))
+    .select(sel("id,customer_code,full_name,email,phone,is_active,last_login_at,created_at"))
     .eq("store_id", storeId)
     .limit(5000)
     .returns<AccountRow[]>();
