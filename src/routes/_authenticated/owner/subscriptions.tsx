@@ -220,10 +220,6 @@ function SubscriptionsPage() {
                 )}
               </div>
               <div className="mt-3 flex flex-wrap gap-1">
-                {QUICK_EXTEND.map((d) => (
-                  <Button key={d} size="sm" variant="outline" className="h-7 px-2 text-[11px]"
-                    onClick={() => doExtend(s.id, d)}>+{d}d</Button>
-                ))}
                 <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]" onClick={() => setOpenId(s.id)}>
                   Usage
                 </Button>
@@ -256,7 +252,6 @@ function SubscriptionsPage() {
               <th className="p-3">Status</th>
               <th className="p-3">Package</th>
               <th className="p-3">Expires</th>
-              <th className="p-3">Quick extend</th>
               <th className="p-3"></th>
             </tr>
           </thead>
@@ -297,16 +292,6 @@ function SubscriptionsPage() {
                         {daysLeft >= 0 ? `${daysLeft}d left` : `${-daysLeft}d ago`}
                       </div>
                     )}
-                  </td>
-                  <td className="p-3">
-                    <div className="flex flex-wrap gap-1">
-                      {QUICK_EXTEND.map((d) => (
-                        <Button key={d} size="sm" variant="outline" className="h-7 px-2 text-[11px]"
-                          onClick={() => doExtend(s.id, d)}>
-                          +{d}d
-                        </Button>
-                      ))}
-                    </div>
                   </td>
                   <td className="p-3">
                     <div className="flex flex-wrap justify-end gap-1">
