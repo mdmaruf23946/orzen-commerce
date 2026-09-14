@@ -560,11 +560,21 @@ export const connectMessenger = createServerFn({ method: "POST" })
       privacy_policy_url: data.privacy_policy_url,
       terms_of_service_url: data.terms_of_service_url || null,
     };
+    // Without an app subscription Meta never delivers inbox messages to the
+    // webhook, so do it as part of connecting.
+    const { ensurePageSubscribed } = await import("@/lib/messenger-subscribe.server");
+    const sub = await ensurePageSubscribed(data.page_id, data.page_access_token);
+    if (!sub.ok) {
+      upsertRow.last_error =
+        sub.error ??
+        "Facebook Page is connected but message delivery could not be enabled. Grant pages_messaging and reconnect.";
+    }
+
     const { error } = await context.supabase
       .from("messenger_integrations")
       .upsert(upsertRow, { onConflict: "store_id" });
     if (error) throw new Error(error.message);
-    return { ok: true, verify_token };
+    return { ok: true, verify_token, subscribed: sub.ok, subscribed_fields: sub.fields };
   });
 
 export const disconnectMessenger = createServerFn({ method: "POST" })
