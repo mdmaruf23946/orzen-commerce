@@ -71,12 +71,22 @@ export const Route = createFileRoute("/api/public/ai-admin/messenger-webhook")({
         const settings = await loadSettings();
         const allowed = (conn.admin_psids ?? []).map((p) => String(p).trim()).filter(Boolean);
 
-        // Sender verification.
-        if (allowed.length === 0 || !allowed.includes(psid)) {
+        // Secure routing: admin access comes ONLY from the server-side PSID
+        // allow-list. Message content can never grant it.
+        const isAdmin = allowed.length > 0 && allowed.includes(psid);
+
+        if (!isAdmin) {
+          const { handleCustomerMessage } = await import("@/lib/ai-admin/customer-router.server");
+          const result = await handleCustomerMessage({
+            psid,
+            text,
+            pageAccessToken: creds.page_access_token,
+            enabled: (settings as any)?.customer_agent_enabled ?? true,
+          });
           if (messageId) {
             await supabaseAdmin
               .from("ai_admin_webhook_events")
-              .update({ processed: true, error: "Sender not allow-listed" })
+              .update({ processed: true, error: result.error ?? null })
               .eq("message_id", messageId);
           }
           return new Response("ok", { status: 200 });

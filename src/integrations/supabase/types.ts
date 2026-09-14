@@ -267,6 +267,101 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_admin_customer_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          thread_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          role: string
+          thread_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_admin_customer_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "ai_admin_customer_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_admin_customer_threads: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          last_message_at: string
+          psid: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          last_message_at?: string
+          psid: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          last_message_at?: string
+          psid?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_admin_kb_entries: {
+        Row: {
+          body: string
+          category: string
+          created_at: string
+          id: string
+          published: boolean
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          category?: string
+          created_at?: string
+          id?: string
+          published?: boolean
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          category?: string
+          created_at?: string
+          id?: string
+          published?: boolean
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_admin_messages: {
         Row: {
           actions: Json
@@ -470,6 +565,8 @@ export type Database = {
           confirm_high_risk: boolean
           confirm_medium_risk: boolean
           created_at: string
+          customer_agent_enabled: boolean
+          customer_agent_model: string | null
           daily_digest_enabled: boolean
           daily_digest_hour: number
           id: string
@@ -487,6 +584,8 @@ export type Database = {
           confirm_high_risk?: boolean
           confirm_medium_risk?: boolean
           created_at?: string
+          customer_agent_enabled?: boolean
+          customer_agent_model?: string | null
           daily_digest_enabled?: boolean
           daily_digest_hour?: number
           id?: string
@@ -504,6 +603,8 @@ export type Database = {
           confirm_high_risk?: boolean
           confirm_medium_risk?: boolean
           created_at?: string
+          customer_agent_enabled?: boolean
+          customer_agent_model?: string | null
           daily_digest_enabled?: boolean
           daily_digest_hour?: number
           id?: string
@@ -516,6 +617,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      ai_admin_support_requests: {
+        Row: {
+          created_at: string
+          customer_name: string | null
+          id: string
+          psid: string
+          reason: string | null
+          resolved_at: string | null
+          status: string
+          summary: string | null
+          thread_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name?: string | null
+          id?: string
+          psid: string
+          reason?: string | null
+          resolved_at?: string | null
+          status?: string
+          summary?: string | null
+          thread_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string | null
+          id?: string
+          psid?: string
+          reason?: string | null
+          resolved_at?: string | null
+          status?: string
+          summary?: string | null
+          thread_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_admin_support_requests_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "ai_admin_customer_threads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_admin_threads: {
         Row: {
