@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   listSubscriptionStores,
-  extendSubscription,
   setSubscriptionStatus,
   assignPackage,
   listPackages,
@@ -47,7 +46,7 @@ const TABS: { v: TabKey; label: string; icon: any }[] = [
   { v: "suspended", label: "Suspended", icon: Ban },
 ];
 
-const QUICK_EXTEND = [7, 15, 30, 90];
+
 
 function fmtDate(v?: string | null) {
   return v ? new Date(v).toLocaleDateString() : "—";
@@ -70,7 +69,6 @@ function statusBadge(s: string) {
 function SubscriptionsPage() {
   const listFn = useServerFn(listSubscriptionStores);
   const pkgFn = useServerFn(listPackages);
-  const extend = useServerFn(extendSubscription);
   const setStatus = useServerFn(setSubscriptionStatus);
   const assign = useServerFn(assignPackage);
   const qc = useQueryClient();
@@ -120,13 +118,6 @@ function SubscriptionsPage() {
 
   function invalidate() {
     qc.invalidateQueries({ queryKey: ["owner", "subscriptions"] });
-  }
-  async function doExtend(id: string, days: number) {
-    try {
-      await extend({ data: { storeId: id, days } });
-      toast.success(`Extended by ${days} days`);
-      invalidate();
-    } catch (e) { toast.error((e as Error).message); }
   }
   async function setS(id: string, status: any) {
     try {
@@ -220,10 +211,6 @@ function SubscriptionsPage() {
                 )}
               </div>
               <div className="mt-3 flex flex-wrap gap-1">
-                {QUICK_EXTEND.map((d) => (
-                  <Button key={d} size="sm" variant="outline" className="h-7 px-2 text-[11px]"
-                    onClick={() => doExtend(s.id, d)}>+{d}d</Button>
-                ))}
                 <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]" onClick={() => setOpenId(s.id)}>
                   Usage
                 </Button>
@@ -256,7 +243,6 @@ function SubscriptionsPage() {
               <th className="p-3">Status</th>
               <th className="p-3">Package</th>
               <th className="p-3">Expires</th>
-              <th className="p-3">Quick extend</th>
               <th className="p-3"></th>
             </tr>
           </thead>
@@ -297,16 +283,6 @@ function SubscriptionsPage() {
                         {daysLeft >= 0 ? `${daysLeft}d left` : `${-daysLeft}d ago`}
                       </div>
                     )}
-                  </td>
-                  <td className="p-3">
-                    <div className="flex flex-wrap gap-1">
-                      {QUICK_EXTEND.map((d) => (
-                        <Button key={d} size="sm" variant="outline" className="h-7 px-2 text-[11px]"
-                          onClick={() => doExtend(s.id, d)}>
-                          +{d}d
-                        </Button>
-                      ))}
-                    </div>
                   </td>
                   <td className="p-3">
                     <div className="flex flex-wrap justify-end gap-1">
