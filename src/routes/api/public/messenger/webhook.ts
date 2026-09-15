@@ -1459,6 +1459,29 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                 continue;
               }
 
+              // Greetings need no model or store lookup. Answer immediately so
+              // the common first interaction stays near Facebook network speed.
+              if (isGreetingIntent(effectiveText)) {
+                const instantReply = /[\u0980-\u09ff]/.test(effectiveText)
+                  ? smallTalkReply(effectiveText)
+                  : "Hello! How can I help you today?";
+                const sent = await fbSend(token, senderId, instantReply);
+                await sb.from("ai_messages").insert({
+                  conversation_id: conv!.id,
+                  role: "assistant",
+                  direction: "out",
+                  message_type: "text",
+                  content: instantReply,
+                  mid: sent.message_id ?? null,
+                  delivery_status: "sent",
+                });
+                await sb
+                  .from("ai_conversations")
+                  .update({ last_message_at: new Date().toISOString(), last_message_preview: instantReply })
+                  .eq("id", conv!.id);
+                continue;
+              }
+
               // Reply pacing is merchant-controlled. Timing starts the moment the
               // customer's message lands, so the AI's own thinking time counts
               // toward the configured delay instead of adding to it.
