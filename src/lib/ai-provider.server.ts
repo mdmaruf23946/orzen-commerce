@@ -14,6 +14,7 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { dhakaToday, normalizeGeminiKeys, pickActiveGeminiKey, type GeminiKey } from "./gemini-keys.server";
+import { requireServerEnv, serverEnv } from "./server-env";
 
 const SENTINEL_BASE = "https://ai-router.internal/v1";
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai";
@@ -49,9 +50,13 @@ export type ResolvedAi = {
 };
 
 function admin() {
-  return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  return createClient<Database>(
+    requireServerEnv("SUPABASE_URL"),
+    requireServerEnv("SUPABASE_SERVICE_ROLE_KEY"),
+    {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-  });
+    },
+  );
 }
 
 function stripVendor(modelId: string) {
@@ -120,7 +125,9 @@ function buildCandidates(settings: any, modelId: string): Candidate[] {
   // owner has not stored any key of their own.
   const saved = (settings?.provider_api_key || "").trim();
   const looksLovable = saved.startsWith("lv_") || saved.startsWith("sk-lovable");
-  const platformKey = (looksLovable ? saved : "") || process.env.LOVABLE_API_KEY || "";
+  // Cloudflare supplies this as a per-request binding. `serverEnv` reads that
+  // binding even when the runtime's process.env object is empty/read-only.
+  const platformKey = (looksLovable ? saved : "") || serverEnv("LOVABLE_API_KEY") || "";
   if (platformKey) {
     out.push({
       provider: "platform",

@@ -170,9 +170,15 @@ export const Route = createFileRoute("/api/public/ai-admin/messenger-webhook")({
           actions = result.actions;
         } catch (e) {
           const detail = e instanceof Error ? e.message : "Unknown error";
+          // This is an AI-provider failure, not a Messenger/Page-ID failure.
+          // Avoid the old, misleading instruction to reconnect or republish.
           const friendly = /forbidden|unauthorized|401|403/i.test(detail)
-            ? "⚠️ AI service authorization failed. Please re-publish the app so the latest AI key is applied, then try again."
-            : `⚠️ Could not process that right now (${detail}).`;
+            ? /[\u0980-\u09FF]/.test(text)
+              ? "⚠️ AI সেবাটি এই অনুরোধ গ্রহণ করেনি। আপনার Facebook Page সংযোগ ও ID ঠিক আছে; অনুগ্রহ করে একটু পরে আবার চেষ্টা করুন।"
+              : "⚠️ The AI service rejected this request. Your Facebook Page connection and ID are valid; please try again shortly."
+            : /[\u0980-\u09FF]/.test(text)
+              ? "⚠️ এই মুহূর্তে অনুরোধটি সম্পন্ন করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।"
+              : "⚠️ Could not process that right now. Please try again.";
           reply = friendly;
           if (messageId) {
             await supabaseAdmin
