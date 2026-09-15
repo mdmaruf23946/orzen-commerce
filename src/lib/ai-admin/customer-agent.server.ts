@@ -34,8 +34,6 @@ export async function runCustomerAgent(args: {
   history?: { role: "user" | "assistant"; content: string }[];
   ctx: CustomerToolCtx;
 }): Promise<{ reply: string; escalated: boolean }> {
-  const apiKey = process.env.LOVABLE_API_KEY;
-  if (!apiKey) throw new Error("AI is not configured.");
 
   const settings = await loadSettings();
   const model =

@@ -25,8 +25,6 @@ function safeJson(text: string): any {
 export async function analyzeComments(supabase: any, storeId: string, commentIds: string[]) {
   if (!commentIds.length) return { ok: true, analyzed: 0 };
 
-  const apiKey = process.env.LOVABLE_API_KEY;
-  if (!apiKey) throw new Error("AI is not configured for this workspace.");
 
   const [{ data: settings }, { data: comments }, { data: store }] = await Promise.all([
     supabase.from("facebook_ai_settings").select("*").eq("store_id", storeId).maybeSingle(),
