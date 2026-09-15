@@ -64,7 +64,7 @@ export async function analyzeComments(supabase: any, storeId: string, commentIds
     .join("\n");
 
   const { text } = await generateText({
-    model: provider("google/gemini-2.5-flash"),
+    model: aiModel,
     prompt,
   });
 
