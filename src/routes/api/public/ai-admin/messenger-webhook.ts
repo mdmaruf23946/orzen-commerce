@@ -68,10 +68,14 @@ export const Route = createFileRoute("/api/public/ai-admin/messenger-webhook")({
           });
           const signature = request.headers.get("x-hub-signature-256");
           if (signature) headers.set("x-hub-signature-256", signature);
-          void fetch(target, { method: "POST", headers, body: raw }).catch((error) => {
-            console.error("merchant Messenger dispatch failed", error);
-          });
-          return new Response("ok", { status: 200 });
+          try {
+            // The Merchant endpoint now only verifies and durably enqueues, so
+            // awaiting this prevents loss while still acknowledging Meta fast.
+            const routed = await fetch(target, { method: "POST", headers, body: raw });
+            return new Response(await routed.text(), { status: routed.status });
+          } catch {
+            return new Response("Messenger route unavailable", { status: 503 });
+          }
         }
 
         if (!conn || !creds?.page_access_token) return new Response("Not configured", { status: 200 });
