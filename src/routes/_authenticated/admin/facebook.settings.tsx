@@ -42,6 +42,7 @@ type AiForm = {
   language: "bn" | "en" | "auto";
   auto_reply_safe: boolean;
   auto_hide_spam: boolean;
+  auto_delete_abusive: boolean;
   suggest_messenger_handoff: boolean;
   allow_keywords: string[];
   deny_keywords: string[];
@@ -318,8 +319,14 @@ function SettingsPage() {
               onChange={(v) => set("auto_hide_spam", v)}
             />
             <Toggle
-              label="Suggest Messenger handoff"
-              hint="Recommend moving order conversations to Messenger."
+              label="Auto-delete abusive comments"
+              hint="Only used when mode is Automatic. Offensive comments are removed immediately and logged in Moderation."
+              checked={form.auto_delete_abusive}
+              onChange={(v) => set("auto_delete_abusive", v)}
+            />
+            <Toggle
+              label="Send a Messenger message to the commenter"
+              hint="After replying publicly, message the person privately so they appear in your Messenger inbox."
               checked={form.suggest_messenger_handoff}
               onChange={(v) => set("suggest_messenger_handoff", v)}
             />
