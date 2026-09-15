@@ -230,6 +230,46 @@ function SettingsPage() {
         )}
       </Section>
 
+      {page?.connected && (
+        <Section
+          title="Permissions"
+          description="What Facebook actually allows with your current Page token. Checked live, not guessed."
+          action={
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy !== null}
+              onClick={() => act("recheck", () => recheckFn(), "Permissions rechecked")}
+            >
+              {busy === "recheck" ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-1.5 h-4 w-4" />
+              )}
+              Recheck
+            </Button>
+          }
+        >
+          <div className="space-y-3">
+            <PermissionsGrid
+              states={(page.capability_states ?? {}) as Record<string, boolean | null>}
+              labels={CAP_LABEL}
+              scopes={CAP_SCOPE}
+            />
+            <div className="rounded-xl border bg-muted/30 p-3 text-[11px] text-muted-foreground">
+              <div className="font-medium text-foreground">If something says “Missing”</div>
+              Generate a new Page access token in Meta Business / Graph API Explorer with these permissions granted:
+              <code className="mt-1 block break-all rounded bg-background px-2 py-1">
+                pages_show_list, pages_read_engagement, pages_manage_posts, pages_manage_engagement,
+                pages_manage_metadata, pages_messaging
+              </code>
+              Then disconnect and reconnect the page here with the new token. Last checked:{" "}
+              {formatWhen(page.permissions_checked_at)}
+            </div>
+          </div>
+        </Section>
+      )}
+
       {page?.connected && page.webhook && (
         <Section
           title="Live sync (webhook)"
