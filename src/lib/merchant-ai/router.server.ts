@@ -103,15 +103,19 @@ export async function handleMerchantChannelMessage(
       identityLabel: verified.label ?? null,
     });
     return { handled: true, reply };
-
   } catch (e) {
     const msg = e instanceof Error ? e.message : "failed";
     await logActivity(db, storeId, {
       agent: "master",
       actionKey: "command_failed",
+      threadId,
       level: "error",
       message: msg,
     });
-    return { handled: true, reply: `Sorry, I could not complete that: ${msg}` };
+    return {
+      handled: true,
+      reply: bn ? `দুঃখিত, কাজটি শেষ করতে পারিনি: ${msg}` : `Sorry, I could not complete that: ${msg}`,
+    };
+
   }
 }
