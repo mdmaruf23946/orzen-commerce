@@ -1,3 +1,4 @@
+import { CAP_LABEL } from "@/lib/facebook-caps";
 import { createFileRoute } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -62,6 +63,7 @@ function AdminMessenger() {
   const d: any = data ?? {};
   const connected = !!d.connected;
 
+  const [fbSync, setFbSync] = useState<any>(null);
   const [pageId, setPageId] = useState("");
   const [token, setToken] = useState("");
   const [appId, setAppId] = useState("");
@@ -141,7 +143,7 @@ function AdminMessenger() {
     }
     setBusy(true);
     try {
-      await connect({
+      const res: any = await connect({
         data: {
           page_id: pageId.trim(),
           page_access_token: token.trim(),
@@ -151,6 +153,7 @@ function AdminMessenger() {
           terms_of_service_url: termsUrl.trim() || null,
         },
       });
+      setFbSync(res?.facebook ?? null);
       setToken("");
       setAppSecret("");
       qc.invalidateQueries({ queryKey: ["admin", "messenger"] });
@@ -416,6 +419,39 @@ function AdminMessenger() {
           </div>
         )}
       </div>
+
+      {fbSync ? (
+        <div className="rounded-xl border bg-card p-3 text-xs sm:p-4">
+          <div className="text-sm font-semibold">Facebook Page agent</div>
+          {fbSync.skipped ? (
+            <p className="mt-1 text-muted-foreground">
+              Not included in your current plan — Messenger chat replies are active.
+            </p>
+          ) : fbSync.connected ? (
+            <>
+              <p className="mt-1 text-muted-foreground">
+                Connected automatically with the same Page{fbSync.page_name ? ` (${fbSync.page_name})` : ""}. Posts and
+                comments now work from the Facebook Page section — no separate connection needed.
+              </p>
+              {fbSync.verified ? (
+                <p className="mt-1 text-muted-foreground">
+                  Allowed now: {Object.keys(fbSync.verified).filter((k) => fbSync.verified[k]).map((k) => CAP_LABEL[k] ?? k).join(", ") || "none"}.
+                  {Object.keys(fbSync.verified).some((k) => fbSync.verified[k] === false) ? (
+                    <>
+                      {" "}Not allowed by this token:{" "}
+                      {Object.keys(fbSync.verified).filter((k) => fbSync.verified[k] === false).map((k) => CAP_LABEL[k] ?? k).join(", ")}
+                      . Regenerate the Page token with pages_show_list, pages_read_engagement, pages_manage_posts,
+                      pages_manage_engagement, pages_manage_metadata and pages_messaging, then reconnect here.
+                    </>
+                  ) : null}
+                </p>
+              ) : null}
+            </>
+          ) : (
+            <p className="mt-1 text-destructive">{fbSync.error ?? "Could not link the Facebook Page agent."}</p>
+          )}
+        </div>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Connection */}
