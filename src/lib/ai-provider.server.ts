@@ -58,9 +58,22 @@ function stripVendor(modelId: string) {
   return modelId.includes("/") ? modelId.slice(modelId.indexOf("/") + 1) : modelId;
 }
 
+// Google's own API only serves its published model names, which differ from
+// some gateway ids — map anything unknown onto a model Google actually serves.
+const GOOGLE_API_MODELS = new Set([
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-2.5-pro",
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
+]);
+
 function geminiModel(modelId: string) {
   const m = stripVendor(modelId);
-  return m.startsWith("gemini") ? m : "gemini-2.5-flash";
+  if (GOOGLE_API_MODELS.has(m)) return m;
+  if (m.includes("pro")) return "gemini-2.5-pro";
+  if (m.includes("lite")) return "gemini-2.5-flash-lite";
+  return "gemini-2.5-flash";
 }
 
 function openaiModel(modelId: string) {
