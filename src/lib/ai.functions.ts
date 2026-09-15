@@ -385,6 +385,26 @@ async function decryptToken(enc: string | null): Promise<string | null> {
   }
 }
 
+/**
+ * Mirrors the Messenger Page connection into the Facebook Page agent.
+ * Skipped silently when the plan does not include the Facebook Page feature;
+ * never throws, so the Messenger connection is never blocked by it.
+ */
+async function syncFacebookPageAgent(
+  context: any,
+  storeId: string,
+  creds: { page_id: string; token: string; app_id?: string | null; app_secret?: string | null },
+) {
+  try {
+    await assertPlan(context.supabase, context.userId, "facebook_page");
+  } catch {
+    return { connected: false, page_name: null, verified: null, error: null, skipped: true };
+  }
+  const { syncFacebookPageFromMessenger } = await import("@/lib/facebook-page.server");
+  return await syncFacebookPageFromMessenger(context.supabase, storeId, creds);
+}
+
+
 async function generateSecureVerifyToken(): Promise<string> {
   const { randomBytes } = await import("crypto");
   // 24 bytes → 48 hex chars (within 32–64 range)
