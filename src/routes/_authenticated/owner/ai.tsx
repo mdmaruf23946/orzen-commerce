@@ -14,6 +14,7 @@ import {
   deleteGlobalGeminiKey,
   moveGlobalGeminiKey,
   testGlobalGeminiKey,
+  getAiProviderStatus,
 } from "@/lib/owner.functions";
 import { getAiGlobalSettings, updateAiGlobalSettings } from "@/lib/ai.functions";
 import { Button } from "@/components/ui/button";
