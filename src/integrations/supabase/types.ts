@@ -10475,7 +10475,6 @@ export type Database = {
           old_price: number | null
           price: number | null
           primary_image_url: string | null
-          product_code: string | null
           product_type: string | null
           rating: number | null
           related_product_ids: string[] | null
@@ -10510,7 +10509,6 @@ export type Database = {
           old_price?: number | null
           price?: number | null
           primary_image_url?: string | null
-          product_code?: string | null
           product_type?: string | null
           rating?: number | null
           related_product_ids?: string[] | null
@@ -10545,7 +10543,6 @@ export type Database = {
           old_price?: number | null
           price?: number | null
           primary_image_url?: string | null
-          product_code?: string | null
           product_type?: string | null
           rating?: number | null
           related_product_ids?: string[] | null
