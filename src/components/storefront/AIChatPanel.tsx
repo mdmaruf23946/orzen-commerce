@@ -110,7 +110,15 @@ export default function AIChatPanel({
     if (!input.trim() || busy || handedOff) return;
     const text = input.trim();
     setInput("");
+    setChatError(null);
+    setLastText(text);
     await sendMessage({ text });
+  }
+
+  async function retryLast() {
+    if (!lastText || busy) return;
+    setChatError(null);
+    await sendMessage({ text: lastText });
   }
 
   async function handleEscalate() {
