@@ -348,7 +348,8 @@ export async function withinRateLimit(
     .select("id", { count: "exact", head: true })
     .eq("store_id", storeId)
     .eq("action_key", "command_received")
+    .eq("meta->>identity", identityRef || "unknown")
     .gte("created_at", since);
-  void identityRef;
   return (count ?? 0) < maxPerMinute;
 }
+

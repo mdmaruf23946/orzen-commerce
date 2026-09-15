@@ -22,9 +22,10 @@ async function ruleFor(db: Db, storeId: string, event: string) {
 }
 
 async function ownerUserId(db: Db, storeId: string) {
-  const { data } = await db.from("stores").select("owner_id").eq("id", storeId).maybeSingle();
-  return (data?.owner_id as string | undefined) ?? null;
+  const { data } = await db.from("stores").select("owner_user_id").eq("id", storeId).maybeSingle();
+  return (data?.owner_user_id as string | undefined) ?? null;
 }
+
 
 async function sendMessenger(db: Db, storeId: string, psids: string[], text: string) {
   if (!psids.length) return;
