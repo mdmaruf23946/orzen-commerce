@@ -1784,7 +1784,7 @@ export function streamAgentResponse(opts: {
       system: opts.system,
       messages: opts.messages,
       tools: buildTools(opts.ctx),
-      stopWhen: stepCountIs(50),
+      stopWhen: stepCountIs(8),
       ...generationParams(settings, modelId),
       onFinish: ({ usage }) => {
         void logUsage(opts.ctx.storeId, modelId, usage, "chat");
@@ -1839,7 +1839,7 @@ async function runGenerate(opts: {
     system: opts.system,
     messages: opts.messages,
     tools: buildTools(opts.ctx),
-    stopWhen: stepCountIs(50),
+    stopWhen: stepCountIs(opts.fast ? 6 : 8),
     ...generationParams(settings, modelId),
   });
   return { result, modelId, settings };

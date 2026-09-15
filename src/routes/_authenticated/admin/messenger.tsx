@@ -364,6 +364,20 @@ function AdminMessenger() {
             }
           />
         </div>
+        <div className="mt-3 grid grid-cols-2 gap-2 border-t pt-3 text-center sm:grid-cols-4">
+          <Stat label="Queue" value={d.queue_health?.pending ?? 0} />
+          <Stat label="Last result" value={d.queue_health?.last_status ?? "—"} />
+          <Stat label="Attempts" value={d.queue_health?.last_attempts ?? 0} />
+          <Stat
+            label="Processing"
+            value={d.queue_health?.last_processing_ms != null ? `${d.queue_health.last_processing_ms} ms` : "—"}
+          />
+        </div>
+        {d.queue_health?.last_error && (
+          <div className="mt-2 rounded-md bg-destructive/10 px-2 py-1.5 text-xs text-destructive">
+            Last delivery: {d.queue_health.last_error}
+          </div>
+        )}
 
         {daysToExpiry !== null && (
           <div

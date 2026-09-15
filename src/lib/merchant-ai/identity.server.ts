@@ -97,3 +97,23 @@ export async function hasPendingVerification(db: Db, storeId: string, channel: C
     .gt("verify_expires_at", new Date().toISOString());
   return (count ?? 0) > 0;
 }
+
+/** Whether this exact sender has a pending identity. Never matches by message claims. */
+export async function pendingIdentityForSender(
+  db: Db,
+  storeId: string,
+  channel: Channel,
+  rawIdentifier: string,
+) {
+  const identifier = normalizeIdentifier(channel, rawIdentifier);
+  const { data } = await db
+    .from("store_ai_identities")
+    .select("id")
+    .eq("store_id", storeId)
+    .eq("channel", channel)
+    .eq("identifier", identifier)
+    .eq("verified", false)
+    .gt("verify_expires_at", new Date().toISOString())
+    .maybeSingle();
+  return !!data;
+}

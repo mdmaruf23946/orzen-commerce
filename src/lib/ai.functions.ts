@@ -416,6 +416,23 @@ export const getMessengerIntegration = createServerFn({ method: "GET" })
       const { data: s } = await context.supabase.rpc("get_messenger_daily_stats", { _store_id: storeId });
       if (s) stats = s;
     } catch {}
+    const { data: queueRows } = await context.supabase
+      .from("messenger_jobs")
+      .select("status,attempts,created_at,completed_at,processing_ms,last_error")
+      .eq("store_id", storeId)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    const queue = queueRows ?? [];
+    const latestJob = queue[0] as any;
+    const queueHealth = {
+      pending: queue.filter((j: any) => ["pending", "processing", "retry"].includes(j.status)).length,
+      failed: queue.filter((j: any) => j.status === "failed").length,
+      last_received_at: latestJob?.created_at ?? null,
+      last_status: latestJob?.status ?? null,
+      last_processing_ms: latestJob?.processing_ms ?? null,
+      last_attempts: latestJob?.attempts ?? 0,
+      last_error: latestJob?.last_error ?? null,
+    };
 
     // Auto-provision a secure verify token the first time this page is opened,
     // or backfill one if the row exists but has no token.
@@ -471,6 +488,7 @@ export const getMessengerIntegration = createServerFn({ method: "GET" })
       terms_of_service_url: row.terms_of_service_url ?? null,
       required_scopes: REQUIRED_MESSENGER_SCOPES,
       stats,
+      queue_health: queueHealth,
     };
   });
 

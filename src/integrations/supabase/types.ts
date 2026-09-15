@@ -4470,6 +4470,87 @@ export type Database = {
           },
         ]
       }
+      messenger_jobs: {
+        Row: {
+          attempts: number
+          available_at: string
+          completed_at: string | null
+          created_at: string
+          event_payload: Json
+          id: string
+          integration_id: string
+          last_error: string | null
+          message_id: string
+          outbound_message_id: string | null
+          page_id: string
+          processing_ms: number | null
+          reply_text: string | null
+          sender_id: string
+          started_at: string | null
+          status: string
+          store_id: string
+          updated_at: string
+          wake_token: string
+        }
+        Insert: {
+          attempts?: number
+          available_at?: string
+          completed_at?: string | null
+          created_at?: string
+          event_payload: Json
+          id?: string
+          integration_id: string
+          last_error?: string | null
+          message_id: string
+          outbound_message_id?: string | null
+          page_id: string
+          processing_ms?: number | null
+          reply_text?: string | null
+          sender_id: string
+          started_at?: string | null
+          status?: string
+          store_id: string
+          updated_at?: string
+          wake_token?: string
+        }
+        Update: {
+          attempts?: number
+          available_at?: string
+          completed_at?: string | null
+          created_at?: string
+          event_payload?: Json
+          id?: string
+          integration_id?: string
+          last_error?: string | null
+          message_id?: string
+          outbound_message_id?: string | null
+          page_id?: string
+          processing_ms?: number | null
+          reply_text?: string | null
+          sender_id?: string
+          started_at?: string | null
+          status?: string
+          store_id?: string
+          updated_at?: string
+          wake_token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messenger_jobs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "messenger_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messenger_jobs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messenger_notes: {
         Row: {
           author_user_id: string | null
@@ -10513,6 +10594,10 @@ export type Database = {
         Returns: string
       }
       _normalize_phone: { Args: { _phone: string }; Returns: string }
+      claim_messenger_job: {
+        Args: { _job_id: string; _wake_token: string }
+        Returns: Json
+      }
       customer_change_password: {
         Args: { _new: string; _old: string; _store_id: string; _token: string }
         Returns: Json
