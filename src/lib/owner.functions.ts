@@ -837,10 +837,12 @@ export const getStoreUsage = createServerFn({ method: "POST" })
         .eq("store_id", data.storeId).order("created_at", { ascending: false }).limit(10),
     ]);
 
+    const orderTotal = (o: any) =>
+      Number(o.subtotal || 0) + Number(o.delivery_amount || 0) - Number(o.discount_amount || 0);
     const revenue = (revenueRows ?? [])
       .filter((o: any) => o.status === "delivered" || o.status === "confirmed" || o.status === "processing")
-      .reduce((a: number, o: any) => a + Number(o.total || 0), 0);
-    const customers = new Set((revenueRows ?? []).map((o: any) => o.customer_phone).filter(Boolean)).size;
+      .reduce((a: number, o: any) => a + orderTotal(o), 0);
+    const customers = new Set((revenueRows ?? []).map((o: any) => o.phone).filter(Boolean)).size;
     const aiCost = (aiRows ?? []).reduce((a: number, r: any) => a + Number(r.cost_usd || 0), 0);
     const aiTokens = (aiRows ?? []).reduce((a: number, r: any) => a + (Number(r.prompt_tokens || 0) + Number(r.completion_tokens || 0)), 0);
 
