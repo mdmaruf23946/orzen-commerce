@@ -52,6 +52,28 @@ export const Route = createFileRoute("/api/public/ai-admin/messenger-webhook")({
         // The Merchant endpoint validates the signature again with that Page's
         // encrypted App Secret before it reads or writes tenant data.
         const pageId = String(payload?.entry?.[0]?.id ?? "");
+
+        // Page feed events (comments, posts) share this single callback. They
+        // belong to the Facebook Page module, so forward the exact signed body
+        // there — that endpoint re-verifies the signature with the Page's own
+        // App Secret and resolves the store from the Page ID.
+        const hasChanges = Array.isArray(payload?.entry?.[0]?.changes) && payload.entry[0].changes.length > 0;
+        if (pageId && hasChanges) {
+          const target = new URL("/api/public/facebook/webhook", request.url);
+          const headers = new Headers({
+            "content-type": "application/json",
+            "x-orzen-facebook-routed": "page",
+          });
+          const sig = request.headers.get("x-hub-signature-256");
+          if (sig) headers.set("x-hub-signature-256", sig);
+          try {
+            const routed = await fetch(target, { method: "POST", headers, body: raw });
+            return new Response(await routed.text(), { status: routed.status === 401 ? 200 : routed.status });
+          } catch {
+            return new Response("ok", { status: 200 });
+          }
+        }
+
         if (pageId && pageId !== String(conn?.page_id ?? "")) {
           const { data: merchantPage } = await supabaseAdmin
             .from("messenger_integrations")

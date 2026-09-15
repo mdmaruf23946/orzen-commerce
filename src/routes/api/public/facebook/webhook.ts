@@ -127,6 +127,19 @@ export const Route = createFileRoute("/api/public/facebook/webhook")({
                   } as any,
                   { onConflict: "store_id,comment_id" },
                 );
+
+                // Answer / moderate the new comment right away.
+                if (verb === "add") {
+                  const token = await decrypt((integ as any).page_access_token_encrypted);
+                  const { handleIncomingComment } = await import("@/lib/facebook-ai.server");
+                  await handleIncomingComment(sb, storeId, pageId, token, {
+                    comment_id: String(v.comment_id),
+                    message: String(v.message ?? ""),
+                    author_id: fromId,
+                    author_name: v?.from?.name ?? null,
+                    post_excerpt: null,
+                  });
+                }
               }
             }
 
