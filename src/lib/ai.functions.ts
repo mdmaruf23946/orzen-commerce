@@ -689,7 +689,15 @@ export const verifyMessengerWebhook = createServerFn({ method: "POST" })
         diag.subscribed = sub.ok;
         diag.subscribed_fields = sub.fields;
         if (!sub.ok && sub.error) diag.subscribe_error = sub.error;
+        // Repair path: make sure the Facebook Page agent shares this connection.
+        diag.facebook = await syncFacebookPageAgent(context, storeId, {
+          page_id: row.page_id,
+          token,
+          app_id: row.app_id ?? null,
+          app_secret: await decryptToken(row.app_secret_encrypted ?? null),
+        });
       }
+
 
       const ok = diag.token_match && diag.subscribed && diag.app_secret_configured;
       await context.supabase
