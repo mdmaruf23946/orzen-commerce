@@ -465,6 +465,8 @@ export const getMessengerIntegration = createServerFn({ method: "GET" })
       order_detection: row.order_detection,
       product_recommendation: row.product_recommendation,
       faq_reply: row.faq_reply,
+      reply_delay_seconds: (row as any).reply_delay_seconds ?? 0,
+      reply_speed: ((row as any).reply_speed ?? "fastest") as "fastest" | "balanced" | "thorough",
       privacy_policy_url: row.privacy_policy_url ?? null,
       terms_of_service_url: row.terms_of_service_url ?? null,
       required_scopes: REQUIRED_MESSENGER_SCOPES,
