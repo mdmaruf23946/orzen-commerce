@@ -80,6 +80,21 @@ export const Route = createFileRoute("/api/public/messenger/process")({
               last_error: message.slice(0, 500),
             } as any)
             .eq("id", job.id);
+          if (exhausted) {
+            const target = new URL("/api/public/messenger/webhook", request.url);
+            await fetch(target, {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+                "x-hub-signature-256": payload.signature,
+                "x-orzen-queue-job": String(job.id),
+                "x-orzen-queue-token": String(job.wake_token),
+                "x-orzen-queue-mid": payload.message_id,
+                "x-orzen-queue-fallback": "1",
+              },
+              body: payload.raw,
+            }).catch(() => undefined);
+          }
           return new Response(exhausted ? "Failed" : "Retry scheduled", { status: exhausted ? 422 : 503 });
         }
       },

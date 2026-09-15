@@ -1145,6 +1145,10 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
         const rawBody = await request.text();
         const signatureHeader =
           request.headers.get("x-hub-signature-256") || request.headers.get("X-Hub-Signature-256");
+        const queuedJobId = request.headers.get("x-orzen-queue-job");
+        const queuedMessageId = request.headers.get("x-orzen-queue-mid");
+        const fallbackOnly = request.headers.get("x-orzen-queue-fallback") === "1";
+        let queuedProcessingError: Error | null = null;
         let body: any = null;
         try {
           body = JSON.parse(rawBody);
@@ -1182,6 +1186,33 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
           }
           if (!signatureHeader) continue;
           if (!(await verifyMessengerSignature(rawBody, signatureHeader, appSecret))) continue;
+
+          // Normal Facebook deliveries only perform the durable write. The insert
+          // wakes an independent processor, allowing Facebook to receive 200
+          // immediately instead of waiting for AI generation and Graph delivery.
+          if (!queuedJobId) {
+            for (const ev of entry.messaging ?? []) {
+              const incoming = ev?.message;
+              const senderId = String(ev?.sender?.id ?? "");
+              const messageId = String(incoming?.mid ?? "");
+              if (!senderId || !messageId || incoming?.is_echo) continue;
+              await sb.from("messenger_jobs").upsert(
+                {
+                  store_id: integ.store_id,
+                  integration_id: (integ as any).id,
+                  page_id: pageId,
+                  sender_id: senderId,
+                  message_id: messageId,
+                  event_payload: { raw: rawBody, signature: signatureHeader, message_id: messageId },
+                  available_at: new Date(
+                    Date.now() + Math.max(0, Number((integ as any).reply_delay_seconds ?? 0)) * 1000,
+                  ).toISOString(),
+                } as any,
+                { onConflict: "page_id,message_id", ignoreDuplicates: true },
+              );
+            }
+            continue;
+          }
 
 
 
@@ -1332,13 +1363,14 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
               // messages event
               const msg = ev.message;
               if (!msg || msg.is_echo) continue;
+              if (queuedMessageId && String(msg.mid ?? "") !== queuedMessageId) continue;
               if (msg.mid) {
                 const { data: existingMessage } = await sb
                   .from("ai_messages")
                   .select("id")
                   .eq("mid", msg.mid)
                   .maybeSingle();
-                if (existingMessage) continue;
+                if (existingMessage && !queuedJobId) continue;
               }
               const parsed = parseMessage(msg);
 
@@ -1376,23 +1408,25 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
 
               const preview = effectiveText.slice(0, 200) || `[${parsed.message_type}]`;
 
-              await sb.from("ai_messages").insert({
-                conversation_id: conv!.id,
-                role: "user",
-                direction: "in",
-                message_type: parsed.message_type,
-                content: effectiveText || preview,
-                attachments: parsed.attachments,
-                mid: msg.mid ?? null,
-              });
-              await sb
-                .from("ai_conversations")
-                .update({
-                  last_message_at: new Date().toISOString(),
-                  last_message_preview: preview,
-                  unread_count: (conv!.unread_count ?? 0) + 1,
-                })
-                .eq("id", conv!.id);
+              if (!msg.mid || !(await sb.from("ai_messages").select("id").eq("mid", msg.mid).maybeSingle()).data) {
+                await sb.from("ai_messages").insert({
+                  conversation_id: conv!.id,
+                  role: "user",
+                  direction: "in",
+                  message_type: parsed.message_type,
+                  content: effectiveText || preview,
+                  attachments: parsed.attachments,
+                  mid: msg.mid ?? null,
+                });
+                await sb
+                  .from("ai_conversations")
+                  .update({
+                    last_message_at: new Date().toISOString(),
+                    last_message_preview: preview,
+                    unread_count: (conv!.unread_count ?? 0) + 1,
+                  })
+                  .eq("id", conv!.id);
+              }
 
               // AI reply gate
               const handoff = (conv as any)!.handoff_mode ?? "ai";
@@ -1407,6 +1441,23 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                 parsed.message_type !== "audio"
               ) continue;
               if (!effectiveText.trim()) continue;
+
+              if (fallbackOnly) {
+                const fallback = /[\u0980-\u09ff]/.test(effectiveText)
+                  ? "দুঃখিত, এই মুহূর্তে আপনার মেসেজের পূর্ণ উত্তর তৈরি করা যায়নি। আপনার মেসেজটি সংরক্ষিত আছে—অনুগ্রহ করে একটু পরে আবার চেষ্টা করুন।"
+                  : "Sorry, I couldn't complete the full answer right now. Your message is saved—please try again shortly.";
+                const sent = await fbSend(token, senderId, fallback);
+                await sb.from("ai_messages").insert({
+                  conversation_id: conv!.id,
+                  role: "assistant",
+                  direction: "out",
+                  message_type: "text",
+                  content: fallback,
+                  mid: sent.message_id ?? null,
+                  delivery_status: "sent",
+                });
+                continue;
+              }
 
               // Reply pacing is merchant-controlled. Timing starts the moment the
               // customer's message lands, so the AI's own thinking time counts
@@ -1539,7 +1590,6 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
               }
 
               try {
-                await waitRemainingDelay(turnStartedAt, replyDelaySeconds);
                 const sent = await fbSend(token, senderId, replyText);
                 await sb.from("ai_messages").insert({
                   conversation_id: conv!.id,
@@ -1583,6 +1633,7 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
 
             } catch (e) {
               console.error("messenger handler", e);
+              if (queuedJobId) queuedProcessingError = e instanceof Error ? e : new Error("Messenger processing failed");
               await sb
                 .from("messenger_integrations")
                 .update({ last_error: (e as Error).message } as any)
@@ -1590,6 +1641,7 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
             }
           }
         }
+        if (queuedProcessingError) return new Response(queuedProcessingError.message, { status: 503 });
         return new Response("ok");
       },
     },
