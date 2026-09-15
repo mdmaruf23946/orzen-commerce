@@ -268,6 +268,16 @@ function AdminMessenger() {
     }
   }
 
+  async function saveReplyTiming(patch: { reply_delay_seconds?: number; reply_speed?: string }) {
+    try {
+      await updateFlags({ data: patch as any });
+      qc.invalidateQueries({ queryKey: ["admin", "messenger"] });
+      toast.success("Reply timing updated");
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  }
+
   const daysToExpiry = useMemo(() => {
     if (!d.token_expires_at) return null;
     const ms = new Date(d.token_expires_at).getTime() - Date.now();
