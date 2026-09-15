@@ -801,6 +801,9 @@ export const updateMessengerAiFlags = createServerFn({ method: "POST" })
         order_detection: z.boolean().optional(),
         product_recommendation: z.boolean().optional(),
         faq_reply: z.boolean().optional(),
+        // Reply pacing controls (merchant-configurable).
+        reply_delay_seconds: z.number().int().min(0).max(600).optional(),
+        reply_speed: z.enum(["fastest", "balanced", "thorough"]).optional(),
       })
       .parse(d),
   )
