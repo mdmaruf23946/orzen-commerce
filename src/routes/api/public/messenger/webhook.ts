@@ -204,25 +204,43 @@ function isReferenceIntent(text: string) {
   return /এটা|এইটা|ওটা|এই|ওই|this|that|it|same/i.test(text);
 }
 
+/** True only when the person actually asked about our wellbeing. */
+function isHowAreYouIntent(text: string) {
+  const compact = text.trim().toLowerCase().replace(/[।!?.,\s]+$/u, "");
+  return /(কেমন আছেন|কেমন আছো|কেমন আছিস|কি অবস্থা|কী অবস্থা|কি খবর|কী খবর|how are you|how r u|how'?s it going|what'?s up|whats up)/i.test(
+    compact,
+  );
+}
+
+function isSalamIntent(text: string) {
+  return /(আসসালামু|আসসালাম|সালাম|assalam|salam)/i.test(text);
+}
+
 function isGreetingIntent(text: string) {
   const compact = text.trim().toLowerCase().replace(/[।!?.,\s]+$/u, "");
   if (!compact) return false;
-  if (compact.length <= 6 && /^(হি+|হে+ই*|হাই+|হ্যা+|হ্যাঁ+|হ্যালো+|হেলো+|হুম+|আচ্ছা|ওহে|ইয়ো|ok|okay|hi+|hai+|hey+|yo+|sup|helo+|hello+|salam|sallam)$/u.test(compact)) {
+  if (
+    compact.length <= 8 &&
+    /^(হি+|হে+ই*|হাই+|হ্যালো+|হেলো+|ওহে|ইয়ো|hi+|hai+|hey+|yo+|helo+|hello+|salam|sallam)$/u.test(compact)
+  ) {
     return true;
   }
-  return /^(assalamu alaikum|আসসালামু আলাইকুম|সালাম|কেমন আছেন|কেমন আছো|তোমার কি খবর|কি খবর|কী খবর|কি অবস্থা|কী অবস্থা)$/i.test(compact);
+  if (/^(assalamu alaikum|assalamualaikum|আসসালামু আলাইকুম|আসসালামুআলাইকুম|সালাম)$/i.test(compact)) return true;
+  return isHowAreYouIntent(compact);
 }
 
 function isSmallTalkIntent(text: string) {
-  return isGreetingIntent(text) || /^(তোমার|আপনার)?\s*(কি|কী)\s*খবর[।!?.\s]*$/i.test(text.trim()) || /(কেমন আছেন|কেমন আছো|কী অবস্থা|কি অবস্থা|how are you|what'?s up)/i.test(text.trim());
+  return isGreetingIntent(text) || isHowAreYouIntent(text);
 }
 
-
+/** The reply must match what was actually said — never volunteer "ভালো আছি" for a plain "হেই". */
 function smallTalkReply(text: string) {
-  if (/আসসালামু|সালাম/i.test(text)) {
-    return "ওয়ালাইকুম আসসালাম। আলহামদুলিল্লাহ ভালো আছি। আপনার কী প্রয়োজন বলুন, আমি সাহায্য করছি।";
-  }
-  return "আলহামদুলিল্লাহ ভালো আছি। আপনার কী খবর? এই মুহূর্তে কী প্রয়োজন বলুন, আমি সাহায্য করছি।";
+  const salam = isSalamIntent(text);
+  const asked = isHowAreYouIntent(text);
+  if (salam && asked) return "ওয়ালাইকুম আসসালাম। আলহামদুলিল্লাহ ভালো আছি। বলুন, কীভাবে সাহায্য করতে পারি?";
+  if (salam) return "ওয়ালাইকুম আসসালাম। বলুন, কীভাবে সাহায্য করতে পারি?";
+  if (asked) return "আলহামদুলিল্লাহ ভালো আছি, ধন্যবাদ। বলুন, কীভাবে সাহায্য করতে পারি?";
+  return "হ্যালো! বলুন, কীভাবে সাহায্য করতে পারি?";
 }
 
 function sanitizeMessengerReply(reply: string, latestText: string) {
