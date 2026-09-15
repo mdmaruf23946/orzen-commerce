@@ -1408,6 +1408,16 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
               ) continue;
               if (!effectiveText.trim()) continue;
 
+              // Reply pacing is merchant-controlled. Timing starts the moment the
+              // customer's message lands, so the AI's own thinking time counts
+              // toward the configured delay instead of adding to it.
+              const turnStartedAt = Date.now();
+              const replyDelaySeconds = Number((integ as any).reply_delay_seconds ?? 0) || 0;
+              const replySpeed = String((integ as any).reply_speed ?? "fastest");
+              // Instant feedback in Messenger while the model runs.
+              void fbTyping(token, senderId).catch(() => {});
+
+
               // Merge any order-detail hints into the pending-order slot as CONTEXT for the LLM.
               // This never sends a template — it only short-circuits when the duplicate guard blocks the order.
               const duplicateBlocked = await maybeApplyPendingOrderText({
