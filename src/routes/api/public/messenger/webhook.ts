@@ -1176,6 +1176,23 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
         if (!body || (body.object !== "page" && body.object !== "instagram")) {
           return new Response("ok");
         }
+        // Page feed events (comments/posts) belong to the Facebook Page module.
+        // Forward the exact signed body; that endpoint verifies the signature
+        // again with the Page's own App Secret and resolves its own store.
+        if (!queuedJobId && (body.entry ?? []).some((e: any) => Array.isArray(e?.changes) && e.changes.length)) {
+          const target = new URL("/api/public/facebook/webhook", request.url);
+          const headers = new Headers({ "content-type": "application/json", "x-orzen-facebook-routed": "page" });
+          if (signatureHeader) headers.set("x-hub-signature-256", signatureHeader);
+          try {
+            await fetch(target, { method: "POST", headers, body: rawBody });
+          } catch {
+            /* comment sync is best-effort; never fail the delivery */
+          }
+          if (!(body.entry ?? []).some((e: any) => Array.isArray(e?.messaging) && e.messaging.length)) {
+            return new Response("ok");
+          }
+        }
+
         const sb = admin();
         for (const entry of body.entry ?? []) {
           const pageId = String(entry.id);
