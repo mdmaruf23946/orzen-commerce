@@ -100,6 +100,22 @@ async function fbSend(pageToken: string, recipientId: string, text: string) {
   return j as { message_id?: string };
 }
 
+/** Show the Page "typing…" bubble instantly so replies feel immediate. */
+async function fbTyping(pageToken: string, recipientId: string) {
+  await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${encodeURIComponent(pageToken)}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ recipient: { id: recipientId }, sender_action: "typing_on" }),
+  });
+}
+
+/** Merchant-controlled pacing: wait only the time still left after the AI worked. */
+async function waitRemainingDelay(startedAt: number, delaySeconds: number) {
+  const target = Math.max(0, Math.min(600, Number(delaySeconds) || 0)) * 1000;
+  const left = target - (Date.now() - startedAt);
+  if (left > 0) await new Promise((r) => setTimeout(r, left));
+}
+
 async function fbSendImage(pageToken: string, recipientId: string, imageUrl: string) {
   const r = await fetch(
     `https://graph.facebook.com/v19.0/me/messages?access_token=${encodeURIComponent(pageToken)}`,
