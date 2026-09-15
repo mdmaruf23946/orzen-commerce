@@ -80,6 +80,7 @@ function SettingsPage() {
         language: (ai.language ?? "bn") as AiForm["language"],
         auto_reply_safe: !!ai.auto_reply_safe,
         auto_hide_spam: !!ai.auto_hide_spam,
+        auto_delete_abusive: !!(ai as { auto_delete_abusive?: boolean }).auto_delete_abusive,
         suggest_messenger_handoff: ai.suggest_messenger_handoff !== false,
         allow_keywords: (ai.allow_keywords ?? []) as string[],
         deny_keywords: (ai.deny_keywords ?? []) as string[],
