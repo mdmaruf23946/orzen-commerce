@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Download, Loader2, Plug, PlugZap, RefreshCw, Save, Sparkles } from "lucide-react";
 import {
-  getFacebookPage, connectFacebookPage, importMessengerPageCredentials, reverifyFacebookPage,
+  getFacebookPage, connectFacebookPage, importMessengerPageCredentials, reverifyFacebookPage, recheckFacebookPermissions,
   setFacebookWebhookEnabled, facebookWebhookSubscription,
   disconnectFacebookPage, getFacebookAiSettings, saveFacebookAiSettings,
 } from "@/lib/facebook-page.functions";
@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Section, StatusPill, formatWhen, FB_BLUE } from "@/components/admin/facebook/ui";
+import { Section, StatusPill, formatWhen, FB_BLUE, PermissionsGrid } from "@/components/admin/facebook/ui";
+import { CAP_LABEL, CAP_SCOPE } from "@/lib/facebook-caps";
 
 export const Route = createFileRoute("/_authenticated/admin/facebook/settings")({
   component: SettingsPage,
@@ -52,6 +53,7 @@ function SettingsPage() {
   const connectFn = useServerFn(connectFacebookPage);
   const importFn = useServerFn(importMessengerPageCredentials);
   const verifyFn = useServerFn(reverifyFacebookPage);
+  const recheckFn = useServerFn(recheckFacebookPermissions);
   const disconnectFn = useServerFn(disconnectFacebookPage);
   const webhookFn = useServerFn(setFacebookWebhookEnabled);
   const subFn = useServerFn(facebookWebhookSubscription);
@@ -227,6 +229,46 @@ function SettingsPage() {
           </div>
         )}
       </Section>
+
+      {page?.connected && (
+        <Section
+          title="Permissions"
+          description="What Facebook actually allows with your current Page token. Checked live, not guessed."
+          action={
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy !== null}
+              onClick={() => act("recheck", () => recheckFn(), "Permissions rechecked")}
+            >
+              {busy === "recheck" ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-1.5 h-4 w-4" />
+              )}
+              Recheck
+            </Button>
+          }
+        >
+          <div className="space-y-3">
+            <PermissionsGrid
+              states={(page.capability_states ?? {}) as Record<string, boolean | null>}
+              labels={CAP_LABEL}
+              scopes={CAP_SCOPE}
+            />
+            <div className="rounded-xl border bg-muted/30 p-3 text-[11px] text-muted-foreground">
+              <div className="font-medium text-foreground">If something says “Missing”</div>
+              Generate a new Page access token in Meta Business / Graph API Explorer with these permissions granted:
+              <code className="mt-1 block break-all rounded bg-background px-2 py-1">
+                pages_show_list, pages_read_engagement, pages_manage_posts, pages_manage_engagement,
+                pages_manage_metadata, pages_messaging
+              </code>
+              Then disconnect and reconnect the page here with the new token. Last checked:{" "}
+              {formatWhen(page.permissions_checked_at)}
+            </div>
+          </div>
+        </Section>
+      )}
 
       {page?.connected && page.webhook && (
         <Section
