@@ -1419,9 +1419,22 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                     if (token) await sendText(token, senderId, merchant.reply);
                     continue;
                   }
-                } catch {
-                  // never break the customer flow because of the command router
+                } catch (err) {
+                  // Never break the customer flow — but never swallow it silently either.
+                  try {
+                    const { logActivity } = await import("@/lib/merchant-ai/core.server");
+                    await logActivity(sb as any, integ.store_id, {
+                      agent: "master",
+                      actionKey: "channel_router_failed",
+                      level: "error",
+                      message: err instanceof Error ? err.message : "Merchant command router failed",
+                      meta: { channel: "messenger" },
+                    });
+                  } catch {
+                    /* logging must not break delivery */
+                  }
                 }
+
               }
 
               const preview = effectiveText.slice(0, 200) || `[${parsed.message_type}]`;
