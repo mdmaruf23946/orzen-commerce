@@ -116,7 +116,8 @@ function buildCandidates(settings: any, modelId: string): Candidate[] {
       label: "Lovable AI",
       apiKey: platformKey,
       baseURL: LOVABLE_BASE,
-      modelId,
+      // A few older gateway ids are no longer served; map them to a live one.
+      modelId: PLATFORM_MODEL_ALIASES[modelId] ?? modelId,
       headers: { "Lovable-API-Key": platformKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
     });
   }
