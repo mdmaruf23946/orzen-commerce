@@ -2,7 +2,7 @@
 // (verified identity → Master Agent) or a normal customer message (handled by
 // the existing customer flow). Returns null when it is NOT a merchant command,
 // so existing behaviour continues untouched.
-import { ensureThread, logActivity, withinRateLimit, type Db } from "./core.server";
+import { ensureThread, loadAgentState, logActivity, withinRateLimit, type Db } from "./core.server";
 import {
   pendingIdentityForSender,
   resolveMerchantIdentity,
@@ -10,6 +10,10 @@ import {
   type Channel,
 } from "./identity.server";
 import { runMasterAgent } from "./master.server";
+import { storeHasAiAgent } from "./plan.server";
+
+const BENGALI = /[\u0980-\u09FF]/;
+
 
 export type ChannelResult = { handled: true; reply: string } | null;
 
