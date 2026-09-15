@@ -57,13 +57,6 @@ export const getFacebookPage = createServerFn({ method: "GET" })
       ]);
 
 
-    // Does the store have a Messenger page connected we could import from?
-    const { data: msg } = await context.supabase
-      .from("messenger_integrations")
-      .select("page_id, page_name, status")
-      .eq("store_id", storeId)
-      .maybeSingle();
-
     return {
       connected: row?.status === "connected",
       page_id: row?.page_id ?? null,
@@ -92,166 +85,7 @@ export const getFacebookPage = createServerFn({ method: "GET" })
       },
       ai_enabled: !!ai?.enabled,
       ai_mode: ai?.mode ?? "suggest",
-
-      messenger_page: msg?.status === "connected" && msg?.page_id
-        ? { page_id: msg.page_id, page_name: msg.page_name }
-        : null,
     };
-  });
-
-export const connectFacebookPage = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
-    z
-      .object({
-        page_id: z.string().trim().min(2).max(120),
-        page_access_token: z.string().trim().min(10).max(2000),
-        app_id: z.string().trim().max(64).optional().nullable(),
-        app_secret: z.string().trim().max(200).optional().nullable(),
-      })
-      .parse(d),
-  )
-  .handler(async ({ context, data }) => {
-    const storeId = await assertPlan(context.supabase, context.userId, "facebook_page");
-    const { graphGet, debugToken, inferScopes, pagePicture, loadPageContext } = await import(
-      "@/lib/facebook-page.server"
-    );
-    const { encryptJSON } = await import("@/lib/crypto/credentials.server");
-    const { row } = await loadPageContext(context.supabase, storeId);
-
-    const page: any = await graphGet(`/${encodeURIComponent(data.page_id)}`, data.page_access_token, {
-      fields: "name,picture.type(large)",
-    });
-
-    let permissions: string[] = [];
-    let expiresAt: string | null = null;
-    if (data.app_id && data.app_secret) {
-      try {
-        const info = await debugToken(data.page_access_token, data.app_id, data.app_secret);
-        permissions = info.scopes;
-        expiresAt = info.expires_at;
-      } catch {
-        /* non-fatal — fall back to task inference */
-      }
-    }
-    if (!permissions.length) permissions = await inferScopes(data.page_id, data.page_access_token);
-
-    const { error } = await context.supabase.from("facebook_page_integrations").upsert(
-      {
-        store_id: storeId,
-        page_id: data.page_id,
-        page_name: page?.name ?? null,
-        page_picture_url: pagePicture(data.page_id),
-        page_access_token_encrypted: encryptJSON(data.page_access_token),
-        app_id: data.app_id || null,
-        app_secret_encrypted: data.app_secret
-          ? encryptJSON(data.app_secret)
-          : (row?.app_secret_encrypted ?? null),
-        permissions,
-        token_expires_at: expiresAt,
-        verify_token: row?.verify_token ?? crypto.randomUUID().replace(/-/g, ""),
-        status: "connected",
-        connected_at: new Date().toISOString(),
-        last_verified_at: new Date().toISOString(),
-        last_error: null,
-      },
-      { onConflict: "store_id" },
-    );
-    if (error) throw new Error(error.message);
-    // Best-effort: subscribe the page to the app so webhooks are delivered.
-    const { subscribePageToApp } = await import("@/lib/facebook-page.server");
-    let subscribed = true;
-    try {
-      await subscribePageToApp(data.page_id, data.page_access_token);
-    } catch {
-      subscribed = false;
-    }
-    const verified = await refreshVerifiedCaps(context.supabase, storeId, data.page_id, data.page_access_token);
-    return { ok: true, page_name: page?.name ?? null, permissions, verified, subscribed };
-
-  });
-
-export const importMessengerPageCredentials = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const storeId = await assertPlan(context.supabase, context.userId, "facebook_page");
-    const { inferScopes, debugToken, pagePicture, graphGet } = await import("@/lib/facebook-page.server");
-
-    // Read-only copy of the Messenger connection; that row is never modified.
-    const { data: msg } = await context.supabase
-      .from("messenger_integrations")
-      .select("page_id, page_name, app_id, app_secret_encrypted, page_access_token_encrypted, page_access_token")
-      .eq("store_id", storeId)
-      .maybeSingle();
-    if (!msg?.page_id) throw new Error("No connected Messenger page found to import.");
-
-    const { decryptJSON } = await import("@/lib/crypto/credentials.server");
-    let token: string | null = msg.page_access_token ?? null;
-    if (msg.page_access_token_encrypted) {
-      try {
-        token = decryptJSON<string>(msg.page_access_token_encrypted);
-      } catch {
-        token = null;
-      }
-    }
-    if (!token) throw new Error("Could not read the Messenger page token. Connect the page manually.");
-
-    let appSecret: string | null = null;
-    if (msg.app_secret_encrypted) {
-      try {
-        appSecret = decryptJSON<string>(msg.app_secret_encrypted);
-      } catch {
-        appSecret = null;
-      }
-    }
-
-    const page: any = await graphGet(`/${encodeURIComponent(msg.page_id)}`, token, { fields: "name" });
-
-    let permissions: string[] = [];
-    let expiresAt: string | null = null;
-    if (msg.app_id && appSecret) {
-      try {
-        const info = await debugToken(token, msg.app_id, appSecret);
-        permissions = info.scopes;
-        expiresAt = info.expires_at;
-      } catch {
-        /* ignore */
-      }
-    }
-    if (!permissions.length) permissions = await inferScopes(msg.page_id, token);
-
-    const { encryptJSON } = await import("@/lib/crypto/credentials.server");
-    const { error } = await context.supabase.from("facebook_page_integrations").upsert(
-      {
-        store_id: storeId,
-        page_id: msg.page_id,
-        page_name: page?.name ?? msg.page_name ?? null,
-        page_picture_url: pagePicture(msg.page_id),
-        page_access_token_encrypted: encryptJSON(token),
-        app_id: msg.app_id ?? null,
-        app_secret_encrypted: appSecret ? encryptJSON(appSecret) : null,
-        permissions,
-        token_expires_at: expiresAt,
-        verify_token: crypto.randomUUID().replace(/-/g, ""),
-        status: "connected",
-        connected_at: new Date().toISOString(),
-        last_verified_at: new Date().toISOString(),
-        last_error: null,
-      },
-      { onConflict: "store_id" },
-    );
-    if (error) throw new Error(error.message);
-    // Best-effort: subscribe the page to the app so webhooks are delivered.
-    const { subscribePageToApp } = await import("@/lib/facebook-page.server");
-    let subscribed = true;
-    try {
-      await subscribePageToApp(msg.page_id, token);
-    } catch {
-      subscribed = false;
-    }
-    const verified = await refreshVerifiedCaps(context.supabase, storeId, msg.page_id, token);
-    return { ok: true, page_name: page?.name ?? null, permissions, verified, subscribed };
-
   });
 
 export const reverifyFacebookPage = createServerFn({ method: "POST" })
@@ -300,15 +134,6 @@ export const reverifyFacebookPage = createServerFn({ method: "POST" })
     }
   });
 
-export const disconnectFacebookPage = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const storeId = await assertPlan(context.supabase, context.userId, "facebook_page");
-    await context.supabase.from("facebook_page_integrations").delete().eq("store_id", storeId);
-    return { ok: true };
-  });
-
-/** Asks Facebook directly which actions this Page token can perform. */
 export const recheckFacebookPermissions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
