@@ -37,16 +37,36 @@ export const CAPABILITY_SCOPE: Record<Capability, string> = {
   private_reply: FB_PAGE_SCOPES.messaging,
 };
 
+export type VerifiedCaps = Partial<Record<Capability, boolean>>;
+
 /**
- * Derives which UI actions are actually usable from the scopes Meta reported
- * for the stored page token. When the scope list is unknown (empty) we cannot
- * prove support, so everything except reads is reported unsupported.
+ * Which UI actions are usable. The scope list Meta reports for a page token is
+ * unreliable (page tokens frequently work for endpoints their scope list never
+ * mentions), so it is only one signal:
+ *
+ *  - a live probe that succeeded  -> allowed
+ *  - a live probe that was refused -> blocked
+ *  - the scope is granted          -> allowed
+ *  - otherwise                     -> allowed optimistically; Facebook itself
+ *    decides and we translate its error for the merchant.
  */
-export function capabilities(permissions: string[] | null | undefined) {
+export function capabilities(permissions: string[] | null | undefined, verified?: VerifiedCaps | null) {
   const granted = new Set((permissions ?? []).map((p) => String(p)));
+  const v = (verified ?? {}) as VerifiedCaps;
   const out = {} as Record<Capability, boolean>;
   for (const [cap, scope] of Object.entries(CAPABILITY_SCOPE) as [Capability, string][]) {
-    out[cap] = granted.has(scope);
+    out[cap] = typeof v[cap] === "boolean" ? (v[cap] as boolean) : granted.has(scope) ? true : true;
+  }
+  return out;
+}
+
+/** Tri-state view used by the settings screen: true / false / null (unknown). */
+export function capabilityStates(permissions: string[] | null | undefined, verified?: VerifiedCaps | null) {
+  const granted = new Set((permissions ?? []).map((p) => String(p)));
+  const v = (verified ?? {}) as VerifiedCaps;
+  const out = {} as Record<Capability, boolean | null>;
+  for (const [cap, scope] of Object.entries(CAPABILITY_SCOPE) as [Capability, string][]) {
+    out[cap] = typeof v[cap] === "boolean" ? (v[cap] as boolean) : granted.has(scope) ? true : null;
   }
   return out;
 }
