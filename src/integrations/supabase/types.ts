@@ -10837,6 +10837,10 @@ export type Database = {
       }
       resolve_domain: { Args: { _host: string }; Returns: Json }
       resolve_host_kind: { Args: { _host: string }; Returns: Json }
+      seed_store_ai_agent_state: {
+        Args: { _store_id: string }
+        Returns: undefined
+      }
       staff_can: {
         Args: { _level: string; _section: string; _store_id: string }
         Returns: boolean

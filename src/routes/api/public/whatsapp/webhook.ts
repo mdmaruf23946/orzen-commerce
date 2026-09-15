@@ -358,9 +358,22 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                     if (token) await sendWaText(phoneNumberId, token, waId, merchant.reply);
                     continue;
                   }
-                } catch {
-                  // the command router must never break customer messaging
+                } catch (err) {
+                  // Must never break customer messaging — but must be visible in the logs.
+                  try {
+                    const { logActivity } = await import("@/lib/merchant-ai/core.server");
+                    await logActivity(sb as any, storeId, {
+                      agent: "master",
+                      actionKey: "channel_router_failed",
+                      level: "error",
+                      message: err instanceof Error ? err.message : "Merchant command router failed",
+                      meta: { channel: "whatsapp" },
+                    });
+                  } catch {
+                    /* logging must not break delivery */
+                  }
                 }
+
               }
 
               await logInbound(sb, conv.id, { text, type, attachments, mid: msg.id ?? null });

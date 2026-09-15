@@ -53,7 +53,9 @@ export const AGENTS: AgentMeta[] = [
   {
     key: "facebook",
     label: "Facebook Page Agent",
-    description: "Comments, replies, moderation and spam handling on your Page.",
+    description:
+      "Comments, replies, moderation and spam handling on your Page. Page chat messages are handled by the Messenger Agent.",
+
     channel: "facebook",
     feature: "facebook_page",
   },
