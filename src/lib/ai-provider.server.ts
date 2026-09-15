@@ -237,3 +237,9 @@ export async function describeActiveAiProvider() {
     chain: list.map((c) => ({ provider: c.provider, label: c.label, model: c.modelId })),
   };
 }
+
+/** Convenience: a routed model for one model id (owner keys first, platform last). */
+export async function routedModel(modelId: string) {
+  const r = await resolveAiModel({ modelOverride: modelId });
+  return r.model;
+}
