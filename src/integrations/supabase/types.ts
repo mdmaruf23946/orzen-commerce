@@ -3373,6 +3373,8 @@ export type Database = {
           page_name: string | null
           page_picture_url: string | null
           permissions: Json
+          permissions_checked_at: string | null
+          permissions_verified: Json
           status: string
           store_id: string
           token_expires_at: string | null
@@ -3394,6 +3396,8 @@ export type Database = {
           page_name?: string | null
           page_picture_url?: string | null
           permissions?: Json
+          permissions_checked_at?: string | null
+          permissions_verified?: Json
           status?: string
           store_id: string
           token_expires_at?: string | null
@@ -3415,6 +3419,8 @@ export type Database = {
           page_name?: string | null
           page_picture_url?: string | null
           permissions?: Json
+          permissions_checked_at?: string | null
+          permissions_verified?: Json
           status?: string
           store_id?: string
           token_expires_at?: string | null

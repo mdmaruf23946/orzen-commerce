@@ -38,6 +38,14 @@ export function explainGraphError(err: unknown, ctx?: "send" | "subscribe"): str
     return "No matching Messenger user. The recipient must be a PSID (Page-scoped ID) — not your Facebook profile ID or username. A PSID only exists after that person messages your Page, and the Page must receive the message through this app's webhook. Send a message to the Page first, then pick the PSID captured in the inbox and retry.";
   }
 
+  if (code === 283) {
+    return "Facebook refused this because the Page access token is missing the pages_read_engagement permission. Regenerate the Page access token with pages_read_engagement, pages_manage_posts, pages_manage_engagement and pages_manage_metadata granted, then reconnect the Page.";
+  }
+
+  if (code === 3 || code === 299) {
+    return "Facebook says this app/token is not allowed to perform this action yet. Grant the required Page permissions to the token (pages_manage_posts for publishing, pages_manage_engagement for replying/hiding/deleting, pages_manage_metadata for blocking and event delivery) and reconnect the Page.";
+  }
+
   if (code === 10 || code === 200) {
     return `${raw} — this usually means the Page access token lacks the required permission or the Page is not subscribed to this app.`;
   }

@@ -37,16 +37,36 @@ export const CAPABILITY_SCOPE: Record<Capability, string> = {
   private_reply: FB_PAGE_SCOPES.messaging,
 };
 
+export type VerifiedCaps = Partial<Record<Capability, boolean>>;
+
 /**
- * Derives which UI actions are actually usable from the scopes Meta reported
- * for the stored page token. When the scope list is unknown (empty) we cannot
- * prove support, so everything except reads is reported unsupported.
+ * Which UI actions are usable. The scope list Meta reports for a page token is
+ * unreliable (page tokens frequently work for endpoints their scope list never
+ * mentions), so it is only one signal:
+ *
+ *  - a live probe that succeeded  -> allowed
+ *  - a live probe that was refused -> blocked
+ *  - the scope is granted          -> allowed
+ *  - otherwise                     -> allowed optimistically; Facebook itself
+ *    decides and we translate its error for the merchant.
  */
-export function capabilities(permissions: string[] | null | undefined) {
+export function capabilities(permissions: string[] | null | undefined, verified?: VerifiedCaps | null) {
   const granted = new Set((permissions ?? []).map((p) => String(p)));
+  const v = (verified ?? {}) as VerifiedCaps;
   const out = {} as Record<Capability, boolean>;
   for (const [cap, scope] of Object.entries(CAPABILITY_SCOPE) as [Capability, string][]) {
-    out[cap] = granted.has(scope);
+    out[cap] = typeof v[cap] === "boolean" ? (v[cap] as boolean) : granted.has(scope) ? true : true;
+  }
+  return out;
+}
+
+/** Tri-state view used by the settings screen: true / false / null (unknown). */
+export function capabilityStates(permissions: string[] | null | undefined, verified?: VerifiedCaps | null) {
+  const granted = new Set((permissions ?? []).map((p) => String(p)));
+  const v = (verified ?? {}) as VerifiedCaps;
+  const out = {} as Record<Capability, boolean | null>;
+  for (const [cap, scope] of Object.entries(CAPABILITY_SCOPE) as [Capability, string][]) {
+    out[cap] = typeof v[cap] === "boolean" ? (v[cap] as boolean) : granted.has(scope) ? true : null;
   }
   return out;
 }
@@ -161,12 +181,55 @@ export async function loadPageContext(supabase: any, storeId: string) {
 /** Throws a friendly error when the page isn't connected or the capability is missing. */
 export function requireCapability(row: any, cap: Capability) {
   if (!row || row.status !== "connected") throw new Error("Facebook Page is not connected.");
-  const caps = capabilities(row.permissions as string[]);
-  if (!caps[cap]) {
+  const states = capabilityStates(row.permissions as string[], row.permissions_verified as VerifiedCaps);
+  // Only block when a live check actually proved the action is refused.
+  if (states[cap] === false) {
     throw new Error(
-      `This action requires the "${CAPABILITY_SCOPE[cap]}" permission on your Facebook Page. Reconnect the page after granting it.`,
+      `Facebook refused this action for your Page token. It needs the "${CAPABILITY_SCOPE[cap]}" permission — regenerate the Page access token with that permission granted, then reconnect the Page in Page Settings.`,
     );
   }
+}
+
+/**
+ * Runs read-only Graph calls to find out what this token can really do, so the
+ * UI stops guessing from the (often incomplete) scope list.
+ */
+export async function probeCapabilities(pageId: string, token: string): Promise<VerifiedCaps> {
+  const out: VerifiedCaps = {};
+  const isPermissionError = (e: any) => [10, 200, 283, 299, 190, 3].includes(Number(e?.code));
+
+  let firstPostId: string | null = null;
+  try {
+    const j: any = await graphGet(`/${encodeURIComponent(pageId)}/posts`, token, { fields: "id", limit: "1" });
+    out.read_posts = true;
+    firstPostId = j?.data?.[0]?.id ?? null;
+  } catch (e) {
+    if (isPermissionError(e)) out.read_posts = false;
+  }
+
+  try {
+    const target = firstPostId ?? pageId;
+    await graphGet(`/${encodeURIComponent(target)}/comments`, token, { fields: "id", limit: "1" });
+    out.read_comments = true;
+  } catch (e) {
+    if (isPermissionError(e)) out.read_comments = false;
+  }
+
+  try {
+    await graphGet(`/${encodeURIComponent(pageId)}/blocked`, token, { limit: "1" });
+    out.block_user = true;
+  } catch (e) {
+    if (isPermissionError(e)) out.block_user = false;
+  }
+
+  try {
+    await graphGet(`/${encodeURIComponent(pageId)}/conversations`, token, { limit: "1" });
+    out.private_reply = true;
+  } catch (e) {
+    if (isPermissionError(e)) out.private_reply = false;
+  }
+
+  return out;
 }
 
 export function attachmentOf(post: any): { type: string; url: string | null; thumb: string | null; target: string | null } {
