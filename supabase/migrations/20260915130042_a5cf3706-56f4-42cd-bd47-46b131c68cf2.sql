@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.staff_can(uuid, text, text) TO authenticated;
