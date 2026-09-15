@@ -139,8 +139,15 @@ export const aiSendCommand = createServerFn({ method: "POST" })
     if (!hasFeature(store, "ai_agent")) {
       throw new Error("AI Command Center is not included in your current plan.");
     }
-    const { ensureThread } = await import("@/lib/merchant-ai/core.server");
+    const { ensureThread, loadAgentState, withinRateLimit } = await import("@/lib/merchant-ai/core.server");
     const { runMasterAgent } = await import("@/lib/merchant-ai/master.server");
+    const state = await loadAgentState(db, storeId);
+    if (state["master"] && state["master"].enabled === false) {
+      throw new Error("The Master AI Agent is switched off. Turn it on in AI Command Center → Agents.");
+    }
+    if (!(await withinRateLimit(db, storeId, userId))) {
+      throw new Error("Too many commands right now. Please wait a minute and try again.");
+    }
     const threadId = await ensureThread(db, storeId, "panel", userId, "Panel commands");
     const res = await runMasterAgent({
       db,
@@ -148,8 +155,10 @@ export const aiSendCommand = createServerFn({ method: "POST" })
       text: data.text,
       via: "panel",
       threadId,
+      identityRef: userId,
       requestedBy: userId,
     });
+
     return { ...res, threadId };
   });
 
