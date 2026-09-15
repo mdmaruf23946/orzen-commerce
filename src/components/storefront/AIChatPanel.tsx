@@ -66,7 +66,12 @@ export default function AIChatPanel({
     }),
   ).current;
 
-  const { messages, sendMessage, setMessages, status } = useChat({ transport });
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [lastText, setLastText] = useState<string>("");
+  const { messages, sendMessage, setMessages, status } = useChat({
+    transport,
+    onError: (err) => setChatError(err?.message || "Something went wrong. Please try again."),
+  });
 
   // Load prior history once per open, if we have a conversation id.
   useEffect(() => {
