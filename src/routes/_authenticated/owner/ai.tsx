@@ -46,6 +46,12 @@ function AIControlCenter() {
   const { data: overview } = useQuery({ queryKey: ["ai", "overview"], queryFn: () => overviewFn(), staleTime: 30_000 });
   const { data: stores } = useQuery({ queryKey: ["ai", "stores"], queryFn: () => listFn(), staleTime: 15_000 });
   const { data: global } = useQuery({ queryKey: ["ai", "global"], queryFn: () => getGlobal() });
+  const providerFn = useServerFn(getAiProviderStatus);
+  const { data: provider } = useQuery({
+    queryKey: ["ai", "provider-status"],
+    queryFn: () => providerFn(),
+    staleTime: 15_000,
+  });
 
   const [search, setSearch] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
