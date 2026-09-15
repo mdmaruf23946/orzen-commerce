@@ -168,7 +168,7 @@ function AdminMessenger() {
   }
 
   async function onDisconnect() {
-    if (!confirm("Disconnect Messenger?")) return;
+    if (!confirm("Disconnect Messenger? This also disconnects the Facebook Page agent.")) return;
     setBusy(true);
     try {
       await disconnect();
