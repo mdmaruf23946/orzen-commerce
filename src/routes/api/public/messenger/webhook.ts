@@ -1436,20 +1436,42 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                 continue;
               }
 
-              const { store, agent, settings } = await loadAiContext(integ.store_id);
-
+              // Everything the model needs is fetched in ONE parallel round-trip.
+              // Previously these six reads ran one after another and dominated the
+              // reply latency.
               const useHistory = (integ as any).conversation_history !== false;
-              const history = useHistory
-                ? (
-                    await sb
+              // Shorter context = fewer tokens = faster first token.
+              const historyLimit = replySpeed === "thorough" ? 30 : replySpeed === "balanced" ? 16 : 8;
+              const smallTalk = isSmallTalkIntent(effectiveText);
+              const [aiCtx, historyRes, pending, convStateRes, recentRecsRes, focusRes] = await Promise.all([
+                loadAiContext(integ.store_id),
+                useHistory
+                  ? sb
                       .from("ai_messages")
                       .select("role,content,message_type")
                       .eq("conversation_id", conv!.id)
                       .in("message_type", ["text", "quick_reply", "postback", "audio"])
                       .order("created_at", { ascending: false })
-                      .limit(30)
-                  ).data ?? []
-                : [];
+                      .limit(historyLimit)
+                  : Promise.resolve({ data: [] as any[] }),
+                getConversationPendingOrder(sb, conv!.id),
+                sb.from("ai_conversations").select("psid_profile").eq("id", conv!.id).maybeSingle(),
+                sb
+                  .from("ai_product_recommendations")
+                  .select("product_id")
+                  .eq("conversation_id", conv!.id)
+                  .order("created_at", { ascending: false })
+                  .limit(3),
+                smallTalk
+                  ? Promise.resolve({ product: null, ambiguous: false, candidates: [] as any[] })
+                  : resolveFocusProduct({
+                      storeId: integ.store_id,
+                      conversationId: conv!.id,
+                      text: effectiveText,
+                    }),
+              ]);
+              const { store, agent, settings } = aiCtx;
+              const history = (historyRes as any).data ?? [];
               const messages = [...history].reverse()
                 .filter((m: any) => m.role === "user" || m.role === "assistant")
                 .map((m: any) => ({
