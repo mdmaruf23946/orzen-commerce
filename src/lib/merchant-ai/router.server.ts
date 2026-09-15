@@ -53,8 +53,42 @@ export async function handleMerchantChannelMessage(
     };
   }
 
+  const bn = BENGALI.test(body);
+
+  // Plan gate — the panel checks this too, so channels must not be a bypass.
+  if (!(await storeHasAiAgent(db, storeId))) {
+    await logActivity(db, storeId, {
+      agent: "master",
+      actionKey: "plan_blocked",
+      level: "warn",
+      message: `Merchant command blocked on ${channel}: plan has no AI agent`,
+    });
+    return {
+      handled: true,
+      reply: bn
+        ? "আপনার বর্তমান প্ল্যানে AI Command Center নেই। Merchant Panel → Billing থেকে প্ল্যান আপডেট করলে আবার ব্যবহার করতে পারবেন।"
+        : "Your current plan does not include the AI Command Center. Update your plan from Merchant Panel → Billing to use it again.",
+    };
+  }
+
+  // Master Agent switched off in the panel means off on every channel.
+  const state = await loadAgentState(db, storeId);
+  if (state["master"] && state["master"].enabled === false) {
+    return {
+      handled: true,
+      reply: bn
+        ? "Master AI Agent এখন বন্ধ আছে। Merchant Panel → AI Command Center → Agents থেকে চালু করুন।"
+        : "The Master AI Agent is currently switched off. Turn it on in Merchant Panel → AI Command Center → Agents.",
+    };
+  }
+
   if (!(await withinRateLimit(db, storeId, senderId))) {
-    return { handled: true, reply: "Too many commands right now. Please wait a minute and try again." };
+    return {
+      handled: true,
+      reply: bn
+        ? "একসাথে অনেক কমান্ড এসেছে। এক মিনিট পরে আবার চেষ্টা করুন।"
+        : "Too many commands right now. Please wait a minute and try again.",
+    };
   }
 
   const threadId = await ensureThread(db, storeId, channel, senderId, `${channel} commands`);
@@ -65,9 +99,11 @@ export async function handleMerchantChannelMessage(
       text: body,
       via: channel,
       threadId,
+      identityRef: senderId,
       identityLabel: verified.label ?? null,
     });
     return { handled: true, reply };
+
   } catch (e) {
     const msg = e instanceof Error ? e.message : "failed";
     await logActivity(db, storeId, {
