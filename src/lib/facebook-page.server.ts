@@ -288,3 +288,101 @@ export async function pageSubscribedFields(pageId: string, token: string): Promi
     return [];
   }
 }
+
+/**
+ * Single crossing point between the Messenger agent and the Facebook Page agent.
+ *
+ * The merchant connects the Page once on the Messenger screen; this mirrors the
+ * exact same credentials into `facebook_page_integrations` so the posts/comments
+ * agent is live without a second connect step. Always store-scoped by the
+ * caller's authenticated storeId. Never throws — a Facebook problem must never
+ * block the Messenger connection.
+ */
+export async function syncFacebookPageFromMessenger(
+  supabase: any,
+  storeId: string,
+  creds: { page_id: string; token: string; app_id?: string | null; app_secret?: string | null },
+): Promise<{ connected: boolean; page_name: string | null; verified: any | null; error: string | null; skipped?: boolean }> {
+  try {
+    const { encryptJSON } = await import("@/lib/crypto/credentials.server");
+    const { row } = await loadPageContext(supabase, storeId);
+
+    let pageName: string | null = row?.page_name ?? null;
+    try {
+      const page: any = await graphGet(`/${encodeURIComponent(creds.page_id)}`, creds.token, { fields: "name" });
+      pageName = page?.name ?? pageName;
+    } catch {
+      /* keep the previous name */
+    }
+
+    let permissions: string[] = [];
+    let expiresAt: string | null = null;
+    if (creds.app_id && creds.app_secret) {
+      try {
+        const info = await debugToken(creds.token, creds.app_id, creds.app_secret);
+        permissions = info.scopes;
+        expiresAt = info.expires_at;
+      } catch {
+        /* fall back to task inference */
+      }
+    }
+    if (!permissions.length) {
+      try {
+        permissions = await inferScopes(creds.page_id, creds.token);
+      } catch {
+        permissions = (row?.permissions as string[]) ?? [];
+      }
+    }
+
+    const { error } = await supabase.from("facebook_page_integrations").upsert(
+      {
+        store_id: storeId,
+        page_id: creds.page_id,
+        page_name: pageName,
+        page_picture_url: pagePicture(creds.page_id),
+        page_access_token_encrypted: encryptJSON(creds.token),
+        app_id: creds.app_id || null,
+        app_secret_encrypted: creds.app_secret
+          ? encryptJSON(creds.app_secret)
+          : (row?.app_secret_encrypted ?? null),
+        permissions,
+        token_expires_at: expiresAt,
+        verify_token: row?.verify_token ?? crypto.randomUUID().replace(/-/g, ""),
+        status: "connected",
+        connected_at: row?.connected_at ?? new Date().toISOString(),
+        last_verified_at: new Date().toISOString(),
+        last_error: null,
+      },
+      { onConflict: "store_id" },
+    );
+    if (error) throw new Error(error.message);
+
+    try {
+      await subscribePageToApp(creds.page_id, creds.token);
+    } catch {
+      /* messaging still works; page events may need pages_manage_metadata */
+    }
+
+    let verified: any = null;
+    try {
+      verified = await probeCapabilities(creds.page_id, creds.token);
+      await supabase
+        .from("facebook_page_integrations")
+        .update({ permissions_verified: verified, permissions_checked_at: new Date().toISOString() })
+        .eq("store_id", storeId);
+    } catch {
+      /* capability probing is advisory */
+    }
+
+    return { connected: true, page_name: pageName, verified, error: null };
+  } catch (e) {
+    const message = (e as Error).message;
+    try {
+      await supabase
+        .from("facebook_page_integrations")
+        .update({ last_error: message })
+        .eq("store_id", storeId);
+    } catch {}
+    return { connected: false, page_name: null, verified: null, error: message };
+  }
+}
