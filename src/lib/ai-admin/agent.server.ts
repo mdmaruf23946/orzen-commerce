@@ -2,7 +2,6 @@
 import { generateText, tool, stepCountIs } from "ai";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 import { ACTION_BY_KEY } from "./catalog";
 import { TOOLS, TOOL_BY_KEY, loadPermissions, logAction } from "./tools.server";
 import { loadSettings } from "./connection.server";

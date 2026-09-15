@@ -1,7 +1,6 @@
 // Server-only AI helper for Facebook Page comment management.
 // Dedicated to this module — the Messenger agent prompts are untouched.
 import { generateText } from "ai";
-import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 
 type Analysis = {
   comment_id: string;

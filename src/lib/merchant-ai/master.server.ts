@@ -2,7 +2,6 @@
 // enforces the 3-level permission system and logs every step.
 import { generateText, tool, stepCountIs } from "ai";
 import { z } from "zod";
-import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 import {
   addThreadMessage,
   createPendingAction,

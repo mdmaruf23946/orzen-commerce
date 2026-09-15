@@ -4,7 +4,6 @@
 // only, never by message content.
 import { generateText, tool, stepCountIs } from "ai";
 import type { z } from "zod";
-import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 import { loadSettings } from "./connection.server";
 import { buildCustomerTools, type CustomerToolCtx } from "./customer-tools.server";
 

@@ -3,7 +3,6 @@ import { createClient } from "@supabase/supabase-js";
 import { generateText, streamText, tool, stepCountIs } from "ai";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
-import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 import {
   sendProductCard as fbSendProductCard,
   sendProductCarousel as fbSendProductCarousel,
