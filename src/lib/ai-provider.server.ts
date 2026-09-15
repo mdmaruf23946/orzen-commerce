@@ -155,6 +155,11 @@ function retryable(status: number) {
   return status === 400 || status === 401 || status === 403 || status === 404 || status === 429 || status >= 500;
 }
 
+/** Statuses that mean the key itself is the problem. */
+function keyLevelFailure(status: number) {
+  return status === 401 || status === 403 || status === 429;
+}
+
 /**
  * Builds one AI SDK model that routes through the owner's keys with fallback.
  * `modelId` is the gateway-style id stored in settings (e.g. "google/gemini-2.5-flash").
@@ -205,10 +210,14 @@ export function buildRoutedModel(settings: any, modelId: string): ResolvedAi {
           used = { provider: c.provider, label: c.label };
           return new Response(text, { status: res.status, headers: res.headers });
         }
-        if (c.provider === "gemini" && c.keyId) void markGeminiFailure(c.keyId, lastError);
+        // Only a key-level problem (bad key, revoked, quota) parks the key for
+        // the day. Provider overload or a request-shape problem is not the
+        // key's fault — move on to the next candidate without disabling it.
+        if (c.provider === "gemini" && c.keyId && keyLevelFailure(res.status)) {
+          void markGeminiFailure(c.keyId, lastError);
+        }
       } catch (e) {
         lastError = `${c.label}: ${(e as Error).message}`;
-        if (c.provider === "gemini" && c.keyId) void markGeminiFailure(c.keyId, lastError);
       }
     }
     throw new Error(lastError);

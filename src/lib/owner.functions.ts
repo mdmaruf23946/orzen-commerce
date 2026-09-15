@@ -1320,3 +1320,12 @@ export const ownerCustomerStats = createServerFn({ method: "GET" })
       recent,
     };
   });
+
+/** Which AI provider will serve the next request (owner panel diagnostics). */
+export const getAiProviderStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { describeActiveAiProvider } = await import("./ai-provider.server");
+    return await describeActiveAiProvider();
+  });
