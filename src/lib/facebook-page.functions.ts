@@ -346,6 +346,7 @@ export const listFacebookPosts = createServerFn({ method: "POST" })
     const caps = capabilities(row.permissions as string[], row.permissions_verified as any);
     if (!caps.read_posts) return { connected: true, posts: [], next: null, missing: "pages_read_engagement" };
 
+
     const fields =
       "id,message,created_time,permalink_url,full_picture,attachments{media_type,type,media,target,url}," +
       "comments.summary(true).limit(0),reactions.summary(true).limit(0),shares";
@@ -400,7 +401,7 @@ export const deleteFacebookPost = createServerFn({ method: "POST" })
     const { loadPageContext, requireCapability, graphDelete } = await import("@/lib/facebook-page.server");
     const { row, token } = await loadPageContext(context.supabase, storeId);
     requireCapability(row, "delete_post");
-    await graphDelete(`/${encodeURIComponent(data.post_id)}`, token!);
+    await withFbError(() => graphDelete(`/${encodeURIComponent(data.post_id)}`, token!));
     await context.supabase.from("facebook_posts").delete().eq("store_id", storeId).eq("fb_post_id", data.post_id);
     return { ok: true };
   });
@@ -415,7 +416,7 @@ export const editFacebookPost = createServerFn({ method: "POST" })
     const { loadPageContext, requireCapability, graphPost } = await import("@/lib/facebook-page.server");
     const { row, token } = await loadPageContext(context.supabase, storeId);
     requireCapability(row, "edit_post");
-    await graphPost(`/${encodeURIComponent(data.post_id)}`, token!, { message: data.message });
+    await withFbError(() => graphPost(`/${encodeURIComponent(data.post_id)}`, token!, { message: data.message }));
     return { ok: true };
   });
 
@@ -522,11 +523,13 @@ export const publishFacebookPost = createServerFn({ method: "POST" })
         const r: any = await graphPost(`/${encodeURIComponent(row.page_id)}/feed`, token!, body);
         fbId = r?.id ?? null;
       }
-    } catch (e) {
+    } catch (raw) {
+      const { explainGraphError } = await import("@/lib/facebook-errors.server");
+      const e = new Error(explainGraphError(raw));
       if (data.draft_id) {
         await context.supabase
           .from("facebook_posts")
-          .update({ error: (e as Error).message })
+          .update({ error: e.message })
           .eq("id", data.draft_id)
           .eq("store_id", storeId);
       }
@@ -565,22 +568,30 @@ export const syncFacebookComments = createServerFn({ method: "POST" })
 
     const rows: any[] = [];
     if (data?.post_id) {
-      const j: any = await graphGet(`/${encodeURIComponent(data.post_id)}/comments`, token, {
-        fields: "id,message,created_time,from{id,name},is_hidden,comment_count",
-        limit: "50",
-        order: "reverse_chronological",
-      });
+      const j: any = await withFbError(() =>
+        graphGet(`/${encodeURIComponent(data.post_id!)}/comments`, token, {
+          fields: "id,message,created_time,from{id,name},is_hidden,comment_count",
+          limit: "50",
+          order: "reverse_chronological",
+        }),
+      );
       for (const c of j?.data ?? []) rows.push({ c, postId: data.post_id, excerpt: null });
-    } else {
-      const feed: any = await graphGet(`/${encodeURIComponent(row.page_id)}/posts`, token, {
+    }
+    // Always also pull the newest posts so fresh comments show up without
+    // opening each post first.
+    const feed: any = await withFbError(() =>
+      graphGet(`/${encodeURIComponent(row.page_id)}/posts`, token, {
         fields:
           "id,message,created_time,comments.limit(25).order(reverse_chronological){id,message,created_time,from{id,name},is_hidden}",
-        limit: "10",
-      });
-      for (const p of feed?.data ?? []) {
-        for (const c of p?.comments?.data ?? []) {
-          rows.push({ c, postId: p.id, excerpt: (p.message ?? "").slice(0, 120) || null });
-        }
+        limit: "15",
+      }),
+    );
+    const seen = new Set(rows.map((r) => r.c?.id));
+    for (const p of feed?.data ?? []) {
+      for (const c of p?.comments?.data ?? []) {
+        if (seen.has(c.id)) continue;
+        seen.add(c.id);
+        rows.push({ c, postId: p.id, excerpt: (p.message ?? "").slice(0, 120) || null });
       }
     }
 
@@ -671,7 +682,9 @@ export const replyFacebookComment = createServerFn({ method: "POST" })
     const { loadPageContext, requireCapability, graphPost } = await import("@/lib/facebook-page.server");
     const { row, token } = await loadPageContext(context.supabase, storeId);
     requireCapability(row, "reply_comment");
-    await graphPost(`/${encodeURIComponent(data.comment_id)}/comments`, token!, { message: data.message });
+    await withFbError(() =>
+      graphPost(`/${encodeURIComponent(data.comment_id)}/comments`, token!, { message: data.message }),
+    );
     await context.supabase
       .from("facebook_comments")
       .update({ replied: true, ai_status: "done" })
@@ -690,7 +703,9 @@ export const setFacebookCommentHidden = createServerFn({ method: "POST" })
     const { loadPageContext, requireCapability, graphPost } = await import("@/lib/facebook-page.server");
     const { row, token } = await loadPageContext(context.supabase, storeId);
     requireCapability(row, "hide_comment");
-    await graphPost(`/${encodeURIComponent(data.comment_id)}`, token!, { is_hidden: String(data.hidden) });
+    await withFbError(() =>
+      graphPost(`/${encodeURIComponent(data.comment_id)}`, token!, { is_hidden: String(data.hidden) }),
+    );
     await context.supabase
       .from("facebook_comments")
       .update({ hidden: data.hidden })
@@ -707,7 +722,7 @@ export const deleteFacebookComment = createServerFn({ method: "POST" })
     const { loadPageContext, requireCapability, graphDelete } = await import("@/lib/facebook-page.server");
     const { row, token } = await loadPageContext(context.supabase, storeId);
     requireCapability(row, "delete_comment");
-    await graphDelete(`/${encodeURIComponent(data.comment_id)}`, token!);
+    await withFbError(() => graphDelete(`/${encodeURIComponent(data.comment_id)}`, token!));
     await context.supabase
       .from("facebook_comments")
       .delete()
@@ -724,7 +739,15 @@ export const blockFacebookCommenter = createServerFn({ method: "POST" })
     const { loadPageContext, requireCapability, graphPost } = await import("@/lib/facebook-page.server");
     const { row, token } = await loadPageContext(context.supabase, storeId);
     requireCapability(row, "block_user");
-    await graphPost(`/${encodeURIComponent(row.page_id)}/blocked`, token!, { user: data.user_id });
+    await withFbError(async () => {
+      try {
+        return await graphPost(`/${encodeURIComponent(row.page_id)}/blocked`, token!, { user: data.user_id });
+      } catch (e) {
+        // Meta accepts either `user` (page-scoped id) or `uid` depending on how
+        // the commenter was seen by the page — try the other form once.
+        return await graphPost(`/${encodeURIComponent(row.page_id)}/blocked`, token!, { uid: data.user_id });
+      }
+    });
     return { ok: true };
   });
 
@@ -739,11 +762,13 @@ export const privateReplyFacebookComment = createServerFn({ method: "POST" })
     const { row, token } = await loadPageContext(context.supabase, storeId);
     requireCapability(row, "private_reply");
     // Meta allows exactly one private reply per top-level comment, within 7 days.
-    await graphPost(`/${encodeURIComponent(row.page_id)}/messages`, token!, {
-      recipient: JSON.stringify({ comment_id: data.comment_id }),
-      message: JSON.stringify({ text: data.message }),
-      messaging_type: "RESPONSE",
-    });
+    await withFbError(() =>
+      graphPost(`/${encodeURIComponent(row.page_id)}/messages`, token!, {
+        recipient: JSON.stringify({ comment_id: data.comment_id }),
+        message: JSON.stringify({ text: data.message }),
+        messaging_type: "RESPONSE",
+      }),
+    );
     return { ok: true };
   });
 
@@ -911,7 +936,11 @@ export const decideFacebookModeration = createServerFn({ method: "POST" })
         requireCapability(row, "block_user");
         const userId = (item as any).author_id;
         if (!userId) throw new Error("This comment has no author to block.");
-        await graphPost(`/${encodeURIComponent(row.page_id)}/blocked`, token!, { user: String(userId) });
+        try {
+          await graphPost(`/${encodeURIComponent(row.page_id)}/blocked`, token!, { user: String(userId) });
+        } catch {
+          await graphPost(`/${encodeURIComponent(row.page_id)}/blocked`, token!, { uid: String(userId) });
+        }
       } else if (action === "reply") {
         requireCapability(row, "reply_comment");
         const text = (data.message ?? (item as any).suggestion ?? "").trim();
