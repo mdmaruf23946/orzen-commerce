@@ -1436,20 +1436,42 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                 continue;
               }
 
-              const { store, agent, settings } = await loadAiContext(integ.store_id);
-
+              // Everything the model needs is fetched in ONE parallel round-trip.
+              // Previously these six reads ran one after another and dominated the
+              // reply latency.
               const useHistory = (integ as any).conversation_history !== false;
-              const history = useHistory
-                ? (
-                    await sb
+              // Shorter context = fewer tokens = faster first token.
+              const historyLimit = replySpeed === "thorough" ? 30 : replySpeed === "balanced" ? 16 : 8;
+              const smallTalk = isSmallTalkIntent(effectiveText);
+              const [aiCtx, historyRes, pending, convStateRes, recentRecsRes, focusRes] = await Promise.all([
+                loadAiContext(integ.store_id),
+                useHistory
+                  ? sb
                       .from("ai_messages")
                       .select("role,content,message_type")
                       .eq("conversation_id", conv!.id)
                       .in("message_type", ["text", "quick_reply", "postback", "audio"])
                       .order("created_at", { ascending: false })
-                      .limit(30)
-                  ).data ?? []
-                : [];
+                      .limit(historyLimit)
+                  : Promise.resolve({ data: [] as any[] }),
+                getConversationPendingOrder(sb, conv!.id),
+                sb.from("ai_conversations").select("psid_profile").eq("id", conv!.id).maybeSingle(),
+                sb
+                  .from("ai_product_recommendations")
+                  .select("product_id")
+                  .eq("conversation_id", conv!.id)
+                  .order("created_at", { ascending: false })
+                  .limit(3),
+                smallTalk
+                  ? Promise.resolve({ product: null, ambiguous: false, candidates: [] as any[] })
+                  : resolveFocusProduct({
+                      storeId: integ.store_id,
+                      conversationId: conv!.id,
+                      text: effectiveText,
+                    }),
+              ]);
+              const { store, agent, settings } = aiCtx;
+              const history = (historyRes as any).data ?? [];
               const messages = [...history].reverse()
                 .filter((m: any) => m.role === "user" || m.role === "assistant")
                 .map((m: any) => ({
@@ -1466,32 +1488,16 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                 messages.push({ role: "user", content: effectiveText.trim() });
               }
 
-              // Build conversation-state block so the model always sees what's already collected.
-              const pending = await getConversationPendingOrder(sb, conv!.id);
-              const { data: convStateRow } = await sb
-                .from("ai_conversations")
-                .select("psid_profile")
-                .eq("id", conv!.id)
-                .maybeSingle();
-              const lastOrder = ((convStateRow as any)?.psid_profile as any)?.last_order ?? null;
-              const { data: recentRecs } = await sb
-                .from("ai_product_recommendations")
-                .select("product_id")
-                .eq("conversation_id", conv!.id)
-                .order("created_at", { ascending: false })
-                .limit(3);
+              // Conversation-state block so the model always sees what's already collected.
+              const lastOrder = ((convStateRes as any)?.data?.psid_profile as any)?.last_order ?? null;
               const recentIds = Array.from(
-                new Set((recentRecs ?? []).map((r: any) => r.product_id).filter(Boolean)),
+                new Set(
+                  ((recentRecsRes as any).data ?? [])
+                    .map((r: any) => String(r.product_id ?? ""))
+                    .filter(Boolean) as string[],
+                ),
               );
-
-              const smallTalk = isSmallTalkIntent(effectiveText);
-              const focus = smallTalk
-                ? { product: null, ambiguous: false, candidates: [] as any[] }
-                : await resolveFocusProduct({
-                    storeId: integ.store_id,
-                    conversationId: conv!.id,
-                    text: effectiveText,
-                  });
+              const focus = focusRes as any;
 
               const reply = await generateAgentReply({
                 ctx: {
@@ -1533,6 +1539,7 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
               }
 
               try {
+                await waitRemainingDelay(turnStartedAt, replyDelaySeconds);
                 const sent = await fbSend(token, senderId, replyText);
                 await sb.from("ai_messages").insert({
                   conversation_id: conv!.id,

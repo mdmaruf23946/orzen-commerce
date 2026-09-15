@@ -268,6 +268,16 @@ function AdminMessenger() {
     }
   }
 
+  async function saveReplyTiming(patch: { reply_delay_seconds?: number; reply_speed?: string }) {
+    try {
+      await updateFlags({ data: patch as any });
+      qc.invalidateQueries({ queryKey: ["admin", "messenger"] });
+      toast.success("Reply timing updated");
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  }
+
   const daysToExpiry = useMemo(() => {
     if (!d.token_expires_at) return null;
     const ms = new Date(d.token_expires_at).getTime() - Date.now();
@@ -640,6 +650,41 @@ function AdminMessenger() {
           <FlagRow label="Order Detection" value={!!d.order_detection} onChange={(v) => toggleFlag("order_detection", v)} disabled={!connected} />
           <FlagRow label="Product Recommendation" value={!!d.product_recommendation} onChange={(v) => toggleFlag("product_recommendation", v)} disabled={!connected} />
           <FlagRow label="FAQ Reply" value={!!d.faq_reply} onChange={(v) => toggleFlag("faq_reply", v)} disabled={!connected} />
+
+          <div className="mt-3 space-y-3 border-t pt-3">
+            <div className="text-sm font-semibold">Reply Timing</div>
+            <Field label="Reply speed">
+              <select
+                className="w-full rounded-md border bg-background px-2 py-2 text-sm"
+                value={(d as any).reply_speed ?? "fastest"}
+                disabled={!connected}
+                onChange={(e) => saveReplyTiming({ reply_speed: e.target.value })}
+              >
+                <option value="fastest">Fastest (shortest context, quickest reply)</option>
+                <option value="balanced">Balanced</option>
+                <option value="thorough">Thorough (longest context, slower)</option>
+              </select>
+            </Field>
+            <Field label="Wait before replying (seconds)">
+              <input
+                type="number"
+                min={0}
+                max={600}
+                step={1}
+                className="w-full rounded-md border bg-background px-2 py-2 text-sm"
+                defaultValue={(d as any).reply_delay_seconds ?? 0}
+                disabled={!connected}
+                onBlur={(e) => {
+                  const n = Math.max(0, Math.min(600, Math.round(Number(e.target.value) || 0)));
+                  if (n !== ((d as any).reply_delay_seconds ?? 0)) saveReplyTiming({ reply_delay_seconds: n });
+                }}
+              />
+            </Field>
+            <p className="text-xs text-muted-foreground">
+              0 = reply as fast as possible. The wait is measured from the customer's message, so AI thinking time
+              counts toward it.
+            </p>
+          </div>
         </div>
       </div>
 
