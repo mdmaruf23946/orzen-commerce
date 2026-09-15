@@ -3,7 +3,12 @@
 // the existing customer flow). Returns null when it is NOT a merchant command,
 // so existing behaviour continues untouched.
 import { ensureThread, logActivity, withinRateLimit, type Db } from "./core.server";
-import { resolveMerchantIdentity, tryVerifyWithCode, type Channel } from "./identity.server";
+import {
+  pendingIdentityForSender,
+  resolveMerchantIdentity,
+  tryVerifyWithCode,
+  type Channel,
+} from "./identity.server";
 import { runMasterAgent } from "./master.server";
 
 export type ChannelResult = { handled: true; reply: string } | null;
@@ -23,7 +28,15 @@ export async function handleMerchantChannelMessage(
   const verified = await resolveMerchantIdentity(db, storeId, channel, senderId);
   if (!verified) {
     const justVerified = await tryVerifyWithCode(db, storeId, channel, senderId, body);
-    if (!justVerified) return null;
+    if (!justVerified) {
+      if (await pendingIdentityForSender(db, storeId, channel, senderId)) {
+        return {
+          handled: true,
+          reply: "Your Merchant identity is still pending. Open Merchant Panel → AI Command Center → Merchant Identity, generate a new code, then send that 6-digit code here.",
+        };
+      }
+      return null;
+    }
     await logActivity(db, storeId, {
       agent: "master",
       actionKey: "identity_verified",

@@ -168,6 +168,7 @@ import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/e
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
 import { Route as ApiPublicTiktokTrackRouteImport } from './routes/api/public/tiktok/track'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
+import { Route as ApiPublicMessengerProcessRouteImport } from './routes/api/public/messenger/process'
 import { Route as ApiPublicLpOrderRouteImport } from './routes/api/public/lp.order'
 import { Route as ApiPublicLpManifestSlugRouteImport } from './routes/api/public/lp-manifest.$slug'
 import { Route as ApiPublicGa4TrackRouteImport } from './routes/api/public/ga4/track'
@@ -1120,6 +1121,12 @@ const ApiPublicMessengerWebhookRoute =
     path: '/api/public/messenger/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicMessengerProcessRoute =
+  ApiPublicMessengerProcessRouteImport.update({
+    id: '/api/public/messenger/process',
+    path: '/api/public/messenger/process',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicLpOrderRoute = ApiPublicLpOrderRouteImport.update({
   id: '/api/public/lp/order',
   path: '/api/public/lp/order',
@@ -1662,6 +1669,7 @@ export interface FileRoutesByFullPath {
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
   '/api/public/lp-manifest/$slug': typeof ApiPublicLpManifestSlugRoute
   '/api/public/lp/order': typeof ApiPublicLpOrderRoute
+  '/api/public/messenger/process': typeof ApiPublicMessengerProcessRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -1873,6 +1881,7 @@ export interface FileRoutesByTo {
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
   '/api/public/lp-manifest/$slug': typeof ApiPublicLpManifestSlugRoute
   '/api/public/lp/order': typeof ApiPublicLpOrderRoute
+  '/api/public/messenger/process': typeof ApiPublicMessengerProcessRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -2095,6 +2104,7 @@ export interface FileRoutesById {
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
   '/api/public/lp-manifest/$slug': typeof ApiPublicLpManifestSlugRoute
   '/api/public/lp/order': typeof ApiPublicLpOrderRoute
+  '/api/public/messenger/process': typeof ApiPublicMessengerProcessRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -2317,6 +2327,7 @@ export interface FileRouteTypes {
     | '/api/public/ga4/track'
     | '/api/public/lp-manifest/$slug'
     | '/api/public/lp/order'
+    | '/api/public/messenger/process'
     | '/api/public/messenger/webhook'
     | '/api/public/tiktok/track'
     | '/api/public/whatsapp/webhook'
@@ -2528,6 +2539,7 @@ export interface FileRouteTypes {
     | '/api/public/ga4/track'
     | '/api/public/lp-manifest/$slug'
     | '/api/public/lp/order'
+    | '/api/public/messenger/process'
     | '/api/public/messenger/webhook'
     | '/api/public/tiktok/track'
     | '/api/public/whatsapp/webhook'
@@ -2749,6 +2761,7 @@ export interface FileRouteTypes {
     | '/api/public/ga4/track'
     | '/api/public/lp-manifest/$slug'
     | '/api/public/lp/order'
+    | '/api/public/messenger/process'
     | '/api/public/messenger/webhook'
     | '/api/public/tiktok/track'
     | '/api/public/whatsapp/webhook'
@@ -2821,6 +2834,7 @@ export interface RootRouteChildren {
   ApiPublicGa4TrackRoute: typeof ApiPublicGa4TrackRoute
   ApiPublicLpManifestSlugRoute: typeof ApiPublicLpManifestSlugRoute
   ApiPublicLpOrderRoute: typeof ApiPublicLpOrderRoute
+  ApiPublicMessengerProcessRoute: typeof ApiPublicMessengerProcessRoute
   ApiPublicMessengerWebhookRoute: typeof ApiPublicMessengerWebhookRoute
   ApiPublicTiktokTrackRoute: typeof ApiPublicTiktokTrackRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
@@ -3949,6 +3963,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMessengerWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/messenger/process': {
+      id: '/api/public/messenger/process'
+      path: '/api/public/messenger/process'
+      fullPath: '/api/public/messenger/process'
+      preLoaderRoute: typeof ApiPublicMessengerProcessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/lp/order': {
       id: '/api/public/lp/order'
       path: '/api/public/lp/order'
@@ -4932,6 +4953,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicGa4TrackRoute: ApiPublicGa4TrackRoute,
   ApiPublicLpManifestSlugRoute: ApiPublicLpManifestSlugRoute,
   ApiPublicLpOrderRoute: ApiPublicLpOrderRoute,
+  ApiPublicMessengerProcessRoute: ApiPublicMessengerProcessRoute,
   ApiPublicMessengerWebhookRoute: ApiPublicMessengerWebhookRoute,
   ApiPublicTiktokTrackRoute: ApiPublicTiktokTrackRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
