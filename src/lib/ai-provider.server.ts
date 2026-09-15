@@ -20,6 +20,13 @@ const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai";
 const OPENAI_BASE = "https://api.openai.com/v1";
 const LOVABLE_BASE = "https://ai.gateway.lovable.dev/v1";
 
+/** Gateway model ids that are no longer served, mapped to a current one. */
+const PLATFORM_MODEL_ALIASES: Record<string, string> = {
+  "google/gemini-2.5-flash": "google/gemini-3.8-flash",
+  "google/gemini-2.5-flash-lite": "google/gemini-3.1-flash-lite",
+  "google/gemini-2.5-pro": "google/gemini-3.1-pro-preview",
+};
+
 export type AiProviderKind = "gemini" | "openai" | "platform";
 
 type Candidate = {
@@ -51,9 +58,14 @@ function stripVendor(modelId: string) {
   return modelId.includes("/") ? modelId.slice(modelId.indexOf("/") + 1) : modelId;
 }
 
+// Google's own API serves its own model names, and older ones get retired for
+// new users. Use Google's "latest" aliases so a saved key never breaks because
+// a specific version was withdrawn.
 function geminiModel(modelId: string) {
   const m = stripVendor(modelId);
-  return m.startsWith("gemini") ? m : "gemini-2.5-flash";
+  if (m.includes("pro")) return "gemini-pro-latest";
+  if (m.includes("lite")) return "gemini-flash-lite-latest";
+  return "gemini-flash-latest";
 }
 
 function openaiModel(modelId: string) {
@@ -116,7 +128,8 @@ function buildCandidates(settings: any, modelId: string): Candidate[] {
       label: "Lovable AI",
       apiKey: platformKey,
       baseURL: LOVABLE_BASE,
-      modelId,
+      // A few older gateway ids are no longer served; map them to a live one.
+      modelId: PLATFORM_MODEL_ALIASES[modelId] ?? modelId,
       headers: { "Lovable-API-Key": platformKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
     });
   }
@@ -236,4 +249,10 @@ export async function describeActiveAiProvider() {
     active: first ? { provider: first.provider, label: first.label, model: first.modelId } : null,
     chain: list.map((c) => ({ provider: c.provider, label: c.label, model: c.modelId })),
   };
+}
+
+/** Convenience: a routed model for one model id (owner keys first, platform last). */
+export async function routedModel(modelId: string) {
+  const r = await resolveAiModel({ modelOverride: modelId });
+  return r.model;
 }

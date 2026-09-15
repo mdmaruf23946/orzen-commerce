@@ -2,7 +2,6 @@
 // enforces the 3-level permission system and logs every step.
 import { generateText, tool, stepCountIs } from "ai";
 import { z } from "zod";
-import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 import {
   addThreadMessage,
   createPendingAction,
@@ -260,16 +259,14 @@ export async function runMasterAgent(args: MasterArgs): Promise<{ reply: string;
     return { reply, actions: ["approval_decision"] };
   }
 
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) throw new Error("AI is not configured on this deployment.");
-
   const executed: string[] = [];
   const tools = await buildTools(args, executed);
   const history = await threadHistory(db, storeId, threadId, 12);
-  const gateway = createLovableAiGatewayProvider(apiKey);
+  const { routedModel } = await import("@/lib/ai-provider.server");
+  const aiModel = await routedModel("google/gemini-3.8-flash");
 
   const { text: reply } = await generateText({
-    model: gateway("google/gemini-3.8-flash"),
+    model: aiModel,
     system: `${SYSTEM}\n${languageInstruction(text)}${
       args.identityLabel ? `\nYou are speaking with: ${args.identityLabel}.` : ""
     }`,

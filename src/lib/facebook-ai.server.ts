@@ -1,7 +1,6 @@
 // Server-only AI helper for Facebook Page comment management.
 // Dedicated to this module — the Messenger agent prompts are untouched.
 import { generateText } from "ai";
-import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 
 type Analysis = {
   comment_id: string;
@@ -25,8 +24,6 @@ function safeJson(text: string): any {
 export async function analyzeComments(supabase: any, storeId: string, commentIds: string[]) {
   if (!commentIds.length) return { ok: true, analyzed: 0 };
 
-  const apiKey = process.env.LOVABLE_API_KEY;
-  if (!apiKey) throw new Error("AI is not configured for this workspace.");
 
   const [{ data: settings }, { data: comments }, { data: store }] = await Promise.all([
     supabase.from("facebook_ai_settings").select("*").eq("store_id", storeId).maybeSingle(),
@@ -44,7 +41,8 @@ export async function analyzeComments(supabase: any, storeId: string, commentIds
   const lang =
     settings.language === "bn" ? "Bangla" : settings.language === "en" ? "English" : "the same language as the comment";
 
-  const provider = createLovableAiGatewayProvider(apiKey);
+  const { routedModel } = await import("@/lib/ai-provider.server");
+  const aiModel = await routedModel("google/gemini-2.5-flash");
   const prompt = [
     `You moderate the Facebook Page comments of the online store "${store?.name ?? "this store"}".`,
     store?.description ? `Store description: ${store.description}` : "",
@@ -65,7 +63,7 @@ export async function analyzeComments(supabase: any, storeId: string, commentIds
     .join("\n");
 
   const { text } = await generateText({
-    model: provider("google/gemini-2.5-flash"),
+    model: aiModel,
     prompt,
   });
 

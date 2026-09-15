@@ -187,13 +187,36 @@ export const Route = createFileRoute("/api/ai/chat")({
               }
             },
           });
-          const response = result.toUIMessageStreamResponse({ originalMessages: body.messages });
+          const response = result.toUIMessageStreamResponse({
+            originalMessages: body.messages,
+            onError: (error) => {
+              const msg = error instanceof Error ? error.message : String(error);
+              console.error("[ai/chat] stream error", msg);
+              void sb.from("ai_messages").insert({
+                conversation_id: ctxConvId,
+                role: "system",
+                direction: "out",
+                message_type: "error",
+                content: msg.slice(0, 2000),
+              } as any);
+              return msg.slice(0, 500);
+            },
+          });
           // Expose conversation id to the browser so it can persist it.
           response.headers.set("x-orzen-conversation-id", ctxConvId);
           response.headers.set("access-control-expose-headers", "x-orzen-conversation-id");
           return response;
         } catch (e) {
-          return new Response((e as Error).message, { status: 400 });
+          const msg = (e as Error).message || "AI request failed";
+          console.error("[ai/chat] failed", msg);
+          void sb.from("ai_messages").insert({
+            conversation_id: convId,
+            role: "system",
+            direction: "out",
+            message_type: "error",
+            content: msg.slice(0, 2000),
+          } as any);
+          return Response.json({ error: msg }, { status: 500 });
         }
       },
     },

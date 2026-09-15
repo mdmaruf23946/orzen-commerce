@@ -3,7 +3,6 @@ import { createClient } from "@supabase/supabase-js";
 import { generateText, streamText, tool, stepCountIs } from "ai";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
-import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 import {
   sendProductCard as fbSendProductCard,
   sendProductCarousel as fbSendProductCarousel,
@@ -1747,16 +1746,16 @@ export async function logUsage(storeId: string | null, model: string, usage: any
 }
 
 export async function getModelForStore(opts?: { fast?: boolean; modelOverride?: string }) {
-  const sb = admin();
-  const { data: settings } = await sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle();
-  const saved = (settings?.provider_api_key || "").trim();
-  const looksLovable = saved.startsWith("lv_") || saved.startsWith("sk-lovable");
-  const apiKey = (looksLovable ? saved : "") || process.env.LOVABLE_API_KEY!;
-  if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
-  const configuredModel = opts?.modelOverride || settings?.default_model || "google/gemini-2.5-flash";
-  const modelId = opts?.fast && configuredModel.includes("pro") ? "google/gemini-2.5-flash" : configuredModel;
-  const gateway = createLovableAiGatewayProvider(apiKey);
-  return { model: gateway(modelId), modelId, settings: (settings ?? null) as GlobalAiSettings | null, gateway };
+  // Routes through the owner's saved Gemini/OpenAI keys (with serial rotation
+  // and failure fallback) and finally the platform Lovable AI key.
+  const { resolveAiModel } = await import("./ai-provider.server");
+  const resolved = await resolveAiModel(opts);
+  return {
+    model: resolved.model,
+    modelId: resolved.modelId,
+    settings: (resolved.settings ?? null) as GlobalAiSettings | null,
+    usedProvider: resolved.usedProvider,
+  };
 }
 
 function generationParams(settings: GlobalAiSettings | null | undefined, modelId?: string) {

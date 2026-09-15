@@ -4,7 +4,6 @@
 // only, never by message content.
 import { generateText, tool, stepCountIs } from "ai";
 import type { z } from "zod";
-import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 import { loadSettings } from "./connection.server";
 import { buildCustomerTools, type CustomerToolCtx } from "./customer-tools.server";
 
@@ -34,8 +33,6 @@ export async function runCustomerAgent(args: {
   history?: { role: "user" | "assistant"; content: string }[];
   ctx: CustomerToolCtx;
 }): Promise<{ reply: string; escalated: boolean }> {
-  const apiKey = process.env.LOVABLE_API_KEY;
-  if (!apiKey) throw new Error("AI is not configured.");
 
   const settings = await loadSettings();
   const model =
@@ -68,9 +65,10 @@ export async function runCustomerAgent(args: {
     ]),
   );
 
-  const gateway = createLovableAiGatewayProvider(apiKey);
+  const { routedModel } = await import("@/lib/ai-provider.server");
+  const aiModel = await routedModel(model);
   const { text } = await generateText({
-    model: gateway(model),
+    model: aiModel,
     system: SYSTEM,
     messages: [
       ...(args.history ?? []).slice(-10).map((m) => ({ role: m.role, content: m.content })),
