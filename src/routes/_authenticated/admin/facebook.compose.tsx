@@ -196,7 +196,7 @@ function ComposePage() {
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button
           onClick={onPublish}
-          disabled={!canPost || busy !== null}
+          disabled={busy !== null}
           className="w-full sm:w-auto"
           style={{ backgroundColor: FB_BLUE }}
         >
@@ -207,7 +207,11 @@ function ComposePage() {
           {busy === "draft" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
           Save as draft
         </Button>
-        {!canPost && <div className="self-center"><MissingPermission scope="pages_manage_posts" /></div>}
+        {!canPost && (
+          <div className="self-center text-[11px] text-amber-600">
+            Facebook may refuse this — <MissingPermission scope="pages_manage_posts" />. Recheck in Page Settings.
+          </div>
+        )}
       </div>
     </div>
   );
