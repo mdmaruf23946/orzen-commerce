@@ -1539,6 +1539,7 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
               }
 
               try {
+                await waitRemainingDelay(turnStartedAt, replyDelaySeconds);
                 const sent = await fbSend(token, senderId, replyText);
                 await sb.from("ai_messages").insert({
                   conversation_id: conv!.id,
