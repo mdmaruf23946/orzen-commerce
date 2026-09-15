@@ -4389,6 +4389,8 @@ export type Database = {
           permissions: Json
           privacy_policy_url: string | null
           product_recommendation: boolean
+          reply_delay_seconds: number
+          reply_speed: string
           status: string
           store_id: string
           terms_of_service_url: string | null
@@ -4418,6 +4420,8 @@ export type Database = {
           permissions?: Json
           privacy_policy_url?: string | null
           product_recommendation?: boolean
+          reply_delay_seconds?: number
+          reply_speed?: string
           status?: string
           store_id: string
           terms_of_service_url?: string | null
@@ -4447,6 +4451,8 @@ export type Database = {
           permissions?: Json
           privacy_policy_url?: string | null
           product_recommendation?: boolean
+          reply_delay_seconds?: number
+          reply_speed?: string
           status?: string
           store_id?: string
           terms_of_service_url?: string | null
