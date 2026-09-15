@@ -75,7 +75,7 @@ export const getFacebookPage = createServerFn({ method: "GET" })
       token_expires_at: row?.token_expires_at ?? null,
       last_error: row?.last_error ?? null,
       permissions: (row?.permissions ?? []) as string[],
-      capabilities: capabilities(row?.permissions as string[]),
+      capabilities: capabilities(row?.permissions as string[], row?.permissions_verified as any),
       scopes: FB_PAGE_SCOPES,
       drafts: draftCount ?? 0,
       unanswered_comments: pendingComments ?? 0,
@@ -319,7 +319,7 @@ export const listFacebookPosts = createServerFn({ method: "POST" })
     const { row, token } = await loadPageContext(context.supabase, storeId);
     if (!row?.page_id || !token) return { connected: false, posts: [], next: null };
 
-    const caps = capabilities(row.permissions as string[]);
+    const caps = capabilities(row.permissions as string[], row.permissions_verified as any);
     if (!caps.read_posts) return { connected: true, posts: [], next: null, missing: "pages_read_engagement" };
 
     const fields =
@@ -536,7 +536,7 @@ export const syncFacebookComments = createServerFn({ method: "POST" })
     const { loadPageContext, capabilities, graphGet } = await import("@/lib/facebook-page.server");
     const { row, token } = await loadPageContext(context.supabase, storeId);
     if (!row?.page_id || !token) return { ok: false, error: "not_connected", synced: 0 };
-    const caps = capabilities(row.permissions as string[]);
+    const caps = capabilities(row.permissions as string[], row.permissions_verified as any);
     if (!caps.read_comments) return { ok: false, error: "pages_read_engagement", synced: 0 };
 
     const rows: any[] = [];
@@ -623,7 +623,7 @@ export const listFacebookComments = createServerFn({ method: "POST" })
     const total = count ?? 0;
     return {
       connected: row?.status === "connected",
-      capabilities: capabilities(row?.permissions as string[]),
+      capabilities: capabilities(row?.permissions as string[], row?.permissions_verified as any),
       page,
       page_size: pageSize,
       total,
@@ -819,7 +819,7 @@ export const listFacebookModeration = createServerFn({ method: "POST" })
 
     return {
       connected: row?.status === "connected",
-      capabilities: capabilities(row?.permissions as string[]),
+      capabilities: capabilities(row?.permissions as string[], row?.permissions_verified as any),
       items: (rows ?? []).map((r: any) => ({
         ...r,
         author_picture: r.author_id ? userPicture(r.author_id) : null,
