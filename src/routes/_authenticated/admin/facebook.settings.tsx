@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Download, Loader2, Plug, PlugZap, RefreshCw, Save, Sparkles } from "lucide-react";
 import {
-  getFacebookPage, connectFacebookPage, importMessengerPageCredentials, reverifyFacebookPage,
+  getFacebookPage, connectFacebookPage, importMessengerPageCredentials, reverifyFacebookPage, recheckFacebookPermissions,
   setFacebookWebhookEnabled, facebookWebhookSubscription,
   disconnectFacebookPage, getFacebookAiSettings, saveFacebookAiSettings,
 } from "@/lib/facebook-page.functions";
@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Section, StatusPill, formatWhen, FB_BLUE } from "@/components/admin/facebook/ui";
+import { Section, StatusPill, formatWhen, FB_BLUE, PermissionsGrid } from "@/components/admin/facebook/ui";
+import { CAP_LABEL, CAP_SCOPE } from "@/lib/facebook-caps";
 
 export const Route = createFileRoute("/_authenticated/admin/facebook/settings")({
   component: SettingsPage,
@@ -52,6 +53,7 @@ function SettingsPage() {
   const connectFn = useServerFn(connectFacebookPage);
   const importFn = useServerFn(importMessengerPageCredentials);
   const verifyFn = useServerFn(reverifyFacebookPage);
+  const recheckFn = useServerFn(recheckFacebookPermissions);
   const disconnectFn = useServerFn(disconnectFacebookPage);
   const webhookFn = useServerFn(setFacebookWebhookEnabled);
   const subFn = useServerFn(facebookWebhookSubscription);

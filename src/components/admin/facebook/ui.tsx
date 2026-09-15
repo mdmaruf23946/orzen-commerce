@@ -131,3 +131,44 @@ export function CapAction({
     </span>
   );
 }
+
+
+/**
+ * Shows, per action, whether Facebook actually allows it with the stored Page
+ * token: verified, refused, or not checked yet.
+ */
+export function PermissionsGrid({
+  states,
+  labels,
+  scopes,
+}: {
+  states: Record<string, boolean | null>;
+  labels: Record<string, string>;
+  scopes: Record<string, string>;
+}) {
+  const keys = Object.keys(labels);
+  return (
+    <div className="grid gap-1.5 sm:grid-cols-2">
+      {keys.map((k) => {
+        const v = states?.[k] ?? null;
+        const tone =
+          v === true
+            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600"
+            : v === false
+              ? "border-destructive/20 bg-destructive/10 text-destructive"
+              : "border-border bg-muted text-muted-foreground";
+        return (
+          <div key={k} className="flex items-center justify-between gap-2 rounded-lg border bg-background px-2.5 py-1.5">
+            <div className="min-w-0">
+              <div className="truncate text-xs font-medium">{labels[k]}</div>
+              <div className="truncate text-[10px] text-muted-foreground">{scopes[k]}</div>
+            </div>
+            <span className={cn("shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium", tone)}>
+              {v === true ? "Verified" : v === false ? "Missing" : "Not checked"}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
