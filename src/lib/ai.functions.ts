@@ -597,7 +597,17 @@ export const connectMessenger = createServerFn({ method: "POST" })
       .from("messenger_integrations")
       .upsert(upsertRow, { onConflict: "store_id" });
     if (error) throw new Error(error.message);
-    return { ok: true, verify_token, subscribed: sub.ok, subscribed_fields: sub.fields };
+
+    // One connection powers both agents: mirror the same Page credentials into
+    // the Facebook Page agent so posts/comments work without a second connect.
+    const facebook = await syncFacebookPageAgent(context, storeId, {
+      page_id: data.page_id,
+      token: data.page_access_token,
+      app_id: data.app_id ?? null,
+      app_secret: data.app_secret ?? (await decryptToken(row?.app_secret_encrypted ?? null)),
+    });
+
+    return { ok: true, verify_token, subscribed: sub.ok, subscribed_fields: sub.fields, facebook };
   });
 
 export const disconnectMessenger = createServerFn({ method: "POST" })
@@ -606,8 +616,11 @@ export const disconnectMessenger = createServerFn({ method: "POST" })
     await assertPlan(context.supabase, context.userId, "ai_messenger");
     const storeId = await getOwnedStoreId(context.supabase, context.userId);
     await context.supabase.from("messenger_integrations").delete().eq("store_id", storeId);
+    // The Facebook Page agent shares this connection, so it disconnects too.
+    await context.supabase.from("facebook_page_integrations").delete().eq("store_id", storeId);
     return { ok: true };
   });
+
 
 export const verifyMessengerWebhook = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
