@@ -113,7 +113,7 @@ function SettingsPage() {
     <div className="space-y-4">
       <Section
         title="Facebook Page connection"
-        description="This connection belongs to the Facebook Page module only — your Messenger AI Agent keeps its own."
+        description="This agent shares the same Page connection as your Messenger agent — connect once in Messenger and both work."
         action={<StatusPill status={page?.status ?? "not_connected"} />}
       >
         {page?.connected ? (
@@ -121,9 +121,14 @@ function SettingsPage() {
             <div className="rounded-xl border bg-muted/30 p-3 text-xs">
               <div className="font-medium">{page.page_name}</div>
               <div className="text-muted-foreground">Page ID: {page.page_id}</div>
+              <div className="text-muted-foreground">Connected: {formatWhen(page.connected_at)}</div>
               <div className="text-muted-foreground">Last verified: {formatWhen(page.last_verified_at)}</div>
               {page.last_error && <div className="mt-1 text-destructive">{page.last_error}</div>}
             </div>
+            <p className="text-[11px] text-muted-foreground">
+              Connected automatically from your Messenger integration. To change or remove the Page, use the Messenger
+              page — disconnecting there removes it from both agents.
+            </p>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Button
                 variant="outline"
@@ -134,101 +139,32 @@ function SettingsPage() {
                 {busy === "verify" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1.5 h-4 w-4" />}
                 Re-verify
               </Button>
-              <Button
-                variant="ghost"
-                className="w-full text-destructive hover:bg-destructive/10 sm:w-auto"
-                onClick={() => act("disconnect", () => disconnectFn(), "Page disconnected")}
-                disabled={busy !== null}
-              >
-                <Plug className="mr-1.5 h-4 w-4" /> Disconnect
+              <Button asChild variant="ghost" className="w-full sm:w-auto">
+                <Link to="/admin/messenger">
+                  <Plug className="mr-1.5 h-4 w-4" /> Manage connection in Messenger
+                </Link>
               </Button>
             </div>
           </div>
         ) : (
           <div className="space-y-3">
-            {page?.messenger_page && (
-              <div className="flex flex-col gap-2 rounded-xl border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-xs">
-                  <div className="font-medium">Use my Messenger page</div>
-                  <div className="text-muted-foreground">
-                    Copy credentials from {page.messenger_page.page_name ?? page.messenger_page.page_id}. Your Messenger
-                    setup stays untouched.
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  style={{ backgroundColor: FB_BLUE }}
-                  disabled={busy !== null}
-                  onClick={() => act("import", () => importFn(), "Imported from Messenger")}
-                >
-                  {busy === "import" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />}
-                  Import
-                </Button>
-              </div>
-            )}
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Page ID</Label>
-                <Input value={pageId} onChange={(e) => setPageId(e.target.value.trim())} placeholder="1234567890" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Page access token</Label>
-                <Input
-                  type="password"
-                  value={token}
-                  onChange={(e) => setToken(e.target.value.trim())}
-                  placeholder="EAAB…"
-                  autoComplete="off"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">App ID (optional)</Label>
-                <Input value={appId} onChange={(e) => setAppId(e.target.value.trim())} placeholder="Meta app ID" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">App secret (optional)</Label>
-                <Input
-                  type="password"
-                  value={appSecret}
-                  onChange={(e) => setAppSecret(e.target.value.trim())}
-                  placeholder="••••••••"
-                  autoComplete="off"
-                />
-              </div>
+            <div className="rounded-xl border bg-muted/30 p-3 text-xs text-muted-foreground">
+              No Facebook Page is connected yet. Connect your Page once on the Messenger integration page — the chat
+              agent and this posts &amp; comments agent will both start working with that same Page.
             </div>
-
             <p className="text-[11px] text-muted-foreground">
               Needed permissions: pages_show_list, pages_read_engagement, pages_manage_posts, pages_manage_engagement,
-              pages_messaging. Only the actions your token grants will be enabled.
+              pages_manage_metadata, pages_messaging. Only the actions your token grants will be enabled.
             </p>
-
-            <Button
-              onClick={() =>
-                act(
-                  "connect",
-                  () =>
-                    connectFn({
-                      data: {
-                        page_id: pageId,
-                        page_access_token: token,
-                        app_id: appId || null,
-                        app_secret: appSecret || null,
-                      },
-                    }),
-                  "Facebook Page connected",
-                )
-              }
-              disabled={busy !== null || !pageId || !token}
-              style={{ backgroundColor: FB_BLUE }}
-              className="w-full sm:w-auto"
-            >
-              {busy === "connect" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <PlugZap className="mr-1.5 h-4 w-4" />}
-              Connect page
+            <Button asChild style={{ backgroundColor: FB_BLUE }} className="w-full sm:w-auto">
+              <Link to="/admin/messenger">
+                <PlugZap className="mr-1.5 h-4 w-4" /> Connect in Messenger
+              </Link>
             </Button>
           </div>
         )}
       </Section>
+
 
       {page?.connected && (
         <Section
