@@ -155,6 +155,11 @@ function retryable(status: number) {
   return status === 400 || status === 401 || status === 403 || status === 404 || status === 429 || status >= 500;
 }
 
+/** Statuses that mean the key itself is the problem. */
+function keyLevelFailure(status: number) {
+  return status === 401 || status === 403 || status === 429;
+}
+
 /**
  * Builds one AI SDK model that routes through the owner's keys with fallback.
  * `modelId` is the gateway-style id stored in settings (e.g. "google/gemini-2.5-flash").
