@@ -1,6 +1,6 @@
 // Real actions the Merchant AI can run. Every handler receives the storeId
 // from the server-side context — the model can never choose a store.
-import type { Db } from "./core.server";
+import { safeSearchTerm, type Db } from "./core.server";
 
 export type ActionCtx = {
   db: Db;
@@ -16,7 +16,8 @@ const money = (n: unknown) => Number(n ?? 0);
 /* ----------------------------- sales ----------------------------- */
 
 const productSearch: ActionHandler = async ({ db, storeId }, input) => {
-  const q = String(input?.query ?? "").trim();
+  const q = safeSearchTerm(input?.query);
+
   let sel = db
     .from("products")
     .select("id, name, price, old_price, stock, status, sku, product_type")
@@ -58,7 +59,8 @@ const ORDER_COLS =
   "id, invoice_no, customer_name, phone, address, subtotal, delivery_amount, discount_amount, paid_amount, due_amount, status, payment_method, payment_status, created_at";
 
 const orderSearch: ActionHandler = async ({ db, storeId }, input) => {
-  const q = String(input?.query ?? "").trim();
+  const q = safeSearchTerm(input?.query);
+
   let sel = db
     .from("orders")
     .select(ORDER_COLS)
@@ -176,7 +178,7 @@ const orderCancel: ActionHandler = async (ctx, input) =>
 /* ---------------------------- customers ---------------------------- */
 
 const customerSearch: ActionHandler = async ({ db, storeId }, input) => {
-  const q = String(input?.query ?? "").trim();
+  const q = safeSearchTerm(input?.query);
   let sel = db
     .from("store_customers")
     .select("id, full_name, phone, email, created_at")
