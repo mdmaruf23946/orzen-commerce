@@ -299,7 +299,7 @@ export const getOwnerReports = createServerFn({ method: "GET" })
     const [{ data: payments }, { data: stores }, { data: orders }, { data: ai }] = await Promise.all([
       sb.from("payments").select("amount,status,created_at,verified_at,method").gte("created_at", last90),
       sb.from("stores").select("id,created_at,subscription_status"),
-      sb.from("orders").select("total,status,created_at").gte("created_at", last30),
+      sb.from("orders").select("subtotal,discount_amount,delivery_amount,status,created_at").gte("created_at", last30),
       sb.from("ai_usage").select("cost_usd,prompt_tokens,completion_tokens,model,created_at").gte("created_at", last30),
     ]);
 
@@ -333,7 +333,9 @@ export const getOwnerReports = createServerFn({ method: "GET" })
     }
     void running;
 
-    const orderTotal = (orders ?? []).reduce((a: number, o: any) => a + Number(o.total || 0), 0);
+    const computeTotal = (o: any) =>
+      Number(o.subtotal || 0) + Number(o.delivery_amount || 0) - Number(o.discount_amount || 0);
+    const orderTotal = (orders ?? []).reduce((a: number, o: any) => a + computeTotal(o), 0);
     const aiCost = (ai ?? []).reduce((a: number, r: any) => a + Number(r.cost_usd || 0), 0);
     const aiTokens = (ai ?? []).reduce((a: number, r: any) => a + (Number(r.prompt_tokens || 0) + Number(r.completion_tokens || 0)), 0);
 
