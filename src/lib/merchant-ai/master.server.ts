@@ -250,11 +250,11 @@ export async function runMasterAgent(args: MasterArgs): Promise<{ reply: string;
     actionKey: "command_received",
     threadId,
     message: `Command via ${args.via}`,
-    meta: { text: text.slice(0, 200) },
+    meta: { text: text.slice(0, 200), identity: args.identityRef ?? "unknown" },
   });
 
-  // YES / NO on the latest waiting approval — no model call needed.
-  const pending = await latestPendingAction(db, storeId);
+  // YES / NO only applies to an approval requested from this same channel.
+  const pending = await pendingActionForContext(db, storeId, args.via);
   if (pending && (YES.test(text.trim()) || NO.test(text.trim()))) {
     let reply: string;
     if (YES.test(text.trim())) {
@@ -271,6 +271,7 @@ export async function runMasterAgent(args: MasterArgs): Promise<{ reply: string;
     await addThreadMessage(db, storeId, threadId, "assistant", reply, {});
     return { reply, actions: ["approval_decision"] };
   }
+
 
   const executed: string[] = [];
   const tools = await buildTools(args, executed);
