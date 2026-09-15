@@ -166,7 +166,8 @@ export const connectFacebookPage = createServerFn({ method: "POST" })
     } catch {
       subscribed = false;
     }
-    return { ok: true, page_name: page?.name ?? null, permissions, subscribed };
+    const verified = await refreshVerifiedCaps(context.supabase, storeId, data.page_id, data.page_access_token);
+    return { ok: true, page_name: page?.name ?? null, permissions, verified, subscribed };
 
   });
 
@@ -248,7 +249,8 @@ export const importMessengerPageCredentials = createServerFn({ method: "POST" })
     } catch {
       subscribed = false;
     }
-    return { ok: true, page_name: page?.name ?? null, permissions, subscribed };
+    const verified = await refreshVerifiedCaps(context.supabase, storeId, msg.page_id, token);
+    return { ok: true, page_name: page?.name ?? null, permissions, verified, subscribed };
 
   });
 
@@ -287,7 +289,8 @@ export const reverifyFacebookPage = createServerFn({ method: "POST" })
           last_error: null,
         })
         .eq("store_id", storeId);
-      return { ok: true, permissions };
+      const verified = await refreshVerifiedCaps(context.supabase, storeId, row.page_id, token);
+      return { ok: true, permissions, verified };
     } catch (e) {
       await context.supabase
         .from("facebook_page_integrations")
@@ -303,6 +306,23 @@ export const disconnectFacebookPage = createServerFn({ method: "POST" })
     const storeId = await assertPlan(context.supabase, context.userId, "facebook_page");
     await context.supabase.from("facebook_page_integrations").delete().eq("store_id", storeId);
     return { ok: true };
+  });
+
+/** Asks Facebook directly which actions this Page token can perform. */
+export const recheckFacebookPermissions = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const storeId = await assertPlan(context.supabase, context.userId, "facebook_page");
+    const { loadPageContext, capabilityStates } = await import("@/lib/facebook-page.server");
+    const { row, token } = await loadPageContext(context.supabase, storeId);
+    if (!row?.page_id || !token) throw new Error("Facebook Page is not connected.");
+    const verified = await refreshVerifiedCaps(context.supabase, storeId, row.page_id, token);
+    return {
+      ok: true,
+      verified,
+      capability_states: capabilityStates(row.permissions as string[], verified),
+      checked_at: new Date().toISOString(),
+    };
   });
 
 export const listFacebookPosts = createServerFn({ method: "POST" })
