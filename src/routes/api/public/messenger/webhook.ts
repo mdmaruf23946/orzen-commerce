@@ -1491,7 +1491,11 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
               // Conversation-state block so the model always sees what's already collected.
               const lastOrder = ((convStateRes as any)?.data?.psid_profile as any)?.last_order ?? null;
               const recentIds = Array.from(
-                new Set(((recentRecsRes as any).data ?? []).map((r: any) => r.product_id).filter(Boolean)),
+                new Set(
+                  ((recentRecsRes as any).data ?? [])
+                    .map((r: any) => String(r.product_id ?? ""))
+                    .filter(Boolean) as string[],
+                ),
               );
               const focus = focusRes as any;
 
