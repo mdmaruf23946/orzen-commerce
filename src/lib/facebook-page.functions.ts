@@ -360,11 +360,13 @@ export const listFacebookPosts = createServerFn({ method: "POST" })
     let rounds = 0;
     let next: string | null = null;
     do {
-      const j: any = await graphGet(`/${encodeURIComponent(row.page_id)}/posts`, token, {
-        fields,
-        limit: String(needle ? 25 : pageSize),
-        after: cursor,
-      });
+      const j: any = await withFbError(() =>
+        graphGet(`/${encodeURIComponent(row.page_id)}/posts`, token, {
+          fields,
+          limit: String(needle ? 25 : pageSize),
+          after: cursor,
+        }),
+      );
       const batch = (j?.data ?? []) as any[];
       collected.push(...(needle ? batch.filter((p) => String(p.message ?? "").toLowerCase().includes(needle)) : batch));
       next = j?.paging?.cursors?.after ?? null;
@@ -590,6 +592,7 @@ export const syncFacebookComments = createServerFn({ method: "POST" })
     for (const p of feed?.data ?? []) {
       for (const c of p?.comments?.data ?? []) {
         if (seen.has(c.id)) continue;
+        if (c?.from?.id && String(c.from.id) === String(row.page_id)) continue; // page's own replies
         seen.add(c.id);
         rows.push({ c, postId: p.id, excerpt: (p.message ?? "").slice(0, 120) || null });
       }
