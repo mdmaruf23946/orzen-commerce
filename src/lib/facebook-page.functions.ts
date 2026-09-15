@@ -6,6 +6,27 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertPlan } from "@/lib/plan-guard";
 
+/** Runs a Graph call and turns any Meta error into actionable guidance. */
+async function withFbError<T>(op: () => Promise<T>): Promise<T> {
+  try {
+    return await op();
+  } catch (e) {
+    const { explainGraphError } = await import("@/lib/facebook-errors.server");
+    throw new Error(explainGraphError(e));
+  }
+}
+
+/** Re-probes what the stored token can do and saves the result. */
+async function refreshVerifiedCaps(supabase: any, storeId: string, pageId: string, token: string) {
+  const { probeCapabilities } = await import("@/lib/facebook-page.server");
+  const verified = await probeCapabilities(pageId, token);
+  await supabase
+    .from("facebook_page_integrations")
+    .update({ permissions_verified: verified, permissions_checked_at: new Date().toISOString() } as any)
+    .eq("store_id", storeId);
+  return verified;
+}
+
 export const getFacebookPage = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
