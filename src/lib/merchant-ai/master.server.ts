@@ -5,14 +5,15 @@ import { z } from "zod";
 import {
   addThreadMessage,
   createPendingAction,
-  latestPendingAction,
+  pendingActionForContext,
+  loadAgentState,
   loadPermissions,
   logActivity,
   threadHistory,
   touchAgent,
-  isAgentEnabled,
   type Db,
 } from "./core.server";
+
 import { ACTION_BY_KEY, MERCHANT_ACTIONS } from "./registry";
 import { runAction, type ActionCtx } from "./tools.server";
 import { notifyMerchantEvent } from "./notify.server";
