@@ -31,7 +31,9 @@ export const getFacebookPage = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const storeId = await assertPlan(context.supabase, context.userId);
-    const { capabilities, pagePicture, FB_PAGE_SCOPES, loadPageContext } = await import("@/lib/facebook-page.server");
+    const { capabilities, capabilityStates, pagePicture, FB_PAGE_SCOPES, loadPageContext } = await import(
+      "@/lib/facebook-page.server"
+    );
     const { row } = await loadPageContext(context.supabase, storeId);
 
     const [{ count: draftCount }, { count: pendingComments }, { data: ai }, { count: pendingModeration }] =
@@ -76,6 +78,8 @@ export const getFacebookPage = createServerFn({ method: "GET" })
       last_error: row?.last_error ?? null,
       permissions: (row?.permissions ?? []) as string[],
       capabilities: capabilities(row?.permissions as string[], row?.permissions_verified as any),
+      capability_states: capabilityStates(row?.permissions as string[], row?.permissions_verified as any),
+      permissions_checked_at: (row?.permissions_checked_at ?? null) as string | null,
       scopes: FB_PAGE_SCOPES,
       drafts: draftCount ?? 0,
       unanswered_comments: pendingComments ?? 0,
