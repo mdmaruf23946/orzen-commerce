@@ -333,9 +333,9 @@ export const getOwnerReports = createServerFn({ method: "GET" })
     }
     void running;
 
-    const orderTotal = (o: any) =>
+    const computeTotal = (o: any) =>
       Number(o.subtotal || 0) + Number(o.delivery_amount || 0) - Number(o.discount_amount || 0);
-    const orderRevenue = (orders ?? []).reduce((a: number, o: any) => a + orderTotal(o), 0);
+    const orderTotal = (orders ?? []).reduce((a: number, o: any) => a + computeTotal(o), 0);
     const aiCost = (ai ?? []).reduce((a: number, r: any) => a + Number(r.cost_usd || 0), 0);
     const aiTokens = (ai ?? []).reduce((a: number, r: any) => a + (Number(r.prompt_tokens || 0) + Number(r.completion_tokens || 0)), 0);
 
