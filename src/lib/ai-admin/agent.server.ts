@@ -226,8 +226,6 @@ export async function runAdminAgent(args: {
   });
   if (decision) return { reply: decision, actions: ["confirmation"] };
 
-  const apiKey = process.env.LOVABLE_API_KEY;
-  if (!apiKey) throw new Error("AI is not configured.");
   const settings = await loadSettings();
   const model = settings?.model || "google/gemini-3.8-flash";
 
@@ -237,9 +235,10 @@ export async function runAdminAgent(args: {
     executed,
   );
 
-  const gateway = createLovableAiGatewayProvider(apiKey);
+  const { routedModel } = await import("@/lib/ai-provider.server");
+  const aiModel = await routedModel(model);
   const { text } = await generateText({
-    model: gateway(model),
+    model: aiModel,
     system:
       SYSTEM +
       (settings?.reply_language && settings.reply_language !== "auto"

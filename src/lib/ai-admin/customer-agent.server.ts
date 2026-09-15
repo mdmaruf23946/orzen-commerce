@@ -68,9 +68,10 @@ export async function runCustomerAgent(args: {
     ]),
   );
 
-  const gateway = createLovableAiGatewayProvider(apiKey);
+  const { routedModel } = await import("@/lib/ai-provider.server");
+  const aiModel = await routedModel(model);
   const { text } = await generateText({
-    model: gateway(model),
+    model: aiModel,
     system: SYSTEM,
     messages: [
       ...(args.history ?? []).slice(-10).map((m) => ({ role: m.role, content: m.content })),
