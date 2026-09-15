@@ -830,7 +830,7 @@ export const getStoreUsage = createServerFn({ method: "POST" })
       sb.from("orders").select("*", { count: "exact", head: true }).eq("store_id", data.storeId),
       sb.from("orders").select("*", { count: "exact", head: true })
         .eq("store_id", data.storeId).gte("created_at", last30),
-      sb.from("orders").select("total,status,customer_phone,created_at").eq("store_id", data.storeId),
+      sb.from("orders").select("subtotal,discount_amount,delivery_amount,status,phone,created_at").eq("store_id", data.storeId),
       sb.from("ai_usage").select("cost_usd,prompt_tokens,completion_tokens,created_at")
         .eq("store_id", data.storeId).gte("created_at", last30),
       sb.from("payments").select("id,amount,status,method,created_at,invoice_no")

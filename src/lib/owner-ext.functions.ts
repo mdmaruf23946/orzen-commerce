@@ -299,7 +299,7 @@ export const getOwnerReports = createServerFn({ method: "GET" })
     const [{ data: payments }, { data: stores }, { data: orders }, { data: ai }] = await Promise.all([
       sb.from("payments").select("amount,status,created_at,verified_at,method").gte("created_at", last90),
       sb.from("stores").select("id,created_at,subscription_status"),
-      sb.from("orders").select("total,status,created_at").gte("created_at", last30),
+      sb.from("orders").select("subtotal,discount_amount,delivery_amount,status,created_at").gte("created_at", last30),
       sb.from("ai_usage").select("cost_usd,prompt_tokens,completion_tokens,model,created_at").gte("created_at", last30),
     ]);
 
