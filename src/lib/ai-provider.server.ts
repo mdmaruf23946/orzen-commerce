@@ -205,10 +205,14 @@ export function buildRoutedModel(settings: any, modelId: string): ResolvedAi {
           used = { provider: c.provider, label: c.label };
           return new Response(text, { status: res.status, headers: res.headers });
         }
-        if (c.provider === "gemini" && c.keyId) void markGeminiFailure(c.keyId, lastError);
+        // Only a key-level problem (bad key, revoked, quota) parks the key for
+        // the day. Provider overload or a request-shape problem is not the
+        // key's fault — move on to the next candidate without disabling it.
+        if (c.provider === "gemini" && c.keyId && keyLevelFailure(res.status)) {
+          void markGeminiFailure(c.keyId, lastError);
+        }
       } catch (e) {
         lastError = `${c.label}: ${(e as Error).message}`;
-        if (c.provider === "gemini" && c.keyId) void markGeminiFailure(c.keyId, lastError);
       }
     }
     throw new Error(lastError);
