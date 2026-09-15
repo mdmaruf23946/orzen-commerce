@@ -37,20 +37,50 @@ export const Route = createFileRoute("/api/public/ai-admin/messenger-webhook")({
         );
         const { loadSettings } = await import("@/lib/ai-admin/connection.server");
 
-        const conn = await loadMessengerConnection();
-        const creds = readMessengerCreds(conn);
-        if (!conn || !creds?.page_access_token) return new Response("Not configured", { status: 200 });
-
-        if (creds.app_secret) {
-          const ok = verifySignature(raw, request.headers.get("x-hub-signature-256"), creds.app_secret);
-          if (!ok) return new Response("Invalid signature", { status: 401 });
-        }
-
         let payload: any = {};
         try {
           payload = JSON.parse(raw);
         } catch {
           return new Response("Bad payload", { status: 400 });
+        }
+
+        const conn = await loadMessengerConnection();
+        const creds = readMessengerCreds(conn);
+
+        // Meta uses one Messenger callback per app. Dispatch connected Merchant
+        // Pages by the payload's Page ID while preserving the exact signed body.
+        // The Merchant endpoint validates the signature again with that Page's
+        // encrypted App Secret before it reads or writes tenant data.
+        const pageId = String(payload?.entry?.[0]?.id ?? "");
+        if (pageId && pageId !== String(conn?.page_id ?? "")) {
+          const { data: merchantPage } = await supabaseAdmin
+            .from("messenger_integrations")
+            .select("id")
+            .eq("page_id", pageId)
+            .eq("status", "connected")
+            .maybeSingle();
+          if (!merchantPage) return new Response("ok", { status: 200 });
+
+          const target = new URL("/api/public/messenger/webhook", request.url);
+          const headers = new Headers({
+            "content-type": "application/json",
+            "x-orzen-messenger-routed": "merchant",
+          });
+          const signature = request.headers.get("x-hub-signature-256");
+          if (signature) headers.set("x-hub-signature-256", signature);
+          try {
+            const routed = await fetch(target, { method: "POST", headers, body: raw });
+            return new Response(await routed.text(), { status: routed.status });
+          } catch {
+            return new Response("Messenger route unavailable", { status: 503 });
+          }
+        }
+
+        if (!conn || !creds?.page_access_token) return new Response("Not configured", { status: 200 });
+
+        if (creds.app_secret) {
+          const ok = verifySignature(raw, request.headers.get("x-hub-signature-256"), creds.app_secret);
+          if (!ok) return new Response("Invalid signature", { status: 401 });
         }
 
         const messaging = payload?.entry?.[0]?.messaging?.[0];

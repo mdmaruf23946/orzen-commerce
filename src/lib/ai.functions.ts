@@ -502,6 +502,9 @@ export const connectMessenger = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertPlan(context.supabase, context.userId, "ai_messenger");
     const { storeId, row } = await loadIntegrationForOwner(context);
+    if (!data.app_secret && !row?.app_secret_encrypted) {
+      throw new Error("App Secret is required to securely receive incoming Messenger messages");
+    }
     const { encryptJSON } = await import("@/lib/crypto/credentials.server");
 
     // Verify page + fetch metadata
@@ -602,6 +605,7 @@ export const verifyMessengerWebhook = createServerFn({ method: "POST" })
       token_match: false,
       post_status: null as number | null,
       bad_token_status: null as number | null,
+      app_secret_configured: !!row.app_secret_encrypted,
     };
     try {
       const r = await fetch(goodUrl);
@@ -634,12 +638,14 @@ export const verifyMessengerWebhook = createServerFn({ method: "POST" })
         if (!sub.ok && sub.error) diag.subscribe_error = sub.error;
       }
 
-      const ok = diag.token_match && diag.subscribed;
+      const ok = diag.token_match && diag.subscribed && diag.app_secret_configured;
       await context.supabase
         .from("messenger_integrations")
         .update({
           last_verified_at: ok ? new Date().toISOString() : row.last_verified_at,
-          last_error: diag.token_match
+          last_error: !diag.app_secret_configured
+            ? "App Secret is required to securely receive incoming Messenger messages. Add it and reconnect."
+            : diag.token_match
             ? ok
               ? null
               : `Message delivery is not enabled on the Page${diag.subscribe_error ? `: ${diag.subscribe_error}` : ". Grant pages_messaging and reconnect."}`

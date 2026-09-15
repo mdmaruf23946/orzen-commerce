@@ -127,6 +127,10 @@ function AdminMessenger() {
       toast.error("Page ID and Page Access Token are required");
       return;
     }
+    if (!appSecret.trim() && !d.has_app_secret) {
+      toast.error("App Secret is required to receive incoming Messenger messages");
+      return;
+    }
     if (!privacyValid) {
       toast.error("A valid HTTPS Privacy Policy URL is required");
       return;
@@ -278,7 +282,7 @@ function AdminMessenger() {
     <Badge variant="secondary">Not Connected</Badge>
   );
 
-  const webhookPill = d.last_verified_at ? (
+  const webhookPill = d.last_verified_at && d.has_app_secret ? (
     <Badge className="bg-messenger text-messenger-foreground hover:bg-messenger/90">Verified</Badge>
   ) : (
     <Badge variant="secondary">Unverified</Badge>
@@ -415,7 +419,7 @@ function AdminMessenger() {
           <Field label="App ID (optional)">
             <Input value={appId} onChange={(e) => setAppId(e.target.value)} inputMode="numeric" />
           </Field>
-          <Field label="App Secret (optional, encrypted)">
+          <Field label="App Secret (encrypted)" required>
             <div className="flex gap-2">
               <Input
                 type={showSecret ? "text" : "password"}
@@ -596,9 +600,14 @@ function AdminMessenger() {
               Refresh
             </Button>
           </div>
-          {!(d.app_id && d.has_app_secret) && (
+          {!d.has_app_secret && (
+            <div className="rounded-md bg-destructive/10 p-2 text-xs text-destructive">
+              App Secret is required. Incoming customer messages cannot be received securely without it.
+            </div>
+          )}
+          {!d.app_id && (
             <div className="rounded-md bg-muted p-2 text-xs text-muted-foreground">
-              Provide App ID and App Secret to enable permission checks.
+              Provide App ID to enable detailed permission checks.
             </div>
           )}
           <ul className="space-y-1.5 text-sm">
