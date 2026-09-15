@@ -76,6 +76,38 @@ function AIControlCenter() {
         <Kpi icon={Sparkles} label="Enabled stores" value={`${(overview as any)?.enabledStores ?? 0}/${(overview as any)?.configuredStores ?? 0}`} />
       </div>
 
+      {/* Which key serves AI requests right now */}
+      <div className="rounded-xl border bg-card p-4 min-w-0">
+        <div className="mb-2 text-xs font-semibold text-muted-foreground">Active AI routing</div>
+        {provider ? (
+          <div className="space-y-1.5">
+            <div className="text-sm">
+              Model: <span className="font-mono">{(provider as any).model}</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {((provider as any).chain ?? []).map((c: any, i: number) => (
+                <span
+                  key={`${c.label}-${i}`}
+                  className={`rounded-full border px-2 py-0.5 text-xs ${
+                    i === 0 ? "border-primary text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  {i + 1}. {c.label}
+                </span>
+              ))}
+              {(((provider as any).chain ?? []).length === 0) && (
+                <span className="text-xs text-muted-foreground">No AI key configured.</span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Requests try each key in order and fall back automatically; the platform AI is used last.
+            </p>
+          </div>
+        ) : (
+          <div className="text-xs text-muted-foreground">Loading…</div>
+        )}
+      </div>
+
       {/* Sparkline + model breakdown */}
       <div className="grid gap-3 lg:grid-cols-2">
         <div className="rounded-xl border bg-card p-4 min-w-0">
