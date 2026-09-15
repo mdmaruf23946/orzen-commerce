@@ -1,14 +1,15 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Download, Loader2, Plug, PlugZap, RefreshCw, Save, Sparkles } from "lucide-react";
+import { Loader2, Plug, PlugZap, RefreshCw, Save, Sparkles } from "lucide-react";
 import {
-  getFacebookPage, connectFacebookPage, importMessengerPageCredentials, reverifyFacebookPage, recheckFacebookPermissions,
+  getFacebookPage, reverifyFacebookPage, recheckFacebookPermissions,
   setFacebookWebhookEnabled, facebookWebhookSubscription,
-  disconnectFacebookPage, getFacebookAiSettings, saveFacebookAiSettings,
+  getFacebookAiSettings, saveFacebookAiSettings,
 } from "@/lib/facebook-page.functions";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,11 +51,8 @@ type AiForm = {
 function SettingsPage() {
   const qc = useQueryClient();
   const pageFn = useServerFn(getFacebookPage);
-  const connectFn = useServerFn(connectFacebookPage);
-  const importFn = useServerFn(importMessengerPageCredentials);
   const verifyFn = useServerFn(reverifyFacebookPage);
   const recheckFn = useServerFn(recheckFacebookPermissions);
-  const disconnectFn = useServerFn(disconnectFacebookPage);
   const webhookFn = useServerFn(setFacebookWebhookEnabled);
   const subFn = useServerFn(facebookWebhookSubscription);
   const aiGet = useServerFn(getFacebookAiSettings);
@@ -68,12 +66,9 @@ function SettingsPage() {
     enabled: !!page?.connected,
   });
 
-  const [pageId, setPageId] = useState("");
-  const [token, setToken] = useState("");
-  const [appId, setAppId] = useState("");
-  const [appSecret, setAppSecret] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [form, setForm] = useState<AiForm | null>(null);
+
 
   useEffect(() => {
     if (ai && !form) {
