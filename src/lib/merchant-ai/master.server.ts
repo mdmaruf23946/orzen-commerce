@@ -5,14 +5,15 @@ import { z } from "zod";
 import {
   addThreadMessage,
   createPendingAction,
-  latestPendingAction,
+  pendingActionForContext,
+  loadAgentState,
   loadPermissions,
   logActivity,
   threadHistory,
   touchAgent,
-  isAgentEnabled,
   type Db,
 } from "./core.server";
+
 import { ACTION_BY_KEY, MERCHANT_ACTIONS } from "./registry";
 import { runAction, type ActionCtx } from "./tools.server";
 import { notifyMerchantEvent } from "./notify.server";
@@ -80,8 +81,11 @@ export type MasterArgs = {
   via: "panel" | "messenger" | "whatsapp" | "facebook";
   threadId: string;
   identityLabel?: string | null;
+  /** Stable sender reference (panel user id, PSID, WhatsApp number) — rate limiting. */
+  identityRef?: string | null;
   requestedBy?: string | null;
 };
+
 
 const YES = /^(yes|y|ok|okay|approve|approved|confirm|হ্যাঁ|হ্যা|ঠিক আছে|করো|কর|accept)\b/i;
 const NO = /^(no|n|cancel|reject|rejected|না|নাহ|বাতিল|stop)\b/i;
@@ -152,7 +156,15 @@ export async function rejectPendingAction(db: Db, storeId: string, pendingId: st
 
 async function buildTools(args: MasterArgs, executed: string[]) {
   const { db, storeId, via } = args;
-  const levels = await loadPermissions(db, storeId);
+  // One read each instead of one per action — a command used to fire 24+ of these.
+  const [levels, agentState] = await Promise.all([
+    loadPermissions(db, storeId),
+    loadAgentState(db, storeId),
+  ]);
+  const agentOn = (key: string) => {
+    const row = agentState[key];
+    return row ? !!row.enabled : true; // new stores: everything on by default
+  };
   const ctx: ActionCtx = { db, storeId, via };
   const tools: Record<string, any> = {};
 
@@ -161,7 +173,8 @@ async function buildTools(args: MasterArgs, executed: string[]) {
     if (level === "restricted") continue;
     const schema = SCHEMAS[meta.key];
     if (!schema) continue;
-    if (!(await isAgentEnabled(db, storeId, meta.agent))) continue;
+    if (!agentOn(meta.agent)) continue;
+
 
     tools[meta.key] = tool({
       description: `${meta.label} — ${meta.description}`,

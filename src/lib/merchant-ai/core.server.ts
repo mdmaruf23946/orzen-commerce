@@ -231,6 +231,38 @@ export async function latestPendingAction(db: Db, storeId: string) {
   return data ?? null;
 }
 
+/**
+ * The approval a YES/NO reply refers to. Scoped to the channel the reply came
+ * from, so a "yes" typed in Messenger can never execute something that was
+ * requested in the panel (or in another merchant's chat).
+ */
+export async function pendingActionForContext(db: Db, storeId: string, via: string) {
+  const { data } = await db
+    .from("store_ai_pending_actions")
+    .select("*")
+    .eq("store_id", storeId)
+    .eq("status", "pending")
+    .eq("requested_via", via)
+    .gt("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data ?? null;
+}
+
+/**
+ * PostgREST `or()` filters are comma/parenthesis delimited, so raw merchant
+ * text can break the query (or change its meaning). Keep search terms safe.
+ */
+export function safeSearchTerm(input: unknown, max = 60) {
+  return String(input ?? "")
+    .replace(/[,()*\\"']/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
+}
+
+
 /* ------------------------------------------------------------------ */
 /* Threads                                                             */
 /* ------------------------------------------------------------------ */
@@ -316,7 +348,8 @@ export async function withinRateLimit(
     .select("id", { count: "exact", head: true })
     .eq("store_id", storeId)
     .eq("action_key", "command_received")
+    .eq("meta->>identity", identityRef || "unknown")
     .gte("created_at", since);
-  void identityRef;
   return (count ?? 0) < maxPerMinute;
 }
+
