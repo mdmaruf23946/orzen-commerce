@@ -100,6 +100,22 @@ async function fbSend(pageToken: string, recipientId: string, text: string) {
   return j as { message_id?: string };
 }
 
+/** Show the Page "typing…" bubble instantly so replies feel immediate. */
+async function fbTyping(pageToken: string, recipientId: string) {
+  await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${encodeURIComponent(pageToken)}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ recipient: { id: recipientId }, sender_action: "typing_on" }),
+  });
+}
+
+/** Merchant-controlled pacing: wait only the time still left after the AI worked. */
+async function waitRemainingDelay(startedAt: number, delaySeconds: number) {
+  const target = Math.max(0, Math.min(600, Number(delaySeconds) || 0)) * 1000;
+  const left = target - (Date.now() - startedAt);
+  if (left > 0) await new Promise((r) => setTimeout(r, left));
+}
+
 async function fbSendImage(pageToken: string, recipientId: string, imageUrl: string) {
   const r = await fetch(
     `https://graph.facebook.com/v19.0/me/messages?access_token=${encodeURIComponent(pageToken)}`,
@@ -1144,7 +1160,7 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
           const { data: integ } = await sb
             .from("messenger_integrations")
             .select(
-              "id,store_id,page_access_token,page_access_token_encrypted,app_secret_encrypted,ai_auto_reply,human_takeover,conversation_history,delivery_failures",
+              "id,store_id,page_access_token,page_access_token_encrypted,app_secret_encrypted,ai_auto_reply,human_takeover,conversation_history,delivery_failures,reply_delay_seconds,reply_speed",
             )
             .eq("page_id", pageId)
             .maybeSingle();
@@ -1391,6 +1407,16 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                 parsed.message_type !== "audio"
               ) continue;
               if (!effectiveText.trim()) continue;
+
+              // Reply pacing is merchant-controlled. Timing starts the moment the
+              // customer's message lands, so the AI's own thinking time counts
+              // toward the configured delay instead of adding to it.
+              const turnStartedAt = Date.now();
+              const replyDelaySeconds = Number((integ as any).reply_delay_seconds ?? 0) || 0;
+              const replySpeed = String((integ as any).reply_speed ?? "fastest");
+              // Instant feedback in Messenger while the model runs.
+              void fbTyping(token, senderId).catch(() => {});
+
 
               // Merge any order-detail hints into the pending-order slot as CONTEXT for the LLM.
               // This never sends a template — it only short-circuits when the duplicate guard blocks the order.
