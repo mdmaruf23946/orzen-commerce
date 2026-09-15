@@ -42,7 +42,8 @@ export async function analyzeComments(supabase: any, storeId: string, commentIds
   const lang =
     settings.language === "bn" ? "Bangla" : settings.language === "en" ? "English" : "the same language as the comment";
 
-  const provider = createLovableAiGatewayProvider(apiKey);
+  const { routedModel } = await import("@/lib/ai-provider.server");
+  const aiModel = await routedModel("google/gemini-2.5-flash");
   const prompt = [
     `You moderate the Facebook Page comments of the online store "${store?.name ?? "this store"}".`,
     store?.description ? `Store description: ${store.description}` : "",
