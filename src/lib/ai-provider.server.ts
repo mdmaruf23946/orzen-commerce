@@ -20,6 +20,13 @@ const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai";
 const OPENAI_BASE = "https://api.openai.com/v1";
 const LOVABLE_BASE = "https://ai.gateway.lovable.dev/v1";
 
+/** Gateway model ids that are no longer served, mapped to a current one. */
+const PLATFORM_MODEL_ALIASES: Record<string, string> = {
+  "google/gemini-2.5-flash": "google/gemini-3.8-flash",
+  "google/gemini-2.5-flash-lite": "google/gemini-3.1-flash-lite",
+  "google/gemini-2.5-pro": "google/gemini-3.1-pro-preview",
+};
+
 export type AiProviderKind = "gemini" | "openai" | "platform";
 
 type Candidate = {
