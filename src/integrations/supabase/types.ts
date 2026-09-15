@@ -3175,6 +3175,7 @@ export type Database = {
       facebook_ai_settings: {
         Row: {
           allow_keywords: string[]
+          auto_delete_abusive: boolean
           auto_hide_spam: boolean
           auto_reply_safe: boolean
           created_at: string
@@ -3191,6 +3192,7 @@ export type Database = {
         }
         Insert: {
           allow_keywords?: string[]
+          auto_delete_abusive?: boolean
           auto_hide_spam?: boolean
           auto_reply_safe?: boolean
           created_at?: string
@@ -3207,6 +3209,7 @@ export type Database = {
         }
         Update: {
           allow_keywords?: string[]
+          auto_delete_abusive?: boolean
           auto_hide_spam?: boolean
           auto_reply_safe?: boolean
           created_at?: string
@@ -3305,6 +3308,7 @@ export type Database = {
           comment_id: string
           created_at: string
           decided_at: string | null
+          decided_by: string | null
           error: string | null
           id: string
           message: string | null
@@ -3322,6 +3326,7 @@ export type Database = {
           comment_id: string
           created_at?: string
           decided_at?: string | null
+          decided_by?: string | null
           error?: string | null
           id?: string
           message?: string | null
@@ -3339,6 +3344,7 @@ export type Database = {
           comment_id?: string
           created_at?: string
           decided_at?: string | null
+          decided_by?: string | null
           error?: string | null
           id?: string
           message?: string | null
