@@ -11,9 +11,9 @@
 - [x] Schema verification vs Lovable Cloud — EXACT MATCH: columns hash c14270f0... (2362), funcs hash 36008e1c... (93), policies (494), triggers (118), views (1), enums (61); tables identical (182) + migration_log tracking table.
 
 ## Tasks
-1. **Auth users migration** — copy auth.users with password hashes + identities (ON HOLD for user approval of data step)
-2. **Data migration** — copy all public table data (disable triggers during load, re-enable after)
-3. **Verification** — row counts per table; merchant/customer codes; wallet balances; sample logins
+1. [x] **Auth users migration** — 6 auth.users + 6 identities copied with password hashes (confirmed_at/identities.email are generated cols, excluded). Sessions/refresh_tokens intentionally NOT copied (JWT secret differs).
+2. [x] **Data migration** — pg_dump --data-only of public (triggers disabled during load, re-enabled after; target truncated first to drop migration seed rows). Fixed drift found during load: store_invoice_settings PK -> (store_id, order_type) + order_type CHECK.
+3. [x] **Verification** — 182 tables / 1344 rows identical; constraints 535=535, indexes 416=416 (no missing/extra/differing); merchant codes A000001..A000005 intact; merchant_code_seq=5 both; wallet total 180.00 both; orders 24; auth users 6.
 4. **Storage migration** — buckets + bucket policies + file copy
 5. **Config** — pgmq queues + vault secret (email_queue_service_role_key) + repoint email_queue_dispatch/wake URL to production origin; pg_cron schedules (recover-messenger-jobs etc.); auth site URL + redirects + SMTP + providers
 6. **Cloudflare switch** — point live site env vars at new project (only with explicit user approval, last step)
