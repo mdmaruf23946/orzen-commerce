@@ -1173,6 +1173,14 @@ export function buildTools(ctx: AgentContext) {
             product_id: p.id,
             orderable,
           });
+          // Card buttons rely on postback delivery, which some Page/app setups
+          // never deliver. Quick replies arrive as ordinary message events, so
+          // the customer always has a working "Buy now" tap.
+          if (orderable && p.stock > 0) {
+            await fbSendQuickReplies(ctx.pageToken!, ctx.psid!, "অর্ডার করতে নিচের বাটনে চাপুন 👇", [
+              { title: `কিনব: ${p.name}`, payload: `BUY_${p.id}` },
+            ]).catch(() => undefined);
+          }
           if (ctx.conversationId) {
             await sb.from("ai_messages").insert({
               conversation_id: ctx.conversationId,
