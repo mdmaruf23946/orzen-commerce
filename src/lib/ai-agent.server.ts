@@ -1237,6 +1237,17 @@ export function buildTools(ctx: AgentContext) {
         if (!items.length) return { sent: false, error: "no_products" };
         try {
           await fbSendProductCarousel(ctx.pageToken!, ctx.psid!, items);
+          // Quick replies mirror the card's Buy Now button over the "messages"
+          // webhook field, which is always delivered.
+          const buyable = items.filter((i) => i.orderable);
+          if (buyable.length) {
+            await fbSendQuickReplies(
+              ctx.pageToken!,
+              ctx.psid!,
+              "কোনটি অর্ডার করতে চান? নিচের বাটনে চাপুন 👇",
+              buyable.slice(0, 10).map((i) => ({ title: `কিনব: ${i.title}`, payload: `BUY_${i.product_id}` })),
+            ).catch(() => undefined);
+          }
           if (ctx.conversationId) {
             await sb.from("ai_messages").insert({
               conversation_id: ctx.conversationId,
