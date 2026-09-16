@@ -19,7 +19,9 @@ export function browserSupabaseProjectId(): string | null {
   );
 }
 
-export function isAuthConfigurationError(error: unknown): boolean {
+export function isInvalidAuthSessionError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error ?? "");
-  return /unauthorized|invalid token|jwt|session not found/i.test(message);
+  return /unauthorized:\s*(invalid token|no token|no authorization|only bearer|no user id)|different deployment|session not found|jwt expired/i.test(
+    message,
+  );
 }
