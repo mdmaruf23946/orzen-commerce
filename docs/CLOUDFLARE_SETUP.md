@@ -1,11 +1,42 @@
-# Deploy to Cloudflare Pages from GitHub (automatic builds)
+# Deploy the ORZEN Cloudflare Worker safely
 
-Push to GitHub → Cloudflare Pages builds and deploys automatically. No
-Wrangler, no manual upload, no domain required to get started.
+The live `orzen.top` site is served by the Cloudflare Worker named
+`orzen-commerce`. It uses the separate production database. Lovable Cloud is
+development/test/backup only.
 
-The database, auth, storage and secrets stay in **Lovable Cloud**. Changing the
-hosting account does not touch user accounts, products or orders — those live
-in the database.
+Never use Lovable Publish for `orzen.top`: its build-time defaults point at the
+development database. A mixed deployment lets the browser sign in against one
+database while the server validates that token against another, producing
+`Unauthorized: Invalid token`.
+
+## Production deployment
+
+Run only:
+
+```bash
+bun run deploy:production
+```
+
+The guarded command fetches the current production publishable key, builds the
+client with the pinned production project identity, rejects any bundle that
+contains the development project identity, uploads a non-live Worker version,
+checks its preview, deploys that exact version, then verifies `orzen.top` again.
+It never prints credentials.
+
+Required project secrets: `PROD_SUPABASE_ACCESS_TOKEN`, `CF_API_TOKEN`, and
+`CF_ACCOUNT_ID`. Runtime Worker secrets remain managed on the Worker.
+
+The expected non-secret production project identity is deliberately pinned in
+`scripts/deploy-production.sh` and `src/lib/deployment-target.ts`. Changing the
+production database requires an explicit change to both files and a reviewed
+deployment.
+
+The historical Cloudflare Pages instructions below are retained only as legacy
+reference. They are not the live ORZEN deployment procedure.
+
+---
+
+# Legacy Cloudflare Pages reference
 
 > **This app is server-rendered.** Checkout, orders, admin, webhooks, cron, the
 > AI agent and the Messenger integration all run as server code. The build
@@ -59,9 +90,9 @@ Production and Preview, as plain variables:
 
 | Variable | Value |
 |---|---|
-| `VITE_SUPABASE_URL` | `https://dqhfxvhzagitytpvildw.supabase.co` |
-| `VITE_SUPABASE_PROJECT_ID` | `dqhfxvhzagitytpvildw` |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | the publishable (anon) key from `.env` |
+| `VITE_SUPABASE_URL` | the target environment's database URL |
+| `VITE_SUPABASE_PROJECT_ID` | the same target environment's project ID |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | the same target environment's publishable key |
 | `SUPABASE_URL` | same as `VITE_SUPABASE_URL` |
 | `SUPABASE_PUBLISHABLE_KEY` | same as `VITE_SUPABASE_PUBLISHABLE_KEY` |
 

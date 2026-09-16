@@ -4,6 +4,7 @@ import { getRequest } from '@tanstack/react-start/server'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './types'
 import { serverEnv } from '@/lib/server-env'
+import { supabaseProjectIdFromUrl } from '@/lib/deployment-target'
 
 
 
@@ -71,7 +72,21 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
     }
 
     if (token.split('.').length !== 3) {
+      console.warn('[Supabase auth] Rejected a malformed bearer token');
       throw new Error('Unauthorized: Invalid token');
+    }
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      const issuerProjectId = supabaseProjectIdFromUrl(payload?.iss);
+      const serverProjectId = supabaseProjectIdFromUrl(SUPABASE_URL);
+      if (issuerProjectId && serverProjectId && issuerProjectId !== serverProjectId) {
+        console.error('[Supabase auth] Token issuer does not match the configured server database');
+        throw new Error('Unauthorized: This session belongs to a different deployment. Please sign in again.');
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('different deployment')) throw error;
+      console.warn('[Supabase auth] Could not inspect bearer token issuer');
     }
 
     const supabase = createClient<Database>(
@@ -94,6 +109,11 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
 
     const { data, error } = await supabase.auth.getClaims(token);
     if (error || !data?.claims) {
+      console.error('[Supabase auth] Token verification failed', {
+        status: error?.status,
+        code: error?.code,
+        name: error?.name,
+      });
       throw new Error('Unauthorized: Invalid token');
     }
 
