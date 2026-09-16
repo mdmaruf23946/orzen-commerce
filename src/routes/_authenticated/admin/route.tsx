@@ -585,7 +585,9 @@ function AdminLayout() {
                     access.isEmployee && (!currentSection || !access.can(currentSection.key, "manage"))
                   }
                 >
-                  <Outlet />
+                  <PlanLockGate path={currentPath}>
+                    <Outlet />
+                  </PlanLockGate>
                 </ReadOnlyGuard>
               </>
 
