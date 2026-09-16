@@ -22,13 +22,15 @@ function Page() {
   const list = useServerFn(listAiAdminRules);
   const save = useServerFn(saveAiAdminRule);
   const qc = useQueryClient();
-  const { data = [] } = useQuery({ queryKey: ["ai-admin", "rules"], queryFn: () => list() });
+  const { data } = useQuery({ queryKey: ["ai-admin", "rules"], queryFn: () => list() });
   const [draft, setDraft] = useState<Record<string, Rule>>({});
 
   useEffect(() => {
+    if (!data) return;
+    const rows = (data as any[]) ?? [];
     const next: Record<string, Rule> = {};
     for (const ev of NOTIFICATION_EVENTS) {
-      const row = (data as any[]).find((r) => r.event_key === ev.key);
+      const row = rows.find((r) => r.event_key === ev.key);
       next[ev.key] = {
         event_key: ev.key,
         enabled: row?.enabled ?? true,
