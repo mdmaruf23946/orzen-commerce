@@ -21,9 +21,9 @@ export function SubscriptionStatusBanner() {
   if (status === "suspended") {
     tone = "bg-red-50 text-red-900 border-red-200";
     msg = <>Your store is <strong>suspended</strong> by the platform owner. Contact support to reactivate.</>;
-  } else if (status === "expired" || status === "cancelled") {
+  } else if (status === "expired" || status === "cancelled" || status === "past_due") {
     tone = "bg-red-50 text-red-900 border-red-200";
-    msg = <>Your subscription has <strong>expired</strong>. Your store is now on the <strong>Free plan</strong> — renew to restore your previous features.</>;
+    msg = <>Your trial or plan has <strong>ended</strong>. The panel is locked — activate the <strong>Free plan</strong> or choose a paid plan to continue.</>;
   } else if (status === "trialing") {
     tone = days <= 1 ? "bg-amber-50 text-amber-900 border-amber-200" : "bg-blue-50 text-blue-900 border-blue-200";
     msg = <>You're on a free trial — <strong>{days} day{days === 1 ? "" : "s"} left</strong>. Upgrade anytime to keep premium features.</>;
