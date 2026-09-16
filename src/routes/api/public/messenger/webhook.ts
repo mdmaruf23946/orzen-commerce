@@ -962,6 +962,19 @@ async function maybeSendDirectProductReply(opts: {
         delivery_status: "sent",
       } as any);
     }
+    // Quick-reply mirror of the card's Buy Now button (postbacks are not
+    // delivered by every Page/app setup; message events always are).
+    const buyable = cards
+      .map((card, i) => ({ card, product: products[i] }))
+      .filter((x) => x.card.orderable !== false && x.card.product_id);
+    if (buyable.length) {
+      await sendQuickReplies(
+        token,
+        psid,
+        "অর্ডার করতে নিচের বাটনে চাপুন 👇",
+        buyable.slice(0, 10).map((x) => ({ title: `কিনব: ${x.product.name}`, payload: `BUY_${x.product.id}` })),
+      ).catch(() => undefined);
+    }
     const image = firstProductImage(products[0]);
     if (photoIntent && image) {
       const imgSent = await fbSendImage(token, psid, image);
