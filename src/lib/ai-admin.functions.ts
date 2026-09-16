@@ -862,11 +862,16 @@ export const closeSupportRequest = createServerFn({ method: "POST" })
 
 export const deploymentHealth = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d) => z.object({ clientProjectId: z.string().nullable() }).parse(d))
+  .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId);
-    const { serverEnvReport } = await import("@/lib/server-env");
+    const { serverEnvReport, serverSupabaseProjectId } = await import("@/lib/server-env");
     const keys = serverEnvReport();
     const has = (n: string) => keys.find((k) => k.name === n)?.present ?? false;
+    const serverProjectId = serverSupabaseProjectId();
+    const databaseProjectMatch = Boolean(
+      data.clientProjectId && serverProjectId && data.clientProjectId === serverProjectId,
+    );
 
     let database = false;
     let databaseError: string | null = null;
@@ -910,8 +915,11 @@ export const deploymentHealth = createServerFn({ method: "GET" })
       credentials,
       credentialsError,
       ai: has("LOVABLE_API_KEY"),
+      clientProjectId: data.clientProjectId,
+      serverProjectId,
+      databaseProjectMatch,
       forwarded: Boolean(forwardedFrom),
       forwardedFrom,
-      ok: database && credentials && has("LOVABLE_API_KEY"),
+      ok: database && credentials && has("LOVABLE_API_KEY") && databaseProjectMatch,
     };
   });
