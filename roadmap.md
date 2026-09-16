@@ -30,4 +30,4 @@ Fix: rebuilt with production VITE_SUPABASE_* and deployed version 6e582b88 at 10
 RULE: never publish orzen.top from the Lovable Publish button. Always redeploy through the wrangler procedure in mem://features/production-migration.
 
 ## New task (2026-09-16)
-8. [ ] **Trial expiry enforcement** — 3-day trial must actually end: after trial_ends_at the store loses all access (no auto-drop to Free). Merchant sees a blocking screen with "Activate Free plan" button or upgrade to a paid plan. Applies to every account, new and existing. No plan active = no panel access.
+8. [x] **Trial expiry enforcement** (done 2026-09-16: expire_due_subscriptions + hourly cron on both DBs; PlanLockGate blocks panel; deployed worker version 4ea48ea1) — 3-day trial must actually end: after trial_ends_at the store loses all access (no auto-drop to Free). Merchant sees a blocking screen with "Activate Free plan" button or upgrade to a paid plan. Applies to every account, new and existing. No plan active = no panel access.
