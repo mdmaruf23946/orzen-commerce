@@ -109,6 +109,7 @@ export async function assertLimit(
 ): Promise<string> {
   const store = await myStoreRow(supabase, userId, "id, subscription_status, subscription_packages(is_trial, product_limit, order_limit, staff_limit, landing_page_limit)");
   if (!store) throw new Error("No store found for this account");
+  if (INACTIVE.has((store as any).subscription_status ?? "active")) throw new Error(PLAN_LOCKED_MESSAGE);
 
   const pkg = await resolveEffectivePlan(supabase, store as any);
   const limit = pkg ? Number(pkg[LIMIT_COLUMN[kind]] ?? 0) : 0;
