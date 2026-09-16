@@ -7,6 +7,7 @@ import {
   sendProductCard as fbSendProductCard,
   sendProductCarousel as fbSendProductCarousel,
   sendViewSiteButton as fbSendViewSiteButton,
+  sendQuickReplies as fbSendQuickReplies,
 } from "./messenger-send.server";
 import { checkDuplicate } from "./duplicate-guard.server";
 import {
@@ -1172,6 +1173,14 @@ export function buildTools(ctx: AgentContext) {
             product_id: p.id,
             orderable,
           });
+          // Card buttons rely on postback delivery, which some Page/app setups
+          // never deliver. Quick replies arrive as ordinary message events, so
+          // the customer always has a working "Buy now" tap.
+          if (orderable && p.stock > 0) {
+            await fbSendQuickReplies(ctx.pageToken!, ctx.psid!, "অর্ডার করতে নিচের বাটনে চাপুন 👇", [
+              { title: `কিনব: ${p.name}`, payload: `BUY_${p.id}` },
+            ]).catch(() => undefined);
+          }
           if (ctx.conversationId) {
             await sb.from("ai_messages").insert({
               conversation_id: ctx.conversationId,
@@ -1228,6 +1237,17 @@ export function buildTools(ctx: AgentContext) {
         if (!items.length) return { sent: false, error: "no_products" };
         try {
           await fbSendProductCarousel(ctx.pageToken!, ctx.psid!, items);
+          // Quick replies mirror the card's Buy Now button over the "messages"
+          // webhook field, which is always delivered.
+          const buyable = items.filter((i) => i.orderable);
+          if (buyable.length) {
+            await fbSendQuickReplies(
+              ctx.pageToken!,
+              ctx.psid!,
+              "কোনটি অর্ডার করতে চান? নিচের বাটনে চাপুন 👇",
+              buyable.slice(0, 10).map((i) => ({ title: `কিনব: ${i.title}`, payload: `BUY_${i.product_id}` })),
+            ).catch(() => undefined);
+          }
           if (ctx.conversationId) {
             await sb.from("ai_messages").insert({
               conversation_id: ctx.conversationId,
