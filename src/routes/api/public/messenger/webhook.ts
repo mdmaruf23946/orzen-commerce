@@ -1266,6 +1266,8 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
           for (const ev of entry.messaging ?? []) {
             const senderId = ev.sender?.id;
             if (!senderId) continue;
+            // Incoming customer messages are answered by the queue worker.
+            if (!queuedJobId && ev.message?.mid && !ev.message?.is_echo) continue;
 
             try {
               // deliveries / reads update outgoing message status by mids
