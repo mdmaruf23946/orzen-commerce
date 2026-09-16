@@ -1246,7 +1246,9 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                 { onConflict: "page_id,message_id", ignoreDuplicates: true },
               );
             }
-            continue;
+            // Message events are now queued; everything else (postbacks,
+            // delivery/read receipts, opt-ins, referrals) is still handled
+            // inline below because it is cheap and must not be dropped.
           }
 
 
@@ -1264,6 +1266,8 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
           for (const ev of entry.messaging ?? []) {
             const senderId = ev.sender?.id;
             if (!senderId) continue;
+            // Incoming customer messages are answered by the queue worker.
+            if (!queuedJobId && ev.message?.mid && !ev.message?.is_echo) continue;
 
             try {
               // deliveries / reads update outgoing message status by mids

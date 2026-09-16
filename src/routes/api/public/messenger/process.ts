@@ -23,9 +23,34 @@ export const Route = createFileRoute("/api/public/messenger/process")({
           _wake_token: input.wake_token,
         });
         if (error) return new Response("Claim failed", { status: 500 });
-        if (!claimed) return new Response("No due job", { status: 202 });
 
-        const job = claimed as any;
+        let claimedJob = claimed as any;
+        if (!claimedJob) {
+          // The job may simply be waiting out the merchant's configured reply
+          // delay. Wait it out here (bounded) so short delays are honoured
+          // exactly instead of falling through to the one-minute recovery cron.
+          const { data: pending } = await supabaseAdmin
+            .from("messenger_jobs")
+            .select("status,available_at")
+            .eq("id", input.job_id)
+            .maybeSingle();
+          const row = pending as any;
+          const waitMs =
+            row && (row.status === "pending" || row.status === "retry")
+              ? new Date(row.available_at).getTime() - Date.now()
+              : -1;
+          if (waitMs > 0 && waitMs <= 45_000) {
+            await new Promise((r) => setTimeout(r, waitMs + 250));
+            const retry = await supabaseAdmin.rpc("claim_messenger_job", {
+              _job_id: input.job_id,
+              _wake_token: input.wake_token,
+            });
+            claimedJob = retry.data as any;
+          }
+          if (!claimedJob) return new Response("No due job", { status: 202 });
+        }
+
+        const job = claimedJob;
         const payload = (job.event_payload ?? {}) as {
           raw?: string;
           signature?: string;
