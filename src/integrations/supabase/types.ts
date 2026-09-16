@@ -10592,7 +10592,6 @@ export type Database = {
       }
     }
     Functions: {
-      __mig_auth_dump: { Args: { _table: string }; Returns: Json }
       _default_invoice_prefix: { Args: { _name: string }; Returns: string }
       _new_session_token: {
         Args: {
