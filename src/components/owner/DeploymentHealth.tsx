@@ -6,6 +6,7 @@ import { AlertTriangle, CheckCircle2, ShieldCheck, XCircle } from "lucide-react"
 import { deploymentHealth } from "@/lib/ai-admin.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { browserSupabaseProjectId } from "@/lib/deployment-target";
 
 function Row({ label, ok, hint }: { label: string; ok: boolean; hint?: string | null }) {
   return (
@@ -27,7 +28,7 @@ export function DeploymentHealth({ className }: { className?: string }) {
   const fn = useServerFn(deploymentHealth);
   const { data } = useQuery({
     queryKey: ["ai-admin", "deployment-health"],
-    queryFn: () => fn(),
+    queryFn: () => fn({ data: { clientProjectId: browserSupabaseProjectId() } }),
     staleTime: 30_000,
   });
 
@@ -59,6 +60,11 @@ export function DeploymentHealth({ className }: { className?: string }) {
           </div>
         ) : null}
         <Row label="Database access" ok={Boolean(data?.database)} hint={data?.databaseError} />
+        <Row
+          label="Browser and server database match"
+          ok={Boolean(data?.databaseProjectMatch)}
+          hint="The website and server are connected to different databases. Stop this deployment and publish a verified production version."
+        />
         <Row
           label="Credential decryption"
           ok={Boolean(data?.credentials)}

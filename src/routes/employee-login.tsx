@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BrandMark } from "@/lib/platform-branding";
+import { isAuthConfigurationError } from "@/lib/deployment-target";
 
 export const Route = createFileRoute("/employee-login")({
   component: EmployeeLogin,
@@ -49,7 +50,12 @@ function EmployeeLogin() {
       toast.success(`Welcome back, ${info.staff.name}`);
       navigate({ to: "/admin", replace: true });
     } catch (err) {
-      toast.error((err as Error).message);
+      if (isAuthConfigurationError(err)) {
+        await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+        toast.error("Your sign-in session could not be verified. Please sign in again.");
+      } else {
+        toast.error((err as Error).message);
+      }
     } finally {
       setLoading(false);
     }

@@ -72,6 +72,20 @@ export const REQUIRED_SERVER_KEYS = [
   "LOVABLE_API_KEY",
 ] as const;
 
+export function serverSupabaseProjectId(): string | null {
+  const explicit = serverEnv("SUPABASE_PROJECT_ID") ?? serverEnv("VITE_SUPABASE_PROJECT_ID");
+  if (explicit) return explicit;
+  const url = serverEnv("SUPABASE_URL") ?? serverEnv("VITE_SUPABASE_URL");
+  if (!url) return null;
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    const suffix = ".supabase.co";
+    return hostname.endsWith(suffix) ? hostname.slice(0, -suffix.length) : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Presence-only report (never values) for the owner health check. */
 export function serverEnvReport(): { name: string; present: boolean }[] {
   return REQUIRED_SERVER_KEYS.map((name) => ({

@@ -8,6 +8,7 @@
     "build": "vite build && bash scripts/pages-postbuild.sh",
     "build:dev": "vite build --mode development",
     "build:dist": "PAGES_BUILD=1 vite build && PAGES_BUILD=1 bash scripts/pages-postbuild.sh",
+    "deploy:production": "bash scripts/deploy-production.sh",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write ."
