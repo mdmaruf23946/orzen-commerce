@@ -147,6 +147,9 @@ function AuthPage() {
         }
         toast.success("Store created. Welcome!");
       } else {
+        // A previous deployment may have left a session for another backend.
+        // Clear only this browser's cached session before issuing a fresh token.
+        await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
         const { error } = await supabase.auth.signInWithPassword({ email, password });
 
         if (error) throw error;
@@ -163,7 +166,7 @@ function AuthPage() {
     } catch (err) {
       if (isAuthConfigurationError(err)) {
         await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
-        toast.error("Your sign-in session could not be verified. Please sign in again.");
+        toast.error("Sign-in is temporarily unavailable because the website connection could not be verified. Please try again shortly.");
       } else {
         toast.error((err as Error).message);
       }

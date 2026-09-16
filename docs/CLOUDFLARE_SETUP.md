@@ -31,12 +31,15 @@ The expected non-secret production project identity is deliberately pinned in
 production database requires an explicit change to both files and a reviewed
 deployment.
 
-The historical Cloudflare Pages instructions below are retained only as legacy
-reference. They are not the live ORZEN deployment procedure.
+The production command also synchronizes the Worker's server database values
+from the same verified source used for the browser build. It then checks
+`/api/public/deployment-health`, so a browser/server mismatch cannot pass.
 
----
+Do not use Cloudflare dashboard uploads, Git-based Pages deployment, or Lovable
+Publish for `orzen.top`. They bypass these checks and can restore development
+database values.
 
-# Legacy Cloudflare Pages reference
+## Runtime requirements
 
 > **This app is server-rendered.** Checkout, orders, admin, webhooks, cron, the
 > AI agent and the Messenger integration all run as server code. The build
@@ -47,46 +50,8 @@ reference. They are not the live ORZEN deployment procedure.
 
 ---
 
-## 1. Connect the repository
-
-Cloudflare dashboard → **Workers & Pages → Create → Pages → Connect to Git** →
-pick the repository and branch.
-
-## 2. Build settings
-
-| Setting | Value |
-|---|---|
-| Framework preset | **None** |
-| Build command | `npm run build` |
-| Build output directory | `dist` |
-| Root directory | *(leave empty)* |
-
-`npm run build` detects the Cloudflare build runner (`CF_PAGES=1`) and packages
-the output automatically:
-
-```
-dist/
-  _worker.js      SSR + server functions, bundled into a single file
-  _routes.json    static assets from the CDN, everything else through the worker
-  _headers        immutable caching for hashed assets
-  assets/...      hashed JS/CSS/images, robots.txt, favicon, other public files
-```
-
-On any other builder the command leaves the normal `dist/client` +
-`dist/server` output untouched. To reproduce the Pages folder locally, run
-`npm run build:dist` (or `bun run build:dist`).
-
-## 3. Runtime settings
-
-Project → **Settings → Runtime**:
-
-- Compatibility date: `2025-09-01` or later
-- Compatibility flag: `nodejs_compat`
-
-## 4. Environment variables
-
-Project → **Settings → Variables and Secrets**. Add these to **both**
-Production and Preview, as plain variables:
+The Worker requires these runtime values. The guarded command sets the database
+values itself and preserves the remaining project secrets:
 
 | Variable | Value |
 |---|---|
@@ -133,8 +98,8 @@ runs. The unprefixed ones are read per request by the worker. Nothing is
 hardcoded in the repository, so a rebuild always picks up whatever the Pages
 project provides.
 
-> Changing a variable does **not** rebuild by itself — trigger a new
-> deployment (Deployments → Retry/redeploy) afterwards.
+The compatibility flag is `nodejs_compat`. Never retry an old dashboard build;
+run the guarded command to create a fresh verified version.
 
 ## 4b. If images do not load on the live domain
 
@@ -158,19 +123,7 @@ Checklist, in order:
    return `200` with `content-type: image/...`.
 
 
-## 5. Deploy and test
-
-Save & Deploy. When it finishes, open the `*.pages.dev` URL and check: home
-page, login/registration, a store page, a product page (refresh it — no 404),
-cart, checkout, and the admin panel. Unknown hosts (including `pages.dev`)
-render the main platform site, so nothing depends on a domain being attached.
-
-## 6. Attach the domain — only after step 5 passes
-
-Project → **Custom domains → Set up a domain** → `orzen.top`, then repeat for
-`www.orzen.top`. Cloudflare creates and manages the DNS records itself.
-
-## 6b. Required for merchant stores (subdomains + custom domains)
+## Required for merchant stores (subdomains + custom domains)
 
 The application code is complete, but two Cloudflare-side pieces must exist or
 merchant domains will never work:
@@ -197,11 +150,11 @@ the platform site and can never be claimed by a store.
 
 
 
-## 7. Updating later
+## Updating later
 
-Push to the connected branch. Cloudflare rebuilds and deploys automatically;
-every push to another branch gets its own preview URL. User data is unaffected
-by a redeploy.
+Code changes do not automatically update `orzen.top`. Run
+`bun run deploy:production`; source control and Lovable preview remain separate
+from the production Worker. User data is unaffected by a deployment.
 
 ---
 

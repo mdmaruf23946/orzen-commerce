@@ -54,6 +54,7 @@ import { Route as StoreSlugAccountRouteImport } from './routes/store/$slug/accou
 import { Route as StoreSlugAboutUsRouteImport } from './routes/store/$slug/about-us'
 import { Route as StoreSlugAboutRouteImport } from './routes/store/$slug/about'
 import { Route as ApiPublicVersionRouteImport } from './routes/api/public/version'
+import { Route as ApiPublicDeploymentHealthRouteImport } from './routes/api/public/deployment-health'
 import { Route as ApiImgSplatRouteImport } from './routes/api/img.$'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
 import { Route as AuthenticatedOwnerWebhooksRouteImport } from './routes/_authenticated/owner/webhooks'
@@ -459,6 +460,12 @@ const ApiPublicVersionRoute = ApiPublicVersionRouteImport.update({
   path: '/api/public/version',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicDeploymentHealthRoute =
+  ApiPublicDeploymentHealthRouteImport.update({
+    id: '/api/public/deployment-health',
+    path: '/api/public/deployment-health',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiImgSplatRoute = ApiImgSplatRouteImport.update({
   id: '/api/img/$',
   path: '/api/img/$',
@@ -1595,6 +1602,7 @@ export interface FileRoutesByFullPath {
   '/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
+  '/api/public/deployment-health': typeof ApiPublicDeploymentHealthRoute
   '/api/public/version': typeof ApiPublicVersionRoute
   '/store/$slug/about': typeof StoreSlugAboutRoute
   '/store/$slug/about-us': typeof StoreSlugAboutUsRoute
@@ -1807,6 +1815,7 @@ export interface FileRoutesByTo {
   '/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
+  '/api/public/deployment-health': typeof ApiPublicDeploymentHealthRoute
   '/api/public/version': typeof ApiPublicVersionRoute
   '/store/$slug/about': typeof StoreSlugAboutRoute
   '/store/$slug/about-us': typeof StoreSlugAboutUsRoute
@@ -2030,6 +2039,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
+  '/api/public/deployment-health': typeof ApiPublicDeploymentHealthRoute
   '/api/public/version': typeof ApiPublicVersionRoute
   '/store/$slug/about': typeof StoreSlugAboutRoute
   '/store/$slug/about-us': typeof StoreSlugAboutUsRoute
@@ -2253,6 +2263,7 @@ export interface FileRouteTypes {
     | '/owner/webhooks'
     | '/api/ai/chat'
     | '/api/img/$'
+    | '/api/public/deployment-health'
     | '/api/public/version'
     | '/store/$slug/about'
     | '/store/$slug/about-us'
@@ -2465,6 +2476,7 @@ export interface FileRouteTypes {
     | '/owner/webhooks'
     | '/api/ai/chat'
     | '/api/img/$'
+    | '/api/public/deployment-health'
     | '/api/public/version'
     | '/store/$slug/about'
     | '/store/$slug/about-us'
@@ -2687,6 +2699,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/webhooks'
     | '/api/ai/chat'
     | '/api/img/$'
+    | '/api/public/deployment-health'
     | '/api/public/version'
     | '/store/$slug/about'
     | '/store/$slug/about-us'
@@ -2819,6 +2832,7 @@ export interface RootRouteChildren {
   DotwellKnownOrzenDomainVerificationTokenRoute: typeof DotwellKnownOrzenDomainVerificationTokenRoute
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiImgSplatRoute: typeof ApiImgSplatRoute
+  ApiPublicDeploymentHealthRoute: typeof ApiPublicDeploymentHealthRoute
   ApiPublicVersionRoute: typeof ApiPublicVersionRoute
   ApiPublicAiAdminMessengerWebhookRoute: typeof ApiPublicAiAdminMessengerWebhookRoute
   ApiPublicAiAdminWebhookRoute: typeof ApiPublicAiAdminWebhookRoute
@@ -3163,6 +3177,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/version'
       fullPath: '/api/public/version'
       preLoaderRoute: typeof ApiPublicVersionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/deployment-health': {
+      id: '/api/public/deployment-health'
+      path: '/api/public/deployment-health'
+      fullPath: '/api/public/deployment-health'
+      preLoaderRoute: typeof ApiPublicDeploymentHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/img/$': {
@@ -4937,6 +4958,7 @@ const rootRouteChildren: RootRouteChildren = {
     DotwellKnownOrzenDomainVerificationTokenRoute,
   ApiAiChatRoute: ApiAiChatRoute,
   ApiImgSplatRoute: ApiImgSplatRoute,
+  ApiPublicDeploymentHealthRoute: ApiPublicDeploymentHealthRoute,
   ApiPublicVersionRoute: ApiPublicVersionRoute,
   ApiPublicAiAdminMessengerWebhookRoute: ApiPublicAiAdminMessengerWebhookRoute,
   ApiPublicAiAdminWebhookRoute: ApiPublicAiAdminWebhookRoute,

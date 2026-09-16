@@ -11,7 +11,7 @@ WORKER_NAME="orzen-commerce"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-for name in CF_API_TOKEN CF_ACCOUNT_ID PROD_SUPABASE_ACCESS_TOKEN; do
+for name in CF_API_TOKEN CF_ACCOUNT_ID PROD_SUPABASE_ACCESS_TOKEN CREDENTIALS_ENCRYPTION_KEY LOVABLE_API_KEY; do
   if [ -z "${!name:-}" ]; then
     echo "Missing required project secret: $name" >&2
     exit 1
@@ -37,8 +37,12 @@ publishable = next(
     (item.get("api_key") for item in keys if item.get("name") in {"publishable", "anon"}),
     None,
 )
-if not publishable:
-    raise SystemExit("Production publishable key was not found.")
+service_role = next(
+    (item.get("api_key") for item in keys if item.get("name") in {"secret", "service_role"}),
+    None,
+)
+if not publishable or not service_role:
+    raise SystemExit("Production API keys were not found.")
 
 url = f"https://{project}.supabase.co"
 path = pathlib.Path(os.environ["ORZEN_KEYS_FILE"])
@@ -50,6 +54,7 @@ path.write_text(
         f"SUPABASE_URL={url}",
         f"SUPABASE_PROJECT_ID={project}",
         f"SUPABASE_PUBLISHABLE_KEY={publishable}",
+        f"SUPABASE_SERVICE_ROLE_KEY={service_role}",
     ]) + "\n",
     encoding="utf-8",
 )
@@ -105,9 +110,9 @@ bunx wrangler versions upload \
   --message "Guarded ORZEN production candidate" | tee "$UPLOAD_LOG"
 
 VERSION_ID="$(grep -Eo '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' "$UPLOAD_LOG" | tail -1)"
-PREVIEW_URL="$(sed -n 's/^Version Preview Alias URL: //p' "$UPLOAD_LOG" | tail -1)"
+PREVIEW_URL="$(sed -n 's/^Version Preview URL: //p' "$UPLOAD_LOG" | tail -1)"
 if [ -z "$PREVIEW_URL" ]; then
-  PREVIEW_URL="$(sed -n 's/^Version Preview URL: //p' "$UPLOAD_LOG" | tail -1)"
+  PREVIEW_URL="$(sed -n 's/^Version Preview Alias URL: //p' "$UPLOAD_LOG" | tail -1)"
 fi
 if [ -z "$VERSION_ID" ] || [ -z "$PREVIEW_URL" ]; then
   echo "Could not identify the candidate version or preview address; live deployment stopped." >&2
@@ -120,7 +125,9 @@ import os, re, urllib.parse, urllib.request
 
 base = os.environ["ORZEN_PREVIEW_URL"].rstrip("/")
 expected = os.environ["ORZEN_EXPECTED_PROJECT_ID"]
-with urllib.request.urlopen(base + "/auth", timeout=30) as response:
+opener = urllib.request.build_opener()
+opener.addheaders = [("User-Agent", "Mozilla/5.0 ORZEN-Deployment-Check/1.0")]
+with opener.open(base + "/auth", timeout=30) as response:
     html = response.read().decode("utf-8", "replace")
     if response.status != 200:
         raise SystemExit("Candidate auth page did not return 200.")
@@ -128,33 +135,63 @@ with urllib.request.urlopen(base + "/auth", timeout=30) as response:
 assets = set(re.findall(r'(?:src|href)=["\']([^"\']+\.js[^"\']*)', html))
 matched = False
 for asset in assets:
-    with urllib.request.urlopen(urllib.parse.urljoin(base, asset), timeout=30) as response:
+    with opener.open(urllib.parse.urljoin(base, asset), timeout=30) as response:
         body = response.read().decode("utf-8", "replace")
     matched = matched or expected in body
 if not matched:
     raise SystemExit("Candidate browser bundle does not point at production; live deployment stopped.")
 PY
 
-echo "Candidate checks passed. Deploying version to 100%…"
-bunx wrangler versions deploy "$VERSION_ID@100%" --name "$WORKER_NAME" --yes \
+echo "Synchronizing production server secrets into the same candidate…"
+RUNTIME_SECRETS="$TMP_DIR/runtime-secrets.env"
+cat > "$RUNTIME_SECRETS" <<EOF
+SUPABASE_URL=$SUPABASE_URL
+SUPABASE_PROJECT_ID=$SUPABASE_PROJECT_ID
+SUPABASE_PUBLISHABLE_KEY=$SUPABASE_PUBLISHABLE_KEY
+SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
+VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+VITE_SUPABASE_PROJECT_ID=$VITE_SUPABASE_PROJECT_ID
+VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY
+CREDENTIALS_ENCRYPTION_KEY=$CREDENTIALS_ENCRYPTION_KEY
+LOVABLE_API_KEY=$LOVABLE_API_KEY
+PUBLIC_SITE_ORIGIN=https://orzen.top
+EOF
+chmod 600 "$RUNTIME_SECRETS"
+SECRET_LOG="$TMP_DIR/secrets.log"
+bunx wrangler versions secret bulk "$RUNTIME_SECRETS" --name "$WORKER_NAME" \
+  --message "Synchronize verified ORZEN production runtime" | tee "$SECRET_LOG"
+SECRET_VERSION_ID="$(grep -Eo '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' "$SECRET_LOG" | tail -1)"
+if [ -z "$SECRET_VERSION_ID" ]; then
+  echo "Could not identify the runtime-synchronized candidate; live deployment stopped." >&2
+  exit 1
+fi
+
+echo "Candidate checks passed. Deploying runtime-synchronized version to 100%…"
+bunx wrangler versions deploy "$SECRET_VERSION_ID@100%" --name "$WORKER_NAME" --yes \
   --message "Verified ORZEN production deployment"
 
 export ORZEN_LIVE_URL="https://orzen.top"
 python3 <<'PY'
-import os, re, time, urllib.parse, urllib.request
+import json, os, re, time, urllib.parse, urllib.request
 
 base = os.environ["ORZEN_LIVE_URL"]
 expected = os.environ["ORZEN_EXPECTED_PROJECT_ID"]
 blocked = "dqhfxvhzagitytpvildw"
 for attempt in range(12):
-    with urllib.request.urlopen(base + "/auth", timeout=30) as response:
+    opener = urllib.request.build_opener()
+    opener.addheaders = [("User-Agent", "Mozilla/5.0 ORZEN-Deployment-Check/1.0")]
+    with opener.open(base + "/auth", timeout=30) as response:
         html = response.read().decode("utf-8", "replace")
     assets = set(re.findall(r'(?:src|href)=["\']([^"\']+\.js[^"\']*)', html))
     bodies = []
     for asset in assets:
-        with urllib.request.urlopen(urllib.parse.urljoin(base, asset), timeout=30) as response:
+        with opener.open(urllib.parse.urljoin(base, asset), timeout=30) as response:
             bodies.append(response.read().decode("utf-8", "replace"))
-    if any(expected in body for body in bodies) and not any(blocked in body for body in bodies):
+    with opener.open(base + "/api/public/deployment-health", timeout=30) as response:
+        health = json.loads(response.read().decode("utf-8"))
+    browser_ok = any(expected in body for body in bodies) and not any(blocked in body for body in bodies)
+    server_ok = health.get("ok") is True and health.get("serverProjectId") == expected
+    if browser_ok and server_ok:
         print("Live production identity check passed.")
         break
     if attempt == 11:
