@@ -76,9 +76,12 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
       throw new Error('Unauthorized: Invalid token');
     }
 
+    let tokenClaims: Record<string, unknown> = {};
     try {
-      const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-      const issuerProjectId = supabaseProjectIdFromUrl(payload?.iss);
+      tokenClaims = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      const issuerProjectId = supabaseProjectIdFromUrl(
+        typeof tokenClaims.iss === 'string' ? tokenClaims.iss : undefined,
+      );
       const serverProjectId = supabaseProjectIdFromUrl(SUPABASE_URL);
       if (issuerProjectId && serverProjectId && issuerProjectId !== serverProjectId) {
         console.error('[Supabase auth] Token issuer does not match the configured server database');
@@ -107,9 +110,12 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
       }
     );
 
-    const { data, error } = await supabase.auth.getClaims(token);
-    if (error || !data?.claims) {
-      console.error('[Supabase auth] Token verification failed', {
+    // Revalidate against the configured Auth service. This supports both
+    // symmetric and asymmetric signing keys and avoids rejecting a freshly
+    // issued token when local signing-key discovery is temporarily stale.
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data?.user) {
+      console.error('[Supabase auth] Authoritative token verification failed', {
         status: error?.status,
         code: error?.code,
         name: error?.name,
@@ -117,15 +123,19 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
       throw new Error('Unauthorized: Invalid token');
     }
 
-    if (!data.claims.sub) {
+    if (!data.user.id) {
       throw new Error('Unauthorized: No user ID found in token');
     }
 
     return next({
       context: {
         supabase,
-        userId: data.claims.sub,
-        claims: data.claims,
+        userId: data.user.id,
+        claims: {
+          ...tokenClaims,
+          sub: data.user.id,
+          email: data.user.email,
+        },
       },
     });
   },

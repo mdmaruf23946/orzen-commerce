@@ -10,7 +10,7 @@ import { myAccountKind } from "@/lib/employees.functions";
 
 import { CheckCircle2, XCircle, Loader2, AlertCircle, UserCog } from "lucide-react";
 import { BrandMark } from "@/lib/platform-branding";
-import { isAuthConfigurationError } from "@/lib/deployment-target";
+import { isInvalidAuthSessionError } from "@/lib/deployment-target";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -164,11 +164,11 @@ function AuthPage() {
       }
       navigate({ to: next, replace: true });
     } catch (err) {
-      if (isAuthConfigurationError(err)) {
+      if (isInvalidAuthSessionError(err)) {
         await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
-        toast.error("Sign-in is temporarily unavailable because the website connection could not be verified. Please try again shortly.");
+        toast.error("Your sign-in session could not be verified. Please sign in again.");
       } else {
-        toast.error((err as Error).message);
+        toast.error("Your account was signed in, but its access could not be checked. Please try again.");
       }
     } finally {
       setLoading(false);
