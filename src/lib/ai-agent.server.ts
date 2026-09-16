@@ -7,6 +7,7 @@ import {
   sendProductCard as fbSendProductCard,
   sendProductCarousel as fbSendProductCarousel,
   sendViewSiteButton as fbSendViewSiteButton,
+  sendQuickReplies as fbSendQuickReplies,
 } from "./messenger-send.server";
 import { checkDuplicate } from "./duplicate-guard.server";
 import {
