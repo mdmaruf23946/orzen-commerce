@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.__mig_auth_dump(text) TO sandbox_exec;
