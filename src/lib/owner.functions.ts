@@ -1337,8 +1337,12 @@ export const ownerStoreHealth = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertOwner(context.supabase, context.userId);
-    const sb: any = context.supabase;
+    // Platform-wide aggregate across every tenant: read with the admin client
+    // (owner verified above) so per-store RLS does not hide other merchants' rows.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const sb: any = supabaseAdmin;
     const now = Date.now();
+
 
     const [storesRes, ordersRes, productsRes, customersRes, domainsRes] = await Promise.all([
       sb.from("stores").select("id,name,slug,status,subscription_status,expires_at,trial_ends_at,created_at,package_id,merchant_code").order("created_at", { ascending: false }),
@@ -1449,7 +1453,8 @@ export const ownerAiUsageReport = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertOwner(context.supabase, context.userId);
-    const sb: any = context.supabase;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const sb: any = supabaseAdmin;
     const now = Date.now();
     const since = new Date(now - 90 * 86400000).toISOString();
 
