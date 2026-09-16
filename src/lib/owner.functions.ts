@@ -1329,3 +1329,196 @@ export const getAiProviderStatus = createServerFn({ method: "GET" })
     const { describeActiveAiProvider } = await import("./ai-provider.server");
     return await describeActiveAiProvider();
   });
+
+// ---------------- STORE HEALTH ----------------
+
+/** Per-store operational health for the owner panel. */
+export const ownerStoreHealth = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const now = Date.now();
+
+    const [storesRes, ordersRes, productsRes, customersRes, domainsRes] = await Promise.all([
+      sb.from("stores").select("id,name,slug,status,subscription_status,expires_at,trial_ends_at,created_at,package_id,merchant_code").order("created_at", { ascending: false }),
+      sb.from("orders").select("store_id,created_at,status,subtotal,discount_amount,delivery_amount"),
+      sb.from("products").select("store_id,status"),
+      sb.from("store_customers").select("store_id,last_login_at"),
+      sb.from("store_domains").select("store_id,hostname,status,ssl_status,is_primary"),
+    ]);
+
+    type Agg = { orders: number; orders7d: number; revenue: number; lastOrderAt: string | null };
+    const orderAgg = new Map<string, Agg>();
+    for (const o of (ordersRes.data ?? []) as any[]) {
+      const a = orderAgg.get(o.store_id) ?? { orders: 0, orders7d: 0, revenue: 0, lastOrderAt: null };
+      a.orders += 1;
+      const t = new Date(o.created_at).getTime();
+      if (now - t <= 7 * 86400000) a.orders7d += 1;
+      if (!["cancelled", "returned"].includes(String(o.status))) {
+        a.revenue += Number(o.subtotal || 0) - Number(o.discount_amount || 0) + Number(o.delivery_amount || 0);
+      }
+      if (!a.lastOrderAt || new Date(a.lastOrderAt).getTime() < t) a.lastOrderAt = o.created_at;
+      orderAgg.set(o.store_id, a);
+    }
+
+    const productAgg = new Map<string, { total: number; active: number }>();
+    for (const p of (productsRes.data ?? []) as any[]) {
+      const a = productAgg.get(p.store_id) ?? { total: 0, active: 0 };
+      a.total += 1;
+      if (p.status === "active") a.active += 1;
+      productAgg.set(p.store_id, a);
+    }
+
+    const customerAgg = new Map<string, { total: number; lastLoginAt: string | null }>();
+    for (const c of (customersRes.data ?? []) as any[]) {
+      const a = customerAgg.get(c.store_id) ?? { total: 0, lastLoginAt: null };
+      a.total += 1;
+      if (c.last_login_at && (!a.lastLoginAt || new Date(a.lastLoginAt) < new Date(c.last_login_at))) {
+        a.lastLoginAt = c.last_login_at;
+      }
+      customerAgg.set(c.store_id, a);
+    }
+
+    const domainAgg = new Map<string, { hostname: string; status: string; ssl: string | null }[]>();
+    for (const d of (domainsRes.data ?? []) as any[]) {
+      const list = domainAgg.get(d.store_id) ?? [];
+      list.push({ hostname: d.hostname, status: d.status, ssl: d.ssl_status ?? null });
+      domainAgg.set(d.store_id, list);
+    }
+
+    const rows = ((storesRes.data ?? []) as any[]).map((s) => {
+      const o = orderAgg.get(s.id) ?? { orders: 0, orders7d: 0, revenue: 0, lastOrderAt: null };
+      const p = productAgg.get(s.id) ?? { total: 0, active: 0 };
+      const c = customerAgg.get(s.id) ?? { total: 0, lastLoginAt: null };
+      const domains = domainAgg.get(s.id) ?? [];
+      const expiresAt = s.expires_at ?? s.trial_ends_at ?? null;
+      const daysLeft = expiresAt ? Math.ceil((new Date(expiresAt).getTime() - now) / 86400000) : null;
+      const issues: string[] = [];
+      if (s.status === "suspended") issues.push("Store suspended");
+      if (["expired", "cancelled", "past_due", "suspended"].includes(String(s.subscription_status))) issues.push("No active plan");
+      if (daysLeft !== null && daysLeft >= 0 && daysLeft <= 7) issues.push(`Plan ends in ${daysLeft}d`);
+      if (p.active === 0) issues.push("No active products");
+      if (o.orders === 0) issues.push("No orders yet");
+      else if (o.orders7d === 0) issues.push("No orders in 7 days");
+      if (domains.some((d) => d.status !== "verified" && d.status !== "active")) issues.push("Domain not verified");
+      const score = Math.max(0, 100 - issues.length * 18);
+      return {
+        id: s.id,
+        name: s.name,
+        slug: s.slug,
+        merchant_code: s.merchant_code ?? null,
+        status: s.status,
+        subscription_status: s.subscription_status,
+        expires_at: expiresAt,
+        days_left: daysLeft,
+        created_at: s.created_at,
+        products: p.total,
+        active_products: p.active,
+        orders: o.orders,
+        orders_7d: o.orders7d,
+        revenue: o.revenue,
+        last_order_at: o.lastOrderAt,
+        customers: c.total,
+        last_customer_login_at: c.lastLoginAt,
+        domains,
+        issues,
+        score,
+      };
+    });
+
+    rows.sort((a, b) => a.score - b.score || b.orders_7d - a.orders_7d);
+
+    return {
+      generated_at: new Date().toISOString(),
+      totals: {
+        stores: rows.length,
+        healthy: rows.filter((r) => r.issues.length === 0).length,
+        warning: rows.filter((r) => r.issues.length > 0 && r.issues.length <= 2).length,
+        critical: rows.filter((r) => r.issues.length > 2).length,
+        inactive7d: rows.filter((r) => r.orders_7d === 0).length,
+      },
+      rows,
+    };
+  });
+
+// ---------------- AI USAGE ----------------
+
+/** Platform-wide AI consumption analytics (last 90 days). */
+export const ownerAiUsageReport = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const now = Date.now();
+    const since = new Date(now - 90 * 86400000).toISOString();
+
+    const [usageRes, storesRes] = await Promise.all([
+      sb.from("ai_usage").select("store_id,model,kind,prompt_tokens,completion_tokens,cost_usd,created_at").gte("created_at", since).order("created_at", { ascending: false }),
+      sb.from("stores").select("id,name,slug"),
+    ]);
+
+    const storeMap = new Map<string, { name: string; slug: string }>();
+    for (const s of (storesRes.data ?? []) as any[]) storeMap.set(s.id, { name: s.name, slug: s.slug });
+
+    const rows = ((usageRes.data ?? []) as any[]).map((r) => ({
+      ...r,
+      tokens: Number(r.prompt_tokens || 0) + Number(r.completion_tokens || 0),
+      cost: Number(r.cost_usd || 0),
+      ts: new Date(r.created_at).getTime(),
+    }));
+
+    const window = (days: number) => {
+      const from = now - days * 86400000;
+      const sel = rows.filter((r) => r.ts >= from);
+      return {
+        requests: sel.length,
+        tokens: sel.reduce((a, r) => a + r.tokens, 0),
+        cost: sel.reduce((a, r) => a + r.cost, 0),
+      };
+    };
+
+    const group = (keyOf: (r: any) => string) => {
+      const m = new Map<string, { key: string; requests: number; tokens: number; cost: number }>();
+      for (const r of rows.filter((x) => x.ts >= now - 30 * 86400000)) {
+        const k = keyOf(r) || "unknown";
+        const g = m.get(k) ?? { key: k, requests: 0, tokens: 0, cost: 0 };
+        g.requests += 1; g.tokens += r.tokens; g.cost += r.cost;
+        m.set(k, g);
+      }
+      return [...m.values()].sort((a, b) => b.tokens - a.tokens);
+    };
+
+    const daily: { date: string; requests: number; tokens: number; cost: number }[] = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now - i * 86400000); d.setHours(0, 0, 0, 0);
+      const next = d.getTime() + 86400000;
+      const sel = rows.filter((r) => r.ts >= d.getTime() && r.ts < next);
+      daily.push({
+        date: d.toISOString().slice(0, 10),
+        requests: sel.length,
+        tokens: sel.reduce((a, r) => a + r.tokens, 0),
+        cost: sel.reduce((a, r) => a + r.cost, 0),
+      });
+    }
+
+    return {
+      windows: { d7: window(7), d30: window(30), d90: window(90) },
+      byStore: group((r) => r.store_id).map((g) => ({
+        ...g,
+        name: storeMap.get(g.key)?.name ?? "Platform / unassigned",
+        slug: storeMap.get(g.key)?.slug ?? "",
+      })),
+      byModel: group((r) => r.model),
+      byKind: group((r) => r.kind),
+      daily,
+      recent: rows.slice(0, 50).map((r) => ({
+        created_at: r.created_at,
+        model: r.model,
+        kind: r.kind,
+        tokens: r.tokens,
+        cost: r.cost,
+        store_name: storeMap.get(r.store_id)?.name ?? "—",
+      })),
+    };
+  });
