@@ -28,8 +28,10 @@
 
 ### 3. লগইন ব্যর্থ হলে পরিষ্কার recovery
 
+- server token যাচাইয়ের সময় token কোন database project থেকে এসেছে তা বর্তমান server project-এর সঙ্গে মিলাব; অমিল হলে server log-এ নির্দিষ্ট কারণ থাকবে, কিন্তু কোনো গোপন তথ্য প্রকাশ হবে না।
 - সঠিক email/password login-এর পর account type check ব্যর্থ হলে invalid session পরিষ্কার করব, যাতে stale token ধরে রেখে বারবার একই error না আসে।
 - ব্যবহারকারীকে raw “Unauthorized: Invalid token” না দেখিয়ে পরিষ্কার বার্তা ও আবার sign-in করার সুযোগ দেব। ভুল password বা inactive account-এর বর্তমান আচরণ অপরিবর্তিত থাকবে।
+- Winner Admin-এর Deployment Health-এ browser/server database মিলের আলাদা সবুজ/লাল check যোগ করব, যাতে ভবিষ্যৎ configuration drift সঙ্গে সঙ্গে ধরা যায়।
 
 ## যাচাই
 
