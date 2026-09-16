@@ -101,11 +101,27 @@ config["compatibility_flags"] = sorted(flags)
 path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
 PY
 
-echo "Uploading a non-live production candidate…"
+RUNTIME_SECRETS="$TMP_DIR/runtime-secrets.env"
+cat > "$RUNTIME_SECRETS" <<EOF
+SUPABASE_URL=$SUPABASE_URL
+SUPABASE_PROJECT_ID=$SUPABASE_PROJECT_ID
+SUPABASE_PUBLISHABLE_KEY=$SUPABASE_PUBLISHABLE_KEY
+SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
+VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+VITE_SUPABASE_PROJECT_ID=$VITE_SUPABASE_PROJECT_ID
+VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY
+CREDENTIALS_ENCRYPTION_KEY=$CREDENTIALS_ENCRYPTION_KEY
+LOVABLE_API_KEY=$LOVABLE_API_KEY
+PUBLIC_SITE_ORIGIN=https://orzen.top
+EOF
+chmod 600 "$RUNTIME_SECRETS"
+
+echo "Uploading a non-live production candidate with synchronized runtime…"
 UPLOAD_LOG="$TMP_DIR/upload.log"
 bunx wrangler versions upload \
   --config "$CONFIG" \
   --keep-vars \
+  --secrets-file "$RUNTIME_SECRETS" \
   --preview-alias orzen-candidate \
   --message "Guarded ORZEN production candidate" | tee "$UPLOAD_LOG"
 
@@ -121,7 +137,7 @@ fi
 
 export ORZEN_PREVIEW_URL="$PREVIEW_URL"
 python3 <<'PY'
-import os, re, urllib.parse, urllib.request
+import json, os, re, urllib.parse, urllib.request
 
 base = os.environ["ORZEN_PREVIEW_URL"].rstrip("/")
 expected = os.environ["ORZEN_EXPECTED_PROJECT_ID"]
@@ -140,34 +156,14 @@ for asset in assets:
     matched = matched or expected in body
 if not matched:
     raise SystemExit("Candidate browser bundle does not point at production; live deployment stopped.")
+with opener.open(base + "/api/public/deployment-health", timeout=30) as response:
+    health = json.loads(response.read().decode("utf-8"))
+if health.get("ok") is not True or health.get("serverProjectId") != expected:
+    raise SystemExit("Candidate server does not point at production; live deployment stopped.")
 PY
 
-echo "Synchronizing production server secrets into the same candidate…"
-RUNTIME_SECRETS="$TMP_DIR/runtime-secrets.env"
-cat > "$RUNTIME_SECRETS" <<EOF
-SUPABASE_URL=$SUPABASE_URL
-SUPABASE_PROJECT_ID=$SUPABASE_PROJECT_ID
-SUPABASE_PUBLISHABLE_KEY=$SUPABASE_PUBLISHABLE_KEY
-SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
-VITE_SUPABASE_URL=$VITE_SUPABASE_URL
-VITE_SUPABASE_PROJECT_ID=$VITE_SUPABASE_PROJECT_ID
-VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY
-CREDENTIALS_ENCRYPTION_KEY=$CREDENTIALS_ENCRYPTION_KEY
-LOVABLE_API_KEY=$LOVABLE_API_KEY
-PUBLIC_SITE_ORIGIN=https://orzen.top
-EOF
-chmod 600 "$RUNTIME_SECRETS"
-SECRET_LOG="$TMP_DIR/secrets.log"
-bunx wrangler versions secret bulk "$RUNTIME_SECRETS" --name "$WORKER_NAME" \
-  --message "Synchronize verified ORZEN production runtime" | tee "$SECRET_LOG"
-SECRET_VERSION_ID="$(grep -Eo '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' "$SECRET_LOG" | tail -1)"
-if [ -z "$SECRET_VERSION_ID" ]; then
-  echo "Could not identify the runtime-synchronized candidate; live deployment stopped." >&2
-  exit 1
-fi
-
-echo "Candidate checks passed. Deploying runtime-synchronized version to 100%…"
-bunx wrangler versions deploy "$SECRET_VERSION_ID@100%" --name "$WORKER_NAME" --yes \
+echo "Candidate checks passed. Deploying verified version to 100%…"
+bunx wrangler versions deploy "$VERSION_ID@100%" --name "$WORKER_NAME" --yes \
   --message "Verified ORZEN production deployment"
 
 export ORZEN_LIVE_URL="https://orzen.top"
