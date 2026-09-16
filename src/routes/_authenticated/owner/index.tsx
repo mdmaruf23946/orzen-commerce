@@ -164,7 +164,17 @@ function Sparkline({ data }: { data: { date: string; total: number }[] }) {
     return { x, y, ...d };
   });
   const path = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
-  const area = `${path} L${points[points.length - 1]?.x ?? pad},${h - pad} L${points[0]?.x ?? pad},${h - pad} Z`;
+  const area = points.length
+    ? `${path} L${points[points.length - 1]!.x},${h - pad} L${points[0]!.x},${h - pad} Z`
+    : "";
+
+  if (points.length === 0) {
+    return (
+      <div className="flex h-32 w-full items-center justify-center rounded-lg border border-dashed text-xs text-muted-foreground">
+        No revenue data yet
+      </div>
+    );
+  }
 
   return (
     <div className="w-full overflow-hidden">
