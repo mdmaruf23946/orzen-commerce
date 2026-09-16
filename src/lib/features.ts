@@ -96,8 +96,8 @@ export type StoreWithPackage = {
   free_package?: PackageRow;
 } | null | undefined;
 
-/** Statuses where the paid plan no longer applies — the store drops to Free. */
-export const INACTIVE_STATUSES = ["expired", "suspended", "cancelled"] as const;
+/** Statuses where no plan is active — the store is locked until one is activated. */
+export const INACTIVE_STATUSES = ["expired", "suspended", "cancelled", "past_due"] as const;
 
 export function isSubscriptionInactive(store: StoreWithPackage): boolean {
   const s = store?.subscription_status ?? "active";
@@ -106,12 +106,12 @@ export function isSubscriptionInactive(store: StoreWithPackage): boolean {
 
 /**
  * The plan whose limits/features actually apply right now.
- * When the paid subscription has expired (or was suspended/cancelled) the
- * store keeps working, but only with the Free plan's access.
+ * When the trial or paid plan has ended there is NO fallback plan: the store
+ * is locked until the merchant activates the Free plan or pays for one.
  */
 export function effectivePackage(store: StoreWithPackage): PackageRow {
   if (!store) return null;
-  if (isSubscriptionInactive(store)) return store.free_package ?? null;
+  if (isSubscriptionInactive(store)) return null;
   return store.subscription_packages ?? null;
 }
 
