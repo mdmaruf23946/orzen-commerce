@@ -5,6 +5,7 @@ import { buildSystemPrompt, generateAgentReply, loadAiContext, resolveFocusProdu
 import {
   sendProductCard,
   sendProductCarousel,
+  sendQuickReplies,
   sendText,
   sendViewSiteButton,
   type ProductCardInput,
