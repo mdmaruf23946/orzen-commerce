@@ -10704,6 +10704,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      expire_due_subscriptions: { Args: never; Returns: undefined }
       expire_trials: { Args: never; Returns: undefined }
       format_merchant_code: { Args: { _n: number }; Returns: string }
       generate_invoice_no: {
