@@ -28,3 +28,6 @@
 A Lovable "Publish" (or other build using the default Lovable Cloud .env) deployed Worker version 235c4074 at 14:41 UTC, which reverted the browser bundle to the OLD Supabase (dqhfxvhzagitytpvildw) while server secrets stayed on the new project → "Unauthorized: Invalid token" on /auth and merchant panel not loading.
 Fix: rebuilt with production VITE_SUPABASE_* and deployed version 6e582b88 at 100%. Verified live chunk client-Dt0IOu2g.js → rljisleyqluoexmtncos.
 RULE: never publish orzen.top from the Lovable Publish button. Always redeploy through the wrangler procedure in mem://features/production-migration.
+
+## New task (2026-09-16)
+8. [ ] **Trial expiry enforcement** — 3-day trial must actually end: after trial_ends_at the store loses all access (no auto-drop to Free). Merchant sees a blocking screen with "Activate Free plan" button or upgrade to a paid plan. Applies to every account, new and existing. No plan active = no panel access.
