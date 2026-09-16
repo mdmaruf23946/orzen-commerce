@@ -1413,6 +1413,48 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
               }
               const parsed = parseMessage(msg);
 
+              // "Buy now" taps: card buttons arrive as postbacks, quick replies
+              // arrive as ordinary messages. Both mean the same intent and must
+              // start the order flow instead of going to the LLM as raw text.
+              const qrPayload = String((parsed.attachments?.[0] as any)?.payload ?? "");
+              if (parsed.message_type === "quick_reply" && /^BUY_[0-9a-f-]{36}$/i.test(qrPayload)) {
+                await sb.from("ai_messages").insert({
+                  conversation_id: conv!.id,
+                  role: "user",
+                  direction: "in",
+                  message_type: "quick_reply",
+                  content: msg.text || "Buy Now",
+                  attachments: parsed.attachments,
+                  mid: msg.mid ?? null,
+                });
+                await sb
+                  .from("ai_conversations")
+                  .update({
+                    last_message_at: new Date().toISOString(),
+                    last_message_preview: (msg.text || "Buy Now").slice(0, 200),
+                    unread_count: (conv!.unread_count ?? 0) + 1,
+                  })
+                  .eq("id", conv!.id);
+                const qrHandoff = (conv as any)!.handoff_mode ?? "ai";
+                if (
+                  qrHandoff === "ai" &&
+                  token &&
+                  !(integ as any).human_takeover &&
+                  (integ as any).ai_auto_reply !== false
+                ) {
+                  await handleBuyPostback({
+                    sb,
+                    storeId: integ.store_id,
+                    conversationId: conv!.id,
+                    psid: senderId,
+                    token,
+                    payload: qrPayload,
+                  });
+                }
+                continue;
+              }
+
+
               // Voice notes: transcribe upstream so the LLM sees text, not "[audio]".
               let effectiveText = parsed.text;
               if (parsed.message_type === "audio") {
