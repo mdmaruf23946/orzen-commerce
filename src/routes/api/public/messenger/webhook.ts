@@ -1246,7 +1246,9 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
                 { onConflict: "page_id,message_id", ignoreDuplicates: true },
               );
             }
-            continue;
+            // Message events are now queued; everything else (postbacks,
+            // delivery/read receipts, opt-ins, referrals) is still handled
+            // inline below because it is cheap and must not be dropped.
           }
 
 
