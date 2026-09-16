@@ -105,7 +105,10 @@ bunx wrangler versions upload \
   --message "Guarded ORZEN production candidate" | tee "$UPLOAD_LOG"
 
 VERSION_ID="$(grep -Eo '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' "$UPLOAD_LOG" | tail -1)"
-PREVIEW_URL="$(grep -Eo 'https://[^ ]+workers\.dev' "$UPLOAD_LOG" | tail -1)"
+PREVIEW_URL="$(sed -n 's/^Version Preview Alias URL: //p' "$UPLOAD_LOG" | tail -1)"
+if [ -z "$PREVIEW_URL" ]; then
+  PREVIEW_URL="$(sed -n 's/^Version Preview URL: //p' "$UPLOAD_LOG" | tail -1)"
+fi
 if [ -z "$VERSION_ID" ] || [ -z "$PREVIEW_URL" ]; then
   echo "Could not identify the candidate version or preview address; live deployment stopped." >&2
   exit 1
