@@ -139,7 +139,9 @@ export async function ensureStoreForAccount(
       if (created.id) {
         try {
           // Default AI sales assistant so the storefront chat works from day one.
-          await supabase.from("store_ai_agents").insert({ store_id: created.id, enabled: true } as any);
+          await supabase
+            .from("store_ai_agents")
+            .insert({ store_id: created.id, enabled: true } as any);
         } catch {
           // A database trigger also seeds this row; a duplicate here is harmless.
         }
