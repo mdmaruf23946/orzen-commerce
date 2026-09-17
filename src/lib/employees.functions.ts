@@ -313,7 +313,7 @@ export const myAccountKind = createServerFn({ method: "POST" })
 export const employeeSessionInfo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const access = await resolveStoreAccess(context.supabase, context.userId);
+    const access = await resolveStoreAccess(context.supabase, context.userId, context.claims);
     if (!access.staff) {
       const { data: inactive } = await context.supabase
         .from("store_staff")
@@ -342,7 +342,7 @@ export const changeMyPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ password: z.string().min(8).max(72) }).parse(d))
   .handler(async ({ data, context }) => {
-    const access = await resolveStoreAccess(context.supabase, context.userId);
+    const access = await resolveStoreAccess(context.supabase, context.userId, context.claims);
     const { error } = await context.supabase.auth.updateUser({ password: data.password });
     if (error) throw new Error(error.message);
     if (access.staff) {
@@ -367,7 +367,7 @@ export const listActivity = createServerFn({ method: "POST" })
       .parse(d ?? {}),
   )
   .handler(async ({ data, context }) => {
-    const access = await resolveStoreAccess(context.supabase, context.userId);
+    const access = await resolveStoreAccess(context.supabase, context.userId, context.claims);
     if (!access.storeId) return { rows: [] };
     assertSection(access, "activity", "view");
 

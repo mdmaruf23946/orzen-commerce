@@ -41,9 +41,13 @@ async function loadStoreWithPlan(db: any, storeId: string) {
 }
 
 async function ctxOf(context: any) {
-  const access = await resolveStoreAccess(context.supabase, context.userId);
+  const access = await resolveStoreAccess(context.supabase, context.userId, context.claims);
   if (!access?.storeId) throw new Error("No store found for this account.");
-  return { db: context.supabase, storeId: access.storeId as string, userId: context.userId as string };
+  return {
+    db: context.supabase,
+    storeId: access.storeId as string,
+    userId: context.userId as string,
+  };
 }
 
 /* ----------------------------- overview ----------------------------- */
@@ -79,7 +83,11 @@ export const aiGetOverview = createServerFn({ method: "GET" })
     const [{ data: messenger }, { data: whatsapp }, { data: facebook }] = await Promise.all([
       db.from("messenger_integrations").select("status").eq("store_id", storeId).maybeSingle(),
       db.from("whatsapp_integrations").select("status").eq("store_id", storeId).maybeSingle(),
-      db.from("facebook_page_integrations").select("status, page_name").eq("store_id", storeId).maybeSingle(),
+      db
+        .from("facebook_page_integrations")
+        .select("status, page_name")
+        .eq("store_id", storeId)
+        .maybeSingle(),
     ]);
 
     const connected: Record<string, boolean> = {
@@ -139,11 +147,14 @@ export const aiSendCommand = createServerFn({ method: "POST" })
     if (!hasFeature(store, "ai_agent")) {
       throw new Error("AI Command Center is not included in your current plan.");
     }
-    const { ensureThread, loadAgentState, withinRateLimit } = await import("@/lib/merchant-ai/core.server");
+    const { ensureThread, loadAgentState, withinRateLimit } =
+      await import("@/lib/merchant-ai/core.server");
     const { runMasterAgent } = await import("@/lib/merchant-ai/master.server");
     const state = await loadAgentState(db, storeId);
     if (state["master"] && state["master"].enabled === false) {
-      throw new Error("The Master AI Agent is switched off. Turn it on in AI Command Center → Agents.");
+      throw new Error(
+        "The Master AI Agent is switched off. Turn it on in AI Command Center → Agents.",
+      );
     }
     if (!(await withinRateLimit(db, storeId, userId))) {
       throw new Error("Too many commands right now. Please wait a minute and try again.");
@@ -193,7 +204,8 @@ export const aiDecideAction = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { db, storeId, userId } = await ctxOf(context);
-    const { executePendingAction, rejectPendingAction } = await import("@/lib/merchant-ai/master.server");
+    const { executePendingAction, rejectPendingAction } =
+      await import("@/lib/merchant-ai/master.server");
     if (data.decision === "approve") return executePendingAction(db, storeId, data.id, userId);
     return rejectPendingAction(db, storeId, data.id, userId);
   });
@@ -242,7 +254,8 @@ export const aiAddIdentity = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { db, storeId } = await ctxOf(context);
-    const { normalizeIdentifier, makeVerifyCode } = await import("@/lib/merchant-ai/identity.server");
+    const { normalizeIdentifier, makeVerifyCode } =
+      await import("@/lib/merchant-ai/identity.server");
     const identifier = normalizeIdentifier(data.channel, data.identifier);
     const code = makeVerifyCode();
     const { error } = await db.from("store_ai_identities").upsert(
@@ -282,7 +295,8 @@ export const aiGetNotificationRules = createServerFn({ method: "GET" })
       .eq("store_id", storeId);
     const map: Record<string, { enabled: boolean; channels: string[] }> = {};
     for (const e of NOTIFICATION_EVENTS) map[e.key] = { enabled: true, channels: ["panel"] };
-    for (const row of data ?? []) map[row.event_key] = { enabled: !!row.enabled, channels: row.channels ?? ["panel"] };
+    for (const row of data ?? [])
+      map[row.event_key] = { enabled: !!row.enabled, channels: row.channels ?? ["panel"] };
     return { rules: map };
   });
 
@@ -299,11 +313,19 @@ export const aiSetNotificationRule = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { db, storeId } = await ctxOf(context);
-    if (!NOTIFICATION_EVENTS.some((e) => e.key === data.eventKey)) throw new Error("Unknown event.");
-    const { error } = await db.from("store_ai_notification_rules").upsert(
-      { store_id: storeId, event_key: data.eventKey, enabled: data.enabled, channels: data.channels },
-      { onConflict: "store_id,event_key" },
-    );
+    if (!NOTIFICATION_EVENTS.some((e) => e.key === data.eventKey))
+      throw new Error("Unknown event.");
+    const { error } = await db
+      .from("store_ai_notification_rules")
+      .upsert(
+        {
+          store_id: storeId,
+          event_key: data.eventKey,
+          enabled: data.enabled,
+          channels: data.channels,
+        },
+        { onConflict: "store_id,event_key" },
+      );
     if (error) throw new Error(error.message);
     return { ok: true };
   });
