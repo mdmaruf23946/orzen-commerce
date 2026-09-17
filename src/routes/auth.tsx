@@ -51,7 +51,8 @@ type SlugStatus = "idle" | "invalid" | "checking" | "available" | "taken" | "err
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
+  const [resetSent, setResetSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // shared
