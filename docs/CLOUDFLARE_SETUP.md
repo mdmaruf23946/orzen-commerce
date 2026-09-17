@@ -211,21 +211,13 @@ Cloudflare API credentials.
 
 ---
 
-## Secure internal forwarding (no secrets on Cloudflare)
+## Independent production runtime
 
-The Cloudflare deployment does not need the private server keys
-(`SUPABASE_SERVICE_ROLE_KEY`, `CREDENTIALS_ENCRYPTION_KEY`, `LOVABLE_API_KEY`).
-
-When those keys are not present, the worker forwards server-only requests
-(`/api/*`, `/_serverFn*`, `/_server*`, `/lovable/*`) server-to-server to the
-Lovable deployment, which already holds them. The browser sees no redirect and
-no second domain; cookies, sessions and status codes pass through unchanged.
-
-- Upstream default: `https://orzen-commerce.lovable.app`
-- Override with the optional variable `LOVABLE_UPSTREAM_ORIGIN`
-- A loop guard header (`x-orzen-forwarded`) prevents double forwarding
-- If the keys *are* present on Cloudflare, nothing is forwarded
+The production-only Worker must hold its own `SUPABASE_SERVICE_ROLE_KEY`,
+`CREDENTIALS_ENCRYPTION_KEY`, and `LOVABLE_API_KEY`. Server requests are never
+forwarded to a Lovable deployment. This keeps authentication, tenant checks,
+webhooks, and AI work on the same verified production runtime.
 
 Verify from the custom domain: Winner Admin → AI Admin Control → Overview →
-**Deployment health** shows "Secure internal forwarding is active" plus green
+**Deployment health** shows all required production capabilities as available.
 rows for database, credential decryption and the AI key.

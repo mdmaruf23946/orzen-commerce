@@ -40,4 +40,4 @@ RULE: never publish orzen.top from the Lovable Publish button. Always redeploy t
 
 13. [x] **Cloudflare DNS cleanup** — removed obsolete Lovable records `ad.orzen.top` and `_lovable.ad.orzen.top` after approval.
 
-14. [ ] **Production isolation and signup repair** — restore anonymous slug availability checks, deploy live code to the isolated `orzen-commerce-production` Worker, attach all public ORZEN domains only to it, and verify login/subdomain behavior end to end.
+14. [x] **Production isolation and signup repair** — restored anonymous boolean-only slug availability checks in production; deployed verified code to isolated `orzen-commerce-production`; moved root, wildcard, and seven explicit merchant hostnames to it; detached every public hostname from auto-published `orzen-commerce`; removed obsolete Lovable DNS; verified 398 browser chunks, matching production server identity, free/taken slug results, and HTTP 200 on root/store/owner routes. A later automatic deployment updated only the detached preview service, proving it no longer changes `orzen.top`.
