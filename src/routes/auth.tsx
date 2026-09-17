@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,6 +52,7 @@ type SlugStatus = "idle" | "invalid" | "checking" | "available" | "taken" | "err
 
 function AuthPage() {
   const navigate = useNavigate();
+  const ensureMyStore = useServerFn(getMyStore);
   const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
   const [resetSent, setResetSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -176,7 +178,7 @@ function AuthPage() {
         }
         // Email-confirmed merchants may not have completed store creation yet.
         // Complete it before entering the panel so child pages never race it.
-        await getMyStore();
+        await ensureMyStore();
 
       }
       navigate({ to: next, replace: true });
