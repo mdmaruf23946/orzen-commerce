@@ -5,6 +5,7 @@ Checks, against the live ORZEN production Supabase project and Cloudflare accoun
   1. every public database function is executable by the trusted server role;
   2. the anonymous-facing functions the public site calls are executable by anon;
   3. every ORZEN custom domain is attached to the production-only Worker service.
+  4. every confirmed merchant account with signup metadata owns a store.
 
 Exits non-zero with a plain explanation when anything drifts.
 Requires: PROD_SUPABASE_ACCESS_TOKEN, and (for the domain check) CF_API_TOKEN.
@@ -91,6 +92,25 @@ def check_database(failures: list[str]) -> None:
         failures.append(f"Server role cannot run these functions: {row['server_missing']}")
     if row.get("anon_missing"):
         failures.append(f"Public visitors cannot run these functions: {row['anon_missing']}")
+
+    orphan_query = """
+        select count(*)::int as orphan_count
+        from auth.users u
+        where u.confirmed_at is not null
+          and nullif(u.raw_user_meta_data->>'store_slug', '') is not null
+          and not exists (select 1 from public.stores s where s.owner_user_id = u.id);
+    """
+    try:
+        orphan_rows = _request(
+            f"https://api.supabase.com/v1/projects/{PROD_PROJECT_ID}/database/query",
+            token,
+            {"query": orphan_query},
+        )
+        orphan_count = orphan_rows[0].get("orphan_count", 0) if orphan_rows else 0
+        if orphan_count:
+            failures.append(f"Confirmed merchant accounts without a store: {orphan_count}")
+    except urllib.error.URLError as exc:  # pragma: no cover - network failure path
+        failures.append(f"Could not check merchant store creation: {exc}")
 
 
 def check_domains(failures: list[str]) -> None:

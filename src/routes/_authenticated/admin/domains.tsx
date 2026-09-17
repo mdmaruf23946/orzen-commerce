@@ -134,7 +134,10 @@ function Page() {
   const provisionFn = useServerFn(provisionMySubdomain);
   const [provisioning, setProvisioning] = useState(false);
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["admin", "domains"], queryFn: () => listFn() });
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
+    queryKey: ["admin", "domains"],
+    queryFn: () => listFn(),
+  });
 
   // Subdomain reachability probe — warns when the platform wildcard is missing.
   const { data: dns } = useQuery({
@@ -216,7 +219,22 @@ function Page() {
     };
   }, [slug, currentSlug, slugCheckFn]);
 
-  if (isLoading || !data) return <div className="text-sm text-muted-foreground">Loading…</div>;
+  if (isLoading) return <div className="text-sm text-muted-foreground">Loading…</div>;
+  if (isError || !data) {
+    return (
+      <div className="mx-auto max-w-md rounded-lg border bg-card p-6 text-center">
+        <AlertTriangle className="mx-auto h-7 w-7 text-destructive" />
+        <h2 className="mt-3 font-semibold">Domain তথ্য লোড হয়নি</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {(error as Error | null)?.message || "সাময়িক সমস্যা হয়েছে। আবার চেষ্টা করুন।"}
+        </p>
+        <Button className="mt-4" size="sm" onClick={() => refetch()} disabled={isFetching}>
+          {isFetching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+          আবার চেষ্টা করুন
+        </Button>
+      </div>
+    );
+  }
 
   const settings = data.settings;
   const rootDomain = settings.rootDomain;

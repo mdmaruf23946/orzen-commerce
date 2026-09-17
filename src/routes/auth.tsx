@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { checkStoreSlugAvailable, createMyStoreWithSlug } from "@/lib/admin.functions";
+import { checkStoreSlugAvailable, createMyStoreWithSlug, getMyStore } from "@/lib/admin.functions";
 import { myAccountKind } from "@/lib/employees.functions";
 
 import { CheckCircle2, XCircle, Loader2, AlertCircle, UserCog } from "lucide-react";
@@ -174,6 +174,9 @@ function AuthPage() {
             "This is an employee account. Please sign in from the Employee login page (/employee-login).",
           );
         }
+        // Email-confirmed merchants may not have completed store creation yet.
+        // Complete it before entering the panel so child pages never race it.
+        await getMyStore();
 
       }
       navigate({ to: next, replace: true });

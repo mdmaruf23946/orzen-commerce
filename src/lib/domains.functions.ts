@@ -11,6 +11,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { assertPlan } from "@/lib/plan-guard";
+import { ensureStoreForAccount } from "@/lib/store-bootstrap";
 
 const HOSTNAME_RE =
   /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/;
@@ -32,14 +33,10 @@ function isApex(host: string) {
   return host.split(".").filter(Boolean).length <= 2;
 }
 
-async function requireMyStore(supabase: any, userId: string) {
-  const { data: store } = await supabase
-    .from("stores")
-    .select("id, slug, primary_domain_id")
-    .eq("owner_user_id", userId)
-    .maybeSingle();
-  if (!store) throw new Error("No store found for this account");
-  return store as { id: string; slug: string; primary_domain_id: string | null };
+async function requireMyStore(supabase: any, userId: string, claims: Record<string, unknown>) {
+  const result = await ensureStoreForAccount(supabase, userId, claims, "id,slug,primary_domain_id");
+  if (result.isEmployee) throw new Error("Only the store owner can manage domains");
+  return result.store as { id: string; slug: string; primary_domain_id: string | null };
 }
 
 async function requireOwner(supabase: any, userId: string) {
@@ -80,7 +77,7 @@ function cloudflareConfigured() {
 export const listMyDomains = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const store = await requireMyStore(context.supabase, context.userId);
+    const store = await requireMyStore(context.supabase, context.userId, context.claims);
     const settings = await platformDomainSettings(context.supabase);
     const { data } = await context.supabase
       .from("store_domains")
@@ -120,7 +117,7 @@ export const listMyDomains = createServerFn({ method: "GET" })
 export const provisionMySubdomain = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const store = await requireMyStore(context.supabase, context.userId);
+    const store = await requireMyStore(context.supabase, context.userId, context.claims);
     const settings = await platformDomainSettings(context.supabase);
     const host = `${store.slug}.${settings.rootDomain}`;
     const { ensureSubdomainAttached } = await import("@/lib/cloudflare-pages.server");
@@ -138,7 +135,7 @@ export const provisionMySubdomain = createServerFn({ method: "POST" })
 export const reconnectMySubdomain = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const store = await requireMyStore(context.supabase, context.userId);
+    const store = await requireMyStore(context.supabase, context.userId, context.claims);
     const settings = await platformDomainSettings(context.supabase);
     const host = `${store.slug}.${settings.rootDomain}`;
     const { reattachSubdomainHost } = await import("@/lib/domain-lifecycle.server");
@@ -164,7 +161,7 @@ export const checkSubdomainAvailable = createServerFn({ method: "POST" })
   .inputValidator((d: { slug: string }) => z.object({ slug: slugSchema }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const store = await requireMyStore(supabase, userId);
+    const store = await requireMyStore(supabase, userId, context.claims);
     if (data.slug === store.slug) return { available: true, current: true, reason: "" };
     if (RESERVED_SLUGS.has(data.slug)) {
       return { available: false, current: false, reason: "This name is reserved" };
@@ -182,7 +179,7 @@ export const updateMySubdomain = createServerFn({ method: "POST" })
   .inputValidator((d: { slug: string }) => z.object({ slug: slugSchema }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const store = await requireMyStore(supabase, userId);
+    const store = await requireMyStore(supabase, userId, context.claims);
     if (data.slug === store.slug) return { ok: true, slug: store.slug, changed: false };
     if (RESERVED_SLUGS.has(data.slug)) throw new Error("This name is reserved");
 
@@ -212,7 +209,7 @@ export const addCustomDomain = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertPlan(supabase, userId, "custom_domain" as any);
-    const store = await requireMyStore(supabase, userId);
+    const store = await requireMyStore(supabase, userId, context.claims);
     const host = normalizeHost(data.hostname);
     if (!HOSTNAME_RE.test(host)) throw new Error("Invalid hostname format");
 
@@ -266,7 +263,7 @@ export const checkDomainVerification = createServerFn({ method: "POST" })
   .inputValidator((d: { domainId: string }) => z.object({ domainId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const store = await requireMyStore(supabase, userId);
+    const store = await requireMyStore(supabase, userId, context.claims);
     const { data: row } = await supabase
       .from("store_domains")
       .select("*")
@@ -384,7 +381,7 @@ export const removeDomain = createServerFn({ method: "POST" })
   .inputValidator((d: { domainId: string }) => z.object({ domainId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const store = await requireMyStore(supabase, userId);
+    const store = await requireMyStore(supabase, userId, context.claims);
     const { data: row } = await supabase
       .from("store_domains")
       .select("id, cf_hostname_id")
@@ -415,7 +412,7 @@ export const setPrimaryDomain = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const store = await requireMyStore(supabase, userId);
+    const store = await requireMyStore(supabase, userId, context.claims);
     // Clear existing primary flags
     await supabase.from("store_domains").update({ is_primary: false }).eq("store_id", store.id);
     if (data.domainId) {
@@ -526,7 +523,7 @@ export const checkDnsResolution = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const store = await requireMyStore(supabase, userId);
+    const store = await requireMyStore(supabase, userId, context.claims);
     const { rootDomain, dnsTarget, apexIp } = await platformDomainSettings(supabase);
 
     const host = data.hostname ? normalizeHost(data.hostname) : `${store.slug}.${rootDomain}`;

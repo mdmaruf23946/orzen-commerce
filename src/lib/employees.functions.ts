@@ -32,7 +32,7 @@ async function nextEmployeeCode(supabase: any, storeId: string) {
 export const getMyAccess = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const access = await resolveStoreAccess(context.supabase, context.userId);
+    const access = await resolveStoreAccess(context.supabase, context.userId, context.claims);
     return {
       storeId: access.storeId,
       isOwner: access.isOwner,
