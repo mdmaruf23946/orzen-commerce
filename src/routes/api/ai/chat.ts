@@ -2,7 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, stepCountIs, type UIMessage } from "ai";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { buildSystemPrompt, buildTools, getModelForStore, loadAiContext, logUsage, resolveFocusProduct } from "@/lib/ai-agent.server";
+import {
+  buildSystemPrompt,
+  buildTools,
+  getModelForStore,
+  loadAiContext,
+  logUsage,
+  resolveFocusProduct,
+} from "@/lib/ai-agent.server";
 
 function admin() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -12,7 +19,8 @@ function admin() {
     global: {
       fetch: (input, init) => {
         const headers = new Headers(init?.headers);
-        if (isNewKey && headers.get("Authorization") === `Bearer ${key}`) headers.delete("Authorization");
+        if (isNewKey && headers.get("Authorization") === `Bearer ${key}`)
+          headers.delete("Authorization");
         headers.set("apikey", key);
         return fetch(input as any, { ...init, headers });
       },
@@ -45,7 +53,9 @@ export const Route = createFileRoute("/api/ai/chat")({
           process.env.SUPABASE_PUBLISHABLE_KEY!,
           { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
         );
-        const { data: storeRow } = await sbPublic.rpc("get_public_store_by_slug", { _slug: body.slug });
+        const { data: storeRow } = await sbPublic.rpc("get_public_store_by_slug", {
+          _slug: body.slug,
+        });
         const store = storeRow as { id: string } | null;
         if (!store) return new Response("Store not found", { status: 404 });
 
@@ -88,7 +98,10 @@ export const Route = createFileRoute("/api/ai/chat")({
             } as any);
             await sb
               .from("ai_conversations")
-              .update({ last_message_at: new Date().toISOString(), last_message_preview: text.slice(0, 200) } as any)
+              .update({
+                last_message_at: new Date().toISOString(),
+                last_message_preview: text.slice(0, 200),
+              } as any)
               .eq("id", convId);
           }
         }
@@ -100,10 +113,7 @@ export const Route = createFileRoute("/api/ai/chat")({
           .eq("id", convId)
           .maybeSingle();
         if (convRow?.handoff_mode === "human") {
-          return Response.json(
-            { conversationId: convId, handedOff: true },
-            { status: 200 },
-          );
+          return Response.json({ conversationId: convId, handedOff: true }, { status: 200 });
         }
 
         try {
@@ -133,7 +143,9 @@ export const Route = createFileRoute("/api/ai/chat")({
 
           // Pull generation params inline to avoid exporting from the server module.
           const temperature =
-            typeof settings?.temperature === "number" ? Math.max(0, Math.min(2, settings.temperature)) : undefined;
+            typeof settings?.temperature === "number"
+              ? Math.max(0, Math.min(2, settings.temperature))
+              : undefined;
           const maxOutputTokens =
             typeof settings?.max_tokens === "number" && settings.max_tokens > 0
               ? Math.floor(settings.max_tokens)
@@ -153,7 +165,11 @@ export const Route = createFileRoute("/api/ai/chat")({
             system: buildSystemPrompt(s, agent, {
               channel: "web",
               settings,
-              state: { pending_order: pending, last_order: lastOrder, recent_product_ids: recentIds },
+              state: {
+                pending_order: pending,
+                last_order: lastOrder,
+                recent_product_ids: recentIds,
+              },
               focus,
               latestUserText: lastUserText,
             }),
@@ -207,16 +223,20 @@ export const Route = createFileRoute("/api/ai/chat")({
           response.headers.set("access-control-expose-headers", "x-orzen-conversation-id");
           return response;
         } catch (e) {
-          const msg = (e as Error).message || "AI request failed";
-          console.error("[ai/chat] failed", msg);
+          const raw = (e as Error).message || "AI request failed";
+          const friendly =
+            raw === "Agent disabled" || raw === "AI globally disabled"
+              ? "এই স্টোরের AI সহকারী এখন বন্ধ আছে। / The AI assistant is currently turned off for this store."
+              : "দুঃখিত, এই মুহূর্তে উত্তর দেওয়া যাচ্ছে না। একটু পরে আবার চেষ্টা করুন। / Sorry, we couldn't reply right now. Please try again.";
+          console.error("[ai/chat] failed", raw);
           void sb.from("ai_messages").insert({
             conversation_id: convId,
             role: "system",
             direction: "out",
             message_type: "error",
-            content: msg.slice(0, 2000),
+            content: raw.slice(0, 2000),
           } as any);
-          return Response.json({ error: msg }, { status: 500 });
+          return Response.json({ error: friendly }, { status: 503 });
         }
       },
     },

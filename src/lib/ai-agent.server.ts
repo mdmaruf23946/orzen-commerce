@@ -21,11 +21,9 @@ import {
 } from "./messenger-order-flow";
 
 function admin() {
-  return createClient<Database>(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-  );
+  return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
 }
 
 export type AgentContext = {
@@ -42,18 +40,60 @@ export type AgentContext = {
   focusProductId?: string | null; // server-resolved product for this turn (see resolveFocusProduct)
 };
 
-
 export async function loadAiContext(storeId: string) {
   const sb = admin();
   const [{ data: store }, { data: agent }, { data: settings }] = await Promise.all([
-    sb.from("stores").select("id,slug,name,description,address,phone,whatsapp,facebook,delivery,payments_config").eq("id", storeId).maybeSingle(),
+    sb
+      .from("stores")
+      .select("id,slug,name,description,address,phone,whatsapp,facebook,delivery,payments_config")
+      .eq("id", storeId)
+      .maybeSingle(),
     sb.from("store_ai_agents").select("*").eq("store_id", storeId).maybeSingle(),
     sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle(),
   ]);
-  if (!store || !agent) throw new Error("Agent not configured");
-  if (!agent.enabled) throw new Error("Agent disabled");
+  if (!store) throw new Error("Store not found");
+  // A store may not have an agent row yet (older stores, or a failed seed).
+  // Fall back to a sane enabled default instead of breaking the chat.
+  const effectiveAgent =
+    agent ??
+    ({
+      store_id: storeId,
+      enabled: true,
+      agent_name: "Sales Assistant",
+      description: "",
+      welcome_message: "Hi! How can I help you today?",
+      fallback_message: "দুঃখিত, এই তথ্যটি আমার কাছে নেই। আমি স্টোর অ্যাডমিনকে জানিয়ে দিচ্ছি।",
+      language: "both",
+      style: "friendly",
+      use_emoji: true,
+      human_like: true,
+      product_recommendations: true,
+      order_assistance: true,
+      sales_focused: true,
+      recommend_related: true,
+      ask_for_info: true,
+      escalate_to_human: true,
+      knowledge: {},
+      order_flow: {},
+      sources: {
+        products: true,
+        stock: true,
+        categories: true,
+        delivery: true,
+        payments: true,
+        returns: true,
+        warranty: true,
+        store_info: true,
+        business_hours: true,
+      },
+    } as any);
+  if (!agent) {
+    // Best-effort self-heal so the owner panel shows the same settings.
+    void sb.from("store_ai_agents").insert({ store_id: storeId, enabled: true } as any);
+  }
+  if (!effectiveAgent.enabled) throw new Error("Agent disabled");
   if (settings && settings.enabled === false) throw new Error("AI globally disabled");
-  return { store, agent, settings };
+  return { store, agent: effectiveAgent, settings };
 }
 
 export type GlobalAiSettings = {
@@ -99,8 +139,8 @@ export function buildSystemPrompt(
     channel === "web"
       ? "showProducts (multiple) or showProduct (one) — the web chat renders rich cards inline"
       : channel === "whatsapp"
-      ? "sendProductCard (one product at a time) so WhatsApp shows the photo, price, stock and a Buy now / View site button"
-      : "sendProductCarousel (multiple) or sendProductCard (one) so Messenger shows the image, price, stock and buy button";
+        ? "sendProductCard (one product at a time) so WhatsApp shows the photo, price, stock and a Buy now / View site button"
+        : "sendProductCarousel (multiple) or sendProductCard (one) so Messenger shows the image, price, stock and buy button";
   const k = (agent.knowledge ?? {}) as Record<string, any>;
   const supported = (settings?.supported_languages ?? []).filter(Boolean);
   const langHint =
@@ -111,8 +151,8 @@ export function buildSystemPrompt(
     agent.language === "bn"
       ? "Respond in Bangla."
       : agent.language === "en"
-      ? "Respond in English."
-      : "Respond in the same language the customer uses (Bangla or English).";
+        ? "Respond in English."
+        : "Respond in the same language the customer uses (Bangla or English).";
 
   const emoji = agent.use_emoji ? "Use friendly emojis sparingly." : "Do not use emojis.";
   const human = agent.human_like ? "Sound natural and human, not robotic." : "";
@@ -143,7 +183,6 @@ export function buildSystemPrompt(
     ? payMethods.map((m) => `${m.label} (${m.id})`).join(", ")
     : "none configured — ask the customer to contact the store for payment";
 
-
   const behaviourLines = [
     salesFocused
       ? "- Be sales-focused: highlight benefits, offers and next steps, and gently move the customer toward a purchase — without pressure or exaggeration."
@@ -172,14 +211,26 @@ export function buildSystemPrompt(
     .join("\n");
 
   const sourceLines = [
-    srcOn("products") ? "- Products and prices: use the product tools." : "- Product catalogue access is OFF: do not discuss specific products or prices.",
-    srcOn("stock") ? "- Stock/availability: use the stock value from product tool results." : "- Stock data is OFF: do not state availability.",
+    srcOn("products")
+      ? "- Products and prices: use the product tools."
+      : "- Product catalogue access is OFF: do not discuss specific products or prices.",
+    srcOn("stock")
+      ? "- Stock/availability: use the stock value from product tool results."
+      : "- Stock data is OFF: do not state availability.",
     srcOn("categories") ? "- Categories: use listCategories." : "- Category data is OFF.",
-    srcOn("delivery") ? "- Delivery info: use the delivery facts below / delivery tools." : "- Delivery data is OFF: do not quote delivery charges or times.",
-    srcOn("payments") ? "- Payment methods: use the payment facts below." : "- Payment data is OFF: do not list payment methods.",
-    srcOn("returns") ? "- Return & exchange policy: use the policy below." : "- Return policy is OFF: refer the customer to the merchant panel.",
+    srcOn("delivery")
+      ? "- Delivery info: use the delivery facts below / delivery tools."
+      : "- Delivery data is OFF: do not quote delivery charges or times.",
+    srcOn("payments")
+      ? "- Payment methods: use the payment facts below."
+      : "- Payment data is OFF: do not list payment methods.",
+    srcOn("returns")
+      ? "- Return & exchange policy: use the policy below."
+      : "- Return policy is OFF: refer the customer to the merchant panel.",
     srcOn("warranty") ? "- Warranty: use the warranty facts below." : "- Warranty data is OFF.",
-    srcOn("store_info") ? "- Store information: name, address, phone, description below." : "- Store info is OFF: share only what the customer already knows.",
+    srcOn("store_info")
+      ? "- Store information: name, address, phone, description below."
+      : "- Store info is OFF: share only what the customer already knows.",
     srcOn("business_hours") ? "- Business hours: as listed below." : "- Business hours are OFF.",
   ].join("\n");
 
@@ -199,7 +250,8 @@ export function buildSystemPrompt(
   // free-form text as if it were the current focus). The focus block below is
   // the single source of truth for product facts this turn.
   const stateLines: string[] = [];
-  const po = state?.pending_order && Object.keys(state.pending_order).length ? state.pending_order : null;
+  const po =
+    state?.pending_order && Object.keys(state.pending_order).length ? state.pending_order : null;
   if (po) {
     const parts = [
       po.qty ? `qty=${po.qty}` : null,
@@ -208,7 +260,8 @@ export function buildSystemPrompt(
       po.full_address ? `address=${String(po.full_address).slice(0, 120)}` : null,
       po.payment_method ? `payment=${po.payment_method}` : null,
     ].filter(Boolean);
-    if (parts.length) stateLines.push(`Pending order slot (already collected): ${parts.join(", ")}`);
+    if (parts.length)
+      stateLines.push(`Pending order slot (already collected): ${parts.join(", ")}`);
   }
   const lo = state?.last_order;
   if (lo?.order_id) {
@@ -221,7 +274,6 @@ export function buildSystemPrompt(
     ? `# Latest customer message — answer this first\n${latestUserText}\n\nRule: Your next reply must answer this exact latest message. Use older conversation only as background, never as a replacement for the latest message.`
     : "";
 
-
   // Focus product block — server-resolved for THIS turn only. If set, it is the
   // ONLY product the assistant is allowed to describe/name/price/image in text.
   let focusBlock = "";
@@ -230,7 +282,11 @@ export function buildSystemPrompt(
     const kind = productKind(p);
     const feat = stringifyProductField(p.features).slice(0, 400);
     const varList = Array.isArray(p.variants)
-      ? p.variants.map((v: any) => v?.label || v?.name).filter(Boolean).slice(0, 10).join(", ")
+      ? p.variants
+          .map((v: any) => v?.label || v?.name)
+          .filter(Boolean)
+          .slice(0, 10)
+          .join(", ")
       : "";
     focusBlock = [
       `# Focus product (ONLY product allowed in this reply)`,
@@ -247,10 +303,14 @@ export function buildSystemPrompt(
       varList ? `variants: ${varList}` : "",
       ``,
       `Rule: every product fact in your reply MUST come from this record. Do not name, describe, price, or image any other product in this reply. To show it, call ${channel === "web" ? "showProduct" : "sendProductCard"} with productId=${p.id}.`,
-    ].filter(Boolean).join("\n");
-
+    ]
+      .filter(Boolean)
+      .join("\n");
   } else if (focus?.ambiguous && focus.candidates?.length) {
-    const list = focus.candidates.slice(0, 4).map((c: any, i: number) => `${i + 1}. ${c.name} — ৳${c.price} (id ${c.id})`).join("\n");
+    const list = focus.candidates
+      .slice(0, 4)
+      .map((c: any, i: number) => `${i + 1}. ${c.name} — ৳${c.price} (id ${c.id})`)
+      .join("\n");
     focusBlock = [
       `# Focus product — AMBIGUOUS`,
       `The customer's message could refer to multiple products:`,
@@ -350,22 +410,26 @@ ${srcOn("store_info") ? `Store info: ${k.store_info || store.description || ""}`
 
 FAQs:
 ${faqs}`;
-
 }
-
-
 
 // ---------- Helpers ----------
 const PUBLIC_MESSENGER_ORIGIN = "https://orzen-commerce.lovable.app";
 
 function publicOrigin(ctx: AgentContext) {
-  return (ctx.siteOrigin || process.env.PUBLIC_APP_URL || process.env.VITE_APP_URL || PUBLIC_MESSENGER_ORIGIN).replace(/\/$/, "");
+  return (
+    ctx.siteOrigin ||
+    process.env.PUBLIC_APP_URL ||
+    process.env.VITE_APP_URL ||
+    PUBLIC_MESSENGER_ORIGIN
+  ).replace(/\/$/, "");
 }
 
 function productUrl(ctx: AgentContext, slug: string | null | undefined, productId: string) {
   const base = publicOrigin(ctx);
   const s = ctx.storeSlug || slug || "";
-  return s ? `${base.replace(/\/$/, "")}/store/${s}/product/${productId}` : `${base}/product/${productId}`;
+  return s
+    ? `${base.replace(/\/$/, "")}/store/${s}/product/${productId}`
+    : `${base}/product/${productId}`;
 }
 
 function absoluteUrl(ctx: AgentContext, value: string | null | undefined) {
@@ -383,41 +447,121 @@ function firstImage(ctx: AgentContext, product: any) {
 }
 
 const BANGLA_SEARCH_SYNONYMS: Record<string, string[]> = {
-  "ব্যাগ": ["bag", "school bag", "backpack"],
-  "স্কুল": ["school"],
-  "কলম": ["pen"],
-  "পেন": ["pen"],
-  "বই": ["book"],
-  "জুতা": ["shoe", "shoes", "sandal"],
-  "ঘড়ি": ["watch", "clock"],
-  "কাপড়": ["cloth", "dress", "shirt"],
-  "ড্রেস": ["dress"],
-  "শার্ট": ["shirt"],
-  "প্যান্ট": ["pant", "trouser"],
-  "ফোন": ["phone", "mobile"],
-  "মোবাইল": ["mobile", "phone"],
-  "চার্জার": ["charger"],
-  "হেডফোন": ["headphone", "earphone"],
-  "ইয়ারফোন": ["earphone", "headphone"],
-  "প্রজেক্টর": ["projector"],
-  "বেডশিট": ["bedsheet", "bed sheet"],
-  "ফ্যান": ["fan"],
-  "লাইট": ["light"],
+  ব্যাগ: ["bag", "school bag", "backpack"],
+  স্কুল: ["school"],
+  কলম: ["pen"],
+  পেন: ["pen"],
+  বই: ["book"],
+  জুতা: ["shoe", "shoes", "sandal"],
+  ঘড়ি: ["watch", "clock"],
+  কাপড়: ["cloth", "dress", "shirt"],
+  ড্রেস: ["dress"],
+  শার্ট: ["shirt"],
+  প্যান্ট: ["pant", "trouser"],
+  ফোন: ["phone", "mobile"],
+  মোবাইল: ["mobile", "phone"],
+  চার্জার: ["charger"],
+  হেডফোন: ["headphone", "earphone"],
+  ইয়ারফোন: ["earphone", "headphone"],
+  প্রজেক্টর: ["projector"],
+  বেডশিট: ["bedsheet", "bed sheet"],
+  ফ্যান: ["fan"],
+  লাইট: ["light"],
 };
 
 const PRODUCT_STOPWORDS = new Set([
-  "this", "that", "these", "those", "show", "give", "send", "photo", "image", "picture", "pic", "please", "price", "details", "hi", "hai", "hey", "hii", "hiii", "yo", "sup", "ok", "okay", "hmm", "hello", "helo", "news", "status", "you", "your", "how", "are",
-  "এটা", "এইটা", "ওটা", "এই", "ওই", "এর", "টার", "একটা", "একটি", "ছবি", "দাও", "দেন", "দেখাও", "দেখান", "কি", "কী", "আছে", "দাম", "কত", "ডিটেইলস", "বিস্তারিত", "প্লিজ", "আমাদের", "আপনাদের", "তুমি", "তোমার", "আপনি", "আপনার", "খবর", "অবস্থা", "কেমন", "ভালো", "আছেন", "আছো", "হাই", "হ্যালো", "হেলো", "হি", "হেই", "হ্যা", "হ্যাঁ", "হুম", "হুঁ", "আচ্ছা", "ওহে", "ইয়ো", "ওকে", "সালাম",
+  "this",
+  "that",
+  "these",
+  "those",
+  "show",
+  "give",
+  "send",
+  "photo",
+  "image",
+  "picture",
+  "pic",
+  "please",
+  "price",
+  "details",
+  "hi",
+  "hai",
+  "hey",
+  "hii",
+  "hiii",
+  "yo",
+  "sup",
+  "ok",
+  "okay",
+  "hmm",
+  "hello",
+  "helo",
+  "news",
+  "status",
+  "you",
+  "your",
+  "how",
+  "are",
+  "এটা",
+  "এইটা",
+  "ওটা",
+  "এই",
+  "ওই",
+  "এর",
+  "টার",
+  "একটা",
+  "একটি",
+  "ছবি",
+  "দাও",
+  "দেন",
+  "দেখাও",
+  "দেখান",
+  "কি",
+  "কী",
+  "আছে",
+  "দাম",
+  "কত",
+  "ডিটেইলস",
+  "বিস্তারিত",
+  "প্লিজ",
+  "আমাদের",
+  "আপনাদের",
+  "তুমি",
+  "তোমার",
+  "আপনি",
+  "আপনার",
+  "খবর",
+  "অবস্থা",
+  "কেমন",
+  "ভালো",
+  "আছেন",
+  "আছো",
+  "হাই",
+  "হ্যালো",
+  "হেলো",
+  "হি",
+  "হেই",
+  "হ্যা",
+  "হ্যাঁ",
+  "হুম",
+  "হুঁ",
+  "আচ্ছা",
+  "ওহে",
+  "ইয়ো",
+  "ওকে",
+  "সালাম",
 ]);
 
 function searchTerms(raw: string) {
   const compact = raw.toLowerCase().replace(/[.,!?;:()\[\]{}"'`~|/\\]+/g, " ");
   const terms = new Set<string>();
-  for (const token of compact.split(/\s+/).map((t) => t.trim()).filter(Boolean)) {
-    const variants = new Set([
-      token,
-      token.replace(/(ের|এর|টি|টা|গুলো|গুলি|গুলোতে|গুলোর|টার|টির)$/u, ""),
-    ].filter(Boolean));
+  for (const token of compact
+    .split(/\s+/)
+    .map((t) => t.trim())
+    .filter(Boolean)) {
+    const variants = new Set(
+      [token, token.replace(/(ের|এর|টি|টা|গুলো|গুলি|গুলোতে|গুলোর|টার|টির)$/u, "")].filter(Boolean),
+    );
     for (const variant of variants) {
       // Require ≥3 chars: prevents short greetings/particles like "হি", "হে",
       // "hi", "ok" from being treated as product keywords and hallucinating a focus product.
@@ -434,7 +578,9 @@ function searchTerms(raw: string) {
 }
 
 function isBroadBrowseQuery(raw: string) {
-  return /প্রোডাক্ট|পণ্য|কি আছে|কী আছে|দেখান|দেখাও|সব|নতুন|বেস্ট|best|new|popular|product|products|items|show|browse|catalog/i.test(raw);
+  return /প্রোডাক্ট|পণ্য|কি আছে|কী আছে|দেখান|দেখাও|সব|নতুন|বেস্ট|best|new|popular|product|products|items|show|browse|catalog/i.test(
+    raw,
+  );
 }
 
 function stringifyProductField(value: any): string {
@@ -448,7 +594,9 @@ export type ProductKind = "physical" | "digital" | "service" | "subscription";
 
 export function productKind(product: any): ProductKind {
   const t = String(product?.product_type ?? "physical").toLowerCase();
-  return t === "digital" || t === "service" || t === "subscription" ? (t as ProductKind) : "physical";
+  return t === "digital" || t === "service" || t === "subscription"
+    ? (t as ProductKind)
+    : "physical";
 }
 
 /** Only physical products may be ordered inside Messenger. */
@@ -490,7 +638,9 @@ function productSummary(ctx: AgentContext, product: any, categoryName?: string |
     status: product.status,
     image_url: firstImage(ctx, product),
     primary_image_url: firstImage(ctx, product),
-    gallery: Array.isArray(product.gallery) ? product.gallery.map((img: string) => absoluteUrl(ctx, img)).filter(Boolean) : [],
+    gallery: Array.isArray(product.gallery)
+      ? product.gallery.map((img: string) => absoluteUrl(ctx, img)).filter(Boolean)
+      : [],
     features: product.features,
     specifications: product.specifications,
     variants: product.variants,
@@ -519,10 +669,13 @@ export async function loadOrderFlow(storeId: string) {
 /** Payment methods a Messenger order may use for this store. */
 export async function loadMessengerPaymentMethods(storeId: string) {
   const sb = admin();
-  const { data } = await sb.from("stores").select("payments_config").eq("id", storeId).maybeSingle();
+  const { data } = await sb
+    .from("stores")
+    .select("payments_config")
+    .eq("id", storeId)
+    .maybeSingle();
   return messengerPaymentMethods((data as any)?.payments_config);
 }
-
 
 async function getConversationSlot(conversationId: string): Promise<Record<string, any>> {
   const sb = admin();
@@ -535,10 +688,7 @@ async function getConversationSlot(conversationId: string): Promise<Record<strin
   return (profile.pending_order ?? {}) as Record<string, any>;
 }
 
-async function updateConversationSlot(
-  conversationId: string,
-  patch: Record<string, any>,
-) {
+async function updateConversationSlot(conversationId: string, patch: Record<string, any>) {
   const sb = admin();
   const { data } = await sb
     .from("ai_conversations")
@@ -646,7 +796,17 @@ async function blockDuplicateMessengerToolOrder(opts: {
 // ---------- Focus product resolver (root-cause fix for wrong-image/wrong-text) ----------
 
 const DEICTIC_TOKENS = [
-  "this", "that", "it", "এটা", "এইটা", "ওটা", "ওইটা", "এই", "ওই", "সেই", "সেটা",
+  "this",
+  "that",
+  "it",
+  "এটা",
+  "এইটা",
+  "ওটা",
+  "ওইটা",
+  "এই",
+  "ওই",
+  "সেই",
+  "সেটা",
 ];
 
 const PRODUCT_SELECT_MIN =
@@ -673,7 +833,10 @@ export function scoreProductAgainstQuery(
   const sku = String(product.sku ?? "").toLowerCase();
   const code = String(product.product_code ?? "").toLowerCase();
   const haystack = [
-    name, brand, sku, code,
+    name,
+    brand,
+    sku,
+    code,
     String(product.short_description ?? "").toLowerCase(),
     String(product.description ?? "").toLowerCase(),
     stringifyProductField(product.features).toLowerCase(),
@@ -682,13 +845,13 @@ export function scoreProductAgainstQuery(
   ].join(" ");
   let score = 0;
   const p = phrase.toLowerCase().trim();
-  if (p && name === p) score += 200;                     // exact name match wins
+  if (p && name === p) score += 200; // exact name match wins
   if (p && name && name.includes(p) && p.length >= 3) score += 100;
   if (p && haystack.includes(p) && p.length >= 3) score += 40;
   for (const t of terms) {
     if (!t) continue;
-    if (sku && sku === t) score += 150;                  // exact SKU
-    if (code && code === t) score += 150;                // exact product code
+    if (sku && sku === t) score += 150; // exact SKU
+    if (code && code === t) score += 150; // exact product code
     if (name.includes(t)) score += 30;
     if (brand === t) score += 25;
     else if (brand && brand.includes(t)) score += 10;
@@ -749,7 +912,13 @@ export async function resolveFocusProduct(opts: {
         .eq("id", ids[0])
         .eq("status", "active")
         .maybeSingle();
-      if (p) return { product: p, ambiguous: false, candidates: [], canonical_caption: canonicalCaption(p as any) };
+      if (p)
+        return {
+          product: p,
+          ambiguous: false,
+          candidates: [],
+          canonical_caption: canonicalCaption(p as any),
+        };
     }
     // Multiple recent products → let the search branch below try to
     // disambiguate; if it also fails, we'll return ambiguous with these ids.
@@ -787,7 +956,9 @@ export async function resolveFocusProduct(opts: {
         .eq("conversation_id", opts.conversationId)
         .order("created_at", { ascending: false })
         .limit(4);
-      const ids = Array.from(new Set((recs ?? []).map((r: any) => r.product_id).filter(Boolean))).slice(0, 4);
+      const ids = Array.from(
+        new Set((recs ?? []).map((r: any) => r.product_id).filter(Boolean)),
+      ).slice(0, 4);
       if (ids.length >= 2) {
         const { data: prods } = await sb
           .from("products")
@@ -798,7 +969,10 @@ export async function resolveFocusProduct(opts: {
           product: null,
           ambiguous: true,
           candidates: (prods ?? []).map((p: any) => ({
-            id: p.id, name: p.name, price: p.price, primary_image_url: p.primary_image_url,
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            primary_image_url: p.primary_image_url,
           })),
         };
       }
@@ -814,7 +988,9 @@ export async function resolveFocusProduct(opts: {
       product: null,
       ambiguous: true,
       candidates: scored.slice(0, 4).map((row) => ({
-        id: row.product.id, name: row.product.name, price: row.product.price,
+        id: row.product.id,
+        name: row.product.name,
+        price: row.product.price,
         primary_image_url: row.product.primary_image_url,
       })),
     };
@@ -829,7 +1005,6 @@ export async function resolveFocusProduct(opts: {
 
 // ---------- Tools ----------
 export function buildTools(ctx: AgentContext) {
-
   const sb = admin();
   const storeId = ctx.storeId;
 
@@ -857,7 +1032,9 @@ export function buildTools(ctx: AgentContext) {
         context: contextText.slice(0, 500),
       }));
       await sb.from("ai_product_recommendations").insert(rows as any);
-    } catch { /* non-fatal */ }
+    } catch {
+      /* non-fatal */
+    }
   }
 
   async function categoryMap() {
@@ -876,7 +1053,10 @@ export function buildTools(ctx: AgentContext) {
         minPrice: z.number().nonnegative().optional(),
         maxPrice: z.number().nonnegative().optional(),
         inStockOnly: z.boolean().optional().default(true),
-        sort: z.enum(["relevance", "price_asc", "price_desc", "bestseller", "newest"]).optional().default("relevance"),
+        sort: z
+          .enum(["relevance", "price_asc", "price_desc", "bestseller", "newest"])
+          .optional()
+          .default("relevance"),
         limit: z.number().int().min(1).max(10).optional().default(6),
       }),
       execute: async (input) => {
@@ -905,7 +1085,10 @@ export function buildTools(ctx: AgentContext) {
         else if (input.sort === "price_desc") q = q.order("price", { ascending: false });
         else if (input.sort === "bestseller") q = q.order("total_sold", { ascending: false });
         else if (input.sort === "newest") q = q.order("created_at", { ascending: false });
-        else q = q.order("is_featured", { ascending: false }).order("total_sold", { ascending: false });
+        else
+          q = q
+            .order("is_featured", { ascending: false })
+            .order("total_sold", { ascending: false });
         const { data } = await q.limit(120);
         const blocked = await getBlacklistedIds();
         const terms = searchTerms(input.query);
@@ -925,14 +1108,26 @@ export function buildTools(ctx: AgentContext) {
               stringifyProductField(p.features),
               stringifyProductField(p.specifications),
               stringifyProductField(p.variants),
-            ].join(" ").toLowerCase();
+            ]
+              .join(" ")
+              .toLowerCase();
             let score = 0;
             if (phrase && haystack.includes(phrase)) score += 60;
             for (const term of terms) {
               if (haystack.includes(term)) score += 25;
-              if (String(p.name ?? "").toLowerCase().includes(term)) score += 20;
+              if (
+                String(p.name ?? "")
+                  .toLowerCase()
+                  .includes(term)
+              )
+                score += 20;
               if (String(categoryName).toLowerCase().includes(term)) score += 15;
-              if (String(p.brand ?? "").toLowerCase().includes(term)) score += 10;
+              if (
+                String(p.brand ?? "")
+                  .toLowerCase()
+                  .includes(term)
+              )
+                score += 10;
             }
             if (p.stock > 0) score += 8;
             if (p.is_featured) score += 6;
@@ -945,9 +1140,11 @@ export function buildTools(ctx: AgentContext) {
         const noMatch = hasMeaningfulTerms && matches.length === 0;
         // When the query matches nothing, never pass off unrelated products as
         // "recommendations" — return a small suggestion list instead and don't log it.
-        const ranked = noMatch ? scored : (hasMeaningfulTerms ? matches : scored);
+        const ranked = noMatch ? scored : hasMeaningfulTerms ? matches : scored;
         ranked.sort((a, b) => b.score - a.score);
-        const filtered = ranked.slice(0, noMatch ? 3 : (input.limit ?? 6)).map((row) => row.product);
+        const filtered = ranked
+          .slice(0, noMatch ? 3 : (input.limit ?? 6))
+          .map((row) => row.product);
         if (!noMatch) await logRecommendations("searchProducts", filtered, input.query);
         return {
           products: filtered.map((p: any) => productSummary(ctx, p, cats.get(p.category_id))),
@@ -958,7 +1155,6 @@ export function buildTools(ctx: AgentContext) {
             ? "No product matched the customer's query. Tell the customer this item is not available and only offer these as optional alternatives — do not claim they match the request."
             : undefined,
         };
-
       },
     }),
 
@@ -977,12 +1173,19 @@ export function buildTools(ctx: AgentContext) {
           .eq("conversation_id", convId)
           .order("created_at", { ascending: false })
           .limit(Math.max(Number(limit ?? 5) * 3, 5));
-        const ids = Array.from(new Set((recs ?? []).map((r: any) => r.product_id).filter(Boolean))).slice(0, limit ?? 5);
+        const ids = Array.from(
+          new Set((recs ?? []).map((r: any) => r.product_id).filter(Boolean)),
+        ).slice(0, limit ?? 5);
         if (!ids.length) return { products: [] };
         const [blocked, cats, productsResult] = await Promise.all([
           getBlacklistedIds(),
           categoryMap(),
-          sb.from("products").select(productSelect).eq("store_id", storeId).eq("status", "active").in("id", ids),
+          sb
+            .from("products")
+            .select(productSelect)
+            .eq("store_id", storeId)
+            .eq("status", "active")
+            .in("id", ids),
         ]);
         const byId = new Map((productsResult.data ?? []).map((p: any) => [p.id, p]));
         const products = ids
@@ -994,7 +1197,8 @@ export function buildTools(ctx: AgentContext) {
     }),
 
     getProduct: tool({
-      description: "Get full details of one product by id. Use before quoting exact price or specs.",
+      description:
+        "Get full details of one product by id. Use before quoting exact price or specs.",
       inputSchema: z.object({ productId: z.string().uuid() }),
       execute: async ({ productId }) => {
         const blocked = await getBlacklistedIds();
@@ -1017,10 +1221,7 @@ export function buildTools(ctx: AgentContext) {
       description: "List product categories in this store.",
       inputSchema: z.object({}),
       execute: async () => {
-        const { data } = await sb
-          .from("categories")
-          .select("id,name")
-          .eq("store_id", storeId);
+        const { data } = await sb.from("categories").select("id,name").eq("store_id", storeId);
         return data ?? [];
       },
     }),
@@ -1085,7 +1286,11 @@ export function buildTools(ctx: AgentContext) {
           .eq("id", productId)
           .maybeSingle();
         if (!p) return [];
-        if (kind !== "similar" && Array.isArray(p.related_product_ids) && p.related_product_ids.length) {
+        if (
+          kind !== "similar" &&
+          Array.isArray(p.related_product_ids) &&
+          p.related_product_ids.length
+        ) {
           const { data } = await sb
             .from("products")
             .select(productSelect)
@@ -1147,11 +1352,17 @@ export function buildTools(ctx: AgentContext) {
       inputSchema: z.object({ productId: z.string().uuid() }),
       execute: async ({ productId }) => {
         if (ctx.focusProductId && productId !== ctx.focusProductId) {
-          return { sent: false, error: "must_use_focus_product", focus_product_id: ctx.focusProductId };
+          return {
+            sent: false,
+            error: "must_use_focus_product",
+            focus_product_id: ctx.focusProductId,
+          };
         }
         const { data: p } = await sb
           .from("products")
-          .select("id,name,slug,short_description,price,old_price,stock,product_type,meta,primary_image_url,gallery")
+          .select(
+            "id,name,slug,short_description,price,old_price,stock,product_type,meta,primary_image_url,gallery",
+          )
           .eq("store_id", storeId)
           .eq("id", productId)
           .maybeSingle();
@@ -1159,10 +1370,12 @@ export function buildTools(ctx: AgentContext) {
 
         const kind = productKind(p);
         const orderable = kind === "physical";
-        const priceLine = p.old_price
-          ? `৳${p.price} (was ৳${p.old_price})`
-          : `৳${p.price}`;
-        const statusLine = orderable ? (p.stock > 0 ? "In stock" : "Out of stock") : "Buy on website";
+        const priceLine = p.old_price ? `৳${p.price} (was ৳${p.old_price})` : `৳${p.price}`;
+        const statusLine = orderable
+          ? p.stock > 0
+            ? "In stock"
+            : "Out of stock"
+          : "Buy on website";
         const subtitle = `${priceLine} · ${statusLine}${p.short_description ? " — " + p.short_description : ""}`;
         try {
           await fbSendProductCard(ctx.pageToken!, ctx.psid!, {
@@ -1177,9 +1390,12 @@ export function buildTools(ctx: AgentContext) {
           // never deliver. Quick replies arrive as ordinary message events, so
           // the customer always has a working "Buy now" tap.
           if (orderable && p.stock > 0) {
-            await fbSendQuickReplies(ctx.pageToken!, ctx.psid!, "অর্ডার করতে নিচের বাটনে চাপুন 👇", [
-              { title: `কিনব: ${p.name}`, payload: `BUY_${p.id}` },
-            ]).catch(() => undefined);
+            await fbSendQuickReplies(
+              ctx.pageToken!,
+              ctx.psid!,
+              "অর্ডার করতে নিচের বাটনে চাপুন 👇",
+              [{ title: `কিনব: ${p.name}`, payload: `BUY_${p.id}` }],
+            ).catch(() => undefined);
           }
           if (ctx.conversationId) {
             await sb.from("ai_messages").insert({
@@ -1201,7 +1417,6 @@ export function buildTools(ctx: AgentContext) {
             product_url: productUrl(ctx, p.slug, p.id),
             ...(kind === "subscription" ? { subscription: subscriptionBilling(p) } : {}),
           };
-
         } catch (e) {
           return { sent: false, error: (e as Error).message };
         }
@@ -1217,7 +1432,9 @@ export function buildTools(ctx: AgentContext) {
       execute: async ({ productIds }) => {
         const { data } = await sb
           .from("products")
-          .select("id,name,slug,short_description,price,old_price,stock,product_type,meta,primary_image_url,gallery")
+          .select(
+            "id,name,slug,short_description,price,old_price,stock,product_type,meta,primary_image_url,gallery",
+          )
           .eq("store_id", storeId)
           .in("id", productIds);
         const items = (data ?? []).map((p) => {
@@ -1245,7 +1462,9 @@ export function buildTools(ctx: AgentContext) {
               ctx.pageToken!,
               ctx.psid!,
               "কোনটি অর্ডার করতে চান? নিচের বাটনে চাপুন 👇",
-              buyable.slice(0, 10).map((i) => ({ title: `কিনব: ${i.title}`, payload: `BUY_${i.product_id}` })),
+              buyable
+                .slice(0, 10)
+                .map((i) => ({ title: `কিনব: ${i.title}`, payload: `BUY_${i.product_id}` })),
             ).catch(() => undefined);
           }
           if (ctx.conversationId) {
@@ -1268,7 +1487,6 @@ export function buildTools(ctx: AgentContext) {
               product_url: i.buy_url,
             })),
           };
-
         } catch (e) {
           return { sent: false, error: (e as Error).message };
         }
@@ -1317,11 +1535,17 @@ export function buildTools(ctx: AgentContext) {
       inputSchema: z.object({ productId: z.string().uuid() }),
       execute: async ({ productId }) => {
         if (ctx.focusProductId && productId !== ctx.focusProductId) {
-          return { sent: false, error: "must_use_focus_product", focus_product_id: ctx.focusProductId };
+          return {
+            sent: false,
+            error: "must_use_focus_product",
+            focus_product_id: ctx.focusProductId,
+          };
         }
         const { data: p } = await sb
           .from("products")
-          .select("id,name,slug,short_description,price,old_price,stock,product_type,meta,primary_image_url,gallery")
+          .select(
+            "id,name,slug,short_description,price,old_price,stock,product_type,meta,primary_image_url,gallery",
+          )
           .eq("store_id", storeId)
           .eq("id", productId)
           .maybeSingle();
@@ -1332,7 +1556,11 @@ export function buildTools(ctx: AgentContext) {
         const url = productUrl(ctx, p.slug, p.id);
         const image = firstImage(ctx, p);
         const priceLine = p.old_price ? `৳${p.price} (আগে ৳${p.old_price})` : `৳${p.price}`;
-        const statusLine = orderable ? (p.stock > 0 ? "স্টকে আছে" : "স্টকে নেই") : "ওয়েবসাইট থেকে কিনতে হবে";
+        const statusLine = orderable
+          ? p.stock > 0
+            ? "স্টকে আছে"
+            : "স্টকে নেই"
+          : "ওয়েবসাইট থেকে কিনতে হবে";
         const caption = [`*${p.name}*`, `${priceLine} · ${statusLine}`, p.short_description ?? ""]
           .filter(Boolean)
           .join("\n");
@@ -1421,8 +1649,6 @@ export function buildTools(ctx: AgentContext) {
     });
   }
 
-
-
   // Web-only display tools — return structured JSON that the chat panel renders inline.
   if (ctx.channel === "web") {
     async function loadProducts(ids: string[]) {
@@ -1445,15 +1671,22 @@ export function buildTools(ctx: AgentContext) {
       inputSchema: z.object({ productId: z.string().uuid() }),
       execute: async ({ productId }) => {
         if (ctx.focusProductId && productId !== ctx.focusProductId) {
-          return { rendered: false, error: "must_use_focus_product", focus_product_id: ctx.focusProductId };
+          return {
+            rendered: false,
+            error: "must_use_focus_product",
+            focus_product_id: ctx.focusProductId,
+          };
         }
         const products = await loadProducts([productId]);
         if (!products.length) return { rendered: false, error: "not_found" };
         await logRecommendations("showProduct", products, "web_card");
-        return { rendered: true, products, canonical_caption: canonicalCaption(products[0] as any) };
+        return {
+          rendered: true,
+          products,
+          canonical_caption: canonicalCaption(products[0] as any),
+        };
       },
     });
-
 
     tools.showProducts = tool({
       description:
@@ -1529,7 +1762,6 @@ export function buildTools(ctx: AgentContext) {
           allowed_payment_methods: (await loadMessengerPaymentMethods(storeId)).map((m) => m.id),
         };
       },
-
     });
 
     tools.finalizeOrder = tool({
@@ -1545,7 +1777,6 @@ export function buildTools(ctx: AgentContext) {
         // Quantity is optional in some store configs — default to 1.
         const qty = Math.max(1, Number(slot.qty ?? 1) || 1);
         slot.qty = qty;
-
 
         const { data: product } = await sb
           .from("products")
@@ -1566,8 +1797,8 @@ export function buildTools(ctx: AgentContext) {
               "Do not create an order. Tell the customer this is purchased on the website and send the product_url.",
           };
         }
-        if (product.stock < slot.qty) return { ok: false, error: "out_of_stock", available: product.stock };
-
+        if (product.stock < slot.qty)
+          return { ok: false, error: "out_of_stock", available: product.stock };
 
         const duplicateBlocked = await blockDuplicateMessengerToolOrder({
           sb,
@@ -1602,7 +1833,9 @@ export function buildTools(ctx: AgentContext) {
             customer_name: slot.customer_name,
             phone: phoneNorm || slot.phone,
             address: slot.full_address,
-            area: [slot.village, slot.union, slot.upazila, slot.district].filter(Boolean).join(", ") || null,
+            area:
+              [slot.village, slot.union, slot.upazila, slot.district].filter(Boolean).join(", ") ||
+              null,
             payment_method: slot.payment_method,
             subtotal,
             delivery_amount: delivery,
@@ -1653,7 +1886,8 @@ export function buildTools(ctx: AgentContext) {
           product_name: product.name,
           qty,
           confirmation_message: confirmation,
-          instruction: "Send confirmation_message to the customer as written (translate only if the customer's language clearly differs).",
+          instruction:
+            "Send confirmation_message to the customer as written (translate only if the customer's language clearly differs).",
         };
       },
     });
@@ -1669,7 +1903,9 @@ export function buildTools(ctx: AgentContext) {
       execute: async ({ orderId, invoice_no, phone }) => {
         let q = sb
           .from("orders")
-          .select("id,invoice_no,status,customer_name,courier_name,courier_tracking_id,courier_status,created_at")
+          .select(
+            "id,invoice_no,status,customer_name,courier_name,courier_tracking_id,courier_status,created_at",
+          )
           .eq("store_id", storeId)
           .order("created_at", { ascending: false })
           .limit(3);
@@ -1729,11 +1965,14 @@ export function buildTools(ctx: AgentContext) {
         "Hand this conversation to a human agent. Use when you cannot answer confidently or the customer asks for a person.",
       inputSchema: z.object({ reason: z.string().min(1).max(500) }),
       execute: async ({ reason }) => {
-        await sb.from("ai_conversations").update({
-          handoff_mode: "human",
-          handoff_reason: reason,
-          handoff_at: new Date().toISOString(),
-        } as any).eq("id", convId);
+        await sb
+          .from("ai_conversations")
+          .update({
+            handoff_mode: "human",
+            handoff_reason: reason,
+            handoff_at: new Date().toISOString(),
+          } as any)
+          .eq("id", convId);
         await sb.from("admin_notifications").insert({
           store_id: storeId,
           kind: "human_handoff",
@@ -1792,11 +2031,7 @@ function generationParams(settings: GlobalAiSettings | null | undefined, modelId
   return params;
 }
 
-export function streamAgentResponse(opts: {
-  ctx: AgentContext;
-  messages: any[];
-  system: string;
-}) {
+export function streamAgentResponse(opts: { ctx: AgentContext; messages: any[]; system: string }) {
   return async () => {
     const { model, modelId, settings } = await getModelForStore();
     const result = streamText({
@@ -1814,12 +2049,20 @@ export function streamAgentResponse(opts: {
   };
 }
 
-function findDuplicateBlockedReply(value: any, depth = 0, seen = new WeakSet<object>()): string | null {
+function findDuplicateBlockedReply(
+  value: any,
+  depth = 0,
+  seen = new WeakSet<object>(),
+): string | null {
   if (!value || depth > 8) return null;
   if (typeof value !== "object") return null;
   if (seen.has(value)) return null;
   seen.add(value);
-  if (value.error === "duplicate_blocked" && typeof value.reply === "string" && value.reply.trim()) {
+  if (
+    value.error === "duplicate_blocked" &&
+    typeof value.reply === "string" &&
+    value.reply.trim()
+  ) {
     return value.reply;
   }
   if (Array.isArray(value)) {
@@ -1915,4 +2158,3 @@ export async function generateAgentReply(opts: {
   if (duplicateReply) return { text: duplicateReply, facts: {} as MessengerPayloadFacts };
   return { text: result.text as string, facts: payloadFactsFromResult(result) };
 }
-

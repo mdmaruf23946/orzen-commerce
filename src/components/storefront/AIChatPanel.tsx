@@ -18,6 +18,22 @@ type WebProduct = {
 
 const CID_KEY_PREFIX = "orzen_ai_cid:";
 
+const GENERIC_CHAT_ERROR =
+  "দুঃখিত, এই মুহূর্তে উত্তর দেওয়া যাচ্ছে না। একটু পরে আবার চেষ্টা করুন। / Sorry, we couldn't reply right now. Please try again.";
+
+/** Turn raw server/network errors (sometimes raw JSON) into a readable message. */
+function readableChatError(raw?: string | null): string {
+  const text = (raw ?? "").trim();
+  if (!text) return GENERIC_CHAT_ERROR;
+  try {
+    const parsed = JSON.parse(text);
+    const msg = typeof parsed?.error === "string" ? parsed.error : "";
+    return msg || GENERIC_CHAT_ERROR;
+  } catch {
+    return text.startsWith("{") || text.length > 200 ? GENERIC_CHAT_ERROR : text;
+  }
+}
+
 export default function AIChatPanel({
   slug,
   agentName,
@@ -70,13 +86,16 @@ export default function AIChatPanel({
   const [lastText, setLastText] = useState<string>("");
   const { messages, sendMessage, setMessages, status } = useChat({
     transport,
-    onError: (err) => setChatError(err?.message || "Something went wrong. Please try again."),
+    onError: (err) => setChatError(readableChatError(err?.message)),
   });
 
   // Load prior history once per open, if we have a conversation id.
   useEffect(() => {
     if (historyLoaded) return;
-    if (!conversationId) { setHistoryLoaded(true); return; }
+    if (!conversationId) {
+      setHistoryLoaded(true);
+      return;
+    }
     (async () => {
       try {
         const res = await loadHistory({ data: { slug, conversationId } });
@@ -90,7 +109,9 @@ export default function AIChatPanel({
             })) as UIMessage[],
           );
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
       setHistoryLoaded(true);
     })();
   }, [conversationId, historyLoaded, loadHistory, slug, setMessages]);
@@ -127,7 +148,9 @@ export default function AIChatPanel({
     try {
       await escalate({ data: { slug, conversationId } });
       setHandedOff(true);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     setEscalating(false);
   }
 
@@ -164,19 +187,19 @@ export default function AIChatPanel({
               <LifeBuoy className="h-4 w-4" />
             </button>
           )}
-          <button onClick={onClose} aria-label={t("common.close")} className="rounded-md p-1.5 hover:bg-white/10">
+          <button
+            onClick={onClose}
+            aria-label={t("common.close")}
+            className="rounded-md p-1.5 hover:bg-white/10"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
       </div>
       <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-3 py-3 text-sm">
-        {messages.length === 0 && (
-          <div className="rounded-lg bg-muted px-3 py-2">{welcome}</div>
-        )}
+        {messages.length === 0 && <div className="rounded-lg bg-muted px-3 py-2">{welcome}</div>}
         {messages.map((m) => {
-          const text = m.parts
-            .map((p: any) => (p.type === "text" ? p.text : ""))
-            .join("");
+          const text = m.parts.map((p: any) => (p.type === "text" ? p.text : "")).join("");
           const products = m.role === "assistant" ? extractProducts(m) : [];
           const isUser = m.role === "user";
           return (
@@ -189,7 +212,11 @@ export default function AIChatPanel({
                         ? "max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm px-3 py-2 text-white"
                         : "max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-bl-sm bg-muted px-3 py-2"
                     }
-                    style={isUser ? { backgroundColor: "var(--store-btn-bg, var(--primary))" } : undefined}
+                    style={
+                      isUser
+                        ? { backgroundColor: "var(--store-btn-bg, var(--primary))" }
+                        : undefined
+                    }
                   >
                     {text}
                   </div>
@@ -257,7 +284,12 @@ function ProductCard({ p }: { p: WebProduct }) {
       className="flex gap-3 rounded-xl border bg-card p-2 shadow-sm transition-shadow hover:shadow-md"
     >
       {p.image_url ? (
-        <img src={p.image_url} alt={p.name} loading="lazy" className="h-20 w-20 flex-shrink-0 rounded-lg object-cover" />
+        <img
+          src={p.image_url}
+          alt={p.name}
+          loading="lazy"
+          className="h-20 w-20 flex-shrink-0 rounded-lg object-cover"
+        />
       ) : (
         <div className="h-20 w-20 flex-shrink-0 rounded-lg bg-muted" />
       )}
@@ -265,7 +297,10 @@ function ProductCard({ p }: { p: WebProduct }) {
         <div>
           <div className="line-clamp-2 text-sm font-medium">{p.name}</div>
           <div className="mt-0.5 flex items-baseline gap-1.5">
-            <span className="text-sm font-semibold" style={{ color: "var(--store-btn-bg, var(--primary))" }}>
+            <span
+              className="text-sm font-semibold"
+              style={{ color: "var(--store-btn-bg, var(--primary))" }}
+            >
               ৳{p.price}
             </span>
             {p.old_price ? (
@@ -274,7 +309,9 @@ function ProductCard({ p }: { p: WebProduct }) {
           </div>
         </div>
         <div className="flex items-center justify-between">
-          <span className={`text-[10px] font-medium ${inStock ? "text-emerald-600" : "text-red-500"}`}>
+          <span
+            className={`text-[10px] font-medium ${inStock ? "text-emerald-600" : "text-red-500"}`}
+          >
             {inStock ? t("chat.inStock") : t("chat.outOfStock")}
           </span>
           <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
