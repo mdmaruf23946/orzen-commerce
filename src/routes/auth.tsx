@@ -140,7 +140,7 @@ function AuthPage() {
       }
       if (mode === "signup") {
         if (!canSubmitSignup) throw new Error("Please complete the form correctly.");
-        const { error } = await supabase.auth.signUp({
+        const { data: signUpData, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -149,15 +149,17 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        // Session should be present (email confirmation off). Create store.
-        try {
-          await createMyStoreWithSlug({
-            data: { storeName: storeName.trim(), slug, ownerName: ownerName.trim() },
-          });
-        } catch (err) {
-          toast.error(`Store creation failed: ${(err as Error).message}`);
+        // Without a session the store cannot be created yet (email confirmation on).
+        if (!signUpData.session) {
+          throw new Error(
+            "Account created. Please confirm your email, then sign in — your store will be set up automatically.",
+          );
         }
+        await createMyStoreWithSlug({
+          data: { storeName: storeName.trim(), slug, ownerName: ownerName.trim() },
+        });
         toast.success("Store created. Welcome!");
+
       } else {
         // A previous deployment may have left a session for another backend.
         // Clear only this browser's cached session before issuing a fresh token.

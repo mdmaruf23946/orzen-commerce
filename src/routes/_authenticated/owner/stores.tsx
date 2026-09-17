@@ -13,6 +13,8 @@ import {
   listPackages,
   getStoreUsage,
 } from "@/lib/owner.functions";
+import { listUsersWithoutStore, createStoreForUser } from "@/lib/owner-ext.functions";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -95,6 +97,10 @@ function OwnerStores() {
           </p>
         </div>
       </div>
+
+      <OrphanAccounts />
+
+
 
       {/* Filters */}
       <div className="grid gap-2 rounded-xl border bg-card p-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -380,6 +386,63 @@ function Stat({ label, value, limit }: { label: string; value: number; limit?: n
           />
         </div>
       )}
+    </div>
+  );
+}
+
+// Accounts that signed up but have no store yet (e.g. interrupted signup).
+function OrphanAccounts() {
+  const listFn = useServerFn(listUsersWithoutStore);
+  const createFn = useServerFn(createStoreForUser);
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const { data: rows } = useQuery({
+    queryKey: ["owner", "users-without-store"],
+    queryFn: () => listFn(),
+  });
+
+  if (!rows || rows.length === 0) return null;
+
+  async function make(userId: string) {
+    setBusy(userId);
+    try {
+      const res: any = await createFn({ data: { userId } });
+      toast.success(res?.already ? "Store already exists" : `Store created: /${res.slug}`);
+      qc.invalidateQueries({ queryKey: ["owner", "stores"] });
+      qc.invalidateQueries({ queryKey: ["owner", "users-without-store"] });
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-amber-300 bg-amber-50/60 p-3">
+      <div className="mb-2 text-sm font-semibold text-amber-800">
+        Accounts without a store ({rows.length})
+      </div>
+      <div className="space-y-2">
+        {rows.map((u: any) => (
+          <div
+            key={u.id}
+            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card p-2"
+          >
+            <div className="min-w-0">
+              <div className="truncate text-sm font-medium">{u.name || u.email}</div>
+              <div className="truncate text-[11px] text-muted-foreground">
+                {u.email} · wants /{u.wanted_slug || "—"} ·{" "}
+                {new Date(u.created_at).toLocaleString()} ·{" "}
+                {u.confirmed ? "email confirmed" : "email not confirmed"}
+              </div>
+            </div>
+            <Button size="sm" disabled={busy === u.id} onClick={() => make(u.id)}>
+              {busy === u.id ? "Creating…" : "Create store"}
+            </Button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
