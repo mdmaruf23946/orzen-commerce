@@ -41,7 +41,7 @@ async function loadStoreWithPlan(db: any, storeId: string) {
 }
 
 async function ctxOf(context: any) {
-  const access = await resolveStoreAccess(context.supabase, context.userId);
+  const access = await resolveStoreAccess(context.supabase, context.userId, context.claims);
   if (!access?.storeId) throw new Error("No store found for this account.");
   return { db: context.supabase, storeId: access.storeId as string, userId: context.userId as string };
 }
