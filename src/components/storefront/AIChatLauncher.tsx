@@ -4,7 +4,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 // inline script runs as soon as the HTML is parsed, remembers the tap, and the
 // component replays it the moment it mounts.
 const EARLY_TAP_SCRIPT =
-  "(function(){try{document.addEventListener('click',function(e){var n=e.target;while(n&&n!==document){if(n.dataset&&n.dataset.chatLauncher){window.__orzenChatTap=1;break}n=n.parentNode}},true)}catch(_){}})()";
+  "(function(){try{function m(e){var n=e.target;while(n&&n!==document){if(n.dataset&&n.dataset.chatLauncher){window.__orzenChatTap=1;try{window.dispatchEvent(new CustomEvent('orzen-chat-tap'))}catch(_){}break}n=n.parentNode}}document.addEventListener('pointerdown',m,true);document.addEventListener('click',m,true)}catch(_){}})()";
 import { Bot, MessageCircle, X } from "lucide-react";
 import { useStoreT } from "@/lib/store-i18n";
 import { Button } from "@/components/ui/button";
@@ -37,13 +37,31 @@ export function AIChatLauncher({
     setOpen((v) => !v);
   }
 
-  // Replay a tap that happened before hydration finished.
+  // Replay a tap that happened before (or right around) hydration. We check on
+  // mount, listen for later pre-hydration taps, and poll briefly in case this
+  // component mounted after the flag was already set and cleared elsewhere.
   useEffect(() => {
     const w = window as any;
-    if (w.__orzenChatTap) {
-      w.__orzenChatTap = 0;
-      setOpen(true);
-    }
+    const consume = () => {
+      if (w.__orzenChatTap) {
+        w.__orzenChatTap = 0;
+        setOpen(true);
+        return true;
+      }
+      return false;
+    };
+    consume();
+    const onTap = () => consume();
+    window.addEventListener("orzen-chat-tap", onTap);
+    const id = window.setInterval(() => {
+      if (consume()) window.clearInterval(id);
+    }, 150);
+    const stop = window.setTimeout(() => window.clearInterval(id), 8000);
+    return () => {
+      window.removeEventListener("orzen-chat-tap", onTap);
+      window.clearInterval(id);
+      window.clearTimeout(stop);
+    };
   }, []);
 
   if (channelCount === 0) return null;
