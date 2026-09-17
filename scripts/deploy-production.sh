@@ -72,8 +72,22 @@ if [ "$VITE_SUPABASE_PROJECT_ID" != "$EXPECTED_PROJECT_ID" ] ||
   exit 1
 fi
 
+# Vite resolves import.meta.env from dotenv files on disk, not from exported
+# shell variables, and `.env` here holds the development project. Write
+# `.env.production` (higher precedence in production mode) so the browser
+# bundle is compiled against the production project, then remove it again.
+ENV_PRODUCTION="$ROOT/.env.production"
+cleanup_env_production() { rm -f "$ENV_PRODUCTION"; }
+trap 'cleanup_env_production; rm -rf "$TMP_DIR"' EXIT
+cat > "$ENV_PRODUCTION" <<EOF
+VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+VITE_SUPABASE_PROJECT_ID=$VITE_SUPABASE_PROJECT_ID
+VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY
+EOF
+chmod 600 "$ENV_PRODUCTION"
+
 echo "Building the guarded production candidate…"
-bun run build
+NODE_ENV=production bun run build
 
 if ! rg -q "$EXPECTED_PROJECT_ID" dist/client; then
   echo "Production database reference is missing from the browser bundle; deployment stopped." >&2
