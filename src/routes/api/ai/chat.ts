@@ -212,16 +212,15 @@ export const Route = createFileRoute("/api/ai/chat")({
             raw === "Agent disabled" || raw === "AI globally disabled"
               ? "এই স্টোরের AI সহকারী এখন বন্ধ আছে। / The AI assistant is currently turned off for this store."
               : "দুঃখিত, এই মুহূর্তে উত্তর দেওয়া যাচ্ছে না। একটু পরে আবার চেষ্টা করুন। / Sorry, we couldn't reply right now. Please try again.";
-          const msg = friendly;
           console.error("[ai/chat] failed", raw);
           void sb.from("ai_messages").insert({
             conversation_id: convId,
             role: "system",
             direction: "out",
             message_type: "error",
-            content: msg.slice(0, 2000),
+            content: raw.slice(0, 2000),
           } as any);
-          return Response.json({ error: msg }, { status: 500 });
+          return Response.json({ error: friendly }, { status: 503 });
         }
       },
     },
