@@ -153,7 +153,7 @@ def check_domains(failures: list[str]) -> None:
             db_token,
             {
                 "query": "select slug from public.stores "
-                "where status <> 'deleted' and subdomain_released_at is null;"
+                "where subdomain_released_at is null;"
             },
         )
     except urllib.error.URLError as exc:  # pragma: no cover - network failure path
