@@ -55,14 +55,15 @@ const agentQuery = (slug: string) =>
 
 export const Route = createFileRoute("/store/$slug")({
   loader: async ({ context, params }) => {
-    const store = await context.queryClient.ensureQueryData(storeQuery(params.slug));
+    // Store data, request origin and the chat channels are independent reads —
+    // run them together so the floating chat launcher is part of the very first
+    // render instead of appearing seconds after hydration.
+    const [store, origin] = await Promise.all([
+      context.queryClient.ensureQueryData(storeQuery(params.slug)),
+      getRequestOrigin().catch(() => ""),
+      context.queryClient.ensureQueryData(agentQuery(params.slug)).catch(() => null),
+    ]);
     if (!store) throw notFound();
-    let origin = "";
-    try {
-      origin = await getRequestOrigin();
-    } catch {
-      /* ignore */
-    }
     return { store, origin };
   },
   head: ({ loaderData }) => {

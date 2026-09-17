@@ -303,24 +303,20 @@ export const getMyMessengerPaymentMethods = createServerFn({ method: "GET" })
 export const getStoreAgentPublic = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ slug: z.string().min(1).max(120) }).parse(d))
   .handler(async ({ data }) => {
-    const sb = createClient<Database>(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_PUBLISHABLE_KEY!,
-      { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-    );
-    const { data: row } = await sb.rpc("get_public_store_by_slug", { _slug: data.slug });
-    const store = row as { id: string } | null;
-    if (!store) return null;
-
-    // Resolve all storefront chat options server-side. Only safe destinations
-    // leave this boundary; channel credentials never reach the browser.
+    // Resolve every storefront chat option server-side in as few round trips as
+    // possible — this runs during SSR, so latency here delays the first paint of
+    // the floating chat launcher. Only safe destinations leave this boundary;
+    // channel credentials never reach the browser.
     const admin = adminClient();
-    const [{ data: planRow }, { data: agent }, { data: messenger }, { data: whatsapp }] = await Promise.all([
-      admin
-        .from("stores")
-        .select("subscription_status, subscription_packages(is_trial, features)")
-        .eq("id", store.id)
-        .maybeSingle(),
+    const { data: planRow } = await admin
+      .from("stores")
+      .select("id, status, subscription_status, subscription_packages(is_trial, features)")
+      .eq("slug", data.slug)
+      .maybeSingle();
+    const store = planRow as { id: string; status?: string | null } | null;
+    if (!store || (store.status && store.status !== "active")) return null;
+
+    const [{ data: agent }, { data: messenger }, { data: whatsapp }] = await Promise.all([
       admin
         .from("store_ai_agents")
         .select("enabled,agent_name,welcome_message,language,style,use_emoji,human_like")
