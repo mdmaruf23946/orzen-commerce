@@ -51,7 +51,8 @@ type SlugStatus = "idle" | "invalid" | "checking" | "available" | "taken" | "err
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
+  const [resetSent, setResetSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // shared
@@ -126,6 +127,17 @@ function AuthPage() {
     setLoading(true);
     try {
       const next = getNext();
+      if (mode === "forgot") {
+        if (!email.includes("@")) throw new Error("Please enter the email address of your account.");
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+        setResetSent(true);
+        toast.success("Password reset link sent. Please check your email inbox and spam folder.");
+        setLoading(false);
+        return;
+      }
       if (mode === "signup") {
         if (!canSubmitSignup) throw new Error("Please complete the form correctly.");
         const { error } = await supabase.auth.signUp({
@@ -190,7 +202,11 @@ function AuthPage() {
           />
         </Link>
         <h1 className="mt-3 text-center text-lg sm:text-xl font-semibold">
-          {mode === "signin" ? "Sign in to your store" : "Create your store"}
+          {mode === "signin"
+            ? "Sign in to your store"
+            : mode === "forgot"
+              ? "Reset your password"
+              : "Create your store"}
         </h1>
 
         <form className="mt-5 space-y-3" onSubmit={submit}>
@@ -299,6 +315,39 @@ function AuthPage() {
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </Field>
+              <button
+                type="button"
+                onClick={() => {
+                  setResetSent(false);
+                  setMode("forgot");
+                }}
+                className="w-full text-right text-xs text-muted-foreground hover:text-foreground"
+              >
+                Forgot your password?
+              </button>
+            </>
+          )}
+
+          {mode === "forgot" && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Enter your account email. We will send you a link to set a new password.
+              </p>
+              <Field label="Email" id="email">
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </Field>
+              {resetSent && (
+                <p className="text-xs text-emerald-600">
+                  Reset link sent. Please check your inbox and spam folder.
+                </p>
+              )}
             </>
           )}
 
@@ -311,17 +360,23 @@ function AuthPage() {
               ? "Please wait…"
               : mode === "signin"
                 ? "Sign in"
-                : "Create store"}
+                : mode === "forgot"
+                  ? "Send reset link"
+                  : "Create store"}
           </Button>
         </form>
 
         <button
           type="button"
-          onClick={() => setMode((m) => (m === "signin" ? "signup" : "signin"))}
+          onClick={() => {
+            setResetSent(false);
+            setMode((m) => (m === "signin" ? "signup" : "signin"));
+          }}
           className="mt-4 w-full text-center text-sm text-muted-foreground hover:text-foreground"
         >
           {mode === "signin" ? "New here? Create your store" : "Have an account? Sign in"}
         </button>
+
 
         {mode === "signin" && (
           <>
