@@ -207,8 +207,13 @@ export const Route = createFileRoute("/api/ai/chat")({
           response.headers.set("access-control-expose-headers", "x-orzen-conversation-id");
           return response;
         } catch (e) {
-          const msg = (e as Error).message || "AI request failed";
-          console.error("[ai/chat] failed", msg);
+          const raw = (e as Error).message || "AI request failed";
+          const friendly =
+            raw === "Agent disabled" || raw === "AI globally disabled"
+              ? "এই স্টোরের AI সহকারী এখন বন্ধ আছে। / The AI assistant is currently turned off for this store."
+              : "দুঃখিত, এই মুহূর্তে উত্তর দেওয়া যাচ্ছে না। একটু পরে আবার চেষ্টা করুন। / Sorry, we couldn't reply right now. Please try again.";
+          const msg = friendly;
+          console.error("[ai/chat] failed", raw);
           void sb.from("ai_messages").insert({
             conversation_id: convId,
             role: "system",
