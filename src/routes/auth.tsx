@@ -127,6 +127,17 @@ function AuthPage() {
     setLoading(true);
     try {
       const next = getNext();
+      if (mode === "forgot") {
+        if (!email.includes("@")) throw new Error("Please enter the email address of your account.");
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+        setResetSent(true);
+        toast.success("Password reset link sent. Please check your email inbox and spam folder.");
+        setLoading(false);
+        return;
+      }
       if (mode === "signup") {
         if (!canSubmitSignup) throw new Error("Please complete the form correctly.");
         const { error } = await supabase.auth.signUp({
