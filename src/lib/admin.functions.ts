@@ -107,7 +107,7 @@ export const getMyStore = createServerFn({ method: "GET" })
         .insert({
           owner_user_id: userId,
           slug,
-          name: `${base.charAt(0).toUpperCase() + base.slice(1)}'s Store`,
+          name: storeName,
           status: "active",
           ...tplFields,
           theme_id: await defaultThemeId(supabase),
