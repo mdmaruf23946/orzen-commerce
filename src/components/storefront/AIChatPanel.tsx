@@ -18,6 +18,22 @@ type WebProduct = {
 
 const CID_KEY_PREFIX = "orzen_ai_cid:";
 
+const GENERIC_CHAT_ERROR =
+  "দুঃখিত, এই মুহূর্তে উত্তর দেওয়া যাচ্ছে না। একটু পরে আবার চেষ্টা করুন। / Sorry, we couldn't reply right now. Please try again.";
+
+/** Turn raw server/network errors (sometimes raw JSON) into a readable message. */
+function readableChatError(raw?: string | null): string {
+  const text = (raw ?? "").trim();
+  if (!text) return GENERIC_CHAT_ERROR;
+  try {
+    const parsed = JSON.parse(text);
+    const msg = typeof parsed?.error === "string" ? parsed.error : "";
+    return msg || GENERIC_CHAT_ERROR;
+  } catch {
+    return text.startsWith("{") || text.length > 200 ? GENERIC_CHAT_ERROR : text;
+  }
+}
+
 export default function AIChatPanel({
   slug,
   agentName,
