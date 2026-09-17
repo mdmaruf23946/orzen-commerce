@@ -79,9 +79,15 @@ export const getMyStore = createServerFn({ method: "GET" })
     }
 
     if (!store) {
-
+      // Prefer the name/subdomain the merchant chose at signup (kept in auth metadata)
+      // so a store created after email confirmation still matches their request.
+      const meta = ((claims as any).user_metadata ?? {}) as Record<string, any>;
       const email = (claims.email as string | undefined) ?? "store";
-      const base = slugify(email.split("@")[0]) || "store";
+      const wanted = slugify(String(meta.store_slug ?? ""));
+      const base = wanted || slugify(email.split("@")[0]) || "store";
+      const storeName =
+        String(meta.store_name ?? "").trim() ||
+        `${base.charAt(0).toUpperCase() + base.slice(1)}'s Store`;
       let slug = base;
       // ensure unique
       for (let i = 0; i < 10; i++) {
@@ -93,6 +99,7 @@ export const getMyStore = createServerFn({ method: "GET" })
         if (!existing) break;
         slug = `${base}-${Math.floor(Math.random() * 9999)}`;
       }
+
       const tpl = await fetchTemplate(supabase);
       const tplFields = templateStoreFields(tpl);
       const { data: created, error } = await supabase
