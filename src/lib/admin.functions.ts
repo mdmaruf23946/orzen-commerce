@@ -11,6 +11,7 @@ import {
   seedStoreFromTemplate,
   wipeStoreChildren,
 } from "@/lib/store-template";
+import { ensureStoreForAccount } from "@/lib/store-bootstrap";
 
 /**
  * Attach a brand-new store's subdomain to Cloudflare (DNS + Pages custom
@@ -47,85 +48,8 @@ export const getMyStore = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId, claims } = context;
-    let { data: store } = await supabase
-      .from("stores")
-      .select("*")
-      .eq("owner_user_id", userId)
-      .maybeSingle();
-
-    if (!store) {
-      // Employee account? Return the store they belong to.
-      const { resolveStoreAccess } = await import("@/lib/store-access");
-      const access = await resolveStoreAccess(supabase, userId);
-      if (access.storeId && !access.isOwner) {
-        const { data: staffStore, error: staffErr } = await supabase
-          .from("stores")
-          .select("*")
-          .eq("id", access.storeId)
-          .maybeSingle();
-        if (staffErr) throw new Error(staffErr.message);
-        if (!staffStore) throw new Error("Your store could not be found. Contact the store owner.");
-        return staffStore;
-      }
-      // Linked as staff but not active — never create a stray store for them.
-      const { data: anyStaff } = await supabase
-        .from("store_staff")
-        .select("id")
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (anyStaff) {
-        throw new Error("Your employee account is not active. Contact the store owner.");
-      }
-    }
-
-    if (!store) {
-      // Prefer the name/subdomain the merchant chose at signup (kept in auth metadata)
-      // so a store created after email confirmation still matches their request.
-      const meta = ((claims as any).user_metadata ?? {}) as Record<string, any>;
-      const email = (claims.email as string | undefined) ?? "store";
-      const wanted = slugify(String(meta.store_slug ?? ""));
-      const base = wanted || slugify(email.split("@")[0]) || "store";
-      const storeName =
-        String(meta.store_name ?? "").trim() ||
-        `${base.charAt(0).toUpperCase() + base.slice(1)}'s Store`;
-      let slug = base;
-      // ensure unique
-      for (let i = 0; i < 10; i++) {
-        const { data: existing } = await supabase
-          .from("stores")
-          .select("id")
-          .eq("slug", slug)
-          .maybeSingle();
-        if (!existing) break;
-        slug = `${base}-${Math.floor(Math.random() * 9999)}`;
-      }
-
-      const tpl = await fetchTemplate(supabase);
-      const tplFields = templateStoreFields(tpl);
-      const { data: created, error } = await supabase
-        .from("stores")
-        .insert({
-          owner_user_id: userId,
-          slug,
-          name: storeName,
-          status: "active",
-          ...tplFields,
-          theme_id: await defaultThemeId(supabase),
-        })
-        .select("*")
-        .single();
-      if (error) throw new Error(error.message);
-      if (tpl && created?.id) {
-        try {
-          await seedStoreFromTemplate(supabase, created.id, tpl);
-        } catch {
-          // Non-fatal: store still exists; owner can Reset to Default later.
-        }
-      }
-      await attachStoreSubdomain(supabase, slug);
-      store = created;
-    }
-    return store;
+    const result = await ensureStoreForAccount(supabase, userId, claims as any, "*");
+    return result.store;
   });
 
 // Winner Admin picks one catalog theme as the default for every new store.
@@ -211,44 +135,27 @@ export const createMyStoreWithSlug = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const existing = await myStoreRow(supabase, userId, "*");
-    if (existing) return existing;
-
-    const { data: taken } = await supabase.rpc("is_slug_taken", { _slug: data.slug });
-    if (taken) throw new Error("Subdomain already taken");
-
-    const tpl = await fetchTemplate(supabase);
-    const tplFields = templateStoreFields(tpl);
-    const { data: created, error } = await supabase
-      .from("stores")
-      .insert({
-        owner_user_id: userId,
-        slug: data.slug,
-        name: data.storeName,
-        status: "active",
-        ...tplFields,
-        theme_id: await defaultThemeId(supabase),
-      })
-      .select("*")
-      .single();
-    if (error) throw new Error(error.message);
-
-    if (tpl && created?.id) {
-      try {
-        await seedStoreFromTemplate(supabase, created.id, tpl);
-      } catch {
-        // Non-fatal
-      }
-    }
+    const { supabase, userId, claims } = context;
     try {
       await supabase.auth.updateUser({ data: { owner_name: data.ownerName } });
     } catch {
       // Non-fatal
     }
-    // Make <slug>.<root> live on Cloudflare right away.
-    await attachStoreSubdomain(supabase, data.slug);
-    return created;
+    const result = await ensureStoreForAccount(
+      supabase,
+      userId,
+      {
+        ...(claims as any),
+        user_metadata: {
+          ...(((claims as any).user_metadata ?? {}) as Record<string, unknown>),
+          owner_name: data.ownerName,
+          store_name: data.storeName,
+          store_slug: data.slug,
+        },
+      },
+      "*",
+    );
+    return result.store;
   });
 
 
@@ -1523,29 +1430,19 @@ export const myDashboardOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId, claims } = context;
-    const store = await myStoreRow(supabase, userId, "id,name,slug,status,subscription_status,expires_at,updated_at,package_id,subscription_packages(name)");
+    const ensured = await ensureStoreForAccount(
+      supabase,
+      userId,
+      claims as any,
+      "id,name,slug,status,subscription_status,expires_at,updated_at,package_id,subscription_packages(name)",
+    );
+    const store = ensured.store;
 
     const ownerName =
       (claims.user_metadata as { full_name?: string; name?: string } | undefined)?.full_name ??
       (claims.user_metadata as { name?: string } | undefined)?.name ??
       (claims.email as string | undefined)?.split("@")[0] ??
       "there";
-
-    if (!store) {
-      return {
-        publicUrl: "",
-        store: null,
-        owner: { name: ownerName },
-        today: { sales: 0, orders: 0, visitors: 0, pendingOrders: 0, salesPct: 0, ordersPct: 0 },
-        visitorsAvailable: false,
-        series: { "7d": [], "30d": [], today: [], month: [] },
-        orderStatus: { pending: 0, confirmed: 0, processing: 0, delivered: 0, cancelled: 0, returned: 0 },
-        products: { total: 0, active: 0, lowStock: 0, outOfStock: 0 },
-        performance: { conversionRate: 0, healthScore: 0, customerRating: null as number | null },
-        recentOrders: [] as any[],
-        notifications: [] as any[],
-      };
-    }
 
     const now = new Date();
     const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
