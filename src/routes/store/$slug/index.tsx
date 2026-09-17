@@ -1,6 +1,6 @@
 import { StoreErrorState } from "@/components/storefront/StoreErrorState";
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { keepPreviousData, queryOptions } from "@tanstack/react-query";
+import { keepPreviousData, queryOptions, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles, Flame, Grid3x3, ChevronRight, ChevronDown, SearchX } from "lucide-react";
 import {
@@ -50,6 +50,17 @@ const bannersQuery = (storeId: string) =>
     ...stable,
   });
 
+/** First screenful — blocks the initial render so the page paints fast. */
+const FIRST_PRODUCTS = 48;
+
+const firstProductsQuery = (storeId: string) =>
+  queryOptions({
+    queryKey: ["products", storeId, "first", FIRST_PRODUCTS],
+    queryFn: () => listStoreProducts({ data: { storeId, limit: FIRST_PRODUCTS } }),
+    ...stable,
+  });
+
+/** Full catalogue — fetched in the background, needed for search/filtering. */
 const productsQuery = (storeId: string) =>
   queryOptions({
     queryKey: ["products", storeId],
@@ -85,9 +96,11 @@ export const Route = createFileRoute("/store/$slug/")({
   loader: async ({ context, params }) => {
     const store = await context.queryClient.ensureQueryData(storeQuery(params.slug));
     if (!store) throw notFound();
+    // Only the first screenful blocks rendering; the full catalogue is fetched
+    // afterwards in the background (needed for search and category filtering).
     const [banners, products, categories, bestSelling] = await Promise.all([
       context.queryClient.ensureQueryData(bannersQuery(store.id)),
-      context.queryClient.ensureQueryData(productsQuery(store.id)),
+      context.queryClient.ensureQueryData(firstProductsQuery(store.id)),
       context.queryClient.ensureQueryData(categoriesQuery(store.id)),
       context.queryClient.ensureQueryData(bestSellingQuery(store.id)),
     ]);
@@ -108,7 +121,20 @@ function HomeContent() {
   const { t } = useStoreT();
 
   const { slug } = Route.useParams();
-  const { store, banners, products, categories, bestSelling } = Route.useLoaderData();
+  const {
+    store,
+    banners,
+    products: firstProducts,
+    categories,
+    bestSelling,
+  } = Route.useLoaderData();
+  // The first page renders instantly from the loader; the complete catalogue
+  // streams in right after so search and filters cover every product.
+  const { data: allProducts } = useQuery({
+    ...productsQuery(store.id),
+    placeholderData: firstProducts,
+  });
+  const products = allProducts ?? firstProducts;
   const { query, activeMainId, activeSubId, source, selectMain, selectSub } = useStoreUI();
   const theme = useStoreTheme();
   const [pageSize, setPageSize] = useState(PAGE_SIZE);

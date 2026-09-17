@@ -448,15 +448,26 @@ const PRODUCT_CARD_COLS =
   "id,name,slug,price,old_price,stock,status,primary_image_url,category_id,is_featured,product_type,total_sold,rating,created_at,updated_at";
 
 export const listStoreProducts = createServerFn({ method: "GET" })
-  .inputValidator((d) => z.object({ storeId: z.string().uuid() }).parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        storeId: z.string().uuid(),
+        // Optional first-page window so the storefront can paint quickly and
+        // load the remaining catalogue in the background.
+        limit: z.number().int().min(1).max(500).optional(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data }) => {
     const sb = publicClient();
-    const { data: products, error } = await (sb as any)
+    let q = (sb as any)
       .from("storefront_products")
       .select(PRODUCT_CARD_COLS)
       .eq("store_id", data.storeId)
       .neq("status", "draft")
       .order("created_at", { ascending: false });
+    if (data.limit) q = q.limit(data.limit);
+    const { data: products, error } = await q;
     if (error) throw new Error(error.message);
     return (products ?? []).map((p: any) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }));
   });
