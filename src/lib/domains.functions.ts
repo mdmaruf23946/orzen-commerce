@@ -17,15 +17,55 @@ const HOSTNAME_RE =
   /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/;
 
 const RESERVED_SLUGS = new Set([
-  "www", "api", "admin", "app", "auth", "login", "signup", "dashboard", "store",
-  "stores", "cdn", "assets", "static", "img", "images", "mail", "smtp", "ftp",
-  "blog", "docs", "help", "support", "status", "billing", "pay", "payments",
-  "checkout", "cart", "owner", "platform", "orzen", "test", "dev", "staging",
-  "preview", "webhook", "webhooks", "ns1", "ns2", "mx",
+  "www",
+  "api",
+  "admin",
+  "app",
+  "auth",
+  "login",
+  "signup",
+  "dashboard",
+  "store",
+  "stores",
+  "cdn",
+  "assets",
+  "static",
+  "img",
+  "images",
+  "mail",
+  "smtp",
+  "ftp",
+  "blog",
+  "docs",
+  "help",
+  "support",
+  "status",
+  "billing",
+  "pay",
+  "payments",
+  "checkout",
+  "cart",
+  "owner",
+  "platform",
+  "orzen",
+  "test",
+  "dev",
+  "staging",
+  "preview",
+  "webhook",
+  "webhooks",
+  "ns1",
+  "ns2",
+  "mx",
 ]);
 
 function normalizeHost(h: string) {
-  return h.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/:\d+$/, "");
+  return h
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "")
+    .replace(/:\d+$/, "");
 }
 
 /** true when the hostname has no subdomain label (example.com, not shop.example.com) */
@@ -107,7 +147,6 @@ export const listMyDomains = createServerFn({ method: "GET" })
         landing_page: r.landing_page_id ? (byId.get(r.landing_page_id) ?? null) : null,
       })),
     };
-
   });
 
 /**
@@ -192,7 +231,8 @@ export const updateMySubdomain = createServerFn({ method: "POST" })
     // Keep Cloudflare in sync: attach the new host, drop the old one.
     try {
       const settings = await platformDomainSettings(supabase);
-      const { ensureSubdomainAttached, detachSubdomain } = await import("@/lib/cloudflare-pages.server");
+      const { ensureSubdomainAttached, detachSubdomain } =
+        await import("@/lib/cloudflare-pages.server");
       await ensureSubdomainAttached(`${data.slug}.${settings.rootDomain}`);
       await detachSubdomain(`${store.slug}.${settings.rootDomain}`);
     } catch {
@@ -277,9 +317,8 @@ export const checkDomainVerification = createServerFn({ method: "POST" })
 
     const { dnsTarget, apexIp } = await platformDomainSettings(supabase);
     const target = (row.dns_target ?? dnsTarget).toLowerCase();
-    const { resolveTxt, resolveCname, resolveA, fetchHttpChallenge } = await import(
-      "./dns-lookup.server"
-    );
+    const { resolveTxt, resolveCname, resolveA, fetchHttpChallenge } =
+      await import("./dns-lookup.server");
 
     const patch: Record<string, any> = { last_checked_at: new Date().toISOString() };
     let ok = false;
@@ -358,7 +397,10 @@ export const checkDomainVerification = createServerFn({ method: "POST" })
     patch.last_error = ok ? null : reason || "Verification failed";
     if (!ok && row.status !== "active") patch.status = patch.status ?? "pending";
 
-    await supabase.from("store_domains").update(patch as never).eq("id", row.id);
+    await supabase
+      .from("store_domains")
+      .update(patch as never)
+      .eq("id", row.id);
 
     // A landing page's custom domain replaces its temporary platform
     // subdomain, so that one is released. A store's own free subdomain
@@ -398,7 +440,10 @@ export const removeDomain = createServerFn({ method: "POST" })
         // Detaching is best-effort — never block removal on the CF API.
       }
     }
-    await supabase.from("stores").update({ primary_domain_id: null }).eq("primary_domain_id", row.id);
+    await supabase
+      .from("stores")
+      .update({ primary_domain_id: null })
+      .eq("primary_domain_id", row.id);
     const { error } = await supabase.from("store_domains").delete().eq("id", row.id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -461,7 +506,10 @@ export const setDomainSslStatus = createServerFn({ method: "POST" })
     await requireOwner(context.supabase, context.userId);
     const patch: any = { ssl_status: data.ssl_status };
     if (data.activate && ["issued", "external"].includes(data.ssl_status)) patch.status = "active";
-    const { error } = await context.supabase.from("store_domains").update(patch).eq("id", data.domainId);
+    const { error } = await context.supabase
+      .from("store_domains")
+      .update(patch)
+      .eq("id", data.domainId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -471,7 +519,10 @@ export const ownerRemoveDomain = createServerFn({ method: "POST" })
   .inputValidator((d: { domainId: string }) => z.object({ domainId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await requireOwner(context.supabase, context.userId);
-    await context.supabase.from("stores").update({ primary_domain_id: null }).eq("primary_domain_id", data.domainId);
+    await context.supabase
+      .from("stores")
+      .update({ primary_domain_id: null })
+      .eq("primary_domain_id", data.domainId);
     const { error } = await context.supabase.from("store_domains").delete().eq("id", data.domainId);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -514,7 +565,6 @@ export const platformDomainHealth = createServerFn({ method: "GET" })
   });
 
 // ---------- DNS diagnostics ----------
-
 
 export const checkDnsResolution = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -575,7 +625,8 @@ function publicSbClient() {
     global: {
       fetch: (input, init) => {
         const h = new Headers(init?.headers);
-        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) h.delete("Authorization");
+        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`)
+          h.delete("Authorization");
         h.set("apikey", key);
         return fetch(input, { ...init, headers: h });
       },
@@ -635,7 +686,6 @@ export const resolveHost = createServerFn({ method: "GET" }).handler(async () =>
       }
       return { host, slug: null, isPlatform: true };
     }
-
 
     // Custom domain lookup
     const { data: resolved } = await sb.rpc("resolve_domain", { _host: host });

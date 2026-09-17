@@ -8,7 +8,14 @@ import { logActivity } from "@/lib/activity-log";
 import { GRANTABLE_SECTIONS, presetPermissions } from "@/lib/panel-sections";
 
 const LEVEL = z.enum(["none", "view", "manage"]);
-const ROLE = z.enum(["manager", "order_agent", "support_agent", "inventory_staff", "viewer", "custom"]);
+const ROLE = z.enum([
+  "manager",
+  "order_agent",
+  "support_agent",
+  "inventory_staff",
+  "viewer",
+  "custom",
+]);
 const STATUS = z.enum(["invited", "active", "suspended"]);
 
 function cleanPermissions(input: Record<string, string> | undefined): Record<string, string> {
@@ -49,7 +56,9 @@ export const listEmployees = createServerFn({ method: "GET" })
     const [{ data: rows }, { data: store }] = await Promise.all([
       context.supabase
         .from("store_staff")
-        .select("id,name,email,phone,role,status,notes,permissions,employee_code,user_id,last_login_at,must_change_password,created_at")
+        .select(
+          "id,name,email,phone,role,status,notes,permissions,employee_code,user_id,last_login_at,must_change_password,created_at",
+        )
         .eq("store_id", sid)
         .order("created_at", { ascending: false }),
       context.supabase
@@ -111,7 +120,9 @@ export const createEmployee = createServerFn({ method: "POST" })
     authUserId = created.data.user?.id ?? null;
 
     const permissions = cleanPermissions(
-      data.role === "custom" ? (data.permissions as any) : { ...presetPermissions(data.role), ...(data.permissions ?? {}) },
+      data.role === "custom"
+        ? (data.permissions as any)
+        : { ...presetPermissions(data.role), ...(data.permissions ?? {}) },
     );
 
     const { data: row, error } = await supabase
@@ -217,7 +228,9 @@ export const resetEmployeePassword = createServerFn({ method: "POST" })
     if (!row?.user_id) throw new Error("This employee has no login account");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const res = await supabaseAdmin.auth.admin.updateUserById(row.user_id, { password: data.password });
+    const res = await supabaseAdmin.auth.admin.updateUserById(row.user_id, {
+      password: data.password,
+    });
     if (res.error) throw new Error(res.error.message);
 
     await supabase
@@ -360,7 +373,9 @@ export const listActivity = createServerFn({ method: "POST" })
 
     let q = context.supabase
       .from("staff_activity_log")
-      .select("id,actor_name,actor_kind,actor_staff_id,section,action,summary,entity_type,entity_id,created_at")
+      .select(
+        "id,actor_name,actor_kind,actor_staff_id,section,action,summary,entity_type,entity_id,created_at",
+      )
       .eq("store_id", access.storeId)
       .gte("created_at", new Date(Date.now() - data.days * 86400000).toISOString())
       .order("created_at", { ascending: false })

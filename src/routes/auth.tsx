@@ -130,7 +130,8 @@ function AuthPage() {
     try {
       const next = getNext();
       if (mode === "forgot") {
-        if (!email.includes("@")) throw new Error("Please enter the email address of your account.");
+        if (!email.includes("@"))
+          throw new Error("Please enter the email address of your account.");
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
           redirectTo: `${window.location.origin}/reset-password`,
         });
@@ -161,7 +162,6 @@ function AuthPage() {
           data: { storeName: storeName.trim(), slug, ownerName: ownerName.trim() },
         });
         toast.success("Store created. Welcome!");
-
       } else {
         // A previous deployment may have left a session for another backend.
         // Clear only this browser's cached session before issuing a fresh token.
@@ -179,7 +179,6 @@ function AuthPage() {
         // Email-confirmed merchants may not have completed store creation yet.
         // Complete it before entering the panel so child pages never race it.
         await ensureMyStore();
-
       }
       navigate({ to: next, replace: true });
     } catch (err) {
@@ -384,7 +383,6 @@ function AuthPage() {
           {mode === "signin" ? "New here? Create your store" : "Have an account? Sign in"}
         </button>
 
-
         {mode === "signin" && (
           <>
             <div className="my-4 flex items-center gap-3">
@@ -415,7 +413,10 @@ function Field({ label, id, children }: { label: string; id: string; children: R
 }
 
 function SlugStatusPill({ status, slug }: { status: SlugStatus; slug: string }) {
-  if (!slug) return <p className="text-xs text-muted-foreground">3–40 chars: lowercase, numbers, hyphens.</p>;
+  if (!slug)
+    return (
+      <p className="text-xs text-muted-foreground">3–40 chars: lowercase, numbers, hyphens.</p>
+    );
   const map: Record<SlugStatus, { icon: React.ReactNode; text: string; cls: string }> = {
     idle: { icon: null, text: "", cls: "text-muted-foreground" },
     invalid: {

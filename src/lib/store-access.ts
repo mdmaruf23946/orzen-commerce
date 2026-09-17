@@ -90,7 +90,8 @@ export function assertSection(
 ) {
   if (access.isOwner) return;
   if (!access.staff) throw new Error("No store access for this account");
-  if (SECTION_BY_KEY[section]?.ownerOnly) throw new Error("This section is available to the store owner only");
+  if (SECTION_BY_KEY[section]?.ownerOnly)
+    throw new Error("This section is available to the store owner only");
   if (!allows(access.permissions, section, level)) {
     throw new Error("You don't have permission to use this section");
   }

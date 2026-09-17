@@ -21,7 +21,11 @@ function slugify(value: string) {
 }
 
 async function defaultThemeId(supabase: any): Promise<string | null> {
-  const { data } = await supabase.from("store_themes").select("id").eq("is_default", true).maybeSingle();
+  const { data } = await supabase
+    .from("store_themes")
+    .select("id")
+    .eq("is_default", true)
+    .maybeSingle();
   if (data?.id) return data.id as string;
   const { data: first } = await supabase
     .from("store_themes")
@@ -35,7 +39,11 @@ async function defaultThemeId(supabase: any): Promise<string | null> {
 
 async function attachStoreSubdomain(supabase: any, slug: string) {
   try {
-    const { data } = await supabase.from("platform_settings").select("settings").eq("id", 1).maybeSingle();
+    const { data } = await supabase
+      .from("platform_settings")
+      .select("settings")
+      .eq("id", 1)
+      .maybeSingle();
     const root = (((data?.settings as any) ?? {}).root_domain ?? "orzen.top").toLowerCase();
     const { ensureSubdomainAttached } = await import("@/lib/cloudflare-pages.server");
     await ensureSubdomainAttached(`${slug}.${root}`);
@@ -69,7 +77,8 @@ export async function ensureStoreForAccount(
     .maybeSingle();
   if (staffError) throw new Error(staffError.message);
   if (staff) {
-    if (staff.status !== "active") throw new Error("Your employee account is not active. Contact the store owner.");
+    if (staff.status !== "active")
+      throw new Error("Your employee account is not active. Contact the store owner.");
     const { data: staffStore, error } = await supabase
       .from("stores")
       .select(columns)
@@ -84,7 +93,9 @@ export async function ensureStoreForAccount(
   const email = claims.email ?? "store";
   const requestedSlug = slugify(String(metadata.store_slug ?? ""));
   const base = requestedSlug || slugify(email.split("@")[0] ?? "") || "store";
-  const storeName = String(metadata.store_name ?? "").trim() || `${base.charAt(0).toUpperCase() + base.slice(1)}'s Store`;
+  const storeName =
+    String(metadata.store_name ?? "").trim() ||
+    `${base.charAt(0).toUpperCase() + base.slice(1)}'s Store`;
   const template = await fetchTemplate(supabase);
   const fields = templateStoreFields(template);
   const themeId = await defaultThemeId(supabase);
@@ -93,7 +104,14 @@ export async function ensureStoreForAccount(
     const slug = attempt === 0 ? base : `${base}-${Math.floor(1000 + Math.random() * 9000)}`;
     const { data: created, error } = await supabase
       .from("stores")
-      .insert({ owner_user_id: userId, slug, name: storeName, status: "active", ...fields, theme_id: themeId })
+      .insert({
+        owner_user_id: userId,
+        slug,
+        name: storeName,
+        status: "active",
+        ...fields,
+        theme_id: themeId,
+      })
       .select(columns)
       .single();
 
