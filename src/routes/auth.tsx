@@ -202,7 +202,11 @@ function AuthPage() {
           />
         </Link>
         <h1 className="mt-3 text-center text-lg sm:text-xl font-semibold">
-          {mode === "signin" ? "Sign in to your store" : "Create your store"}
+          {mode === "signin"
+            ? "Sign in to your store"
+            : mode === "forgot"
+              ? "Reset your password"
+              : "Create your store"}
         </h1>
 
         <form className="mt-5 space-y-3" onSubmit={submit}>
