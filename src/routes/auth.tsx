@@ -168,7 +168,7 @@ function AuthPage() {
         await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
         toast.error("Your sign-in session could not be verified. Please sign in again.");
       } else {
-        toast.error("Your account was signed in, but its access could not be checked. Please try again.");
+        toast.error((err as Error).message || "Something went wrong. Please try again.");
       }
     } finally {
       setLoading(false);
