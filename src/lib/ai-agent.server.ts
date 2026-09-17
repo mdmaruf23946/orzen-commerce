@@ -50,10 +50,49 @@ export async function loadAiContext(storeId: string) {
     sb.from("store_ai_agents").select("*").eq("store_id", storeId).maybeSingle(),
     sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle(),
   ]);
-  if (!store || !agent) throw new Error("Agent not configured");
-  if (!agent.enabled) throw new Error("Agent disabled");
+  if (!store) throw new Error("Store not found");
+  // A store may not have an agent row yet (older stores, or a failed seed).
+  // Fall back to a sane enabled default instead of breaking the chat.
+  const effectiveAgent =
+    agent ??
+    ({
+      store_id: storeId,
+      enabled: true,
+      agent_name: "Sales Assistant",
+      description: "",
+      welcome_message: "Hi! How can I help you today?",
+      fallback_message: "দুঃখিত, এই তথ্যটি আমার কাছে নেই। আমি স্টোর অ্যাডমিনকে জানিয়ে দিচ্ছি।",
+      language: "both",
+      style: "friendly",
+      use_emoji: true,
+      human_like: true,
+      product_recommendations: true,
+      order_assistance: true,
+      sales_focused: true,
+      recommend_related: true,
+      ask_for_info: true,
+      escalate_to_human: true,
+      knowledge: {},
+      order_flow: {},
+      sources: {
+        products: true,
+        stock: true,
+        categories: true,
+        delivery: true,
+        payments: true,
+        returns: true,
+        warranty: true,
+        store_info: true,
+        business_hours: true,
+      },
+    } as any);
+  if (!agent) {
+    // Best-effort self-heal so the owner panel shows the same settings.
+    void sb.from("store_ai_agents").insert({ store_id: storeId, enabled: true } as any);
+  }
+  if (!effectiveAgent.enabled) throw new Error("Agent disabled");
   if (settings && settings.enabled === false) throw new Error("AI globally disabled");
-  return { store, agent, settings };
+  return { store, agent: effectiveAgent, settings };
 }
 
 export type GlobalAiSettings = {

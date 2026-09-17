@@ -136,6 +136,14 @@ export async function ensureStoreForAccount(
           // The store is usable even if optional starter content cannot be seeded.
         }
       }
+      if (created.id) {
+        try {
+          // Default AI sales assistant so the storefront chat works from day one.
+          await supabase.from("store_ai_agents").insert({ store_id: created.id, enabled: true } as any);
+        } catch {
+          // A database trigger also seeds this row; a duplicate here is harmless.
+        }
+      }
       await attachStoreSubdomain(supabase, slug);
       return { store: created, isEmployee: false, created: true };
     }
