@@ -11,25 +11,7 @@ import {
   seedStoreFromTemplate,
   wipeStoreChildren,
 } from "@/lib/store-template";
-
-/**
- * Attach a brand-new store's subdomain to Cloudflare (DNS + Pages custom
- * domain) so <slug>.<root> is live immediately. Never blocks store creation.
- */
-async function attachStoreSubdomain(supabase: any, slug: string) {
-  try {
-    const { data } = await supabase
-      .from("platform_settings")
-      .select("settings")
-      .eq("id", 1)
-      .maybeSingle();
-    const root = (((data?.settings as any) ?? {}).root_domain ?? "orzen.top").toLowerCase();
-    const { ensureSubdomainAttached } = await import("@/lib/cloudflare-pages.server");
-    await ensureSubdomainAttached(`${slug}.${root}`);
-  } catch {
-    // Non-fatal — the merchant can retry from Merchant Panel → Domains.
-  }
-}
+import { ensureStoreForAccount } from "@/lib/store-bootstrap";
 
 function slugify(s: string) {
   return s
@@ -47,85 +29,8 @@ export const getMyStore = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId, claims } = context;
-    let { data: store } = await supabase
-      .from("stores")
-      .select("*")
-      .eq("owner_user_id", userId)
-      .maybeSingle();
-
-    if (!store) {
-      // Employee account? Return the store they belong to.
-      const { resolveStoreAccess } = await import("@/lib/store-access");
-      const access = await resolveStoreAccess(supabase, userId);
-      if (access.storeId && !access.isOwner) {
-        const { data: staffStore, error: staffErr } = await supabase
-          .from("stores")
-          .select("*")
-          .eq("id", access.storeId)
-          .maybeSingle();
-        if (staffErr) throw new Error(staffErr.message);
-        if (!staffStore) throw new Error("Your store could not be found. Contact the store owner.");
-        return staffStore;
-      }
-      // Linked as staff but not active — never create a stray store for them.
-      const { data: anyStaff } = await supabase
-        .from("store_staff")
-        .select("id")
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (anyStaff) {
-        throw new Error("Your employee account is not active. Contact the store owner.");
-      }
-    }
-
-    if (!store) {
-      // Prefer the name/subdomain the merchant chose at signup (kept in auth metadata)
-      // so a store created after email confirmation still matches their request.
-      const meta = ((claims as any).user_metadata ?? {}) as Record<string, any>;
-      const email = (claims.email as string | undefined) ?? "store";
-      const wanted = slugify(String(meta.store_slug ?? ""));
-      const base = wanted || slugify(email.split("@")[0]) || "store";
-      const storeName =
-        String(meta.store_name ?? "").trim() ||
-        `${base.charAt(0).toUpperCase() + base.slice(1)}'s Store`;
-      let slug = base;
-      // ensure unique
-      for (let i = 0; i < 10; i++) {
-        const { data: existing } = await supabase
-          .from("stores")
-          .select("id")
-          .eq("slug", slug)
-          .maybeSingle();
-        if (!existing) break;
-        slug = `${base}-${Math.floor(Math.random() * 9999)}`;
-      }
-
-      const tpl = await fetchTemplate(supabase);
-      const tplFields = templateStoreFields(tpl);
-      const { data: created, error } = await supabase
-        .from("stores")
-        .insert({
-          owner_user_id: userId,
-          slug,
-          name: storeName,
-          status: "active",
-          ...tplFields,
-          theme_id: await defaultThemeId(supabase),
-        })
-        .select("*")
-        .single();
-      if (error) throw new Error(error.message);
-      if (tpl && created?.id) {
-        try {
-          await seedStoreFromTemplate(supabase, created.id, tpl);
-        } catch {
-          // Non-fatal: store still exists; owner can Reset to Default later.
-        }
-      }
-      await attachStoreSubdomain(supabase, slug);
-      store = created;
-    }
-    return store;
+    const result = await ensureStoreForAccount(supabase, userId, claims as any, "*");
+    return result.store;
   });
 
 // Winner Admin picks one catalog theme as the default for every new store.
@@ -186,7 +91,8 @@ export const checkStoreSlugAvailable = createServerFn({ method: "POST" })
       global: {
         fetch: (input, init) => {
           const h = new Headers(init?.headers);
-          if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) h.delete("Authorization");
+          if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`)
+            h.delete("Authorization");
           h.set("apikey", key);
           return fetch(input, { ...init, headers: h });
         },
@@ -211,46 +117,28 @@ export const createMyStoreWithSlug = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const existing = await myStoreRow(supabase, userId, "*");
-    if (existing) return existing;
-
-    const { data: taken } = await supabase.rpc("is_slug_taken", { _slug: data.slug });
-    if (taken) throw new Error("Subdomain already taken");
-
-    const tpl = await fetchTemplate(supabase);
-    const tplFields = templateStoreFields(tpl);
-    const { data: created, error } = await supabase
-      .from("stores")
-      .insert({
-        owner_user_id: userId,
-        slug: data.slug,
-        name: data.storeName,
-        status: "active",
-        ...tplFields,
-        theme_id: await defaultThemeId(supabase),
-      })
-      .select("*")
-      .single();
-    if (error) throw new Error(error.message);
-
-    if (tpl && created?.id) {
-      try {
-        await seedStoreFromTemplate(supabase, created.id, tpl);
-      } catch {
-        // Non-fatal
-      }
-    }
+    const { supabase, userId, claims } = context;
     try {
       await supabase.auth.updateUser({ data: { owner_name: data.ownerName } });
     } catch {
       // Non-fatal
     }
-    // Make <slug>.<root> live on Cloudflare right away.
-    await attachStoreSubdomain(supabase, data.slug);
-    return created;
+    const result = await ensureStoreForAccount(
+      supabase,
+      userId,
+      {
+        ...(claims as any),
+        user_metadata: {
+          ...(((claims as any).user_metadata ?? {}) as Record<string, unknown>),
+          owner_name: data.ownerName,
+          store_name: data.storeName,
+          store_slug: data.slug,
+        },
+      },
+      "*",
+    );
+    return result.store;
   });
-
 
 export const updateMyStore = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -258,7 +146,12 @@ export const updateMyStore = createServerFn({ method: "POST" })
     z
       .object({
         name: z.string().trim().min(1).max(120),
-        slug: z.string().trim().min(2).max(60).regex(/^[a-z0-9-]+$/, "Lowercase letters, numbers, hyphens"),
+        slug: z
+          .string()
+          .trim()
+          .min(2)
+          .max(60)
+          .regex(/^[a-z0-9-]+$/, "Lowercase letters, numbers, hyphens"),
         description: z.string().trim().max(1000).optional().nullable(),
         logo_url: z.string().max(500).optional().nullable(),
         name_logo_url: z.string().max(500).optional().nullable(),
@@ -279,10 +172,26 @@ export const updateMyStore = createServerFn({ method: "POST" })
         threads: z.string().trim().max(200).optional().nullable(),
         address: z.string().trim().max(500).optional().nullable(),
         primary_color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
-        header_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().nullable(),
-        title_bar_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().nullable(),
-        footer_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().nullable(),
-        button_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().nullable(),
+        header_color: z
+          .string()
+          .regex(/^#[0-9a-fA-F]{6}$/)
+          .optional()
+          .nullable(),
+        title_bar_color: z
+          .string()
+          .regex(/^#[0-9a-fA-F]{6}$/)
+          .optional()
+          .nullable(),
+        footer_color: z
+          .string()
+          .regex(/^#[0-9a-fA-F]{6}$/)
+          .optional()
+          .nullable(),
+        button_color: z
+          .string()
+          .regex(/^#[0-9a-fA-F]{6}$/)
+          .optional()
+          .nullable(),
         bkash_number: z.string().trim().max(40).optional().nullable(),
         nagad_number: z.string().trim().max(40).optional().nullable(),
         business_name: z.string().trim().max(160).optional().nullable(),
@@ -343,7 +252,9 @@ export const listMyProducts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
     z
-      .object({ product_type: z.enum(["physical", "digital", "service", "subscription"]).optional() })
+      .object({
+        product_type: z.enum(["physical", "digital", "service", "subscription"]).optional(),
+      })
       .parse(d ?? {}),
   )
   .handler(async ({ data: input, context }) => {
@@ -401,7 +312,6 @@ export const listMyProducts = createServerFn({ method: "GET" })
     }));
   });
 
-
 const productSchema = z.object({
   name: z.string().trim().min(1).max(160),
   description: z.string().trim().max(5000).optional().nullable(),
@@ -424,28 +334,47 @@ const productSchema = z.object({
   shipping_info: z.string().trim().max(2000).optional().nullable(),
   is_featured: z.boolean().optional().default(false),
   features: z.array(z.string().max(200)).max(30).optional().default([]),
-  specifications: z.array(z.object({ key: z.string().max(60), value: z.string().max(200) })).max(60).optional().default([]),
-  variants: z.union([
-    z.array(z.object({
-      name: z.string().max(60),
-      price: z.number().nonnegative().optional().nullable(),
-      stock: z.number().int().min(0).optional().nullable(),
-      sku: z.string().max(60).optional().nullable(),
-    })).max(30),
-    z.object({
-      options: z.array(z.object({ name: z.string().max(60), values: z.array(z.string().max(60)).max(50) })).max(6),
-      items: z.array(z.object({
-        id: z.string().max(120),
-        options: z.record(z.string(), z.string().max(60)),
-        sku: z.string().max(60).optional().nullable(),
-        price: z.number().nonnegative().optional().nullable(),
-        discount: z.number().nonnegative().optional().nullable(),
-        stock: z.number().int().min(0).optional().nullable(),
-        barcode: z.string().max(60).optional().nullable(),
-        image: z.string().max(500).optional().nullable(),
-      })).max(500),
-    }),
-  ]).optional().default([]),
+  specifications: z
+    .array(z.object({ key: z.string().max(60), value: z.string().max(200) }))
+    .max(60)
+    .optional()
+    .default([]),
+  variants: z
+    .union([
+      z
+        .array(
+          z.object({
+            name: z.string().max(60),
+            price: z.number().nonnegative().optional().nullable(),
+            stock: z.number().int().min(0).optional().nullable(),
+            sku: z.string().max(60).optional().nullable(),
+          }),
+        )
+        .max(30),
+      z.object({
+        options: z
+          .array(
+            z.object({ name: z.string().max(60), values: z.array(z.string().max(60)).max(50) }),
+          )
+          .max(6),
+        items: z
+          .array(
+            z.object({
+              id: z.string().max(120),
+              options: z.record(z.string(), z.string().max(60)),
+              sku: z.string().max(60).optional().nullable(),
+              price: z.number().nonnegative().optional().nullable(),
+              discount: z.number().nonnegative().optional().nullable(),
+              stock: z.number().int().min(0).optional().nullable(),
+              barcode: z.string().max(60).optional().nullable(),
+              image: z.string().max(500).optional().nullable(),
+            }),
+          )
+          .max(500),
+      }),
+    ])
+    .optional()
+    .default([]),
   delivery_charge: z.number().nonnegative().optional().nullable(),
   delivery_time_days: z.string().trim().max(60).optional().nullable(),
   rating: z.number().min(0).max(5).optional().nullable(),
@@ -455,15 +384,10 @@ const productSchema = z.object({
   product_type: z.enum(["physical", "digital", "service", "subscription"]).optional(),
 });
 
-
-
 export const upsertProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z
-      .object({ id: z.string().uuid().optional() })
-      .merge(productSchema)
-      .parse(d),
+    z.object({ id: z.string().uuid().optional() }).merge(productSchema).parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -511,13 +435,13 @@ export const upsertProduct = createServerFn({ method: "POST" })
         .eq("store_id", store.id)
         .maybeSingle();
       if (!cat) throw new Error("Category not found");
-      if ((cat as any).product_type && (cat as any).product_type !== (data.product_type ?? "physical")) {
+      if (
+        (cat as any).product_type &&
+        (cat as any).product_type !== (data.product_type ?? "physical")
+      ) {
         throw new Error("Category belongs to a different product type");
       }
     }
-
-
-
 
     if (data.id) {
       const { error } = await supabase
@@ -547,7 +471,11 @@ export const deleteProduct = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const store = await myStoreRow(supabase, userId, "id");
     if (!store) throw new Error("No store");
-    const { error } = await supabase.from("products").delete().eq("id", data.id).eq("store_id", store.id);
+    const { error } = await supabase
+      .from("products")
+      .delete()
+      .eq("id", data.id)
+      .eq("store_id", store.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -589,11 +517,11 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
       .eq("store_id", store.id);
     if (error) throw new Error(error.message);
 
-
     // Fire-and-observe: push Messenger status update to the customer if this order
     // originated from (or has) a Messenger conversation. Failures are swallowed —
     // they remain in the outbox for retry.
-    let messenger: { sent: number; failed: number; considered: number; error?: string } | null = null;
+    let messenger: { sent: number; failed: number; considered: number; error?: string } | null =
+      null;
     try {
       const { drainOutbox } = await import("@/lib/messenger-notify.server");
       messenger = await drainOutbox({ orderId: data.id, latestOnly: true });
@@ -644,9 +572,7 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
 
 export const setOrderAllowDuplicate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
-    z.object({ id: z.string().uuid(), allow: z.boolean() }).parse(d),
-  )
+  .inputValidator((d) => z.object({ id: z.string().uuid(), allow: z.boolean() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const store = await myStoreRow(supabase, userId, "id");
@@ -660,15 +586,14 @@ export const setOrderAllowDuplicate = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
-
-
 // ---------- BANNERS ----------
 export const listMyBanners = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
     z
-      .object({ product_type: z.enum(["physical", "digital", "service", "subscription"]).optional() })
+      .object({
+        product_type: z.enum(["physical", "digital", "service", "subscription"]).optional(),
+      })
       .parse(d ?? {}),
   )
   .handler(async ({ data: input, context }) => {
@@ -752,7 +677,6 @@ export const updateBanner = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
 export const deleteBanner = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
@@ -760,7 +684,11 @@ export const deleteBanner = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const store = await myStoreRow(supabase, userId, "id");
     if (!store) throw new Error("No store");
-    const { error } = await supabase.from("banners").delete().eq("id", data.id).eq("store_id", store.id);
+    const { error } = await supabase
+      .from("banners")
+      .delete()
+      .eq("id", data.id)
+      .eq("store_id", store.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -777,10 +705,19 @@ export const listMyCustomers = createServerFn({ method: "GET" })
       .select("customer_name,phone,address,subtotal,created_at")
       .eq("store_id", store.id);
     if (error) throw new Error(error.message);
-    const map = new Map<string, { name: string; phone: string; orders: number; total: number; last: string }>();
+    const map = new Map<
+      string,
+      { name: string; phone: string; orders: number; total: number; last: string }
+    >();
     for (const o of data ?? []) {
       const k = o.phone;
-      const cur = map.get(k) ?? { name: o.customer_name, phone: o.phone, orders: 0, total: 0, last: o.created_at };
+      const cur = map.get(k) ?? {
+        name: o.customer_name,
+        phone: o.phone,
+        orders: 0,
+        total: 0,
+        last: o.created_at,
+      };
       cur.orders += 1;
       cur.total += Number(o.subtotal);
       if (o.created_at > cur.last) cur.last = o.created_at;
@@ -800,7 +737,10 @@ export const myDashboardStats = createServerFn({ method: "GET" })
     today.setHours(0, 0, 0, 0);
     const [{ data: orders }, { count: productCount }] = await Promise.all([
       supabase.from("orders").select("subtotal,created_at,status").eq("store_id", store.id),
-      supabase.from("products").select("*", { count: "exact", head: true }).eq("store_id", store.id),
+      supabase
+        .from("products")
+        .select("*", { count: "exact", head: true })
+        .eq("store_id", store.id),
     ]);
     let todaySales = 0;
     let totalSales = 0;
@@ -819,7 +759,11 @@ export const mySubscription = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const store = await myStoreRow(supabase, userId, "expires_at,package_id, subscription_packages(name,price,duration_days,product_limit)");
+    const store = await myStoreRow(
+      supabase,
+      userId,
+      "expires_at,package_id, subscription_packages(name,price,duration_days,product_limit)",
+    );
     const { data: payments } = await supabase
       .from("payments")
       .select("*")
@@ -833,7 +777,9 @@ export const listMyCategories = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
     z
-      .object({ product_type: z.enum(["physical", "digital", "service", "subscription"]).optional() })
+      .object({
+        product_type: z.enum(["physical", "digital", "service", "subscription"]).optional(),
+      })
       .parse(d ?? {}),
   )
   .handler(async ({ data: input, context }) => {
@@ -930,18 +876,17 @@ export const deleteCategory = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const store = await myStoreRow(supabase, userId, "id");
     if (!store) throw new Error("No store");
-    const { error } = await supabase.from("categories").delete().eq("id", data.id).eq("store_id", store.id);
+    const { error } = await supabase
+      .from("categories")
+      .delete()
+      .eq("id", data.id)
+      .eq("store_id", store.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
 // ---------- SETTINGS SECTIONS (jsonb blobs on stores) ----------
-async function updateStoreColumn(
-  supabase: any,
-  userId: string,
-  column: string,
-  value: unknown,
-) {
+async function updateStoreColumn(supabase: any, userId: string, column: string, value: unknown) {
   const { error } = await supabase
     .from("stores")
     .update({ [column]: value })
@@ -971,13 +916,25 @@ const marketingSchema = z
   })
   .superRefine((v, ctx) => {
     if (v.fb_pixel_id && !/^\d{15,17}$/.test(v.fb_pixel_id)) {
-      ctx.addIssue({ code: "custom", path: ["fb_pixel_id"], message: "Facebook Pixel ID must be 15–17 digits" });
+      ctx.addIssue({
+        code: "custom",
+        path: ["fb_pixel_id"],
+        message: "Facebook Pixel ID must be 15–17 digits",
+      });
     }
     if (v.fb_capi_enabled && (!v.fb_capi_token || v.fb_capi_token.length < 40)) {
-      ctx.addIssue({ code: "custom", path: ["fb_capi_token"], message: "CAPI access token looks too short" });
+      ctx.addIssue({
+        code: "custom",
+        path: ["fb_capi_token"],
+        message: "CAPI access token looks too short",
+      });
     }
     if (v.fb_test_event_code && !/^[A-Za-z0-9_-]{4,40}$/.test(v.fb_test_event_code)) {
-      ctx.addIssue({ code: "custom", path: ["fb_test_event_code"], message: "Invalid test event code" });
+      ctx.addIssue({
+        code: "custom",
+        path: ["fb_test_event_code"],
+        message: "Invalid test event code",
+      });
     }
   });
 
@@ -1021,7 +978,11 @@ export const sendFbTestEvent = createServerFn({ method: "POST" })
       .maybeSingle();
     const m: any = (store as any)?.marketing ?? {};
     if (!m.fb_pixel_id || !m.fb_capi_token) {
-      return { ok: false as const, error: "Pixel ID and CAPI token are required for a test event.", mode: "live" as const };
+      return {
+        ok: false as const,
+        error: "Pixel ID and CAPI token are required for a test event.",
+        mode: "live" as const,
+      };
     }
     const { sendFbEvents } = await import("@/lib/fb-capi.server");
     const testCode = (m.fb_test_event_code as string | undefined) || "TEST_LOVABLE";
@@ -1126,7 +1087,6 @@ const couriersSchema = z.object({
   sundarban: courierProvider.optional(),
 });
 
-
 export const updateCouriers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => couriersSchema.parse(d))
@@ -1180,7 +1140,10 @@ export const testCourierConnection = createServerFn({ method: "POST" })
       latencyMs,
     };
     const next = { ...couriers, [data.key]: { ...cfg, diagnostics } };
-    await context.supabase.from("stores").update({ couriers: next }).eq("id", (store as any).id);
+    await context.supabase
+      .from("stores")
+      .update({ couriers: next })
+      .eq("id", (store as any).id);
     return { ok: status === "connected", status, message, latencyMs };
   });
 
@@ -1206,14 +1169,20 @@ export const syncCourierInfo = createServerFn({ method: "POST" })
     const diagnostics = {
       ...(cfg.diagnostics ?? {}),
       ...(r.ok
-        ? { lastSyncAt: new Date().toISOString(), lastSyncSummary: r.summary ?? null, lastError: null }
+        ? {
+            lastSyncAt: new Date().toISOString(),
+            lastSyncSummary: r.summary ?? null,
+            lastError: null,
+          }
         : { lastError: r.message, lastStatus: "error" as const }),
     };
     const next = { ...couriers, [data.key]: { ...cfg, diagnostics } };
-    await context.supabase.from("stores").update({ couriers: next }).eq("id", (store as any).id);
+    await context.supabase
+      .from("stores")
+      .update({ couriers: next })
+      .eq("id", (store as any).id);
     return { ok: r.ok, message: r.message, summary: r.summary ?? null };
   });
-
 
 const seoSchema = z.object({
   title: z.string().trim().max(160).optional().nullable(),
@@ -1316,9 +1285,7 @@ export const createDeliveryZone = createServerFn({ method: "POST" })
 
 export const updateDeliveryZone = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
-    zoneUpsertSchema.partial().extend({ id: z.string().uuid() }).parse(d),
-  )
+  .inputValidator((d) => zoneUpsertSchema.partial().extend({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const storeId = await getOwnedStoreId(context.supabase, context.userId);
     if (data.is_default) {
@@ -1380,7 +1347,6 @@ export const setDefaultDeliveryZone = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
-
 
 const paymentMethod = z.object({
   enabled: z.boolean().optional(),
@@ -1456,7 +1422,6 @@ export const updatePaymentStatusRules = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
 const notificationsSchema = z.object({
   whatsapp: z.string().trim().max(40).optional().nullable(),
   email_enabled: z.boolean().optional(),
@@ -1523,7 +1488,13 @@ export const myDashboardOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId, claims } = context;
-    const store = await myStoreRow(supabase, userId, "id,name,slug,status,subscription_status,expires_at,updated_at,package_id,subscription_packages(name)");
+    const ensured = await ensureStoreForAccount(
+      supabase,
+      userId,
+      claims as any,
+      "id,name,slug,status,subscription_status,expires_at,updated_at,package_id,subscription_packages(name)",
+    );
+    const store = ensured.store;
 
     const ownerName =
       (claims.user_metadata as { full_name?: string; name?: string } | undefined)?.full_name ??
@@ -1531,79 +1502,104 @@ export const myDashboardOverview = createServerFn({ method: "GET" })
       (claims.email as string | undefined)?.split("@")[0] ??
       "there";
 
-    if (!store) {
-      return {
-        publicUrl: "",
-        store: null,
-        owner: { name: ownerName },
-        today: { sales: 0, orders: 0, visitors: 0, pendingOrders: 0, salesPct: 0, ordersPct: 0 },
-        visitorsAvailable: false,
-        series: { "7d": [], "30d": [], today: [], month: [] },
-        orderStatus: { pending: 0, confirmed: 0, processing: 0, delivered: 0, cancelled: 0, returned: 0 },
-        products: { total: 0, active: 0, lowStock: 0, outOfStock: 0 },
-        performance: { conversionRate: 0, healthScore: 0, customerRating: null as number | null },
-        recentOrders: [] as any[],
-        notifications: [] as any[],
-      };
-    }
-
     const now = new Date();
-    const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
+    const startOfDay = (d: Date) => {
+      const x = new Date(d);
+      x.setHours(0, 0, 0, 0);
+      return x;
+    };
     const today0 = startOfDay(now);
-    const yest0 = new Date(today0); yest0.setDate(yest0.getDate() - 1);
+    const yest0 = new Date(today0);
+    yest0.setDate(yest0.getDate() - 1);
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const d30 = new Date(now); d30.setDate(d30.getDate() - 29); d30.setHours(0,0,0,0);
+    const d30 = new Date(now);
+    d30.setDate(d30.getDate() - 29);
+    d30.setHours(0, 0, 0, 0);
     const windowStart = d30 < monthStart ? d30 : monthStart;
 
     const [ordersRes, productsRes, bannersRes, feedbackRes] = await Promise.all([
-      supabase.from("orders")
+      supabase
+        .from("orders")
         .select("id,invoice_no,customer_name,subtotal,status,created_at")
         .eq("store_id", store.id)
-        .gte("created_at", new Date(yest0.getTime() - 24*3600*1000).toISOString())
+        .gte("created_at", new Date(yest0.getTime() - 24 * 3600 * 1000).toISOString())
         .order("created_at", { ascending: false }),
-      supabase.from("products")
+      supabase
+        .from("products")
         .select("id,name,stock,low_stock_threshold,status")
         .eq("store_id", store.id),
-      supabase.from("banners").select("id", { count: "exact", head: true }).eq("store_id", store.id),
+      supabase
+        .from("banners")
+        .select("id", { count: "exact", head: true })
+        .eq("store_id", store.id),
       supabase.from("feedback").select("rating").eq("store_id", store.id).limit(500),
     ]);
 
     // Also pull all-time counts by status (cheap head:count queries)
-    const statuses = ["pending","confirmed","processing","delivered","cancelled","returned"] as const;
-    const statusCounts: Record<string, number> = { pending:0, confirmed:0, processing:0, delivered:0, cancelled:0, returned:0 };
-    await Promise.all(statuses.map(async (s) => {
-      const { count } = await supabase.from("orders")
-        .select("*", { count: "exact", head: true })
-        .eq("store_id", store.id)
-        .eq("status", s as any);
-      statusCounts[s] = count ?? 0;
-    }));
+    const statuses = [
+      "pending",
+      "confirmed",
+      "processing",
+      "delivered",
+      "cancelled",
+      "returned",
+    ] as const;
+    const statusCounts: Record<string, number> = {
+      pending: 0,
+      confirmed: 0,
+      processing: 0,
+      delivered: 0,
+      cancelled: 0,
+      returned: 0,
+    };
+    await Promise.all(
+      statuses.map(async (s) => {
+        const { count } = await supabase
+          .from("orders")
+          .select("*", { count: "exact", head: true })
+          .eq("store_id", store.id)
+          .eq("status", s as any);
+        statusCounts[s] = count ?? 0;
+      }),
+    );
 
     const orders = ordersRes.data ?? [];
     // Today / yesterday
-    let todaySales = 0, todayOrders = 0, todayPending = 0;
-    let yestSales = 0, yestOrders = 0;
+    let todaySales = 0,
+      todayOrders = 0,
+      todayPending = 0;
+    let yestSales = 0,
+      yestOrders = 0;
     for (const o of orders) {
       const t = new Date(o.created_at);
       const amt = Number(o.subtotal) || 0;
       if (t >= today0) {
-        if (o.status !== "cancelled") { todaySales += amt; todayOrders++; }
+        if (o.status !== "cancelled") {
+          todaySales += amt;
+          todayOrders++;
+        }
         if (o.status === "pending") todayPending++;
       } else if (t >= yest0 && t < today0) {
-        if (o.status !== "cancelled") { yestSales += amt; yestOrders++; }
+        if (o.status !== "cancelled") {
+          yestSales += amt;
+          yestOrders++;
+        }
       }
     }
-    const pct = (a: number, b: number) => b === 0 ? (a > 0 ? 100 : 0) : Math.round(((a - b) / b) * 100);
+    const pct = (a: number, b: number) =>
+      b === 0 ? (a > 0 ? 100 : 0) : Math.round(((a - b) / b) * 100);
 
     // Build series over the last 30 days from windowStart-window orders
-    const { data: seriesRows } = await supabase.from("orders")
+    const { data: seriesRows } = await supabase
+      .from("orders")
       .select("subtotal,status,created_at")
       .eq("store_id", store.id)
       .gte("created_at", windowStart.toISOString());
     type Point = { date: string; sales: number; orders: number; revenue: number };
     const buckets: Record<string, Point> = {};
     for (let i = 0; i < 30; i++) {
-      const d = new Date(today0); d.setDate(d.getDate() - (29 - i));
+      const d = new Date(today0);
+      d.setDate(d.getDate() - (29 - i));
       const key = d.toISOString().slice(0, 10);
       buckets[key] = { date: key, sales: 0, orders: 0, revenue: 0 };
     }
@@ -1626,21 +1622,36 @@ export const myDashboardOverview = createServerFn({ method: "GET" })
     const productSummary = {
       total: products.length,
       active: products.filter((p) => p.status === "active").length,
-      lowStock: products.filter((p) => (p.stock ?? 0) > 0 && (p.stock ?? 0) <= (p.low_stock_threshold ?? 5)).length,
+      lowStock: products.filter(
+        (p) => (p.stock ?? 0) > 0 && (p.stock ?? 0) <= (p.low_stock_threshold ?? 5),
+      ).length,
       outOfStock: products.filter((p) => (p.stock ?? 0) === 0).length,
     };
 
     // Performance
-    const ratings = (feedbackRes.data ?? []).map((f: any) => Number(f.rating)).filter((n) => !isNaN(n));
-    const customerRating = ratings.length ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10 : null;
+    const ratings = (feedbackRes.data ?? [])
+      .map((f: any) => Number(f.rating))
+      .filter((n) => !isNaN(n));
+    const customerRating = ratings.length
+      ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10
+      : null;
     const has = {
       products: productSummary.total > 0 ? 25 : 0,
       banner: (bannersRes.count ?? 0) > 0 ? 15 : 0,
-      subActive: store.subscription_status === "active" || store.subscription_status === "trialing" ? 25 : 0,
-      recentOrders: (last7.reduce((a, b) => a + b.orders, 0) > 0 ? 20 : 0),
-      lowStockPenalty: productSummary.total > 0 ? Math.round(15 * (1 - Math.min(1, productSummary.outOfStock / Math.max(1, productSummary.total)))) : 0,
+      subActive:
+        store.subscription_status === "active" || store.subscription_status === "trialing" ? 25 : 0,
+      recentOrders: last7.reduce((a, b) => a + b.orders, 0) > 0 ? 20 : 0,
+      lowStockPenalty:
+        productSummary.total > 0
+          ? Math.round(
+              15 * (1 - Math.min(1, productSummary.outOfStock / Math.max(1, productSummary.total))),
+            )
+          : 0,
     };
-    const healthScore = Math.min(100, has.products + has.banner + has.subActive + has.recentOrders + has.lowStockPenalty);
+    const healthScore = Math.min(
+      100,
+      has.products + has.banner + has.subActive + has.recentOrders + has.lowStockPenalty,
+    );
     const conversionRate = 0; // no visitors data available
 
     // Recent orders
@@ -1655,7 +1666,9 @@ export const myDashboardOverview = createServerFn({ method: "GET" })
 
     // Notifications
     const notifications: { type: string; title: string; detail: string; at: string }[] = [];
-    const newOrders = orders.filter((o) => new Date(o.created_at) >= new Date(now.getTime() - 24*3600*1000));
+    const newOrders = orders.filter(
+      (o) => new Date(o.created_at) >= new Date(now.getTime() - 24 * 3600 * 1000),
+    );
     if (newOrders[0]) {
       notifications.push({
         type: "order",
@@ -1664,7 +1677,9 @@ export const myDashboardOverview = createServerFn({ method: "GET" })
         at: newOrders[0].created_at,
       });
     }
-    const lowSample = products.find((p) => (p.stock ?? 0) > 0 && (p.stock ?? 0) <= (p.low_stock_threshold ?? 5));
+    const lowSample = products.find(
+      (p) => (p.stock ?? 0) > 0 && (p.stock ?? 0) <= (p.low_stock_threshold ?? 5),
+    );
     if (productSummary.lowStock > 0 && lowSample) {
       notifications.push({
         type: "low-stock",
@@ -1674,11 +1689,16 @@ export const myDashboardOverview = createServerFn({ method: "GET" })
       });
     }
     if (store.expires_at) {
-      const days = Math.ceil((new Date(store.expires_at).getTime() - now.getTime()) / (24*3600*1000));
+      const days = Math.ceil(
+        (new Date(store.expires_at).getTime() - now.getTime()) / (24 * 3600 * 1000),
+      );
       if (days <= 7) {
         notifications.push({
           type: "subscription",
-          title: days <= 0 ? "Subscription expired" : `Subscription expires in ${days} day${days > 1 ? "s" : ""}`,
+          title:
+            days <= 0
+              ? "Subscription expired"
+              : `Subscription expires in ${days} day${days > 1 ? "s" : ""}`,
           detail: "Renew to keep your store active",
           at: store.expires_at,
         });
@@ -1714,7 +1734,14 @@ export const myDashboardOverview = createServerFn({ method: "GET" })
         "30d": all30,
         month: monthArr,
       },
-      orderStatus: statusCounts as { pending:number; confirmed:number; processing:number; delivered:number; cancelled:number; returned:number },
+      orderStatus: statusCounts as {
+        pending: number;
+        confirmed: number;
+        processing: number;
+        delivered: number;
+        cancelled: number;
+        returned: number;
+      },
       products: productSummary,
       performance: { conversionRate, healthScore, customerRating },
       recentOrders,
@@ -1778,7 +1805,9 @@ export const adminListCustomerAccounts = createServerFn({ method: "POST" })
         s.count += 1;
         if (o.status !== "cancelled")
           s.spend +=
-            Number(o.subtotal ?? 0) + Number(o.delivery_amount ?? 0) - Number(o.discount_amount ?? 0);
+            Number(o.subtotal ?? 0) +
+            Number(o.delivery_amount ?? 0) -
+            Number(o.discount_amount ?? 0);
         if (!s.last || o.created_at > s.last) s.last = o.created_at;
       }
     }
@@ -1792,7 +1821,6 @@ export const adminListCustomerAccounts = createServerFn({ method: "POST" })
     if (data.sort === "spend") mapped.sort((a, b) => b.total_spent - a.total_spent);
     return mapped;
   });
-
 
 export const adminGetCustomerAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -1808,7 +1836,9 @@ export const adminGetCustomerAccount = createServerFn({ method: "POST" })
     if (!row) throw new Error("Not found");
     const { data: orders } = await context.supabase
       .from("orders")
-      .select("id,invoice_no,status,payment_status,payment_method,subtotal,delivery_amount,discount_amount,created_at")
+      .select(
+        "id,invoice_no,status,payment_status,payment_method,subtotal,delivery_amount,discount_amount,created_at",
+      )
       .eq("store_id", storeId)
       .eq("customer_id", data.customerId)
       .order("created_at", { ascending: false })
@@ -1822,7 +1852,10 @@ export const adminGetCustomerAccount = createServerFn({ method: "POST" })
     const paid = list.filter((o) => o.status !== "cancelled");
     const spend = paid.reduce(
       (s, o) =>
-        s + Number(o.subtotal ?? 0) + Number(o.delivery_amount ?? 0) - Number(o.discount_amount ?? 0),
+        s +
+        Number(o.subtotal ?? 0) +
+        Number(o.delivery_amount ?? 0) -
+        Number(o.discount_amount ?? 0),
       0,
     );
     const stats = {
@@ -1833,14 +1866,11 @@ export const adminGetCustomerAccount = createServerFn({ method: "POST" })
       last_order_at: list.length ? list[0].created_at : null,
     };
     return { ...row, orders: list, addresses: addresses ?? [], stats };
-
   });
 
 export const adminSetCustomerActive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
-    z.object({ customerId: z.string().uuid(), active: z.boolean() }).parse(d),
-  )
+  .inputValidator((d) => z.object({ customerId: z.string().uuid(), active: z.boolean() }).parse(d))
   .handler(async ({ data, context }) => {
     const storeId = await currentStoreId(context);
     const { error } = await context.supabase
@@ -1896,23 +1926,36 @@ export const listPublicCourierProviders = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await (context.supabase as any).rpc("get_public_courier_providers");
     if (error) throw new Error(error.message);
-    return (data ?? []) as Array<{ code: string; name: string; logo_url: string | null; wordmark_url: string | null; is_active: boolean }>;
+    return (data ?? []) as Array<{
+      code: string;
+      name: string;
+      logo_url: string | null;
+      wordmark_url: string | null;
+      is_active: boolean;
+    }>;
   });
-
 
 // ---------- PRODUCT TYPE SCOPE COUNTS ----------
 export const typeScopeCounts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ entity: z.enum(["products", "categories", "coupons", "banners", "orders"]) }).parse(d),
+    z
+      .object({ entity: z.enum(["products", "categories", "coupons", "banners", "orders"]) })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const store = await myStoreRow(supabase, userId, "id");
-    const empty = { all: 0, physical: 0, digital: 0, service: 0, subscription: 0 } as Record<string, number>;
+    const empty = { all: 0, physical: 0, digital: 0, service: 0, subscription: 0 } as Record<
+      string,
+      number
+    >;
     if (!store) return empty;
     const col = data.entity === "orders" ? "order_type" : "product_type";
-    const { data: rows, error } = await supabase.from(data.entity as any).select(col).eq("store_id", store.id);
+    const { data: rows, error } = await supabase
+      .from(data.entity as any)
+      .select(col)
+      .eq("store_id", store.id);
     if (error) throw new Error(error.message);
     const counts = { ...empty };
     for (const r of (rows ?? []) as any[]) {
@@ -1926,9 +1969,7 @@ export const typeScopeCounts = createServerFn({ method: "GET" })
 // Image shown on the storefront "All" category tile.
 export const setAllCategoryImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
-    z.object({ image_url: z.string().max(500).nullable() }).parse(d),
-  )
+  .inputValidator((d) => z.object({ image_url: z.string().max(500).nullable() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const store = await myStoreRow(supabase, userId, "id");

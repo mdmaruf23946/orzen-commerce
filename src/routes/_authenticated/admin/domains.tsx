@@ -82,7 +82,6 @@ function StatusPill({ d }: { d: any }) {
   );
 }
 
-
 function CopyBtn({ v }: { v: string }) {
   const [ok, setOk] = useState(false);
   return (
@@ -105,7 +104,9 @@ function RecordRow({ type, name, value }: { type: string; name: string; value: s
   return (
     <div className="rounded border bg-background p-2">
       <div className="flex items-center gap-2">
-        <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase">{type}</span>
+        <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase">
+          {type}
+        </span>
         <code className="min-w-0 flex-1 truncate text-xs">{name}</code>
         <CopyBtn v={name} />
       </div>
@@ -134,7 +135,10 @@ function Page() {
   const provisionFn = useServerFn(provisionMySubdomain);
   const [provisioning, setProvisioning] = useState(false);
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["admin", "domains"], queryFn: () => listFn() });
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
+    queryKey: ["admin", "domains"],
+    queryFn: () => listFn(),
+  });
 
   // Subdomain reachability probe — warns when the platform wildcard is missing.
   const { data: dns } = useQuery({
@@ -176,10 +180,13 @@ function Page() {
     return () => clearInterval(t);
   }, [pendingIds, checkFn, qc]);
 
-
   // Subdomain editor
   const [slug, setSlug] = useState("");
-  const [slugState, setSlugState] = useState<{ loading: boolean; ok: boolean | null; reason: string }>({
+  const [slugState, setSlugState] = useState<{
+    loading: boolean;
+    ok: boolean | null;
+    reason: string;
+  }>({
     loading: false,
     ok: null,
     reason: "",
@@ -197,7 +204,11 @@ function Page() {
       return;
     }
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug) || slug.length < 3) {
-      setSlugState({ loading: false, ok: false, reason: "3+ chars, lowercase letters, numbers, hyphens" });
+      setSlugState({
+        loading: false,
+        ok: false,
+        reason: "3+ chars, lowercase letters, numbers, hyphens",
+      });
       return;
     }
     let alive = true;
@@ -216,7 +227,26 @@ function Page() {
     };
   }, [slug, currentSlug, slugCheckFn]);
 
-  if (isLoading || !data) return <div className="text-sm text-muted-foreground">Loading…</div>;
+  if (isLoading) return <div className="text-sm text-muted-foreground">Loading…</div>;
+  if (isError || !data) {
+    return (
+      <div className="mx-auto max-w-md rounded-lg border bg-card p-6 text-center">
+        <AlertTriangle className="mx-auto h-7 w-7 text-destructive" />
+        <h2 className="mt-3 font-semibold">Domain তথ্য লোড হয়নি</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {(error as Error | null)?.message || "সাময়িক সমস্যা হয়েছে। আবার চেষ্টা করুন।"}
+        </p>
+        <Button className="mt-4" size="sm" onClick={() => refetch()} disabled={isFetching}>
+          {isFetching ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="mr-2 h-4 w-4" />
+          )}
+          আবার চেষ্টা করুন
+        </Button>
+      </div>
+    );
+  }
 
   const settings = data.settings;
   const rootDomain = settings.rootDomain;
@@ -291,16 +321,13 @@ function Page() {
     try {
       await removeFn({ data: { domainId: id } });
       toast.success(
-        wasPrimary
-          ? "Domain removed — your store now uses its subdomain again"
-          : "Domain removed",
+        wasPrimary ? "Domain removed — your store now uses its subdomain again" : "Domain removed",
       );
       qc.invalidateQueries({ queryKey: ["admin", "domains"] });
     } catch (e) {
       toast.error((e as Error).message);
     }
   }
-
 
   async function setPrimary(id: string | null) {
     try {
@@ -344,14 +371,18 @@ function Page() {
           </div>
           <Button
             onClick={saveSlug}
-            disabled={savingSlug || slug === currentSlug || slugState.ok === false || slugState.loading}
+            disabled={
+              savingSlug || slug === currentSlug || slugState.ok === false || slugState.loading
+            }
           >
             {savingSlug ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
             Save
           </Button>
         </div>
         <div className="min-h-4 text-xs">
-          {slugState.loading && <span className="text-muted-foreground">Checking availability…</span>}
+          {slugState.loading && (
+            <span className="text-muted-foreground">Checking availability…</span>
+          )}
           {slugState.ok === true && <span className="text-emerald-600">Available</span>}
           {slugState.ok === false && <span className="text-destructive">{slugState.reason}</span>}
         </div>
@@ -370,7 +401,12 @@ function Page() {
 
         {(data as any).autoSubdomain && (
           <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="outline" onClick={reconnectSubdomain} disabled={provisioning}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={reconnectSubdomain}
+              disabled={provisioning}
+            >
               {provisioning ? (
                 <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
               ) : (
@@ -399,14 +435,13 @@ function Page() {
           <div className="flex items-start gap-2 rounded-md bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span className="min-w-0 break-words">
-              এই সাবডোমেইনটি এখনো লাইভ হয়নি। উপরের “Reconnect subdomain” চাপুন —
-              প্ল্যাটফর্মে Cloudflare API সেটআপ থাকলে এটি সাথে সাথে DNS + হোস্টিং-এ
-              যুক্ত হয়ে যাবে (সার্টিফিকেট ইস্যু হতে কয়েক মিনিট লাগতে পারে)।
+              এই সাবডোমেইনটি এখনো লাইভ হয়নি। উপরের “Reconnect subdomain” চাপুন — প্ল্যাটফর্মে
+              Cloudflare API সেটআপ থাকলে এটি সাথে সাথে DNS + হোস্টিং-এ যুক্ত হয়ে যাবে (সার্টিফিকেট
+              ইস্যু হতে কয়েক মিনিট লাগতে পারে)।
             </span>
           </div>
         )}
       </section>
-
 
       {/* Custom domains (plan-gated) */}
       <FeatureGate feature={"custom_domain" as any} inline>
@@ -423,8 +458,13 @@ function Page() {
             <p className="font-semibold">কীভাবে কানেক্ট করবেন — ৪ ধাপ:</p>
             <ol className="mt-1 list-decimal space-y-0.5 pl-4">
               <li>যেকোনো registrar (GoDaddy, Namecheap, Cloudflare) থেকে ডোমেইন কিনুন।</li>
-              <li>নিচে ডোমেইন যোগ করে দেখানো TXT + A/CNAME record গুলো registrar এর DNS panel এ বসান।</li>
-              <li>"Check now" চাপুন — verify হলে status "Verified" হবে (DNS ছড়াতে ৫ মিনিট–২৪ ঘণ্টা লাগতে পারে)।</li>
+              <li>
+                নিচে ডোমেইন যোগ করে দেখানো TXT + A/CNAME record গুলো registrar এর DNS panel এ বসান।
+              </li>
+              <li>
+                "Check now" চাপুন — verify হলে status "Verified" হবে (DNS ছড়াতে ৫ মিনিট–২৪ ঘণ্টা
+                লাগতে পারে)।
+              </li>
               <li>SSL issue হওয়ার পর "Make primary" দিয়ে সেট করলে ওই ডোমেইনে স্টোর ওপেন হবে।</li>
             </ol>
             <p className="mt-2">
@@ -432,7 +472,6 @@ function Page() {
               Domains ট্যাব থেকে search করে যেকোনো landing page এর সাথে connect করা যাবে।
             </p>
           </div>
-
 
           <div className="flex flex-col gap-2 sm:flex-row">
             <Input
@@ -455,7 +494,10 @@ function Page() {
               const apex = isApexHost(d.hostname);
               const target = d.dns_target || settings.dnsTarget;
               const cooldownLeft = d.last_checked_at
-                ? Math.max(0, Math.ceil((15_000 - (now - new Date(d.last_checked_at).getTime())) / 1000))
+                ? Math.max(
+                    0,
+                    Math.ceil((15_000 - (now - new Date(d.last_checked_at).getTime())) / 1000),
+                  )
                 : 0;
               const live = d.status === "active" || d.ssl_status === "issued";
               const canBePrimary =
@@ -483,7 +525,6 @@ function Page() {
                       </span>
                     )}
                   </div>
-
 
                   {d.status === "verified" && !live && (
                     <div className="rounded-md bg-blue-50 p-2 text-xs text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
@@ -514,7 +555,11 @@ function Page() {
                           <RecordRow type="A" name={d.hostname} value={settings.apexIp} />
                           <p className="text-[11px] text-muted-foreground">
                             আপনার DNS provider যদি CNAME flattening সাপোর্ট করে (যেমন Cloudflare),
-                            তাহলে A এর বদলে <code>{d.hostname} → {target}</code> CNAME ও ব্যবহার করা যাবে।
+                            তাহলে A এর বদলে{" "}
+                            <code>
+                              {d.hostname} → {target}
+                            </code>{" "}
+                            CNAME ও ব্যবহার করা যাবে।
                           </p>
                         </>
                       ) : (
@@ -594,7 +639,11 @@ function Page() {
                 key={d.id}
                 className="flex cursor-pointer items-center gap-2 rounded-md border p-2 text-sm"
               >
-                <input type="radio" checked={primaryId === d.id} onChange={() => setPrimary(d.id)} />
+                <input
+                  type="radio"
+                  checked={primaryId === d.id}
+                  onChange={() => setPrimary(d.id)}
+                />
                 <span className="truncate">
                   Custom — <code className="text-xs">{d.hostname}</code>
                 </span>

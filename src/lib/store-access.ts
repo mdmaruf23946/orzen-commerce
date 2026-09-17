@@ -4,6 +4,7 @@
 import { createMiddleware } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { allows, SECTION_BY_KEY, type PermissionMap } from "@/lib/panel-sections";
+import { ensureStoreForAccount } from "@/lib/store-bootstrap";
 
 export type StaffInfo = {
   id: string;
@@ -27,6 +28,7 @@ export type StoreAccess = {
 export async function resolveStoreAccess(
   supabase: any,
   userId: string,
+  claims?: Record<string, unknown>,
 ): Promise<StoreAccess> {
   const { data: own } = await supabase
     .from("stores")
@@ -46,6 +48,16 @@ export async function resolveStoreAccess(
     .maybeSingle();
 
   if (!staff) {
+    if (claims) {
+      const ensured = await ensureStoreForAccount(supabase, userId, claims, "id,owner_user_id");
+      return {
+        storeId: ensured.store.id,
+        isOwner: !ensured.isEmployee,
+        ownerUserId: ensured.store.owner_user_id ?? userId,
+        staff: null,
+        permissions: null,
+      };
+    }
     return { storeId: null, isOwner: false, ownerUserId: userId, staff: null, permissions: null };
   }
 
@@ -78,7 +90,8 @@ export function assertSection(
 ) {
   if (access.isOwner) return;
   if (!access.staff) throw new Error("No store access for this account");
-  if (SECTION_BY_KEY[section]?.ownerOnly) throw new Error("This section is available to the store owner only");
+  if (SECTION_BY_KEY[section]?.ownerOnly)
+    throw new Error("This section is available to the store owner only");
   if (!allows(access.permissions, section, level)) {
     throw new Error("You don't have permission to use this section");
   }
@@ -93,7 +106,7 @@ export function storeAccess(section: string, level: "view" | "manage" = "view") 
   return createMiddleware({ type: "function" })
     .middleware([requireSupabaseAuth])
     .server(async ({ next, context }) => {
-      const access = await resolveStoreAccess(context.supabase, context.userId);
+      const access = await resolveStoreAccess(context.supabase, context.userId, context.claims);
       if (!access.storeId) throw new Error("No store found for this account");
       assertSection(access, section, level);
       return next({
@@ -111,7 +124,7 @@ export function storeAccess(section: string, level: "view" | "manage" = "view") 
 export const ownerOnlyAccess = createMiddleware({ type: "function" })
   .middleware([requireSupabaseAuth])
   .server(async ({ next, context }) => {
-    const access = await resolveStoreAccess(context.supabase, context.userId);
+    const access = await resolveStoreAccess(context.supabase, context.userId, context.claims);
     if (!access.isOwner) throw new Error("Only the store owner can do this");
     return next({ context: { ...context, access } });
   });
