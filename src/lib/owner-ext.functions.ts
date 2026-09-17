@@ -608,3 +608,106 @@ export const listDevLogs = createServerFn({ method: "GET" })
     items.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
     return items.slice(0, 100);
   });
+
+// ---------- ACCOUNTS WITHOUT A STORE ----------
+// Merchants can end up signed up but store-less (e.g. signup interrupted).
+// The Winner Admin must be able to see and repair them.
+export const listUsersWithoutStore = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const sb: any = supabaseAdmin;
+    const { data: list } = await sb.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const { data: stores } = await sb.from("stores").select("owner_user_id");
+    const { data: staff } = await sb.from("store_staff").select("user_id");
+    const owners = new Set((stores ?? []).map((s: any) => s.owner_user_id));
+    const staffIds = new Set((staff ?? []).map((s: any) => s.user_id));
+    return ((list?.users ?? []) as any[])
+      .filter((u) => !owners.has(u.id) && !staffIds.has(u.id))
+      .map((u) => ({
+        id: u.id,
+        email: u.email ?? "",
+        name: u.user_metadata?.owner_name ?? "",
+        wanted_slug: u.user_metadata?.store_slug ?? "",
+        wanted_name: u.user_metadata?.store_name ?? "",
+        created_at: u.created_at,
+        confirmed: Boolean(u.email_confirmed_at),
+      }))
+      .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  });
+
+export const createStoreForUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ userId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { fetchTemplate, templateStoreFields, seedStoreFromTemplate } = await import(
+      "@/lib/store-template"
+    );
+    const sb: any = supabaseAdmin;
+
+    const { data: existing } = await sb
+      .from("stores")
+      .select("id,slug")
+      .eq("owner_user_id", data.userId)
+      .maybeSingle();
+    if (existing) return { ok: true, slug: existing.slug, already: true };
+
+    const { data: got } = await sb.auth.admin.getUserById(data.userId);
+    const user = got?.user;
+    if (!user) throw new Error("User not found");
+    const meta = user.user_metadata ?? {};
+    const slugify = (s: string) =>
+      s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 60);
+    const base =
+      slugify(String(meta.store_slug ?? "")) ||
+      slugify(String(user.email ?? "store").split("@")[0]) ||
+      "store";
+    let slug = base;
+    for (let i = 0; i < 10; i++) {
+      const { data: taken } = await sb.from("stores").select("id").eq("slug", slug).maybeSingle();
+      if (!taken) break;
+      slug = `${base}-${Math.floor(Math.random() * 9999)}`;
+    }
+    const name =
+      String(meta.store_name ?? "").trim() ||
+      `${base.charAt(0).toUpperCase() + base.slice(1)}'s Store`;
+
+    const tpl = await fetchTemplate(sb);
+    const { data: theme } = await sb
+      .from("store_themes")
+      .select("id")
+      .eq("is_default", true)
+      .maybeSingle();
+    const { data: created, error } = await sb
+      .from("stores")
+      .insert({
+        owner_user_id: data.userId,
+        slug,
+        name,
+        status: "active",
+        ...templateStoreFields(tpl),
+        theme_id: theme?.id ?? null,
+      })
+      .select("id,slug")
+      .single();
+    if (error) throw new Error(error.message);
+    if (tpl && created?.id) {
+      try {
+        await seedStoreFromTemplate(sb, created.id, tpl);
+      } catch {
+        // Non-fatal: the merchant can reset to default later.
+      }
+    }
+    try {
+      const { data: ps } = await sb.from("platform_settings").select("settings").eq("id", 1).maybeSingle();
+      const root = ((ps?.settings ?? {}).root_domain ?? "orzen.top").toLowerCase();
+      const { ensureSubdomainAttached } = await import("@/lib/cloudflare-pages.server");
+      await ensureSubdomainAttached(`${slug}.${root}`);
+    } catch {
+      // Non-fatal — domain can be attached later from the merchant panel.
+    }
+    return { ok: true, slug, already: false };
+  });
