@@ -98,6 +98,10 @@ function OwnerStores() {
         </div>
       </div>
 
+      <OrphanAccounts />
+
+
+
       {/* Filters */}
       <div className="grid gap-2 rounded-xl border bg-card p-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="relative">
