@@ -181,9 +181,9 @@ function StoreLayout() {
         {showChrome && !isPreview && agent && (
           <AIChatLauncher
             slug={slug}
-            agentName={agent.agent_name}
-            welcome={agent.welcome_message}
-            messengerUrl={toMessengerUrl(store.facebook)}
+            aiAgent={agent.ai ? { agentName: agent.ai.agent_name, welcome: agent.ai.welcome_message } : null}
+            messengerUrl={agent.messenger_url}
+            whatsappUrl={agent.whatsapp_url}
           />
         )}
         {!isPreview && !isProductPage && <BottomNav slug={slug} whatsapp={store.whatsapp} />}
@@ -195,16 +195,6 @@ function StoreLayout() {
 
   );
 
-}
-
-function toMessengerUrl(fb: string | null): string | null {
-  if (!fb) return null;
-  const trimmed = fb.trim();
-  if (!trimmed) return null;
-  if (trimmed.startsWith("http://m.me/") || trimmed.startsWith("https://m.me/")) return trimmed;
-  const m = trimmed.match(/facebook\.com\/([^/?#]+)/i);
-  if (m) return `https://m.me/${m[1]}`;
-  return trimmed;
 }
 
 function TrackingScripts({ marketing, slug }: { marketing: any; slug: string }) {

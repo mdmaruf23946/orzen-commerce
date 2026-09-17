@@ -4,6 +4,7 @@ import { getRequestHeader } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertPlan } from "@/lib/plan-guard";
+import { hasFeature } from "@/lib/features";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -298,7 +299,7 @@ export const getMyMessengerPaymentMethods = createServerFn({ method: "GET" })
   });
 
 
-// ---------- Storefront: read public agent config ----------
+// ---------- Storefront: read public chat channels ----------
 export const getStoreAgentPublic = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ slug: z.string().min(1).max(120) }).parse(d))
   .handler(async ({ data }) => {
@@ -311,37 +312,55 @@ export const getStoreAgentPublic = createServerFn({ method: "GET" })
     const store = row as { id: string } | null;
     if (!store) return null;
 
-    // Plan-gate the storefront AI icon: only show for stores whose current
-    // subscription package includes the `ai_agent` feature (or trial).
+    // Resolve all storefront chat options server-side. Only safe destinations
+    // leave this boundary; channel credentials never reach the browser.
     const admin = adminClient();
-    const { data: planRow } = await admin
-      .from("stores")
-      .select("subscription_status, subscription_packages(is_trial, features)")
-      .eq("id", store.id)
-      .maybeSingle();
-    const status = (planRow as any)?.subscription_status ?? "active";
-    if (status === "expired" || status === "suspended" || status === "cancelled") return null;
-    const pkg = (planRow as any)?.subscription_packages;
-    const planAllows = !!pkg && (pkg.is_trial === true || pkg.features?.ai_agent === true);
-    if (!planAllows) return null;
+    const [{ data: planRow }, { data: agent }, { data: messenger }, { data: whatsapp }] = await Promise.all([
+      admin
+        .from("stores")
+        .select("subscription_status, subscription_packages(is_trial, features)")
+        .eq("id", store.id)
+        .maybeSingle(),
+      admin
+        .from("store_ai_agents")
+        .select("enabled,agent_name,welcome_message,language,style,use_emoji,human_like")
+        .eq("store_id", store.id)
+        .maybeSingle(),
+      admin
+        .from("messenger_integrations")
+        .select("status,page_id")
+        .eq("store_id", store.id)
+        .maybeSingle(),
+      admin
+        .from("whatsapp_integrations")
+        .select("status,phone_number")
+        .eq("store_id", store.id)
+        .maybeSingle(),
+    ]);
 
-    const { data: agent } = await sb
-      .from("store_ai_agents")
-      .select("enabled,agent_name,welcome_message,language,style,use_emoji,human_like")
-      .eq("store_id", store.id)
-      .maybeSingle();
-    // If owner explicitly disabled the agent, hide the icon.
-    if (agent && agent.enabled === false) return null;
-    // Plan allows and no row (or enabled) → show icon with sensible defaults.
+    const aiAvailable = hasFeature(planRow as any, "ai_agent") && agent?.enabled !== false;
+    const messengerAvailable = ["connected", "active"].includes(messenger?.status ?? "") && !!messenger?.page_id;
+    const whatsappNumber = whatsapp?.phone_number?.replace(/\D/g, "") ?? "";
+    const whatsappAvailable = ["connected", "active"].includes(whatsapp?.status ?? "") && whatsappNumber.length > 0;
+
+    if (!aiAvailable && !messengerAvailable && !whatsappAvailable) return null;
+
     return {
       storeId: store.id,
-      enabled: true,
-      agent_name: agent?.agent_name || "Sales Assistant",
-      welcome_message: agent?.welcome_message || "Hi! How can I help you today?",
-      language: agent?.language ?? "both",
-      style: agent?.style ?? "Friendly and helpful",
-      use_emoji: agent?.use_emoji ?? true,
-      human_like: agent?.human_like ?? true,
+      ai: aiAvailable
+        ? {
+            agent_name: agent?.agent_name || "Sales Assistant",
+            welcome_message: agent?.welcome_message || "Hi! How can I help you today?",
+            language: agent?.language ?? "both",
+            style: agent?.style ?? "Friendly and helpful",
+            use_emoji: agent?.use_emoji ?? true,
+            human_like: agent?.human_like ?? true,
+          }
+        : null,
+      messenger_url: messengerAvailable
+        ? `https://m.me/${encodeURIComponent(messenger.page_id as string)}`
+        : null,
+      whatsapp_url: whatsappAvailable ? `https://wa.me/${whatsappNumber}` : null,
     };
   });
 
