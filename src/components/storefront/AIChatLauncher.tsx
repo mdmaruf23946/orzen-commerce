@@ -1,4 +1,10 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
+
+// Taps that land before React hydrates would otherwise do nothing. This tiny
+// inline script runs as soon as the HTML is parsed, remembers the tap, and the
+// component replays it the moment it mounts.
+const EARLY_TAP_SCRIPT =
+  "(function(){try{document.addEventListener('click',function(e){var n=e.target;while(n&&n!==document){if(n.dataset&&n.dataset.chatLauncher){window.__orzenChatTap=1;break}n=n.parentNode}},true)}catch(_){}})()";
 import { Bot, MessageCircle, X } from "lucide-react";
 import { useStoreT } from "@/lib/store-i18n";
 import { Button } from "@/components/ui/button";
@@ -30,6 +36,15 @@ export function AIChatLauncher({
     if (chatOpen) setChatOpen(false);
     setOpen((v) => !v);
   }
+
+  // Replay a tap that happened before hydration finished.
+  useEffect(() => {
+    const w = window as any;
+    if (w.__orzenChatTap) {
+      w.__orzenChatTap = 0;
+      setOpen(true);
+    }
+  }, []);
 
   if (channelCount === 0) return null;
 
@@ -85,9 +100,12 @@ export function AIChatLauncher({
         </div>
       )}
 
+      <script dangerouslySetInnerHTML={{ __html: EARLY_TAP_SCRIPT }} />
+
       <Button
         type="button"
         size="icon"
+        data-chat-launcher="1"
         onClick={toggle}
         aria-label={t("chat.openChat")}
         aria-expanded={open}
