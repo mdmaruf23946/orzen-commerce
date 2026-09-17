@@ -151,7 +151,8 @@ export const listMyDomains = createServerFn({ method: "GET" })
         if (!subdomainAttached) {
           const res = await ensureSubdomainAttached(host);
           subdomainAttached = res.ok;
-          if (!res.ok) console.error(`[subdomain] self-heal failed for ${host}: ${res.error ?? ""}`);
+          if (!res.ok)
+            console.error(`[subdomain] self-heal failed for ${host}: ${res.error ?? ""}`);
         }
       } catch (e) {
         console.error(`[subdomain] self-heal threw for ${host}: ${(e as Error).message}`);
