@@ -1,8 +1,10 @@
 # Deploy the ORZEN Cloudflare Worker safely
 
-The live `orzen.top` site is served by the Cloudflare Worker named
-`orzen-commerce`. It uses the separate production database. Lovable Cloud is
-development/test/backup only.
+The live `orzen.top` site is served only by the Cloudflare Worker named
+`orzen-commerce-production`. The workspace's automatic publisher may update
+`orzen-commerce`, but that preview service must never have an `orzen.top`
+custom domain. The live service uses the separate production database.
+Lovable Cloud is development/test/backup only.
 
 Never use Lovable Publish for `orzen.top`: its build-time defaults point at the
 development database. A mixed deployment lets the browser sign in against one
@@ -37,7 +39,8 @@ from the same verified source used for the browser build. It then checks
 
 Do not use Cloudflare dashboard uploads, Git-based Pages deployment, or Lovable
 Publish for `orzen.top`. They bypass these checks and can restore development
-database values.
+database values. Keep root and wildcard custom domains attached exclusively to
+`orzen-commerce-production`; `orzen-commerce` is an unattached preview target.
 
 ## Runtime requirements
 
@@ -73,7 +76,7 @@ And these as **secrets** (never commit them):
 |---|---|
 | `SUPABASE_SERVICE_ROLE_KEY` | **required** — admin panel, Winner Admin, all agent reads/writes |
 | `CREDENTIALS_ENCRYPTION_KEY` | **required** — decrypts saved WhatsApp/Messenger/payment credentials |
-| `LOVABLE_API_KEY` | **required** — AI Gateway (AI agents, product builder) |
+| `LOVABLE_API_KEY` | **required** — AI Gateway only (AI agents, product builder); it is not an auth or database key |
 
 > Without these three, the site still renders, but every Agent connection
 > (Messenger, WhatsApp, Winner Admin) fails with a server error on this host
@@ -154,7 +157,7 @@ the platform site and can never be claimed by a store.
 
 Code changes do not automatically update `orzen.top`. Run
 `bun run deploy:production`; source control and Lovable preview remain separate
-from the production Worker. User data is unaffected by a deployment.
+from the production-only Worker. User data is unaffected by a deployment.
 
 ---
 

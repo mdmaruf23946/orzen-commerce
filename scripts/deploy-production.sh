@@ -7,7 +7,9 @@ cd "$ROOT"
 
 EXPECTED_PROJECT_ID="rljisleyqluoexmtncos"
 BLOCKED_PROJECT_ID="dqhfxvhzagitytpvildw"
-WORKER_NAME="orzen-commerce"
+# Public ORZEN domains point only at this isolated service. Workspace preview
+# publishing may update `orzen-commerce`, but cannot replace this service.
+WORKER_NAME="orzen-commerce-production"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
@@ -108,7 +110,7 @@ python3 - "$CONFIG" <<'PY'
 import json, pathlib, sys
 path = pathlib.Path(sys.argv[1])
 config = json.loads(path.read_text(encoding="utf-8"))
-config["name"] = "orzen-commerce"
+config["name"] = "orzen-commerce-production"
 flags = set(config.get("compatibility_flags", []))
 flags.add("nodejs_compat")
 config["compatibility_flags"] = sorted(flags)
@@ -129,6 +131,21 @@ LOVABLE_API_KEY=$LOVABLE_API_KEY
 PUBLIC_SITE_ORIGIN=https://orzen.top
 EOF
 chmod 600 "$RUNTIME_SECRETS"
+
+SERVICE_STATUS="$(curl -sS -o /dev/null -w '%{http_code}' \
+  -H "Authorization: Bearer $CF_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/services/$WORKER_NAME")"
+if [ "$SERVICE_STATUS" = "404" ]; then
+  echo "Creating the isolated production service with the verified build…"
+  bunx wrangler deploy \
+    --config "$CONFIG" \
+    --keep-vars \
+    --secrets-file "$RUNTIME_SECRETS" \
+    --message "Initial guarded ORZEN production deployment"
+elif [ "$SERVICE_STATUS" != "200" ]; then
+  echo "Could not verify the isolated production service (HTTP $SERVICE_STATUS); deployment stopped." >&2
+  exit 1
+fi
 
 echo "Uploading a non-live production candidate with synchronized runtime…"
 UPLOAD_LOG="$TMP_DIR/upload.log"
