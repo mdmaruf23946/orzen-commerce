@@ -58,13 +58,15 @@ export const Route = createFileRoute("/store/$slug")({
     // Store data, request origin and the chat channels are independent reads —
     // run them together so the floating chat launcher is part of the very first
     // render instead of appearing seconds after hydration.
-    const [store, origin] = await Promise.all([
+    const [store, origin, agent] = await Promise.all([
       context.queryClient.ensureQueryData(storeQuery(params.slug)),
       getRequestOrigin().catch(() => ""),
       context.queryClient.ensureQueryData(agentQuery(params.slug)).catch(() => null),
     ]);
     if (!store) throw notFound();
-    return { store, origin };
+    // `agent` travels with the loader data so the launcher survives hydration
+    // instead of blinking out while the client cache is still empty.
+    return { store, origin, agent: agent ?? null };
   },
   head: ({ loaderData }) => {
     if (!loaderData) return {};
@@ -103,7 +105,13 @@ function StoreLayout() {
   // Real-time runtime error logging for every Store Panel page.
   useRouteErrorTracking("storefront");
   const { data: store } = useSuspenseQuery(storeQuery(slug));
-  const { data: agent } = useQuery(agentQuery(slug));
+  const { agent: loaderAgent } = Route.useLoaderData();
+  const { data: agentData } = useQuery({
+    ...agentQuery(slug),
+    initialData: loaderAgent ?? undefined,
+    
+  });
+  const agent = agentData ?? loaderAgent;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const search = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
   const isPreview = String(search?.[THEME_PREVIEW_PARAM] ?? "") === "1";
