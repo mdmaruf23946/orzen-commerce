@@ -1,5 +1,6 @@
-// Owner-only: live deployment + GitHub connection status helpers.
+// Owner-only: live deployment status helper for the GitHub & Deploy card.
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 async function assertOwner(supabase: any, userId: string) {
   const { data, error } = await supabase
@@ -15,7 +16,7 @@ async function assertOwner(supabase: any, userId: string) {
 const LIVE_URL = "https://orzen.top/api/public/version";
 
 export const liveDeploymentStatus = createServerFn({ method: "GET" })
-  .middleware([(await import("@/integrations/supabase/auth-middleware")).requireSupabaseAuth])
+  .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertOwner(context.supabase, context.userId);
     const checkedAt = new Date().toISOString();
