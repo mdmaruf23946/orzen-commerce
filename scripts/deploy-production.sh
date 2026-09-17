@@ -190,4 +190,10 @@ for attempt in $(seq 1 12); do
   sleep 5
 done
 
+echo "Checking production database privileges and domain attachment…"
+if ! python3 "$ROOT/scripts/verify-production-parity.py"; then
+  echo "Production parity check failed after deployment; investigate before announcing the release." >&2
+  exit 1
+fi
+
 echo "ORZEN production deployment completed safely."
