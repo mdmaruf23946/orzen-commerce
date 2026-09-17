@@ -139,6 +139,38 @@ def check_domains(failures: list[str]) -> None:
             f"{PRODUCTION_SERVICE}: {', '.join(sorted(stray))}"
         )
 
+    attached = {
+        entry["hostname"].lower()
+        for entry in result.get("result", [])
+        if entry.get("service") == PRODUCTION_SERVICE
+    }
+    db_token = os.environ.get("PROD_SUPABASE_ACCESS_TOKEN")
+    if not db_token:
+        return
+    try:
+        rows = _request(
+            f"https://api.supabase.com/v1/projects/{PROD_PROJECT_ID}/database/query",
+            db_token,
+            {
+                "query": "select slug from public.stores "
+                "where subdomain_released_at is null;"
+            },
+        )
+    except urllib.error.URLError as exc:  # pragma: no cover - network failure path
+        failures.append(f"Could not read store addresses: {exc}")
+        return
+
+    missing = [
+        f"{row['slug']}.{CF_ZONE_NAME}"
+        for row in rows
+        if f"{row['slug']}.{CF_ZONE_NAME}" not in attached
+    ]
+    if missing:
+        failures.append(
+            "These store addresses are not connected to the live server: "
+            f"{', '.join(sorted(missing))}"
+        )
+
 
 def main() -> int:
     failures: list[str] = []

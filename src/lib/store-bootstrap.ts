@@ -37,7 +37,12 @@ async function defaultThemeId(supabase: any): Promise<string | null> {
   return (first?.id as string) ?? null;
 }
 
-async function attachStoreSubdomain(supabase: any, slug: string) {
+/**
+ * Register <slug>.<root> on the hosting network so the storefront answers
+ * immediately. Failures never block store creation, but they are logged and
+ * retried later (Domains page self-heal), never silently dropped.
+ */
+export async function attachStoreSubdomain(supabase: any, slug: string) {
   try {
     const { data } = await supabase
       .from("platform_settings")
@@ -45,10 +50,18 @@ async function attachStoreSubdomain(supabase: any, slug: string) {
       .eq("id", 1)
       .maybeSingle();
     const root = (((data?.settings as any) ?? {}).root_domain ?? "orzen.top").toLowerCase();
+    const host = `${slug}.${root}`;
     const { ensureSubdomainAttached } = await import("@/lib/cloudflare-pages.server");
-    await ensureSubdomainAttached(`${slug}.${root}`);
-  } catch {
-    // Store creation remains valid; Domains can retry the external attachment.
+    const res = await ensureSubdomainAttached(host);
+    if (!res.ok) {
+      console.error(
+        `[subdomain] could not attach ${host}: ${res.reason ?? "error"} ${res.error ?? ""}`,
+      );
+    }
+    return res;
+  } catch (e) {
+    console.error(`[subdomain] attach threw for ${slug}: ${(e as Error).message}`);
+    return { ok: false, hostname: slug, reason: "error" as const, error: (e as Error).message };
   }
 }
 

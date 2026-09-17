@@ -131,17 +131,40 @@ export const listMyDomains = createServerFn({ method: "GET" })
       ? await context.supabase.from("landing_pages").select("id,title,slug").in("id", pageIds)
       : { data: [] as any[] };
     const byId = new Map((pages ?? []).map((p: any) => [p.id, p]));
-    const { subdomainAutomationConfigured } = await import("@/lib/cloudflare-pages.server");
+    const { subdomainAutomationConfigured, getSubdomainStatus, ensureSubdomainAttached } =
+      await import("@/lib/cloudflare-pages.server");
     const { data: releaseInfo } = await context.supabase
       .from("stores")
       .select("subdomain_released_at, subdomain_release_reason")
       .eq("id", store.id)
       .maybeSingle();
+
+    // Self-heal: if this store's free address was never registered on the
+    // hosting network (or was lost), attach it right here so the merchant
+    // never has to wait or press anything.
+    const autoSubdomain = subdomainAutomationConfigured();
+    let subdomainAttached: boolean | null = null;
+    if (autoSubdomain && !releaseInfo?.subdomain_released_at) {
+      const host = `${store.slug}.${settings.rootDomain}`;
+      try {
+        subdomainAttached = (await getSubdomainStatus(host)) === "active";
+        if (!subdomainAttached) {
+          const res = await ensureSubdomainAttached(host);
+          subdomainAttached = res.ok;
+          if (!res.ok)
+            console.error(`[subdomain] self-heal failed for ${host}: ${res.error ?? ""}`);
+        }
+      } catch (e) {
+        console.error(`[subdomain] self-heal threw for ${host}: ${(e as Error).message}`);
+      }
+    }
+
     return {
       store: { ...store, ...(releaseInfo ?? {}) },
       settings,
       autoSsl: cloudflareConfigured(),
-      autoSubdomain: subdomainAutomationConfigured(),
+      autoSubdomain,
+      subdomainAttached,
       domains: rows.map((r) => ({
         ...r,
         landing_page: r.landing_page_id ? (byId.get(r.landing_page_id) ?? null) : null,
