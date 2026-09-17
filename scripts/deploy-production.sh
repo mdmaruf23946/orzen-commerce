@@ -153,64 +153,28 @@ if [ -z "$VERSION_ID" ] || [ -z "$PREVIEW_URL" ]; then
   exit 1
 fi
 
-export ORZEN_PREVIEW_URL="$PREVIEW_URL"
-python3 <<'PY'
-import json, os, re, urllib.parse, urllib.request
-
-base = os.environ["ORZEN_PREVIEW_URL"].rstrip("/")
-expected = os.environ["ORZEN_EXPECTED_PROJECT_ID"]
-opener = urllib.request.build_opener()
-opener.addheaders = [("User-Agent", "Mozilla/5.0 ORZEN-Deployment-Check/1.0")]
-with opener.open(base + "/auth", timeout=30) as response:
-    html = response.read().decode("utf-8", "replace")
-    if response.status != 200:
-        raise SystemExit("Candidate auth page did not return 200.")
-
-assets = set(re.findall(r'(?:src|href)=["\']([^"\']+\.js[^"\']*)', html))
-matched = False
-for asset in assets:
-    with opener.open(urllib.parse.urljoin(base, asset), timeout=30) as response:
-        body = response.read().decode("utf-8", "replace")
-    matched = matched or expected in body
-if not matched:
-    raise SystemExit("Candidate browser bundle does not point at production; live deployment stopped.")
-with opener.open(base + "/api/public/deployment-health", timeout=30) as response:
-    health = json.loads(response.read().decode("utf-8"))
-if health.get("ok") is not True or health.get("serverProjectId") != expected:
-    raise SystemExit("Candidate server does not point at production; live deployment stopped.")
-PY
+echo "Checking the candidate before any live traffic reaches it…"
+if ! python3 "$ROOT/scripts/verify-deployment-target.py" \
+  "$PREVIEW_URL" "$EXPECTED_PROJECT_ID" "$BLOCKED_PROJECT_ID"; then
+  echo "Candidate does not point at production; live deployment stopped." >&2
+  exit 1
+fi
 
 echo "Candidate checks passed. Deploying verified version to 100%…"
 bunx wrangler versions deploy "$VERSION_ID@100%" --name "$WORKER_NAME" --yes \
   --message "Verified ORZEN production deployment"
 
-export ORZEN_LIVE_URL="https://orzen.top"
-python3 <<'PY'
-import json, os, re, time, urllib.parse, urllib.request
-
-base = os.environ["ORZEN_LIVE_URL"]
-expected = os.environ["ORZEN_EXPECTED_PROJECT_ID"]
-blocked = "dqhfxvhzagitytpvildw"
-for attempt in range(12):
-    opener = urllib.request.build_opener()
-    opener.addheaders = [("User-Agent", "Mozilla/5.0 ORZEN-Deployment-Check/1.0")]
-    with opener.open(base + "/auth", timeout=30) as response:
-        html = response.read().decode("utf-8", "replace")
-    assets = set(re.findall(r'(?:src|href)=["\']([^"\']+\.js[^"\']*)', html))
-    bodies = []
-    for asset in assets:
-        with opener.open(urllib.parse.urljoin(base, asset), timeout=30) as response:
-            bodies.append(response.read().decode("utf-8", "replace"))
-    with opener.open(base + "/api/public/deployment-health", timeout=30) as response:
-        health = json.loads(response.read().decode("utf-8"))
-    browser_ok = any(expected in body for body in bodies) and not any(blocked in body for body in bodies)
-    server_ok = health.get("ok") is True and health.get("serverProjectId") == expected
-    if browser_ok and server_ok:
-        print("Live production identity check passed.")
-        break
-    if attempt == 11:
-        raise SystemExit("Live identity check failed after deployment.")
-    time.sleep(5)
-PY
+echo "Confirming the live site…"
+for attempt in $(seq 1 12); do
+  if python3 "$ROOT/scripts/verify-deployment-target.py" \
+    "https://orzen.top" "$EXPECTED_PROJECT_ID" "$BLOCKED_PROJECT_ID"; then
+    break
+  fi
+  if [ "$attempt" -eq 12 ]; then
+    echo "Live identity check failed after deployment." >&2
+    exit 1
+  fi
+  sleep 5
+done
 
 echo "ORZEN production deployment completed safely."
