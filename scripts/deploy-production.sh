@@ -89,12 +89,16 @@ chmod 600 "$ENV_PRODUCTION"
 echo "Building the guarded production candidate…"
 NODE_ENV=production bun run build
 
-if ! rg -q "$EXPECTED_PROJECT_ID" dist/client; then
-  echo "Production database reference is missing from the browser bundle; deployment stopped." >&2
+# Assert on the actual Supabase endpoint compiled into the browser bundle, not
+# on a bare project id (guard constants in source contain the expected id and
+# would make a naive check pass even on a misbuilt bundle).
+if ! rg -q "https://$EXPECTED_PROJECT_ID\.supabase\.co" dist/client; then
+  echo "Production database endpoint is missing from the browser bundle; deployment stopped." >&2
   exit 1
 fi
 if rg -q "$BLOCKED_PROJECT_ID" dist/client; then
   echo "Development database reference was found in the browser bundle; deployment stopped." >&2
+  rg -l "$BLOCKED_PROJECT_ID" dist/client >&2 || true
   exit 1
 fi
 
