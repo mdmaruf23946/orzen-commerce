@@ -187,13 +187,12 @@ import { Route as ApiPublicAiCallsToolRouteImport } from './routes/api/public/ai
 import { Route as ApiPublicAiAdminWebhookRouteImport } from './routes/api/public/ai-admin/webhook'
 import { Route as ApiPublicAiAdminMessengerWebhookRouteImport } from './routes/api/public/ai-admin/messenger-webhook'
 import { Route as AuthenticatedOwnerSubscriptionPayProvidersRouteImport } from './routes/_authenticated/owner/subscription-pay.providers'
-import { Route as AuthenticatedOwnerNotificationCenterTemplatesRouteImport } from './routes/_authenticated/owner/notification-center.templates'
-import { Route as AuthenticatedOwnerNotificationCenterComposeRouteImport } from './routes/_authenticated/owner/notification-center.compose'
-import { Route as AuthenticatedOwnerNotificationCenterIdRouteImport } from './routes/_authenticated/owner/notification-center.$id'
+import { Route as AuthenticatedOwnerNotificationCenterSplatRouteImport } from './routes/_authenticated/owner/notification-center.$'
 import { Route as AuthenticatedOwnerCommunicationTemplatesRouteImport } from './routes/_authenticated/owner/communication.templates'
 import { Route as AuthenticatedOwnerCommunicationHistoryRouteImport } from './routes/_authenticated/owner/communication.history'
 import { Route as AuthenticatedOwnerCommunicationGmailRouteImport } from './routes/_authenticated/owner/communication.gmail'
 import { Route as AuthenticatedOwnerCommunicationComposeRouteImport } from './routes/_authenticated/owner/communication.compose'
+import { Route as AuthenticatedOwnerCommunicationAutomationsRouteImport } from './routes/_authenticated/owner/communication.automations'
 import { Route as AuthenticatedOwnerAiAdminWhatsappRouteImport } from './routes/_authenticated/owner/ai-admin.whatsapp'
 import { Route as AuthenticatedOwnerAiAdminSupportRouteImport } from './routes/_authenticated/owner/ai-admin.support'
 import { Route as AuthenticatedOwnerAiAdminSettingsRouteImport } from './routes/_authenticated/owner/ai-admin.settings'
@@ -1228,22 +1227,10 @@ const AuthenticatedOwnerSubscriptionPayProvidersRoute =
     path: '/providers',
     getParentRoute: () => AuthenticatedOwnerSubscriptionPayRouteRoute,
   } as any)
-const AuthenticatedOwnerNotificationCenterTemplatesRoute =
-  AuthenticatedOwnerNotificationCenterTemplatesRouteImport.update({
-    id: '/templates',
-    path: '/templates',
-    getParentRoute: () => AuthenticatedOwnerNotificationCenterRouteRoute,
-  } as any)
-const AuthenticatedOwnerNotificationCenterComposeRoute =
-  AuthenticatedOwnerNotificationCenterComposeRouteImport.update({
-    id: '/compose',
-    path: '/compose',
-    getParentRoute: () => AuthenticatedOwnerNotificationCenterRouteRoute,
-  } as any)
-const AuthenticatedOwnerNotificationCenterIdRoute =
-  AuthenticatedOwnerNotificationCenterIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
+const AuthenticatedOwnerNotificationCenterSplatRoute =
+  AuthenticatedOwnerNotificationCenterSplatRouteImport.update({
+    id: '/$',
+    path: '/$',
     getParentRoute: () => AuthenticatedOwnerNotificationCenterRouteRoute,
   } as any)
 const AuthenticatedOwnerCommunicationTemplatesRoute =
@@ -1268,6 +1255,12 @@ const AuthenticatedOwnerCommunicationComposeRoute =
   AuthenticatedOwnerCommunicationComposeRouteImport.update({
     id: '/compose',
     path: '/compose',
+    getParentRoute: () => AuthenticatedOwnerCommunicationRouteRoute,
+  } as any)
+const AuthenticatedOwnerCommunicationAutomationsRoute =
+  AuthenticatedOwnerCommunicationAutomationsRouteImport.update({
+    id: '/automations',
+    path: '/automations',
     getParentRoute: () => AuthenticatedOwnerCommunicationRouteRoute,
   } as any)
 const AuthenticatedOwnerAiAdminWhatsappRoute =
@@ -1670,13 +1663,12 @@ export interface FileRoutesByFullPath {
   '/owner/ai-admin/settings': typeof AuthenticatedOwnerAiAdminSettingsRoute
   '/owner/ai-admin/support': typeof AuthenticatedOwnerAiAdminSupportRoute
   '/owner/ai-admin/whatsapp': typeof AuthenticatedOwnerAiAdminWhatsappRoute
+  '/owner/communication/automations': typeof AuthenticatedOwnerCommunicationAutomationsRoute
   '/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
   '/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
   '/owner/communication/history': typeof AuthenticatedOwnerCommunicationHistoryRouteWithChildren
   '/owner/communication/templates': typeof AuthenticatedOwnerCommunicationTemplatesRoute
-  '/owner/notification-center/$id': typeof AuthenticatedOwnerNotificationCenterIdRoute
-  '/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
-  '/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
+  '/owner/notification-center/$': typeof AuthenticatedOwnerNotificationCenterSplatRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/ai-admin/messenger-webhook': typeof ApiPublicAiAdminMessengerWebhookRoute
   '/api/public/ai-admin/webhook': typeof ApiPublicAiAdminWebhookRoute
@@ -1885,13 +1877,12 @@ export interface FileRoutesByTo {
   '/owner/ai-admin/settings': typeof AuthenticatedOwnerAiAdminSettingsRoute
   '/owner/ai-admin/support': typeof AuthenticatedOwnerAiAdminSupportRoute
   '/owner/ai-admin/whatsapp': typeof AuthenticatedOwnerAiAdminWhatsappRoute
+  '/owner/communication/automations': typeof AuthenticatedOwnerCommunicationAutomationsRoute
   '/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
   '/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
   '/owner/communication/history': typeof AuthenticatedOwnerCommunicationHistoryRouteWithChildren
   '/owner/communication/templates': typeof AuthenticatedOwnerCommunicationTemplatesRoute
-  '/owner/notification-center/$id': typeof AuthenticatedOwnerNotificationCenterIdRoute
-  '/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
-  '/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
+  '/owner/notification-center/$': typeof AuthenticatedOwnerNotificationCenterSplatRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/ai-admin/messenger-webhook': typeof ApiPublicAiAdminMessengerWebhookRoute
   '/api/public/ai-admin/webhook': typeof ApiPublicAiAdminWebhookRoute
@@ -2111,13 +2102,12 @@ export interface FileRoutesById {
   '/_authenticated/owner/ai-admin/settings': typeof AuthenticatedOwnerAiAdminSettingsRoute
   '/_authenticated/owner/ai-admin/support': typeof AuthenticatedOwnerAiAdminSupportRoute
   '/_authenticated/owner/ai-admin/whatsapp': typeof AuthenticatedOwnerAiAdminWhatsappRoute
+  '/_authenticated/owner/communication/automations': typeof AuthenticatedOwnerCommunicationAutomationsRoute
   '/_authenticated/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
   '/_authenticated/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
   '/_authenticated/owner/communication/history': typeof AuthenticatedOwnerCommunicationHistoryRouteWithChildren
   '/_authenticated/owner/communication/templates': typeof AuthenticatedOwnerCommunicationTemplatesRoute
-  '/_authenticated/owner/notification-center/$id': typeof AuthenticatedOwnerNotificationCenterIdRoute
-  '/_authenticated/owner/notification-center/compose': typeof AuthenticatedOwnerNotificationCenterComposeRoute
-  '/_authenticated/owner/notification-center/templates': typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
+  '/_authenticated/owner/notification-center/$': typeof AuthenticatedOwnerNotificationCenterSplatRoute
   '/_authenticated/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
   '/api/public/ai-admin/messenger-webhook': typeof ApiPublicAiAdminMessengerWebhookRoute
   '/api/public/ai-admin/webhook': typeof ApiPublicAiAdminWebhookRoute
@@ -2337,13 +2327,12 @@ export interface FileRouteTypes {
     | '/owner/ai-admin/settings'
     | '/owner/ai-admin/support'
     | '/owner/ai-admin/whatsapp'
+    | '/owner/communication/automations'
     | '/owner/communication/compose'
     | '/owner/communication/gmail'
     | '/owner/communication/history'
     | '/owner/communication/templates'
-    | '/owner/notification-center/$id'
-    | '/owner/notification-center/compose'
-    | '/owner/notification-center/templates'
+    | '/owner/notification-center/$'
     | '/owner/subscription-pay/providers'
     | '/api/public/ai-admin/messenger-webhook'
     | '/api/public/ai-admin/webhook'
@@ -2552,13 +2541,12 @@ export interface FileRouteTypes {
     | '/owner/ai-admin/settings'
     | '/owner/ai-admin/support'
     | '/owner/ai-admin/whatsapp'
+    | '/owner/communication/automations'
     | '/owner/communication/compose'
     | '/owner/communication/gmail'
     | '/owner/communication/history'
     | '/owner/communication/templates'
-    | '/owner/notification-center/$id'
-    | '/owner/notification-center/compose'
-    | '/owner/notification-center/templates'
+    | '/owner/notification-center/$'
     | '/owner/subscription-pay/providers'
     | '/api/public/ai-admin/messenger-webhook'
     | '/api/public/ai-admin/webhook'
@@ -2777,13 +2765,12 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/ai-admin/settings'
     | '/_authenticated/owner/ai-admin/support'
     | '/_authenticated/owner/ai-admin/whatsapp'
+    | '/_authenticated/owner/communication/automations'
     | '/_authenticated/owner/communication/compose'
     | '/_authenticated/owner/communication/gmail'
     | '/_authenticated/owner/communication/history'
     | '/_authenticated/owner/communication/templates'
-    | '/_authenticated/owner/notification-center/$id'
-    | '/_authenticated/owner/notification-center/compose'
-    | '/_authenticated/owner/notification-center/templates'
+    | '/_authenticated/owner/notification-center/$'
     | '/_authenticated/owner/subscription-pay/providers'
     | '/api/public/ai-admin/messenger-webhook'
     | '/api/public/ai-admin/webhook'
@@ -4136,25 +4123,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerSubscriptionPayProvidersRouteImport
       parentRoute: typeof AuthenticatedOwnerSubscriptionPayRouteRoute
     }
-    '/_authenticated/owner/notification-center/templates': {
-      id: '/_authenticated/owner/notification-center/templates'
-      path: '/templates'
-      fullPath: '/owner/notification-center/templates'
-      preLoaderRoute: typeof AuthenticatedOwnerNotificationCenterTemplatesRouteImport
-      parentRoute: typeof AuthenticatedOwnerNotificationCenterRouteRoute
-    }
-    '/_authenticated/owner/notification-center/compose': {
-      id: '/_authenticated/owner/notification-center/compose'
-      path: '/compose'
-      fullPath: '/owner/notification-center/compose'
-      preLoaderRoute: typeof AuthenticatedOwnerNotificationCenterComposeRouteImport
-      parentRoute: typeof AuthenticatedOwnerNotificationCenterRouteRoute
-    }
-    '/_authenticated/owner/notification-center/$id': {
-      id: '/_authenticated/owner/notification-center/$id'
-      path: '/$id'
-      fullPath: '/owner/notification-center/$id'
-      preLoaderRoute: typeof AuthenticatedOwnerNotificationCenterIdRouteImport
+    '/_authenticated/owner/notification-center/$': {
+      id: '/_authenticated/owner/notification-center/$'
+      path: '/$'
+      fullPath: '/owner/notification-center/$'
+      preLoaderRoute: typeof AuthenticatedOwnerNotificationCenterSplatRouteImport
       parentRoute: typeof AuthenticatedOwnerNotificationCenterRouteRoute
     }
     '/_authenticated/owner/communication/templates': {
@@ -4183,6 +4156,13 @@ declare module '@tanstack/react-router' {
       path: '/compose'
       fullPath: '/owner/communication/compose'
       preLoaderRoute: typeof AuthenticatedOwnerCommunicationComposeRouteImport
+      parentRoute: typeof AuthenticatedOwnerCommunicationRouteRoute
+    }
+    '/_authenticated/owner/communication/automations': {
+      id: '/_authenticated/owner/communication/automations'
+      path: '/automations'
+      fullPath: '/owner/communication/automations'
+      preLoaderRoute: typeof AuthenticatedOwnerCommunicationAutomationsRouteImport
       parentRoute: typeof AuthenticatedOwnerCommunicationRouteRoute
     }
     '/_authenticated/owner/ai-admin/whatsapp': {
@@ -4688,6 +4668,7 @@ const AuthenticatedOwnerCommunicationHistoryRouteWithChildren =
   )
 
 interface AuthenticatedOwnerCommunicationRouteRouteChildren {
+  AuthenticatedOwnerCommunicationAutomationsRoute: typeof AuthenticatedOwnerCommunicationAutomationsRoute
   AuthenticatedOwnerCommunicationComposeRoute: typeof AuthenticatedOwnerCommunicationComposeRoute
   AuthenticatedOwnerCommunicationGmailRoute: typeof AuthenticatedOwnerCommunicationGmailRoute
   AuthenticatedOwnerCommunicationHistoryRoute: typeof AuthenticatedOwnerCommunicationHistoryRouteWithChildren
@@ -4697,6 +4678,8 @@ interface AuthenticatedOwnerCommunicationRouteRouteChildren {
 
 const AuthenticatedOwnerCommunicationRouteRouteChildren: AuthenticatedOwnerCommunicationRouteRouteChildren =
   {
+    AuthenticatedOwnerCommunicationAutomationsRoute:
+      AuthenticatedOwnerCommunicationAutomationsRoute,
     AuthenticatedOwnerCommunicationComposeRoute:
       AuthenticatedOwnerCommunicationComposeRoute,
     AuthenticatedOwnerCommunicationGmailRoute:
@@ -4715,20 +4698,14 @@ const AuthenticatedOwnerCommunicationRouteRouteWithChildren =
   )
 
 interface AuthenticatedOwnerNotificationCenterRouteRouteChildren {
-  AuthenticatedOwnerNotificationCenterIdRoute: typeof AuthenticatedOwnerNotificationCenterIdRoute
-  AuthenticatedOwnerNotificationCenterComposeRoute: typeof AuthenticatedOwnerNotificationCenterComposeRoute
-  AuthenticatedOwnerNotificationCenterTemplatesRoute: typeof AuthenticatedOwnerNotificationCenterTemplatesRoute
+  AuthenticatedOwnerNotificationCenterSplatRoute: typeof AuthenticatedOwnerNotificationCenterSplatRoute
   AuthenticatedOwnerNotificationCenterIndexRoute: typeof AuthenticatedOwnerNotificationCenterIndexRoute
 }
 
 const AuthenticatedOwnerNotificationCenterRouteRouteChildren: AuthenticatedOwnerNotificationCenterRouteRouteChildren =
   {
-    AuthenticatedOwnerNotificationCenterIdRoute:
-      AuthenticatedOwnerNotificationCenterIdRoute,
-    AuthenticatedOwnerNotificationCenterComposeRoute:
-      AuthenticatedOwnerNotificationCenterComposeRoute,
-    AuthenticatedOwnerNotificationCenterTemplatesRoute:
-      AuthenticatedOwnerNotificationCenterTemplatesRoute,
+    AuthenticatedOwnerNotificationCenterSplatRoute:
+      AuthenticatedOwnerNotificationCenterSplatRoute,
     AuthenticatedOwnerNotificationCenterIndexRoute:
       AuthenticatedOwnerNotificationCenterIndexRoute,
   }
