@@ -4,7 +4,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 // inline script runs as soon as the HTML is parsed, remembers the tap, and the
 // component replays it the moment it mounts.
 const EARLY_TAP_SCRIPT =
-  "(function(){try{function m(e){var n=e.target;while(n&&n!==document){if(n.dataset&&n.dataset.chatLauncher){window.__orzenChatTap=1;try{window.dispatchEvent(new CustomEvent('orzen-chat-tap'))}catch(_){}break}n=n.parentNode}}document.addEventListener('pointerdown',m,true);document.addEventListener('click',m,true)}catch(_){}})()";
+  "(function(){try{function m(e){if(window.__orzenChatReady)return;var n=e.target;while(n&&n!==document){if(n.dataset&&n.dataset.chatLauncher){window.__orzenChatTap=1;try{window.dispatchEvent(new CustomEvent('orzen-chat-tap'))}catch(_){}break}n=n.parentNode}}document.addEventListener('pointerdown',m,true);document.addEventListener('click',m,true)}catch(_){}})()";
 import { Bot, MessageCircle, X } from "lucide-react";
 import { useStoreT } from "@/lib/store-i18n";
 import { Button } from "@/components/ui/button";
