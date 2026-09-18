@@ -12,11 +12,19 @@ export const AUTH_SENDER = {
   email: process.env["AUTH_EMAIL_FROM"] ?? "auth@orzen.top",
 };
 
-export type AuthMailProvider = "mailjet" | "resend" | "none";
+export type AuthMailProvider = "resend" | "mailjet" | "none";
 
+function hasResend() {
+  return Boolean(process.env["RESEND_API_KEY"]);
+}
+function hasMailjet() {
+  return Boolean(process.env["MAILJET_API_KEY"] && process.env["MAILJET_SECRET_KEY"]);
+}
+
+/** Primary provider; the other one is used automatically as fallback. */
 export function authMailProvider(): AuthMailProvider {
-  if (process.env["MAILJET_API_KEY"] && process.env["MAILJET_SECRET_KEY"]) return "mailjet";
-  if (process.env["RESEND_API_KEY"]) return "resend";
+  if (hasResend()) return "resend";
+  if (hasMailjet()) return "mailjet";
   return "none";
 }
 
