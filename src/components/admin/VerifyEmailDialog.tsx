@@ -114,12 +114,19 @@ export function VerifyEmailDialog({
             </Button>
             <button
               type="button"
-              className="w-full text-xs text-muted-foreground hover:text-foreground"
+              className="w-full text-xs text-muted-foreground hover:text-foreground disabled:opacity-60"
               onClick={send}
-              disabled={busy}
+              disabled={busy || !timer.canSend}
             >
-              Resend code
+              {timer.limitReached
+                ? "Resend limit reached — try again later"
+                : timer.secondsLeft > 0
+                  ? `Resend code in ${timer.secondsLeft}s`
+                  : `Resend code (${timer.sendsLeft} left)`}
             </button>
+            <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+              {CODE_INBOX_HINT}
+            </p>
           </form>
         )}
       </DialogContent>
