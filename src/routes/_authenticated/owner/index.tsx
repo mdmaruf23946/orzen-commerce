@@ -94,8 +94,8 @@ function OwnerDashboard() {
         </div>
       </div>
 
-      {/* Activity + store health */}
-      <div className="grid gap-4 lg:grid-cols-2">
+      {/* Activity + store health + GitHub deploy */}
+      <div className="grid gap-4 lg:grid-cols-3">
         <div className="min-w-0 rounded-xl border bg-card p-4">
           <h2 className="mb-3 text-sm font-semibold">Recent activity</h2>
           {(data?.activity ?? []).length === 0 ? (
