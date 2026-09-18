@@ -12,6 +12,7 @@ import { myAccountKind } from "@/lib/employees.functions";
 import { CheckCircle2, XCircle, Loader2, AlertCircle, UserCog } from "lucide-react";
 import { BrandMark } from "@/lib/platform-branding";
 import { isInvalidAuthSessionError } from "@/lib/deployment-target";
+import { TurnstileWidget, turnstileConfigured, CAPTCHA_WAIT_BN } from "@/components/TurnstileWidget";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -55,6 +56,7 @@ function AuthPage() {
   const ensureMyStore = useServerFn(getMyStore);
   const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
   const [resetSent, setResetSent] = useState(false);
+  const [captcha, setCaptcha] = useState("");
   const [loading, setLoading] = useState(false);
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState("");
@@ -174,8 +176,9 @@ function AuthPage() {
       if (mode === "forgot") {
         if (!email.includes("@"))
           throw new Error("Please enter the email address of your account.");
+        if (turnstileConfigured() && !captcha) throw new Error(CAPTCHA_WAIT_BN);
         const { requestPasswordResetCode } = await import("@/lib/merchant-security.functions");
-        await requestPasswordResetCode({ data: { email: email.trim() } });
+        await requestPasswordResetCode({ data: { email: email.trim(), captcha } });
         setResetSent(true);
         toast.success("We sent a 6-digit reset code to your email.");
         navigate({ to: "/reset-password", search: { email: email.trim() } as never });
@@ -438,6 +441,7 @@ function AuthPage() {
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </Field>
+              <TurnstileWidget onToken={setCaptcha} className="flex justify-center" />
               {resetSent && (
                 <p className="text-xs text-emerald-600">
                   Code sent. Please check your inbox and spam folder.

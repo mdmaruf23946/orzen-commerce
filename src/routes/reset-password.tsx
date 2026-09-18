@@ -13,6 +13,7 @@ import {
   MAX_SENDS_PER_WINDOW,
 } from "@/lib/merchant-security.functions";
 import { useResendTimer, CODE_INBOX_HINT } from "@/lib/use-resend-timer";
+import { TurnstileWidget, turnstileConfigured, CAPTCHA_WAIT_BN } from "@/components/TurnstileWidget";
 
 export const Route = createFileRoute("/reset-password")({
   validateSearch: (s: Record<string, unknown>) =>
@@ -43,6 +44,7 @@ function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
+  const [captcha, setCaptcha] = useState("");
   const timer = useResendTimer(RESEND_COOLDOWN_SEC, MAX_SENDS_PER_WINDOW);
 
   const canSubmit =
@@ -54,9 +56,13 @@ function ResetPasswordPage() {
       toast.error("Please enter your account email first.");
       return;
     }
+    if (turnstileConfigured() && !captcha) {
+      toast.error(CAPTCHA_WAIT_BN);
+      return;
+    }
     setLoading(true);
     try {
-      await requestPasswordResetCode({ data: { email: email.trim() } });
+      await requestPasswordResetCode({ data: { email: email.trim(), captcha } });
       timer.markSent();
       toast.success("A new code is on its way to your email.");
     } catch (err) {
@@ -69,10 +75,14 @@ function ResetPasswordPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
+    if (turnstileConfigured() && !captcha) {
+      toast.error(CAPTCHA_WAIT_BN);
+      return;
+    }
     setLoading(true);
     try {
       await confirmPasswordResetCode({
-        data: { email: email.trim(), code: code.trim(), password },
+        data: { email: email.trim(), code: code.trim(), password, captcha },
       });
       toast.success("Password updated. Please sign in with your new password.");
       navigate({ to: "/auth", replace: true });
@@ -150,6 +160,7 @@ function ResetPasswordPage() {
               <p className="text-xs text-destructive">Passwords do not match.</p>
             )}
           </div>
+          <TurnstileWidget onToken={setCaptcha} className="flex justify-center" />
           <Button type="submit" className="h-10 w-full" disabled={loading || !canSubmit}>
             {loading ? "Please wait…" : "Update password"}
           </Button>

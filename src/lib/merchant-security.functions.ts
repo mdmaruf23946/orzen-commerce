@@ -87,6 +87,13 @@ async function logSend(template: string, to: string, status: string, error?: str
   }
 }
 
+/** Cloudflare Turnstile check; a no-op while the secret is not configured. */
+async function requireHuman(captcha?: string) {
+  const { verifyTurnstile, TURNSTILE_FAILED_BN } = await import("@/lib/turnstile.server");
+  const res = await verifyTurnstile(captcha);
+  if (!res.ok) throw new Error(TURNSTILE_FAILED_BN);
+}
+
 /** Issue a fresh code, enforcing send throttles. Returns the plain code. */
 async function issueCode(userId: string, email: string, purpose: "email_verify" | "password_reset") {
   const { guardServerFn } = await import("@/lib/rate-limit.server");
@@ -234,8 +241,16 @@ export const confirmEmailCode = createServerFn({ method: "POST" })
 // --------------------------------------------------- password reset by code
 
 export const requestPasswordResetCode = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ email: z.string().trim().email().max(255) }).parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        email: z.string().trim().email().max(255),
+        captcha: z.string().max(4000).optional(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data }) => {
+    await requireHuman(data.captcha);
     const user = await findUserByEmail(data.email);
     // Always report success: never reveal whether an account exists.
     if (!user) return { ok: true };
@@ -259,10 +274,12 @@ export const confirmPasswordResetCode = createServerFn({ method: "POST" })
         email: z.string().trim().email().max(255),
         code: z.string().trim().min(4).max(10),
         password: z.string().min(8).max(200),
+        captcha: z.string().max(4000).optional(),
       })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    await requireHuman(data.captcha);
     const user = await findUserByEmail(data.email);
     if (!user) throw new Error("The code is incorrect.");
     await consumeCode(user.id, "password_reset", data.code);
