@@ -47,13 +47,15 @@ export const sendTestPlatformEmail = createServerFn({ method: "POST" })
     await assertOwner(context.supabase, context.userId);
     const to = (context.claims as any)?.email as string | undefined;
     if (!to) throw new Error("Your account has no email address");
-    const { sendBrevoEmail, platformEmailShell } = await import("@/lib/brevo.server");
+    const { sendBrevoEmail, renderPlatformEmail } = await import("@/lib/brevo.server");
     await sendBrevoEmail({
       to,
       subject: "ORZEN test notification",
-      html: platformEmailShell({
-        title: "Test notification",
-        bodyHtml: `<p style="margin:0 0 12px">This is a test email from your ORZEN Owner Panel. Email delivery is working.</p>`,
+      html: await renderPlatformEmail({
+        title: "Test notification সফল",
+        bodyHtml: `<p style="margin:0 0 12px">এটি আপনার ORZEN Owner Panel থেকে পাঠানো test email। Email delivery সঠিকভাবে কাজ করছে।</p>`,
+        kind: "platform",
+        sanitizeBody: false,
       }),
       tags: ["platform", "test"],
     });

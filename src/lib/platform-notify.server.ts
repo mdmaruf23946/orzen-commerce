@@ -1,7 +1,7 @@
 // Server-only ORZEN platform automation emails (welcome, login alert,
 // subscription, landing page). Every send is switch-controlled from the
 // Owner Panel and never throws into the calling business flow.
-import { sendBrevoEmail, platformEmailShell } from "@/lib/brevo.server";
+import { escapeHtml, emailInfoRows, renderPlatformEmail, sendBrevoEmail } from "@/lib/brevo.server";
 
 export type AutomationKey = "welcome" | "login_alert" | "subscription" | "landing_page";
 
@@ -58,12 +58,14 @@ export async function sendAutomationEmail(args: {
   if (args.to.endsWith("@demo-orzen.test")) return { sent: false, reason: "demo_account" };
   if (!(await automationEnabled(args.key))) return { sent: false, reason: "disabled" };
 
-  const html = platformEmailShell({
+  const html = await renderPlatformEmail({
     title: args.title,
     bodyHtml: args.bodyHtml,
     actionLabel: args.actionLabel ?? null,
     actionUrl: args.actionUrl ?? null,
     preheader: args.preheader ?? null,
+    kind: args.key === "login_alert" ? "security" : args.key === "subscription" ? "billing" : "platform",
+    sanitizeBody: false,
   });
 
   try {
@@ -105,10 +107,10 @@ export async function notifyWelcome(args: {
     title: `Your store is live 🎉`,
     preheader: `${args.storeName} is ready at ${args.slug}.orzen.top`,
     bodyHtml:
-      p(`Hi ${args.ownerName || "there"},`) +
-      p(`<strong>${args.storeName}</strong> has been created and is already online at <a href="${storeUrl}">${args.slug}.orzen.top</a>.`) +
-      p(`Add your products, set up delivery and payments, and start selling. Your free trial is active right now.`),
-    actionLabel: "Open my dashboard",
+      p(`স্বাগতম${args.ownerName ? `, ${escapeHtml(args.ownerName)}` : ""}।`) +
+      p(`<strong>${escapeHtml(args.storeName)}</strong> তৈরি হয়েছে এবং এখন online: <a href="${storeUrl}" style="color:#315c48">${escapeHtml(args.slug)}.orzen.top</a>।`) +
+      p(`পণ্য, delivery ও payment setup করে বিক্রি শুরু করুন। Your free trial is active.`),
+    actionLabel: "Dashboard খুলুন",
     actionUrl: `${SITE}/admin`,
   });
 }
@@ -128,14 +130,14 @@ export async function notifyLoginAlert(args: {
     title: "New sign-in detected",
     preheader: "A sign-in to your ORZEN account was just recorded.",
     bodyHtml:
-      p(`We recorded a sign-in to your ORZEN account.`) +
-      `<table style="width:100%;font-size:14px;margin:8px 0 4px">
-        <tr><td style="padding:6px 0;color:#6b7280;width:38%">Time</td><td style="padding:6px 0;font-weight:600">${args.when}</td></tr>
-        ${args.device ? `<tr><td style="padding:6px 0;color:#6b7280">Device</td><td style="padding:6px 0;font-weight:600">${args.device}</td></tr>` : ""}
-        ${args.ip ? `<tr><td style="padding:6px 0;color:#6b7280">IP address</td><td style="padding:6px 0;font-weight:600">${args.ip}</td></tr>` : ""}
-      </table>` +
-      p(`If this was you, no action is needed. If it was not, change your password immediately.`),
-    actionLabel: "Change password",
+      p(`আপনার ORZEN account-এ একটি নতুন sign-in শনাক্ত হয়েছে।`) +
+      emailInfoRows([
+        { label: "সময় / Time", value: args.when },
+        { label: "ডিভাইস / Device", value: args.device ?? "" },
+        { label: "IP address", value: args.ip ?? "" },
+      ]) +
+      p(`এটি আপনি হলে কিছু করতে হবে না। না হলে অবিলম্বে password পরিবর্তন করুন।`),
+    actionLabel: "Password পরিবর্তন করুন",
     actionUrl: `${SITE}/auth`,
   });
 }
@@ -157,14 +159,14 @@ export async function notifySubscription(args: {
     title: "Subscription confirmed",
     preheader: `${args.planName} plan activated on your ORZEN account.`,
     bodyHtml:
-      p(`Thank you — your payment was received and your plan is now active.`) +
-      `<table style="width:100%;font-size:14px;margin:8px 0 4px">
-        <tr><td style="padding:6px 0;color:#6b7280;width:38%">Plan</td><td style="padding:6px 0;font-weight:600">${args.planName}</td></tr>
-        ${amount ? `<tr><td style="padding:6px 0;color:#6b7280">Amount paid</td><td style="padding:6px 0;font-weight:600">${amount}</td></tr>` : ""}
-        ${args.invoiceNo ? `<tr><td style="padding:6px 0;color:#6b7280">Invoice</td><td style="padding:6px 0;font-weight:600">${args.invoiceNo}</td></tr>` : ""}
-        ${args.expiresAt ? `<tr><td style="padding:6px 0;color:#6b7280">Valid until</td><td style="padding:6px 0;font-weight:600">${new Date(args.expiresAt).toDateString()}</td></tr>` : ""}
-      </table>`,
-    actionLabel: "View billing",
+      p(`ধন্যবাদ—আপনার payment পাওয়া গেছে এবং subscription এখন active।`) +
+      emailInfoRows([
+        { label: "Plan", value: args.planName },
+        { label: "পরিশোধ / Amount", value: amount ?? "" },
+        { label: "Invoice", value: args.invoiceNo ?? "" },
+        { label: "মেয়াদ / Valid until", value: args.expiresAt ? new Date(args.expiresAt).toDateString() : "" },
+      ]),
+    actionLabel: "Billing দেখুন",
     actionUrl: `${SITE}/admin/billing`,
   });
 }
@@ -183,9 +185,9 @@ export async function notifyLandingPagePublished(args: {
     title: "Your landing page is live",
     preheader: `${args.pageTitle} has been published.`,
     bodyHtml:
-      p(`Your landing page <strong>${args.pageTitle}</strong> is now published and can receive orders.`) +
-      (args.pageUrl ? p(`Live link: <a href="${args.pageUrl}">${args.pageUrl}</a>`) : ""),
-    actionLabel: "Manage landing pages",
+      p(`আপনার landing page <strong>${escapeHtml(args.pageTitle)}</strong> publish হয়েছে এবং এখন order নিতে প্রস্তুত।`) +
+      (args.pageUrl ? p(`Live link: <a href="${escapeHtml(args.pageUrl)}" style="color:#315c48">${escapeHtml(args.pageUrl)}</a>`) : ""),
+    actionLabel: "Landing pages দেখুন",
     actionUrl: `${SITE}/admin/landing-pages`,
   });
 }

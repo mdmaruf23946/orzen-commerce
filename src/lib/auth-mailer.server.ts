@@ -5,7 +5,7 @@
 // mailer (Brevo / notify@orzen.top). Security mail must never depend on the
 // promotional/notification pipeline. Primary provider: Mailjet (200 free
 // emails per day). Resend is supported as an alternative if its key is set.
-import { platformEmailShell } from "@/lib/brevo.server";
+import { emailCodeBlock, emailWarning, renderPlatformEmail } from "@/lib/brevo.server";
 
 export const AUTH_SENDER = {
   name: "ORZEN Security",
@@ -136,48 +136,52 @@ export async function sendAuthEmail(args: {
   throw new Error(`All security email providers failed: ${errors.join(" | ")}`);
 }
 
-function codeBlock(code: string): string {
-  return `<div style="margin:22px 0;text-align:center"><div style="display:inline-block;font-size:32px;font-weight:800;letter-spacing:10px;padding:14px 22px;border:1px solid #E5E7EB;border-radius:14px;background:#F9FAFB;">${code}</div></div>`;
-}
-
-export function verifyCodeEmail(code: string, minutes: number) {
+export async function verifyCodeEmail(code: string, minutes: number) {
   return {
-    subject: `${code} is your ORZEN verification code`,
-    html: platformEmailShell({
-      title: "Verify your email address",
-      preheader: `Your verification code is ${code}`,
+    subject: `${code} — ORZEN email verification code`,
+    html: await renderPlatformEmail({
+      kind: "security",
+      title: "আপনার email verify করুন",
+      preheader: `ORZEN verification code: ${code}`,
       bodyHtml:
-        `<p style="margin:0">Use the code below to verify your ORZEN account email.</p>${codeBlock(code)}` +
-        `<p style="margin:0;color:#6b7280;font-size:13px">This code expires in ${minutes} minutes. If you did not request it, you can ignore this email.</p>`,
+        `<p style="margin:0">আপনার ORZEN account email নিশ্চিত করতে নিচের <strong>verification code</strong> ব্যবহার করুন।</p>${emailCodeBlock(code)}` +
+        `<p style="margin:0;color:#64716b;font-size:13px">কোডটি ${minutes} মিনিট পর্যন্ত কার্যকর। Code expires in ${minutes} minutes.</p>` +
+        emailWarning("আপনি এই অনুরোধ না করলে codeটি ব্যবহার করবেন না এবং emailটি উপেক্ষা করুন।"),
+      sanitizeBody: false,
     }),
   };
 }
 
-export function resetCodeEmail(code: string, minutes: number) {
+export async function resetCodeEmail(code: string, minutes: number) {
   return {
-    subject: `${code} is your ORZEN password reset code`,
-    html: platformEmailShell({
-      title: "Reset your password",
-      preheader: `Your password reset code is ${code}`,
+    subject: `${code} — ORZEN password reset code`,
+    html: await renderPlatformEmail({
+      kind: "security",
+      title: "Password reset করুন",
+      preheader: `ORZEN password reset code: ${code}`,
       bodyHtml:
-        `<p style="margin:0">Enter the code below on the password reset page to set a new password.</p>${codeBlock(code)}` +
-        `<p style="margin:0;color:#6b7280;font-size:13px">This code expires in ${minutes} minutes. If you did not request a password reset, please secure your account immediately.</p>`,
+        `<p style="margin:0">নতুন password সেট করতে reset page-এ নিচের codeটি দিন।</p>${emailCodeBlock(code)}` +
+        `<p style="margin:0;color:#64716b;font-size:13px">কোডটি ${minutes} মিনিট পর্যন্ত কার্যকর। Code expires in ${minutes} minutes.</p>` +
+        emailWarning("আপনি password reset চাননি? Codeটি ব্যবহার করবেন না এবং account security পরীক্ষা করুন।"),
+      sanitizeBody: false,
     }),
   };
 }
 
-export function twoFactorChangedEmail(enabled: boolean) {
+export async function twoFactorChangedEmail(enabled: boolean) {
   return {
     subject: enabled
       ? "Two-factor authentication enabled on your ORZEN account"
       : "Two-factor authentication disabled on your ORZEN account",
-    html: platformEmailShell({
-      title: enabled ? "Two-factor authentication enabled" : "Two-factor authentication disabled",
+    html: await renderPlatformEmail({
+      kind: "security",
+      title: enabled ? "Two-factor authentication চালু হয়েছে" : "Two-factor authentication বন্ধ হয়েছে",
       bodyHtml: enabled
-        ? `<p style="margin:0">Your account now asks for an authenticator app code at every sign-in. If this was not you, change your password immediately.</p>`
-        : `<p style="margin:0">Two-factor authentication was turned off for your account. If this was not you, change your password immediately and turn it back on.</p>`,
-      actionLabel: "Open security settings",
+        ? `<p style="margin:0">আপনার account-এ এখন প্রতিবার sign-in-এর সময় authenticator code লাগবে।</p>${emailWarning("এটি আপনি না করলে এখনই password পরিবর্তন করুন।")}`
+        : `<p style="margin:0">আপনার account থেকে two-factor authentication বন্ধ করা হয়েছে।</p>${emailWarning("এটি আপনি না করলে এখনই password পরিবর্তন করে 2FA আবার চালু করুন।")}`,
+      actionLabel: "Security settings খুলুন",
       actionUrl: "https://orzen.top/admin/settings/security",
+      sanitizeBody: false,
     }),
   };
 }
