@@ -56,9 +56,13 @@ function ResetPasswordPage() {
       toast.error("Please enter your account email first.");
       return;
     }
+    if (turnstileConfigured() && !captcha) {
+      toast.error(CAPTCHA_WAIT_BN);
+      return;
+    }
     setLoading(true);
     try {
-      await requestPasswordResetCode({ data: { email: email.trim() } });
+      await requestPasswordResetCode({ data: { email: email.trim(), captcha } });
       timer.markSent();
       toast.success("A new code is on its way to your email.");
     } catch (err) {
