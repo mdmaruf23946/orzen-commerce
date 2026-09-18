@@ -147,6 +147,17 @@ export async function ensureStoreForAccount(
         }
       }
       await attachStoreSubdomain(supabase, slug);
+      try {
+        const { notifyWelcome } = await import("@/lib/platform-notify.server");
+        await notifyWelcome({
+          email: claims.email ?? null,
+          ownerName: String((metadata as any).full_name ?? "") || null,
+          storeName: storeName,
+          slug,
+        });
+      } catch {
+        // A failed welcome email must never block store creation.
+      }
       return { store: created, isEmployee: false, created: true };
     }
     if (error?.code !== "23505") throw new Error(error?.message ?? "Store could not be created");
