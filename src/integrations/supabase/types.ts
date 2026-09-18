@@ -5424,6 +5424,30 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_email_automations: {
+        Row: {
+          description: string
+          enabled: boolean
+          key: string
+          label: string
+          updated_at: string
+        }
+        Insert: {
+          description?: string
+          enabled?: boolean
+          key: string
+          label: string
+          updated_at?: string
+        }
+        Update: {
+          description?: string
+          enabled?: boolean
+          key?: string
+          label?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_feature_flags: {
         Row: {
           category: string | null
