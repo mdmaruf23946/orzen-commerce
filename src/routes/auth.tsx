@@ -344,7 +344,7 @@ function AuthPage() {
           {mode === "forgot" && (
             <>
               <p className="text-sm text-muted-foreground">
-                Enter your account email. We will send you a link to set a new password.
+                Enter your account email. We will send you a 6-digit code to set a new password.
               </p>
               <Field label="Email" id="email">
                 <Input
@@ -358,7 +358,7 @@ function AuthPage() {
               </Field>
               {resetSent && (
                 <p className="text-xs text-emerald-600">
-                  Reset link sent. Please check your inbox and spam folder.
+                  Code sent. Please check your inbox and spam folder.
                 </p>
               )}
             </>
