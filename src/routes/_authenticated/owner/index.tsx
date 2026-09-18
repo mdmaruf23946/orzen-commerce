@@ -132,6 +132,8 @@ function OwnerDashboard() {
             <Link to="/owner/subscriptions" className="rounded-md border px-3 py-1.5 text-xs hover:bg-muted">Subscriptions</Link>
           </div>
         </div>
+
+        <GitHubDeployment />
       </div>
     </div>
   );
