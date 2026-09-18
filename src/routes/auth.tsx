@@ -202,6 +202,50 @@ function AuthPage() {
 
   const rootDomain = "orzen.top";
 
+  if (mfaFactorId) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4 py-8">
+        <div className="w-full max-w-sm rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
+          <h1 className="text-center text-lg font-semibold">Two-factor verification</h1>
+          <p className="mt-1 text-center text-xs text-muted-foreground">
+            Google Authenticator অ্যাপ থেকে ৬ ডিজিট কোডটি লিখুন।
+          </p>
+          <form className="mt-5 space-y-3" onSubmit={submitMfa}>
+            <Input
+              inputMode="numeric"
+              maxLength={6}
+              required
+              autoFocus
+              value={mfaCode}
+              onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
+              className="text-center text-lg tracking-[0.4em]"
+            />
+            <Button type="submit" className="h-10 w-full" disabled={loading || mfaCode.length < 6}>
+              {loading ? "Checking…" : "Verify and sign in"}
+            </Button>
+          </form>
+          <button
+            type="button"
+            className="mt-4 w-full text-center text-xs text-muted-foreground hover:text-foreground"
+            onClick={async () => {
+              await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+              setMfaFactorId(null);
+              setMfaCode("");
+            }}
+          >
+            Cancel and sign in with another account
+          </button>
+          <p className="mt-3 text-center text-[11px] text-muted-foreground">
+            ফোন হারিয়ে ফেলেছেন?{" "}
+            <Link to="/account-recovery" className="underline">
+              ব্যাকআপ কোড ব্যবহার করুন
+            </Link>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4 py-8">
       <div
