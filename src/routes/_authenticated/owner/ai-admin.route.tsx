@@ -22,10 +22,6 @@ const tabs = [
 function AiAdminLayout() {
   return (
     <div>
-      <OwnerPageHeader
-        title="AI Admin Control"
-        description="Channels, agents, knowledge and automation for the platform AI assistant."
-      />
       <div className="mb-4 flex gap-1 overflow-x-auto border-b pb-px">
         {tabs.map((t) => (
           <Link
