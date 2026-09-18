@@ -190,6 +190,7 @@ import { Route as ApiPublicAiAdminMessengerWebhookRouteImport } from './routes/a
 import { Route as AuthenticatedOwnerSubscriptionPayProvidersRouteImport } from './routes/_authenticated/owner/subscription-pay.providers'
 import { Route as AuthenticatedOwnerNotificationCenterSplatRouteImport } from './routes/_authenticated/owner/notification-center.$'
 import { Route as AuthenticatedOwnerCommunicationTemplatesRouteImport } from './routes/_authenticated/owner/communication.templates'
+import { Route as AuthenticatedOwnerCommunicationSettingsRouteImport } from './routes/_authenticated/owner/communication.settings'
 import { Route as AuthenticatedOwnerCommunicationHistoryRouteImport } from './routes/_authenticated/owner/communication.history'
 import { Route as AuthenticatedOwnerCommunicationGmailRouteImport } from './routes/_authenticated/owner/communication.gmail'
 import { Route as AuthenticatedOwnerCommunicationComposeRouteImport } from './routes/_authenticated/owner/communication.compose'
@@ -1247,6 +1248,12 @@ const AuthenticatedOwnerCommunicationTemplatesRoute =
     path: '/templates',
     getParentRoute: () => AuthenticatedOwnerCommunicationRouteRoute,
   } as any)
+const AuthenticatedOwnerCommunicationSettingsRoute =
+  AuthenticatedOwnerCommunicationSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedOwnerCommunicationRouteRoute,
+  } as any)
 const AuthenticatedOwnerCommunicationHistoryRoute =
   AuthenticatedOwnerCommunicationHistoryRouteImport.update({
     id: '/history',
@@ -1683,6 +1690,7 @@ export interface FileRoutesByFullPath {
   '/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
   '/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
   '/owner/communication/history': typeof AuthenticatedOwnerCommunicationHistoryRouteWithChildren
+  '/owner/communication/settings': typeof AuthenticatedOwnerCommunicationSettingsRoute
   '/owner/communication/templates': typeof AuthenticatedOwnerCommunicationTemplatesRoute
   '/owner/notification-center/$': typeof AuthenticatedOwnerNotificationCenterSplatRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
@@ -1898,6 +1906,7 @@ export interface FileRoutesByTo {
   '/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
   '/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
   '/owner/communication/history': typeof AuthenticatedOwnerCommunicationHistoryRouteWithChildren
+  '/owner/communication/settings': typeof AuthenticatedOwnerCommunicationSettingsRoute
   '/owner/communication/templates': typeof AuthenticatedOwnerCommunicationTemplatesRoute
   '/owner/notification-center/$': typeof AuthenticatedOwnerNotificationCenterSplatRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
@@ -2125,6 +2134,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/communication/compose': typeof AuthenticatedOwnerCommunicationComposeRoute
   '/_authenticated/owner/communication/gmail': typeof AuthenticatedOwnerCommunicationGmailRoute
   '/_authenticated/owner/communication/history': typeof AuthenticatedOwnerCommunicationHistoryRouteWithChildren
+  '/_authenticated/owner/communication/settings': typeof AuthenticatedOwnerCommunicationSettingsRoute
   '/_authenticated/owner/communication/templates': typeof AuthenticatedOwnerCommunicationTemplatesRoute
   '/_authenticated/owner/notification-center/$': typeof AuthenticatedOwnerNotificationCenterSplatRoute
   '/_authenticated/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
@@ -2352,6 +2362,7 @@ export interface FileRouteTypes {
     | '/owner/communication/compose'
     | '/owner/communication/gmail'
     | '/owner/communication/history'
+    | '/owner/communication/settings'
     | '/owner/communication/templates'
     | '/owner/notification-center/$'
     | '/owner/subscription-pay/providers'
@@ -2567,6 +2578,7 @@ export interface FileRouteTypes {
     | '/owner/communication/compose'
     | '/owner/communication/gmail'
     | '/owner/communication/history'
+    | '/owner/communication/settings'
     | '/owner/communication/templates'
     | '/owner/notification-center/$'
     | '/owner/subscription-pay/providers'
@@ -2793,6 +2805,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/communication/compose'
     | '/_authenticated/owner/communication/gmail'
     | '/_authenticated/owner/communication/history'
+    | '/_authenticated/owner/communication/settings'
     | '/_authenticated/owner/communication/templates'
     | '/_authenticated/owner/notification-center/$'
     | '/_authenticated/owner/subscription-pay/providers'
@@ -4168,6 +4181,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerCommunicationTemplatesRouteImport
       parentRoute: typeof AuthenticatedOwnerCommunicationRouteRoute
     }
+    '/_authenticated/owner/communication/settings': {
+      id: '/_authenticated/owner/communication/settings'
+      path: '/settings'
+      fullPath: '/owner/communication/settings'
+      preLoaderRoute: typeof AuthenticatedOwnerCommunicationSettingsRouteImport
+      parentRoute: typeof AuthenticatedOwnerCommunicationRouteRoute
+    }
     '/_authenticated/owner/communication/history': {
       id: '/_authenticated/owner/communication/history'
       path: '/history'
@@ -4755,6 +4775,7 @@ interface AuthenticatedOwnerCommunicationRouteRouteChildren {
   AuthenticatedOwnerCommunicationComposeRoute: typeof AuthenticatedOwnerCommunicationComposeRoute
   AuthenticatedOwnerCommunicationGmailRoute: typeof AuthenticatedOwnerCommunicationGmailRoute
   AuthenticatedOwnerCommunicationHistoryRoute: typeof AuthenticatedOwnerCommunicationHistoryRouteWithChildren
+  AuthenticatedOwnerCommunicationSettingsRoute: typeof AuthenticatedOwnerCommunicationSettingsRoute
   AuthenticatedOwnerCommunicationTemplatesRoute: typeof AuthenticatedOwnerCommunicationTemplatesRoute
   AuthenticatedOwnerCommunicationIndexRoute: typeof AuthenticatedOwnerCommunicationIndexRoute
 }
@@ -4771,6 +4792,8 @@ const AuthenticatedOwnerCommunicationRouteRouteChildren: AuthenticatedOwnerCommu
       AuthenticatedOwnerCommunicationGmailRoute,
     AuthenticatedOwnerCommunicationHistoryRoute:
       AuthenticatedOwnerCommunicationHistoryRouteWithChildren,
+    AuthenticatedOwnerCommunicationSettingsRoute:
+      AuthenticatedOwnerCommunicationSettingsRoute,
     AuthenticatedOwnerCommunicationTemplatesRoute:
       AuthenticatedOwnerCommunicationTemplatesRoute,
     AuthenticatedOwnerCommunicationIndexRoute:

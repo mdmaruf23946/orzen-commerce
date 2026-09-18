@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
-import { Mail, Send, History, FileText, Link2, Zap } from "lucide-react";
+import { Mail, Send, History, FileText, Link2, Zap, Activity, Settings } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/owner/communication")({
   component: CommunicationLayout,
