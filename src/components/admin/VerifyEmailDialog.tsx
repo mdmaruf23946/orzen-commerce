@@ -91,7 +91,7 @@ export function VerifyEmailDialog({
         </DialogHeader>
 
         {!sent ? (
-          <Button onClick={send} disabled={busy} className="w-full">
+          <Button onClick={send} disabled={busy || !timer.canSend} className="w-full">
             {busy ? "Sending…" : "Send code"}
           </Button>
         ) : (
