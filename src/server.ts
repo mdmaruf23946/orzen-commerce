@@ -67,9 +67,16 @@ export default {
       const rootDomain = hosts.rootDomain;
 
       // Canonical host: redirect www.<root> → <root> (301, preserve path + query)
+      // Redirects also carry the security header set (HSTS matters most here).
+      const secureRedirect = (target: string): Response =>
+        new Response(null, {
+          status: 301,
+          headers: applySecurityHeaders(new Headers({ location: target }), request),
+        });
+
       if (url.hostname === `www.${rootDomain}`) {
         url.hostname = rootDomain;
-        return Response.redirect(url.toString(), 301);
+        return secureRedirect(url.toString());
       }
 
       // A storefront must never be served under the platform host: that URL is
@@ -84,7 +91,7 @@ export default {
           target.port = "";
           target.hostname = `${m[1].toLowerCase()}.${rootDomain}`;
           target.pathname = m[2] ?? "/";
-          return Response.redirect(target.toString(), 301);
+          return secureRedirect(target.toString());
         }
 
         // Same rule for landing pages: a landing page must open on its own host
@@ -98,7 +105,7 @@ export default {
             target.port = "";
             target.hostname = host;
             target.pathname = "/";
-            return Response.redirect(target.toString(), 301);
+            return secureRedirect(target.toString());
           }
         }
       }
@@ -119,7 +126,7 @@ export default {
             canonical.hostname = primary;
             canonical.port = "";
             canonical.protocol = "https:";
-            return Response.redirect(canonical.toString(), 301);
+            return secureRedirect(canonical.toString());
           }
           const rewritten = new URL(url.toString());
           if (tenant.kind === "landing") {
