@@ -22,6 +22,7 @@ import { Route as EmployeeLoginRouteImport } from './routes/employee-login'
 import { Route as DataDeletionRouteImport } from './routes/data-deletion'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AccountRecoveryRouteImport } from './routes/account-recovery'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -299,6 +300,11 @@ const ContactRoute = ContactRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRecoveryRoute = AccountRecoveryRouteImport.update({
+  id: '/account-recovery',
+  path: '/account-recovery',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -1524,6 +1530,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
+  '/account-recovery': typeof AccountRecoveryRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/data-deletion': typeof DataDeletionRoute
@@ -1751,6 +1758,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
+  '/account-recovery': typeof AccountRecoveryRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/data-deletion': typeof DataDeletionRoute
@@ -1970,6 +1978,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
+  '/account-recovery': typeof AccountRecoveryRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/data-deletion': typeof DataDeletionRoute
@@ -2199,6 +2208,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/about'
+    | '/account-recovery'
     | '/auth'
     | '/contact'
     | '/data-deletion'
@@ -2426,6 +2436,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/about'
+    | '/account-recovery'
     | '/auth'
     | '/contact'
     | '/data-deletion'
@@ -2644,6 +2655,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/$'
     | '/about'
+    | '/account-recovery'
     | '/auth'
     | '/contact'
     | '/data-deletion'
@@ -2873,6 +2885,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   SplatRoute: typeof SplatRoute
   AboutRoute: typeof AboutRoute
+  AccountRecoveryRoute: typeof AccountRecoveryRoute
   AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
   DataDeletionRoute: typeof DataDeletionRoute
@@ -3016,6 +3029,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account-recovery': {
+      id: '/account-recovery'
+      path: '/account-recovery'
+      fullPath: '/account-recovery'
+      preLoaderRoute: typeof AccountRecoveryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -5057,6 +5077,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   SplatRoute: SplatRoute,
   AboutRoute: AboutRoute,
+  AccountRecoveryRoute: AccountRecoveryRoute,
   AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
   DataDeletionRoute: DataDeletionRoute,
