@@ -76,21 +76,39 @@ async function sendViaResend(args: { to: string; subject: string; html: string }
   return { messageId: id };
 }
 
-/** Send one security email. Throws with the provider status/body on failure. */
+/**
+ * Send one security email with automatic provider failover: Resend first,
+ * Mailjet second (or whichever is configured). If the first provider is out of
+ * quota / blocked / erroring, the next one is tried before giving up.
+ */
 export async function sendAuthEmail(args: {
   to: string;
   subject: string;
   html: string;
 }): Promise<{ messageId: string | null; provider: AuthMailProvider }> {
   if (!args.to || !args.to.includes("@")) throw new Error("Invalid recipient email");
-  const provider = authMailProvider();
-  if (provider === "none") {
+
+  const chain: AuthMailProvider[] = [];
+  if (hasResend()) chain.push("resend");
+  if (hasMailjet()) chain.push("mailjet");
+
+  if (chain.length === 0) {
     throw new Error(
-      "Security email provider is not configured yet (MAILJET_API_KEY / MAILJET_SECRET_KEY missing).",
+      "Security email provider is not configured yet (RESEND_API_KEY or MAILJET_API_KEY/MAILJET_SECRET_KEY missing).",
     );
   }
-  const sent = provider === "mailjet" ? await sendViaMailjet(args) : await sendViaResend(args);
-  return { ...sent, provider };
+
+  const errors: string[] = [];
+  for (const provider of chain) {
+    try {
+      const sent = provider === "resend" ? await sendViaResend(args) : await sendViaMailjet(args);
+      if (errors.length) console.warn(`[auth-mailer] fallback to ${provider}: ${errors.join(" | ")}`);
+      return { ...sent, provider };
+    } catch (err) {
+      errors.push(err instanceof Error ? err.message : String(err));
+    }
+  }
+  throw new Error(`All security email providers failed: ${errors.join(" | ")}`);
 }
 
 function codeBlock(code: string): string {
