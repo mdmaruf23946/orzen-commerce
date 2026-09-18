@@ -8,7 +8,7 @@ const TABS = [
   { to: "/admin/settings/information", label: "Store Information" },
   { to: "/admin/settings/configuration", label: "Store Configuration" },
   { to: "/admin/settings/workflow", label: "Order & Workflow" },
-  
+  { to: "/admin/settings/security", label: "Account Security" },
 ];
 
 function SettingsLayout() {

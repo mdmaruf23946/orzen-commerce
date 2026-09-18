@@ -1,28 +1,31 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { useState } from "react";
+import { z } from "zod";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BrandMark } from "@/lib/platform-branding";
+import {
+  requestPasswordResetCode,
+  confirmPasswordResetCode,
+} from "@/lib/merchant-security.functions";
 
 export const Route = createFileRoute("/reset-password")({
-  ssr: false,
+  validateSearch: (s: Record<string, unknown>) =>
+    z.object({ email: z.string().optional() }).parse(s),
   head: () => ({
     meta: [
       { title: "Set a new password — ORZEN" },
       {
         name: "description",
-        content: "Choose a new password for your ORZEN merchant account and get back to your dashboard.",
+        content: "Enter the 6-digit code sent to your email and choose a new ORZEN password.",
       },
       { property: "og:title", content: "Set a new password — ORZEN" },
       {
         property: "og:description",
-        content: "Choose a new password for your ORZEN merchant account.",
+        content: "Reset your ORZEN merchant account password with the code sent to your email.",
       },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -31,53 +34,44 @@ export const Route = createFileRoute("/reset-password")({
 
 function ResetPasswordPage() {
   const navigate = useNavigate();
-  const [ready, setReady] = useState(false);
-  const [hasSession, setHasSession] = useState(false);
+  const search = useSearch({ from: "/reset-password" });
+  const [email, setEmail] = useState(search.email ?? "");
+  const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    let active = true;
+  const canSubmit =
+    email.includes("@") && code.length >= 6 && password.length >= 8 && password === confirm;
 
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!active) return;
-      if (event === "PASSWORD_RECOVERY" || session) {
-        setHasSession(true);
-        setReady(true);
-      }
-    });
-
-    supabase.auth.getSession().then(({ data }) => {
-      if (!active) return;
-      setHasSession(Boolean(data.session));
-      setReady(true);
-    });
-
-    return () => {
-      active = false;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters.");
-      return;
-    }
-    if (password !== confirm) {
-      toast.error("Passwords do not match.");
+  async function resend() {
+    if (!email.includes("@")) {
+      toast.error("Please enter your account email first.");
       return;
     }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password });
-      if (error) throw error;
-      toast.success("Password updated. You are signed in.");
-      navigate({ to: "/admin", replace: true });
+      await requestPasswordResetCode({ data: { email: email.trim() } });
+      toast.success("A new code is on its way to your email.");
     } catch (err) {
-      toast.error((err as Error).message || "Could not update the password. Please try again.");
+      toast.error((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!canSubmit) return;
+    setLoading(true);
+    try {
+      await confirmPasswordResetCode({
+        data: { email: email.trim(), code: code.trim(), password },
+      });
+      toast.success("Password updated. Please sign in with your new password.");
+      navigate({ to: "/auth", replace: true });
+    } catch (err) {
+      toast.error((err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -85,57 +79,90 @@ function ResetPasswordPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4 py-8">
-      <div className="w-full max-w-sm rounded-2xl border bg-card p-5 sm:p-6 shadow-sm">
+      <div className="w-full max-w-sm rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
         <Link to="/" className="flex items-center justify-center">
-          <BrandMark placement="auth_login" fallbackText="ORZEN" className="text-sm font-bold tracking-tight" />
+          <BrandMark
+            placement="auth_login"
+            fallbackText="ORZEN"
+            className="text-sm font-bold tracking-tight"
+          />
         </Link>
-        <h1 className="mt-3 text-center text-lg sm:text-xl font-semibold">Set a new password</h1>
+        <h1 className="mt-3 text-center text-lg font-semibold">Set a new password</h1>
+        <p className="mt-1 text-center text-xs text-muted-foreground">
+          ইমেইলে পাঠানো ৬ ডিজিট কোড এবং নতুন পাসওয়ার্ড দিন।
+        </p>
 
-        {!ready ? (
-          <p className="mt-6 text-center text-sm text-muted-foreground">Checking your reset link…</p>
-        ) : !hasSession ? (
-          <div className="mt-5 space-y-4">
-            <p className="text-sm text-muted-foreground">
-              This password reset link is invalid or has expired. Request a new one from the sign-in page.
-            </p>
-            <Button asChild className="h-10 w-full">
-              <Link to="/auth">Back to sign in</Link>
-            </Button>
+        <form className="mt-5 space-y-3" onSubmit={submit}>
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
-        ) : (
-          <form className="mt-5 space-y-3" onSubmit={submit}>
-            <div className="space-y-1.5">
-              <Label htmlFor="new-password">New password</Label>
-              <Input
-                id="new-password"
-                type="password"
-                autoComplete="new-password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="confirm-password">Confirm new password</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                autoComplete="new-password"
-                required
-                minLength={6}
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-              />
-              {confirm.length > 0 && confirm !== password && (
-                <p className="text-xs text-destructive">Passwords do not match.</p>
-              )}
-            </div>
-            <Button type="submit" className="mt-1 h-10 w-full" disabled={loading}>
-              {loading ? "Please wait…" : "Update password"}
-            </Button>
-          </form>
-        )}
+          <div className="space-y-1.5">
+            <Label htmlFor="code">6-digit code</Label>
+            <Input
+              id="code"
+              inputMode="numeric"
+              maxLength={6}
+              autoComplete="one-time-code"
+              required
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+              className="text-center text-lg tracking-[0.4em]"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="pw">New password</Label>
+            <Input
+              id="pw"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="pw2">Confirm new password</Label>
+            <Input
+              id="pw2"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+            />
+            {confirm.length > 0 && confirm !== password && (
+              <p className="text-xs text-destructive">Passwords do not match.</p>
+            )}
+          </div>
+          <Button type="submit" className="h-10 w-full" disabled={loading || !canSubmit}>
+            {loading ? "Please wait…" : "Update password"}
+          </Button>
+        </form>
+
+        <button
+          type="button"
+          onClick={resend}
+          disabled={loading}
+          className="mt-4 w-full text-center text-xs text-muted-foreground hover:text-foreground"
+        >
+          Resend code
+        </button>
+        <Link
+          to="/auth"
+          className="mt-2 block text-center text-xs text-muted-foreground hover:text-foreground"
+        >
+          Back to sign in
+        </Link>
       </div>
     </div>
   );
