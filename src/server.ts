@@ -13,6 +13,7 @@ function getTenantHost(): Promise<TenantHost> {
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { applySecurityHeaders } from "./lib/security-headers.server";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -149,7 +150,7 @@ export default {
         const patched = html.includes("<head>")
           ? html.replace("<head>", `<head>${script}`)
           : `${script}${html}`;
-        const headers = new Headers(normalized.headers);
+        const headers = applySecurityHeaders(new Headers(normalized.headers), request);
         headers.delete("content-length");
         // Storefront / landing HTML is merchant-editable: never let a CDN or
         // browser reuse it, or a freshly published edit stays invisible.
@@ -159,16 +160,22 @@ export default {
 
       // Same rule for landing/store HTML reached through a platform path.
       if (isHtml && /^\/(lp|store)\//i.test(url.pathname)) {
-        const headers = new Headers(normalized.headers);
+        const headers = applySecurityHeaders(new Headers(normalized.headers), request);
         headers.set("cache-control", "no-store, must-revalidate");
         return new Response(normalized.body, { status: normalized.status, headers });
       }
-      return normalized;
+      return new Response(normalized.body, {
+        status: normalized.status,
+        headers: applySecurityHeaders(new Headers(normalized.headers), request),
+      });
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
         status: 500,
-        headers: { "content-type": "text/html; charset=utf-8" },
+        headers: applySecurityHeaders(
+          new Headers({ "content-type": "text/html; charset=utf-8" }),
+          request,
+        ),
       });
     }
   },
