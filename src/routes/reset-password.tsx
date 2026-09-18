@@ -9,7 +9,10 @@ import { BrandMark } from "@/lib/platform-branding";
 import {
   requestPasswordResetCode,
   confirmPasswordResetCode,
+  RESEND_COOLDOWN_SEC,
+  MAX_SENDS_PER_WINDOW,
 } from "@/lib/merchant-security.functions";
+import { useResendTimer, CODE_INBOX_HINT } from "@/lib/use-resend-timer";
 
 export const Route = createFileRoute("/reset-password")({
   validateSearch: (s: Record<string, unknown>) =>
@@ -40,11 +43,13 @@ function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
+  const timer = useResendTimer(RESEND_COOLDOWN_SEC, MAX_SENDS_PER_WINDOW);
 
   const canSubmit =
     email.includes("@") && code.length >= 6 && password.length >= 8 && password === confirm;
 
   async function resend() {
+    if (!timer.canSend) return;
     if (!email.includes("@")) {
       toast.error("Please enter your account email first.");
       return;
@@ -52,6 +57,7 @@ function ResetPasswordPage() {
     setLoading(true);
     try {
       await requestPasswordResetCode({ data: { email: email.trim() } });
+      timer.markSent();
       toast.success("A new code is on its way to your email.");
     } catch (err) {
       toast.error((err as Error).message);
@@ -152,11 +158,18 @@ function ResetPasswordPage() {
         <button
           type="button"
           onClick={resend}
-          disabled={loading}
-          className="mt-4 w-full text-center text-xs text-muted-foreground hover:text-foreground"
+          disabled={loading || !timer.canSend}
+          className="mt-4 w-full text-center text-xs text-muted-foreground hover:text-foreground disabled:opacity-60"
         >
-          Resend code
+          {timer.limitReached
+            ? "Resend limit reached — try again later"
+            : timer.secondsLeft > 0
+              ? `Resend code in ${timer.secondsLeft}s`
+              : `Resend code${timer.sends > 0 ? ` (${timer.sendsLeft} left)` : ""}`}
         </button>
+        <p className="mt-2 text-center text-[11px] leading-relaxed text-muted-foreground">
+          {CODE_INBOX_HINT}
+        </p>
         <Link
           to="/auth"
           className="mt-2 block text-center text-xs text-muted-foreground hover:text-foreground"

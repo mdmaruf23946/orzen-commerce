@@ -7,6 +7,10 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const CODE_TTL_MIN = 10;
 const MAX_ATTEMPTS = 5;
+/** Resend rules shared with the UI countdown. */
+export const RESEND_COOLDOWN_SEC = 30;
+export const MAX_SENDS_PER_WINDOW = 3;
+export const SEND_WINDOW_MIN = 15;
 
 async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -92,12 +96,18 @@ async function issueCode(userId: string, email: string, purpose: "email_verify" 
     .select("created_at")
     .eq("user_id", userId)
     .eq("purpose", purpose)
-    .gte("created_at", new Date(now - 60 * 60_000).toISOString())
+    .gte("created_at", new Date(now - SEND_WINDOW_MIN * 60_000).toISOString())
     .order("created_at", { ascending: false });
   const rows = (recent ?? []) as Array<{ created_at: string }>;
-  if (rows.length >= 5) throw new Error("Too many codes requested. Please try again in an hour.");
-  if (rows[0] && now - new Date(rows[0].created_at).getTime() < 60_000) {
-    throw new Error("A code was just sent. Please wait a minute before requesting another.");
+  if (rows.length >= MAX_SENDS_PER_WINDOW) {
+    throw new Error(
+      `You have already requested ${MAX_SENDS_PER_WINDOW} codes. Please try again in ${SEND_WINDOW_MIN} minutes.`,
+    );
+  }
+  if (rows[0] && now - new Date(rows[0].created_at).getTime() < RESEND_COOLDOWN_SEC * 1000) {
+    throw new Error(
+      `A code was just sent. Please wait ${RESEND_COOLDOWN_SEC} seconds before requesting another.`,
+    );
   }
 
   const code = newCode();

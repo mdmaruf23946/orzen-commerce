@@ -59,8 +59,11 @@ async function sendViaMailjet(args: { to: string; subject: string; html: string 
         {
           From: { Email: AUTH_SENDER.email, Name: AUTH_SENDER.name },
           To: [{ Email: args.to }],
+          ReplyTo: { Email: AUTH_REPLY_TO },
           Subject: args.subject,
           HTMLPart: args.html,
+          TextPart: toPlainText(args.html),
+          Headers: { "X-Entity-Ref-ID": crypto.randomUUID(), Precedence: "bulk" },
         },
       ],
     }),
@@ -80,8 +83,11 @@ async function sendViaResend(args: { to: string; subject: string; html: string }
     body: JSON.stringify({
       from: `${AUTH_SENDER.name} <${AUTH_SENDER.email}>`,
       to: [args.to],
+      reply_to: AUTH_REPLY_TO,
       subject: args.subject,
       html: args.html,
+      text: toPlainText(args.html),
+      headers: { "X-Entity-Ref-ID": crypto.randomUUID() },
     }),
   });
   const body = await res.text();

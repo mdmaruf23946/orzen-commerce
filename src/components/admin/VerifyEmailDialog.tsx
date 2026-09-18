@@ -12,8 +12,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { requestEmailCode, confirmEmailCode } from "@/lib/merchant-security.functions";
+import {
+  requestEmailCode,
+  confirmEmailCode,
+  RESEND_COOLDOWN_SEC,
+  MAX_SENDS_PER_WINDOW,
+} from "@/lib/merchant-security.functions";
 import { useRefreshSecurity } from "@/lib/use-security";
+import { useResendTimer, CODE_INBOX_HINT } from "@/lib/use-resend-timer";
 
 export function VerifyEmailDialog({
   open,
@@ -30,8 +36,10 @@ export function VerifyEmailDialog({
   const [sent, setSent] = useState(false);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const timer = useResendTimer(RESEND_COOLDOWN_SEC, MAX_SENDS_PER_WINDOW);
 
   async function send() {
+    if (!timer.canSend) return;
     setBusy(true);
     try {
       const res = (await request()) as { alreadyVerified?: boolean };
@@ -42,6 +50,7 @@ export function VerifyEmailDialog({
         return;
       }
       setSent(true);
+      timer.markSent();
       toast.success("We sent a 6-digit code to your email");
     } catch (err) {
       toast.error((err as Error).message);
@@ -82,7 +91,7 @@ export function VerifyEmailDialog({
         </DialogHeader>
 
         {!sent ? (
-          <Button onClick={send} disabled={busy} className="w-full">
+          <Button onClick={send} disabled={busy || !timer.canSend} className="w-full">
             {busy ? "Sending…" : "Send code"}
           </Button>
         ) : (
@@ -105,12 +114,19 @@ export function VerifyEmailDialog({
             </Button>
             <button
               type="button"
-              className="w-full text-xs text-muted-foreground hover:text-foreground"
+              className="w-full text-xs text-muted-foreground hover:text-foreground disabled:opacity-60"
               onClick={send}
-              disabled={busy}
+              disabled={busy || !timer.canSend}
             >
-              Resend code
+              {timer.limitReached
+                ? "Resend limit reached — try again later"
+                : timer.secondsLeft > 0
+                  ? `Resend code in ${timer.secondsLeft}s`
+                  : `Resend code (${timer.sendsLeft} left)`}
             </button>
+            <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+              {CODE_INBOX_HINT}
+            </p>
           </form>
         )}
       </DialogContent>
