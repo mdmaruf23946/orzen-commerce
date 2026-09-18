@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useStoreT } from "@/lib/store-i18n";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
+
 
 export const Route = createFileRoute("/store/$slug/auth/signup")({
   validateSearch: (s: Record<string, unknown>) =>
@@ -30,6 +32,8 @@ function SignupPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
+  const [captcha, setCaptcha] = useState("");
+
 
   const canSubmit =
     fullName.trim().length >= 1 &&
@@ -50,6 +54,8 @@ function SignupPage() {
           phone: phone.trim() || undefined,
           password,
           confirmPassword: confirm,
+          captcha,
+
         },
       });
       setSession(res.token);
@@ -128,7 +134,9 @@ function SignupPage() {
               <p className="text-xs text-destructive">{t("auth.passwordMismatch")}</p>
             )}
           </div>
+          <TurnstileWidget onToken={setCaptcha} className="flex justify-center" />
           <Button
+
             type="submit"
             className="mt-1 h-10 w-full"
             style={{ backgroundColor: "var(--store-btn-bg)", color: "white" }}

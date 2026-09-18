@@ -25,6 +25,8 @@ function buildCspReportOnly(): string {
       "https://connect.facebook.net",
       "https://analytics.tiktok.com",
       "https://static.cloudflareinsights.com",
+      "https://challenges.cloudflare.com",
+
     ],
     "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
     "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
@@ -48,6 +50,8 @@ function buildCspReportOnly(): string {
       "https://www.youtube-nocookie.com",
       "https://player.vimeo.com",
       "https://www.facebook.com",
+      "https://challenges.cloudflare.com",
+
     ],
     "frame-ancestors": ["'self'"],
     "form-action": ["'self'"],

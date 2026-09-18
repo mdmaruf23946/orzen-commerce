@@ -7,6 +7,15 @@ import { z } from "zod";
 
 const slugSchema = z.string().min(1).max(120);
 const tokenSchema = z.string().min(16).max(128);
+const captchaSchema = z.string().max(4000).optional();
+
+// Cloudflare Turnstile gate. Skipped automatically when no secret is set.
+async function requireHuman(captcha?: string) {
+  const { verifyTurnstile, TURNSTILE_FAILED_BN } = await import("@/lib/turnstile.server");
+  const res = await verifyTurnstile(captcha);
+  if (!res.ok) throw new Error(TURNSTILE_FAILED_BN);
+}
+
 
 async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -30,6 +39,8 @@ export const signupCustomer = createServerFn({ method: "POST" })
         phone: z.string().trim().max(40).optional().or(z.literal("")),
         password: z.string().min(6).max(200),
         confirmPassword: z.string().min(6).max(200),
+        captcha: captchaSchema,
+
       })
       .refine((v) => v.password === v.confirmPassword, {
         message: "Passwords do not match",
@@ -43,6 +54,8 @@ export const signupCustomer = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { guardServerFn } = await import("@/lib/rate-limit.server");
     await guardServerFn("auth");
+    await requireHuman(data.captcha);
+
     const storeId = await resolveStore(data.storeSlug);
     const sb = await admin();
     const { data: res, error } = await sb.rpc("customer_signup", {
@@ -67,12 +80,16 @@ export const loginCustomer = createServerFn({ method: "POST" })
         storeSlug: slugSchema,
         identifier: z.string().trim().min(1).max(255),
         password: z.string().min(1).max(200),
+        captcha: captchaSchema,
+
       })
       .parse(d),
   )
   .handler(async ({ data }) => {
     const { guardServerFn } = await import("@/lib/rate-limit.server");
     await guardServerFn("auth");
+    await requireHuman(data.captcha);
+
     const storeId = await resolveStore(data.storeSlug);
     const sb = await admin();
     const ident = data.identifier.trim().toLowerCase();
@@ -107,11 +124,19 @@ export const loginCustomer = createServerFn({ method: "POST" })
 
 export const requestCustomerPasswordReset = createServerFn({ method: "POST" })
   .inputValidator((d) =>
-    z.object({ storeSlug: slugSchema, identifier: z.string().trim().min(3).max(255) }).parse(d),
+    z
+      .object({
+        storeSlug: slugSchema,
+        identifier: z.string().trim().min(3).max(255),
+        captcha: captchaSchema,
+      })
+      .parse(d),
   )
   .handler(async ({ data }) => {
     const { guardServerFn } = await import("@/lib/rate-limit.server");
     await guardServerFn("auth");
+    await requireHuman(data.captcha);
+
     const storeId = await resolveStore(data.storeSlug);
     const sb = await admin();
     const { data: store } = await sb

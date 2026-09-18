@@ -84,8 +84,15 @@ if [ -f "$ROOT/.env.production" ]; then
   exit 1
 fi
 
+# Cloudflare Turnstile bot shield: the public site key must be inlined into the
+# browser bundle at build time, the secret stays server-side only.
+if [ -n "${TURNSTILE_SITE_KEY:-}" ]; then
+  export VITE_TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY"
+fi
+
 echo "Building the guarded production candidate…"
 NODE_ENV=production bun run build
+
 
 # Assert on the actual Supabase endpoint compiled into the browser bundle, not
 # on a bare project id (guard constants in source contain the expected id and
@@ -137,7 +144,10 @@ BREVO_API_KEY=$BREVO_API_KEY
 RESEND_API_KEY=$RESEND_API_KEY
 MAILJET_API_KEY=$MAILJET_API_KEY
 MAILJET_SECRET_KEY=$MAILJET_SECRET_KEY
+TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY:-}
+VITE_TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY:-}
 EOF
+
 chmod 600 "$RUNTIME_SECRETS"
 
 SERVICE_STATUS="$(curl -sS -o /dev/null -w '%{http_code}' \
