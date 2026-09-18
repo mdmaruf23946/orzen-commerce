@@ -374,7 +374,7 @@ function AuthPage() {
               : mode === "signin"
                 ? "Sign in"
                 : mode === "forgot"
-                  ? "Send reset link"
+                  ? "Send reset code"
                   : "Create store"}
           </Button>
         </form>
