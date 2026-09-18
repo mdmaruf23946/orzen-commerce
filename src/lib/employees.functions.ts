@@ -96,6 +96,8 @@ export const createEmployee = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const access = context.access as any;
     const sid = access.storeId as string;
+    const { assertEmailVerified } = await import("@/lib/require-verified.server");
+    await assertEmailVerified(userId);
     await assertPlan(supabase, userId, "staff");
     await assertLimit(supabase, userId, "staff");
 

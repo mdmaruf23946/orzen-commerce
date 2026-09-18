@@ -93,6 +93,8 @@ export const saveStorePaymentGateway = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
+    const { assertEmailVerified } = await import("@/lib/require-verified.server");
+    await assertEmailVerified(context.userId);
     await assertStoreOwnership(context.supabase, data.storeId, context.userId);
     const provider = getProvider(data.providerId);
 
