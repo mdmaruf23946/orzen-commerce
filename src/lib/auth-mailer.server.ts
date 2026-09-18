@@ -28,6 +28,25 @@ export function authMailProvider(): AuthMailProvider {
   return "none";
 }
 
+/** Deliverability: a real plain-text alternative lowers the spam score a lot. */
+function toPlainText(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|tr|h1|h2|h3|li)>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n\s*\n\s*\n+/g, "\n\n")
+    .split("\n")
+    .map((l) => l.trim())
+    .join("\n")
+    .trim();
+}
+
+export const AUTH_REPLY_TO = process.env["AUTH_EMAIL_REPLY_TO"] ?? "support@orzen.top";
+
 async function sendViaMailjet(args: { to: string; subject: string; html: string }) {
   const key = process.env["MAILJET_API_KEY"]!;
   const secret = process.env["MAILJET_SECRET_KEY"]!;
