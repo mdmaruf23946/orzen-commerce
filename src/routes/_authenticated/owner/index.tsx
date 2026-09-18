@@ -6,6 +6,7 @@ import {
   Clock, AlertTriangle, TrendingUp, Receipt,
 } from "lucide-react";
 import { ownerControlCenter } from "@/lib/owner.functions";
+import { GitHubDeployment } from "@/components/owner/GitHubDeployment";
 
 export const Route = createFileRoute("/_authenticated/owner/")({
   component: OwnerDashboard,
