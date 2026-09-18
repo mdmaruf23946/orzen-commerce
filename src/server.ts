@@ -13,6 +13,7 @@ function getTenantHost(): Promise<TenantHost> {
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { applySecurityHeaders } from "./lib/security-headers.server";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -66,9 +67,16 @@ export default {
       const rootDomain = hosts.rootDomain;
 
       // Canonical host: redirect www.<root> → <root> (301, preserve path + query)
+      // Redirects also carry the security header set (HSTS matters most here).
+      const secureRedirect = (target: string): Response =>
+        new Response(null, {
+          status: 301,
+          headers: applySecurityHeaders(new Headers({ location: target }), request),
+        });
+
       if (url.hostname === `www.${rootDomain}`) {
         url.hostname = rootDomain;
-        return Response.redirect(url.toString(), 301);
+        return secureRedirect(url.toString());
       }
 
       // A storefront must never be served under the platform host: that URL is
@@ -83,7 +91,7 @@ export default {
           target.port = "";
           target.hostname = `${m[1].toLowerCase()}.${rootDomain}`;
           target.pathname = m[2] ?? "/";
-          return Response.redirect(target.toString(), 301);
+          return secureRedirect(target.toString());
         }
 
         // Same rule for landing pages: a landing page must open on its own host
@@ -97,7 +105,7 @@ export default {
             target.port = "";
             target.hostname = host;
             target.pathname = "/";
-            return Response.redirect(target.toString(), 301);
+            return secureRedirect(target.toString());
           }
         }
       }
@@ -118,7 +126,7 @@ export default {
             canonical.hostname = primary;
             canonical.port = "";
             canonical.protocol = "https:";
-            return Response.redirect(canonical.toString(), 301);
+            return secureRedirect(canonical.toString());
           }
           const rewritten = new URL(url.toString());
           if (tenant.kind === "landing") {
@@ -149,7 +157,7 @@ export default {
         const patched = html.includes("<head>")
           ? html.replace("<head>", `<head>${script}`)
           : `${script}${html}`;
-        const headers = new Headers(normalized.headers);
+        const headers = applySecurityHeaders(new Headers(normalized.headers), request);
         headers.delete("content-length");
         // Storefront / landing HTML is merchant-editable: never let a CDN or
         // browser reuse it, or a freshly published edit stays invisible.
@@ -159,16 +167,22 @@ export default {
 
       // Same rule for landing/store HTML reached through a platform path.
       if (isHtml && /^\/(lp|store)\//i.test(url.pathname)) {
-        const headers = new Headers(normalized.headers);
+        const headers = applySecurityHeaders(new Headers(normalized.headers), request);
         headers.set("cache-control", "no-store, must-revalidate");
         return new Response(normalized.body, { status: normalized.status, headers });
       }
-      return normalized;
+      return new Response(normalized.body, {
+        status: normalized.status,
+        headers: applySecurityHeaders(new Headers(normalized.headers), request),
+      });
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
         status: 500,
-        headers: { "content-type": "text/html; charset=utf-8" },
+        headers: applySecurityHeaders(
+          new Headers({ "content-type": "text/html; charset=utf-8" }),
+          request,
+        ),
       });
     }
   },
