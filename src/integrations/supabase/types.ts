@@ -4334,6 +4334,69 @@ export type Database = {
         }
         Relationships: []
       }
+      merchant_auth_codes: {
+        Row: {
+          attempts: number
+          code_hash: string
+          consumed_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          purpose: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          consumed_at?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          purpose: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          consumed_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          purpose?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      merchant_security: {
+        Row: {
+          backup_code_hashes: string[]
+          created_at: string
+          email_verified_at: string | null
+          totp_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          backup_code_hashes?: string[]
+          created_at?: string
+          email_verified_at?: string | null
+          totp_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          backup_code_hashes?: string[]
+          created_at?: string
+          email_verified_at?: string | null
+          totp_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       merchant_wallets: {
         Row: {
           auto_renew: boolean
