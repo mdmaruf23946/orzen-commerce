@@ -271,6 +271,8 @@ export const addCustomDomain = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const { assertEmailVerified } = await import("@/lib/require-verified.server");
+    await assertEmailVerified(userId);
     await assertPlan(supabase, userId, "custom_domain" as any);
     const store = await requireMyStore(supabase, userId, context.claims);
     const host = normalizeHost(data.hostname);
