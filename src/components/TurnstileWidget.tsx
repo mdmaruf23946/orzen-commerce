@@ -37,6 +37,10 @@ export function turnstileConfigured(): boolean {
   return !!import.meta.env["VITE_TURNSTILE_SITE_KEY"];
 }
 
+export const CAPTCHA_WAIT_BN =
+  "নিরাপত্তা যাচাই চলছে — কয়েক সেকেন্ড অপেক্ষা করে আবার চেষ্টা করুন।";
+
+
 export function TurnstileWidget({
   onToken,
   className,

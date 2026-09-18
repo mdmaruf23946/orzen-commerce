@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useStoreT } from "@/lib/store-i18n";
-import { TurnstileWidget } from "@/components/TurnstileWidget";
+import { TurnstileWidget, turnstileConfigured, CAPTCHA_WAIT_BN } from "@/components/TurnstileWidget";
 
 
 export const Route = createFileRoute("/store/$slug/auth/signup")({
@@ -44,6 +44,11 @@ function SignupPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
+    if (turnstileConfigured() && !captcha) {
+      toast.error(CAPTCHA_WAIT_BN);
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await signup({
