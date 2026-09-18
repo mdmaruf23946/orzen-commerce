@@ -37,30 +37,17 @@ export function AIChatLauncher({
     setOpen((v) => !v);
   }
 
-  // Replay a tap that happened before (or right around) hydration. We check on
-  // mount, listen for later pre-hydration taps, and poll briefly in case this
-  // component mounted after the flag was already set and cleared elsewhere.
+  // Replay a tap that happened before hydration, then hand control back to
+  // React's own onClick so post-hydration clicks toggle normally.
   useEffect(() => {
     const w = window as any;
-    const consume = () => {
-      if (w.__orzenChatTap) {
-        w.__orzenChatTap = 0;
-        setOpen(true);
-        return true;
-      }
-      return false;
-    };
-    consume();
-    const onTap = () => consume();
-    window.addEventListener("orzen-chat-tap", onTap);
-    const id = window.setInterval(() => {
-      if (consume()) window.clearInterval(id);
-    }, 150);
-    const stop = window.setTimeout(() => window.clearInterval(id), 8000);
+    if (w.__orzenChatTap) {
+      w.__orzenChatTap = 0;
+      setOpen(true);
+    }
+    w.__orzenChatReady = 1;
     return () => {
-      window.removeEventListener("orzen-chat-tap", onTap);
-      window.clearInterval(id);
-      window.clearTimeout(stop);
+      w.__orzenChatReady = 0;
     };
   }, []);
 
