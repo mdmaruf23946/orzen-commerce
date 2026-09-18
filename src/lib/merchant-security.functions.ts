@@ -234,8 +234,16 @@ export const confirmEmailCode = createServerFn({ method: "POST" })
 // --------------------------------------------------- password reset by code
 
 export const requestPasswordResetCode = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ email: z.string().trim().email().max(255) }).parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        email: z.string().trim().email().max(255),
+        captcha: z.string().max(4000).optional(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data }) => {
+    await requireHuman(data.captcha);
     const user = await findUserByEmail(data.email);
     // Always report success: never reveal whether an account exists.
     if (!user) return { ok: true };
