@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
@@ -220,6 +220,7 @@ function OwnerLayout() {
         </aside>
         {open && <div className="fixed inset-0 z-30 bg-black/40 md:hidden" onClick={() => setOpen(false)} />}
         <main className="min-w-0 flex-1 overflow-x-hidden p-3 sm:p-4 md:p-8">
+          <SectionTabBar pathname={pathname} />
           <Outlet />
         </main>
       </div>
