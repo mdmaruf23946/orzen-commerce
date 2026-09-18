@@ -83,3 +83,19 @@ export async function guardRequest(
   const res = await checkRateLimit(rule, clientIp(request));
   return res.allowed ? null : tooManyResponse(res.retryAfter, extraHeaders);
 }
+
+/**
+ * Guard for `createServerFn` handlers: reads the current request and throws a
+ * user-facing Bangla error once the limit is exceeded.
+ */
+export async function guardServerFn(rule: RateRuleName, subject?: string): Promise<void> {
+  let ip = "unknown";
+  try {
+    const { getRequest } = await import("@tanstack/react-start/server");
+    ip = clientIp(getRequest());
+  } catch {
+    /* no request context (build/prerender) — fall through */
+  }
+  const res = await checkRateLimit(rule, subject ?? ip);
+  if (!res.allowed) throw new Error(TOO_MANY_MESSAGE_BN);
+}
