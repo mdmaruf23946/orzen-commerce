@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useStoreT } from "@/lib/store-i18n";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
+
 
 export const Route = createFileRoute("/store/$slug/auth/login")({
   validateSearch: (s: Record<string, unknown>) =>
@@ -27,12 +29,14 @@ function LoginPage() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [captcha, setCaptcha] = useState("");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await login({ data: { storeSlug: slug, identifier, password } });
+      const res = await login({ data: { storeSlug: slug, identifier, password, captcha } });
+
       setSession(res.token);
       toast.success(t("auth.loginSuccess"));
       if (redirect) navigate({ to: redirect });
@@ -73,7 +77,9 @@ function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
+          <TurnstileWidget onToken={setCaptcha} className="flex justify-center" />
           <Button
+
             type="submit"
             className="mt-1 h-10 w-full"
             style={{ backgroundColor: "var(--store-btn-bg)", color: "white" }}

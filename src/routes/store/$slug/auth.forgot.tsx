@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useStoreT } from "@/lib/store-i18n";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
+
 
 export const Route = createFileRoute("/store/$slug/auth/forgot")({
   head: () => ({ meta: [{ title: "Forgot password" }] }),
@@ -20,12 +22,14 @@ function ForgotPage() {
   const [identifier, setIdentifier] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [captcha, setCaptcha] = useState("");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
-      await request({ data: { storeSlug: slug, identifier } });
+      await request({ data: { storeSlug: slug, identifier, captcha } });
+
       setSent(true);
     } catch (err) {
       toast.error((err as Error).message);
@@ -56,7 +60,9 @@ function ForgotPage() {
                   onChange={(e) => setIdentifier(e.target.value)}
                 />
               </div>
+              <TurnstileWidget onToken={setCaptcha} className="flex justify-center" />
               <Button
+
                 type="submit"
                 className="mt-1 h-10 w-full"
                 style={{ backgroundColor: "var(--store-btn-bg)", color: "white" }}
