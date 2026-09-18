@@ -87,6 +87,13 @@ async function logSend(template: string, to: string, status: string, error?: str
   }
 }
 
+/** Cloudflare Turnstile check; a no-op while the secret is not configured. */
+async function requireHuman(captcha?: string) {
+  const { verifyTurnstile, TURNSTILE_FAILED_BN } = await import("@/lib/turnstile.server");
+  const res = await verifyTurnstile(captcha);
+  if (!res.ok) throw new Error(TURNSTILE_FAILED_BN);
+}
+
 /** Issue a fresh code, enforcing send throttles. Returns the plain code. */
 async function issueCode(userId: string, email: string, purpose: "email_verify" | "password_reset") {
   const { guardServerFn } = await import("@/lib/rate-limit.server");
