@@ -12,6 +12,7 @@ import { myAccountKind } from "@/lib/employees.functions";
 import { CheckCircle2, XCircle, Loader2, AlertCircle, UserCog } from "lucide-react";
 import { BrandMark } from "@/lib/platform-branding";
 import { isInvalidAuthSessionError } from "@/lib/deployment-target";
+import { TurnstileWidget, turnstileConfigured, CAPTCHA_WAIT_BN } from "@/components/TurnstileWidget";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
