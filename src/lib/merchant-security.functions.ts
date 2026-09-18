@@ -206,7 +206,7 @@ export const requestEmailCode = createServerFn({ method: "POST" })
 
     const code = await issueCode(userId, email, "email_verify");
     const { sendAuthEmail, verifyCodeEmail } = await import("@/lib/auth-mailer.server");
-    const mail = verifyCodeEmail(code, CODE_TTL_MIN);
+    const mail = await verifyCodeEmail(code, CODE_TTL_MIN);
     try {
       await sendAuthEmail({ to: email, subject: mail.subject, html: mail.html });
       await logSend("auth-email-verify-code", email, "sent");
@@ -257,7 +257,7 @@ export const requestPasswordResetCode = createServerFn({ method: "POST" })
     try {
       const code = await issueCode(user.id, user.email, "password_reset");
       const { sendAuthEmail, resetCodeEmail } = await import("@/lib/auth-mailer.server");
-      const mail = resetCodeEmail(code, CODE_TTL_MIN);
+      const mail = await resetCodeEmail(code, CODE_TTL_MIN);
       await sendAuthEmail({ to: user.email, subject: mail.subject, html: mail.html });
       await logSend("auth-password-reset-code", user.email, "sent");
     } catch (e) {
@@ -322,7 +322,7 @@ export const syncTotpStatus = createServerFn({ method: "POST" })
 
     if (enabled !== !!row.totp_enabled && user?.email) {
       const { sendAuthEmail, twoFactorChangedEmail } = await import("@/lib/auth-mailer.server");
-      const mail = twoFactorChangedEmail(enabled);
+      const mail = await twoFactorChangedEmail(enabled);
       try {
         await sendAuthEmail({ to: user.email, subject: mail.subject, html: mail.html });
       } catch {
@@ -396,7 +396,7 @@ export const recoverWithBackupCode = createServerFn({ method: "POST" })
       .eq("user_id", user.id);
 
     const { sendAuthEmail, twoFactorChangedEmail } = await import("@/lib/auth-mailer.server");
-    const mail = twoFactorChangedEmail(false);
+    const mail = await twoFactorChangedEmail(false);
     try {
       await sendAuthEmail({ to: user.email, subject: mail.subject, html: mail.html });
     } catch {
