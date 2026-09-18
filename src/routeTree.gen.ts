@@ -209,6 +209,7 @@ import { Route as AuthenticatedOwnerAiAdminAgentsRouteImport } from './routes/_a
 import { Route as AuthenticatedOwnerAiAdminAgentRouteImport } from './routes/_authenticated/owner/ai-admin.agent'
 import { Route as AuthenticatedAdminSettingsWorkflowRouteImport } from './routes/_authenticated/admin/settings.workflow'
 import { Route as AuthenticatedAdminSettingsSubscriptionRouteImport } from './routes/_authenticated/admin/settings.subscription'
+import { Route as AuthenticatedAdminSettingsSecurityRouteImport } from './routes/_authenticated/admin/settings.security'
 import { Route as AuthenticatedAdminSettingsInformationRouteImport } from './routes/_authenticated/admin/settings.information'
 import { Route as AuthenticatedAdminSettingsConfigurationRouteImport } from './routes/_authenticated/admin/settings.configuration'
 import { Route as AuthenticatedAdminLandingPagesIdRouteImport } from './routes/_authenticated/admin/landing-pages.$id'
@@ -1362,6 +1363,12 @@ const AuthenticatedAdminSettingsSubscriptionRoute =
     path: '/subscription',
     getParentRoute: () => AuthenticatedAdminSettingsRoute,
   } as any)
+const AuthenticatedAdminSettingsSecurityRoute =
+  AuthenticatedAdminSettingsSecurityRouteImport.update({
+    id: '/security',
+    path: '/security',
+    getParentRoute: () => AuthenticatedAdminSettingsRoute,
+  } as any)
 const AuthenticatedAdminSettingsInformationRoute =
   AuthenticatedAdminSettingsInformationRouteImport.update({
     id: '/information',
@@ -1672,6 +1679,7 @@ export interface FileRoutesByFullPath {
   '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
   '/admin/settings/configuration': typeof AuthenticatedAdminSettingsConfigurationRoute
   '/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
+  '/admin/settings/security': typeof AuthenticatedAdminSettingsSecurityRoute
   '/admin/settings/subscription': typeof AuthenticatedAdminSettingsSubscriptionRoute
   '/admin/settings/workflow': typeof AuthenticatedAdminSettingsWorkflowRoute
   '/owner/ai-admin/agent': typeof AuthenticatedOwnerAiAdminAgentRoute
@@ -1888,6 +1896,7 @@ export interface FileRoutesByTo {
   '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
   '/admin/settings/configuration': typeof AuthenticatedAdminSettingsConfigurationRoute
   '/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
+  '/admin/settings/security': typeof AuthenticatedAdminSettingsSecurityRoute
   '/admin/settings/subscription': typeof AuthenticatedAdminSettingsSubscriptionRoute
   '/admin/settings/workflow': typeof AuthenticatedAdminSettingsWorkflowRoute
   '/owner/ai-admin/agent': typeof AuthenticatedOwnerAiAdminAgentRoute
@@ -2116,6 +2125,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
   '/_authenticated/admin/settings/configuration': typeof AuthenticatedAdminSettingsConfigurationRoute
   '/_authenticated/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
+  '/_authenticated/admin/settings/security': typeof AuthenticatedAdminSettingsSecurityRoute
   '/_authenticated/admin/settings/subscription': typeof AuthenticatedAdminSettingsSubscriptionRoute
   '/_authenticated/admin/settings/workflow': typeof AuthenticatedAdminSettingsWorkflowRoute
   '/_authenticated/owner/ai-admin/agent': typeof AuthenticatedOwnerAiAdminAgentRoute
@@ -2344,6 +2354,7 @@ export interface FileRouteTypes {
     | '/admin/landing-pages/$id'
     | '/admin/settings/configuration'
     | '/admin/settings/information'
+    | '/admin/settings/security'
     | '/admin/settings/subscription'
     | '/admin/settings/workflow'
     | '/owner/ai-admin/agent'
@@ -2560,6 +2571,7 @@ export interface FileRouteTypes {
     | '/admin/landing-pages/$id'
     | '/admin/settings/configuration'
     | '/admin/settings/information'
+    | '/admin/settings/security'
     | '/admin/settings/subscription'
     | '/admin/settings/workflow'
     | '/owner/ai-admin/agent'
@@ -2787,6 +2799,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/landing-pages/$id'
     | '/_authenticated/admin/settings/configuration'
     | '/_authenticated/admin/settings/information'
+    | '/_authenticated/admin/settings/security'
     | '/_authenticated/admin/settings/subscription'
     | '/_authenticated/admin/settings/workflow'
     | '/_authenticated/owner/ai-admin/agent'
@@ -4314,6 +4327,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminSettingsSubscriptionRouteImport
       parentRoute: typeof AuthenticatedAdminSettingsRoute
     }
+    '/_authenticated/admin/settings/security': {
+      id: '/_authenticated/admin/settings/security'
+      path: '/security'
+      fullPath: '/admin/settings/security'
+      preLoaderRoute: typeof AuthenticatedAdminSettingsSecurityRouteImport
+      parentRoute: typeof AuthenticatedAdminSettingsRoute
+    }
     '/_authenticated/admin/settings/information': {
       id: '/_authenticated/admin/settings/information'
       path: '/information'
@@ -4542,6 +4562,7 @@ const AuthenticatedAdminFacebookRouteRouteWithChildren =
 interface AuthenticatedAdminSettingsRouteChildren {
   AuthenticatedAdminSettingsConfigurationRoute: typeof AuthenticatedAdminSettingsConfigurationRoute
   AuthenticatedAdminSettingsInformationRoute: typeof AuthenticatedAdminSettingsInformationRoute
+  AuthenticatedAdminSettingsSecurityRoute: typeof AuthenticatedAdminSettingsSecurityRoute
   AuthenticatedAdminSettingsSubscriptionRoute: typeof AuthenticatedAdminSettingsSubscriptionRoute
   AuthenticatedAdminSettingsWorkflowRoute: typeof AuthenticatedAdminSettingsWorkflowRoute
   AuthenticatedAdminSettingsIndexRoute: typeof AuthenticatedAdminSettingsIndexRoute
@@ -4553,6 +4574,8 @@ const AuthenticatedAdminSettingsRouteChildren: AuthenticatedAdminSettingsRouteCh
       AuthenticatedAdminSettingsConfigurationRoute,
     AuthenticatedAdminSettingsInformationRoute:
       AuthenticatedAdminSettingsInformationRoute,
+    AuthenticatedAdminSettingsSecurityRoute:
+      AuthenticatedAdminSettingsSecurityRoute,
     AuthenticatedAdminSettingsSubscriptionRoute:
       AuthenticatedAdminSettingsSubscriptionRoute,
     AuthenticatedAdminSettingsWorkflowRoute:
