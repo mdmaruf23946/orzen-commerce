@@ -11,6 +11,8 @@ const tabs = [
   { to: "/owner/communication/history", label: "History", icon: History },
   { to: "/owner/communication/templates", label: "Templates", icon: FileText },
   { to: "/owner/communication/automations", label: "Email Automations", icon: Zap },
+  { to: "/owner/communication/activity", label: "Activity", icon: Activity },
+  { to: "/owner/communication/settings", label: "Settings", icon: Settings },
   { to: "/owner/communication/gmail", label: "Gmail Connection", icon: Link2 },
 ];
 
