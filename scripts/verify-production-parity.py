@@ -152,8 +152,12 @@ def check_domains(failures: list[str]) -> None:
             f"https://api.supabase.com/v1/projects/{PROD_PROJECT_ID}/database/query",
             db_token,
             {
+                # Temporary load-test stores (slug demoNNN) are excluded: the zone
+                # allows only 100 attached addresses, so they cannot all be attached
+                # and must not block real deployments. Remove with the demo data.
                 "query": "select slug from public.stores "
-                "where subdomain_released_at is null;"
+                "where subdomain_released_at is null "
+                "and slug !~ '^demo[0-9]{3}$';"
             },
         )
     except urllib.error.URLError as exc:  # pragma: no cover - network failure path
