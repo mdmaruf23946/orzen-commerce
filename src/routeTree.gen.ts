@@ -83,6 +83,7 @@ import { Route as AuthenticatedOwnerHealthRouteImport } from './routes/_authenti
 import { Route as AuthenticatedOwnerFraudRouteImport } from './routes/_authenticated/owner/fraud'
 import { Route as AuthenticatedOwnerFooterRouteImport } from './routes/_authenticated/owner/footer'
 import { Route as AuthenticatedOwnerFeaturesRouteImport } from './routes/_authenticated/owner/features'
+import { Route as AuthenticatedOwnerEmailAutomationsRouteImport } from './routes/_authenticated/owner/email-automations'
 import { Route as AuthenticatedOwnerDomainsRouteImport } from './routes/_authenticated/owner/domains'
 import { Route as AuthenticatedOwnerDevLogsRouteImport } from './routes/_authenticated/owner/dev-logs'
 import { Route as AuthenticatedOwnerCustomersRouteImport } from './routes/_authenticated/owner/customers'
@@ -627,6 +628,12 @@ const AuthenticatedOwnerFeaturesRoute =
   AuthenticatedOwnerFeaturesRouteImport.update({
     id: '/features',
     path: '/features',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerEmailAutomationsRoute =
+  AuthenticatedOwnerEmailAutomationsRouteImport.update({
+    id: '/email-automations',
+    path: '/email-automations',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
 const AuthenticatedOwnerDomainsRoute =
@@ -1582,6 +1589,7 @@ export interface FileRoutesByFullPath {
   '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
   '/owner/domains': typeof AuthenticatedOwnerDomainsRoute
+  '/owner/email-automations': typeof AuthenticatedOwnerEmailAutomationsRoute
   '/owner/features': typeof AuthenticatedOwnerFeaturesRoute
   '/owner/footer': typeof AuthenticatedOwnerFooterRoute
   '/owner/fraud': typeof AuthenticatedOwnerFraudRoute
@@ -1796,6 +1804,7 @@ export interface FileRoutesByTo {
   '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
   '/owner/domains': typeof AuthenticatedOwnerDomainsRoute
+  '/owner/email-automations': typeof AuthenticatedOwnerEmailAutomationsRoute
   '/owner/features': typeof AuthenticatedOwnerFeaturesRoute
   '/owner/footer': typeof AuthenticatedOwnerFooterRoute
   '/owner/fraud': typeof AuthenticatedOwnerFraudRoute
@@ -2021,6 +2030,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/_authenticated/owner/dev-logs': typeof AuthenticatedOwnerDevLogsRoute
   '/_authenticated/owner/domains': typeof AuthenticatedOwnerDomainsRoute
+  '/_authenticated/owner/email-automations': typeof AuthenticatedOwnerEmailAutomationsRoute
   '/_authenticated/owner/features': typeof AuthenticatedOwnerFeaturesRoute
   '/_authenticated/owner/footer': typeof AuthenticatedOwnerFooterRoute
   '/_authenticated/owner/fraud': typeof AuthenticatedOwnerFraudRoute
@@ -2246,6 +2256,7 @@ export interface FileRouteTypes {
     | '/owner/customers'
     | '/owner/dev-logs'
     | '/owner/domains'
+    | '/owner/email-automations'
     | '/owner/features'
     | '/owner/footer'
     | '/owner/fraud'
@@ -2460,6 +2471,7 @@ export interface FileRouteTypes {
     | '/owner/customers'
     | '/owner/dev-logs'
     | '/owner/domains'
+    | '/owner/email-automations'
     | '/owner/features'
     | '/owner/footer'
     | '/owner/fraud'
@@ -2684,6 +2696,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/customers'
     | '/_authenticated/owner/dev-logs'
     | '/_authenticated/owner/domains'
+    | '/_authenticated/owner/email-automations'
     | '/_authenticated/owner/features'
     | '/_authenticated/owner/footer'
     | '/_authenticated/owner/fraud'
@@ -3393,6 +3406,13 @@ declare module '@tanstack/react-router' {
       path: '/features'
       fullPath: '/owner/features'
       preLoaderRoute: typeof AuthenticatedOwnerFeaturesRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/email-automations': {
+      id: '/_authenticated/owner/email-automations'
+      path: '/email-automations'
+      fullPath: '/owner/email-automations'
+      preLoaderRoute: typeof AuthenticatedOwnerEmailAutomationsRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/owner/domains': {
@@ -4754,6 +4774,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerCustomersRoute: typeof AuthenticatedOwnerCustomersRoute
   AuthenticatedOwnerDevLogsRoute: typeof AuthenticatedOwnerDevLogsRoute
   AuthenticatedOwnerDomainsRoute: typeof AuthenticatedOwnerDomainsRoute
+  AuthenticatedOwnerEmailAutomationsRoute: typeof AuthenticatedOwnerEmailAutomationsRoute
   AuthenticatedOwnerFeaturesRoute: typeof AuthenticatedOwnerFeaturesRoute
   AuthenticatedOwnerFooterRoute: typeof AuthenticatedOwnerFooterRoute
   AuthenticatedOwnerFraudRoute: typeof AuthenticatedOwnerFraudRoute
@@ -4817,6 +4838,8 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerCustomersRoute: AuthenticatedOwnerCustomersRoute,
     AuthenticatedOwnerDevLogsRoute: AuthenticatedOwnerDevLogsRoute,
     AuthenticatedOwnerDomainsRoute: AuthenticatedOwnerDomainsRoute,
+    AuthenticatedOwnerEmailAutomationsRoute:
+      AuthenticatedOwnerEmailAutomationsRoute,
     AuthenticatedOwnerFeaturesRoute: AuthenticatedOwnerFeaturesRoute,
     AuthenticatedOwnerFooterRoute: AuthenticatedOwnerFooterRoute,
     AuthenticatedOwnerFraudRoute: AuthenticatedOwnerFraudRoute,
