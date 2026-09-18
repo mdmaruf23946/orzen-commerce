@@ -56,6 +56,8 @@ function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
   const [resetSent, setResetSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
 
   // shared
   const [email, setEmail] = useState("");
@@ -124,6 +126,46 @@ function AuthPage() {
     email.includes("@") &&
     passwordsMatch;
 
+  /** Post-authentication steps shared by the password and 2FA paths. */
+  async function afterSignIn(next: string) {
+    const kind = (await myAccountKind()) as any;
+    if (kind?.kind === "employee") {
+      await supabase.auth.signOut();
+      throw new Error(
+        "This is an employee account. Please sign in from the Employee login page (/employee-login).",
+      );
+    }
+    // Email-confirmed merchants may not have completed store creation yet.
+    await ensureMyStore();
+    try {
+      const { notifySignIn } = await import("@/lib/platform-notify.functions");
+      void notifySignIn({ data: { device: navigator.userAgent.slice(0, 180) } });
+    } catch {
+      /* ignore */
+    }
+    navigate({ to: next, replace: true });
+  }
+
+  async function submitMfa(e: React.FormEvent) {
+    e.preventDefault();
+    if (!mfaFactorId) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.mfa.challengeAndVerify({
+        factorId: mfaFactorId,
+        code: mfaCode,
+      });
+      if (error) throw error;
+      setMfaFactorId(null);
+      setMfaCode("");
+      await afterSignIn(getNext());
+    } catch (err) {
+      toast.error((err as Error).message || "The code is incorrect.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -132,12 +174,11 @@ function AuthPage() {
       if (mode === "forgot") {
         if (!email.includes("@"))
           throw new Error("Please enter the email address of your account.");
-        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-          redirectTo: `${window.location.origin}/reset-password`,
-        });
-        if (error) throw error;
+        const { requestPasswordResetCode } = await import("@/lib/merchant-security.functions");
+        await requestPasswordResetCode({ data: { email: email.trim() } });
         setResetSent(true);
-        toast.success("Password reset link sent. Please check your email inbox and spam folder.");
+        toast.success("We sent a 6-digit reset code to your email.");
+        navigate({ to: "/reset-password", search: { email: email.trim() } as never });
         setLoading(false);
         return;
       }
@@ -162,32 +203,29 @@ function AuthPage() {
           data: { storeName: storeName.trim(), slug, ownerName: ownerName.trim() },
         });
         toast.success("Store created. Welcome!");
-      } else {
-        // A previous deployment may have left a session for another backend.
-        // Clear only this browser's cached session before issuing a fresh token.
-        await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        navigate({ to: next, replace: true });
+        return;
+      }
 
-        if (error) throw error;
-        const kind = (await myAccountKind()) as any;
-        if (kind?.kind === "employee") {
-          await supabase.auth.signOut();
-          throw new Error(
-            "This is an employee account. Please sign in from the Employee login page (/employee-login).",
-          );
-        }
-        // Email-confirmed merchants may not have completed store creation yet.
-        // Complete it before entering the panel so child pages never race it.
-        await ensureMyStore();
-        // Security alert email; never block the sign-in on it.
-        try {
-          const { notifySignIn } = await import("@/lib/platform-notify.functions");
-          void notifySignIn({ data: { device: navigator.userAgent.slice(0, 180) } });
-        } catch {
-          /* ignore */
+      // A previous deployment may have left a session for another backend.
+      // Clear only this browser's cached session before issuing a fresh token.
+      await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+
+      // Two-factor: stop here and ask for the authenticator code.
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal?.nextLevel === "aal2" && aal.nextLevel !== aal.currentLevel) {
+        const { data: factors } = await supabase.auth.mfa.listFactors();
+        const factor = (factors?.totp ?? [])[0];
+        if (factor) {
+          setMfaFactorId(factor.id);
+          setLoading(false);
+          return;
         }
       }
-      navigate({ to: next, replace: true });
+
+      await afterSignIn(next);
     } catch (err) {
       if (isInvalidAuthSessionError(err)) {
         await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
