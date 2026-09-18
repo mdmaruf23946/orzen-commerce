@@ -158,11 +158,18 @@ function ResetPasswordPage() {
         <button
           type="button"
           onClick={resend}
-          disabled={loading}
-          className="mt-4 w-full text-center text-xs text-muted-foreground hover:text-foreground"
+          disabled={loading || !timer.canSend}
+          className="mt-4 w-full text-center text-xs text-muted-foreground hover:text-foreground disabled:opacity-60"
         >
-          Resend code
+          {timer.limitReached
+            ? "Resend limit reached — try again later"
+            : timer.secondsLeft > 0
+              ? `Resend code in ${timer.secondsLeft}s`
+              : `Resend code${timer.sends > 0 ? ` (${timer.sendsLeft} left)` : ""}`}
         </button>
+        <p className="mt-2 text-center text-[11px] leading-relaxed text-muted-foreground">
+          {CODE_INBOX_HINT}
+        </p>
         <Link
           to="/auth"
           className="mt-2 block text-center text-xs text-muted-foreground hover:text-foreground"
