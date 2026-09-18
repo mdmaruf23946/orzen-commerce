@@ -75,10 +75,14 @@ function ResetPasswordPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
+    if (turnstileConfigured() && !captcha) {
+      toast.error(CAPTCHA_WAIT_BN);
+      return;
+    }
     setLoading(true);
     try {
       await confirmPasswordResetCode({
-        data: { email: email.trim(), code: code.trim(), password },
+        data: { email: email.trim(), code: code.trim(), password, captcha },
       });
       toast.success("Password updated. Please sign in with your new password.");
       navigate({ to: "/auth", replace: true });
