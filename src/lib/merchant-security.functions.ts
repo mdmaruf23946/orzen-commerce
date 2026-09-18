@@ -274,10 +274,12 @@ export const confirmPasswordResetCode = createServerFn({ method: "POST" })
         email: z.string().trim().email().max(255),
         code: z.string().trim().min(4).max(10),
         password: z.string().min(8).max(200),
+        captcha: z.string().max(4000).optional(),
       })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    await requireHuman(data.captcha);
     const user = await findUserByEmail(data.email);
     if (!user) throw new Error("The code is incorrect.");
     await consumeCode(user.id, "password_reset", data.code);
