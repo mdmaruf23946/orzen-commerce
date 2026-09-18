@@ -9,6 +9,9 @@ export const Route = createFileRoute("/api/public/lp/order")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const { guardRequest } = await import("@/lib/rate-limit.server");
+        const blocked = await guardRequest("landing_order", request);
+        if (blocked) return blocked;
         let raw: unknown;
         try {
           raw = await request.json();

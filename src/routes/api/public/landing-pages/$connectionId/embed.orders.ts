@@ -14,6 +14,11 @@ export const Route = createFileRoute("/api/public/landing-pages/$connectionId/em
           },
         }),
       POST: async ({ request, params }) => {
+        const { guardRequest } = await import("@/lib/rate-limit.server");
+        const blocked = await guardRequest("landing_order", request, {
+          "Access-Control-Allow-Origin": "*",
+        });
+        if (blocked) return blocked;
         let rawBody = await request.text();
         // Accept both JSON and form-encoded submissions from embed forms.
         const ct = request.headers.get("content-type") ?? "";

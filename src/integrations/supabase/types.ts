@@ -6039,6 +6039,27 @@ export type Database = {
           },
         ]
       }
+      rate_limit_hits: {
+        Row: {
+          bucket_key: string
+          hits: number
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          bucket_key: string
+          hits?: number
+          updated_at?: string
+          window_start: string
+        }
+        Update: {
+          bucket_key?: string
+          hits?: number
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       return_items: {
         Row: {
           created_at: string
@@ -10923,6 +10944,11 @@ export type Database = {
       }
       next_subscription_no: { Args: { _store_id: string }; Returns: string }
       platform_routing_hosts: { Args: never; Returns: Json }
+      rate_limit_cleanup: { Args: never; Returns: undefined }
+      rate_limit_hit: {
+        Args: { _key: string; _limit: number; _window_sec: number }
+        Returns: Json
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {

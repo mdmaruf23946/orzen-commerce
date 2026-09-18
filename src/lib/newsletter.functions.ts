@@ -10,6 +10,8 @@ const schema = z.object({
 export const subscribeToStoreOffers = createServerFn({ method: "POST" })
   .inputValidator((data) => schema.parse(data))
   .handler(async ({ data }) => {
+    const { guardServerFn } = await import("@/lib/rate-limit.server");
+    await guardServerFn("contact");
     const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
     const sb = createClient(process.env["SUPABASE_URL"]!, key, {
       auth: { persistSession: false, autoRefreshToken: false },

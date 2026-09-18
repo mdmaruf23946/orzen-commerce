@@ -41,6 +41,8 @@ export const signupCustomer = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    const { guardServerFn } = await import("@/lib/rate-limit.server");
+    await guardServerFn("auth");
     const storeId = await resolveStore(data.storeSlug);
     const sb = await admin();
     const { data: res, error } = await sb.rpc("customer_signup", {
@@ -69,6 +71,8 @@ export const loginCustomer = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    const { guardServerFn } = await import("@/lib/rate-limit.server");
+    await guardServerFn("auth");
     const storeId = await resolveStore(data.storeSlug);
     const sb = await admin();
     const ident = data.identifier.trim().toLowerCase();
@@ -106,6 +110,8 @@ export const requestCustomerPasswordReset = createServerFn({ method: "POST" })
     z.object({ storeSlug: slugSchema, identifier: z.string().trim().min(3).max(255) }).parse(d),
   )
   .handler(async ({ data }) => {
+    const { guardServerFn } = await import("@/lib/rate-limit.server");
+    await guardServerFn("auth");
     const storeId = await resolveStore(data.storeSlug);
     const sb = await admin();
     const { data: store } = await sb

@@ -14,6 +14,11 @@ export const Route = createFileRoute("/api/public/landing-pages/$connectionId/or
           },
         }),
       POST: async ({ request, params }) => {
+        const { guardRequest } = await import("@/lib/rate-limit.server");
+        const blocked = await guardRequest("landing_order", request, {
+          "Access-Control-Allow-Origin": "*",
+        });
+        if (blocked) return blocked;
         const rawBody = await request.text();
         const result = await intakeLandingPageOrder({
           connectionId: params.connectionId,

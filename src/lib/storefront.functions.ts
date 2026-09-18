@@ -892,6 +892,8 @@ export const placeOrder = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    const { guardServerFn } = await import("@/lib/rate-limit.server");
+    await guardServerFn("checkout");
     // Use service-role admin client so writes bypass RLS; all pricing is
     // recomputed server-side below from trusted product/coupon rows.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

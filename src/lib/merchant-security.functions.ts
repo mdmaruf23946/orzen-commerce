@@ -89,6 +89,8 @@ async function logSend(template: string, to: string, status: string, error?: str
 
 /** Issue a fresh code, enforcing send throttles. Returns the plain code. */
 async function issueCode(userId: string, email: string, purpose: "email_verify" | "password_reset") {
+  const { guardServerFn } = await import("@/lib/rate-limit.server");
+  await guardServerFn("auth", `code:${userId}`);
   const sb = await admin();
   const now = Date.now();
   const { data: recent } = await sb
