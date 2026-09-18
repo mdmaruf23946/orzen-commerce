@@ -160,6 +160,7 @@ function ResetPasswordPage() {
               <p className="text-xs text-destructive">Passwords do not match.</p>
             )}
           </div>
+          <TurnstileWidget onToken={setCaptcha} className="flex justify-center" />
           <Button type="submit" className="h-10 w-full" disabled={loading || !canSubmit}>
             {loading ? "Please wait…" : "Update password"}
           </Button>
