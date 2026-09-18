@@ -1,5 +1,4 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
-import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 
 export const Route = createFileRoute("/_authenticated/owner/ai-admin")({
   component: AiAdminLayout,
