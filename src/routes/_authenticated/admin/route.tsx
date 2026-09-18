@@ -27,6 +27,7 @@ import { recoverFromChunkError } from "@/lib/chunk-recovery";
 import { StoreAccessProvider, useStoreAccess } from "@/lib/use-store-access";
 import { ReadOnlyGuard } from "@/components/admin/ReadOnlyGuard";
 import { PlanLockGate } from "@/components/admin/PlanLockGate";
+import { EmailVerifyBanner, EmailVerifyGate } from "@/components/admin/EmailVerifyGate";
 import { sectionForPath } from "@/lib/panel-sections";
 
 
@@ -570,6 +571,7 @@ function AdminLayout() {
 
           <main className="min-w-0 flex-1 overflow-x-hidden p-4 pb-[70px] md:p-6 md:pb-8 lg:p-8">
             {!access.isEmployee && <SubscriptionStatusBanner />}
+            {!access.isEmployee && <EmailVerifyBanner />}
             {access.loading ? (
               <div className="h-40 animate-pulse rounded-2xl bg-muted/40" />
             ) : pageAllowed ? (
@@ -586,7 +588,9 @@ function AdminLayout() {
                   }
                 >
                   <PlanLockGate path={currentPath}>
-                    <Outlet />
+                    <EmailVerifyGate path={currentPath}>
+                      <Outlet />
+                    </EmailVerifyGate>
                   </PlanLockGate>
                 </ReadOnlyGuard>
               </>
