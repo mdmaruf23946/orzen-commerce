@@ -700,6 +700,17 @@ export const setLandingStatus = createServerFn({ method: "POST" })
     // inside the platform app. Register <slug>.<root> when nothing is attached.
     if (data.status === "published") {
       await ensureLandingHost(context.supabase, store.id, page).catch(() => null);
+      try {
+        const { notifyLandingPagePublished } = await import("@/lib/platform-notify.server");
+        await notifyLandingPagePublished({
+          email: ((context.claims as any)?.email as string) ?? null,
+          ownerName: ((context.claims as any)?.user_metadata?.full_name as string) ?? null,
+          pageTitle: String((page as any).title ?? "Landing page"),
+          pageUrl: (page as any).slug ? `https://${(page as any).slug}.orzen.top` : null,
+        });
+      } catch {
+        // Publishing must succeed even when the notification email fails.
+      }
     }
     return { ok: true };
   });

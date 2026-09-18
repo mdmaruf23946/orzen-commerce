@@ -179,6 +179,13 @@ function AuthPage() {
         // Email-confirmed merchants may not have completed store creation yet.
         // Complete it before entering the panel so child pages never race it.
         await ensureMyStore();
+        // Security alert email; never block the sign-in on it.
+        try {
+          const { notifySignIn } = await import("@/lib/platform-notify.functions");
+          void notifySignIn({ data: { device: navigator.userAgent.slice(0, 180) } });
+        } catch {
+          /* ignore */
+        }
       }
       navigate({ to: next, replace: true });
     } catch (err) {

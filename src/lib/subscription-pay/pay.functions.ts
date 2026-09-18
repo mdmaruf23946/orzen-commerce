@@ -583,6 +583,21 @@ export const verifyAndActivateSubscription = createServerFn({ method: "POST" })
       console.error("[subscription-pay] invoice/email step failed", e);
     }
 
+    try {
+      const { notifySubscription } = await import("@/lib/platform-notify.server");
+      const { data: u } = await supabaseAdmin.auth.admin.getUserById((inv as any).user_id);
+      await notifySubscription({
+        email: u?.user?.email ?? null,
+        ownerName: ((u?.user?.user_metadata as any)?.full_name as string) ?? null,
+        planName: (pkg as any)?.name ?? "Subscription",
+        amount: Number((inv as any).total),
+        expiresAt: expires.toISOString(),
+        invoiceNo: (inv as any).invoice_no,
+      });
+    } catch (e) {
+      console.error("[subscription-pay] notification email failed", e);
+    }
+
     await supabaseAdmin
       .from("subscription_invoices")
       .update({ status: "paid", paid_at: now.toISOString(), pdf_path: pdfPath })

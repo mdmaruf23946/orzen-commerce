@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Store as StoreIcon, Package, LogOut, Menu, ArrowLeft, ShieldCheck,
   Sparkles, Wallet, Users, CreditCard, Activity, Truck, Megaphone, ToggleLeft, Settings,
   UserCog, BarChart3, LifeBuoy, Bell, FileText, KeyRound, Webhook, Terminal, HardDrive,
-  ChevronDown, ChevronRight, Globe, Palette, PhoneCall, Star, MessageCircle, Bot,
+  ChevronDown, ChevronRight, Globe, Palette, PhoneCall, Star, MessageCircle, Bot, Mail,
 } from "lucide-react";
 import { amIOwner } from "@/lib/owner.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -79,6 +79,7 @@ const groups: NavGroup[] = [
     { to: "/owner/support", label: "Support", icon: LifeBuoy },
     { to: "/owner/notification-center", label: "Notification Center", icon: Bell },
     { to: "/owner/notifications", label: "Announcements", icon: Megaphone },
+    { to: "/owner/email-automations", label: "Email Automations", icon: Mail },
   ]},
   { label: "Security", links: [
     { to: "/owner/logs", label: "Login Logs", icon: FileText },

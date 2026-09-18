@@ -183,25 +183,21 @@ export const sendCampaign = createServerFn({ method: "POST" })
       }
 
       // Email
-      if (wantEmail && r.email) {
+      if (wantEmail && r.email && !r.email.endsWith("@demo-orzen.test")) {
         try {
-          const { error: qErr } = await (supabaseAdmin as any).rpc("enqueue_email", {
-            queue_name: "transactional_emails",
-            payload: {
-              template_name: "platform-notification",
-              recipient_email: r.email,
-              idempotency_key: `notif-${data.id}-${r.user_id}`,
-              template_data: {
-                title: campaign.title,
-                body_html: campaign.body_html,
-                type: campaign.type,
-                priority: campaign.priority,
-                action_label: campaign.action_label,
-                action_url: buildActionUrl(campaign.action_type, campaign.action_target),
-              },
-            },
+          const { sendBrevoEmail, platformEmailShell } = await import("@/lib/brevo.server");
+          await sendBrevoEmail({
+            to: r.email,
+            subject: campaign.title,
+            html: platformEmailShell({
+              title: campaign.title,
+              bodyHtml: campaign.body_html ?? "",
+              actionLabel: campaign.action_label,
+              actionUrl: buildActionUrl(campaign.action_type, campaign.action_target),
+              preheader: stripHtml(campaign.body_html ?? "").slice(0, 120),
+            }),
+            tags: ["platform", "campaign"],
           });
-          if (qErr) throw new Error(qErr.message);
           await supabaseAdmin.from("notification_recipients").update({
             email_status: "sent", email_attempts: 1,
           }).eq("id", recipientId);
