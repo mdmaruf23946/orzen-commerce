@@ -3,10 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import {
-  LayoutDashboard, Store as StoreIcon, Package, LogOut, Menu, ArrowLeft, ShieldCheck,
-  Sparkles, Wallet, Users, CreditCard, Activity, Truck, Megaphone, ToggleLeft, Settings,
-  UserCog, BarChart3, LifeBuoy, Bell, FileText, KeyRound, Webhook, Terminal, HardDrive,
-  ChevronDown, ChevronRight, Globe, Palette, PhoneCall, Star, MessageCircle, Bot, Mail,
+  LayoutDashboard, Store as StoreIcon, LogOut, Menu, ArrowLeft, ShieldCheck,
+  Sparkles, Users, CreditCard, Activity, Truck, Megaphone, ToggleLeft, Settings,
+  UserCog, BarChart3, LifeBuoy, FileText, KeyRound, Webhook, Terminal, HardDrive,
+  ChevronDown, ChevronRight, Globe, Palette, PhoneCall, Star, Bot, Mail,
 } from "lucide-react";
 import { amIOwner } from "@/lib/owner.functions";
 import { supabase } from "@/integrations/supabase/client";
