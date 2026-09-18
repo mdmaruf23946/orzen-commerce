@@ -6,6 +6,7 @@ import {
   Clock, AlertTriangle, TrendingUp, Receipt,
 } from "lucide-react";
 import { ownerControlCenter } from "@/lib/owner.functions";
+import { GitHubDeployment } from "@/components/owner/GitHubDeployment";
 
 export const Route = createFileRoute("/_authenticated/owner/")({
   component: OwnerDashboard,
@@ -93,8 +94,8 @@ function OwnerDashboard() {
         </div>
       </div>
 
-      {/* Activity + store health */}
-      <div className="grid gap-4 lg:grid-cols-2">
+      {/* Activity + store health + GitHub deploy */}
+      <div className="grid gap-4 lg:grid-cols-3">
         <div className="min-w-0 rounded-xl border bg-card p-4">
           <h2 className="mb-3 text-sm font-semibold">Recent activity</h2>
           {(data?.activity ?? []).length === 0 ? (
@@ -131,6 +132,8 @@ function OwnerDashboard() {
             <Link to="/owner/subscriptions" className="rounded-md border px-3 py-1.5 text-xs hover:bg-muted">Subscriptions</Link>
           </div>
         </div>
+
+        <GitHubDeployment />
       </div>
     </div>
   );
