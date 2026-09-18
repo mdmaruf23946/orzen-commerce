@@ -39,6 +39,9 @@ export const Route = createFileRoute("/api/ai/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const { guardRequest } = await import("@/lib/rate-limit.server");
+        const blocked = await guardRequest("ai_chat", request);
+        if (blocked) return blocked;
         const body = (await request.json()) as {
           slug?: string;
           messages?: UIMessage[];
