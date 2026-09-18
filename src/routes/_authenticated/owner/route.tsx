@@ -144,6 +144,7 @@ function OwnerLayout() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const ownerCheck = useServerFn(amIOwner);
   const { data, isLoading } = useQuery({ queryKey: ["amIOwner"], queryFn: () => ownerCheck() });
 
