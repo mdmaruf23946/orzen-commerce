@@ -149,6 +149,7 @@ import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.
 import { Route as AuthenticatedOwnerSubscriptionPayRouteRouteImport } from './routes/_authenticated/owner/subscription-pay.route'
 import { Route as AuthenticatedOwnerNotificationCenterRouteRouteImport } from './routes/_authenticated/owner/notification-center.route'
 import { Route as AuthenticatedOwnerCommunicationRouteRouteImport } from './routes/_authenticated/owner/communication.route'
+import { Route as AuthenticatedOwnerAiAdminRouteRouteImport } from './routes/_authenticated/owner/ai-admin.route'
 import { Route as AuthenticatedAdminFacebookRouteRouteImport } from './routes/_authenticated/admin/facebook.route'
 import { Route as AuthenticatedAdminBillingRouteRouteImport } from './routes/_authenticated/admin/billing.route'
 import { Route as AuthenticatedOwnerSubscriptionPayIndexRouteImport } from './routes/_authenticated/owner/subscription-pay.index'
@@ -1014,6 +1015,12 @@ const AuthenticatedOwnerCommunicationRouteRoute =
     path: '/communication',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
+const AuthenticatedOwnerAiAdminRouteRoute =
+  AuthenticatedOwnerAiAdminRouteRouteImport.update({
+    id: '/ai-admin',
+    path: '/ai-admin',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
 const AuthenticatedAdminFacebookRouteRoute =
   AuthenticatedAdminFacebookRouteRouteImport.update({
     id: '/facebook',
@@ -1046,9 +1053,9 @@ const AuthenticatedOwnerCommunicationIndexRoute =
   } as any)
 const AuthenticatedOwnerAiAdminIndexRoute =
   AuthenticatedOwnerAiAdminIndexRouteImport.update({
-    id: '/ai-admin/',
-    path: '/ai-admin/',
-    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedOwnerAiAdminRouteRoute,
   } as any)
 const AuthenticatedAdminSettingsIndexRoute =
   AuthenticatedAdminSettingsIndexRouteImport.update({
@@ -1265,69 +1272,69 @@ const AuthenticatedOwnerCommunicationAutomationsRoute =
   } as any)
 const AuthenticatedOwnerAiAdminWhatsappRoute =
   AuthenticatedOwnerAiAdminWhatsappRouteImport.update({
-    id: '/ai-admin/whatsapp',
-    path: '/ai-admin/whatsapp',
-    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+    id: '/whatsapp',
+    path: '/whatsapp',
+    getParentRoute: () => AuthenticatedOwnerAiAdminRouteRoute,
   } as any)
 const AuthenticatedOwnerAiAdminSupportRoute =
   AuthenticatedOwnerAiAdminSupportRouteImport.update({
-    id: '/ai-admin/support',
-    path: '/ai-admin/support',
-    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+    id: '/support',
+    path: '/support',
+    getParentRoute: () => AuthenticatedOwnerAiAdminRouteRoute,
   } as any)
 const AuthenticatedOwnerAiAdminSettingsRoute =
   AuthenticatedOwnerAiAdminSettingsRouteImport.update({
-    id: '/ai-admin/settings',
-    path: '/ai-admin/settings',
-    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedOwnerAiAdminRouteRoute,
   } as any)
 const AuthenticatedOwnerAiAdminPermissionsRoute =
   AuthenticatedOwnerAiAdminPermissionsRouteImport.update({
-    id: '/ai-admin/permissions',
-    path: '/ai-admin/permissions',
-    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+    id: '/permissions',
+    path: '/permissions',
+    getParentRoute: () => AuthenticatedOwnerAiAdminRouteRoute,
   } as any)
 const AuthenticatedOwnerAiAdminNotificationsRoute =
   AuthenticatedOwnerAiAdminNotificationsRouteImport.update({
-    id: '/ai-admin/notifications',
-    path: '/ai-admin/notifications',
-    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedOwnerAiAdminRouteRoute,
   } as any)
 const AuthenticatedOwnerAiAdminMessengerRoute =
   AuthenticatedOwnerAiAdminMessengerRouteImport.update({
-    id: '/ai-admin/messenger',
-    path: '/ai-admin/messenger',
-    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+    id: '/messenger',
+    path: '/messenger',
+    getParentRoute: () => AuthenticatedOwnerAiAdminRouteRoute,
   } as any)
 const AuthenticatedOwnerAiAdminLogsRoute =
   AuthenticatedOwnerAiAdminLogsRouteImport.update({
-    id: '/ai-admin/logs',
-    path: '/ai-admin/logs',
-    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+    id: '/logs',
+    path: '/logs',
+    getParentRoute: () => AuthenticatedOwnerAiAdminRouteRoute,
   } as any)
 const AuthenticatedOwnerAiAdminKnowledgeRoute =
   AuthenticatedOwnerAiAdminKnowledgeRouteImport.update({
-    id: '/ai-admin/knowledge',
-    path: '/ai-admin/knowledge',
-    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+    id: '/knowledge',
+    path: '/knowledge',
+    getParentRoute: () => AuthenticatedOwnerAiAdminRouteRoute,
   } as any)
 const AuthenticatedOwnerAiAdminAutomationRoute =
   AuthenticatedOwnerAiAdminAutomationRouteImport.update({
-    id: '/ai-admin/automation',
-    path: '/ai-admin/automation',
-    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+    id: '/automation',
+    path: '/automation',
+    getParentRoute: () => AuthenticatedOwnerAiAdminRouteRoute,
   } as any)
 const AuthenticatedOwnerAiAdminAgentsRoute =
   AuthenticatedOwnerAiAdminAgentsRouteImport.update({
-    id: '/ai-admin/agents',
-    path: '/ai-admin/agents',
-    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+    id: '/agents',
+    path: '/agents',
+    getParentRoute: () => AuthenticatedOwnerAiAdminRouteRoute,
   } as any)
 const AuthenticatedOwnerAiAdminAgentRoute =
   AuthenticatedOwnerAiAdminAgentRouteImport.update({
-    id: '/ai-admin/agent',
-    path: '/ai-admin/agent',
-    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+    id: '/agent',
+    path: '/agent',
+    getParentRoute: () => AuthenticatedOwnerAiAdminRouteRoute,
   } as any)
 const AuthenticatedAdminSettingsWorkflowRoute =
   AuthenticatedAdminSettingsWorkflowRouteImport.update({
@@ -1517,6 +1524,7 @@ export interface FileRoutesByFullPath {
   '/lp/$slug': typeof LpSlugRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
   '/admin/facebook': typeof AuthenticatedAdminFacebookRouteRouteWithChildren
+  '/owner/ai-admin': typeof AuthenticatedOwnerAiAdminRouteRouteWithChildren
   '/owner/communication': typeof AuthenticatedOwnerCommunicationRouteRouteWithChildren
   '/owner/notification-center': typeof AuthenticatedOwnerNotificationCenterRouteRouteWithChildren
   '/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
@@ -1956,6 +1964,7 @@ export interface FileRoutesById {
   '/lp/$slug': typeof LpSlugRoute
   '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
   '/_authenticated/admin/facebook': typeof AuthenticatedAdminFacebookRouteRouteWithChildren
+  '/_authenticated/owner/ai-admin': typeof AuthenticatedOwnerAiAdminRouteRouteWithChildren
   '/_authenticated/owner/communication': typeof AuthenticatedOwnerCommunicationRouteRouteWithChildren
   '/_authenticated/owner/notification-center': typeof AuthenticatedOwnerNotificationCenterRouteRouteWithChildren
   '/_authenticated/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
@@ -2181,6 +2190,7 @@ export interface FileRouteTypes {
     | '/lp/$slug'
     | '/admin/billing'
     | '/admin/facebook'
+    | '/owner/ai-admin'
     | '/owner/communication'
     | '/owner/notification-center'
     | '/owner/subscription-pay'
@@ -2619,6 +2629,7 @@ export interface FileRouteTypes {
     | '/lp/$slug'
     | '/_authenticated/admin/billing'
     | '/_authenticated/admin/facebook'
+    | '/_authenticated/owner/ai-admin'
     | '/_authenticated/owner/communication'
     | '/_authenticated/owner/notification-center'
     | '/_authenticated/owner/subscription-pay'
@@ -3857,6 +3868,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerCommunicationRouteRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
+    '/_authenticated/owner/ai-admin': {
+      id: '/_authenticated/owner/ai-admin'
+      path: '/ai-admin'
+      fullPath: '/owner/ai-admin'
+      preLoaderRoute: typeof AuthenticatedOwnerAiAdminRouteRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
     '/_authenticated/admin/facebook': {
       id: '/_authenticated/admin/facebook'
       path: '/facebook'
@@ -3894,10 +3912,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/owner/ai-admin/': {
       id: '/_authenticated/owner/ai-admin/'
-      path: '/ai-admin'
+      path: '/'
       fullPath: '/owner/ai-admin/'
       preLoaderRoute: typeof AuthenticatedOwnerAiAdminIndexRouteImport
-      parentRoute: typeof AuthenticatedOwnerRouteRoute
+      parentRoute: typeof AuthenticatedOwnerAiAdminRouteRoute
     }
     '/_authenticated/admin/settings/': {
       id: '/_authenticated/admin/settings/'
@@ -4167,80 +4185,80 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/owner/ai-admin/whatsapp': {
       id: '/_authenticated/owner/ai-admin/whatsapp'
-      path: '/ai-admin/whatsapp'
+      path: '/whatsapp'
       fullPath: '/owner/ai-admin/whatsapp'
       preLoaderRoute: typeof AuthenticatedOwnerAiAdminWhatsappRouteImport
-      parentRoute: typeof AuthenticatedOwnerRouteRoute
+      parentRoute: typeof AuthenticatedOwnerAiAdminRouteRoute
     }
     '/_authenticated/owner/ai-admin/support': {
       id: '/_authenticated/owner/ai-admin/support'
-      path: '/ai-admin/support'
+      path: '/support'
       fullPath: '/owner/ai-admin/support'
       preLoaderRoute: typeof AuthenticatedOwnerAiAdminSupportRouteImport
-      parentRoute: typeof AuthenticatedOwnerRouteRoute
+      parentRoute: typeof AuthenticatedOwnerAiAdminRouteRoute
     }
     '/_authenticated/owner/ai-admin/settings': {
       id: '/_authenticated/owner/ai-admin/settings'
-      path: '/ai-admin/settings'
+      path: '/settings'
       fullPath: '/owner/ai-admin/settings'
       preLoaderRoute: typeof AuthenticatedOwnerAiAdminSettingsRouteImport
-      parentRoute: typeof AuthenticatedOwnerRouteRoute
+      parentRoute: typeof AuthenticatedOwnerAiAdminRouteRoute
     }
     '/_authenticated/owner/ai-admin/permissions': {
       id: '/_authenticated/owner/ai-admin/permissions'
-      path: '/ai-admin/permissions'
+      path: '/permissions'
       fullPath: '/owner/ai-admin/permissions'
       preLoaderRoute: typeof AuthenticatedOwnerAiAdminPermissionsRouteImport
-      parentRoute: typeof AuthenticatedOwnerRouteRoute
+      parentRoute: typeof AuthenticatedOwnerAiAdminRouteRoute
     }
     '/_authenticated/owner/ai-admin/notifications': {
       id: '/_authenticated/owner/ai-admin/notifications'
-      path: '/ai-admin/notifications'
+      path: '/notifications'
       fullPath: '/owner/ai-admin/notifications'
       preLoaderRoute: typeof AuthenticatedOwnerAiAdminNotificationsRouteImport
-      parentRoute: typeof AuthenticatedOwnerRouteRoute
+      parentRoute: typeof AuthenticatedOwnerAiAdminRouteRoute
     }
     '/_authenticated/owner/ai-admin/messenger': {
       id: '/_authenticated/owner/ai-admin/messenger'
-      path: '/ai-admin/messenger'
+      path: '/messenger'
       fullPath: '/owner/ai-admin/messenger'
       preLoaderRoute: typeof AuthenticatedOwnerAiAdminMessengerRouteImport
-      parentRoute: typeof AuthenticatedOwnerRouteRoute
+      parentRoute: typeof AuthenticatedOwnerAiAdminRouteRoute
     }
     '/_authenticated/owner/ai-admin/logs': {
       id: '/_authenticated/owner/ai-admin/logs'
-      path: '/ai-admin/logs'
+      path: '/logs'
       fullPath: '/owner/ai-admin/logs'
       preLoaderRoute: typeof AuthenticatedOwnerAiAdminLogsRouteImport
-      parentRoute: typeof AuthenticatedOwnerRouteRoute
+      parentRoute: typeof AuthenticatedOwnerAiAdminRouteRoute
     }
     '/_authenticated/owner/ai-admin/knowledge': {
       id: '/_authenticated/owner/ai-admin/knowledge'
-      path: '/ai-admin/knowledge'
+      path: '/knowledge'
       fullPath: '/owner/ai-admin/knowledge'
       preLoaderRoute: typeof AuthenticatedOwnerAiAdminKnowledgeRouteImport
-      parentRoute: typeof AuthenticatedOwnerRouteRoute
+      parentRoute: typeof AuthenticatedOwnerAiAdminRouteRoute
     }
     '/_authenticated/owner/ai-admin/automation': {
       id: '/_authenticated/owner/ai-admin/automation'
-      path: '/ai-admin/automation'
+      path: '/automation'
       fullPath: '/owner/ai-admin/automation'
       preLoaderRoute: typeof AuthenticatedOwnerAiAdminAutomationRouteImport
-      parentRoute: typeof AuthenticatedOwnerRouteRoute
+      parentRoute: typeof AuthenticatedOwnerAiAdminRouteRoute
     }
     '/_authenticated/owner/ai-admin/agents': {
       id: '/_authenticated/owner/ai-admin/agents'
-      path: '/ai-admin/agents'
+      path: '/agents'
       fullPath: '/owner/ai-admin/agents'
       preLoaderRoute: typeof AuthenticatedOwnerAiAdminAgentsRouteImport
-      parentRoute: typeof AuthenticatedOwnerRouteRoute
+      parentRoute: typeof AuthenticatedOwnerAiAdminRouteRoute
     }
     '/_authenticated/owner/ai-admin/agent': {
       id: '/_authenticated/owner/ai-admin/agent'
-      path: '/ai-admin/agent'
+      path: '/agent'
       fullPath: '/owner/ai-admin/agent'
       preLoaderRoute: typeof AuthenticatedOwnerAiAdminAgentRouteImport
-      parentRoute: typeof AuthenticatedOwnerRouteRoute
+      parentRoute: typeof AuthenticatedOwnerAiAdminRouteRoute
     }
     '/_authenticated/admin/settings/workflow': {
       id: '/_authenticated/admin/settings/workflow'
@@ -4652,6 +4670,50 @@ const AuthenticatedAdminRouteRouteWithChildren =
     AuthenticatedAdminRouteRouteChildren,
   )
 
+interface AuthenticatedOwnerAiAdminRouteRouteChildren {
+  AuthenticatedOwnerAiAdminAgentRoute: typeof AuthenticatedOwnerAiAdminAgentRoute
+  AuthenticatedOwnerAiAdminAgentsRoute: typeof AuthenticatedOwnerAiAdminAgentsRoute
+  AuthenticatedOwnerAiAdminAutomationRoute: typeof AuthenticatedOwnerAiAdminAutomationRoute
+  AuthenticatedOwnerAiAdminKnowledgeRoute: typeof AuthenticatedOwnerAiAdminKnowledgeRoute
+  AuthenticatedOwnerAiAdminLogsRoute: typeof AuthenticatedOwnerAiAdminLogsRoute
+  AuthenticatedOwnerAiAdminMessengerRoute: typeof AuthenticatedOwnerAiAdminMessengerRoute
+  AuthenticatedOwnerAiAdminNotificationsRoute: typeof AuthenticatedOwnerAiAdminNotificationsRoute
+  AuthenticatedOwnerAiAdminPermissionsRoute: typeof AuthenticatedOwnerAiAdminPermissionsRoute
+  AuthenticatedOwnerAiAdminSettingsRoute: typeof AuthenticatedOwnerAiAdminSettingsRoute
+  AuthenticatedOwnerAiAdminSupportRoute: typeof AuthenticatedOwnerAiAdminSupportRoute
+  AuthenticatedOwnerAiAdminWhatsappRoute: typeof AuthenticatedOwnerAiAdminWhatsappRoute
+  AuthenticatedOwnerAiAdminIndexRoute: typeof AuthenticatedOwnerAiAdminIndexRoute
+}
+
+const AuthenticatedOwnerAiAdminRouteRouteChildren: AuthenticatedOwnerAiAdminRouteRouteChildren =
+  {
+    AuthenticatedOwnerAiAdminAgentRoute: AuthenticatedOwnerAiAdminAgentRoute,
+    AuthenticatedOwnerAiAdminAgentsRoute: AuthenticatedOwnerAiAdminAgentsRoute,
+    AuthenticatedOwnerAiAdminAutomationRoute:
+      AuthenticatedOwnerAiAdminAutomationRoute,
+    AuthenticatedOwnerAiAdminKnowledgeRoute:
+      AuthenticatedOwnerAiAdminKnowledgeRoute,
+    AuthenticatedOwnerAiAdminLogsRoute: AuthenticatedOwnerAiAdminLogsRoute,
+    AuthenticatedOwnerAiAdminMessengerRoute:
+      AuthenticatedOwnerAiAdminMessengerRoute,
+    AuthenticatedOwnerAiAdminNotificationsRoute:
+      AuthenticatedOwnerAiAdminNotificationsRoute,
+    AuthenticatedOwnerAiAdminPermissionsRoute:
+      AuthenticatedOwnerAiAdminPermissionsRoute,
+    AuthenticatedOwnerAiAdminSettingsRoute:
+      AuthenticatedOwnerAiAdminSettingsRoute,
+    AuthenticatedOwnerAiAdminSupportRoute:
+      AuthenticatedOwnerAiAdminSupportRoute,
+    AuthenticatedOwnerAiAdminWhatsappRoute:
+      AuthenticatedOwnerAiAdminWhatsappRoute,
+    AuthenticatedOwnerAiAdminIndexRoute: AuthenticatedOwnerAiAdminIndexRoute,
+  }
+
+const AuthenticatedOwnerAiAdminRouteRouteWithChildren =
+  AuthenticatedOwnerAiAdminRouteRoute._addFileChildren(
+    AuthenticatedOwnerAiAdminRouteRouteChildren,
+  )
+
 interface AuthenticatedOwnerCommunicationHistoryRouteChildren {
   AuthenticatedOwnerCommunicationHistoryIdRoute: typeof AuthenticatedOwnerCommunicationHistoryIdRoute
 }
@@ -4734,6 +4796,7 @@ const AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren =
   )
 
 interface AuthenticatedOwnerRouteRouteChildren {
+  AuthenticatedOwnerAiAdminRouteRoute: typeof AuthenticatedOwnerAiAdminRouteRouteWithChildren
   AuthenticatedOwnerCommunicationRouteRoute: typeof AuthenticatedOwnerCommunicationRouteRouteWithChildren
   AuthenticatedOwnerNotificationCenterRouteRoute: typeof AuthenticatedOwnerNotificationCenterRouteRouteWithChildren
   AuthenticatedOwnerSubscriptionPayRouteRoute: typeof AuthenticatedOwnerSubscriptionPayRouteRouteWithChildren
@@ -4778,22 +4841,12 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerUsersRoute: typeof AuthenticatedOwnerUsersRoute
   AuthenticatedOwnerWebhooksRoute: typeof AuthenticatedOwnerWebhooksRoute
   AuthenticatedOwnerIndexRoute: typeof AuthenticatedOwnerIndexRoute
-  AuthenticatedOwnerAiAdminAgentRoute: typeof AuthenticatedOwnerAiAdminAgentRoute
-  AuthenticatedOwnerAiAdminAgentsRoute: typeof AuthenticatedOwnerAiAdminAgentsRoute
-  AuthenticatedOwnerAiAdminAutomationRoute: typeof AuthenticatedOwnerAiAdminAutomationRoute
-  AuthenticatedOwnerAiAdminKnowledgeRoute: typeof AuthenticatedOwnerAiAdminKnowledgeRoute
-  AuthenticatedOwnerAiAdminLogsRoute: typeof AuthenticatedOwnerAiAdminLogsRoute
-  AuthenticatedOwnerAiAdminMessengerRoute: typeof AuthenticatedOwnerAiAdminMessengerRoute
-  AuthenticatedOwnerAiAdminNotificationsRoute: typeof AuthenticatedOwnerAiAdminNotificationsRoute
-  AuthenticatedOwnerAiAdminPermissionsRoute: typeof AuthenticatedOwnerAiAdminPermissionsRoute
-  AuthenticatedOwnerAiAdminSettingsRoute: typeof AuthenticatedOwnerAiAdminSettingsRoute
-  AuthenticatedOwnerAiAdminSupportRoute: typeof AuthenticatedOwnerAiAdminSupportRoute
-  AuthenticatedOwnerAiAdminWhatsappRoute: typeof AuthenticatedOwnerAiAdminWhatsappRoute
-  AuthenticatedOwnerAiAdminIndexRoute: typeof AuthenticatedOwnerAiAdminIndexRoute
 }
 
 const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren =
   {
+    AuthenticatedOwnerAiAdminRouteRoute:
+      AuthenticatedOwnerAiAdminRouteRouteWithChildren,
     AuthenticatedOwnerCommunicationRouteRoute:
       AuthenticatedOwnerCommunicationRouteRouteWithChildren,
     AuthenticatedOwnerNotificationCenterRouteRoute:
@@ -4848,26 +4901,6 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerUsersRoute: AuthenticatedOwnerUsersRoute,
     AuthenticatedOwnerWebhooksRoute: AuthenticatedOwnerWebhooksRoute,
     AuthenticatedOwnerIndexRoute: AuthenticatedOwnerIndexRoute,
-    AuthenticatedOwnerAiAdminAgentRoute: AuthenticatedOwnerAiAdminAgentRoute,
-    AuthenticatedOwnerAiAdminAgentsRoute: AuthenticatedOwnerAiAdminAgentsRoute,
-    AuthenticatedOwnerAiAdminAutomationRoute:
-      AuthenticatedOwnerAiAdminAutomationRoute,
-    AuthenticatedOwnerAiAdminKnowledgeRoute:
-      AuthenticatedOwnerAiAdminKnowledgeRoute,
-    AuthenticatedOwnerAiAdminLogsRoute: AuthenticatedOwnerAiAdminLogsRoute,
-    AuthenticatedOwnerAiAdminMessengerRoute:
-      AuthenticatedOwnerAiAdminMessengerRoute,
-    AuthenticatedOwnerAiAdminNotificationsRoute:
-      AuthenticatedOwnerAiAdminNotificationsRoute,
-    AuthenticatedOwnerAiAdminPermissionsRoute:
-      AuthenticatedOwnerAiAdminPermissionsRoute,
-    AuthenticatedOwnerAiAdminSettingsRoute:
-      AuthenticatedOwnerAiAdminSettingsRoute,
-    AuthenticatedOwnerAiAdminSupportRoute:
-      AuthenticatedOwnerAiAdminSupportRoute,
-    AuthenticatedOwnerAiAdminWhatsappRoute:
-      AuthenticatedOwnerAiAdminWhatsappRoute,
-    AuthenticatedOwnerAiAdminIndexRoute: AuthenticatedOwnerAiAdminIndexRoute,
   }
 
 const AuthenticatedOwnerRouteRouteWithChildren =
