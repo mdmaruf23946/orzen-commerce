@@ -12,8 +12,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { requestEmailCode, confirmEmailCode } from "@/lib/merchant-security.functions";
+import {
+  requestEmailCode,
+  confirmEmailCode,
+  RESEND_COOLDOWN_SEC,
+  MAX_SENDS_PER_WINDOW,
+} from "@/lib/merchant-security.functions";
 import { useRefreshSecurity } from "@/lib/use-security";
+import { useResendTimer, CODE_INBOX_HINT } from "@/lib/use-resend-timer";
 
 export function VerifyEmailDialog({
   open,
@@ -30,8 +36,10 @@ export function VerifyEmailDialog({
   const [sent, setSent] = useState(false);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const timer = useResendTimer(RESEND_COOLDOWN_SEC, MAX_SENDS_PER_WINDOW);
 
   async function send() {
+    if (!timer.canSend) return;
     setBusy(true);
     try {
       const res = (await request()) as { alreadyVerified?: boolean };
@@ -42,6 +50,7 @@ export function VerifyEmailDialog({
         return;
       }
       setSent(true);
+      timer.markSent();
       toast.success("We sent a 6-digit code to your email");
     } catch (err) {
       toast.error((err as Error).message);
