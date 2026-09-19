@@ -38,8 +38,8 @@ export const Route = createFileRoute("/_authenticated/admin/customers-accounts")
 const taka = (n: number) => `৳${Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 
 function tierOf(c: any, vipThreshold: number) {
-  if (c.total_spent >= vipThreshold && vipThreshold > 0) return { label: "VIP", cls: "bg-amber-100 text-amber-700" };
-  if (c.order_count >= 2) return { label: "Repeat", cls: "bg-indigo-100 text-indigo-700" };
+  if (c.total_spent >= vipThreshold && vipThreshold > 0) return { label: "VIP", cls: "bg-amber-100 text-amber-700 dark:text-amber-300" };
+  if (c.order_count >= 2) return { label: "Repeat", cls: "bg-indigo-100 text-indigo-700 dark:text-indigo-300" };
   return { label: "New", cls: "bg-muted text-muted-foreground" };
 }
 
@@ -251,7 +251,7 @@ function CustomerAccountsPage() {
                         {c.last_order_at ? new Date(c.last_order_at).toLocaleDateString() : "—"}
                       </td>
                       <td className="p-3">
-                        <span className={`rounded-full px-2 py-0.5 text-xs ${c.is_active ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"}`}>
+                        <span className={`rounded-full px-2 py-0.5 text-xs ${c.is_active ? "bg-emerald-100 text-emerald-700 dark:text-emerald-300" : "bg-muted text-muted-foreground"}`}>
                           {c.is_active ? "Active" : "Disabled"}
                         </span>
                       </td>
@@ -318,7 +318,7 @@ function CustomerDetail({ id, onClose }: { id: string; onClose: () => void }) {
             </span>
             <span className="flex-1 truncate">{data?.full_name ?? "Customer"}</span>
             {data && (
-              <span className={`rounded-full px-2 py-0.5 text-xs ${data.is_active ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"}`}>
+              <span className={`rounded-full px-2 py-0.5 text-xs ${data.is_active ? "bg-emerald-100 text-emerald-700 dark:text-emerald-300" : "bg-muted text-muted-foreground"}`}>
                 {data.is_active ? "Active" : "Disabled"}
               </span>
             )}
@@ -388,7 +388,7 @@ function CustomerDetail({ id, onClose }: { id: string; onClose: () => void }) {
                         {o.invoice_no ?? o.id.slice(0, 8)}
                       </a>
                       <span className="text-muted-foreground">{o.status}</span>
-                      <span className={`rounded-full px-1.5 py-0.5 ${o.payment_status === "paid" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                      <span className={`rounded-full px-1.5 py-0.5 ${o.payment_status === "paid" ? "bg-emerald-100 text-emerald-700 dark:text-emerald-300" : "bg-amber-100 text-amber-700 dark:text-amber-300"}`}>
                         {o.payment_status}
                       </span>
                       <span>

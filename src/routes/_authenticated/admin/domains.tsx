@@ -383,7 +383,7 @@ function Page() {
           {slugState.loading && (
             <span className="text-muted-foreground">Checking availability…</span>
           )}
-          {slugState.ok === true && <span className="text-emerald-600">Available</span>}
+          {slugState.ok === true && <span className="text-emerald-600 dark:text-emerald-400">Available</span>}
           {slugState.ok === false && <span className="text-destructive">{slugState.reason}</span>}
         </div>
         <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/40 px-3 py-2">
@@ -432,7 +432,7 @@ function Page() {
         )}
 
         {dns && !dns.hostResolves && (
-          <div className="flex items-start gap-2 rounded-md bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+          <div className="flex items-start gap-2 rounded-md bg-amber-50 p-2 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span className="min-w-0 break-words">
               এই সাবডোমেইনটি এখনো লাইভ হয়নি। উপরের “Reconnect subdomain” চাপুন — প্ল্যাটফর্মে
@@ -536,7 +536,7 @@ function Page() {
                   )}
 
                   {d.last_error && d.status !== "active" && (
-                    <div className="flex items-start gap-2 rounded-md bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                    <div className="flex items-start gap-2 rounded-md bg-amber-50 p-2 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
                       <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       <span className="min-w-0 break-words">{d.last_error}</span>
                     </div>

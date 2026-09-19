@@ -278,9 +278,9 @@ function StatusBadge({ c }: { c: any }) {
       className={cn(
         "shrink-0 rounded px-2 py-0.5 text-xs",
         expired
-          ? "bg-amber-100 text-amber-800"
+          ? "bg-amber-100 text-amber-800 dark:text-amber-300"
           : c.active
-            ? "bg-emerald-100 text-emerald-800"
+            ? "bg-emerald-100 text-emerald-800 dark:text-emerald-300"
             : "bg-muted text-muted-foreground",
       )}
     >

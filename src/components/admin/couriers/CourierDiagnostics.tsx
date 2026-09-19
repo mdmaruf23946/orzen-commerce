@@ -41,7 +41,7 @@ export function CourierDiagnosticsPanel({
         </Row>
       </div>
       {d.lastError && (
-        <div className="rounded border border-red-200 bg-red-50 p-2 text-xs text-red-700">
+        <div className="rounded border border-red-200 bg-red-50 p-2 text-xs text-red-700 dark:text-red-300">
           {d.lastError}
         </div>
       )}

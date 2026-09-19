@@ -114,7 +114,7 @@ function PageOverview() {
           {caps.map(([k, ok]) => (
             <div key={k} className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-xs">
               {ok ? (
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
               ) : (
                 <XCircle className="h-4 w-4 shrink-0 text-muted-foreground" />
               )}

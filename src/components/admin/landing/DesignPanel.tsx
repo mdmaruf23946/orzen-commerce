@@ -307,7 +307,7 @@ export function DesignPanel({
               <span className="min-w-0 truncate text-muted-foreground">{r.label}</span>
               <span
                 className={`shrink-0 rounded-full px-2 py-0.5 font-medium ${
-                  r.pass ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"
+                  r.pass ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
                 }`}
               >
                 {r.ratio.toFixed(1)}:1 · {r.pass ? "Pass" : "Low contrast"}

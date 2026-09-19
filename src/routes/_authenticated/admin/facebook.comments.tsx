@@ -47,10 +47,10 @@ const FILTERS: { key: Filter; label: string }[] = [
 ];
 
 const CATEGORY_STYLE: Record<string, string> = {
-  question: "bg-blue-500/10 text-blue-600",
-  order_intent: "bg-emerald-500/10 text-emerald-600",
-  praise: "bg-violet-500/10 text-violet-600",
-  spam: "bg-amber-500/10 text-amber-600",
+  question: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+  order_intent: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+  praise: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
+  spam: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
   abusive: "bg-destructive/10 text-destructive",
   other: "bg-muted text-muted-foreground",
 };
@@ -258,7 +258,7 @@ function CommentsPage() {
                         </span>
                       )}
                       {c.hidden && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px]">hidden</span>}
-                      {c.replied && <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-600">replied</span>}
+                      {c.replied && <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-600 dark:text-emerald-400">replied</span>}
                     </div>
                     <p className="mt-0.5 whitespace-pre-wrap text-sm">{c.message}</p>
                     <div className="mt-0.5 text-[11px] text-muted-foreground">

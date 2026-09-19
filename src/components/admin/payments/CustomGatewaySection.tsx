@@ -254,11 +254,11 @@ function seedFromGateway(g: Gateway): EditorState {
 
 const STATUS_STYLES: Record<Gateway["status"], string> = {
   draft: "bg-muted text-muted-foreground",
-  testing: "bg-amber-100 text-amber-700",
-  connected: "bg-emerald-100 text-emerald-700",
+  testing: "bg-amber-100 text-amber-700 dark:text-amber-300",
+  connected: "bg-emerald-100 text-emerald-700 dark:text-emerald-300",
   active: "bg-emerald-600 text-white",
-  error: "bg-red-100 text-red-700",
-  disabled: "bg-slate-200 text-slate-700",
+  error: "bg-red-100 text-red-700 dark:text-red-300",
+  disabled: "bg-slate-200 text-slate-700 dark:text-slate-300",
 };
 
 export function CustomGatewaySection({ storeId }: { storeId: string }) {
@@ -587,7 +587,7 @@ function GatewayEditor({
               i === step
                 ? "border-primary bg-primary/10 text-primary"
                 : i < step
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"
                   : "border-dashed text-muted-foreground"
             }`}
           >
@@ -795,8 +795,8 @@ function GatewayEditor({
               <div
                 className={`flex items-start gap-2 rounded-md border p-3 text-sm ${
                   testResult.ok
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                    : "border-red-200 bg-red-50 text-red-800"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"
+                    : "border-red-200 bg-red-50 text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200"
                 }`}
               >
                 {testResult.ok ? (

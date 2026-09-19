@@ -72,7 +72,7 @@ function Lines({ title, items }: { title: string; items: any[] }) {
               {it.inspection_result && (
                 <span
                   className={`text-[11px] ${
-                    it.inspection_result === "passed" ? "text-emerald-600" : "text-red-600"
+                    it.inspection_result === "passed" ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
                   }`}
                 >
                   Inspection {it.inspection_result}
@@ -211,7 +211,7 @@ export function ReturnDrawer({ request, onClose }: { request: any | null; onClos
               <Row label="Refund due" value={money(r.refund_amount)} strong />
             )}
             {r.refund_status === "paid" && (
-              <p className="text-[11px] text-emerald-600">
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400">
                 Refunded via {REFUND_METHOD_LABEL[r.refund_method] ?? r.refund_method}
               </p>
             )}

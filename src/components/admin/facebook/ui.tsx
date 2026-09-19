@@ -47,7 +47,7 @@ export function StatusPill({ status }: { status: string }) {
   const map: Record<string, string> = {
     connected: "border-[#1877F2]/30 bg-[#1877F2]/10 text-[#1877F2]",
     error: "border-destructive/20 bg-destructive/10 text-destructive",
-    pending: "border-amber-500/20 bg-amber-500/10 text-amber-600",
+    pending: "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400",
   };
   const cls = map[status] ?? "border-border bg-muted text-muted-foreground";
   return (
@@ -103,8 +103,8 @@ export function CapBadge({ ok, scope, className }: { ok: boolean; scope: string;
       className={cn(
         "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium",
         ok
-          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600"
-          : "border-amber-500/20 bg-amber-500/10 text-amber-600",
+          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+          : "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400",
         className,
       )}
     >
@@ -153,7 +153,7 @@ export function PermissionsGrid({
         const v = states?.[k] ?? null;
         const tone =
           v === true
-            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600"
+            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
             : v === false
               ? "border-destructive/20 bg-destructive/10 text-destructive"
               : "border-border bg-muted text-muted-foreground";

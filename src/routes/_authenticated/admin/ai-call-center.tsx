@@ -131,7 +131,7 @@ function StoreAiCallCenter() {
             <Stat icon={PhoneCall} label="Calls Today" value={overview.data?.today ?? 0} />
             <Stat icon={PhoneOutgoing} label="Outbound" value={overview.data?.outbound ?? 0} />
             <Stat icon={PhoneIncoming} label="Inbound" value={overview.data?.inbound ?? 0} />
-            <Stat icon={CheckCircle2} label="Confirmed" value={overview.data?.confirmed ?? 0} tone="text-emerald-600" />
+            <Stat icon={CheckCircle2} label="Confirmed" value={overview.data?.confirmed ?? 0} tone="text-emerald-600 dark:text-emerald-400" />
             <Stat icon={XCircle} label="Cancelled" value={overview.data?.cancelled ?? 0} tone="text-destructive" />
             <Stat icon={Clock} label="Minutes" value={overview.data?.minutes ?? 0} />
           </div>
@@ -320,7 +320,7 @@ function SetupWizard({ setup, onDone }: { setup: any; onDone: () => Promise<void
         {steps.map((label, i) => (
           <span
             key={label}
-            className={`rounded-full border px-2.5 py-0.5 text-[11px] ${i === step ? "border-primary bg-primary/10 text-primary" : i < step ? "text-emerald-600" : "text-muted-foreground"}`}
+            className={`rounded-full border px-2.5 py-0.5 text-[11px] ${i === step ? "border-primary bg-primary/10 text-primary" : i < step ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}
           >
             {i + 1}. {label}
           </span>

@@ -60,8 +60,8 @@ const FILTERS: { key: Filter; label: string }[] = [
 
 const STATUS_TONE: Record<string, string> = {
   new: "bg-sky-100 text-sky-700",
-  returning: "bg-blue-100 text-blue-700",
-  vip: "bg-amber-100 text-amber-700",
+  returning: "bg-blue-100 text-blue-700 dark:text-blue-300",
+  vip: "bg-amber-100 text-amber-700 dark:text-amber-300",
   inactive: "bg-muted text-muted-foreground",
   blocked: "bg-rose-100 text-rose-700",
 };

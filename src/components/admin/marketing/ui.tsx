@@ -8,8 +8,8 @@ export type StatusKind = "connected" | "test" | "not_configured" | "error";
 
 export function StatusBadge({ kind, label }: { kind: StatusKind; label?: string }) {
   const map: Record<StatusKind, { text: string; cls: string; icon: ReactNode }> = {
-    connected: { text: "Connected", cls: "bg-emerald-100 text-emerald-800", icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
-    test: { text: "Test Mode", cls: "bg-amber-100 text-amber-800", icon: <FlaskConical className="h-3.5 w-3.5" /> },
+    connected: { text: "Connected", cls: "bg-emerald-100 text-emerald-800 dark:text-emerald-300", icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
+    test: { text: "Test Mode", cls: "bg-amber-100 text-amber-800 dark:text-amber-300", icon: <FlaskConical className="h-3.5 w-3.5" /> },
     not_configured: { text: "Not Configured", cls: "bg-muted text-muted-foreground", icon: <PowerOff className="h-3.5 w-3.5" /> },
     error: { text: "Error", cls: "bg-destructive/10 text-destructive", icon: <AlertCircle className="h-3.5 w-3.5" /> },
   };
@@ -81,7 +81,7 @@ export function TestResult({ result }: { result: { ok: boolean; text: string } |
     <div
       className={cn(
         "rounded-md border p-2 text-xs",
-        result.ok ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-destructive/40 bg-destructive/10 text-destructive",
+        result.ok ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200" : "border-destructive/40 bg-destructive/10 text-destructive",
       )}
     >
       {result.text}

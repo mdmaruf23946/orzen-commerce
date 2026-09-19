@@ -445,7 +445,7 @@ function ProgressPanel({ stage }: { stage: number }) {
       </p>
       <ol className="space-y-1.5 text-xs">
         {STAGES.map((s, i) => (
-          <li key={s} className={`flex items-center gap-2 ${i < stage ? "text-emerald-600" : i === stage ? "text-foreground" : "text-muted-foreground"}`}>
+          <li key={s} className={`flex items-center gap-2 ${i < stage ? "text-emerald-600 dark:text-emerald-400" : i === stage ? "text-foreground" : "text-muted-foreground"}`}>
             {i < stage ? <CheckCircle2 className="h-3.5 w-3.5" /> : <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />}
             {s}
           </li>

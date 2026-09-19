@@ -108,7 +108,7 @@ export function StepDescribe({
           </div>
           <div className="space-y-1.5">
             <Label className="flex items-center gap-1.5 text-xs">
-              <Facebook className="h-3.5 w-3.5 text-blue-600" /> Facebook video URL <span className="text-muted-foreground">(optional)</span>
+              <Facebook className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" /> Facebook video URL <span className="text-muted-foreground">(optional)</span>
             </Label>
             <Input type="url" placeholder="https://facebook.com/…" value={extras.facebookUrl} onChange={(e) => setExtras("facebookUrl", e.target.value)} />
           </div>

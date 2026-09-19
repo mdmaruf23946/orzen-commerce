@@ -357,7 +357,7 @@ export function OfferBuilder({
                   )}
                   ৳{priced.price}
                   {priced.savings > 0 && (
-                    <span className="ml-1.5 text-emerald-600">save ৳{priced.savings}</span>
+                    <span className="ml-1.5 text-emerald-600 dark:text-emerald-400">save ৳{priced.savings}</span>
                   )}
                 </span>
               </div>

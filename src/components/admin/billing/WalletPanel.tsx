@@ -270,7 +270,7 @@ export default function WalletPanel() {
                 <li key={t.id} className="flex items-center gap-2.5 p-2.5">
                   <span
                     className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${
-                      credit ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                      credit ? "bg-emerald-100 text-emerald-700 dark:text-emerald-300" : "bg-red-100 text-red-700 dark:text-red-300"
                     }`}
                   >
                     {credit ? <ArrowDownLeft className="h-3.5 w-3.5" /> : <ArrowUpRight className="h-3.5 w-3.5" />}
@@ -286,7 +286,7 @@ export default function WalletPanel() {
                     </div>
                   </div>
                   <div className="shrink-0 text-right">
-                    <div className={`text-xs font-semibold sm:text-sm ${credit ? "text-emerald-600" : "text-red-600"}`}>
+                    <div className={`text-xs font-semibold sm:text-sm ${credit ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
                       {credit ? "+" : "−"}
                       {money(Math.abs(Number(t.amount)))}
                     </div>
@@ -346,7 +346,7 @@ export default function WalletPanel() {
                 placeholder="1000"
               />
               {!valid && amount !== "" && (
-                <p className="text-[11px] text-red-600">Enter an amount between ৳50 and ৳1,000,000.</p>
+                <p className="text-[11px] text-red-600 dark:text-red-400">Enter an amount between ৳50 and ৳1,000,000.</p>
               )}
             </div>
 

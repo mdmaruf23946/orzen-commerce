@@ -166,7 +166,7 @@ export function SimpleCourierCard({
               </span>
             )}
             {cfg.sandbox && meta.supports.sandbox && (
-              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] text-amber-700">
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] text-amber-700 dark:text-amber-300">
                 Sandbox
               </span>
             )}

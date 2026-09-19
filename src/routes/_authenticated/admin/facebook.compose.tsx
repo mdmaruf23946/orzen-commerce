@@ -208,7 +208,7 @@ function ComposePage() {
           Save as draft
         </Button>
         {!canPost && (
-          <div className="self-center text-[11px] text-amber-600">
+          <div className="self-center text-[11px] text-amber-600 dark:text-amber-400">
             Facebook may refuse this — <MissingPermission scope="pages_manage_posts" />. Recheck in Page Settings.
           </div>
         )}

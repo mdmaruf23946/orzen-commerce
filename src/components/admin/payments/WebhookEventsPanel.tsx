@@ -34,8 +34,8 @@ type Row = {
 function StatusPill({ row }: { row: Row }) {
   const ok = (row.status_code ?? 0) < 400 && !row.error_message;
   const color = ok
-    ? "bg-emerald-100 text-emerald-800 border-emerald-200"
-    : "bg-red-100 text-red-800 border-red-200";
+    ? "bg-emerald-100 text-emerald-800 dark:text-emerald-300 border-emerald-200"
+    : "bg-red-100 text-red-800 dark:text-red-300 border-red-200";
   return (
     <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] ${color}`}>
       {ok ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
@@ -170,7 +170,7 @@ export function WebhookEventsPanel({
                 {isOpen && (
                   <div className="mt-3 space-y-2 rounded-md border bg-muted/40 p-3">
                     {row.error_message && (
-                      <div className="rounded border border-red-200 bg-red-50 p-2 text-xs text-red-800">
+                      <div className="rounded border border-red-200 bg-red-50 p-2 text-xs text-red-800 dark:text-red-300">
                         {row.error_message}
                       </div>
                     )}

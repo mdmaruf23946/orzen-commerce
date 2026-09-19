@@ -27,7 +27,7 @@ function Card({ label, value, tone, hint }: { label: string; value: string; tone
   );
 }
 
-const profitTone = (n: number) => (n >= 0 ? "text-emerald-600" : "text-destructive");
+const profitTone = (n: number) => (n >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive");
 
 export function SummaryCards({ s }: { s: FinanceSummary }) {
   return (
@@ -37,7 +37,7 @@ export function SummaryCards({ s }: { s: FinanceSummary }) {
       <Card label="Profit" value={money(s.rangeProfit)} tone={profitTone(s.rangeProfit)} />
       <Card label="Monthly Profit" value={money(s.monthProfit)} tone={profitTone(s.monthProfit)} hint="This month" />
       <Card label="Net Profit" value={money(s.netProfit)} tone={profitTone(s.netProfit)} hint="All time" />
-      <Card label="COD Receivable" value={money(s.codReceivable)} tone="text-amber-600" hint="Undelivered COD" />
+      <Card label="COD Receivable" value={money(s.codReceivable)} tone="text-amber-600 dark:text-amber-400" hint="Undelivered COD" />
     </div>
   );
 }

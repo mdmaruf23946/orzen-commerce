@@ -11,12 +11,12 @@ export function EmailVerifyBanner() {
   if (!data || data.emailVerified) return null;
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
         <span className="flex items-center gap-2">
           <MailCheck className="h-4 w-4 shrink-0" />
           আপনার ইমেইলটি এখনো ভেরিফাই করা হয়নি — অ্যাকাউন্ট সুরক্ষিত রাখতে এখনই করে নিন।
         </span>
-        <Button size="sm" variant="outline" className="h-7 bg-white/70" onClick={() => setOpen(true)}>
+        <Button size="sm" variant="outline" className="h-7 bg-white/70 dark:bg-white/10 dark:text-amber-100 dark:hover:bg-white/20" onClick={() => setOpen(true)}>
           Verify email
         </Button>
       </div>

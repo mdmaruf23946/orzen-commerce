@@ -9,7 +9,7 @@ function Delta({ value }: { value: number }) {
     <span
       className={cn(
         "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
-        up ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive",
+        up ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-destructive/10 text-destructive",
       )}
     >
       {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}

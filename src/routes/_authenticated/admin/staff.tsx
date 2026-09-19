@@ -131,7 +131,7 @@ function StaffPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold capitalize">{s.role}</span>
-                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${s.status === "active" ? "bg-emerald-500/10 text-emerald-600" : s.status === "suspended" ? "bg-destructive/10 text-destructive" : "bg-amber-500/10 text-amber-600"}`}>
+                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${s.status === "active" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : s.status === "suspended" ? "bg-destructive/10 text-destructive" : "bg-amber-500/10 text-amber-600 dark:text-amber-400"}`}>
                       {s.status}
                     </span>
                     <button onClick={() => edit(s)} className="rounded p-1.5 text-muted-foreground hover:bg-muted" title="Edit">

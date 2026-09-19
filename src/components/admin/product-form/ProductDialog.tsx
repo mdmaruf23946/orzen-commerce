@@ -696,7 +696,7 @@ export function ProductDialog({
               <ul className="mt-2 space-y-2">
                 {videos.map((v, i) => (
                   <li key={i} className="flex items-center gap-2 rounded-md border p-2 text-xs">
-                    {v.provider === "youtube" ? <Youtube className="h-4 w-4 text-red-500" /> : <Facebook className="h-4 w-4 text-blue-600" />}
+                    {v.provider === "youtube" ? <Youtube className="h-4 w-4 text-red-500" /> : <Facebook className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
                     <span className="min-w-0 flex-1 truncate">{v.url}</span>
                     <button type="button" onClick={() => setPrimaryVideo(i)} title="Set primary">
                       <Star className={`h-3 w-3 ${v.primary ? "fill-yellow-500 text-yellow-500" : ""}`} />
@@ -761,7 +761,7 @@ export function ProductDialog({
           </div>
           {(hasDiscount || profit != null) && (
             <div className="rounded-md border bg-muted/30 p-3 text-xs">
-              {hasDiscount && <p className="font-medium text-emerald-600">{discountPct}% off — customers save ৳{(reg - sale!).toFixed(0)}</p>}
+              {hasDiscount && <p className="font-medium text-emerald-600 dark:text-emerald-400">{discountPct}% off — customers save ৳{(reg - sale!).toFixed(0)}</p>}
               {profit != null && (
                 <p className="text-muted-foreground">
                   Profit: ৳{profit.toFixed(0)} {profitMargin != null && `(${profitMargin}% margin)`}

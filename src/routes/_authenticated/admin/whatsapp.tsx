@@ -49,7 +49,7 @@ function StatusPill({ status }: { status: string }) {
   const map: Record<string, string> = {
     connected: "bg-whatsapp/10 text-whatsapp-deep border-whatsapp/30 dark:text-whatsapp",
     error: "bg-destructive/10 text-destructive border-destructive/20",
-    connecting: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+    connecting: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
   };
   const cls = map[status] ?? "bg-muted text-muted-foreground border-border";
   return (

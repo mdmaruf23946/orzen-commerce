@@ -151,7 +151,7 @@ function PagesAdmin() {
                     >
                       <span className="min-w-0 truncate">{p.label}</span>
                       {row?.content_html ? (
-                        <span className="text-[10px] font-medium text-emerald-600">
+                        <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
                           {row.is_published ? "Live" : "Hidden"}
                         </span>
                       ) : (

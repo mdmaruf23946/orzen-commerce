@@ -28,16 +28,16 @@ function StatusRow({ ok, label, detail }: { ok: boolean; label: string; detail?:
     <div className="flex items-start justify-between gap-3 rounded-md border bg-background p-3">
       <div className="flex items-start gap-2">
         {ok ? (
-          <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
+          <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
         ) : (
-          <XCircle className="mt-0.5 h-4 w-4 text-red-600" />
+          <XCircle className="mt-0.5 h-4 w-4 text-red-600 dark:text-red-400" />
         )}
         <div>
           <div className="text-sm font-medium">{label}</div>
           {detail && <div className="text-xs text-muted-foreground break-all">{detail}</div>}
         </div>
       </div>
-      <span className={`text-xs font-medium ${ok ? "text-emerald-600" : "text-red-600"}`}>
+      <span className={`text-xs font-medium ${ok ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
         {ok ? "OK" : "Fail"}
       </span>
     </div>
@@ -144,7 +144,7 @@ function Page() {
           </div>
 
           {!r.wildcardCorrect && (
-            <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+            <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <div className="space-y-1">
                 <div className="font-semibold">Wildcard DNS not configured</div>

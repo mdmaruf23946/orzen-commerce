@@ -48,17 +48,17 @@ const TABS = [
 type TabKey = (typeof TABS)[number]["key"];
 
 const STATUS_STYLE: Record<string, string> = {
-  requested: "bg-amber-100 text-amber-700",
-  approved: "bg-blue-100 text-blue-700",
-  shipment_created: "bg-blue-100 text-blue-700",
-  in_transit: "bg-indigo-100 text-indigo-700",
-  received: "bg-violet-100 text-violet-700",
+  requested: "bg-amber-100 text-amber-700 dark:text-amber-300",
+  approved: "bg-blue-100 text-blue-700 dark:text-blue-300",
+  shipment_created: "bg-blue-100 text-blue-700 dark:text-blue-300",
+  in_transit: "bg-indigo-100 text-indigo-700 dark:text-indigo-300",
+  received: "bg-violet-100 text-violet-700 dark:text-violet-300",
   inspection_passed: "bg-teal-100 text-teal-700",
-  inspection_failed: "bg-red-100 text-red-700",
-  replacement_created: "bg-emerald-100 text-emerald-700",
-  refunded: "bg-emerald-100 text-emerald-700",
-  completed: "bg-emerald-100 text-emerald-700",
-  rejected: "bg-red-100 text-red-700",
+  inspection_failed: "bg-red-100 text-red-700 dark:text-red-300",
+  replacement_created: "bg-emerald-100 text-emerald-700 dark:text-emerald-300",
+  refunded: "bg-emerald-100 text-emerald-700 dark:text-emerald-300",
+  completed: "bg-emerald-100 text-emerald-700 dark:text-emerald-300",
+  rejected: "bg-red-100 text-red-700 dark:text-red-300",
   cancelled: "bg-muted text-muted-foreground",
 };
 
