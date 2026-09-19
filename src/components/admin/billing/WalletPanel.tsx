@@ -34,6 +34,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { CycleKey } from "@/lib/billing.functions";
+import {
+  MethodTabs,
+  BrandCopyRow,
+  BrandSteps,
+  brandOf,
+} from "@/components/admin/payments/ManualPayBlock";
 
 const QUICK = [500, 1000, 2000, 5000];
 
@@ -82,6 +88,7 @@ export default function WalletPanel() {
   const [txnId, setTxnId] = useState("");
   const [email, setEmail] = useState("");
 
+  const walletBrand = brandOf(method);
   const amountNum = Math.round(Number(amount) || 0);
   const valid = amountNum >= 50 && amountNum <= 1_000_000;
 
@@ -348,31 +355,37 @@ export default function WalletPanel() {
                 No payment method is available right now. Please contact support.
               </p>
             ) : (
-              <div className="space-y-2.5 rounded-lg border bg-muted/30 p-2.5">
-                <div className="grid grid-cols-3 gap-1.5">
-                  {manualKeys.map((k) => (
-                    <button
-                      key={k}
-                      type="button"
-                      onClick={() => setMethod(k)}
-                      className={`rounded-lg border px-2 py-1.5 text-[11px] font-semibold uppercase ${
-                        method === k ? "border-primary bg-primary/5" : "hover:border-foreground/30"
-                      }`}
-                    >
-                      {k}
-                    </button>
-                  ))}
-                </div>
+              <div
+                className="space-y-3 rounded-xl border-2 bg-card p-3"
+                style={{ borderColor: walletBrand.brandColor }}
+              >
+                <MethodTabs methods={manualKeys} value={method} onChange={setMethod} compact />
                 {manualNumber && (
-                  <div className="rounded-lg border bg-background px-2.5 py-2 text-[11px]">
-                    Send <b>{money(amountNum)}</b> to{" "}
-                    <span className="font-mono font-semibold">{manualNumber}</span>
-                    {manualName ? ` (${manualName})` : ""} using {method.toUpperCase()}, then submit
-                    the transaction details below.
-                  </div>
+                  <>
+                    <BrandCopyRow
+                      label={`${walletBrand.label} number`}
+                      value={manualNumber}
+                      brand={walletBrand}
+                    />
+                    <BrandCopyRow
+                      label="Amount"
+                      value={money(amountNum)}
+                      brand={walletBrand}
+                      mono={false}
+                    />
+                    <BrandSteps
+                      brand={walletBrand}
+                      steps={[
+                        `Open your ${walletBrand.label} app and choose "Send Money".`,
+                        `Send exactly ${money(amountNum)} to ${manualNumber}${manualName ? ` (${manualName})` : ""}.`,
+                        "Copy the Transaction ID from your app.",
+                        "Fill the form below and submit.",
+                      ]}
+                    />
+                  </>
                 )}
                 <div className="space-y-1.5">
-                  <Label htmlFor="wt-sender">Sender {method.toUpperCase()} number</Label>
+                  <Label htmlFor="wt-sender">Sender {walletBrand.label} number</Label>
                   <Input
                     id="wt-sender"
                     inputMode="numeric"
