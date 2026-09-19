@@ -579,12 +579,15 @@ function AdminLayout() {
                       onClick={() => toggleGroup(g.label, groupOpen)}
                       aria-expanded={groupOpen}
                       className={cn(
-                        "flex w-full items-center justify-between px-3 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground",
+                        "flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-[13px] font-bold uppercase tracking-wide text-foreground/70 hover:bg-muted hover:text-foreground",
                         groupActive && "text-foreground",
                       )}
                     >
-                      <span>{g.label}</span>
-                      <ChevronDown className={cn("h-3 w-3 transition-transform", !groupOpen && "-rotate-90")} />
+                      <span className="flex min-w-0 items-center gap-2.5">
+                        <g.icon className={cn("h-[18px] w-[18px] shrink-0 text-muted-foreground", groupActive && "text-primary")} />
+                        <span className="truncate">{g.label}</span>
+                      </span>
+                      <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform", !groupOpen && "-rotate-90")} />
                     </button>
                   )}
                   {(groupOpen || (collapsed && !open)) && (
