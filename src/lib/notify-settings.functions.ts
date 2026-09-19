@@ -118,6 +118,7 @@ export const testNotificationChannel = createServerFn({ method: "POST" })
         const { sendNotifyEmail } = await import("@/lib/notify/email.server");
         await sendNotifyEmail({
           provider: ch.provider === "resend" ? "resend" : "platform",
+          recipientKind: "merchant",
           apiKey: readSecret(ch.api_key_enc),
           fromAddress: ch.from_address,
           to: ch.address,

@@ -156,15 +156,15 @@ export const requestCustomerPasswordReset = createServerFn({ method: "POST" })
       const link = `${process.env["PUBLIC_SITE_URL"] ?? "https://orzen.top"}/store/${
         store?.slug ?? data.storeSlug
       }/auth/reset?token=${r.token}`;
-      const { enqueueEmail } = await import("@/lib/emails.server");
-      await enqueueEmail({
-        to: r.email,
-        template: "customer-password-reset",
+      const { dispatchNotification } = await import("@/lib/notify-dispatch.server");
+      const notification = await dispatchNotification(sb, {
+        storeId,
+        event: "customer_password_reset",
         subject: `Reset your password — ${store?.name ?? "Store"}`,
-        html: `<p>Hi ${r.name ?? "there"},</p><p>Use the link below to set a new password. It expires in 30 minutes.</p><p><a href="${link}">Reset my password</a></p><p>If you did not request this, you can ignore this email.</p>`,
-        payload: { store_id: storeId },
+        message: `Hi ${r.name ?? "there"}, use this link to set a new password. It expires in 30 minutes.\n\n${link}\n\nIf you did not request this, ignore this email.`,
+        customer: { email: r.email },
       });
-      return { ok: true, sentTo: "email" as const };
+      return { ok: true, sentTo: notification.attempted > 0 ? "email" as const : null };
     }
     return { ok: true, sentTo: null };
   });

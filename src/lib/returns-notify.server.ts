@@ -126,44 +126,11 @@ export async function notifyReturnStatus(
         event: "return_update",
         subject: `Return ${ref}: ${label}`,
         message: `${storeName} — return ${ref} is now ${label}.${note ? " " + note : ""}`,
-        customer: { email: custEmail, phone: custPhone },
+        customer: opts.notifyCustomer === false ? null : { email: custEmail, phone: custPhone },
       });
     } catch { /* best effort */ }
 
     if (opts.notifyCustomer === false) return;
-
-    const message = customerMessage(ret, status, storeName);
-
-    // Customer email — reuses the existing email queue.
-    let email: string | null = null;
-    if (ret.customer_id) {
-      const { data: c } = await sb
-        .from("store_customers")
-        .select("email")
-        .eq("id", ret.customer_id)
-        .maybeSingle();
-      email = (c as any)?.email ?? null;
-    }
-    if (!email) {
-      const { data: o } = await sb.from("orders").select("email").eq("id", ret.order_id).maybeSingle();
-      email = (o as any)?.email ?? null;
-    }
-    if (email) {
-      try {
-        const { enqueueEmail } = await import("@/lib/emails.server");
-        await enqueueEmail({
-          to: email,
-          template: "return_status",
-          subject: `${storeName} — return ${ref}: ${label}`,
-          html: `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6"><p>${message}</p>${
-            note ? `<p style="color:#666">${note}</p>` : ""
-          }</div>`,
-          payload: { return_id: ret.id, status },
-        });
-      } catch (e) {
-        console.error("[returns] email failed", e);
-      }
-    }
 
     // Customer SMS — only when the store has an SMS sender configured.
     try {
