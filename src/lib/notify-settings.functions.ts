@@ -78,6 +78,10 @@ export const saveNotificationChannel = createServerFn({ method: "POST" })
       next.provider = data.provider;
       next.address = data.address;
       next.from_address = data.from_address;
+      next.from_name = data.from_name;
+      next.mailgun_domain = data.mailgun_domain;
+      next.mailgun_region = data.mailgun_region;
+      next.smtp_endpoint = data.smtp_endpoint;
       if (data.api_key) next.api_key_enc = encryptSecret(data.api_key);
     } else {
       next.provider = "bulksmsbd";
@@ -121,10 +125,14 @@ export const testNotificationChannel = createServerFn({ method: "POST" })
         if (!ch.address) throw new Error("Notification email address is required");
         const { sendNotifyEmail } = await import("@/lib/notify/email.server");
         await sendNotifyEmail({
-          provider: ch.provider === "resend" ? "resend" : "platform",
+          provider: ch.provider ?? "platform",
           recipientKind: "merchant",
           apiKey: readSecret(ch.api_key_enc),
           fromAddress: ch.from_address,
+          fromName: ch.from_name,
+          mailgunDomain: ch.mailgun_domain,
+          mailgunRegion: ch.mailgun_region,
+          smtpEndpoint: ch.smtp_endpoint,
           to: ch.address,
           subject: "Test notification",
           html: `<p>${text}</p>`,
