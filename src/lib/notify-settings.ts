@@ -49,10 +49,27 @@ export type WhatsappChannel = ChannelCommon & {
   has_token?: boolean;
 };
 
+export type EmailProvider = "platform" | "resend" | "sendgrid" | "mailgun" | "brevo" | "smtp";
+
+export const EMAIL_PROVIDERS: { key: EmailProvider; label: string; hint: string }[] = [
+  { key: "platform", label: "Platform email (merchant inbox only)", hint: "ORZEN sends to your own inbox. Customers are never emailed by ORZEN." },
+  { key: "resend", label: "Resend (your account)", hint: "API key from resend.com, sending domain verified there." },
+  { key: "sendgrid", label: "SendGrid (your account)", hint: "API key with Mail Send permission." },
+  { key: "mailgun", label: "Mailgun (your account)", hint: "Private API key plus your Mailgun sending domain." },
+  { key: "brevo", label: "Brevo (your account)", hint: "API v3 key from your own Brevo account." },
+  { key: "smtp", label: "Own mail server (SMTP relay)", hint: "Your server's HTTPS-to-SMTP relay endpoint." },
+];
+
 export type EmailChannel = ChannelCommon & {
-  provider: "platform" | "resend";
+  provider: EmailProvider;
   address: string;
   from_address: string;
+  from_name?: string;
+  /** Mailgun sending domain, or the region host for Mailgun EU. */
+  mailgun_domain?: string;
+  mailgun_region?: "us" | "eu";
+  /** HTTPS endpoint of the merchant's own SMTP relay. */
+  smtp_endpoint?: string;
   has_api_key?: boolean;
 };
 
@@ -137,7 +154,14 @@ export function computeState(key: ChannelKey, ch: any): ChannelState {
     key === "whatsapp"
       ? !!(ch.number && ch.phone_number_id && (ch.has_token || ch.access_token))
       : key === "email"
-        ? !!(ch.address && (ch.provider === "platform" || (ch.from_address && (ch.has_api_key || ch.api_key))))
+        ? !!(
+            ch.address &&
+            (ch.provider === "platform" ||
+              (ch.from_address &&
+                (ch.has_api_key || ch.api_key) &&
+                (ch.provider !== "mailgun" || ch.mailgun_domain) &&
+                (ch.provider !== "smtp" || ch.smtp_endpoint)))
+          )
         : !!(ch.number && ch.sender_id && (ch.has_api_key || ch.api_key));
   return ok ? "connected" : "not_configured";
 }
