@@ -58,8 +58,11 @@ function AnalyticsPage() {
   const range = useMemo(() => analyticsRange(rangeKey, customRange), [rangeKey, customRange]);
   const cmp = useMemo(() => compareRange(range, compare), [range, compare]);
 
+  const [view, setView] = useState<"overview" | "courier" | "payment">("overview");
+
   const { data, isFetching } = useQuery({
     queryKey: ["analytics", filter ?? "all", range.from, range.to, cmp.from, cmp.to],
+    enabled: view === "overview",
     queryFn: () =>
       run({
         data: {
@@ -73,6 +76,22 @@ function AnalyticsPage() {
     placeholderData: (prev) => prev,
   });
 
+  const rangeArgs = { from: range.from, to: range.to, compare_from: cmp.from, compare_to: cmp.to };
+
+  const { data: courier, isFetching: courierLoading } = useQuery({
+    queryKey: ["analytics-courier", range.from, range.to, cmp.from, cmp.to],
+    enabled: view === "courier",
+    queryFn: () => runCourier({ data: rangeArgs }),
+    placeholderData: (prev) => prev,
+  });
+
+  const { data: payment, isFetching: paymentLoading } = useQuery({
+    queryKey: ["analytics-payment", range.from, range.to, cmp.from, cmp.to],
+    enabled: view === "payment",
+    queryFn: () => runPayment({ data: rangeArgs }),
+    placeholderData: (prev) => prev,
+  });
+
   const tabs = scopeTabs({}).map((t) => ({ key: t.key, label: t.label.replace(/ \(0\)$/, "") }));
 
   return (
@@ -81,7 +100,23 @@ function AnalyticsPage() {
         title="Analytics"
         description="Business performance from your real store data."
       />
-      <TypeFilterTabs tabs={tabs} value={scope} onChange={(k) => setScope(k as any)} />
+      <TypeFilterTabs
+        tabs={[
+          { key: "overview", label: "Overview" },
+          { key: "courier", label: "Courier Overview" },
+          { key: "payment", label: "Payment Overview" },
+        ]}
+        value={view}
+        onChange={(k) => setView(k as typeof view)}
+      />
+      {view === "overview" && (
+        <TypeFilterTabs
+          className="static top-auto z-auto border-0 bg-transparent px-0 py-0 backdrop-blur-none sm:px-0"
+          tabs={tabs}
+          value={scope}
+          onChange={(k) => setScope(k as any)}
+        />
+      )}
       <AnalyticsRangeBar
         rangeKey={rangeKey}
         onRangeKey={setRangeKey}
@@ -91,7 +126,27 @@ function AnalyticsPage() {
         onCompare={setCompare}
       />
 
-      {!data ? (
+      {view === "courier" ? (
+        !courier ? (
+          <div className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
+            {courierLoading ? "Loading courier performance…" : "No courier data available yet."}
+          </div>
+        ) : (
+          <div className={courierLoading ? "opacity-60 transition-opacity" : undefined}>
+            <CourierOverviewPanel data={courier} />
+          </div>
+        )
+      ) : view === "payment" ? (
+        !payment ? (
+          <div className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
+            {paymentLoading ? "Loading payment performance…" : "No payment data available yet."}
+          </div>
+        ) : (
+          <div className={paymentLoading ? "opacity-60 transition-opacity" : undefined}>
+            <PaymentOverviewPanel data={payment} />
+          </div>
+        )
+      ) : !data ? (
         <div className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
           {isFetching ? "Loading analytics…" : "No analytics available yet."}
         </div>
