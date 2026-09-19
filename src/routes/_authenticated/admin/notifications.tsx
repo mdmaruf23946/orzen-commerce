@@ -179,7 +179,7 @@ function NotificationsPage() {
       {/* Email */}
       <ChannelCard
         title="Email"
-        description="Platform email for your inbox; customer email only through your own Resend account"
+        description="Platform email reaches your inbox only. Connect your own provider or mail server to email customers."
         icon={<Mail className="h-4 w-4" />}
         state={computeState("email", em)}
         lastError={em?.status?.last_error}
@@ -193,38 +193,85 @@ function NotificationsPage() {
         onSave={() =>
           doSave("email", {
             enabled: !!em.enabled,
-            provider: em.provider === "resend" ? "resend" : "platform",
+            provider: em.provider ?? "platform",
             address: em.address ?? "",
             from_address: em.from_address ?? "",
+            from_name: em.from_name ?? "",
+            mailgun_domain: em.mailgun_domain ?? "",
+            mailgun_region: em.mailgun_region === "eu" ? "eu" : "us",
+            smtp_endpoint: em.smtp_endpoint ?? "",
             api_key: em.api_key || undefined,
             events: em.events as EventMap,
           })
         }
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Notification email address">
+          <Field label="Notification email address" hint="Where your own order alerts arrive.">
             <Input value={em?.address ?? ""} onChange={(e) => setEmField({ address: e.target.value })} />
           </Field>
-          <Field label="Provider">
+          <Field
+            label="Sending service"
+            hint={EMAIL_PROVIDERS.find((p) => p.key === (em?.provider ?? "platform"))?.hint}
+          >
             <select
               value={em?.provider ?? "platform"}
               onChange={(e) => setEmField({ provider: e.target.value })}
               className="h-10 w-full rounded-md border bg-background px-3 text-sm"
             >
-              <option value="platform">Platform email (merchant inbox only)</option>
-              <option value="resend">Resend (own account)</option>
+              {EMAIL_PROVIDERS.map((p) => (
+                <option key={p.key} value={p.key}>
+                  {p.label}
+                </option>
+              ))}
             </select>
           </Field>
-          {em?.provider === "resend" && (
+          {em?.provider && em.provider !== "platform" && (
             <>
-              <Field label="From address" hint="Must be a domain verified in Resend.">
+              <Field label="From address" hint="Must be an address/domain your service has verified.">
                 <Input
                   value={em?.from_address ?? ""}
                   onChange={(e) => setEmField({ from_address: e.target.value })}
                 />
               </Field>
+              <Field label="From name (optional)" hint="Shown as the sender name, e.g. your store name.">
+                <Input
+                  value={em?.from_name ?? ""}
+                  onChange={(e) => setEmField({ from_name: e.target.value })}
+                />
+              </Field>
+              {em.provider === "mailgun" && (
+                <>
+                  <Field label="Mailgun sending domain" hint="e.g. mg.yourstore.com">
+                    <Input
+                      value={em?.mailgun_domain ?? ""}
+                      onChange={(e) => setEmField({ mailgun_domain: e.target.value })}
+                    />
+                  </Field>
+                  <Field label="Mailgun region">
+                    <select
+                      value={em?.mailgun_region ?? "us"}
+                      onChange={(e) => setEmField({ mailgun_region: e.target.value })}
+                      className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                    >
+                      <option value="us">US</option>
+                      <option value="eu">EU</option>
+                    </select>
+                  </Field>
+                </>
+              )}
+              {em.provider === "smtp" && (
+                <Field
+                  label="Mail server endpoint (HTTPS)"
+                  hint="Your server's send URL, e.g. https://mail.yourstore.com/send — it receives from, to, subject and html."
+                >
+                  <Input
+                    value={em?.smtp_endpoint ?? ""}
+                    onChange={(e) => setEmField({ smtp_endpoint: e.target.value })}
+                  />
+                </Field>
+              )}
               <Field
-                label="Resend API key"
+                label={em.provider === "smtp" ? "Endpoint access token" : "API key"}
                 hint={em?.has_api_key ? "A key is saved. Type a new one to replace it." : undefined}
               >
                 <Input
