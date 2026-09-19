@@ -179,7 +179,7 @@ function NotificationsPage() {
       {/* Email */}
       <ChannelCard
         title="Email"
-        description="Platform email or your own Resend account"
+        description="Platform email for your inbox; customer email only through your own Resend account"
         icon={<Mail className="h-4 w-4" />}
         state={computeState("email", em)}
         lastError={em?.status?.last_error}
@@ -211,7 +211,7 @@ function NotificationsPage() {
               onChange={(e) => setEmField({ provider: e.target.value })}
               className="h-10 w-full rounded-md border bg-background px-3 text-sm"
             >
-              <option value="platform">Platform email (no setup)</option>
+              <option value="platform">Platform email (merchant inbox only)</option>
               <option value="resend">Resend (own account)</option>
             </select>
           </Field>

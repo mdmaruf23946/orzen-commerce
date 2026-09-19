@@ -3,12 +3,16 @@ import { enqueueEmail } from "@/lib/emails.server";
 
 export async function sendNotifyEmail(args: {
   provider: "platform" | "resend";
+  recipientKind: "merchant" | "customer";
   apiKey?: string | null;
   fromAddress?: string | null;
   to: string;
   subject: string;
   html: string;
 }) {
+  if (args.recipientKind === "customer" && args.provider !== "resend") {
+    throw new Error("Customer email skipped: merchant email provider is not connected");
+  }
   if (args.provider === "resend") {
     if (!args.apiKey) throw new Error("Resend API key missing");
     if (!args.fromAddress) throw new Error("Resend from-address missing");
@@ -22,6 +26,9 @@ export async function sendNotifyEmail(args: {
       throw new Error(`Resend ${res.status}: ${t.slice(0, 300)}`);
     }
     return { ok: true };
+  }
+  if (args.recipientKind !== "merchant") {
+    throw new Error("Customer email cannot use the ORZEN platform sender");
   }
   const id = await enqueueEmail({
     to: args.to,

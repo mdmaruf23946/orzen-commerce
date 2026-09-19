@@ -6,6 +6,8 @@ export type NotifyEventKey =
   | "order_status"
   | "order_cancelled"
   | "return_update"
+  | "digital_delivery"
+  | "customer_password_reset"
   | "payment_update"
   | "courier_update";
 
@@ -15,6 +17,8 @@ export const NOTIFY_EVENTS: { key: NotifyEventKey; label: string; hint: string }
   { key: "order_status", label: "Order status update", hint: "Packed, shipped, delivered" },
   { key: "order_cancelled", label: "Cancellation", hint: "Order is cancelled" },
   { key: "return_update", label: "Return / Exchange update", hint: "Return request status changes" },
+  { key: "digital_delivery", label: "Digital delivery", hint: "A purchased download is ready" },
+  { key: "customer_password_reset", label: "Customer password reset", hint: "A customer requests a reset link" },
   { key: "payment_update", label: "Payment update", hint: "Payment received or failed" },
   { key: "courier_update", label: "Courier / shipping update", hint: "Parcel assigned or in transit" },
 ];

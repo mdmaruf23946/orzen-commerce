@@ -75,17 +75,27 @@ export async function dispatchNotification(sb: Sb, input: DispatchInput) {
     const em: any = settings.email;
     if (em?.enabled) {
       const audience = em.events?.[input.event];
-      const targets: string[] = [];
-      if (audience?.admin && em.address) targets.push(em.address);
-      if (audience?.customer && input.customer?.email) targets.push(input.customer.email);
       const apiKey = readSecret(em.api_key_enc);
-      for (const to of targets) {
+      const targets: Array<{ to: string; kind: "merchant" | "customer" }> = [];
+      if (audience?.admin && em.address) targets.push({ to: em.address, kind: "merchant" });
+      // A merchant customer may only receive email through the merchant's own provider.
+      if (
+        audience?.customer &&
+        input.customer?.email &&
+        em.provider === "resend" &&
+        apiKey &&
+        em.from_address
+      ) {
+        targets.push({ to: input.customer.email, kind: "customer" });
+      }
+      for (const target of targets) {
         jobs.push(
           sendNotifyEmail({
             provider: em.provider === "resend" ? "resend" : "platform",
+            recipientKind: target.kind,
             apiKey,
             fromAddress: em.from_address,
-            to,
+            to: target.to,
             subject: input.subject,
             html: html(input.subject, input.message),
           }),
