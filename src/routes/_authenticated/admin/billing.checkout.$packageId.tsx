@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Copy, CheckCircle2, Wallet, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Wallet, Loader2 } from "lucide-react";
 import {
   MethodTabs,
   MethodLogo,
@@ -61,37 +61,6 @@ const TXN_RE = /^[A-Za-z0-9]{6,32}$/;
 
 type MethodKey = "bkash" | "nagad" | "rocket";
 
-function copyToClipboard(text: string, label: string) {
-  try {
-    void navigator.clipboard.writeText(text);
-    toast.success(`${label} copied`);
-  } catch {
-    toast.error("Copy failed");
-  }
-}
-
-function CopyRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="space-y-1.5">
-      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </div>
-      <div className="flex items-stretch gap-2">
-        <div className="flex-1 rounded-2xl border border-border bg-muted/40 px-4 py-3 font-mono text-base font-semibold sm:text-lg">
-          {value}
-        </div>
-        <button
-          type="button"
-          onClick={() => copyToClipboard(value, label)}
-          className="inline-flex min-w-[52px] items-center justify-center rounded-2xl border border-border bg-background px-3 text-sm font-medium hover:bg-muted active:scale-95"
-          aria-label={`Copy ${label}`}
-        >
-          <Copy className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function CheckoutPage() {
   const { packageId } = Route.useParams();
