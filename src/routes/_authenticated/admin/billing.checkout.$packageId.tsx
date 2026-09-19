@@ -361,7 +361,7 @@ function CheckoutPage() {
               </Button>
             </div>
             {!enough && (
-              <div className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
+              <div className="mt-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200">
                 Not enough balance — you need ৳{(calc.total - balance).toLocaleString()} more.{" "}
                 <Link to="/admin/billing" search={{} as never} className="font-semibold underline">
                   Add fund
@@ -373,7 +373,7 @@ function CheckoutPage() {
       })()}
 
       {enabledMethods.length === 0 ? (
-        <div className="rounded-2xl border bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="rounded-2xl border bg-amber-50 dark:bg-amber-500/10 p-4 text-sm text-amber-900 dark:text-amber-200">
           No payment methods are currently enabled. Please contact the platform owner.
         </div>
       ) : (
@@ -399,7 +399,7 @@ function CheckoutPage() {
             {merchantNumber ? (
               <BrandCopyRow label={`${brand.label} number`} value={merchantNumber} brand={brand} />
             ) : (
-              <div className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+              <div className="rounded-xl bg-amber-50 dark:bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200">
                 Merchant number not configured for {brand.label}. Contact the platform owner.
               </div>
             )}

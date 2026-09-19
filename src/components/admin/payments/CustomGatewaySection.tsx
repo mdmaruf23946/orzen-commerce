@@ -587,7 +587,7 @@ function GatewayEditor({
               i === step
                 ? "border-primary bg-primary/10 text-primary"
                 : i < step
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"
                   : "border-dashed text-muted-foreground"
             }`}
           >
@@ -795,8 +795,8 @@ function GatewayEditor({
               <div
                 className={`flex items-start gap-2 rounded-md border p-3 text-sm ${
                   testResult.ok
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                    : "border-red-200 bg-red-50 text-red-800"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"
+                    : "border-red-200 bg-red-50 text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200"
                 }`}
               >
                 {testResult.ok ? (

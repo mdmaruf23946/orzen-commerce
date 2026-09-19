@@ -144,7 +144,7 @@ function Page() {
           </div>
 
           {!r.wildcardCorrect && (
-            <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+            <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <div className="space-y-1">
                 <div className="font-semibold">Wildcard DNS not configured</div>

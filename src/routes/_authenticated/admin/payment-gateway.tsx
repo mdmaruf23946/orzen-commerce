@@ -370,7 +370,7 @@ function GatewayCard({
                 </span>
               )}
               {c?.is_active && (
-                <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700">
+                <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
                   <Star className="mr-1 h-3 w-3 fill-current" /> Default
                 </Badge>
               )}
@@ -420,7 +420,7 @@ function GatewayCard({
               </div>
             )}
             {lastErr && (
-              <div className="mt-1 flex items-start gap-1 rounded bg-red-50 px-2 py-1 text-[10px] text-red-700">
+              <div className="mt-1 flex items-start gap-1 rounded bg-red-50 dark:bg-red-500/10 px-2 py-1 text-[10px] text-red-700 dark:text-red-300">
                 <XCircle className="mt-0.5 h-3 w-3 shrink-0" />
                 <span className="line-clamp-2">{lastErr}</span>
               </div>
@@ -875,7 +875,7 @@ function ConfigureForm({
             </div>
           )}
           {g.supportsSandbox && sandbox && enabled && (
-            <p className="rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
+            <p className="rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-500/10 p-2 text-sm text-amber-800 dark:text-amber-200">
               Sandbox is ON — shoppers will see a “Test mode” badge and no real money will be collected. Turn it off
               before going live.
             </p>
@@ -896,8 +896,8 @@ function ConfigureForm({
           <div
             className={`flex items-start gap-2 rounded-md border p-3 text-sm ${
               testResult.ok
-                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                : "border-red-200 bg-red-50 text-red-800"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"
+                : "border-red-200 bg-red-50 text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200"
             }`}
           >
             {testResult.ok ? (

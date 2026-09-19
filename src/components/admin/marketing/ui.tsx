@@ -81,7 +81,7 @@ export function TestResult({ result }: { result: { ok: boolean; text: string } |
     <div
       className={cn(
         "rounded-md border p-2 text-xs",
-        result.ok ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-destructive/40 bg-destructive/10 text-destructive",
+        result.ok ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200" : "border-destructive/40 bg-destructive/10 text-destructive",
       )}
     >
       {result.text}
