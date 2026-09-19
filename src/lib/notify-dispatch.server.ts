@@ -78,23 +78,25 @@ export async function dispatchNotification(sb: Sb, input: DispatchInput) {
       const apiKey = readSecret(em.api_key_enc);
       const targets: Array<{ to: string; kind: "merchant" | "customer" }> = [];
       if (audience?.admin && em.address) targets.push({ to: em.address, kind: "merchant" });
-      // A merchant customer may only receive email through the merchant's own provider.
-      if (
-        audience?.customer &&
-        input.customer?.email &&
-        em.provider === "resend" &&
-        apiKey &&
-        em.from_address
-      ) {
+      // A merchant customer may only receive email through the merchant's own provider/server.
+      const ownSender =
+        em.provider && em.provider !== "platform" && apiKey && em.from_address &&
+        (em.provider !== "mailgun" || em.mailgun_domain) &&
+        (em.provider !== "smtp" || em.smtp_endpoint);
+      if (audience?.customer && input.customer?.email && ownSender) {
         targets.push({ to: input.customer.email, kind: "customer" });
       }
       for (const target of targets) {
         jobs.push(
           sendNotifyEmail({
-            provider: em.provider === "resend" ? "resend" : "platform",
+            provider: em.provider ?? "platform",
             recipientKind: target.kind,
             apiKey,
             fromAddress: em.from_address,
+            fromName: em.from_name,
+            mailgunDomain: em.mailgun_domain,
+            mailgunRegion: em.mailgun_region,
+            smtpEndpoint: em.smtp_endpoint,
             to: target.to,
             subject: input.subject,
             html: html(input.subject, input.message),
