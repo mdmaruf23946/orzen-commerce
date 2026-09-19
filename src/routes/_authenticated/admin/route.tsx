@@ -556,39 +556,47 @@ function AdminLayout() {
             </div>
           )}
 
-          <nav className="flex flex-1 flex-col gap-4 overflow-y-auto p-2 pb-[100px] md:pb-4">
+          <nav className="flex flex-1 flex-col gap-3 overflow-y-auto p-2 pb-4">
             {groups.map((g) => {
-              const collapsedGroup = openGroups[g.label] === false;
+              const groupActive = g.items.some((item) => activeInItem(currentPath, item));
+              const groupOpen = search.trim() ? true : (openGroups[g.label] ?? groupActive);
               return (
                 <div key={g.label}>
-                  {!collapsed && (
+                  {(!collapsed || open) && (
                     <button
                       type="button"
-                      onClick={() => setOpenGroups((s) => ({ ...s, [g.label]: !(s[g.label] !== false) }))}
-                      className="flex w-full items-center justify-between px-3 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                      onClick={() => toggleGroup(g.label, groupOpen)}
+                      aria-expanded={groupOpen}
+                      className={cn(
+                        "flex w-full items-center justify-between px-3 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground",
+                        groupActive && "text-foreground",
+                      )}
                     >
                       <span>{g.label}</span>
-                      <ChevronDown className={cn("h-3 w-3 transition-transform", collapsedGroup && "-rotate-90")} />
+                      <ChevronDown className={cn("h-3 w-3 transition-transform", !groupOpen && "-rotate-90")} />
                     </button>
                   )}
-                  {(!collapsedGroup || collapsed) && (
+                  {(groupOpen || (collapsed && !open)) && (
                     <div className="space-y-0.5">
                       {g.items.map((l) => {
-                        const badgeVal = l.badgeKey ? (counts as any)[l.badgeKey] ?? 0 : 0;
+                        const badgeVal = itemBadgeCount(l, counts);
                         const hasChildren = !!l.children?.length && (!collapsed || open);
-                        const subOpen = subMenus[l.to] ?? currentPath.startsWith(l.to);
+                        const itemActive = activeInItem(currentPath, l);
+                        const childSearchMatch = search.trim() && l.children?.some((child) => child.label.toLowerCase().includes(search.trim().toLowerCase()));
+                        const subOpen = childSearchMatch ? true : (subMenus[l.to] ?? itemActive);
+                        const destination = hasChildren && l.children?.[0] ? l.children[0].to : l.to;
                         return (
                         <div key={l.to}>
                         <div className="flex items-center">
                         <Link
-                          to={hasChildren ? l.children![0].to : l.to}
+                          to={destination}
                           onClick={() => { if (!hasChildren) setOpen(false); }}
                           activeOptions={l.exact ? { exact: true } : undefined}
-                          activeProps={{ className: "bg-primary/10 text-primary font-medium" }}
                           title={collapsed ? `${l.label}${badgeVal ? ` (${badgeVal})` : ""}` : undefined}
                           className={cn(
                             "group relative flex flex-1 items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground",
                             collapsed && "md:justify-center md:px-2",
+                            itemActive && "bg-primary/10 font-medium text-primary",
                           )}
                         >
                           <span className="relative shrink-0">
@@ -598,7 +606,7 @@ function AdminLayout() {
                             )}
                           </span>
                           {(!collapsed || open) && <span className="truncate">{l.label}</span>}
-                          {(!collapsed || open) && badgeVal > 0 && (
+                          {(!collapsed || open) && badgeVal > 0 && (!hasChildren || !subOpen) && (
                             <CountBadge count={badgeVal} label={l.label} />
                           )}
                         </Link>
@@ -606,7 +614,8 @@ function AdminLayout() {
                           <button
                             type="button"
                             aria-label={`Toggle ${l.label} menu`}
-                            onClick={() => setSubMenus((s) => ({ ...s, [l.to]: !subOpen }))}
+                            onClick={() => toggleSubMenu(l.to, subOpen)}
+                            aria-expanded={subOpen}
                             className="mr-1 grid h-7 w-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
                           >
                             <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", !subOpen && "-rotate-90")} />
@@ -614,18 +623,23 @@ function AdminLayout() {
                         )}
                         </div>
                         {hasChildren && subOpen && (
-                          <div className="mt-0.5 space-y-0.5 border-l pl-3 ml-5">
-                            {l.children!.map((c) => (
+                          <div className="ml-5 mt-0.5 space-y-0.5 border-l pl-3">
+                            {l.children?.map((c) => {
+                              const childBadge = c.badgeKey ? counts[c.badgeKey] ?? 0 : 0;
+                              return (
                               <Link
                                 key={c.to}
                                 to={c.to}
                                 onClick={() => setOpen(false)}
+                                activeOptions={c.exact ? { exact: true } : undefined}
                                 activeProps={{ className: "bg-primary/10 text-primary font-medium" }}
-                                className="block rounded-lg px-3 py-1.5 text-[13px] text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                                className="flex min-h-8 items-center rounded-lg px-3 py-1.5 text-[13px] text-muted-foreground transition hover:bg-muted hover:text-foreground"
                               >
-                                {c.label}
+                                <span className="truncate">{c.label}</span>
+                                {childBadge > 0 && <CountBadge count={childBadge} label={c.label} />}
                               </Link>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                         </div>
@@ -637,14 +651,15 @@ function AdminLayout() {
                 </div>
               );
             })}
-
+          </nav>
+          <div className="shrink-0 space-y-1 border-t bg-sidebar p-2">
             {ownerData?.isOwner && (
               <Link
                 to="/owner"
                 onClick={() => setOpen(false)}
                 title={collapsed ? "Owner Panel" : undefined}
                 className={cn(
-                  "mt-1 flex items-center gap-3 rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10",
+                  "flex items-center gap-3 rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10",
                   collapsed && !open && "md:justify-center md:px-2",
                 )}
               >
@@ -657,14 +672,14 @@ function AdminLayout() {
               onClick={signOut}
               title={collapsed ? "Logout" : undefined}
               className={cn(
-                "mt-auto flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-destructive/10",
+                "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-destructive/10",
                 collapsed && "md:justify-center md:px-2",
               )}
             >
               <LogOut className="h-4 w-4" />
               {(!collapsed || open) && <span>Logout</span>}
             </button>
-          </nav>
+          </div>
         </aside>
 
         {open && (
