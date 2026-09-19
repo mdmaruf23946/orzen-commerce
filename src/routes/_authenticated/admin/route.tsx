@@ -9,6 +9,7 @@ import {
   MessageSquare, MessageCircle, Boxes, Ticket, RotateCcw, BarChart3, FileUp, Globe,
   Radar, ShieldCheck, FileText, PhoneCall, Sparkles, AlertTriangle, UserCog, Palette,
   ChevronDown, ChevronsLeft, ChevronsRight, Moon, Sun, ExternalLink, LayoutTemplate, X,
+  Gauge, PackageCheck, Headphones, Store, SlidersHorizontal,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { amIOwner } from "@/lib/owner.functions";
@@ -53,6 +54,7 @@ type ChildLinkDef = {
 
 type NavGroupDef = {
   label: string;
+  icon: typeof LayoutDashboard;
   items: LinkDef[];
 };
 
@@ -61,6 +63,7 @@ type VisibleLinkDef = Omit<LinkDef, "children"> & { children?: ChildLinkDef[] };
 const menuGroups: NavGroupDef[] = [
   {
     label: "Core",
+    icon: Gauge,
     items: [
       { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
       { to: "/admin/inbox", label: "Notifications Inbox", icon: Bell, badgeKey: "notifications" },
@@ -68,6 +71,7 @@ const menuGroups: NavGroupDef[] = [
   },
   {
     label: "Orders & Delivery",
+    icon: PackageCheck,
     items: [
       { to: "/admin/orders", label: "All Orders", icon: ShoppingBag, badgeKey: "orders" },
       {
@@ -87,6 +91,7 @@ const menuGroups: NavGroupDef[] = [
   },
   {
     label: "Products & Inventory",
+    icon: Boxes,
     items: [
       { to: "/admin/products", label: "Products", icon: Package },
       { to: "/admin/categories", label: "Categories", icon: Tags },
@@ -113,6 +118,7 @@ const menuGroups: NavGroupDef[] = [
   },
   {
     label: "Customers & Support",
+    icon: Headphones,
     items: [
       {
         to: "/admin/customers",
@@ -138,6 +144,7 @@ const menuGroups: NavGroupDef[] = [
   },
   {
     label: "Channels & AI",
+    icon: Bot,
     items: [
       {
         to: "/admin/messenger-inbox",
@@ -177,6 +184,7 @@ const menuGroups: NavGroupDef[] = [
   },
   {
     label: "Marketing & Sales",
+    icon: Megaphone,
     items: [
       { to: "/admin/marketing", label: "Marketing & Tracking", icon: Megaphone },
       { to: "/admin/coupons", label: "Coupons & Discounts", icon: Ticket },
@@ -208,6 +216,7 @@ const menuGroups: NavGroupDef[] = [
   },
   {
     label: "Finance & Analytics",
+    icon: BarChart3,
     items: [
       { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
       { to: "/admin/finance", label: "Business Finance", icon: Wallet },
@@ -216,6 +225,7 @@ const menuGroups: NavGroupDef[] = [
   },
   {
     label: "Online Storefront",
+    icon: Store,
     items: [
       { to: "/admin/theme", label: "Theme & Styling", icon: Palette },
       { to: "/admin/banners", label: "Banners & Sliders", icon: ImageIcon },
@@ -225,6 +235,7 @@ const menuGroups: NavGroupDef[] = [
   },
   {
     label: "Settings & Management",
+    icon: SlidersHorizontal,
     items: [
       {
         to: "/admin/settings",
@@ -304,7 +315,7 @@ function buildGroups(query: string, canSee: (path: string) => boolean) {
           visible.push({ ...item, children: visibleChildren.length ? visibleChildren : undefined });
           return visible;
         }, []);
-      return { label: group.label, items };
+      return { label: group.label, icon: group.icon, items };
     })
     .filter((group) => group.items.length > 0);
 }
