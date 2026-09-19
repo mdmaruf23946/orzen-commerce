@@ -438,7 +438,8 @@ export default function WalletPanel() {
               <Button
                 disabled={!canSubmitManual || manualTopup.isPending}
                 onClick={() => manualTopup.mutate()}
-                className="w-full gap-1.5 sm:w-auto"
+                className="w-full gap-1.5 text-white hover:opacity-90 sm:w-auto"
+                style={{ background: walletBrand.brandColor }}
               >
                 {manualTopup.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
