@@ -308,14 +308,21 @@ export async function sendDigitalDeliveryEmail(sb: Sb, orderId: string) {
     <p style="font-size:12px;color:#666">Need help? Reply to this email and our support team will get back to you.</p>
   </div>`;
 
-  const { enqueueEmail } = await import("@/lib/emails.server");
-  await enqueueEmail({
-    to: order.email as string,
-    template: "digital_delivery",
+  const licenseText = ents.map((e: any) => {
+    const p = pById.get(e.product_id);
+    const lic = e.license_id ? lById.get(e.license_id) : null;
+    return `${p?.name ?? "Product"}${lic ? ` — License: ${lic.license_key} (${lic.license_type})` : ""}`;
+  }).join("\n");
+  const { dispatchNotification } = await import("@/lib/notify-dispatch.server");
+  const delivery = await dispatchNotification(sb, {
+    storeId: order.store_id as string,
+    event: "digital_delivery",
     subject: "Your download is ready",
-    html,
-    payload: { orderId },
+    message: `Hi ${order.customer_name ?? "there"}, your purchase from ${(store as any)?.name ?? "the store"} is ready.\n\n${licenseText}\n\nDownload: ${orderUrl}`,
+    customer: { email: order.email as string, phone: order.phone as string | null },
   });
+  void html;
+  if (delivery.attempted === 0) return { sent: false };
   await logDigitalEvent(sb, {
     storeId: order.store_id as string,
     orderId,

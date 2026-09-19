@@ -51,35 +51,16 @@ export async function notifyQuickOrder(sb: Sb, orderId: string) {
   // Shopper confirmation email.
   if (!order.email) return;
   try {
-    const rows = ((items ?? []) as any[])
-      .map(
-        (i) =>
-          `<tr><td style="padding:6px 0">${i.name_snapshot} × ${i.qty}</td><td style="padding:6px 0;text-align:right">${money(
-            Number(i.price_snapshot) * Number(i.qty),
-          )}</td></tr>`,
-      )
-      .join("");
-
-    const { enqueueEmail } = await import("@/lib/emails.server");
-    await enqueueEmail({
-      to: order.email,
-      template: "order_confirmation",
+    const itemLines = ((items ?? []) as any[])
+      .map((i) => `${i.name_snapshot} × ${i.qty} — ${money(Number(i.price_snapshot) * Number(i.qty))}`)
+      .join("\n");
+    const { dispatchNotification } = await import("@/lib/notify-dispatch.server");
+    await dispatchNotification(sb, {
+      storeId: order.store_id,
+      event: "order_confirmed",
       subject: `${storeName} — order ${ref} confirmed`,
-      html: `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6;color:#111">
-        <p>Hi ${order.customer_name},</p>
-        <p>We've placed your order <strong>${ref}</strong> with ${storeName}.</p>
-        <table style="width:100%;border-collapse:collapse;margin:12px 0">${rows}
-          <tr><td style="padding:6px 0;border-top:1px solid #eee"><strong>Total</strong></td>
-              <td style="padding:6px 0;border-top:1px solid #eee;text-align:right"><strong>${money(total)}</strong></td></tr>
-          ${
-            Number(order.due_amount ?? 0) > 0
-              ? `<tr><td style="padding:6px 0">Due on delivery</td><td style="padding:6px 0;text-align:right">${money(order.due_amount)}</td></tr>`
-              : ""
-          }
-        </table>
-        <p style="color:#666">Delivering to: ${order.address ?? ""}${order.area ? `, ${order.area}` : ""}</p>
-      </div>`,
-      payload: { order_id: order.id, source: "manual" },
+      message: `Hi ${order.customer_name}, your order ${ref} with ${storeName} is confirmed.\n\n${itemLines}\nTotal: ${money(total)}${Number(order.due_amount ?? 0) > 0 ? `\nDue on delivery: ${money(order.due_amount)}` : ""}\n\nDelivering to: ${order.address ?? ""}${order.area ? `, ${order.area}` : ""}`,
+      customer: { email: order.email, phone: order.phone },
     });
   } catch (e) {
     console.error("[quick-order] email failed", e);
