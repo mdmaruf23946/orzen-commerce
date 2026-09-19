@@ -151,6 +151,7 @@ function CheckoutPage() {
   const merchantNumber = m?.number ?? "";
   const merchantName = (m as any)?.merchant_name ?? "";
   const rawInstructions = m?.instructions ?? "";
+  const brand = brandOf(method);
 
   const instructions = useMemo<string[]>(() => {
     if (rawInstructions?.trim()) {
