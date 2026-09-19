@@ -361,7 +361,7 @@ export const verifyPayment = createServerFn({ method: "POST" })
         meta: { payment_id: pay.id, reason },
       });
       if (pay.customer_email) {
-        const tpl = tplPaymentRejected({
+        const tpl = await tplPaymentRejected({
           ownerName: null,
           planName: pkg?.name ?? "your plan",
           amount: Number(pay.amount),
@@ -479,7 +479,7 @@ export const verifyPayment = createServerFn({ method: "POST" })
     });
 
     if (pay.customer_email) {
-      const tpl = tplPaymentApproved({
+      const tpl = await tplPaymentApproved({
         ownerName: null,
         planName: pkg.name,
         amount: Number(pay.amount),

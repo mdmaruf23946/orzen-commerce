@@ -567,7 +567,7 @@ export const verifyAndActivateSubscription = createServerFn({ method: "POST" })
         await sendSubscriptionEmail({
           to: email,
           subject: `Payment received — ${(inv as any).invoice_no}`,
-          html: receiptEmailHtml({
+          html: await receiptEmailHtml({
             customerName: name,
             invoiceNo: (inv as any).invoice_no,
             packageName: (pkg as any)?.name ?? "Subscription",

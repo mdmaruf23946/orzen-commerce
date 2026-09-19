@@ -133,6 +133,7 @@ export async function notifyReturnStatus(
     if (opts.notifyCustomer === false) return;
 
     // Customer SMS — only when the store has an SMS sender configured.
+    const message = customerMessage(ret, status, storeName);
     try {
       const sender = process.env["GATEWAYAPI_API_KEY"];
       const lovableKey = process.env["LOVABLE_API_KEY"];

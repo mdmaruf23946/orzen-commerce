@@ -240,7 +240,7 @@ export const submitManualPayment = createServerFn({ method: "POST" })
         customerNote: data.customer_note ?? null,
         reviewUrl: "/owner/billing?status=pending",
       };
-      const cust = tplPaymentSubmittedCustomer(ctxBase);
+      const cust = await tplPaymentSubmittedCustomer(ctxBase);
       await enqueueEmail({
         to: data.customer_email,
         template: "payment_submitted_customer",
@@ -250,7 +250,7 @@ export const submitManualPayment = createServerFn({ method: "POST" })
         relatedPaymentId: payment.id,
       });
       if (notifyEmail) {
-        const adm = tplPaymentSubmittedAdmin(ctxBase);
+        const adm = await tplPaymentSubmittedAdmin(ctxBase);
         await enqueueEmail({
           to: notifyEmail,
           template: "payment_submitted_admin",

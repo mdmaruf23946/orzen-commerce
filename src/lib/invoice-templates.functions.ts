@@ -3,7 +3,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { myStoreRow } from "@/lib/store-access";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { enqueueEmail } from "@/lib/emails.server";
 import { buildTrackingUrl } from "@/lib/couriers/status";
 import type { InvoiceData } from "@/lib/invoice-template/data";
 
@@ -420,9 +419,13 @@ export const emailInvoiceLink = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!order) throw new Error("Order not found");
     const subject = `Your invoice ${order.invoice_no ?? ""}`.trim();
-    const html = `<p>Hi ${order.customer_name ?? "there"},</p>
-<p>Your invoice is ready. You can view or download it here:</p>
-<p><a href="${data.url}">${data.url}</a></p>`;
-    await enqueueEmail({ to: data.to, template: "invoice_link", subject, html, payload: { orderId: data.orderId, storeId: sid } });
-    return { ok: true };
+    const { dispatchNotification } = await import("@/lib/notify-dispatch.server");
+    const result = await dispatchNotification(sb, {
+      storeId: sid,
+      event: "order_status",
+      subject,
+      message: `Hi ${order.customer_name ?? "there"}, your invoice is ready.\n\nView or download: ${data.url}`,
+      customer: { email: data.to },
+    });
+    return { ok: result.attempted > 0 };
   });

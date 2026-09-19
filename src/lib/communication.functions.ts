@@ -112,11 +112,13 @@ export const sendGmailTest = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId);
     const profile = await gmailProfile();
-    const html = `<div style="font-family:-apple-system,sans-serif;padding:24px">
-      <h2 style="margin:0 0 12px">Gmail test from ORZEN</h2>
-      <p>This confirms your Gmail is connected and can send messages.</p>
-      <p style="color:#6b7280;font-size:12px">Sent from ${profile.emailAddress}</p>
-    </div>`;
+    const { renderPlatformEmail } = await import("@/lib/brevo.server");
+    const html = await renderPlatformEmail({
+      title: "Gmail connection test সফল",
+      bodyHtml: `<p style="margin:0">আপনার Gmail connected এবং email পাঠানোর জন্য প্রস্তুত।</p>`,
+      kind: "platform",
+      sanitizeBody: false,
+    });
     try {
       const r = await sendGmail({ from: profile.emailAddress, to: data.to, subject: "ORZEN Gmail test", html });
       await (context.supabase as any).from("owner_gmail_state").upsert({
@@ -313,7 +315,14 @@ export const sendCommunication = createServerFn({ method: "POST" })
         platform_name: "ORZEN",
       };
       const subject = resolveVars(data.subject, vars);
-      const html = resolveVars(data.body_html, vars);
+      const rawHtml = resolveVars(data.body_html, vars);
+      const { renderPlatformEmail } = await import("@/lib/brevo.server");
+      const html = await renderPlatformEmail({
+        title: subject,
+        bodyHtml: rawHtml,
+        preheader: stripHtml(rawHtml).slice(0, 120),
+        kind: "platform",
+      });
       const inappTitle = resolveVars(data.notification_title || data.subject, vars);
       const inappBody = resolveVars(data.notification_body ?? stripHtml(data.body_html), vars);
 

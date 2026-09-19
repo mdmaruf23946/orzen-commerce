@@ -4,50 +4,10 @@
 // retry from the admin panel once email is enabled.
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-
-const BRAND = {
-  name: "ORZEN",
-  color: "#111111",
-  border: "#E5E7EB",
-};
-
-function escapeHtml(s: string): string {
-  return String(s ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+import { emailInfoRows, emailWarning, escapeHtml, renderPlatformEmail } from "@/lib/brevo.server";
 
 function money(n: number): string {
   return `৳${Number(n || 0).toLocaleString()}`;
-}
-
-function shell(inner: string, preheader = ""): string {
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${BRAND.name}</title></head>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:${BRAND.color};">
-${preheader ? `<div style="display:none;max-height:0;overflow:hidden">${escapeHtml(preheader)}</div>` : ""}
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f5f5;padding:24px 12px;">
-  <tr><td align="center">
-    <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="max-width:560px;width:100%;background:#fff;border:1px solid ${BRAND.border};border-radius:18px;overflow:hidden;">
-      <tr><td style="padding:20px 24px;border-bottom:1px solid ${BRAND.border};">
-        <div style="font-weight:800;font-size:20px;letter-spacing:0.5px;">${BRAND.name}</div>
-      </td></tr>
-      <tr><td style="padding:24px;font-size:15px;line-height:1.55;">${inner}</td></tr>
-      <tr><td style="padding:16px 24px;border-top:1px solid ${BRAND.border};font-size:12px;color:#6b7280;">
-        You're receiving this email from ${BRAND.name} — the modern eCommerce platform.
-      </td></tr>
-    </table>
-  </td></tr>
-</table></body></html>`;
-}
-
-function button(href: string, label: string): string {
-  return `<a href="${escapeHtml(href)}" style="display:inline-block;background:${BRAND.color};color:#fff;text-decoration:none;padding:12px 20px;border-radius:12px;font-weight:600;">${escapeHtml(label)}</a>`;
-}
-
-function row(label: string, value: string): string {
-  return `<tr><td style="padding:8px 0;color:#6b7280;font-size:13px;width:40%;">${escapeHtml(label)}</td><td style="padding:8px 0;font-weight:600;font-size:14px;">${value}</td></tr>`;
 }
 
 // ---------- Template payloads ----------
@@ -67,43 +27,37 @@ export type SubmittedCtx = {
   reviewUrl: string;
 };
 
-export function tplPaymentSubmittedAdmin(c: SubmittedCtx) {
-  const html = shell(
-    `<h2 style="margin:0 0 12px;font-size:20px;">New Subscription Payment Received</h2>
-     <p style="margin:0 0 16px;">A store owner just submitted a manual payment request. Review it in the Winner Admin panel.</p>
-     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid ${BRAND.border};border-radius:12px;padding:8px 14px;margin:0 0 20px;">
-       ${row("Store", escapeHtml(c.storeName))}
-       ${row("Owner", escapeHtml(c.ownerName ?? "—"))}
-       ${row("Email", escapeHtml(c.customerEmail))}
-       ${row("Plan", escapeHtml(c.planName))}
-       ${row("Duration", escapeHtml(c.cycleLabel))}
-       ${row("Amount", money(c.amount))}
-       ${row("Method", escapeHtml(c.method.toUpperCase()))}
-       ${row("Sender", escapeHtml(c.senderNumber))}
-       ${row("Txn ID", `<span style="font-family:monospace">${escapeHtml(c.txnId)}</span>`)}
-       ${row("Submitted", escapeHtml(c.submittedAt))}
-       ${c.customerNote ? row("Note", escapeHtml(c.customerNote)) : ""}
-     </table>
-     <div>${button(c.reviewUrl, "Review Payment Request")}</div>`,
-    `New payment request from ${c.storeName}`,
-  );
+export async function tplPaymentSubmittedAdmin(c: SubmittedCtx) {
+  const html = await renderPlatformEmail({
+    title: "নতুন subscription payment এসেছে",
+    preheader: `New payment request from ${c.storeName}`,
+    kind: "billing",
+    bodyHtml: `<p style="margin:0">একজন merchant manual payment request জমা দিয়েছেন। Review করে সিদ্ধান্ত নিন।</p>${emailInfoRows([
+      { label: "Store", value: c.storeName }, { label: "Owner", value: c.ownerName ?? "—" },
+      { label: "Email", value: c.customerEmail }, { label: "Plan", value: c.planName },
+      { label: "Duration", value: c.cycleLabel }, { label: "Amount", value: money(c.amount) },
+      { label: "Method", value: c.method.toUpperCase() }, { label: "Sender", value: c.senderNumber },
+      { label: "Txn ID", value: c.txnId }, { label: "Submitted", value: c.submittedAt },
+      { label: "Note", value: c.customerNote ?? "" },
+    ])}`,
+    actionLabel: "Payment review করুন",
+    actionUrl: c.reviewUrl,
+    sanitizeBody: false,
+  });
   return { subject: "New Subscription Payment Received", html };
 }
 
-export function tplPaymentSubmittedCustomer(c: SubmittedCtx) {
-  const html = shell(
-    `<h2 style="margin:0 0 12px;font-size:20px;">Payment Request Received</h2>
-     <p style="margin:0 0 12px;">Hi${c.ownerName ? " " + escapeHtml(c.ownerName) : ""}, we have successfully received your payment request for <b>${escapeHtml(c.planName)}</b> (${escapeHtml(c.cycleLabel)}).</p>
-     <p style="margin:0 0 16px;">Your payment is currently under verification. You will receive another email once your subscription has been approved or rejected.</p>
-     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid ${BRAND.border};border-radius:12px;padding:8px 14px;margin:0 0 20px;">
-       ${row("Amount", money(c.amount))}
-       ${row("Method", escapeHtml(c.method.toUpperCase()))}
-       ${row("Txn ID", `<span style="font-family:monospace">${escapeHtml(c.txnId)}</span>`)}
-       ${row("Submitted", escapeHtml(c.submittedAt))}
-     </table>
-     <p style="margin:0;color:#6b7280;font-size:13px;">If you did not submit this payment, please contact support.</p>`,
-    `Payment received — under verification`,
-  );
+export async function tplPaymentSubmittedCustomer(c: SubmittedCtx) {
+  const html = await renderPlatformEmail({
+    title: "Payment request গ্রহণ করা হয়েছে",
+    preheader: "Payment received — under verification",
+    kind: "billing",
+    bodyHtml: `<p style="margin:0 0 12px">${c.ownerName ? `${escapeHtml(c.ownerName)}, ` : ""}আপনার <strong>${escapeHtml(c.planName)}</strong> (${escapeHtml(c.cycleLabel)}) payment request পেয়েছি।</p><p style="margin:0">Payment এখন verification-এর অধীনে আছে। সিদ্ধান্ত হলে আরেকটি email পাবেন।</p>${emailInfoRows([
+      { label: "Amount", value: money(c.amount) }, { label: "Method", value: c.method.toUpperCase() },
+      { label: "Txn ID", value: c.txnId }, { label: "Submitted", value: c.submittedAt },
+    ])}${emailWarning("এই payment আপনি জমা না দিলে support-এর সঙ্গে যোগাযোগ করুন।")}`,
+    sanitizeBody: false,
+  });
   return { subject: "Payment Request Received", html };
 }
 
@@ -118,21 +72,20 @@ export type ApprovedCtx = {
   amount: number;
 };
 
-export function tplPaymentApproved(c: ApprovedCtx) {
-  const html = shell(
-    `<h2 style="margin:0 0 12px;font-size:20px;">Your ORZEN Subscription is Now Active</h2>
-     <p style="margin:0 0 16px;">Great news${c.ownerName ? ", " + escapeHtml(c.ownerName) : ""}! Your payment has been verified and your subscription is now active.</p>
-     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid ${BRAND.border};border-radius:12px;padding:8px 14px;margin:0 0 20px;">
-       ${row("Plan", escapeHtml(c.planName))}
-       ${row("Amount", money(c.amount))}
-       ${row("Activation", escapeHtml(c.activationDate))}
-       ${row("Expires", escapeHtml(c.expiryDate))}
-       ${row("Invoice", `<span style="font-family:monospace">${escapeHtml(c.invoiceNo)}</span>`)}
-       ${row("Store URL", `<a href="${escapeHtml(c.storeUrl)}" style="color:${BRAND.color};">${escapeHtml(c.storeUrl)}</a>`)}
-     </table>
-     <div>${button(c.loginUrl, "Log in to Dashboard")}</div>`,
-    `Subscription active — ${c.planName}`,
-  );
+export async function tplPaymentApproved(c: ApprovedCtx) {
+  const html = await renderPlatformEmail({
+    title: "আপনার ORZEN subscription এখন active",
+    preheader: `Subscription active — ${c.planName}`,
+    kind: "billing",
+    bodyHtml: `<p style="margin:0">সুখবর${c.ownerName ? `, ${escapeHtml(c.ownerName)}` : ""}! আপনার payment verify হয়েছে এবং subscription চালু হয়েছে।</p>${emailInfoRows([
+      { label: "Plan", value: c.planName }, { label: "Amount", value: money(c.amount) },
+      { label: "Activation", value: c.activationDate }, { label: "Expires", value: c.expiryDate },
+      { label: "Invoice", value: c.invoiceNo }, { label: "Store URL", value: c.storeUrl },
+    ])}`,
+    actionLabel: "Dashboard-এ যান",
+    actionUrl: c.loginUrl,
+    sanitizeBody: false,
+  });
   return { subject: "Your ORZEN Subscription is Now Active", html };
 }
 
@@ -145,19 +98,16 @@ export type RejectedCtx = {
   retryUrl: string;
 };
 
-export function tplPaymentRejected(c: RejectedCtx) {
-  const html = shell(
-    `<h2 style="margin:0 0 12px;font-size:20px;">Subscription Verification Failed</h2>
-     <p style="margin:0 0 12px;">Hi${c.ownerName ? " " + escapeHtml(c.ownerName) : ""}, we were unable to verify your recent payment for <b>${escapeHtml(c.planName)}</b> (${money(c.amount)}).</p>
-     <div style="background:#fff7ed;border:1px solid #fed7aa;color:#7c2d12;border-radius:12px;padding:12px 14px;margin:0 0 20px;">
-       <div style="font-weight:600;margin-bottom:4px;">Reason</div>
-       <div>${escapeHtml(c.reason)}</div>
-     </div>
-     <p style="margin:0 0 16px;">Please resubmit your payment with the correct details, or contact support if you believe this is a mistake.</p>
-     <p style="margin:0 0 20px;">Support: <a href="mailto:${escapeHtml(c.supportEmail)}" style="color:${BRAND.color};">${escapeHtml(c.supportEmail)}</a></p>
-     <div>${button(c.retryUrl, "Resubmit Payment")}</div>`,
-    `Payment verification failed`,
-  );
+export async function tplPaymentRejected(c: RejectedCtx) {
+  const html = await renderPlatformEmail({
+    title: "Payment verification সফল হয়নি",
+    preheader: "Payment verification failed",
+    kind: "billing",
+    bodyHtml: `<p style="margin:0">${c.ownerName ? `${escapeHtml(c.ownerName)}, ` : ""}<strong>${escapeHtml(c.planName)}</strong> plan-এর ${money(c.amount)} payment verify করা যায়নি।</p>${emailInfoRows([{ label: "Reason", value: c.reason }])}<p style="margin:0">সঠিক তথ্য দিয়ে আবার submit করুন, অথবা ভুল মনে হলে <a href="mailto:${escapeHtml(c.supportEmail)}" style="color:#315c48">support</a>-এ যোগাযোগ করুন।</p>`,
+    actionLabel: "Payment আবার submit করুন",
+    actionUrl: c.retryUrl,
+    sanitizeBody: false,
+  });
   return { subject: "Subscription Verification Failed", html };
 }
 
