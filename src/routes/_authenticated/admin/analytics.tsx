@@ -3,7 +3,6 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { FeatureGate } from "@/components/admin/FeatureGate";
-import { AdSlot } from "@/components/admin/AdSlot";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
 import { useProductTypeScope, scopeTabs } from "@/lib/product-type-scope";
@@ -114,7 +113,6 @@ function AnalyticsPage() {
           </div>
         </div>
       )}
-      <AdSlot slotKey="admin_analytics_bottom" />
     </div>
   );
 }

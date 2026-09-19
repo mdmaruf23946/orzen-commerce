@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { myDashboardOverview } from "@/lib/admin.functions";
 import { getInboxStats } from "@/lib/messenger-inbox.functions";
-import { AdSlot } from "@/components/admin/AdSlot";
 import { WelcomeCard } from "@/components/admin/dashboard/WelcomeCard";
 import { cn } from "@/lib/utils";
 import { QuickOrderSheet } from "@/components/admin/quick-order/QuickOrderSheet";
@@ -327,8 +326,6 @@ function Dashboard() {
           <QuickAction onClick={shareStore} icon={Share2} label="Share Store" tone="text-slate-700 bg-slate-100" />
         </div>
       </Card>
-
-      <AdSlot slotKey="admin_dashboard_bottom" />
     </div>
   );
 }

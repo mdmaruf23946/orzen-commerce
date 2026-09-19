@@ -15,7 +15,6 @@ import { amIOwner } from "@/lib/owner.functions";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SubscriptionStatusBanner } from "@/components/admin/SubscriptionStatusBanner";
-import { StickyMobileAdBar } from "@/components/admin/StickyMobileAdBar";
 import { UpgradeProvider } from "@/components/admin/UpgradeModal";
 import { ProductTypeScopeProvider } from "@/lib/product-type-scope";
 import { StoreBrandMark } from "@/components/admin/StoreBrandMark";
@@ -608,7 +607,6 @@ function AdminLayout() {
           </main>
         </div>
       </div>
-      <StickyMobileAdBar />
     </div>
     </ProductTypeScopeProvider>
     </UpgradeProvider>
