@@ -130,10 +130,10 @@ function ImportExportPage() {
                         <td className="py-2 pr-3 max-w-[200px] truncate">{h.file_name ?? "—"}</td>
                         <td className="py-2 pr-3">{h.format ?? "—"}</td>
                         <td className="py-2 pr-3">{h.total}</td>
-                        <td className="py-2 pr-3 text-green-600">{h.imported || "—"}</td>
-                        <td className="py-2 pr-3 text-blue-600">{h.updated || "—"}</td>
-                        <td className="py-2 pr-3 text-amber-600">{h.skipped || "—"}</td>
-                        <td className="py-2 pr-3 text-red-600">{h.failed || "—"}</td>
+                        <td className="py-2 pr-3 text-green-600 dark:text-green-400">{h.imported || "—"}</td>
+                        <td className="py-2 pr-3 text-blue-600 dark:text-blue-400">{h.updated || "—"}</td>
+                        <td className="py-2 pr-3 text-amber-600 dark:text-amber-400">{h.skipped || "—"}</td>
+                        <td className="py-2 pr-3 text-red-600 dark:text-red-400">{h.failed || "—"}</td>
                         <td className="py-2 pr-3 text-muted-foreground">{timeAgo(h.created_at)}</td>
                       </tr>
                     ))}
@@ -198,7 +198,7 @@ function ActionCard({ icon, title, desc, cta, onClick, variant }: { icon: React.
 }
 
 function MiniStat({ label, v, tone }: { label: string; v: number; tone?: "green" | "amber" | "red" }) {
-  const cls = tone === "green" ? "text-green-600" : tone === "amber" ? "text-amber-600" : tone === "red" ? "text-red-600" : "";
+  const cls = tone === "green" ? "text-green-600 dark:text-green-400" : tone === "amber" ? "text-amber-600 dark:text-amber-400" : tone === "red" ? "text-red-600 dark:text-red-400" : "";
   return (
     <div className="text-center border rounded p-1">
       <div className={`font-semibold ${cls}`}>{v || 0}</div>

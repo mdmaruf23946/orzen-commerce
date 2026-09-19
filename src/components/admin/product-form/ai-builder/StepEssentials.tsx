@@ -39,7 +39,7 @@ function PriceBlock({ ess, set, label = "Selling price" }: { ess: AiEssentials; 
         <NumField label={label} required value={ess.price} onChange={(v) => set("price", v)} placeholder="e.g. 499" />
         <NumField label="Compare price" value={ess.oldPrice} onChange={(v) => set("oldPrice", v)} placeholder="e.g. 699" />
       </Grid>
-      {off > 0 && <p className="mt-2 text-xs text-emerald-600">Discount: {off}% off</p>}
+      {off > 0 && <p className="mt-2 text-xs text-emerald-600 dark:text-emerald-400">Discount: {off}% off</p>}
     </Section>
   );
 }

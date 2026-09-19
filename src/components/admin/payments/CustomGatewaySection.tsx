@@ -254,11 +254,11 @@ function seedFromGateway(g: Gateway): EditorState {
 
 const STATUS_STYLES: Record<Gateway["status"], string> = {
   draft: "bg-muted text-muted-foreground",
-  testing: "bg-amber-100 text-amber-700",
-  connected: "bg-emerald-100 text-emerald-700",
+  testing: "bg-amber-100 text-amber-700 dark:text-amber-300",
+  connected: "bg-emerald-100 text-emerald-700 dark:text-emerald-300",
   active: "bg-emerald-600 text-white",
-  error: "bg-red-100 text-red-700",
-  disabled: "bg-slate-200 text-slate-700",
+  error: "bg-red-100 text-red-700 dark:text-red-300",
+  disabled: "bg-slate-200 text-slate-700 dark:text-slate-300",
 };
 
 export function CustomGatewaySection({ storeId }: { storeId: string }) {

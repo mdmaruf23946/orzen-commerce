@@ -21,8 +21,8 @@ export function KpiStrip({ items }: { items: { label: string; value: ReactNode; 
 
 export function Pill({ tone, children }: { tone: "green" | "amber" | "red" | "gray" | "blue"; children: ReactNode }) {
   const map = {
-    green: "bg-emerald-100 text-emerald-800",
-    amber: "bg-amber-100 text-amber-800",
+    green: "bg-emerald-100 text-emerald-800 dark:text-emerald-300",
+    amber: "bg-amber-100 text-amber-800 dark:text-amber-300",
     red: "bg-destructive/10 text-destructive",
     gray: "bg-muted text-muted-foreground",
     blue: "bg-sky-100 text-sky-800",

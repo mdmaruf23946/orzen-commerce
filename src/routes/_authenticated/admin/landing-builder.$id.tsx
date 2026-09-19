@@ -669,12 +669,12 @@ function LandingEditor() {
 function StatusPill({ status }: { status: string }) {
   const tone =
     status === "active"
-      ? "bg-emerald-500/10 text-emerald-600"
+      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
       : status === "error"
-        ? "bg-red-500/10 text-red-600"
+        ? "bg-red-500/10 text-red-600 dark:text-red-400"
         : status === "released"
           ? "bg-muted text-muted-foreground"
-          : "bg-amber-500/10 text-amber-600";
+          : "bg-amber-500/10 text-amber-600 dark:text-amber-400";
   const label =
     status === "active"
       ? "Live"
@@ -744,7 +744,7 @@ function DomainsPanel({
           hostname on Cloudflare automatically.
         </p>
         {!autoSubdomain && (
-          <p className="rounded-lg bg-amber-500/10 p-2 text-xs text-amber-700">
+          <p className="rounded-lg bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">
             Cloudflare automation is not configured on this platform, so the subdomain will stay
             in “Provisioning” until an administrator connects it.
           </p>

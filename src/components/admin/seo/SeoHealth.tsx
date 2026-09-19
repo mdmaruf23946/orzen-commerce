@@ -7,7 +7,7 @@ export function SeoHealth({ items }: { items: HealthItem[] }) {
       Math.max(items.length, 1)) *
       100,
   );
-  const tone = score >= 80 ? "text-emerald-600" : score >= 50 ? "text-amber-600" : "text-destructive";
+  const tone = score >= 80 ? "text-emerald-600 dark:text-emerald-400" : score >= 50 ? "text-amber-600 dark:text-amber-400" : "text-destructive";
 
   return (
     <section className="space-y-3 rounded-xl border bg-card p-4">
@@ -25,7 +25,7 @@ export function SeoHealth({ items }: { items: HealthItem[] }) {
         {items.map((i) => (
           <li key={i.key} className="flex items-start gap-2">
             {i.state === "ok" ? (
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
             ) : i.state === "warn" ? (
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
             ) : (

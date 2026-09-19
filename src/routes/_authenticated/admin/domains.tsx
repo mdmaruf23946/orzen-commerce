@@ -383,7 +383,7 @@ function Page() {
           {slugState.loading && (
             <span className="text-muted-foreground">Checking availability…</span>
           )}
-          {slugState.ok === true && <span className="text-emerald-600">Available</span>}
+          {slugState.ok === true && <span className="text-emerald-600 dark:text-emerald-400">Available</span>}
           {slugState.ok === false && <span className="text-destructive">{slugState.reason}</span>}
         </div>
         <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/40 px-3 py-2">

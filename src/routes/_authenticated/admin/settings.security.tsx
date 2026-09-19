@@ -127,9 +127,9 @@ function SecuritySettings() {
             <p className="mt-1 text-sm text-muted-foreground">
               {data.email ?? "—"} —{" "}
               {data.emailVerified ? (
-                <span className="font-medium text-green-700">Verified</span>
+                <span className="font-medium text-green-700 dark:text-green-300">Verified</span>
               ) : (
-                <span className="font-medium text-amber-700">Not verified</span>
+                <span className="font-medium text-amber-700 dark:text-amber-300">Not verified</span>
               )}
             </p>
             {!data.emailVerified && (

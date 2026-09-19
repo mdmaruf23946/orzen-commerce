@@ -382,7 +382,7 @@ export function LogsTab({ courier }: { courier?: CourierKey }) {
         <details key={l.id} className="border-b p-3 text-xs last:border-0">
           <summary className="cursor-pointer">
             <span className="font-medium">{courierLabel(l.courier_key)}</span> · {l.action} ·{" "}
-            <span className={l.ok ? "text-emerald-600" : "text-destructive"}>{l.ok ? "OK" : "Error"}</span> ·{" "}
+            <span className={l.ok ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}>{l.ok ? "OK" : "Error"}</span> ·{" "}
             {new Date(l.created_at).toLocaleString()}
           </summary>
           <pre className="mt-2 max-h-56 overflow-auto rounded bg-muted p-2 text-[10px]">

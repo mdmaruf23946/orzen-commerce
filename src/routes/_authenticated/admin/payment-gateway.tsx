@@ -226,7 +226,7 @@ function PaymentGatewayPage() {
               </div>
             ) : (
               <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-700">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-700 dark:text-amber-300">
                   <AlertTriangle className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
@@ -389,7 +389,7 @@ function GatewayCard({
         </div>
 
         {!g.storefrontCheckout && (
-          <div className="rounded-md border border-amber-200 bg-amber-50 p-2 text-[11px] leading-snug text-amber-800">
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-2 text-[11px] leading-snug text-amber-800 dark:text-amber-300">
             Storefront checkout for {g.label} is coming soon. You can save and test your credentials
             now — the gateway stays hidden at checkout until live payment routing ships.
           </div>
@@ -832,7 +832,7 @@ function ConfigureForm({
 
       <div className="my-4 space-y-4">
         {hasExisting && (
-          <div className="flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">
+          <div className="flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 dark:text-emerald-300">
             <Info className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
               Existing credentials are encrypted and hidden. Leave a field blank to keep its current value; type a new

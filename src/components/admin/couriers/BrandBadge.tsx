@@ -46,14 +46,14 @@ export function BrandBadge({ meta, logoUrl }: { meta: CourierMeta; logoUrl?: str
 export function StatusChip({ status }: { status?: string | null }) {
   if (status === "connected") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
         <CheckCircle2 className="h-3 w-3" /> Connected
       </span>
     );
   }
   if (status === "error") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700">
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700 dark:text-red-300">
         <XCircle className="h-3 w-3" /> Error
       </span>
     );

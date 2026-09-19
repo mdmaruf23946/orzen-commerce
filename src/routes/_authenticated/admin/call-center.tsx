@@ -85,9 +85,9 @@ function CallCenterPage() {
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
         <Stat icon={PhoneCall} label="Calls Today" value={stats?.total ?? 0} />
-        <Stat icon={Phone} label="Answered" value={stats?.answered ?? 0} tone="text-emerald-600" />
-        <Stat icon={PhoneMissed} label="Missed" value={stats?.missed ?? 0} tone="text-amber-600" />
-        <Stat icon={PhoneOff} label="Busy" value={stats?.busy ?? 0} tone="text-violet-600" />
+        <Stat icon={Phone} label="Answered" value={stats?.answered ?? 0} tone="text-emerald-600 dark:text-emerald-400" />
+        <Stat icon={PhoneMissed} label="Missed" value={stats?.missed ?? 0} tone="text-amber-600 dark:text-amber-400" />
+        <Stat icon={PhoneOff} label="Busy" value={stats?.busy ?? 0} tone="text-violet-600 dark:text-violet-400" />
         <Stat icon={PhoneOff} label="Failed" value={stats?.failed ?? 0} tone="text-destructive" />
         <Stat icon={Clock} label="Total Duration" value={formatDuration(stats?.duration_sec ?? 0)} />
       </div>
@@ -289,10 +289,10 @@ function ProviderCard() {
   const state = data?.status ?? "not_connected";
   const tone =
     state === "connected"
-      ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
       : state === "error"
         ? "bg-destructive/10 text-destructive border-destructive/20"
-        : "bg-amber-500/10 text-amber-600 border-amber-500/20";
+        : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
 
   async function refresh() {
     await qc.invalidateQueries({ queryKey: ["call-center", "provider"] });

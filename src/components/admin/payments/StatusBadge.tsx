@@ -14,14 +14,14 @@ export function StatusBadge({ status, color }: { status: GatewayStatus; color?: 
   }
   if (status === "connected") {
     return (
-      <span className={`${base} bg-emerald-100 text-emerald-700`}>
+      <span className={`${base} bg-emerald-100 text-emerald-700 dark:text-emerald-300`}>
         <CheckCircle2 className="h-3 w-3" /> Connected
       </span>
     );
   }
   if (status === "error") {
     return (
-      <span className={`${base} bg-red-100 text-red-700`}>
+      <span className={`${base} bg-red-100 text-red-700 dark:text-red-300`}>
         <XCircle className="h-3 w-3" /> Error
       </span>
     );

@@ -519,7 +519,7 @@ function AdminMessenger() {
               </p>
             )}
             {privacySaved && privacyValid && (
-              <p className="mt-1 flex items-center gap-1 text-xs text-emerald-600">
+              <p className="mt-1 flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 className="h-3.5 w-3.5" /> Saved
               </p>
             )}
@@ -547,7 +547,7 @@ function AdminMessenger() {
               <p className="mt-1 text-xs text-destructive">Must be a valid HTTPS URL</p>
             )}
             {termsSaved && termsValid && (
-              <p className="mt-1 flex items-center gap-1 text-xs text-emerald-600">
+              <p className="mt-1 flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 className="h-3.5 w-3.5" /> Saved
               </p>
             )}
@@ -680,7 +680,7 @@ function AdminMessenger() {
               return (
                 <li key={s} className="flex items-center gap-2">
                   {has ? (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                   ) : (
                     <XCircle className="h-4 w-4 text-muted-foreground" />
                   )}
@@ -795,7 +795,7 @@ function AdminMessenger() {
               {log.map((e, i) => (
                 <li key={i} className="flex items-start gap-2">
                   {e.ok ? (
-                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-emerald-600" />
+                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                   ) : (
                     <XCircle className="mt-0.5 h-3.5 w-3.5 text-destructive" />
                   )}

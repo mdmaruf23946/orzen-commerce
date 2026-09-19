@@ -47,7 +47,7 @@ function ReturnPage() {
       <div className="rounded-2xl border bg-card p-6 text-center shadow-sm">
         {missingRef ? (
           <>
-            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-amber-100 text-amber-700">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-amber-100 text-amber-700 dark:text-amber-300">
               <XCircle className="h-8 w-8" />
             </div>
             <h1 className="mt-3 text-lg font-semibold">No payment reference</h1>
@@ -65,7 +65,7 @@ function ReturnPage() {
           </>
         ) : paid ? (
           <>
-            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-700">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-700 dark:text-emerald-300">
               <CheckCircle2 className="h-8 w-8" />
             </div>
             <h1 className="mt-3 text-lg font-semibold">
@@ -80,7 +80,7 @@ function ReturnPage() {
           </>
         ) : (
           <>
-            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-red-100 text-red-700">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-red-100 text-red-700 dark:text-red-300">
               <XCircle className="h-8 w-8" />
             </div>
             <h1 className="mt-3 text-lg font-semibold">Payment not completed</h1>

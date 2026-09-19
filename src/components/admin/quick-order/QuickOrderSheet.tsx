@@ -286,7 +286,7 @@ export function QuickOrderSheet({
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
           {done ? (
             <div className="flex flex-col items-center gap-3 py-10 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:text-emerald-300">
                 <Check className="h-6 w-6" />
               </div>
               <div>

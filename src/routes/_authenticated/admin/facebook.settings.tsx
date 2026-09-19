@@ -213,7 +213,7 @@ function SettingsPage() {
             <Field label="Verify token" value={page.webhook.verify_token ?? "—"} />
 
             {!page.has_app_secret && (
-              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] text-amber-700">
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] text-amber-700 dark:text-amber-300">
                 Live sync needs your <b>App secret</b> — incoming events are signed by Meta and are rejected without it.
                 Disconnect and reconnect the page with the App ID and App secret filled in.
               </div>
@@ -222,7 +222,7 @@ function SettingsPage() {
             <div className="flex flex-col gap-2 rounded-xl border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-[11px] text-muted-foreground">
                 Page subscription:{" "}
-                <b className={sub.data ? (sub.data.subscribed ? "text-emerald-600" : "text-amber-600") : ""}>
+                <b className={sub.data ? (sub.data.subscribed ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400") : ""}>
                   {sub.isFetching ? "checking…" : sub.data ? (sub.data.subscribed ? `active (${sub.data.fields.join(", ")})` : "not subscribed") : "unknown"}
                 </b>
               </div>

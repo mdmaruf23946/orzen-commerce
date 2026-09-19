@@ -201,7 +201,7 @@ function CheckoutPage() {
           <ArrowLeft className="h-4 w-4" /> Back to billing
         </Link>
         <div className="rounded-2xl border bg-card p-6 text-center shadow-sm">
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-700">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-700 dark:text-emerald-300">
             <CheckCircle2 className="h-7 w-7" />
           </div>
           <h1 className="mt-4 text-xl font-semibold">Payment request submitted</h1>
@@ -237,7 +237,7 @@ function CheckoutPage() {
           <ArrowLeft className="h-4 w-4" /> Back to billing
         </Link>
         <div className="rounded-2xl border bg-card p-6 text-center shadow-sm">
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-700">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-700 dark:text-emerald-300">
             <CheckCircle2 className="h-7 w-7" />
           </div>
           <h1 className="mt-4 text-xl font-semibold">{pkg.name}</h1>
@@ -284,7 +284,7 @@ function CheckoutPage() {
         <div className="mt-1 flex items-center justify-between text-sm text-muted-foreground">
           <span>{CYCLE_LABEL[cycle]} · {calc.months} mo</span>
           {calc.discountPct > 0 && (
-            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
               Save {calc.discountPct}%
             </span>
           )}
@@ -434,7 +434,7 @@ function CheckoutPage() {
                 placeholder="01XXXXXXXXX"
                 className="h-11"
               />
-              {errors.sender && <p className="text-xs text-red-600">{errors.sender}</p>}
+              {errors.sender && <p className="text-xs text-red-600 dark:text-red-400">{errors.sender}</p>}
             </div>
 
             <div className="space-y-1.5">
@@ -446,7 +446,7 @@ function CheckoutPage() {
                 placeholder="e.g. 9A7B2C3D4E"
                 className="h-11 font-mono"
               />
-              {errors.txn && <p className="text-xs text-red-600">{errors.txn}</p>}
+              {errors.txn && <p className="text-xs text-red-600 dark:text-red-400">{errors.txn}</p>}
             </div>
 
             <div className="space-y-1.5">
@@ -459,7 +459,7 @@ function CheckoutPage() {
                 placeholder="you@example.com"
                 className="h-11"
               />
-              {errors.email && <p className="text-xs text-red-600">{errors.email}</p>}
+              {errors.email && <p className="text-xs text-red-600 dark:text-red-400">{errors.email}</p>}
             </div>
 
             <div className="space-y-1.5">

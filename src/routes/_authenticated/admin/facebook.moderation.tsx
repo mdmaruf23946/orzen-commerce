@@ -40,15 +40,15 @@ const TABS: { key: Status; label: string }[] = [
 ];
 
 const ACTION_META: Record<string, { label: string; icon: typeof Trash2; cap: string; tone: string }> = {
-  reply: { label: "Post a public reply", icon: MessageSquare, cap: "reply_comment", tone: "text-blue-600" },
-  hide: { label: "Hide this comment", icon: EyeOff, cap: "hide_comment", tone: "text-amber-600" },
+  reply: { label: "Post a public reply", icon: MessageSquare, cap: "reply_comment", tone: "text-blue-600 dark:text-blue-400" },
+  hide: { label: "Hide this comment", icon: EyeOff, cap: "hide_comment", tone: "text-amber-600 dark:text-amber-400" },
   delete: { label: "Delete this comment", icon: Trash2, cap: "delete_comment", tone: "text-destructive" },
   block: { label: "Block this person", icon: Ban, cap: "block_user", tone: "text-destructive" },
 };
 
 const STATUS_STYLE: Record<string, string> = {
-  pending: "bg-amber-500/10 text-amber-600",
-  approved: "bg-emerald-500/10 text-emerald-600",
+  pending: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+  approved: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
   rejected: "bg-muted text-muted-foreground",
   failed: "bg-destructive/10 text-destructive",
 };

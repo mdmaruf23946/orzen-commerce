@@ -67,7 +67,7 @@ function HandoffQueuePage() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <p className="line-clamp-1 text-sm font-semibold">{c.customer_name ?? "Customer"}</p>
-                  <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium uppercase text-amber-600">
+                  <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium uppercase text-amber-600 dark:text-amber-400">
                     {c.channel ?? "chat"}
                   </span>
                 </div>

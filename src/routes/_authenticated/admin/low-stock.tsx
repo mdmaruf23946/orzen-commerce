@@ -78,7 +78,7 @@ function LowStockPage() {
               <div className="min-w-0 flex-1">
                 <p className="line-clamp-1 text-sm font-medium">{a.products?.name ?? "Deleted product"}</p>
                 <p className="text-xs text-muted-foreground">
-                  Stock <span className={a.current_stock === 0 ? "font-semibold text-destructive" : "font-semibold text-amber-600"}>{a.current_stock}</span>
+                  Stock <span className={a.current_stock === 0 ? "font-semibold text-destructive" : "font-semibold text-amber-600 dark:text-amber-400"}>{a.current_stock}</span>
                   {" "}· threshold {a.threshold} · alerted {new Date(a.created_at).toLocaleString()}
                 </p>
               </div>

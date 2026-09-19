@@ -211,7 +211,7 @@ function Detail() {
                         <span className="font-mono">{l.external_order_id ?? l.order_id?.slice(0, 8) ?? "—"}</span>
                         {l.processing_ms != null && <span className="text-muted-foreground">{l.processing_ms}ms</span>}
                       </div>
-                      {l.error && <div className="mt-1 text-red-600">{l.error}</div>}
+                      {l.error && <div className="mt-1 text-red-600 dark:text-red-400">{l.error}</div>}
                     </div>
                     <div className="text-muted-foreground">{new Date(l.received_at).toLocaleString()}</div>
                   </li>

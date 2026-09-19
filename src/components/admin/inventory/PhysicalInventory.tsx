@@ -57,7 +57,7 @@ export function PhysicalInventory({ search }: { search: string }) {
       { label: "Products", value: all.length },
       { label: "Units in stock", value: units },
       { label: "Stock value", value: money(value) },
-      { label: "Low stock", value: low, tone: low ? "text-amber-600" : "" },
+      { label: "Low stock", value: low, tone: low ? "text-amber-600 dark:text-amber-400" : "" },
       { label: "Out of stock", value: out, tone: out ? "text-destructive" : "" },
     ];
   }, [items]);
@@ -141,7 +141,7 @@ export function PhysicalInventory({ search }: { search: string }) {
                       { label: "Price", value: money(p.price) },
                       {
                         label: "Profit / unit",
-                        value: <span className={profit >= 0 ? "text-emerald-600" : "text-destructive"}>{money(profit)}</span>,
+                        value: <span className={profit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}>{money(profit)}</span>,
                       },
                     ]}
                   />
@@ -171,7 +171,7 @@ export function PhysicalInventory({ search }: { search: string }) {
                     <div className="truncate text-sm font-medium">{m.product_name}</div>
                     <div className="text-[11px] text-muted-foreground">{fmtDate(m.created_at)}</div>
                   </div>
-                  <div className={`shrink-0 font-mono text-sm ${m.delta >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                  <div className={`shrink-0 font-mono text-sm ${m.delta >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
                     {m.delta > 0 ? `+${m.delta}` : m.delta}
                   </div>
                 </div>

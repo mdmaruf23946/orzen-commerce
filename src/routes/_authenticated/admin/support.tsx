@@ -102,7 +102,7 @@ function SupportPage() {
                       {new Date(t.updated_at ?? t.created_at).toLocaleString()} · {t.priority}
                     </div>
                   </div>
-                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${t.status === "closed" ? "bg-muted text-muted-foreground" : "bg-emerald-500/10 text-emerald-600"}`}>
+                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${t.status === "closed" ? "bg-muted text-muted-foreground" : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"}`}>
                     {t.status}
                   </span>
                 </button>

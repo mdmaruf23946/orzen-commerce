@@ -58,7 +58,7 @@ export function Counter({ value, min, max }: { value: string; min: number; max: 
   const n = (value ?? "").length;
   const good = n >= min && n <= max;
   return (
-    <p className={`text-xs ${n === 0 ? "text-muted-foreground" : good ? "text-emerald-600" : "text-amber-600"}`}>
+    <p className={`text-xs ${n === 0 ? "text-muted-foreground" : good ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
       {n} / {max} characters{n === 0 ? " · automatic value will be used" : good ? "" : ` · best ${min}–${max}`}
     </p>
   );

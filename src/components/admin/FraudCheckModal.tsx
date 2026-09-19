@@ -20,9 +20,9 @@ type Props = {
 export function RiskBadge({ risk }: { risk: "safe" | "medium" | "high" | null | undefined }) {
   if (!risk) return null;
   const cls =
-    risk === "safe" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" :
-    risk === "medium" ? "bg-amber-500/10 text-amber-600 border-amber-500/30" :
-    "bg-red-500/10 text-red-600 border-red-500/30";
+    risk === "safe" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" :
+    risk === "medium" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30" :
+    "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30";
   const Icon = risk === "safe" ? ShieldCheck : risk === "medium" ? AlertTriangle : ShieldAlert;
   const label = risk === "safe" ? "Safe" : risk === "medium" ? "Medium Risk" : "High Risk";
   return (
@@ -279,15 +279,15 @@ export function FraudCheckModal({ open, onOpenChange, phone, orderId }: Props) {
                       >
                         <CourierLogo c={r.c} />
                         <span className="text-right tabular-nums">{r.total}</span>
-                        <span className="text-right font-medium tabular-nums text-emerald-600">{r.success}</span>
-                        <span className="text-right font-medium tabular-nums text-red-600">{r.cancelled}</span>
+                        <span className="text-right font-medium tabular-nums text-emerald-600 dark:text-emerald-400">{r.success}</span>
+                        <span className="text-right font-medium tabular-nums text-red-600 dark:text-red-400">{r.cancelled}</span>
                       </li>
                     ))}
                     <li className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,0.6fr)_minmax(0,0.7fr)_minmax(0,0.7fr)] items-center gap-2 bg-muted/40 px-3 py-2.5 text-sm font-semibold">
                       <span>Total</span>
                       <span className="text-right tabular-nums">{total}</span>
-                      <span className="text-right tabular-nums text-emerald-600">{success}</span>
-                      <span className="text-right tabular-nums text-red-600">{cancelled}</span>
+                      <span className="text-right tabular-nums text-emerald-600 dark:text-emerald-400">{success}</span>
+                      <span className="text-right tabular-nums text-red-600 dark:text-red-400">{cancelled}</span>
                     </li>
                   </ul>
                 </div>

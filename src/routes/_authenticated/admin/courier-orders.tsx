@@ -294,7 +294,7 @@ function CourierOrdersPage() {
                 </span>
               )}
               {c.sandbox && (
-                <span className="rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-600">
+                <span className="rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-600 dark:text-amber-400">
                   Test mode
                 </span>
               )}

@@ -236,7 +236,7 @@ export function ImportDialog({ open, onOpenChange, onDone }: { open: boolean; on
                         <TableCell>{v.raw.sku ?? "—"}</TableCell>
                         <TableCell>{v.raw.price ?? "—"}</TableCell>
                         <TableCell>{v.raw.stock ?? "—"}</TableCell>
-                        <TableCell className="text-xs text-red-600">{v.reason ?? ""}</TableCell>
+                        <TableCell className="text-xs text-red-600 dark:text-red-400">{v.reason ?? ""}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -350,7 +350,7 @@ function ModeOption({ v, cur, title, desc }: { v: string; cur: string; title: st
 }
 
 function Stat({ label, value, tone }: { label: string; value: number; tone?: "green" | "blue" | "amber" | "red" }) {
-  const cls = tone === "green" ? "text-green-600" : tone === "blue" ? "text-blue-600" : tone === "amber" ? "text-amber-600" : tone === "red" ? "text-red-600" : "";
+  const cls = tone === "green" ? "text-green-600 dark:text-green-400" : tone === "blue" ? "text-blue-600 dark:text-blue-400" : tone === "amber" ? "text-amber-600 dark:text-amber-400" : tone === "red" ? "text-red-600 dark:text-red-400" : "";
   return (
     <div className="border rounded-lg p-3 text-center">
       <div className={`text-2xl font-bold ${cls}`}>{value}</div>

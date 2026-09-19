@@ -448,7 +448,7 @@ function BillingPage() {
                     return (
                       <li key={k} className="flex items-start gap-2">
                         {on ? (
-                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
                         ) : (
                           <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
                         )}
@@ -468,7 +468,7 @@ function BillingPage() {
                       return (
                         <li key={k} className="flex items-start gap-1.5">
                           {on ? (
-                            <Check className="mt-0.5 h-3 w-3 shrink-0 text-emerald-600" />
+                            <Check className="mt-0.5 h-3 w-3 shrink-0 text-emerald-600 dark:text-emerald-400" />
                           ) : (
                             <X className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground/50" />
                           )}
@@ -553,7 +553,7 @@ function BillingPage() {
                     return (
                       <td key={p.id} className="p-3 text-center">
                         {on ? (
-                          <Check className="mx-auto h-4 w-4 text-emerald-600" />
+                          <Check className="mx-auto h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                         ) : (
                           <X className="mx-auto h-4 w-4 text-muted-foreground/50" />
                         )}
@@ -592,7 +592,7 @@ function BillingPage() {
                     return (
                       <li key={k} className="flex items-center justify-between gap-3">
                         <span className="text-muted-foreground">{FEATURE_LABELS[k]}</span>
-                        {on ? <Check className="h-4 w-4 text-emerald-600" /> : <X className="h-4 w-4 text-muted-foreground/50" />}
+                        {on ? <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <X className="h-4 w-4 text-muted-foreground/50" />}
                       </li>
                     );
                   })}
