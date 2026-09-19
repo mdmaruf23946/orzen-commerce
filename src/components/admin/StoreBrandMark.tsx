@@ -67,7 +67,7 @@ export function StoreBrandMark({
             src={wordmark.url}
             alt="ORZEN"
             style={{ height: wordSize, width: "auto" }}
-            className="object-contain"
+            className={cn("object-contain", invertWordmark && "brightness-0 invert")}
           />
         ) : (
           <span className="font-black tracking-tight" style={{ fontSize: wordSize }}>
