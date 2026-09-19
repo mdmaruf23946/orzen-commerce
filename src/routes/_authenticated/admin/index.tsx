@@ -219,10 +219,10 @@ function Dashboard() {
             />
           </div>
           <div className="mt-5 grid grid-cols-2 gap-3">
-            <MiniStat icon={Package} label="Products" value={data.products.total} tone="text-slate-700" />
-            <MiniStat icon={PackageCheck} label="Active" value={data.products.active} tone="text-emerald-600" />
-            <MiniStat icon={AlertTriangle} label="Low Stock" value={data.products.lowStock} tone="text-amber-600" />
-            <MiniStat icon={PackageX} label="Out" value={data.products.outOfStock} tone="text-red-600" />
+            <MiniStat icon={Package} label="Products" value={data.products.total} tone="text-slate-700 dark:text-slate-200" />
+            <MiniStat icon={PackageCheck} label="Active" value={data.products.active} tone="text-emerald-600 dark:text-emerald-400" />
+            <MiniStat icon={AlertTriangle} label="Low Stock" value={data.products.lowStock} tone="text-amber-600 dark:text-amber-400" />
+            <MiniStat icon={PackageX} label="Out" value={data.products.outOfStock} tone="text-red-600 dark:text-red-400" />
           </div>
         </Card>
       </div>
@@ -319,11 +319,11 @@ function Dashboard() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <QuickAction onClick={() => setQuickOrderOpen(true)} icon={ShoppingBag} label="Create Order" tone="text-primary bg-primary/10" />
           <QuickAction to="/admin/products" icon={Plus} label="Add Product" tone="text-primary bg-primary/10" />
-          <QuickAction to="/admin/coupons" icon={Ticket} label="Create Coupon" tone="text-emerald-600 bg-emerald-50" />
-          <QuickAction to="/admin/banners" icon={ImageIcon} label="Create Banner" tone="text-violet-600 bg-violet-50" />
-          <QuickAction to="/admin/orders" icon={ShoppingBag} label="View Orders" tone="text-blue-600 bg-blue-50" />
-          <QuickAction to="/admin/messenger-inbox" icon={MessageSquare} label="Messenger Inbox" tone="text-amber-600 bg-amber-50" />
-          <QuickAction onClick={shareStore} icon={Share2} label="Share Store" tone="text-slate-700 bg-slate-100" />
+          <QuickAction to="/admin/coupons" icon={Ticket} label="Create Coupon" tone="text-emerald-600 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/15" />
+          <QuickAction to="/admin/banners" icon={ImageIcon} label="Create Banner" tone="text-violet-600 bg-violet-50 dark:text-violet-300 dark:bg-violet-500/15" />
+          <QuickAction to="/admin/orders" icon={ShoppingBag} label="View Orders" tone="text-blue-600 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/15" />
+          <QuickAction to="/admin/messenger-inbox" icon={MessageSquare} label="Messenger Inbox" tone="text-amber-600 bg-amber-50 dark:text-amber-300 dark:bg-amber-500/15" />
+          <QuickAction onClick={shareStore} icon={Share2} label="Share Store" tone="text-slate-700 bg-slate-100 dark:text-slate-200 dark:bg-slate-500/15" />
         </div>
       </Card>
     </div>
@@ -337,7 +337,9 @@ function StatusPill({ status, sub }: { status: string; sub?: string }) {
   return (
     <span className={cn(
       "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-medium",
-      isActive ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-700"
+      isActive
+        ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300"
+        : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-300"
     )}>
       <span className={cn("h-1.5 w-1.5 rounded-full", isActive ? "bg-emerald-500" : "bg-amber-500")} />
       {isActive ? "Active Store" : (sub || status)}
@@ -346,13 +348,41 @@ function StatusPill({ status, sub }: { status: string; sub?: string }) {
 }
 
 const toneMap: Record<string, { bg: string; text: string; icon: string }> = {
-  emerald: { bg: "bg-emerald-50", text: "text-emerald-600", icon: "text-emerald-600 bg-emerald-100" },
-  blue:    { bg: "bg-blue-50",    text: "text-blue-600",    icon: "text-blue-600 bg-blue-100" },
-  violet:  { bg: "bg-violet-50",  text: "text-violet-600",  icon: "text-violet-600 bg-violet-100" },
-  amber:   { bg: "bg-amber-50",   text: "text-amber-600",   icon: "text-amber-600 bg-amber-100" },
-  indigo:  { bg: "bg-indigo-50",  text: "text-indigo-600",  icon: "text-indigo-600 bg-indigo-100" },
-  red:     { bg: "bg-red-50",     text: "text-red-600",     icon: "text-red-600 bg-red-100" },
-  slate:   { bg: "bg-slate-100",  text: "text-slate-700",   icon: "text-slate-700 bg-slate-200" },
+  emerald: {
+    bg: "bg-emerald-50 dark:bg-emerald-500/10 dark:border-emerald-500/20",
+    text: "text-emerald-600 dark:text-emerald-400",
+    icon: "text-emerald-600 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-500/15 dark:ring-1 dark:ring-emerald-400/20",
+  },
+  blue: {
+    bg: "bg-blue-50 dark:bg-blue-500/10 dark:border-blue-500/20",
+    text: "text-blue-600 dark:text-blue-400",
+    icon: "text-blue-600 bg-blue-100 dark:text-blue-300 dark:bg-blue-500/15 dark:ring-1 dark:ring-blue-400/20",
+  },
+  violet: {
+    bg: "bg-violet-50 dark:bg-violet-500/10 dark:border-violet-500/20",
+    text: "text-violet-600 dark:text-violet-400",
+    icon: "text-violet-600 bg-violet-100 dark:text-violet-300 dark:bg-violet-500/15 dark:ring-1 dark:ring-violet-400/20",
+  },
+  amber: {
+    bg: "bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/20",
+    text: "text-amber-600 dark:text-amber-400",
+    icon: "text-amber-600 bg-amber-100 dark:text-amber-300 dark:bg-amber-500/15 dark:ring-1 dark:ring-amber-400/20",
+  },
+  indigo: {
+    bg: "bg-indigo-50 dark:bg-indigo-500/10 dark:border-indigo-500/20",
+    text: "text-indigo-600 dark:text-indigo-400",
+    icon: "text-indigo-600 bg-indigo-100 dark:text-indigo-300 dark:bg-indigo-500/15 dark:ring-1 dark:ring-indigo-400/20",
+  },
+  red: {
+    bg: "bg-red-50 dark:bg-red-500/10 dark:border-red-500/20",
+    text: "text-red-600 dark:text-red-400",
+    icon: "text-red-600 bg-red-100 dark:text-red-300 dark:bg-red-500/15 dark:ring-1 dark:ring-red-400/20",
+  },
+  slate: {
+    bg: "bg-slate-100 dark:bg-slate-500/10 dark:border-slate-400/20",
+    text: "text-slate-700 dark:text-slate-300",
+    icon: "text-slate-700 bg-slate-200 dark:text-slate-200 dark:bg-slate-500/15 dark:ring-1 dark:ring-slate-400/20",
+  },
 };
 
 function StatCard({
@@ -378,7 +408,9 @@ function StatCard({
           <>
             <span className={cn(
               "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 font-medium",
-              up ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700",
+              up
+                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+                : "bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300",
             )}>
               {up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
               {Math.abs(trend)}%
@@ -537,12 +569,12 @@ function Ring({ label, value, max, suffix = "%", display, icon }: { label: strin
 
 function OrderStatusPill({ status }: { status: string }) {
   const map: Record<string, string> = {
-    pending: "bg-amber-50 text-amber-700 border-amber-200",
-    confirmed: "bg-blue-50 text-blue-700 border-blue-200",
-    processing: "bg-indigo-50 text-indigo-700 border-indigo-200",
-    delivered: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    cancelled: "bg-red-50 text-red-700 border-red-200",
-    returned: "bg-slate-100 text-slate-700 border-slate-200",
+    pending: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/25",
+    confirmed: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/25",
+    processing: "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-300 dark:border-indigo-500/25",
+    delivered: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/25",
+    cancelled: "bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-300 dark:border-red-500/25",
+    returned: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-500/10 dark:text-slate-300 dark:border-slate-400/25",
   };
   return (
     <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium capitalize", map[status] ?? "bg-muted")}>
@@ -553,9 +585,9 @@ function OrderStatusPill({ status }: { status: string }) {
 
 function NotifIcon({ type }: { type: string }) {
   const cls = "grid h-9 w-9 shrink-0 place-items-center rounded-xl";
-  if (type === "order") return <span className={cn(cls, "bg-blue-50 text-blue-600")}><ShoppingBag className="h-4 w-4" /></span>;
-  if (type === "low-stock") return <span className={cn(cls, "bg-amber-50 text-amber-600")}><AlertTriangle className="h-4 w-4" /></span>;
-  if (type === "subscription") return <span className={cn(cls, "bg-red-50 text-red-600")}><Clock className="h-4 w-4" /></span>;
+  if (type === "order") return <span className={cn(cls, "bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300")}><ShoppingBag className="h-4 w-4" /></span>;
+  if (type === "low-stock") return <span className={cn(cls, "bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300")}><AlertTriangle className="h-4 w-4" /></span>;
+  if (type === "subscription") return <span className={cn(cls, "bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300")}><Clock className="h-4 w-4" /></span>;
   return <span className={cn(cls, "bg-muted text-foreground")}><Bell className="h-4 w-4" /></span>;
 }
 
@@ -587,16 +619,16 @@ function InboxTile() {
     refetchInterval: 30_000,
   });
   const items: { label: string; value: number; tone: string }[] = [
-    { label: "Unread", value: data?.unread ?? 0, tone: "text-blue-600" },
-    { label: "AI", value: data?.ai_replied ?? 0, tone: "text-violet-600" },
-    { label: "Human", value: data?.human_replied ?? 0, tone: "text-amber-600" },
-    { label: "Failed", value: data?.failed ?? 0, tone: "text-red-600" },
+    { label: "Unread", value: data?.unread ?? 0, tone: "text-blue-600 dark:text-blue-400" },
+    { label: "AI", value: data?.ai_replied ?? 0, tone: "text-violet-600 dark:text-violet-400" },
+    { label: "Human", value: data?.human_replied ?? 0, tone: "text-amber-600 dark:text-amber-400" },
+    { label: "Failed", value: data?.failed ?? 0, tone: "text-red-600 dark:text-red-400" },
   ];
   return (
     <Card>
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="grid h-8 w-8 place-items-center rounded-xl bg-violet-50 text-violet-600">
+          <span className="grid h-8 w-8 place-items-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
             <Bot className="h-4 w-4" />
           </span>
           <h2 className="text-base font-semibold tracking-tight">Messenger</h2>

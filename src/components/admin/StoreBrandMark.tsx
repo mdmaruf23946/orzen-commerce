@@ -33,10 +33,16 @@ export function StoreBrandMark({
   const wordSize = compact ? 22 : 28;
 
   const assets = platform?.assets ?? {};
-  const logo =
-    (isDark ? assets.darkLogo : assets.lightLogo) ?? assets.primaryLogo ?? null;
+  const darkLogo = isDark ? assets.darkLogo : null;
+  const darkWordmark = isDark ? assets.darkWordmark : null;
+  const logo = darkLogo ?? (isDark ? null : assets.lightLogo) ?? assets.primaryLogo ?? null;
   const wordmark =
-    (isDark ? assets.darkWordmark : assets.lightWordmark) ?? assets.primaryWordmark ?? null;
+    darkWordmark ?? (isDark ? null : assets.lightWordmark) ?? assets.primaryWordmark ?? null;
+
+  // When no dedicated dark asset exists, the light artwork (dark ink on a
+  // transparent background) disappears against the dark sidebar. Invert it to
+  // a crisp white so the brand stays legible.
+  const invertWordmark = isDark && !darkWordmark;
 
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
@@ -61,7 +67,7 @@ export function StoreBrandMark({
             src={wordmark.url}
             alt="ORZEN"
             style={{ height: wordSize, width: "auto" }}
-            className="object-contain"
+            className={cn("object-contain", invertWordmark && "brightness-0 invert")}
           />
         ) : (
           <span className="font-black tracking-tight" style={{ fontSize: wordSize }}>
