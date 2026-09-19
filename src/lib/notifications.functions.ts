@@ -185,16 +185,17 @@ export const sendCampaign = createServerFn({ method: "POST" })
       // Email
       if (wantEmail && r.email && !r.email.endsWith("@demo-orzen.test")) {
         try {
-          const { sendBrevoEmail, platformEmailShell } = await import("@/lib/brevo.server");
+           const { sendBrevoEmail, renderPlatformEmail } = await import("@/lib/brevo.server");
           await sendBrevoEmail({
             to: r.email,
             subject: campaign.title,
-            html: platformEmailShell({
+            html: await renderPlatformEmail({
               title: campaign.title,
               bodyHtml: campaign.body_html ?? "",
               actionLabel: campaign.action_label,
               actionUrl: buildActionUrl(campaign.action_type, campaign.action_target),
               preheader: stripHtml(campaign.body_html ?? "").slice(0, 120),
+              kind: "platform",
             }),
             tags: ["platform", "campaign"],
           });

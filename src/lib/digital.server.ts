@@ -287,27 +287,6 @@ export async function sendDigitalDeliveryEmail(sb: Sb, orderId: string) {
   const lById = new Map((licenses ?? []).map((l: any) => [l.id, l]));
 
   const orderUrl = `${BASE_URL}/store/${(store as any)?.slug ?? ""}/order/${orderId}`;
-  const rows = ents
-    .map((e: any) => {
-      const p = pById.get(e.product_id);
-      const lic = e.license_id ? lById.get(e.license_id) : null;
-      const version = (p?.meta as any)?.digital?.version;
-      return `<tr><td style="padding:10px 0;border-bottom:1px solid #eee">
-        <strong>${p?.name ?? "Product"}</strong>${version ? ` <span style="color:#888">v${version}</span>` : ""}
-        ${lic ? `<div style="font-family:monospace;font-size:12px;color:#444">License: ${lic.license_key} (${lic.license_type})</div>` : ""}
-      </td></tr>`;
-    })
-    .join("");
-
-  const html = `<div style="font-family:system-ui,sans-serif;max-width:560px;margin:auto">
-    <h2>Your download is ready</h2>
-    <p>Hi ${order.customer_name ?? "there"}, thank you for your purchase from ${(store as any)?.name ?? "our store"}.</p>
-    <table style="width:100%;border-collapse:collapse">${rows}</table>
-    <p style="margin:24px 0"><a href="${orderUrl}" style="background:#111;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none">Download now</a></p>
-    <p style="font-size:12px;color:#666">Order ${String(order.invoice_no ?? order.id).slice(0, 12).toUpperCase()} · ${new Date(order.created_at as string).toLocaleString()}</p>
-    <p style="font-size:12px;color:#666">Need help? Reply to this email and our support team will get back to you.</p>
-  </div>`;
-
   const licenseText = ents.map((e: any) => {
     const p = pById.get(e.product_id);
     const lic = e.license_id ? lById.get(e.license_id) : null;
@@ -321,7 +300,6 @@ export async function sendDigitalDeliveryEmail(sb: Sb, orderId: string) {
     message: `Hi ${order.customer_name ?? "there"}, your purchase from ${(store as any)?.name ?? "the store"} is ready.\n\n${licenseText}\n\nDownload: ${orderUrl}`,
     customer: { email: order.email as string, phone: order.phone as string | null },
   });
-  void html;
   if (delivery.attempted === 0) return { sent: false };
   await logDigitalEvent(sb, {
     storeId: order.store_id as string,

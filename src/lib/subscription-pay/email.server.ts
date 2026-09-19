@@ -2,6 +2,8 @@
 // RESEND_API_KEY + LOVABLE_API_KEY env vars are present; otherwise
 // silently no-ops so the payment flow never fails on email issues.
 
+import { emailInfoRows, escapeHtml, renderPlatformEmail } from "@/lib/brevo.server";
+
 const GATEWAY = "https://connector-gateway.lovable.dev/resend";
 
 type SendOpts = {
@@ -41,7 +43,7 @@ export async function sendSubscriptionEmail(opts: SendOpts): Promise<{ sent: boo
   }
 }
 
-export function receiptEmailHtml(args: {
+export async function receiptEmailHtml(args: {
   customerName: string;
   invoiceNo: string;
   packageName: string;
@@ -50,15 +52,17 @@ export function receiptEmailHtml(args: {
   currency: string;
   invoiceUrl?: string | null;
 }) {
-  return `<div style="font-family:system-ui,sans-serif;color:#111;max-width:560px;margin:0 auto;padding:24px">
-    <h2 style="color:#3b82f6">Payment received</h2>
-    <p>Hi ${args.customerName || "there"},</p>
-    <p>We've received your payment for the <b>${args.packageName}</b> plan (${args.cycle}). Your subscription is now active.</p>
-    <table style="border-collapse:collapse;margin:16px 0">
-      <tr><td style="padding:6px 12px;color:#6b7280">Invoice</td><td style="padding:6px 12px"><b>${args.invoiceNo}</b></td></tr>
-      <tr><td style="padding:6px 12px;color:#6b7280">Amount</td><td style="padding:6px 12px"><b>${args.currency} ${args.total.toLocaleString()}</b></td></tr>
-    </table>
-    ${args.invoiceUrl ? `<p><a href="${args.invoiceUrl}" style="display:inline-block;background:#3b82f6;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">View invoice</a></p>` : ""}
-    <p style="color:#6b7280;font-size:12px;margin-top:24px">— ORZEN</p>
-  </div>`;
+  return renderPlatformEmail({
+    kind: "billing",
+    title: "Payment receipt",
+    preheader: `Payment received — ${args.invoiceNo}`,
+    bodyHtml: `<p style="margin:0 0 12px">${args.customerName ? `${escapeHtml(args.customerName)}, ` : ""}আপনার <strong>${escapeHtml(args.packageName)}</strong> plan (${escapeHtml(args.cycle)})-এর payment পেয়েছি। Subscription এখন active।</p>${emailInfoRows([
+      { label: "Invoice", value: args.invoiceNo },
+      { label: "Plan", value: args.packageName },
+      { label: "Amount", value: `${args.currency} ${args.total.toLocaleString()}` },
+    ])}`,
+    actionLabel: args.invoiceUrl ? "Invoice দেখুন" : null,
+    actionUrl: args.invoiceUrl,
+    sanitizeBody: false,
+  });
 }
