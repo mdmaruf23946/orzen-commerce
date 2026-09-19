@@ -49,7 +49,7 @@ function Chip({ children, className }: { children: React.ReactNode; className?: 
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-black/5 dark:border-white/10 bg-white/70 dark:bg-white/5 px-1.5 py-0.5 sm:px-2 sm:py-1 text-[9px] sm:text-[10px] md:text-[11px] font-medium text-foreground/80",
+        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-black/5 dark:border-white/12 bg-white/70 dark:bg-white/[0.06] px-1.5 py-0.5 sm:px-2 sm:py-1 text-[9px] sm:text-[10px] md:text-[11px] font-medium text-foreground/80",
         className,
       )}
     >
@@ -149,7 +149,7 @@ function StatTile({
   tone: string;
 }) {
   return (
-    <div className="min-w-0 rounded-xl border border-black/5 dark:border-white/10 bg-white/60 dark:bg-white/5 px-2 py-1.5 sm:px-3 sm:py-2">
+    <div className="min-w-0 rounded-xl border border-black/5 dark:border-white/10 bg-white/60 dark:bg-white/[0.04] px-2 py-1.5 shadow-sm dark:shadow-none sm:px-3 sm:py-2">
       <div className="flex min-w-0 items-center gap-1 text-[9px] sm:text-[10px] md:text-[11px] font-medium uppercase tracking-normal md:tracking-wide text-muted-foreground">
         <Icon className={cn("h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0", tone)} />
         <span className="min-w-0 whitespace-nowrap md:whitespace-normal leading-tight">{label}</span>
@@ -185,18 +185,18 @@ export function WelcomeCard(props: WelcomeCardProps) {
   );
 
   const stats = [
-    { icon: ShoppingBag, label: "Orders", value: nFmt(today.orders), tone: "text-blue-600" },
-    { icon: MessageSquare, label: "Messages", value: nFmt(messagesCount), tone: "text-indigo-600" },
-    { icon: Bot, label: "AI Replies", value: nFmt(aiRepliesCount), tone: "text-purple-600" },
-    { icon: TrendingUp, label: "Today's Sales", value: fmtBDT(today.sales), tone: "text-emerald-600" },
+    { icon: ShoppingBag, label: "Orders", value: nFmt(today.orders), tone: "text-blue-600 dark:text-blue-400" },
+    { icon: MessageSquare, label: "Messages", value: nFmt(messagesCount), tone: "text-indigo-600 dark:text-indigo-400" },
+    { icon: Bot, label: "AI Replies", value: nFmt(aiRepliesCount), tone: "text-purple-600 dark:text-purple-400" },
+    { icon: TrendingUp, label: "Today's Sales", value: fmtBDT(today.sales), tone: "text-emerald-600 dark:text-emerald-400" },
   ];
 
   return (
     <section
       className={cn(
         "relative overflow-hidden rounded-[22px] border border-[#ECECEC] dark:border-white/10",
-        "bg-gradient-to-br from-primary/5 via-background to-accent/40 dark:from-primary/10 dark:via-card/70 dark:to-accent/20",
-        "shadow-[0_8px_30px_-12px_rgba(80,70,229,0.18)]",
+        "bg-gradient-to-br from-primary/5 via-background to-accent/40 dark:from-primary/15 dark:via-card dark:to-card",
+        "shadow-[0_8px_30px_-12px_rgba(80,70,229,0.18)] dark:shadow-[0_10px_40px_-20px_rgba(0,0,0,0.9)]",
       )}
     >
       {/* Decorative overlays */}
