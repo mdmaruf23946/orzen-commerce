@@ -609,8 +609,8 @@ function AdminLayout() {
                           activeOptions={l.exact ? { exact: true } : undefined}
                           title={collapsed ? `${l.label}${badgeVal ? ` (${badgeVal})` : ""}` : undefined}
                           className={cn(
-                            "group relative flex flex-1 items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground",
-                            collapsed && "md:justify-center md:px-2",
+                            "group relative flex flex-1 items-center gap-2.5 rounded-lg py-2 pl-9 pr-3 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground",
+                            collapsed && "md:justify-center md:px-2 md:pl-2",
                             itemActive && "bg-primary/10 font-medium text-primary",
                           )}
                         >
@@ -638,7 +638,7 @@ function AdminLayout() {
                         )}
                         </div>
                         {hasChildren && subOpen && (
-                          <div className="ml-5 mt-0.5 space-y-0.5 border-l pl-3">
+                          <div className="ml-[38px] mt-0.5 space-y-0.5 border-l pl-2">
                             {l.children?.map((c) => {
                               const childBadge = c.badgeKey ? counts[c.badgeKey] ?? 0 : 0;
                               return (
@@ -648,8 +648,9 @@ function AdminLayout() {
                                 onClick={() => setOpen(false)}
                                 activeOptions={c.exact ? { exact: true } : undefined}
                                 activeProps={{ className: "bg-primary/10 text-primary font-medium" }}
-                                className="flex min-h-8 items-center rounded-lg px-3 py-1.5 text-[13px] text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                                className="flex min-h-8 items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-muted-foreground transition hover:bg-muted hover:text-foreground"
                               >
+                                <c.icon className="h-4 w-4 shrink-0 opacity-80" />
                                 <span className="truncate">{c.label}</span>
                                 {childBadge > 0 && <CountBadge count={childBadge} label={c.label} />}
                               </Link>
