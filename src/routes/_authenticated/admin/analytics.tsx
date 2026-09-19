@@ -50,6 +50,8 @@ export const Route = createFileRoute("/_authenticated/admin/analytics")({
 
 function AnalyticsPage() {
   const run = useServerFn(storeAnalytics);
+  const runCourier = useServerFn(courierOverview);
+  const runPayment = useServerFn(paymentOverview);
   const { scope, setScope, filter } = useProductTypeScope();
   const [rangeKey, setRangeKey] = useState<AnalyticsRangeKey>("30d");
   const [customRange, setCustomRange] = useState<DateRange>(analyticsRange("this_month"));
