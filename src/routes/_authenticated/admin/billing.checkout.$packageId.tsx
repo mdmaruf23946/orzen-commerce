@@ -414,11 +414,18 @@ function CheckoutPage() {
           </BrandPanel>
 
           {/* Payment form */}
-          <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border bg-card p-5 shadow-sm">
-            <div className="text-sm font-semibold">Confirm your payment</div>
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-4 rounded-2xl border-2 bg-card p-5 shadow-sm"
+            style={{ borderColor: brand.accentColor }}
+          >
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <MethodLogo method={method} className="h-5 w-5" />
+              Confirm your {brand.label} payment
+            </div>
 
             <div className="space-y-1.5">
-              <Label>Sender {method.toUpperCase()} number</Label>
+              <Label>Sender {brand.label} number</Label>
               <Input
                 inputMode="numeric"
                 required
@@ -471,7 +478,8 @@ function CheckoutPage() {
             <Button
               type="submit"
               disabled={saving || !canSubmit}
-              className="h-12 w-full text-base"
+              className="h-12 w-full text-base text-white hover:opacity-90"
+              style={{ background: brand.brandColor }}
             >
               {saving ? "Submitting…" : `Submit Payment · ৳${calc.total.toLocaleString()}`}
             </Button>
