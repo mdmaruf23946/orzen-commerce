@@ -48,6 +48,7 @@ type LinkDef = {
 type ChildLinkDef = {
   to: string;
   label: string;
+  icon: typeof LayoutDashboard;
   exact?: boolean;
   badgeKey?: BadgeKey;
 };
@@ -80,10 +81,10 @@ const menuGroups: NavGroupDef[] = [
         icon: Truck,
         badgeKey: "delivery",
         children: [
-          { to: "/admin/courier-orders", label: "Courier Orders", badgeKey: "delivery" },
-          { to: "/admin/parcels", label: "Courier Parcels", badgeKey: "delivery" },
-          { to: "/admin/couriers", label: "Courier Setup", badgeKey: "delivery" },
-          { to: "/admin/delivery", label: "Delivery Zones", badgeKey: "delivery" },
+          { to: "/admin/courier-orders", label: "Courier Orders", icon: ClipboardList, badgeKey: "delivery" },
+          { to: "/admin/parcels", label: "Courier Parcels", icon: PackageOpen, badgeKey: "delivery" },
+          { to: "/admin/couriers", label: "Courier Setup", icon: Truck, badgeKey: "delivery" },
+          { to: "/admin/delivery", label: "Delivery Zones", icon: Radar, badgeKey: "delivery" },
         ],
       },
       { to: "/admin/returns", label: "Returns & Exchanges", icon: RotateCcw, badgeKey: "returns" },
@@ -101,8 +102,8 @@ const menuGroups: NavGroupDef[] = [
         icon: Boxes,
         badgeKey: "low_stock",
         children: [
-          { to: "/admin/inventory", label: "Inventory" },
-          { to: "/admin/low-stock", label: "Low Stock Alerts", badgeKey: "low_stock" },
+          { to: "/admin/inventory", label: "Inventory", icon: Boxes },
+          { to: "/admin/low-stock", label: "Low Stock Alerts", icon: AlertTriangle, badgeKey: "low_stock" },
         ],
       },
       {
@@ -110,8 +111,8 @@ const menuGroups: NavGroupDef[] = [
         label: "Catalogue Tools",
         icon: ClipboardList,
         children: [
-          { to: "/admin/product-defaults", label: "Product Defaults" },
-          { to: "/admin/import-export", label: "Import / Export" },
+          { to: "/admin/product-defaults", label: "Product Defaults", icon: ClipboardList },
+          { to: "/admin/import-export", label: "Import / Export", icon: FileUp },
         ],
       },
     ],
@@ -126,8 +127,8 @@ const menuGroups: NavGroupDef[] = [
         icon: Users,
         badgeKey: "customers",
         children: [
-          { to: "/admin/customers", label: "Customers", badgeKey: "customers" },
-          { to: "/admin/customers-accounts", label: "Customer Accounts", badgeKey: "customers" },
+          { to: "/admin/customers", label: "Customers", icon: Users, badgeKey: "customers" },
+          { to: "/admin/customers-accounts", label: "Customer Accounts", icon: UserCog, badgeKey: "customers" },
         ],
       },
       {
@@ -135,8 +136,8 @@ const menuGroups: NavGroupDef[] = [
         label: "Call Center",
         icon: PhoneCall,
         children: [
-          { to: "/admin/call-center", label: "Manual Call Center" },
-          { to: "/admin/ai-call-center", label: "AI Call Center" },
+          { to: "/admin/call-center", label: "Manual Call Center", icon: PhoneCall },
+          { to: "/admin/ai-call-center", label: "AI Call Center", icon: Bot },
         ],
       },
       { to: "/admin/duplicate-protection", label: "Duplicate Protection", icon: ShieldCheck, badgeKey: "duplicate_protection" },
@@ -152,9 +153,9 @@ const menuGroups: NavGroupDef[] = [
         icon: MessageSquare,
         badgeKey: "messenger",
         children: [
-          { to: "/admin/messenger-inbox", label: "Messenger Inbox", badgeKey: "messenger" },
-          { to: "/admin/whatsapp-inbox", label: "WhatsApp Inbox" },
-          { to: "/admin/handoff-queue", label: "Handoff Queue", badgeKey: "handoff" },
+          { to: "/admin/messenger-inbox", label: "Messenger Inbox", icon: MessageSquare, badgeKey: "messenger" },
+          { to: "/admin/whatsapp-inbox", label: "WhatsApp Inbox", icon: MessageCircle },
+          { to: "/admin/handoff-queue", label: "Handoff Queue", icon: Headphones, badgeKey: "handoff" },
         ],
       },
       {
@@ -162,8 +163,8 @@ const menuGroups: NavGroupDef[] = [
         label: "Channel Setup",
         icon: MessageCircle,
         children: [
-          { to: "/admin/messenger", label: "Messenger" },
-          { to: "/admin/whatsapp", label: "WhatsApp Integration" },
+          { to: "/admin/messenger", label: "Messenger", icon: MessageSquare },
+          { to: "/admin/whatsapp", label: "WhatsApp Integration", icon: MessageCircle },
         ],
       },
       {
@@ -171,11 +172,11 @@ const menuGroups: NavGroupDef[] = [
         label: "AI Command Center",
         icon: Bot,
         children: [
-          { to: "/admin/ai/agents", label: "Agents" },
-          { to: "/admin/ai/approvals", label: "Approvals" },
-          { to: "/admin/ai/identity", label: "Merchant Identity" },
-          { to: "/admin/ai/settings", label: "AI Settings" },
-          { to: "/admin/ai/logs", label: "Activity Log" },
+          { to: "/admin/ai/agents", label: "Agents", icon: Bot },
+          { to: "/admin/ai/approvals", label: "Approvals", icon: ShieldCheck },
+          { to: "/admin/ai/identity", label: "Merchant Identity", icon: UserCog },
+          { to: "/admin/ai/settings", label: "AI Settings", icon: Settings },
+          { to: "/admin/ai/logs", label: "Activity Log", icon: ClipboardList },
         ],
       },
       { to: "/admin/ai-agent", label: "AI Sales Agent", icon: Bot },
@@ -194,8 +195,8 @@ const menuGroups: NavGroupDef[] = [
         icon: LayoutTemplate,
         badgeKey: "landing_pages",
         children: [
-          { to: "/admin/landing-builder", label: "Landing Page Builder" },
-          { to: "/admin/landing-pages", label: "Landing Page Integrations", badgeKey: "landing_pages" },
+          { to: "/admin/landing-builder", label: "Landing Page Builder", icon: LayoutTemplate },
+          { to: "/admin/landing-pages", label: "Landing Page Integrations", icon: Globe, badgeKey: "landing_pages" },
         ],
       },
       {
@@ -203,12 +204,12 @@ const menuGroups: NavGroupDef[] = [
         label: "Facebook Page",
         icon: Globe,
         children: [
-          { to: "/admin/facebook", label: "Page Overview" },
-          { to: "/admin/facebook/posts", label: "Posts" },
-          { to: "/admin/facebook/comments", label: "Comments" },
-          { to: "/admin/facebook/compose", label: "Create Post" },
-          { to: "/admin/facebook/moderation", label: "Moderation" },
-          { to: "/admin/facebook/settings", label: "Page Settings" },
+          { to: "/admin/facebook", label: "Page Overview", icon: Globe },
+          { to: "/admin/facebook/posts", label: "Posts", icon: FileText },
+          { to: "/admin/facebook/comments", label: "Comments", icon: MessageSquare },
+          { to: "/admin/facebook/compose", label: "Create Post", icon: Megaphone },
+          { to: "/admin/facebook/moderation", label: "Moderation", icon: ShieldCheck },
+          { to: "/admin/facebook/settings", label: "Page Settings", icon: Settings },
         ],
       },
       { to: "/admin/seo", label: "SEO Tools", icon: SearchIcon },
@@ -242,10 +243,10 @@ const menuGroups: NavGroupDef[] = [
         label: "Store Settings",
         icon: Settings,
         children: [
-          { to: "/admin/settings/information", label: "Store Information" },
-          { to: "/admin/settings/configuration", label: "Store Configuration" },
-          { to: "/admin/settings/workflow", label: "Order & Workflow" },
-          { to: "/admin/settings/security", label: "Account Security" },
+          { to: "/admin/settings/information", label: "Store Information", icon: Store },
+          { to: "/admin/settings/configuration", label: "Store Configuration", icon: SlidersHorizontal },
+          { to: "/admin/settings/workflow", label: "Order & Workflow", icon: ClipboardList },
+          { to: "/admin/settings/security", label: "Account Security", icon: ShieldCheck },
         ],
       },
       {
@@ -253,8 +254,8 @@ const menuGroups: NavGroupDef[] = [
         label: "Domains & DNS",
         icon: Globe,
         children: [
-          { to: "/admin/domains", label: "Domains" },
-          { to: "/admin/dns-check", label: "DNS Checker" },
+          { to: "/admin/domains", label: "Domains", icon: Globe },
+          { to: "/admin/dns-check", label: "DNS Checker", icon: Radar },
         ],
       },
       { to: "/admin/employees", label: "Employees & Team", icon: UserCog },
