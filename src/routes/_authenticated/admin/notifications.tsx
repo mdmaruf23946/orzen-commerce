@@ -10,7 +10,7 @@ import {
   saveNotificationChannel,
   testNotificationChannel,
 } from "@/lib/notify-settings.functions";
-import { computeState, defaultSettings, type EventMap } from "@/lib/notify-settings";
+import { computeState, defaultSettings, EMAIL_PROVIDERS, type EventMap } from "@/lib/notify-settings";
 import { ChannelCard } from "@/components/admin/notifications/ChannelCard";
 import { EventMatrix } from "@/components/admin/notifications/EventMatrix";
 import { Input } from "@/components/ui/input";
