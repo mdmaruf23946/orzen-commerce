@@ -3,7 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Copy, CheckCircle2, Wallet, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Wallet, Loader2 } from "lucide-react";
+import {
+  MethodTabs,
+  MethodLogo,
+  BrandCopyRow,
+  BrandSteps,
+  BrandPanel,
+  brandOf,
+} from "@/components/admin/payments/ManualPayBlock";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -53,37 +61,6 @@ const TXN_RE = /^[A-Za-z0-9]{6,32}$/;
 
 type MethodKey = "bkash" | "nagad" | "rocket";
 
-function copyToClipboard(text: string, label: string) {
-  try {
-    void navigator.clipboard.writeText(text);
-    toast.success(`${label} copied`);
-  } catch {
-    toast.error("Copy failed");
-  }
-}
-
-function CopyRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="space-y-1.5">
-      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </div>
-      <div className="flex items-stretch gap-2">
-        <div className="flex-1 rounded-2xl border border-border bg-muted/40 px-4 py-3 font-mono text-base font-semibold sm:text-lg">
-          {value}
-        </div>
-        <button
-          type="button"
-          onClick={() => copyToClipboard(value, label)}
-          className="inline-flex min-w-[52px] items-center justify-center rounded-2xl border border-border bg-background px-3 text-sm font-medium hover:bg-muted active:scale-95"
-          aria-label={`Copy ${label}`}
-        >
-          <Copy className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function CheckoutPage() {
   const { packageId } = Route.useParams();
@@ -143,6 +120,7 @@ function CheckoutPage() {
   const merchantNumber = m?.number ?? "";
   const merchantName = (m as any)?.merchant_name ?? "";
   const rawInstructions = m?.instructions ?? "";
+  const brand = brandOf(method);
 
   const instructions = useMemo<string[]>(() => {
     if (rawInstructions?.trim()) {
@@ -402,62 +380,52 @@ function CheckoutPage() {
         <>
           {/* Method tabs */}
           {enabledMethods.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto rounded-2xl border bg-card p-2 shadow-sm">
-              {enabledMethods.map((k) => (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => setMethod(k)}
-                  className={`flex-1 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium capitalize transition ${
-                    method === k ? "bg-primary text-primary-foreground" : "hover:bg-muted"
-                  }`}
-                >
-                  {k}
-                </button>
-              ))}
-            </div>
+            <MethodTabs methods={enabledMethods} value={method} onChange={setMethod} />
           )}
 
           {/* Merchant details with copy */}
-          <div className="space-y-4 rounded-2xl border bg-card p-5 shadow-sm">
-            {merchantName && (
+          <BrandPanel brand={brand}>
+            <div className="flex items-center gap-2">
+              <MethodLogo method={method} className="h-8 w-8" />
               <div className="text-sm">
-                <span className="text-muted-foreground">Send Money to </span>
-                <b>{merchantName}</b>
+                <div className="font-semibold" style={{ color: brand.brandColor }}>
+                  {brand.label}
+                </div>
+                {merchantName && (
+                  <div className="text-xs text-muted-foreground">Send Money to {merchantName}</div>
+                )}
               </div>
-            )}
+            </div>
             {merchantNumber ? (
-              <CopyRow label={`${method.toUpperCase()} number`} value={merchantNumber} />
+              <BrandCopyRow label={`${brand.label} number`} value={merchantNumber} brand={brand} />
             ) : (
               <div className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
-                Merchant number not configured for {method.toUpperCase()}. Contact the platform owner.
+                Merchant number not configured for {brand.label}. Contact the platform owner.
               </div>
             )}
-            <CopyRow label="Amount" value={`৳${calc.total.toLocaleString()}`} />
+            <BrandCopyRow
+              label="Amount"
+              value={`৳${calc.total.toLocaleString()}`}
+              brand={brand}
+              mono={false}
+            />
 
-            <div>
-              <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Instructions
-              </div>
-              <ol className="space-y-1.5 text-sm">
-                {instructions.map((step: string, i: number) => (
-                  <li key={i} className="flex gap-2">
-                    <span className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
-                      {i + 1}
-                    </span>
-                    <span className="leading-snug">{step}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          </div>
+            <BrandSteps steps={instructions} brand={brand} />
+          </BrandPanel>
 
           {/* Payment form */}
-          <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border bg-card p-5 shadow-sm">
-            <div className="text-sm font-semibold">Confirm your payment</div>
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-4 rounded-2xl border-2 bg-card p-5 shadow-sm"
+            style={{ borderColor: brand.accentColor }}
+          >
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <MethodLogo method={method} className="h-5 w-5" />
+              Confirm your {brand.label} payment
+            </div>
 
             <div className="space-y-1.5">
-              <Label>Sender {method.toUpperCase()} number</Label>
+              <Label>Sender {brand.label} number</Label>
               <Input
                 inputMode="numeric"
                 required
@@ -510,7 +478,8 @@ function CheckoutPage() {
             <Button
               type="submit"
               disabled={saving || !canSubmit}
-              className="h-12 w-full text-base"
+              className="h-12 w-full text-base text-white hover:opacity-90"
+              style={{ background: brand.brandColor }}
             >
               {saving ? "Submitting…" : `Submit Payment · ৳${calc.total.toLocaleString()}`}
             </Button>
