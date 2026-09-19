@@ -134,7 +134,7 @@ export function CourierOverviewPanel({ data }: { data: CourierOverview }) {
             style={{ background: colorOf(r.key, rows.indexOf(r)) }}
           />
         )}
-        onRowClick={() => navigate({ to: "/admin/courier-orders" })}
+        onRowClick={() => navigate({ to: "/admin/courier-orders", search: { tab: "all" } })}
         exportName="courier-overview"
         emptyText="No courier data."
       />
