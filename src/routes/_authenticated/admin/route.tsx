@@ -296,17 +296,16 @@ function activeInItem(pathname: string, item: LinkDef) {
 function buildGroups(query: string, canSee: (path: string) => boolean) {
   const q = query.trim().toLowerCase();
   return menuGroups
-    .map((group) => ({
-      label: group.label,
-      items: group.items
-        .map((item) => {
+    .map((group) => {
+      const items = group.items.reduce<VisibleLinkDef[]>((visible, item) => {
           const visibleChildren = (item.children ?? []).filter((child) => canSee(child.to));
           const isVisible = canSee(item.to) || visibleChildren.length > 0;
-          if (!isVisible || !itemMatchesQuery({ ...item, children: visibleChildren }, q)) return null;
-          return { ...item, children: visibleChildren.length ? visibleChildren : undefined } satisfies VisibleLinkDef;
-        })
-        .filter((item): item is VisibleLinkDef => Boolean(item)),
-    }))
+          if (!isVisible || !itemMatchesQuery({ ...item, children: visibleChildren }, q)) return visible;
+          visible.push({ ...item, children: visibleChildren.length ? visibleChildren : undefined });
+          return visible;
+        }, []);
+      return { label: group.label, items };
+    })
     .filter((group) => group.items.length > 0);
 }
 
@@ -389,9 +388,9 @@ function AdminLayout() {
 
   useEffect(() => {
     if (!storeId) return;
-    const link = links.find((l) => l.to === currentPath && l.badgeKey);
-    if (link?.badgeKey) {
-      markSeen.mutate({ store_id: storeId, feature: link.badgeKey });
+    const badgeKey = findBadgeKey(currentPath);
+    if (badgeKey) {
+      markSeen.mutate({ store_id: storeId, feature: badgeKey });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeId, currentPath]);
@@ -399,6 +398,15 @@ function AdminLayout() {
 
   useEffect(() => {
     setCollapsed(localStorage.getItem("admin.sidebar.collapsed") === "1");
+    try {
+      const savedGroups = JSON.parse(localStorage.getItem("admin.sidebar.groups") ?? "{}");
+      const savedSubMenus = JSON.parse(localStorage.getItem("admin.sidebar.submenus") ?? "{}");
+      if (savedGroups && typeof savedGroups === "object") setOpenGroups(savedGroups);
+      if (savedSubMenus && typeof savedSubMenus === "object") setSubMenus(savedSubMenus);
+    } catch {
+      localStorage.removeItem("admin.sidebar.groups");
+      localStorage.removeItem("admin.sidebar.submenus");
+    }
     const d = localStorage.getItem("admin.theme.dark") === "1";
     setDark(d);
     if (d) document.documentElement.classList.add("dark");
@@ -410,6 +418,20 @@ function AdminLayout() {
     const v = !collapsed;
     setCollapsed(v);
     localStorage.setItem("admin.sidebar.collapsed", v ? "1" : "0");
+  }
+  function toggleGroup(label: string, currentlyOpen: boolean) {
+    setOpenGroups((state) => {
+      const next = { ...state, [label]: !currentlyOpen };
+      localStorage.setItem("admin.sidebar.groups", JSON.stringify(next));
+      return next;
+    });
+  }
+  function toggleSubMenu(path: string, currentlyOpen: boolean) {
+    setSubMenus((state) => {
+      const next = { ...state, [path]: !currentlyOpen };
+      localStorage.setItem("admin.sidebar.submenus", JSON.stringify(next));
+      return next;
+    });
   }
   function toggleDark() {
     const v = !dark;
