@@ -16,7 +16,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { ImageUploader } from "@/components/admin/ImageUploader";
-import { AdSlot } from "@/components/admin/AdSlot";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -323,8 +322,6 @@ function StoreInformationPage() {
             </AlertDialogContent>
           </AlertDialog>
         </section>
-
-        <AdSlot slotKey="admin_settings_bottom" />
 
         <SaveBar label="Save Store Information" saving={saving} dirty={dirty} fixed={false} />
       </div>
