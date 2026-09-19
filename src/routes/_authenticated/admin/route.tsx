@@ -41,137 +41,273 @@ type LinkDef = {
   icon: typeof LayoutDashboard;
   exact?: boolean;
   badgeKey?: BadgeKey;
-  children?: { to: string; label: string }[];
+  children?: ChildLinkDef[];
 };
 
-const links: LinkDef[] = [
-  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { to: "/admin/inbox", label: "Notifications Inbox", icon: Bell, badgeKey: "notifications" },
+type ChildLinkDef = {
+  to: string;
+  label: string;
+  exact?: boolean;
+  badgeKey?: BadgeKey;
+};
 
-  { to: "/admin/orders", label: "Orders", icon: ShoppingBag, badgeKey: "orders" },
-  { to: "/admin/courier-orders", label: "Courier Orders", icon: Truck, badgeKey: "delivery" },
-  { to: "/admin/products", label: "Products", icon: Package },
-  { to: "/admin/categories", label: "Categories", icon: Tags },
-  { to: "/admin/inventory", label: "Inventory", icon: Boxes },
-  { to: "/admin/customers", label: "Customers", icon: Users, badgeKey: "customers" },
-  { to: "/admin/customers-accounts", label: "Customer Accounts", icon: Users, badgeKey: "customers" },
-  { to: "/admin/duplicate-protection", label: "Duplicate Protection", icon: ShieldCheck, badgeKey: "duplicate_protection" },
-  { to: "/admin/call-center", label: "Manual Call Center", icon: PhoneCall },
-  { to: "/admin/ai-call-center", label: "AI Call Center", icon: PhoneCall },
-  { to: "/admin/returns", label: "Returns", icon: RotateCcw, badgeKey: "returns" },
-  { to: "/admin/coupons", label: "Coupons", icon: Ticket },
-  { to: "/admin/finance", label: "Finance", icon: Wallet },
-  { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/admin/marketing", label: "Marketing", icon: Megaphone },
-  { to: "/admin/banners", label: "Banners", icon: ImageIcon },
-  { to: "/admin/theme", label: "Store Theme", icon: Palette },
-  
-  { to: "/admin/seo", label: "SEO", icon: SearchIcon },
-  { to: "/admin/pages", label: "Pages & Content", icon: FileText },
-  { to: "/admin/delivery", label: "Delivery zone", icon: PackageOpen, badgeKey: "delivery" },
-  { to: "/admin/couriers", label: "Couriers", icon: Truck, badgeKey: "delivery" },
-  { to: "/admin/parcels", label: "Courier Parcels", icon: PackageOpen, badgeKey: "delivery" },
-  { to: "/admin/payment-gateway", label: "Payment Gateway", icon: CreditCard, badgeKey: "payment_gateway" },
-  { to: "/admin/staff", label: "Staff", icon: UserCog },
-  { to: "/admin/employees", label: "Employees & Team", icon: UserCog },
-  { to: "/admin/activity", label: "Activity Log", icon: ClipboardList },
-  { to: "/admin/support", label: "Support", icon: MessageSquare },
+type NavGroupDef = {
+  label: string;
+  items: LinkDef[];
+};
 
+type VisibleLinkDef = Omit<LinkDef, "children"> & { children?: ChildLinkDef[] };
 
-  
+const menuGroups: NavGroupDef[] = [
   {
-    to: "/admin/ai",
-    label: "AI Command Center",
-    icon: Bot,
-    children: [
-      { to: "/admin/ai/agents", label: "Agents" },
-      { to: "/admin/ai/approvals", label: "Approvals" },
-      { to: "/admin/ai/identity", label: "Merchant Identity" },
-      { to: "/admin/ai/settings", label: "AI Settings" },
-      { to: "/admin/ai/logs", label: "Activity Log" },
+    label: "Core",
+    items: [
+      { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+      { to: "/admin/inbox", label: "Notifications Inbox", icon: Bell, badgeKey: "notifications" },
     ],
   },
-  { to: "/admin/ai-agent", label: "AI Sales Agent", icon: Bot },
-  { to: "/admin/ai-recommendations", label: "AI Recommendations", icon: Sparkles, badgeKey: "ai_recommendations" },
-  { to: "/admin/handoff-queue", label: "Handoff Queue", icon: UserCog, badgeKey: "handoff" },
-  { to: "/admin/low-stock", label: "Low Stock Alerts", icon: AlertTriangle, badgeKey: "low_stock" },
-  { to: "/admin/messenger", label: "Messenger", icon: MessageSquare, badgeKey: "messenger" },
-  { to: "/admin/messenger-inbox", label: "Messenger Inbox", icon: MessageSquare, badgeKey: "messenger" },
-  { to: "/admin/whatsapp", label: "WhatsApp Integration", icon: MessageCircle },
-  { to: "/admin/whatsapp-inbox", label: "WhatsApp Inbox", icon: MessageCircle },
   {
-    to: "/admin/facebook",
-    label: "Facebook Page",
-    icon: Globe,
-    children: [
-      { to: "/admin/facebook", label: "Page Overview" },
-      { to: "/admin/facebook/posts", label: "Posts" },
-      { to: "/admin/facebook/comments", label: "Comments" },
-      { to: "/admin/facebook/compose", label: "Create Post" },
-      { to: "/admin/facebook/moderation", label: "Moderation" },
-      { to: "/admin/facebook/settings", label: "Page Settings" },
+    label: "Orders & Delivery",
+    items: [
+      { to: "/admin/orders", label: "All Orders", icon: ShoppingBag, badgeKey: "orders" },
+      {
+        to: "/admin/courier-orders",
+        label: "Courier & Shipping",
+        icon: Truck,
+        badgeKey: "delivery",
+        children: [
+          { to: "/admin/courier-orders", label: "Courier Orders", badgeKey: "delivery" },
+          { to: "/admin/parcels", label: "Courier Parcels", badgeKey: "delivery" },
+          { to: "/admin/couriers", label: "Courier Setup", badgeKey: "delivery" },
+          { to: "/admin/delivery", label: "Delivery Zones", badgeKey: "delivery" },
+        ],
+      },
+      { to: "/admin/returns", label: "Returns & Exchanges", icon: RotateCcw, badgeKey: "returns" },
     ],
   },
-  { to: "/admin/notifications", label: "Notifications", icon: Bell, badgeKey: "notifications" },
-  { to: "/admin/product-defaults", label: "Product Defaults", icon: ClipboardList },
-  { to: "/admin/domains", label: "Domains", icon: Globe },
-  { to: "/admin/dns-check", label: "DNS Checker", icon: Radar },
-  { to: "/admin/landing-builder", label: "Landing Pages", icon: LayoutTemplate },
-  { to: "/admin/landing-pages", label: "Landing Page Integrations", icon: ExternalLink, badgeKey: "landing_pages" },
-
-  { to: "/admin/import-export", label: "Import / Export", icon: FileUp },
-  { to: "/admin/invoice-templates", label: "Invoice Templates", icon: FileText },
-  { to: "/admin/subscription", label: "My Subscription", icon: CreditCard },
-  { to: "/admin/billing", label: "Billing & Plans", icon: Wallet },
   {
-    to: "/admin/settings",
-    label: "Store Settings",
-    icon: Settings,
-    children: [
-      { to: "/admin/settings/information", label: "Store Information" },
-      { to: "/admin/settings/configuration", label: "Store Configuration" },
-      { to: "/admin/settings/workflow", label: "Order & Workflow" },
-      
+    label: "Products & Inventory",
+    items: [
+      { to: "/admin/products", label: "Products", icon: Package },
+      { to: "/admin/categories", label: "Categories", icon: Tags },
+      {
+        to: "/admin/inventory",
+        label: "Inventory & Stock",
+        icon: Boxes,
+        badgeKey: "low_stock",
+        children: [
+          { to: "/admin/inventory", label: "Inventory" },
+          { to: "/admin/low-stock", label: "Low Stock Alerts", badgeKey: "low_stock" },
+        ],
+      },
+      {
+        to: "/admin/product-defaults",
+        label: "Catalogue Tools",
+        icon: ClipboardList,
+        children: [
+          { to: "/admin/product-defaults", label: "Product Defaults" },
+          { to: "/admin/import-export", label: "Import / Export" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Customers & Support",
+    items: [
+      {
+        to: "/admin/customers",
+        label: "Customer Directory",
+        icon: Users,
+        badgeKey: "customers",
+        children: [
+          { to: "/admin/customers", label: "Customers", badgeKey: "customers" },
+          { to: "/admin/customers-accounts", label: "Customer Accounts", badgeKey: "customers" },
+        ],
+      },
+      {
+        to: "/admin/call-center",
+        label: "Call Center",
+        icon: PhoneCall,
+        children: [
+          { to: "/admin/call-center", label: "Manual Call Center" },
+          { to: "/admin/ai-call-center", label: "AI Call Center" },
+        ],
+      },
+      { to: "/admin/duplicate-protection", label: "Duplicate Protection", icon: ShieldCheck, badgeKey: "duplicate_protection" },
+    ],
+  },
+  {
+    label: "Channels & AI",
+    items: [
+      {
+        to: "/admin/messenger-inbox",
+        label: "Omnichannel Inbox",
+        icon: MessageSquare,
+        badgeKey: "messenger",
+        children: [
+          { to: "/admin/messenger-inbox", label: "Messenger Inbox", badgeKey: "messenger" },
+          { to: "/admin/whatsapp-inbox", label: "WhatsApp Inbox" },
+          { to: "/admin/handoff-queue", label: "Handoff Queue", badgeKey: "handoff" },
+        ],
+      },
+      {
+        to: "/admin/messenger",
+        label: "Channel Setup",
+        icon: MessageCircle,
+        children: [
+          { to: "/admin/messenger", label: "Messenger" },
+          { to: "/admin/whatsapp", label: "WhatsApp Integration" },
+        ],
+      },
+      {
+        to: "/admin/ai",
+        label: "AI Command Center",
+        icon: Bot,
+        children: [
+          { to: "/admin/ai/agents", label: "Agents" },
+          { to: "/admin/ai/approvals", label: "Approvals" },
+          { to: "/admin/ai/identity", label: "Merchant Identity" },
+          { to: "/admin/ai/settings", label: "AI Settings" },
+          { to: "/admin/ai/logs", label: "Activity Log" },
+        ],
+      },
+      { to: "/admin/ai-agent", label: "AI Sales Agent", icon: Bot },
+      { to: "/admin/ai-recommendations", label: "AI Recommendations", icon: Sparkles, badgeKey: "ai_recommendations" },
+    ],
+  },
+  {
+    label: "Marketing & Sales",
+    items: [
+      { to: "/admin/marketing", label: "Marketing & Tracking", icon: Megaphone },
+      { to: "/admin/coupons", label: "Coupons & Discounts", icon: Ticket },
+      {
+        to: "/admin/landing-builder",
+        label: "Landing Pages",
+        icon: LayoutTemplate,
+        badgeKey: "landing_pages",
+        children: [
+          { to: "/admin/landing-builder", label: "Landing Page Builder" },
+          { to: "/admin/landing-pages", label: "Landing Page Integrations", badgeKey: "landing_pages" },
+        ],
+      },
+      {
+        to: "/admin/facebook",
+        label: "Facebook Page",
+        icon: Globe,
+        children: [
+          { to: "/admin/facebook", label: "Page Overview" },
+          { to: "/admin/facebook/posts", label: "Posts" },
+          { to: "/admin/facebook/comments", label: "Comments" },
+          { to: "/admin/facebook/compose", label: "Create Post" },
+          { to: "/admin/facebook/moderation", label: "Moderation" },
+          { to: "/admin/facebook/settings", label: "Page Settings" },
+        ],
+      },
+      { to: "/admin/seo", label: "SEO Tools", icon: SearchIcon },
+    ],
+  },
+  {
+    label: "Finance & Analytics",
+    items: [
+      { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+      { to: "/admin/finance", label: "Business Finance", icon: Wallet },
+      { to: "/admin/payment-gateway", label: "Payment Gateways", icon: CreditCard, badgeKey: "payment_gateway" },
+    ],
+  },
+  {
+    label: "Online Storefront",
+    items: [
+      { to: "/admin/theme", label: "Theme & Styling", icon: Palette },
+      { to: "/admin/banners", label: "Banners & Sliders", icon: ImageIcon },
+      { to: "/admin/pages", label: "Pages & Legal Content", icon: FileText },
+      { to: "/admin/invoice-templates", label: "Invoice Templates", icon: FileText },
+    ],
+  },
+  {
+    label: "Settings & Management",
+    items: [
+      {
+        to: "/admin/settings",
+        label: "Store Settings",
+        icon: Settings,
+        children: [
+          { to: "/admin/settings/information", label: "Store Information" },
+          { to: "/admin/settings/configuration", label: "Store Configuration" },
+          { to: "/admin/settings/workflow", label: "Order & Workflow" },
+          { to: "/admin/settings/security", label: "Account Security" },
+        ],
+      },
+      {
+        to: "/admin/domains",
+        label: "Domains & DNS",
+        icon: Globe,
+        children: [
+          { to: "/admin/domains", label: "Domains" },
+          { to: "/admin/dns-check", label: "DNS Checker" },
+        ],
+      },
+      { to: "/admin/employees", label: "Employees & Team", icon: UserCog },
+      { to: "/admin/activity", label: "Activity Log", icon: ClipboardList },
+      { to: "/admin/notifications", label: "Customer Notification Setup", icon: Bell, badgeKey: "notifications" },
+      { to: "/admin/subscription", label: "My Subscription", icon: CreditCard },
+      { to: "/admin/billing", label: "Billing & Plans", icon: Wallet },
+      { to: "/admin/support", label: "Support", icon: MessageSquare },
     ],
   },
 ];
 
+const allMenuItems = menuGroups.flatMap((g) =>
+  g.items.flatMap((i) => [i, ...(i.children ?? []).map((c) => ({ ...c, icon: i.icon }))]),
+);
 
-const groupDefs: { label: string; paths: string[] }[] = [
-  { label: "Main", paths: ["/admin", "/admin/inbox"] },
-  { label: "Orders", paths: ["/admin/orders", "/admin/courier-orders", "/admin/returns"] },
-  { label: "Products", paths: ["/admin/products", "/admin/categories", "/admin/inventory", "/admin/product-defaults"] },
-  { label: "Customers", paths: ["/admin/customers", "/admin/customers-accounts", "/admin/duplicate-protection"] },
-  { label: "Call Center", paths: ["/admin/call-center", "/admin/ai-call-center"] },
-  { label: "AI & Automation", paths: ["/admin/ai", "/admin/ai-agent", "/admin/ai-recommendations", "/admin/handoff-queue", "/admin/low-stock", "/admin/messenger", "/admin/messenger-inbox", "/admin/whatsapp", "/admin/whatsapp-inbox"] },
-  { label: "Facebook Page", paths: ["/admin/facebook"] },
-  { label: "Marketing", paths: ["/admin/marketing", "/admin/coupons", "/admin/seo", "/admin/banners", "/admin/theme", "/admin/notifications"] },
-  { label: "Finance", paths: ["/admin/payment-gateway", "/admin/finance", "/admin/analytics"] },
-  { label: "Operations", paths: ["/admin/delivery", "/admin/couriers", "/admin/parcels", "/admin/landing-builder", "/admin/landing-pages"] },
-  { label: "System", paths: ["/admin/pages", "/admin/invoice-templates", "/admin/domains", "/admin/dns-check", "/admin/import-export", "/admin/staff", "/admin/employees", "/admin/activity"] },
-  { label: "Account", paths: ["/admin/subscription", "/admin/billing", "/admin/support", "/admin/settings"] },
-];
+function matchesPath(pathname: string, item: { to: string; exact?: boolean }) {
+  return item.exact ? pathname === item.to : pathname === item.to || pathname.startsWith(item.to + "/");
+}
 
+function itemBadgeCount(item: Pick<LinkDef, "badgeKey" | "children">, counts: Partial<Record<BadgeKey, number>>) {
+  const keys = new Set<BadgeKey>();
+  if (item.badgeKey) keys.add(item.badgeKey);
+  for (const child of item.children ?? []) if (child.badgeKey) keys.add(child.badgeKey);
+  let total = 0;
+  for (const key of keys) total += counts[key] ?? 0;
+  return total;
+}
+
+function findBadgeKey(pathname: string): BadgeKey | undefined {
+  let best: { len: number; key: BadgeKey } | null = null;
+  for (const item of allMenuItems) {
+    if (!item.badgeKey || !matchesPath(pathname, item)) continue;
+    if (!best || item.to.length > best.len) best = { len: item.to.length, key: item.badgeKey };
+  }
+  return best?.key;
+}
+
+function itemMatchesQuery(item: LinkDef, q: string) {
+  if (!q) return true;
+  if (item.label.toLowerCase().includes(q)) return true;
+  return (item.children ?? []).some((child) => child.label.toLowerCase().includes(q));
+}
+
+function activeInItem(pathname: string, item: LinkDef) {
+  if (matchesPath(pathname, item)) return true;
+  return (item.children ?? []).some((child) => matchesPath(pathname, child));
+}
 
 function buildGroups(query: string, canSee: (path: string) => boolean) {
   const q = query.trim().toLowerCase();
-  const used = new Set<string>();
-  const visible = links.filter((l) => canSee(l.to));
-  const byPath = new Map(visible.map((l) => [l.to, l]));
-  const groups = groupDefs.map((g) => {
-    const items: LinkDef[] = [];
-    for (const p of g.paths) {
-      const l = byPath.get(p);
-      if (l) { items.push(l); used.add(p); }
-    }
-    return { label: g.label, items };
-  });
-  const leftover = visible.filter((l) => !used.has(l.to));
-  if (leftover.length) groups.push({ label: "More", items: leftover });
-  if (!q) return groups.filter((g) => g.items.length > 0);
-  return groups
-    .map((g) => ({ ...g, items: g.items.filter((i) => i.label.toLowerCase().includes(q)) }))
-    .filter((g) => g.items.length > 0);
+  return menuGroups
+    .map((group) => ({
+      label: group.label,
+      items: group.items
+        .map((item) => {
+          const visibleChildren = (item.children ?? []).filter((child) => canSee(child.to));
+          const isVisible = canSee(item.to) || visibleChildren.length > 0;
+          if (!isVisible || !itemMatchesQuery({ ...item, children: visibleChildren }, q)) return null;
+          return { ...item, children: visibleChildren.length ? visibleChildren : undefined } satisfies VisibleLinkDef;
+        })
+        .filter((item): item is VisibleLinkDef => Boolean(item)),
+    }))
+    .filter((group) => group.items.length > 0);
 }
 
 export const Route = createFileRoute("/_authenticated/admin")({
