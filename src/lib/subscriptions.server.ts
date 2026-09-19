@@ -151,19 +151,23 @@ export async function notify(
 
   if (!settings.notify_email || !recipient) return;
   try {
-    const { enqueueEmail } = await import("@/lib/emails.server");
-    await enqueueEmail({
-      to: recipient,
-      template: `subscription_${kind}`,
+    const { dispatchNotification } = await import("@/lib/notify-dispatch.server");
+    const result = await dispatchNotification(sb, {
+      storeId: sub.store_id,
+      event: kind === "payment_failed" || kind === "payment_received" ? "payment_update" : "order_status",
       subject: copy.subject,
-      html: `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.6">${copy.body}</div>`,
-      payload: { subscriptionId: sub.id, kind },
+      message: String(copy.body).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
+      customer: { email: recipient },
     });
-    if (row) {
+    if (row && result.attempted > 0 && result.failed === 0) {
       await sb
         .from("store_subscription_notifications")
         .update({ sent_at: new Date().toISOString() })
         .eq("id", (row as any).id);
+    } else if (row && result.attempted === 0) {
+      await sb.from("store_subscription_notifications").update({
+        error: "Merchant email provider is not connected",
+      }).eq("id", (row as any).id);
     }
   } catch (e: any) {
     if (row) {
