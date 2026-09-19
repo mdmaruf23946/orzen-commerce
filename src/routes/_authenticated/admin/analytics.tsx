@@ -25,6 +25,9 @@ import { TypeSections } from "@/components/admin/analytics/TypeSections";
 import { SalesFunnel } from "@/components/admin/analytics/SalesFunnel";
 import { ActivityFeed } from "@/components/admin/analytics/ActivityFeed";
 import { Insights, ProfitPanel } from "@/components/admin/analytics/ProfitPanel";
+import { CourierOverviewPanel } from "@/components/admin/analytics/CourierOverviewPanel";
+import { PaymentOverviewPanel } from "@/components/admin/analytics/PaymentOverviewPanel";
+import { courierOverview, paymentOverview } from "@/lib/ops-analytics.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/analytics")({
   head: () => ({
