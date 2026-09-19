@@ -346,13 +346,41 @@ function StatusPill({ status, sub }: { status: string; sub?: string }) {
 }
 
 const toneMap: Record<string, { bg: string; text: string; icon: string }> = {
-  emerald: { bg: "bg-emerald-50", text: "text-emerald-600", icon: "text-emerald-600 bg-emerald-100" },
-  blue:    { bg: "bg-blue-50",    text: "text-blue-600",    icon: "text-blue-600 bg-blue-100" },
-  violet:  { bg: "bg-violet-50",  text: "text-violet-600",  icon: "text-violet-600 bg-violet-100" },
-  amber:   { bg: "bg-amber-50",   text: "text-amber-600",   icon: "text-amber-600 bg-amber-100" },
-  indigo:  { bg: "bg-indigo-50",  text: "text-indigo-600",  icon: "text-indigo-600 bg-indigo-100" },
-  red:     { bg: "bg-red-50",     text: "text-red-600",     icon: "text-red-600 bg-red-100" },
-  slate:   { bg: "bg-slate-100",  text: "text-slate-700",   icon: "text-slate-700 bg-slate-200" },
+  emerald: {
+    bg: "bg-emerald-50 dark:bg-emerald-500/10 dark:border-emerald-500/20",
+    text: "text-emerald-600 dark:text-emerald-400",
+    icon: "text-emerald-600 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-500/15 dark:ring-1 dark:ring-emerald-400/20",
+  },
+  blue: {
+    bg: "bg-blue-50 dark:bg-blue-500/10 dark:border-blue-500/20",
+    text: "text-blue-600 dark:text-blue-400",
+    icon: "text-blue-600 bg-blue-100 dark:text-blue-300 dark:bg-blue-500/15 dark:ring-1 dark:ring-blue-400/20",
+  },
+  violet: {
+    bg: "bg-violet-50 dark:bg-violet-500/10 dark:border-violet-500/20",
+    text: "text-violet-600 dark:text-violet-400",
+    icon: "text-violet-600 bg-violet-100 dark:text-violet-300 dark:bg-violet-500/15 dark:ring-1 dark:ring-violet-400/20",
+  },
+  amber: {
+    bg: "bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/20",
+    text: "text-amber-600 dark:text-amber-400",
+    icon: "text-amber-600 bg-amber-100 dark:text-amber-300 dark:bg-amber-500/15 dark:ring-1 dark:ring-amber-400/20",
+  },
+  indigo: {
+    bg: "bg-indigo-50 dark:bg-indigo-500/10 dark:border-indigo-500/20",
+    text: "text-indigo-600 dark:text-indigo-400",
+    icon: "text-indigo-600 bg-indigo-100 dark:text-indigo-300 dark:bg-indigo-500/15 dark:ring-1 dark:ring-indigo-400/20",
+  },
+  red: {
+    bg: "bg-red-50 dark:bg-red-500/10 dark:border-red-500/20",
+    text: "text-red-600 dark:text-red-400",
+    icon: "text-red-600 bg-red-100 dark:text-red-300 dark:bg-red-500/15 dark:ring-1 dark:ring-red-400/20",
+  },
+  slate: {
+    bg: "bg-slate-100 dark:bg-slate-500/10 dark:border-slate-400/20",
+    text: "text-slate-700 dark:text-slate-300",
+    icon: "text-slate-700 bg-slate-200 dark:text-slate-200 dark:bg-slate-500/15 dark:ring-1 dark:ring-slate-400/20",
+  },
 };
 
 function StatCard({
