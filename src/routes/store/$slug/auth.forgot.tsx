@@ -35,10 +35,10 @@ function ForgotPage() {
 
     try {
       const res = (await request({ data: { storeSlug: slug, identifier, captcha } })) as
-        | { ok: boolean; sentTo: "email" | null }
+        | { ok: boolean; sentTo: "email" | "failed" | null }
         | undefined;
 
-      setFailed(res?.sentTo === null && res?.ok === true ? false : false);
+      setFailed(res?.sentTo === "failed");
       setSent(true);
     } catch (err) {
       toast.error((err as Error).message);

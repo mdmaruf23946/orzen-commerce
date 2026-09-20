@@ -164,7 +164,13 @@ export const requestCustomerPasswordReset = createServerFn({ method: "POST" })
         message: `Hi ${r.name ?? "there"}, use this link to set a new password. It expires in 30 minutes.\n\n${link}\n\nIf you did not request this, ignore this email.`,
         customer: { email: r.email },
       });
-      return { ok: true, sentTo: notification.attempted > 0 ? "email" as const : null };
+      // "failed" = the account exists but the store has no working email sender.
+      return {
+        ok: true,
+        sentTo: (notification.attempted > 0 && notification.failed < notification.attempted
+          ? "email"
+          : "failed") as "email" | "failed",
+      };
     }
     return { ok: true, sentTo: null };
   });
