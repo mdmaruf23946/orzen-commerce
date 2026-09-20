@@ -174,6 +174,29 @@ export async function tplWalletTopupApproved(c: WalletTopupCtx) {
 
 // ---------- Queue + send ----------
 
+/**
+ * White-label rule: ORZEN's platform sender must NEVER email a merchant's
+ * customer. Store-facing shopper emails (order confirmation, delivery,
+ * password reset, etc.) only go through the merchant's own email provider
+ * (see src/lib/notify/email.server.ts). This blocklist is a hard guard at
+ * the platform queue so no code path — current or future — can leak a
+ * shopper email through the ORZEN sender.
+ */
+export const CUSTOMER_FACING_TEMPLATES = new Set([
+  "order_confirmation",
+  "order_confirmed",
+  "order_status",
+  "order_cancelled",
+  "return_update",
+  "digital_delivery",
+  "customer_password_reset",
+  "courier_update",
+]);
+
+export function isCustomerFacingTemplate(template: string | null | undefined): boolean {
+  return CUSTOMER_FACING_TEMPLATES.has(String(template ?? ""));
+}
+
 type EnqueueArgs = {
   to: string;
   template: string;
