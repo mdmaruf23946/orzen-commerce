@@ -166,6 +166,33 @@ export function sendViewSiteButton(
   });
 }
 
+/** Send a text with up to 3 postback buttons (used for owner approvals). */
+export function sendPostbackButtons(
+  token: string,
+  psid: string,
+  text: string,
+  buttons: { title: string; payload: string }[],
+) {
+  return post(token, {
+    recipient: { id: psid },
+    messaging_type: "RESPONSE",
+    message: {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "button",
+          text: text.slice(0, 640),
+          buttons: buttons.slice(0, 3).map((b) => ({
+            type: "postback",
+            title: b.title.slice(0, 20),
+            payload: b.payload.slice(0, 1000),
+          })),
+        },
+      },
+    },
+  });
+}
+
 export function sendQuickReplies(
   token: string,
   psid: string,
