@@ -19,6 +19,7 @@ export const ACTION_GROUPS: { key: string; label: string }[] = [
   { key: "payments", label: "Payment Management" },
   { key: "orders", label: "Order Management" },
   { key: "products", label: "Product Management" },
+  { key: "support", label: "Customer Support Relay" },
   { key: "restricted", label: "Restricted" },
 ];
 
@@ -71,6 +72,12 @@ export const ACTIONS: ActionMeta[] = [
   { key: "product_update_price", group: "products", label: "Update product price", risk: "medium", defaultEnabled: true },
   { key: "product_set_status", group: "products", label: "Enable/disable product", risk: "medium", defaultEnabled: true },
   { key: "product_update_stock", group: "products", label: "Update stock", risk: "medium", defaultEnabled: true },
+
+  // Customer support relay (owner <-> Messenger customer, through the AI)
+  { key: "support_open_list", group: "support", label: "List waiting customers", risk: "low", defaultEnabled: true },
+  { key: "support_history", group: "support", label: "Read customer conversation", risk: "low", defaultEnabled: true },
+  { key: "support_reply", group: "support", label: "Reply to customer", risk: "low", defaultEnabled: true },
+  { key: "support_close", group: "support", label: "Close support conversation", risk: "low", defaultEnabled: true },
 
   // Restricted (off by default)
   { key: "payment_refund", group: "restricted", label: "Refund payment", risk: "high", defaultEnabled: false },

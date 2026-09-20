@@ -76,6 +76,12 @@ export async function escalateToHuman(args: {
       });
     }
 
+    // Hand the conversation to human mode so the customer AI stops auto-replying
+    // and every new customer message is forwarded to the owner instead.
+    if (args.threadId) {
+      await supabaseAdmin.from("ai_admin_customer_threads").update({ status: "human" }).eq("id", args.threadId);
+    }
+
     const conn = await loadMessengerConnection();
     const psids = (conn?.admin_psids ?? []).map((p) => String(p).trim()).filter(Boolean);
     const text =
@@ -84,7 +90,9 @@ export async function escalateToHuman(args: {
       `Messenger ID: ${args.psid}\n` +
       `Issue: ${args.summary.slice(0, 500)}\n` +
       `Reason: ${args.reason.slice(0, 200)}\n\n` +
-      `Open Winner Admin → AI Admin Control → Customer Support to reply.`;
+      `আপনি এখানেই উত্তর লিখতে পারেন — যা বলবেন আমি তাকে সুন্দরভাবে পৌঁছে দেব।\n` +
+      `যেমন: "জিজ্ঞেস করো কী সমস্যা" বা "বলো আজ রাত ৮টায় কথা বলব"।\n` +
+      `শেষ হলে লিখুন: "সাপোর্ট বন্ধ করো"।`;
     for (const admin of psids) {
       await sendAdminMessengerMessage(admin, text).catch(() => {});
     }

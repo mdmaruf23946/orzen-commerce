@@ -765,6 +765,57 @@ export const TOOLS: ToolDef[] = [
       return { action_key: a.action_key, enabled: a.enabled };
     },
   },
+
+  // ---------------- Human support relay ----------------
+  {
+    key: "support_open_list",
+    description:
+      "List the Messenger customers who asked to talk to a human and are waiting for the owner's reply.",
+    schema: empty,
+    risk: "low",
+    summary: () => "List customers waiting for human support",
+    run: async () => {
+      const { listOpenSupport } = await import("./support-relay.server");
+      return { waiting: await listOpenSupport() };
+    },
+  },
+  {
+    key: "support_history",
+    description:
+      "Read the recent Messenger conversation with a waiting customer. Optional 'customer' = their name or Messenger ID; omit it for the most recent one.",
+    schema: z.object({ customer: z.string().nullable() }),
+    risk: "low",
+    summary: (a) => `Read support conversation ${a?.customer ?? "(latest)"}`,
+    run: async (_sb, a) => {
+      const { supportHistory } = await import("./support-relay.server");
+      return supportHistory(a?.customer ?? null);
+    },
+  },
+  {
+    key: "support_reply",
+    description:
+      "Send a message to the waiting Messenger customer on the owner's behalf. Put the final, polite customer-facing wording in 'message'. Optional 'customer' = their name or Messenger ID; omit it for the most recent one.",
+    schema: z.object({ message: z.string(), customer: z.string().nullable() }),
+    risk: "low",
+    summary: (a) => `Reply to customer ${a?.customer ?? "(latest)"}`,
+    run: async (_sb, a) => {
+      const { relayToCustomer } = await import("./support-relay.server");
+      return relayToCustomer({ hint: a?.customer ?? null, message: a.message });
+    },
+  },
+  {
+    key: "support_close",
+    description:
+      "Mark the human support conversation finished and hand the customer back to the AI agent.",
+    schema: z.object({ customer: z.string().nullable(), note: z.string().nullable() }),
+    risk: "low",
+    summary: (a) => `Close support conversation ${a?.customer ?? "(latest)"}`,
+    run: async (_sb, a) => {
+      const { closeSupport } = await import("./support-relay.server");
+      return closeSupport(a?.customer ?? null, a?.note ?? null);
+    },
+  },
+
 ];
 
 export const TOOL_BY_KEY: Record<string, ToolDef> = Object.fromEntries(TOOLS.map((t) => [t.key, t]));
