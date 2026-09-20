@@ -175,6 +175,14 @@ export const mySecurityStatus = createServerFn({ method: "POST" })
     const { userId, claims } = context as any;
     const row = await ensureSecurityRow(userId);
     const user = await getAdminUser(userId);
+    // Merchants who already confirmed their address at sign-up are verified;
+    // never ask them again.
+    if (!row.email_verified_at && user?.email_confirmed_at) {
+      const sb = await admin();
+      const at = user.email_confirmed_at as string;
+      await sb.from("merchant_security").update({ email_verified_at: at }).eq("user_id", userId);
+      row.email_verified_at = at;
+    }
     const factors: any[] = (user?.factors ?? []).filter(
       (f: any) => f.factor_type === "totp" && f.status === "verified",
     );
