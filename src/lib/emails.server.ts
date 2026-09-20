@@ -70,6 +70,7 @@ export type ApprovedCtx = {
   loginUrl: string;
   invoiceNo: string;
   amount: number;
+  customerEmail?: string | null;
 };
 
 export async function tplPaymentApproved(c: ApprovedCtx) {
@@ -81,6 +82,7 @@ export async function tplPaymentApproved(c: ApprovedCtx) {
       { label: "Plan", value: c.planName }, { label: "Amount", value: money(c.amount) },
       { label: "Activation", value: c.activationDate }, { label: "Expires", value: c.expiryDate },
       { label: "Invoice", value: c.invoiceNo }, { label: "Store URL", value: c.storeUrl },
+      { label: "Sent to", value: c.customerEmail ?? "" },
     ])}`,
     actionLabel: "Dashboard-এ যান",
     actionUrl: c.loginUrl,
@@ -96,6 +98,7 @@ export type RejectedCtx = {
   reason: string;
   supportEmail: string;
   retryUrl: string;
+  customerEmail?: string | null;
 };
 
 export async function tplPaymentRejected(c: RejectedCtx) {
@@ -103,12 +106,70 @@ export async function tplPaymentRejected(c: RejectedCtx) {
     title: "Payment verification সফল হয়নি",
     preheader: "Payment verification failed",
     kind: "billing",
-    bodyHtml: `<p style="margin:0">${c.ownerName ? `${escapeHtml(c.ownerName)}, ` : ""}<strong>${escapeHtml(c.planName)}</strong> plan-এর ${money(c.amount)} payment verify করা যায়নি।</p>${emailInfoRows([{ label: "Reason", value: c.reason }])}<p style="margin:0">সঠিক তথ্য দিয়ে আবার submit করুন, অথবা ভুল মনে হলে <a href="mailto:${escapeHtml(c.supportEmail)}" style="color:#315c48">support</a>-এ যোগাযোগ করুন।</p>`,
+    bodyHtml: `<p style="margin:0">${c.ownerName ? `${escapeHtml(c.ownerName)}, ` : ""}<strong>${escapeHtml(c.planName)}</strong> plan-এর ${money(c.amount)} payment verify করা যায়নি।</p>${emailInfoRows([{ label: "Reason", value: c.reason }, { label: "Sent to", value: c.customerEmail ?? "" }])}<p style="margin:0">সঠিক তথ্য দিয়ে আবার submit করুন, অথবা ভুল মনে হলে <a href="mailto:${escapeHtml(c.supportEmail)}" style="color:#315c48">support</a>-এ যোগাযোগ করুন।</p>`,
     actionLabel: "Payment আবার submit করুন",
     actionUrl: c.retryUrl,
     sanitizeBody: false,
   });
   return { subject: "Subscription Verification Failed", html };
+}
+
+// ---------- Wallet top-up templates ----------
+
+export type WalletTopupCtx = {
+  ownerName?: string | null;
+  storeName?: string | null;
+  customerEmail: string;
+  amount: number;
+  method: string;
+  txnId?: string | null;
+  invoiceNo?: string | null;
+  submittedAt?: string | null;
+  balanceAfter?: number | null;
+  walletUrl: string;
+};
+
+export async function tplWalletTopupSubmitted(c: WalletTopupCtx) {
+  const html = await renderPlatformEmail({
+    title: "Add Fund request গ্রহণ করা হয়েছে",
+    preheader: `Wallet top-up request of ${money(c.amount)} received`,
+    kind: "billing",
+    bodyHtml: `<p style="margin:0 0 12px">${c.ownerName ? `${escapeHtml(c.ownerName)}, ` : ""}আপনার wallet-এ <strong>${money(c.amount)}</strong> যোগ করার request পেয়েছি।</p><p style="margin:0">Payment verify হওয়ার সঙ্গে সঙ্গে balance যোগ হবে এবং আপনি আরেকটি email পাবেন।</p>${emailInfoRows([
+      { label: "Store", value: c.storeName ?? "" },
+      { label: "Amount", value: money(c.amount) },
+      { label: "Method", value: (c.method || "manual").toUpperCase() },
+      { label: "Txn ID", value: c.txnId ?? "" },
+      { label: "Invoice", value: c.invoiceNo ?? "" },
+      { label: "Submitted", value: c.submittedAt ?? "" },
+      { label: "Sent to", value: c.customerEmail },
+    ])}${emailWarning("এই request আপনি না করে থাকলে সঙ্গে সঙ্গে support-এর সঙ্গে যোগাযোগ করুন।")}`,
+    actionLabel: "Wallet দেখুন",
+    actionUrl: c.walletUrl,
+    sanitizeBody: false,
+  });
+  return { subject: `Add Fund Request Received — ${money(c.amount)}`, html };
+}
+
+export async function tplWalletTopupApproved(c: WalletTopupCtx) {
+  const html = await renderPlatformEmail({
+    title: "আপনার Add Fund approve হয়েছে",
+    preheader: `${money(c.amount)} added to your ORZEN wallet`,
+    kind: "billing",
+    bodyHtml: `<p style="margin:0 0 12px">সুখবর${c.ownerName ? `, ${escapeHtml(c.ownerName)}` : ""}! আপনার payment verify হয়েছে এবং <strong>${money(c.amount)}</strong> আপনার ORZEN wallet-এ যোগ করা হয়েছে।</p>${emailInfoRows([
+      { label: "Store", value: c.storeName ?? "" },
+      { label: "Added amount", value: money(c.amount) },
+      { label: "New balance", value: c.balanceAfter == null ? "" : money(c.balanceAfter) },
+      { label: "Method", value: (c.method || "manual").toUpperCase() },
+      { label: "Txn ID", value: c.txnId ?? "" },
+      { label: "Invoice", value: c.invoiceNo ?? "" },
+      { label: "Approved at", value: c.submittedAt ?? "" },
+      { label: "Sent to", value: c.customerEmail },
+    ])}<p style="margin:0">এই balance দিয়ে plan কেনা বা auto-renewal চালু রাখা যাবে।</p>`,
+    actionLabel: "Wallet balance দেখুন",
+    actionUrl: c.walletUrl,
+    sanitizeBody: false,
+  });
+  return { subject: `Wallet Top-up Approved — ${money(c.amount)} Added`, html };
 }
 
 // ---------- Queue + send ----------
@@ -144,21 +205,9 @@ export async function enqueueEmail(args: EnqueueArgs): Promise<string | null> {
 }
 
 async function callLovableSendEmail(to: string, subject: string, html: string) {
-  // Uses Lovable Emails infra if configured. If the RPC/edge function isn't
-  // available yet, throws — caller records the error on the log row.
-  const url = `${process.env.SUPABASE_URL}/functions/v1/send-email`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-    },
-    body: JSON.stringify({ to, subject, html }),
-  });
-  if (!res.ok) {
-    const t = await res.text().catch(() => "");
-    throw new Error(`send-email returned ${res.status}: ${t.slice(0, 200)}`);
-  }
+  // Platform (ORZEN) sender — same path used by every other platform email.
+  const { sendBrevoEmail } = await import("@/lib/brevo.server");
+  await sendBrevoEmail({ to, subject, html, tags: ["platform"] });
 }
 
 export async function trySendLog(logId: string): Promise<{ ok: boolean; error?: string }> {
