@@ -228,11 +228,9 @@ function Page() {
                 subscribe the page to the <b>messages</b> and <b>messaging_postbacks</b> fields. Keep one callback URL
                 only — never register a second endpoint.
               </p>
-              {MESSENGER_WEBHOOK_URL !== FALLBACK_WEBHOOK_URL ? (
-                <p className="text-xs text-muted-foreground">
-                  Always-available alternative: <span className="break-all">{FALLBACK_WEBHOOK_URL}</span>
-                </p>
-              ) : null}
+              <p className="text-xs text-muted-foreground">
+                This must stay on the live domain — preview URLs cannot approve wallet payments.
+              </p>
             </CardContent>
           </Card>
 
