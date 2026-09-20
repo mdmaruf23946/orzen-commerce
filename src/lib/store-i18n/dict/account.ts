@@ -36,6 +36,10 @@ export const accountDict: Dict = {
     en: "If an account matches, a reset link has been sent. Please check your email.",
     bn: "অ্যাকাউন্ট থাকলে রিসেট লিংক পাঠানো হয়েছে। আপনার ইমেইল দেখুন।",
   },
+  "auth.resetUnavailable": {
+    en: "We could not send the reset email right now. Please contact the store for help.",
+    bn: "এই মুহূর্তে রিসেট ইমেইল পাঠানো যায়নি। সহায়তার জন্য দোকানের সাথে যোগাযোগ করুন।",
+  },
   "auth.resetTitle": { en: "Set a new password", bn: "নতুন পাসওয়ার্ড দিন" },
   "auth.resetDone": {
     en: "Password updated. Please sign in with your new password.",

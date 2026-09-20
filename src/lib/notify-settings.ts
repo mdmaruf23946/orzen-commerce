@@ -89,9 +89,25 @@ export type NotifySettings = {
 
 export type ChannelKey = "whatsapp" | "email" | "sms";
 
-function defaultEvents(admin = true, customer = false): EventMap {
+/** Events a shopper is expected to receive as soon as a sender is connected. */
+const CUSTOMER_FACING: NotifyEventKey[] = [
+  "order_confirmed",
+  "order_status",
+  "order_cancelled",
+  "return_update",
+  "digital_delivery",
+  "customer_password_reset",
+  "courier_update",
+];
+
+function defaultEvents(admin = true, customer?: boolean): EventMap {
   const m: EventMap = {};
-  for (const e of NOTIFY_EVENTS) m[e.key] = { admin, customer };
+  for (const e of NOTIFY_EVENTS) {
+    m[e.key] = {
+      admin,
+      customer: customer ?? CUSTOMER_FACING.includes(e.key),
+    };
+  }
   return m;
 }
 
