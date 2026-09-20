@@ -123,8 +123,8 @@ export async function closeSupport(hint?: string | null, note?: string | null) {
   if (target.requestId) {
     await supabaseAdmin
       .from("ai_admin_support_requests")
-      .update({ status: "closed", resolution: note ?? null, closed_at: new Date().toISOString() })
+      .update({ status: "resolved", resolved_at: new Date().toISOString() })
       .eq("id", target.requestId);
   }
-  return { closed: target.name ?? target.psid, psid: target.psid };
+  return { closed: target.name ?? target.psid, psid: target.psid, note: note ?? null };
 }
