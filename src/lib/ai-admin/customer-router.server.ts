@@ -67,7 +67,8 @@ export async function handleCustomerMessage(args: {
     for (const admin of (conn?.admin_psids ?? []).map((p) => String(p).trim()).filter(Boolean)) {
       await sendAdminMessengerMessage(
         admin,
-        `💬 ${thread.display_name || "Customer"} (${psid}):\n${text.slice(0, 800)}`,
+        `💬 ${thread.display_name || "Customer"} (${psid}):\n${text.slice(0, 800)}\n\n` +
+          `↩️ উত্তর দিতে এখানেই লিখুন — আমি তাকে জানিয়ে দেব।`,
       ).catch(() => {});
     }
     return {};
