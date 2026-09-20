@@ -230,7 +230,7 @@ export const Route = createFileRoute("/api/public/ai-admin/messenger-webhook")({
               .select("role, content")
               .eq("thread_id", threadId)
               .order("created_at", { ascending: false })
-              .limit(10)
+              .limit(20)
           : { data: [] as { role: string; content: string }[] };
 
         if (threadId) {
