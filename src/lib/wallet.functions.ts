@@ -311,5 +311,14 @@ export const submitWalletTopupManual = createServerFn({ method: "POST" })
       }
     }
 
+    // Push the request to the platform owner's Messenger with Approve/Reject
+    // buttons so it can be verified without opening the panel.
+    try {
+      const { notifyOwnerTopupSubmitted } = await import("./ai-admin/topup-messenger.server");
+      await notifyOwnerTopupSubmitted((payment as any).id);
+    } catch (e) {
+      console.error("[wallet] owner messenger alert failed", (e as Error).message);
+    }
+
     return { ok: true as const, paymentId: (payment as any).id, invoice_no: invoiceNo, amount };
   });
