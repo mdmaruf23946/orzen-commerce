@@ -75,3 +75,5 @@ RULE: never publish orzen.top from the Lovable Publish button. Always redeploy t
 
 34. [x] **Customer email fix + email-verify lockout fix** (done 2026-09-20, deploy version 826ff48e) — customer-facing notifications (order confirmation, digital delivery, password reset) now default ON for customer audience so merchants with their own provider actually send; failed sends no longer show a false "sent" message (clear warning instead); existing merchants with a confirmed email are no longer blocked by the verify-email gate on billing/subscription/domains/couriers/employees/payments. Typecheck clean, guarded deploy to orzen.commerce-production passed identity + parity checks; orzen.top 200 with HSTS.
 35. [x] Wallet Add Fund emails (submitted + approved + rejected) via ORZEN platform sender; recipient email shown inside every email.
+
+36. [x] Email delivery fix: enqueueEmail awaits trySendLog (serverless-safe) + backlogged emails re-sent live (deploy 10529ab0)
