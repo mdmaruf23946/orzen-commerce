@@ -199,8 +199,14 @@ export async function enqueueEmail(args: EnqueueArgs): Promise<string | null> {
     console.error("[emails] enqueue failed", error);
     return null;
   }
-  // Attempt delivery immediately (fire and forget)
-  trySendLog(data.id).catch((e) => console.error("[emails] send error", e));
+  // Deliver before the response finishes — fire-and-forget promises die on the
+  // serverless worker, leaving mails stuck in "pending". Failures stay logged
+  // (status: failed) and never block the caller.
+  try {
+    await trySendLog(data.id);
+  } catch (e) {
+    console.error("[emails] send error", e);
+  }
   return data.id;
 }
 
