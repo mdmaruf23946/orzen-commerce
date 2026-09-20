@@ -22,6 +22,7 @@ function ForgotPage() {
   const [identifier, setIdentifier] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [captcha, setCaptcha] = useState("");
 
   async function submit(e: React.FormEvent) {
@@ -33,8 +34,11 @@ function ForgotPage() {
     setLoading(true);
 
     try {
-      await request({ data: { storeSlug: slug, identifier, captcha } });
+      const res = (await request({ data: { storeSlug: slug, identifier, captcha } })) as
+        | { ok: boolean; sentTo: "email" | null }
+        | undefined;
 
+      setFailed(res?.sentTo === null && res?.ok === true ? false : false);
       setSent(true);
     } catch (err) {
       toast.error((err as Error).message);
