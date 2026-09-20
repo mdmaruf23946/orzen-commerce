@@ -22,6 +22,7 @@ function ForgotPage() {
   const [identifier, setIdentifier] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [captcha, setCaptcha] = useState("");
 
   async function submit(e: React.FormEvent) {
@@ -33,8 +34,11 @@ function ForgotPage() {
     setLoading(true);
 
     try {
-      await request({ data: { storeSlug: slug, identifier, captcha } });
+      const res = (await request({ data: { storeSlug: slug, identifier, captcha } })) as
+        | { ok: boolean; sentTo: "email" | "failed" | null }
+        | undefined;
 
+      setFailed(res?.sentTo === "failed");
       setSent(true);
     } catch (err) {
       toast.error((err as Error).message);
@@ -48,9 +52,15 @@ function ForgotPage() {
       <div className="rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
         <h1 className="text-center text-lg font-semibold sm:text-xl">{t("auth.forgotTitle")}</h1>
         {sent ? (
-          <p className="mt-4 rounded-lg bg-emerald-50 p-3 text-center text-sm text-emerald-800">
-            {t("auth.resetSent")}
-          </p>
+          failed ? (
+            <p className="mt-4 rounded-lg bg-amber-50 p-3 text-center text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">
+              {t("auth.resetUnavailable")}
+            </p>
+          ) : (
+            <p className="mt-4 rounded-lg bg-emerald-50 p-3 text-center text-sm text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200">
+              {t("auth.resetSent")}
+            </p>
+          )
         ) : (
           <>
             <p className="mt-2 text-center text-xs text-muted-foreground">{t("auth.forgotBody")}</p>
