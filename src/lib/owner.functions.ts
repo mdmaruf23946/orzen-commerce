@@ -361,13 +361,15 @@ export const verifyPayment = createServerFn({ method: "POST" })
         meta: { payment_id: pay.id, reason },
       });
       if (pay.customer_email) {
+        const isTopup = (pay as any).purpose === "wallet_topup";
         const tpl = await tplPaymentRejected({
           ownerName: null,
-          planName: pkg?.name ?? "your plan",
+          planName: isTopup ? "Wallet Add Fund" : (pkg?.name ?? "your plan"),
           amount: Number(pay.amount),
           reason,
           supportEmail,
           retryUrl: "/admin/billing",
+          customerEmail: pay.customer_email,
         });
         await enqueueEmail({
           to: pay.customer_email,
@@ -434,6 +436,34 @@ export const verifyPayment = createServerFn({ method: "POST" })
           },
         })
         .then(() => null, () => null);
+
+      if (pay.customer_email) {
+        try {
+          const { tplWalletTopupApproved } = await import("./emails.server");
+          const tpl = await tplWalletTopupApproved({
+            ownerName: null,
+            storeName: store?.name ?? null,
+            customerEmail: pay.customer_email,
+            amount: Number(pay.amount),
+            method: pay.method ?? "manual",
+            txnId: pay.txn_id ?? null,
+            invoiceNo: (pay as any).invoice_no ?? null,
+            submittedAt: nowT.toISOString().replace("T", " ").slice(0, 16) + " UTC",
+            balanceAfter: typeof res?.balance === "number" ? res.balance : null,
+            walletUrl: "/admin/billing",
+          });
+          await enqueueEmail({
+            to: pay.customer_email,
+            template: "wallet_topup_approved",
+            subject: tpl.subject,
+            html: tpl.html,
+            payload: { payment_id: pay.id, amount: Number(pay.amount) },
+            relatedPaymentId: pay.id,
+          });
+        } catch (e) {
+          console.error("[wallet] approval email failed", (e as Error).message);
+        }
+      }
       return { ok: true, invoice_no: (pay as any).invoice_no ?? null };
     }
 
