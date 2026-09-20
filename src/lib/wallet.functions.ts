@@ -283,5 +283,33 @@ export const submitWalletTopupManual = createServerFn({ method: "POST" })
       })
       .then(() => null, () => null);
 
+    if (data.customer_email) {
+      try {
+        const { enqueueEmail, tplWalletTopupSubmitted } = await import("./emails.server");
+        const { data: st } = await sb.from("stores").select("name").eq("id", (store as any).id).maybeSingle();
+        const tpl = await tplWalletTopupSubmitted({
+          ownerName: null,
+          storeName: (st as any)?.name ?? null,
+          customerEmail: data.customer_email,
+          amount,
+          method: data.method,
+          txnId: data.txn_id,
+          invoiceNo,
+          submittedAt: new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC",
+          walletUrl: "/admin/billing",
+        });
+        await enqueueEmail({
+          to: data.customer_email,
+          template: "wallet_topup_submitted",
+          subject: tpl.subject,
+          html: tpl.html,
+          payload: { payment_id: (payment as any).id, amount },
+          relatedPaymentId: (payment as any).id,
+        });
+      } catch (e) {
+        console.error("[wallet] submit email failed", (e as Error).message);
+      }
+    }
+
     return { ok: true as const, paymentId: (payment as any).id, invoice_no: invoiceNo, amount };
   });
