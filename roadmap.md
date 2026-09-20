@@ -78,3 +78,4 @@ RULE: never publish orzen.top from the Lovable Publish button. Always redeploy t
 
 36. [x] Email delivery fix: enqueueEmail awaits trySendLog (serverless-safe) + backlogged emails re-sent live (deploy 10529ab0)
 37. [x] White-label hard guard: CUSTOMER_FACING_TEMPLATES blocklist in emails.server.ts — enqueueEmail refuses + trySendLog marks "skipped" so shopper emails can never leave via ORZEN platform sender (deploy 3cd43594)
+38. [x] **Messenger Add Fund approvals + AI context fix** — owner gets merchant/payment details with Approve/Reject buttons in Messenger; postback executes wallet credit or rejection with merchant email; admin agent keeps 20-message context (deploy 2cd2c155)

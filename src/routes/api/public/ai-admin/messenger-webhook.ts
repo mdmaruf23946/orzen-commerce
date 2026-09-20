@@ -114,6 +114,7 @@ export const Route = createFileRoute("/api/public/ai-admin/messenger-webhook")({
         const psid: string = String(messaging.sender?.id ?? "");
         const messageId: string = String(messaging.message?.mid ?? "");
         const text: string = String(messaging.message?.text ?? messaging.postback?.title ?? "");
+        const postbackPayload: string = String(messaging.postback?.payload ?? "");
         if (!psid) return new Response("ok", { status: 200 });
 
         // Dedup on message id.
@@ -144,6 +145,36 @@ export const Route = createFileRoute("/api/public/ai-admin/messenger-webhook")({
               .eq("message_id", messageId);
           }
           return new Response("ok", { status: 200 });
+        }
+
+        // Owner tapped Approve / Reject on a wallet Add Fund alert. This runs
+        // even when the AI agent is switched off — it is a direct admin action,
+        // authorised only by the server-side PSID allow-list above.
+        {
+          const { TOPUP_APPROVE_PREFIX, TOPUP_REJECT_PREFIX, decideTopupFromMessenger } = await import(
+            "@/lib/ai-admin/topup-messenger.server"
+          );
+          const isApprove = postbackPayload.startsWith(TOPUP_APPROVE_PREFIX);
+          const isReject = postbackPayload.startsWith(TOPUP_REJECT_PREFIX);
+          if (isApprove || isReject) {
+            const paymentId = postbackPayload.slice(
+              (isApprove ? TOPUP_APPROVE_PREFIX : TOPUP_REJECT_PREFIX).length,
+            );
+            let out = "";
+            try {
+              out = await decideTopupFromMessenger({ paymentId, approve: isApprove, actor: `psid:${psid}` });
+            } catch (e) {
+              out = `⚠️ কাজটি সম্পন্ন করা যায়নি: ${e instanceof Error ? e.message : "unknown error"}`;
+            }
+            await sendAdminMessengerMessage(psid, out).catch(() => {});
+            if (messageId) {
+              await supabaseAdmin
+                .from("ai_admin_webhook_events")
+                .update({ processed: true })
+                .eq("message_id", messageId);
+            }
+            return new Response("ok", { status: 200 });
+          }
         }
 
         if (!settings?.agent_enabled) {
@@ -199,7 +230,7 @@ export const Route = createFileRoute("/api/public/ai-admin/messenger-webhook")({
               .select("role, content")
               .eq("thread_id", threadId)
               .order("created_at", { ascending: false })
-              .limit(10)
+              .limit(20)
           : { data: [] as { role: string; content: string }[] };
 
         if (threadId) {
