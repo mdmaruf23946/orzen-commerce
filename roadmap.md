@@ -77,3 +77,4 @@ RULE: never publish orzen.top from the Lovable Publish button. Always redeploy t
 35. [x] Wallet Add Fund emails (submitted + approved + rejected) via ORZEN platform sender; recipient email shown inside every email.
 
 36. [x] Email delivery fix: enqueueEmail awaits trySendLog (serverless-safe) + backlogged emails re-sent live (deploy 10529ab0)
+37. [x] White-label hard guard: CUSTOMER_FACING_TEMPLATES blocklist in emails.server.ts — enqueueEmail refuses + trySendLog marks "skipped" so shopper emails can never leave via ORZEN platform sender (deploy 3cd43594)

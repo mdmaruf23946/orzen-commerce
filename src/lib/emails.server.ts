@@ -174,6 +174,29 @@ export async function tplWalletTopupApproved(c: WalletTopupCtx) {
 
 // ---------- Queue + send ----------
 
+/**
+ * White-label rule: ORZEN's platform sender must NEVER email a merchant's
+ * customer. Store-facing shopper emails (order confirmation, delivery,
+ * password reset, etc.) only go through the merchant's own email provider
+ * (see src/lib/notify/email.server.ts). This blocklist is a hard guard at
+ * the platform queue so no code path — current or future — can leak a
+ * shopper email through the ORZEN sender.
+ */
+export const CUSTOMER_FACING_TEMPLATES = new Set([
+  "order_confirmation",
+  "order_confirmed",
+  "order_status",
+  "order_cancelled",
+  "return_update",
+  "digital_delivery",
+  "customer_password_reset",
+  "courier_update",
+]);
+
+export function isCustomerFacingTemplate(template: string | null | undefined): boolean {
+  return CUSTOMER_FACING_TEMPLATES.has(String(template ?? ""));
+}
+
 type EnqueueArgs = {
   to: string;
   template: string;
@@ -184,6 +207,12 @@ type EnqueueArgs = {
 };
 
 export async function enqueueEmail(args: EnqueueArgs): Promise<string | null> {
+  // Hard guard: customer-facing shopper emails must never enter the ORZEN
+  // platform queue — they belong to the merchant's own email provider.
+  if (isCustomerFacingTemplate(args.template)) {
+    console.warn(`[emails] blocked customer-facing template on platform queue: ${args.template}`);
+    return null;
+  }
   const { data, error } = await (supabaseAdmin.from("email_logs") as any)
     .insert({
       to_email: args.to,
@@ -220,7 +249,18 @@ export async function trySendLog(logId: string): Promise<{ ok: boolean; error?: 
   const sb: any = supabaseAdmin;
   const { data: log } = await sb.from("email_logs").select("*").eq("id", logId).maybeSingle();
   if (!log) return { ok: false, error: "log not found" };
-  if (log.status === "sent") return { ok: true };
+  if (log.status === "sent" || log.status === "skipped") return { ok: true };
+
+  // White-label guard: never deliver a shopper email from the ORZEN sender,
+  // even if a row was queued before the guard existed.
+  if (isCustomerFacingTemplate(log.template)) {
+    const msg = "Blocked: customer-facing email — ORZEN platform sender is merchant-only. The merchant must connect their own email provider (Settings → Notifications).";
+    await sb
+      .from("email_logs")
+      .update({ status: "skipped", attempts: (log.attempts ?? 0) + 1, last_error: msg })
+      .eq("id", logId);
+    return { ok: false, error: msg };
+  }
 
   try {
     await callLovableSendEmail(log.to_email, log.subject, log.html);
