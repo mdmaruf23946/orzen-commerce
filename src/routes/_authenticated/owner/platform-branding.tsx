@@ -512,7 +512,7 @@ function PlatformBrandingPage() {
           />
         </div>
         <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-          Home Screen-এর App Icon বদলাতে নিচের App Icon ব্যবহার করুন; সেটি এই চালুর স্ক্রিনে ব্যবহার হবে না।
+          <strong>Chrome-এর নিয়ম:</strong> App-এ চাপ দেওয়ার পর প্রথম অল্প সময় Home Screen-এর App Icon দেখা যেতে পারে। তারপর এই আলাদা Splash Logo দেখাবে। Chrome-এর প্রথম অংশটি website থেকে আলাদাভাবে বদলানো যায় না।
         </p>
       </section>
 
