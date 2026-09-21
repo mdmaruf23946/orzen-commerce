@@ -190,54 +190,6 @@ function PlatformFavicon() {
   return null;
 }
 
-function PlatformLaunchSplash() {
-  const { data, isFetched } = usePlatformBranding();
-  const [visible, setVisible] = useState(false);
-  const [standalone, setStandalone] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      ("standalone" in window.navigator &&
-        (window.navigator as Navigator & { standalone?: boolean }).standalone === true);
-    setStandalone(isStandalone);
-  }, []);
-
-  useEffect(() => {
-    if (!standalone || !isFetched) return;
-
-    setVisible(true);
-    const timer = window.setTimeout(() => setVisible(false), 2200);
-    return () => window.clearTimeout(timer);
-  }, [isFetched, standalone]);
-
-  const splashLogo = data?.assets?.launchSplashLogo?.url;
-  // Without a dedicated splash logo the OS launch screen is enough — showing a
-  // second, different screen would look like the logo changed mid-launch.
-  if (!visible || !splashLogo) return null;
-
-  return (
-    <div
-      className="fixed inset-0 z-[9999] flex min-h-dvh flex-col items-center justify-center bg-background px-6 text-foreground"
-      role="status"
-      aria-label="ORZEN app চালু হচ্ছে"
-    >
-      <div className="flex min-h-44 w-full max-w-xs items-center justify-center">
-        <img
-          src={splashLogo}
-          alt="ORZEN"
-          className="max-h-40 max-w-40 object-contain"
-        />
-      </div>
-
-      <p className="absolute bottom-[10vh] text-center text-xl font-medium sm:text-2xl">
-        ORZEN - Smart Commerce
-      </p>
-    </div>
-  );
-}
-
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
@@ -269,7 +221,6 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <PlatformFavicon />
-      <PlatformLaunchSplash />
       <PlatformInstallPrompt />
       <Outlet />
       <Toaster richColors position="top-center" />

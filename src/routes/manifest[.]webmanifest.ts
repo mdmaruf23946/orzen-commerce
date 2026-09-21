@@ -52,16 +52,16 @@ export const Route = createFileRoute("/manifest.webmanifest")({
           // Branding is optional — a manifest without icons still installs.
         }
 
-        // Chrome builds its native launch screen from the largest manifest icon.
-        // When a dedicated splash logo exists, expose it as the largest icon so
-        // the OS screen and the in-app splash show the same logo (no double flash).
-        const largest = splash ?? icon512;
-
-        const icons = [
-          icon192 && { src: icon192, sizes: "192x192", type: "image/png", purpose: "any" },
-          largest && { src: largest, sizes: "512x512", type: "image/png", purpose: "any" },
-          icon512 && { src: icon512, sizes: "512x512", type: "image/png", purpose: "maskable" },
-        ].filter(Boolean);
+        // Chrome renders its own native launch screen before website code starts.
+        // Use the dedicated launch upload for every native splash candidate and do
+        // not render another website overlay, otherwise Android shows two screens.
+        const nativeLaunchIcon = splash ?? icon512 ?? icon192;
+        const icons = nativeLaunchIcon
+          ? [
+              { src: nativeLaunchIcon, sizes: "192x192", purpose: "any" },
+              { src: nativeLaunchIcon, sizes: "512x512", purpose: "any maskable" },
+            ]
+          : [];
 
 
         const manifest = {
@@ -83,7 +83,7 @@ export const Route = createFileRoute("/manifest.webmanifest")({
         return new Response(JSON.stringify(manifest), {
           headers: {
             "Content-Type": "application/manifest+json; charset=utf-8",
-            "Cache-Control": "public, max-age=300",
+            "Cache-Control": "no-cache, max-age=0, must-revalidate",
           },
         });
       },
