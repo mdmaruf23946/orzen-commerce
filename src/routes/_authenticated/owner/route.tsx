@@ -114,7 +114,7 @@ function SectionTabBar({ pathname }: { pathname: string }) {
   );
   if (!section) return null;
   return (
-    <div className="mb-4 flex gap-1 overflow-x-auto border-b pb-px">
+    <div className="mb-4 flex w-full min-w-0 max-w-full gap-1 overflow-x-auto overscroll-x-contain border-b pb-px">
       {section.tabs.map((t) => {
         const active = t.exact ? pathname === t.to : pathname === t.to || pathname.startsWith(t.to + "/");
         return (
@@ -220,9 +220,11 @@ function OwnerLayout() {
           </nav>
         </aside>
         {open && <div className="fixed inset-0 z-30 bg-black/40 md:hidden" onClick={() => setOpen(false)} />}
-        <main className="min-w-0 flex-1 overflow-x-hidden p-3 sm:p-4 md:p-8">
-          <SectionTabBar pathname={pathname} />
-          <Outlet />
+        <main className="w-full min-w-0 max-w-full flex-1 overflow-x-hidden p-3 sm:p-4 md:p-8">
+          <div className="w-full min-w-0 max-w-full">
+            <SectionTabBar pathname={pathname} />
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
