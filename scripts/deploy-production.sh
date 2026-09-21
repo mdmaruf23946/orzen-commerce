@@ -109,8 +109,23 @@ fi
 
 CONFIG="dist/server/wrangler.json"
 if [ ! -f "$CONFIG" ]; then
-  echo "Cloudflare Worker configuration was not generated; deployment stopped." >&2
-  exit 1
+  # Some Nitro builds skip emitting the deploy config. Write the same file the
+  # cloudflare-module preset would produce, so deployments never depend on it.
+  if [ ! -f "dist/server/index.mjs" ] || [ ! -d "dist/client" ]; then
+    echo "Build output is incomplete; deployment stopped." >&2
+    exit 1
+  fi
+  cat > "$CONFIG" <<'JSON'
+{
+  "main": "index.mjs",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "no_bundle": true,
+  "rules": [{ "type": "ESModule", "globs": ["**/*.mjs", "**/*.js"] }],
+  "assets": { "binding": "ASSETS", "directory": "../client" }
+}
+JSON
+  echo "· Generated the Cloudflare Worker configuration."
 fi
 
 python3 - "$CONFIG" <<'PY'
