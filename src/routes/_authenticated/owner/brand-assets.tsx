@@ -20,6 +20,16 @@ import { PAYMENT_BRANDS } from "@/components/admin/payments/providers";
 
 
 export const Route = createFileRoute("/_authenticated/owner/brand-assets")({
+  head: () => ({
+    meta: [
+      { title: "Payment Brand Assets | ORZEN Winner Admin" },
+      { name: "description", content: "Manage payment gateway logos, colors, and brand details in ORZEN Winner Admin." },
+      { property: "og:title", content: "Payment Brand Assets | ORZEN Winner Admin" },
+      { property: "og:description", content: "Manage payment gateway logos, colors, and brand details in ORZEN Winner Admin." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: BrandAssetsPage,
 });
 
@@ -48,7 +58,7 @@ function BrandPreview({ label, brand, logo }: { label: string; brand: BrandField
   const color = brand.brand_color || "#64748B";
   return (
     <div
-      className="flex items-center gap-2 overflow-hidden rounded-xl border p-2 sm:gap-3 sm:p-3"
+      className="flex w-full min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-lg border p-2 sm:gap-3 sm:p-3"
       style={{ borderColor: color + "40", background: (brand.secondary_color || color) + "0D" }}
     >
       <div
@@ -89,7 +99,7 @@ function ColorInput({ label, value, onChange }: { label: string; value: string |
           value={value ?? ""}
           onChange={(e) => onChange(e.target.value)}
           placeholder="#RRGGBB"
-          className="h-8 font-mono text-[11px] sm:h-9 sm:text-xs"
+        className="h-8 min-w-0 font-mono text-[11px] sm:h-9 sm:text-xs"
         />
       </div>
     </div>
@@ -162,8 +172,8 @@ function BrandCard({
   const wordSrc = logoSrc(f.wordmark_url);
 
   return (
-    <div className="space-y-3 rounded-xl border bg-card p-2.5 sm:space-y-4 sm:p-3 md:p-4">
-      <div className="flex items-start justify-between gap-2">
+    <div className="w-full min-w-0 max-w-full space-y-3 overflow-hidden rounded-lg border bg-card p-2.5 sm:space-y-4 sm:p-3 md:p-4">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-semibold md:text-base">{title}</div>
           {subtitle && <div className="truncate text-[10px] text-muted-foreground sm:text-xs">{subtitle}</div>}
@@ -178,21 +188,21 @@ function BrandCard({
 
       {wordSrc && (
         <div
-          className="flex items-center justify-center overflow-hidden rounded-lg border p-2"
+          className="flex w-full min-w-0 items-center justify-center overflow-hidden rounded-lg border p-2"
           style={{ background: (f.icon_bg_color || "#ffffff") }}
         >
-          <img src={wordSrc} alt={`${f.label} wordmark`} className="max-h-10 w-auto object-contain sm:max-h-12" />
+          <img src={wordSrc} alt={`${f.label} wordmark`} className="max-h-10 max-w-full object-contain sm:max-h-12" />
         </div>
       )}
 
-      <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
-        <div className="space-y-1 sm:space-y-1.5 sm:col-span-2">
+      <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
+        <div className="min-w-0 space-y-1 sm:col-span-2 sm:space-y-1.5">
           <Label className="text-[11px] sm:text-xs">Brand name</Label>
           <Input value={f.label ?? ""} onChange={(e) => setF({ ...f, label: e.target.value })} className="h-8 text-xs sm:h-9 sm:text-sm" />
         </div>
 
-        <div className="space-y-1 sm:space-y-1.5 sm:col-span-2">
-          <Label className="text-[11px] sm:text-xs">Icon logo (square — SVG / PNG / WebP)</Label>
+        <div className="min-w-0 space-y-1 sm:col-span-2 sm:space-y-1.5">
+          <Label className="block break-words text-[11px] sm:text-xs">Icon logo (square — SVG / PNG / WebP)</Label>
           <div className="flex flex-wrap items-center gap-2">
             <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1.5 text-[11px] hover:bg-muted sm:px-3 sm:py-2 sm:text-xs">
               {uploadingIcon ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
@@ -212,8 +222,8 @@ function BrandCard({
           </div>
         </div>
 
-        <div className="space-y-1 sm:space-y-1.5 sm:col-span-2">
-          <Label className="text-[11px] sm:text-xs">Name logo (wordmark — SVG / PNG / WebP)</Label>
+        <div className="min-w-0 space-y-1 sm:col-span-2 sm:space-y-1.5">
+          <Label className="block break-words text-[11px] sm:text-xs">Name logo (wordmark — SVG / PNG / WebP)</Label>
           <div className="flex flex-wrap items-center gap-2">
             <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1.5 text-[11px] hover:bg-muted sm:px-3 sm:py-2 sm:text-xs">
               {uploadingWord ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
@@ -236,7 +246,7 @@ function BrandCard({
         <ColorInput label="Brand color" value={f.brand_color} onChange={(v) => setF({ ...f, brand_color: v })} />
         <ColorInput label="Secondary color" value={f.secondary_color} onChange={(v) => setF({ ...f, secondary_color: v })} />
         <ColorInput label="Icon background" value={f.icon_bg_color} onChange={(v) => setF({ ...f, icon_bg_color: v })} />
-        <div className="space-y-1 sm:space-y-1.5 sm:col-span-2">
+        <div className="min-w-0 space-y-1 sm:col-span-2 sm:space-y-1.5">
           <Label className="text-[11px] sm:text-xs">Short description</Label>
           <Textarea
             rows={2}
@@ -247,7 +257,7 @@ function BrandCard({
           />
         </div>
 
-        <div className="space-y-1 sm:space-y-1.5">
+        <div className="min-w-0 space-y-1 sm:space-y-1.5">
           <Label className="text-[11px] sm:text-xs">Official website URL</Label>
           <Input
             type="url"
@@ -257,7 +267,7 @@ function BrandCard({
             className="h-8 text-[11px] sm:h-9 sm:text-xs"
           />
         </div>
-        <div className="space-y-1 sm:space-y-1.5">
+        <div className="min-w-0 space-y-1 sm:space-y-1.5">
           <Label className="text-[11px] sm:text-xs">API / documentation URL</Label>
           <Input
             type="url"
@@ -313,7 +323,7 @@ function PaymentGatewaysTab() {
   }, [data]);
 
   return (
-    <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
+    <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
       {rows.map((r) => (
         <BrandCard
           key={r.id}
@@ -362,7 +372,7 @@ function PaymentGatewaysTab() {
 
 function BrandAssetsPage() {
   return (
-    <div>
+    <div className="w-full min-w-0 max-w-full overflow-hidden">
       <OwnerPageHeader
         title="Payment Gateway Brand Assets"
         description="Central branding for every payment gateway. Courier branding lives in Courier Brand Assets."
