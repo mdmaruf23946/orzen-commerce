@@ -92,8 +92,9 @@ export async function resolveTarget(hint?: string | null): Promise<SupportTarget
 
   if (open.length === 1) return open[0]!;
   if (open.length > 1) {
-    // Most recent one — the owner is normally answering the newest alert.
-    return open[0]!;
+    throw new Error(
+      `Several customers are waiting: ${open.map((o) => o.name ?? o.psid).join(", ")}. Ask the owner which one this reply is for.`,
+    );
   }
 
   // No open request: fall back to the conversation a human most recently took over.
