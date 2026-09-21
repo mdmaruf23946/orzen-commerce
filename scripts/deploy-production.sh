@@ -118,7 +118,7 @@ if [ ! -f "$CONFIG" ]; then
   cat > "$CONFIG" <<'JSON'
 {
   "main": "index.mjs",
-  "compatibility_date": "2025-09-01",
+  "compatibility_date": "2026-09-01",
   "compatibility_flags": ["nodejs_compat"],
   "no_bundle": true,
   "rules": [{ "type": "ESModule", "globs": ["**/*.mjs", "**/*.js"] }],
