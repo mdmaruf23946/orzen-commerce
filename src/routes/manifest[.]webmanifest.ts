@@ -28,6 +28,7 @@ export const Route = createFileRoute("/manifest.webmanifest")({
 
         let icon192: string | null = null;
         let icon512: string | null = null;
+        let splash: string | null = null;
         let themeColor = "#0f172a";
         try {
           const url = process.env["SUPABASE_URL"];
@@ -43,6 +44,7 @@ export const Route = createFileRoute("/manifest.webmanifest")({
               const assets = b?.assets ?? {};
               icon192 = assets?.appIcon192?.url ?? assets?.favicon?.url ?? null;
               icon512 = assets?.appIcon512?.url ?? assets?.primaryLogo?.url ?? icon192;
+              splash = assets?.launchSplashLogo?.url ?? null;
               if (typeof b?.combo?.themeColor === "string") themeColor = b.combo.themeColor;
             }
           }
@@ -50,11 +52,17 @@ export const Route = createFileRoute("/manifest.webmanifest")({
           // Branding is optional — a manifest without icons still installs.
         }
 
+        // Chrome builds its native launch screen from the largest manifest icon.
+        // When a dedicated splash logo exists, expose it as the largest icon so
+        // the OS screen and the in-app splash show the same logo (no double flash).
+        const largest = splash ?? icon512;
+
         const icons = [
           icon192 && { src: icon192, sizes: "192x192", type: "image/png", purpose: "any" },
-          icon512 && { src: icon512, sizes: "512x512", type: "image/png", purpose: "any" },
+          largest && { src: largest, sizes: "512x512", type: "image/png", purpose: "any" },
           icon512 && { src: icon512, sizes: "512x512", type: "image/png", purpose: "maskable" },
         ].filter(Boolean);
+
 
         const manifest = {
           id: "/",
