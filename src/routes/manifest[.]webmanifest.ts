@@ -59,7 +59,9 @@ export const Route = createFileRoute("/manifest.webmanifest")({
         const icons = nativeLaunchIcon
           ? [
               { src: nativeLaunchIcon, sizes: "192x192", purpose: "any" },
-              { src: nativeLaunchIcon, sizes: "512x512", purpose: "any maskable" },
+              // A transparent splash must not be declared maskable: Android fills
+              // the transparent safe-zone with a rounded black app-icon plate.
+              { src: nativeLaunchIcon, sizes: "512x512", purpose: "any" },
             ]
           : [];
 
