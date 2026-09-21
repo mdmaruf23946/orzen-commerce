@@ -32,21 +32,21 @@ export const PLACEMENT_KEYS = [
 export type PlacementKey = (typeof PLACEMENT_KEYS)[number];
 
 export const PLACEMENT_LABELS: Record<PlacementKey, string> = {
-  winner_header: "Winner Admin Header",
-  store_header: "Merchant Panel Header",
-  sidebar: "Sidebar",
-  mobile_header: "Mobile Header",
-  website_header: "Website Header",
+  winner_header: "Winner Admin-এর উপরের হেডার",
+  store_header: "Merchant Panel-এর উপরের হেডার",
+  sidebar: "পাশের মেনু (Sidebar)",
+  mobile_header: "মোবাইল হেডার",
+  website_header: "মূল ওয়েবসাইটের হেডার",
   customer_store: "Customer Store",
-  auth_login: "Login Page",
-  auth_register: "Register Page",
-  auth_forgot: "Forgot Password Page",
-  footer: "Footer",
-  checkout: "Checkout",
-  order_confirm: "Order Confirmation",
+  auth_login: "Login পেজ",
+  auth_register: "Register পেজ",
+  auth_forgot: "Password Reset পেজ",
+  footer: "পেজের নিচের অংশ (Footer)",
+  checkout: "Checkout পেজ",
+  order_confirm: "Order Confirmation পেজ",
   loading: "Loading Screen",
   invoice: "Invoice",
-  email: "Email Templates",
+  email: "Email Template",
 };
 
 export function usePlatformBranding() {

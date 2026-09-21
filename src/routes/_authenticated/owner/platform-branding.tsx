@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Upload } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Moon, Sun, Upload } from "lucide-react";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,28 +27,56 @@ import {
 
 export const Route = createFileRoute("/_authenticated/owner/platform-branding")({
   component: PlatformBrandingPage,
+  head: () => ({
+    meta: [
+      { title: "প্ল্যাটফর্ম ব্র্যান্ডিং — ORZEN Winner Admin" },
+      { name: "description", content: "ORZEN-এর আইকন, নাম লোগো, browser icon ও app icon পরিচালনা করুন।" },
+      { property: "og:title", content: "প্ল্যাটফর্ম ব্র্যান্ডিং — ORZEN Winner Admin" },
+      { property: "og:description", content: "ORZEN-এর সব জায়গার লোগো ও icon পরিচালনা করুন।" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 const LOGO_KEYS = [
-  ["primaryLogo", "Primary Logo"],
-  ["compactLogo", "Compact Logo"],
-  ["squareLogo", "Square Logo"],
-  ["lightLogo", "Light Logo"],
-  ["darkLogo", "Dark Logo"],
+  ["primaryLogo", "প্রধান আইকন লোগো", "সাধারণভাবে সব জায়গায় ব্যবহৃত ছোট প্রতীক।", "square"],
+  ["compactLogo", "ছোট জায়গার আইকন লোগো", "কম জায়গা, ছোট হেডার বা মোবাইলের জন্য।", "square"],
+  ["squareLogo", "বর্গাকার আইকন লোগো", "বর্গাকার প্রদর্শন বা প্রোফাইল ধরনের জায়গার জন্য।", "square"],
+  ["lightLogo", "হালকা ব্যাকগ্রাউন্ডের আইকন লোগো", "সাদা বা হালকা অংশে দেখাবে—গাঢ় রঙের লোগো দিন।", "light"],
+  ["darkLogo", "ডার্ক ব্যাকগ্রাউন্ডের আইকন লোগো", "Dark Mode বা গাঢ় অংশে দেখাবে—সাদা/হালকা লোগো দিন।", "dark"],
 ] as const;
 
 const WORDMARK_KEYS = [
-  ["primaryWordmark", "Primary Wordmark"],
-  ["lightWordmark", "Light Wordmark"],
-  ["darkWordmark", "Dark Wordmark"],
-  ["compactWordmark", "Compact Wordmark"],
+  ["primaryWordmark", "প্রধান নাম লোগো", "ORZEN নামসহ সাধারণ লোগো; বেশিরভাগ জায়গায় এটি ব্যবহৃত হবে।", "wide"],
+  ["lightWordmark", "হালকা ব্যাকগ্রাউন্ডের নাম লোগো", "সাদা বা হালকা অংশের জন্য গাঢ় লেখার নাম লোগো।", "light"],
+  ["darkWordmark", "ডার্ক ব্যাকগ্রাউন্ডের নাম লোগো", "Dark Mode-এর জন্য সাদা/হালকা লেখার স্বচ্ছ PNG বা SVG দিন।", "dark"],
+  ["compactWordmark", "ছোট জায়গার নাম লোগো", "ছোট হেডার বা কম জায়গার জন্য সংক্ষিপ্ত নাম লোগো।", "wide"],
 ] as const;
 
 const ICON_KEYS = [
-  ["favicon", "Favicon (32×32 / SVG / ICO)"],
-  ["appIcon192", "App Icon 192×192"],
-  ["appIcon512", "App Icon 512×512"],
+  ["favicon", "Browser Tab Icon (Favicon)", "ব্রাউজারের ট্যাবে ওয়েবসাইটের নামের পাশে দেখাবে। 32×32 PNG, SVG বা ICO দিন।"],
+  ["appIcon192", "App Icon — ছোট (192×192)", "মোবাইল Home Screen ও ছোট install icon হিসেবে ব্যবহৃত হবে।"],
+  ["appIcon512", "App Icon — বড় (512×512)", "Install করা app-এর বড় ও পরিষ্কার icon হিসেবে ব্যবহৃত হবে।"],
 ] as const;
+
+const PLACEMENT_HELP: Record<PlacementKey, string> = {
+  winner_header: "Winner Admin Panel-এর একদম উপরের অংশে।",
+  store_header: "Merchant Panel-এর একদম উপরের অংশে।",
+  sidebar: "Desktop-এর বাম পাশের মেনুর উপরে।",
+  mobile_header: "মোবাইলে উপরের navigation অংশে।",
+  website_header: "ORZEN-এর মূল website header-এ।",
+  customer_store: "Customer যে online store দেখেন সেখানে।",
+  auth_login: "Account Login করার পেজে।",
+  auth_register: "নতুন Account খোলার পেজে।",
+  auth_forgot: "Password ভুলে গেলে reset করার পেজে।",
+  footer: "Website-এর প্রত্যেক পেজের একদম নিচে।",
+  checkout: "Customer-এর Checkout পেজে।",
+  order_confirm: "Order সফল হওয়ার confirmation পেজে।",
+  loading: "পেজ খোলার সময় Loading Screen-এ।",
+  invoice: "Order Invoice বা receipt-এ।",
+  email: "ORZEN থেকে পাঠানো platform email-এ।",
+};
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 const MAX_ICON_BYTES = 512 * 1024;
@@ -61,6 +89,8 @@ function AssetUploader({
   bucketPath,
   maxBytes,
   accept = "image/*",
+  helperText,
+  previewTone = "default",
 }: {
   slot: string;
   label: string;
@@ -69,6 +99,8 @@ function AssetUploader({
   bucketPath: string;
   maxBytes: number;
   accept?: string;
+  helperText?: string;
+  previewTone?: "default" | "light" | "dark" | "square" | "wide";
 }) {
   const [busy, setBusy] = useState(false);
   const src = value?.url ?? null;
@@ -112,19 +144,22 @@ function AssetUploader({
 
   return (
     <div className="space-y-2 rounded-lg border bg-card p-2.5 sm:p-3">
-      <Label className="text-[11px] sm:text-xs">{label}</Label>
+      <div>
+        <Label className="text-xs font-semibold sm:text-sm">{label}</Label>
+        {helperText && <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{helperText}</p>}
+      </div>
       <div className="flex items-center gap-2">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted/30">
+        <div className={`flex h-14 shrink-0 items-center justify-center overflow-hidden rounded-md border ${previewTone === "wide" ? "w-24" : "w-14"} ${previewTone === "dark" ? "bg-slate-950" : previewTone === "light" ? "bg-white" : "bg-muted/30"}`}>
           {src ? (
             <img src={src} alt={label} className="max-h-full max-w-full object-contain" />
           ) : (
-            <span className="text-[10px] text-muted-foreground">Empty</span>
+            <span className={`text-[10px] ${previewTone === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>খালি</span>
           )}
         </div>
         <div className="flex flex-wrap gap-1.5">
           <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1.5 text-[11px] hover:bg-muted sm:text-xs">
             {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-            {busy ? "Uploading…" : src ? "Replace" : "Upload"}
+            {busy ? "আপলোড হচ্ছে…" : src ? "পরিবর্তন" : "আপলোড"}
             <input
               type="file"
               accept={accept}
@@ -134,7 +169,7 @@ function AssetUploader({
           </label>
           {src && (
             <Button variant="ghost" size="sm" className="h-7 px-2 text-[11px]" onClick={() => onChange(null)}>
-              Remove
+              মুছুন
             </Button>
           )}
         </div>
@@ -144,15 +179,20 @@ function AssetUploader({
 }
 
 function LivePreview({ b }: { b: PlatformBranding }) {
-  const logo = b.assets?.primaryLogo?.url ?? b.assets?.lightLogo?.url ?? b.assets?.compactLogo?.url;
-  const wordmark = b.assets?.primaryWordmark?.url;
   const combo = b.combo;
 
   const flex = combo?.layout === "top" ? "flex-col" : "flex-row";
   const justify =
     combo?.align === "center" ? "justify-center" : combo?.align === "end" ? "justify-end" : "justify-start";
 
-  const Mark = () => (
+  const Mark = ({ dark = false }: { dark?: boolean }) => {
+    const logo = dark
+      ? b.assets?.darkLogo?.url ?? b.assets?.primaryLogo?.url ?? b.assets?.compactLogo?.url
+      : b.assets?.lightLogo?.url ?? b.assets?.primaryLogo?.url ?? b.assets?.compactLogo?.url;
+    const wordmark = dark
+      ? b.assets?.darkWordmark?.url ?? b.assets?.primaryWordmark?.url
+      : b.assets?.lightWordmark?.url ?? b.assets?.primaryWordmark?.url;
+    return (
     <span className={`inline-flex items-center ${flex} ${justify}`} style={{ gap: combo?.gap ?? 8 }}>
       {(combo?.mode === "logo" || combo?.mode === "both") && logo && (
         <img src={logo} alt="" style={{ height: combo?.logoSize ?? 32 }} className="w-auto object-contain" />
@@ -160,25 +200,26 @@ function LivePreview({ b }: { b: PlatformBranding }) {
       {(combo?.mode === "wordmark" || combo?.mode === "both") && wordmark && (
         <img src={wordmark} alt="brand" style={{ height: combo?.wordmarkSize ?? 24 }} className="w-auto object-contain" />
       )}
-      {!logo && !wordmark && <span className="text-sm font-semibold text-muted-foreground">Your brand</span>}
+      {!logo && !wordmark && <span className={dark ? "text-sm font-semibold text-slate-400" : "text-sm font-semibold text-muted-foreground"}>আপনার ব্র্যান্ড</span>}
     </span>
-  );
+    );
+  };
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <div className="rounded-xl border bg-white p-3 shadow-sm">
-        <div className="mb-2 text-[10px] uppercase text-muted-foreground">Desktop header</div>
+        <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground"><Sun className="h-3.5 w-3.5" /> হালকা হেডার</div>
         <div className="flex h-12 items-center border-b px-3"><Mark /></div>
       </div>
       <div className="rounded-xl border bg-slate-900 p-3 text-white shadow-sm">
-        <div className="mb-2 text-[10px] uppercase text-slate-400">Dark header</div>
-        <div className="flex h-12 items-center border-b border-slate-700 px-3"><Mark /></div>
+        <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-slate-400"><Moon className="h-3.5 w-3.5" /> ডার্ক হেডার</div>
+        <div className="flex h-12 items-center border-b border-slate-700 px-3"><Mark dark /></div>
       </div>
       <div className="rounded-xl border bg-white p-3 shadow-sm sm:col-span-2">
-        <div className="mb-2 text-[10px] uppercase text-muted-foreground">Login screen</div>
+        <div className="mb-2 text-[11px] font-medium text-muted-foreground">Login Screen</div>
         <div className="flex h-32 flex-col items-center justify-center gap-2 rounded-lg bg-muted/30">
           <Mark />
-          <div className="text-xs text-muted-foreground">Sign in to continue</div>
+          <div className="text-xs text-muted-foreground">চালিয়ে যেতে Login করুন</div>
         </div>
       </div>
     </div>
@@ -201,13 +242,14 @@ function PlacementCard({
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 text-xs font-semibold sm:text-sm">{PLACEMENT_LABELS[keyName]}</div>
         <label className="flex items-center gap-1.5 text-[11px]">
-          <span className="text-muted-foreground">{v.visible === false ? "Hidden" : "Visible"}</span>
+          <span className="text-muted-foreground">{v.visible === false ? "লুকানো" : "দেখানো"}</span>
           <Switch
             checked={v.visible !== false}
             onCheckedChange={(x) => onChange({ ...v, visible: x })}
           />
         </label>
       </div>
+      <p className="text-[11px] leading-relaxed text-muted-foreground">{PLACEMENT_HELP[keyName]}</p>
       <div className="flex flex-wrap gap-2 text-[11px]">
         <label className="inline-flex items-center gap-1">
           <input
@@ -215,7 +257,7 @@ function PlacementCard({
             checked={!isCustom}
             onChange={() => onChange({ ...v, source: "global" })}
           />
-          Use global
+          মূল লোগো ব্যবহার করুন
         </label>
         <label className="inline-flex items-center gap-1">
           <input
@@ -223,23 +265,47 @@ function PlacementCard({
             checked={isCustom}
             onChange={() => onChange({ ...v, source: "custom" })}
           />
-          Use custom
+          আলাদা লোগো দিন
         </label>
       </div>
       <div className="grid grid-cols-3 gap-1.5">
         {(["logo", "wordmark", "both"] as const).map((m) => (
-          <button
+          <Button
             key={m}
             type="button"
+            variant={(v.mode ?? "both") === m ? "default" : "outline"}
+            size="sm"
             onClick={() => onChange({ ...v, mode: m })}
-            className={`rounded-md border px-2 py-1 text-[11px] ${
-              (v.mode ?? "both") === m ? "bg-primary text-primary-foreground" : "hover:bg-muted"
-            }`}
+            className="h-7 px-2 text-[11px]"
           >
-            {m}
-          </button>
+            {m === "logo" ? "শুধু আইকন" : m === "wordmark" ? "শুধু নাম" : "দুটোই"}
+          </Button>
         ))}
       </div>
+      {isCustom && (
+        <div className="grid gap-2 border-t pt-2">
+          <AssetUploader
+            slot={`${keyName}Logo`}
+            label="এই জায়গার আইকন লোগো"
+            helperText="শুধু এই জায়গাতেই ব্যবহৃত হবে।"
+            value={v.logo ?? null}
+            onChange={(logo) => onChange({ ...v, logo })}
+            bucketPath={`placements/${keyName}`}
+            maxBytes={MAX_LOGO_BYTES}
+            previewTone="square"
+          />
+          <AssetUploader
+            slot={`${keyName}Wordmark`}
+            label="এই জায়গার নাম লোগো"
+            helperText="নাম বা wordmark; শুধু এই জায়গাতেই ব্যবহৃত হবে।"
+            value={v.wordmark ?? null}
+            onChange={(wordmark) => onChange({ ...v, wordmark })}
+            bucketPath={`placements/${keyName}`}
+            maxBytes={MAX_LOGO_BYTES}
+            previewTone="wide"
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -302,18 +368,26 @@ function PlatformBrandingPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       <OwnerPageHeader
-        title="Platform Branding"
-        description="Central control for the platform's logo, wordmark, favicon, and per-location branding. Existing pages keep their current branding until you publish."
+        title="প্ল্যাটফর্ম ব্র্যান্ডিং"
+        description="ORZEN-এর কোন লোগো কোথায় দেখাবে তা এখান থেকে সহজে নিয়ন্ত্রণ করুন। প্রকাশ না করা পর্যন্ত বর্তমান লোগো অপরিবর্তিত থাকবে।"
       />
 
+      <div className="flex items-start gap-3 rounded-lg border bg-muted/40 p-3 text-sm">
+        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        <p><strong>সহজ নিয়ম:</strong> হালকা ঘরে গাঢ় রঙের লোগো এবং Dark ঘরে সাদা/হালকা রঙের স্বচ্ছ লোগো দিন।</p>
+      </div>
+
       <section className="rounded-xl border bg-card p-3 sm:p-4">
-        <h2 className="mb-3 text-sm font-semibold sm:text-base">Global Brand Logo</h2>
+        <h2 className="mb-1 text-sm font-semibold sm:text-base">মূল আইকন লোগো</h2>
+        <p className="mb-3 text-xs text-muted-foreground">নাম ছাড়া শুধু ORZEN-এর প্রতীক বা চিহ্ন।</p>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {LOGO_KEYS.map(([k, label]) => (
+          {LOGO_KEYS.map(([k, label, helperText, previewTone]) => (
             <AssetUploader
               key={k}
               slot={k}
               label={label}
+              helperText={helperText}
+              previewTone={previewTone}
               value={assets[k] ?? null}
               onChange={(v) => setAssets((s) => ({ ...s, [k]: v }))}
               bucketPath="logos"
@@ -324,13 +398,16 @@ function PlatformBrandingPage() {
       </section>
 
       <section className="rounded-xl border bg-card p-3 sm:p-4">
-        <h2 className="mb-3 text-sm font-semibold sm:text-base">Brand Name / Wordmark</h2>
+        <h2 className="mb-1 text-sm font-semibold sm:text-base">নামসহ লোগো (Wordmark)</h2>
+        <p className="mb-3 text-xs text-muted-foreground">ORZEN লেখা বা ব্র্যান্ডের নামসহ চওড়া লোগো।</p>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {WORDMARK_KEYS.map(([k, label]) => (
+          {WORDMARK_KEYS.map(([k, label, helperText, previewTone]) => (
             <AssetUploader
               key={k}
               slot={k}
               label={label}
+              helperText={helperText}
+              previewTone={previewTone}
               value={assets[k] ?? null}
               onChange={(v) => setAssets((s) => ({ ...s, [k]: v }))}
               bucketPath="wordmarks"
@@ -341,46 +418,47 @@ function PlatformBrandingPage() {
       </section>
 
       <section className="rounded-xl border bg-card p-3 sm:p-4">
-        <h2 className="mb-3 text-sm font-semibold sm:text-base">Logo + Wordmark combination</h2>
+        <h2 className="mb-1 text-sm font-semibold sm:text-base">আইকন ও নাম লোগো কীভাবে দেখাবে</h2>
+        <p className="mb-3 text-xs text-muted-foreground">দুটো লোগো পাশাপাশি বা আলাদাভাবে দেখানোর সাধারণ নিয়ম।</p>
         <div className="grid gap-3 sm:grid-cols-3">
           <div>
-            <Label className="text-xs">Mode</Label>
+            <Label className="text-xs">কোন লোগো দেখাবে</Label>
             <select
               value={combo.mode ?? "both"}
               onChange={(e) => setCombo({ ...combo, mode: e.target.value as any })}
               className="h-9 w-full rounded-md border bg-background px-2 text-xs"
             >
-              <option value="logo">Logo only</option>
-              <option value="wordmark">Wordmark only</option>
-              <option value="both">Logo + Wordmark</option>
+              <option value="logo">শুধু আইকন লোগো</option>
+              <option value="wordmark">শুধু নাম লোগো</option>
+              <option value="both">আইকন + নাম লোগো</option>
             </select>
           </div>
           <div>
-            <Label className="text-xs">Layout</Label>
+            <Label className="text-xs">কীভাবে সাজাবে</Label>
             <select
               value={combo.layout ?? "left"}
               onChange={(e) => setCombo({ ...combo, layout: e.target.value as any })}
               className="h-9 w-full rounded-md border bg-background px-2 text-xs"
             >
-              <option value="left">Logo left + wordmark right</option>
-              <option value="top">Logo on top + wordmark below</option>
-              <option value="centered">Centered</option>
+              <option value="left">পাশাপাশি: আইকন বামে, নাম ডানে</option>
+              <option value="top">উপর-নিচে: আইকন উপরে, নাম নিচে</option>
+              <option value="centered">মাঝখানে</option>
             </select>
           </div>
           <div>
-            <Label className="text-xs">Alignment</Label>
+            <Label className="text-xs">অবস্থান</Label>
             <select
               value={combo.align ?? "start"}
               onChange={(e) => setCombo({ ...combo, align: e.target.value as any })}
               className="h-9 w-full rounded-md border bg-background px-2 text-xs"
             >
-              <option value="start">Start</option>
-              <option value="center">Center</option>
-              <option value="end">End</option>
+              <option value="start">বামে</option>
+              <option value="center">মাঝে</option>
+              <option value="end">ডানে</option>
             </select>
           </div>
           <div>
-            <Label className="text-xs">Gap ({combo.gap ?? 8}px)</Label>
+            <Label className="text-xs">দুই লোগোর মাঝের দূরত্ব ({combo.gap ?? 8}px)</Label>
             <Input
               type="number"
               min={0}
@@ -391,7 +469,7 @@ function PlatformBrandingPage() {
             />
           </div>
           <div>
-            <Label className="text-xs">Logo size ({combo.logoSize ?? 32}px)</Label>
+            <Label className="text-xs">আইকন লোগোর আকার ({combo.logoSize ?? 32}px)</Label>
             <Input
               type="number"
               min={8}
@@ -402,7 +480,7 @@ function PlatformBrandingPage() {
             />
           </div>
           <div>
-            <Label className="text-xs">Wordmark size ({combo.wordmarkSize ?? 24}px)</Label>
+            <Label className="text-xs">নাম লোগোর আকার ({combo.wordmarkSize ?? 24}px)</Label>
             <Input
               type="number"
               min={8}
@@ -416,13 +494,16 @@ function PlatformBrandingPage() {
       </section>
 
       <section className="rounded-xl border bg-card p-3 sm:p-4">
-        <h2 className="mb-3 text-sm font-semibold sm:text-base">Favicon &amp; App Icon</h2>
+        <h2 className="mb-1 text-sm font-semibold sm:text-base">Browser ও App Icon</h2>
+        <p className="mb-3 text-xs text-muted-foreground">এগুলো website-এর ভেতরের header-এ নয়; browser tab ও install করা app-এ দেখা যাবে।</p>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {ICON_KEYS.map(([k, label]) => (
+          {ICON_KEYS.map(([k, label, helperText]) => (
             <AssetUploader
               key={k}
               slot={k}
               label={label}
+              helperText={helperText}
+              previewTone="square"
               value={assets[k] ?? null}
               onChange={(v) => setAssets((s) => ({ ...s, [k]: v }))}
               bucketPath="icons"
@@ -435,13 +516,20 @@ function PlatformBrandingPage() {
 
       <section className="rounded-xl border bg-card p-3 sm:p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold sm:text-base">Live preview</h2>
+          <h2 className="text-sm font-semibold sm:text-base">লোগো কেমন দেখাবে</h2>
         </div>
         <LivePreview b={previewBranding} />
+        {(!assets.darkLogo || !assets.darkWordmark) && (
+          <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-xs text-foreground">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <span>Dark Mode-এর জন্য {!assets.darkLogo && !assets.darkWordmark ? "আইকন ও নাম লোগো" : !assets.darkLogo ? "আইকন লোগো" : "নাম লোগো"} দেওয়া নেই। আপাতত প্রধান লোগো দেখাবে।</span>
+          </div>
+        )}
       </section>
 
       <section className="rounded-xl border bg-card p-3 sm:p-4">
-        <h2 className="mb-3 text-sm font-semibold sm:text-base">Placement manager</h2>
+        <h2 className="mb-1 text-sm font-semibold sm:text-base">কোথায় কোন লোগো দেখাবে</h2>
+        <p className="mb-3 text-xs text-muted-foreground">প্রতিটি জায়গায় মূল লোগো রাখুন, অথবা প্রয়োজন হলে সেই জায়গার জন্য আলাদা লোগো দিন।</p>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {PLACEMENT_KEYS.map((k) => (
             <PlacementCard
@@ -453,8 +541,7 @@ function PlatformBrandingPage() {
           ))}
         </div>
         <p className="mt-2 text-[11px] text-muted-foreground">
-          Any placement left on "Use global" inherits the global logo + wordmark. Reset a placement to
-          clear its override.
+          “মূল লোগো ব্যবহার করুন” রাখা জায়গায় উপরের প্রধান icon ও নাম লোগো নিজে থেকেই দেখাবে।
         </p>
         <div className="mt-2 flex flex-wrap gap-2">
           {Object.keys(placements).map((k) => (
@@ -473,7 +560,7 @@ function PlatformBrandingPage() {
                 toast.success("Placement reset");
               }}
             >
-              Reset {PLACEMENT_LABELS[k as PlacementKey] ?? k}
+              {PLACEMENT_LABELS[k as PlacementKey] ?? k} আগের অবস্থায় নিন
             </Button>
           ))}
         </div>
@@ -481,10 +568,10 @@ function PlatformBrandingPage() {
 
       <div className="sticky bottom-0 flex flex-wrap justify-end gap-2 rounded-xl border bg-background/95 p-3 shadow-sm backdrop-blur">
         <Button variant="outline" onClick={doSave} disabled={saving || publishing}>
-          {saving ? "Saving…" : "Save changes"}
+          {saving ? "সেভ হচ্ছে…" : "পরিবর্তন সেভ করুন"}
         </Button>
         <Button onClick={doPublish} disabled={saving || publishing}>
-          {publishing ? "Publishing…" : "Publish branding"}
+          {publishing ? "প্রকাশ হচ্ছে…" : "সব জায়গায় প্রকাশ করুন"}
         </Button>
       </div>
     </div>
