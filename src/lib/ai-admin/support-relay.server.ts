@@ -64,12 +64,37 @@ export async function resolveTarget(hint?: string | null): Promise<SupportTarget
     if (byName.length > 1) {
       throw new Error(`Multiple customers match "${q}": ${byName.map((b) => b.name).join(", ")}. Ask which one.`);
     }
+
+    // Named customer is not in the open list — look them up among known threads.
+    const { data: threads } = await supabaseAdmin
+      .from("ai_admin_customer_threads")
+      .select("id, psid, display_name")
+      .ilike("display_name", `%${q}%`)
+      .order("last_message_at", { ascending: false })
+      .limit(5);
+    const hits = threads ?? [];
+    if (hits.length === 1) {
+      const t = hits[0]!;
+      return { threadId: t.id, psid: t.psid, name: t.display_name, requestId: null, reason: null, summary: null };
+    }
+    if (hits.length > 1) {
+      throw new Error(
+        `Multiple customers match "${q}": ${hits.map((h) => h.display_name).join(", ")}. Ask which one.`,
+      );
+    }
+    // NEVER fall back to another customer when a specific person was named —
+    // that would deliver a private support reply to the wrong inbox.
+    throw new Error(
+      `No Messenger conversation found for "${q}". Ask the owner which customer they mean` +
+        (open.length ? `: ${open.map((o) => o.name ?? o.psid).join(", ")}.` : "."),
+    );
   }
 
   if (open.length === 1) return open[0]!;
   if (open.length > 1) {
-    // Most recent one — the owner is normally answering the newest alert.
-    return open[0]!;
+    throw new Error(
+      `Several customers are waiting: ${open.map((o) => o.name ?? o.psid).join(", ")}. Ask the owner which one this reply is for.`,
+    );
   }
 
   // No open request: fall back to the conversation a human most recently took over.
