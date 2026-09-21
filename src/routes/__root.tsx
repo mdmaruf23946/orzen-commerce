@@ -191,21 +191,26 @@ function PlatformFavicon() {
 }
 
 function PlatformLaunchSplash() {
-  const { data } = usePlatformBranding();
+  const { data, isFetched } = usePlatformBranding();
   const [visible, setVisible] = useState(false);
+  const [standalone, setStandalone] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const standalone =
+    const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       ("standalone" in window.navigator &&
         (window.navigator as Navigator & { standalone?: boolean }).standalone === true);
-    if (!standalone) return;
+    setStandalone(isStandalone);
+  }, []);
+
+  useEffect(() => {
+    if (!standalone || !isFetched) return;
 
     setVisible(true);
-    const timer = window.setTimeout(() => setVisible(false), 1800);
+    const timer = window.setTimeout(() => setVisible(false), 2200);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [isFetched, standalone]);
 
   if (!visible) return null;
 
