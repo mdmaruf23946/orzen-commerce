@@ -148,6 +148,36 @@ function Compose() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+      <div className="space-y-4">
+      <div className="space-y-3 rounded-xl border bg-card p-4">
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          <Sparkles className="h-4 w-4 text-primary" /> AI দিয়ে ইমেইল লিখুন
+        </div>
+        <p className="text-xs text-muted-foreground">
+          আপনি যা বলতে চান সহজ ভাষায় লিখুন। AI নিজেই সুন্দর Subject, ইমেইলের লেখা ও নোটিফিকেশন তৈরি করে দেবে।
+        </p>
+        <Textarea
+          rows={5}
+          value={brief}
+          onChange={(e) => setBrief(e.target.value)}
+          placeholder="যেমন: আগামীকাল রাত ১২টা থেকে ২টা পর্যন্ত সার্ভার আপডেট চলবে, এই সময় অর্ডার নেওয়া বন্ধ থাকবে।"
+        />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <select value={tone} onChange={(e) => setTone(e.target.value as any)}
+            className="rounded-md border bg-background px-3 py-2 text-sm sm:w-48">
+            <option value="friendly">বন্ধুত্বপূর্ণ</option>
+            <option value="formal">আনুষ্ঠানিক</option>
+            <option value="urgent">জরুরি</option>
+            <option value="promotional">অফার / প্রচার</option>
+          </select>
+          <Button onClick={doGenerate} disabled={generating} className="sm:flex-1">
+            {generating
+              ? <><Loader2 className="mr-1 h-4 w-4 animate-spin" /> তৈরি হচ্ছে…</>
+              : <><Sparkles className="mr-1 h-4 w-4" /> AI দিয়ে সাজান</>}
+          </Button>
+        </div>
+      </div>
+
       <div className="space-y-4 rounded-xl border bg-card p-4">
         {templates.length > 0 && (
           <div>
