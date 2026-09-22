@@ -237,6 +237,7 @@ function Compose() {
           <Button size="sm" variant="outline" onClick={saveAsTemplate}><Save className="mr-1 h-4 w-4" /> Save template</Button>
         </div>
       </div>
+      </div>
 
       <div className="space-y-4">
         <div className="rounded-xl border bg-card p-4">
