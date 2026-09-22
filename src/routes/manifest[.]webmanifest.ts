@@ -26,9 +26,8 @@ export const Route = createFileRoute("/manifest.webmanifest")({
           return landingManifestResponse(target.slug, origin, "/");
         }
 
-        let icon192: string | null = null;
-        let icon512: string | null = null;
-        let splash: string | null = null;
+        let icon192: { url: string; mime?: string | null } | null = null;
+        let icon512: { url: string; mime?: string | null } | null = null;
         let themeColor = "#0f172a";
         try {
           const url = process.env["SUPABASE_URL"];
@@ -42,9 +41,12 @@ export const Route = createFileRoute("/manifest.webmanifest")({
             if (res.ok) {
               const b = (await res.json()) as any;
               const assets = b?.assets ?? {};
-              icon192 = assets?.appIcon192?.url ?? assets?.favicon?.url ?? null;
-              icon512 = assets?.appIcon512?.url ?? assets?.primaryLogo?.url ?? icon192;
-              splash = assets?.launchSplashLogo?.url ?? null;
+              icon192 = assets?.appIcon192?.url
+                ? assets.appIcon192
+                : assets?.favicon?.url
+                  ? assets.favicon
+                  : null;
+              icon512 = assets?.appIcon512?.url ? assets.appIcon512 : null;
               if (typeof b?.combo?.themeColor === "string") themeColor = b.combo.themeColor;
             }
           }
@@ -52,18 +54,22 @@ export const Route = createFileRoute("/manifest.webmanifest")({
           // Branding is optional — a manifest without icons still installs.
         }
 
-        // Chrome renders its own native launch screen before website code starts.
-        // Use the dedicated launch upload for every native splash candidate and do
-        // not render another website overlay, otherwise Android shows two screens.
-        const nativeLaunchIcon = splash ?? icon512 ?? icon192;
-        const icons = nativeLaunchIcon
-          ? [
-              { src: nativeLaunchIcon, sizes: "192x192", purpose: "any" },
-              // A transparent splash must not be declared maskable: Android fills
-              // the transparent safe-zone with a rounded black app-icon plate.
-              { src: nativeLaunchIcon, sizes: "512x512", purpose: "any" },
-            ]
-          : [];
+        // Manifest icons become the installed app's Home Screen icon. Keep each
+        // dedicated App Icon at its real declared size; never substitute a splash.
+        const icons = [
+          icon192 && {
+            src: icon192.url,
+            sizes: "192x192",
+            type: icon192.mime || "image/png",
+            purpose: "any",
+          },
+          icon512 && {
+            src: icon512.url,
+            sizes: "512x512",
+            type: icon512.mime || "image/png",
+            purpose: "any",
+          },
+        ].filter((icon): icon is NonNullable<typeof icon> => Boolean(icon));
 
 
         const manifest = {

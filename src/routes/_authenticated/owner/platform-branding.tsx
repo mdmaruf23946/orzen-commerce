@@ -494,31 +494,8 @@ function PlatformBrandingPage() {
       </section>
 
       <section className="rounded-xl border bg-card p-3 sm:p-4">
-        <h2 className="mb-1 text-sm font-semibold sm:text-base">অ্যাপ খোলার সময়ের লোগো (Splash Logo)</h2>
-        <p className="mb-3 text-xs text-muted-foreground">
-          মোবাইলে install করা ORZEN app চালু হওয়ার সময় মাঝখানে এই লোগো দেখাবে। এটি App Icon থেকে সম্পূর্ণ আলাদা।
-        </p>
-        <div className="max-w-md">
-          <AssetUploader
-            slot="launchSplashLogo"
-            label="অ্যাপ চালুর স্ক্রিনের লোগো"
-            helperText="স্বচ্ছ PNG, WebP বা SVG দিলে সবচেয়ে সুন্দর দেখাবে। লোগোর চারপাশে কিছু খালি জায়গা রাখুন।"
-            previewTone="square"
-            value={assets.launchSplashLogo ?? null}
-            onChange={(v) => setAssets((s) => ({ ...s, launchSplashLogo: v }))}
-            bucketPath="splash"
-            maxBytes={MAX_LOGO_BYTES}
-            accept="image/png,image/webp,image/jpeg,image/svg+xml"
-          />
-        </div>
-        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-          <strong>Chrome-এর নিয়ম:</strong> App-এ চাপ দেওয়ার পর প্রথম অল্প সময় Home Screen-এর App Icon দেখা যেতে পারে। তারপর এই আলাদা Splash Logo দেখাবে। Chrome-এর প্রথম অংশটি website থেকে আলাদাভাবে বদলানো যায় না।
-        </p>
-      </section>
-
-      <section className="rounded-xl border bg-card p-3 sm:p-4">
         <h2 className="mb-1 text-sm font-semibold sm:text-base">Browser ও App Icon</h2>
-        <p className="mb-3 text-xs text-muted-foreground">এগুলো browser tab ও মোবাইল Home Screen-এ দেখা যাবে; অ্যাপ চালুর স্ক্রিনের লোগো নয়।</p>
+        <p className="mb-3 text-xs text-muted-foreground">এগুলো browser tab, মোবাইল Home Screen এবং Android-এর app চালুর স্ক্রিনে দেখা যাবে।</p>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {ICON_KEYS.map(([k, label, helperText]) => (
             <AssetUploader
