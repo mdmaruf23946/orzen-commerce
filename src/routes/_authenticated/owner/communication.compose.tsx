@@ -3,10 +3,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Send, Users, Save } from "lucide-react";
+import { Send, Users, Save, Sparkles, Loader2, Code2 } from "lucide-react";
 import {
   previewCommunication, sendCommunication,
   listOwnerTemplates, saveOwnerTemplate, getGmailStatus,
+  generateCommunicationDraft,
 } from "@/lib/communication.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +51,31 @@ function Compose() {
   const [form, setForm] = useState<Form>(empty);
   const [sending, setSending] = useState(false);
   const [tplName, setTplName] = useState("");
+  const genDraft = useServerFn(generateCommunicationDraft);
+  const [brief, setBrief] = useState("");
+  const [tone, setTone] = useState<"friendly" | "formal" | "urgent" | "promotional">("friendly");
+  const [generating, setGenerating] = useState(false);
+  const [showHtml, setShowHtml] = useState(false);
+
+  async function doGenerate() {
+    if (brief.trim().length < 3) return toast.error("আগে আপনার বার্তাটি লিখুন");
+    setGenerating(true);
+    try {
+      const r = await genDraft({ data: { brief, tone } as any });
+      setForm((f) => ({
+        ...f,
+        subject: r.subject || f.subject,
+        body_html: r.body_html || f.body_html,
+        notification_title: r.notification_title || f.notification_title,
+        notification_body: r.notification_body || f.notification_body,
+      }));
+      toast.success("AI সুন্দর করে সাজিয়ে দিয়েছে — নিচে দেখে নিন");
+    } catch (e: any) {
+      toast.error(e?.message ?? "AI তৈরি করতে পারেনি");
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   const { data: gmail } = useQuery({ queryKey: ["gmail-status"], queryFn: () => status() });
   const { data: templates = [] } = useQuery({ queryKey: ["owner-tpls"], queryFn: () => listTpls() });
