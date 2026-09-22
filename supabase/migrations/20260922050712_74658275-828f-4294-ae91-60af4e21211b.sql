@@ -1,0 +1,15 @@
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.ad_settings TO authenticated; GRANT ALL ON public.ad_settings TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.ad_slots TO authenticated; GRANT ALL ON public.ad_slots TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.digital_licenses TO authenticated; GRANT ALL ON public.digital_licenses TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.email_logs TO authenticated; GRANT ALL ON public.email_logs TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.fraud_checks TO authenticated; GRANT ALL ON public.fraud_checks TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.fraud_settings TO authenticated; GRANT ALL ON public.fraud_settings TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.low_stock_alerts TO authenticated; GRANT ALL ON public.low_stock_alerts TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.platform_billing_settings TO authenticated; GRANT ALL ON public.platform_billing_settings TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.platform_footer TO authenticated; GRANT ALL ON public.platform_footer TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.platform_notices TO authenticated; GRANT ALL ON public.platform_notices TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.platform_payment_gateways TO authenticated; GRANT ALL ON public.platform_payment_gateways TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.service_order_files TO authenticated; GRANT ALL ON public.service_order_files TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.store_template TO authenticated; GRANT ALL ON public.store_template TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.subscription_packages TO authenticated; GRANT ALL ON public.subscription_packages TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.user_roles TO authenticated; GRANT ALL ON public.user_roles TO service_role;
