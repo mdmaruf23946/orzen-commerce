@@ -167,9 +167,25 @@ function Compose() {
             placeholder="Important update for {{store_name}}" />
         </div>
         <div>
-          <Label>Email body (HTML)</Label>
-          <Textarea rows={12} value={form.body_html} onChange={(e) => set("body_html", e.target.value)}
-            placeholder="<p>Hi {{store_name}},</p><p>...</p>" />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Label>ইমেইলের মূল লেখা (Email body)</Label>
+            <Button size="sm" variant="ghost" onClick={() => setShowHtml((v) => !v)}>
+              <Code2 className="mr-1 h-4 w-4" /> {showHtml ? "সাধারণ ভিউ" : "কোড দেখুন"}
+            </Button>
+          </div>
+          {showHtml ? (
+            <Textarea rows={12} value={form.body_html} onChange={(e) => set("body_html", e.target.value)}
+              placeholder="<p>Hi {{store_name}},</p><p>...</p>" />
+          ) : form.body_html ? (
+            <div
+              className="prose prose-sm dark:prose-invert max-w-none rounded-md border bg-background p-3 text-sm [&_a]:text-primary [&_li]:my-1 [&_p]:my-2"
+              dangerouslySetInnerHTML={{ __html: form.body_html }}
+            />
+          ) : (
+            <div className="rounded-md border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+              উপরে বার্তা লিখে “AI দিয়ে সাজান” চাপুন — ইমেইলটি এখানে তৈরি হয়ে দেখাবে।
+            </div>
+          )}
           <p className="mt-1 text-xs text-muted-foreground">
             Variables: <code>{"{{store_name}}"}</code>, <code>{"{{owner_email}}"}</code>, <code>{"{{platform_name}}"}</code>
           </p>
