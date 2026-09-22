@@ -454,3 +454,76 @@ export const getCommunicationDetail = createServerFn({ method: "GET" })
       .limit(1000);
     return { campaign: c, recipients: recips ?? [] };
   });
+
+// ---- AI draft writer ----
+// Owner types a plain message (Bengali/English) and gets a polished
+// subject, HTML email body, and in-app notification title/body.
+export const generateCommunicationDraft = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { brief: string; tone?: string }) =>
+    z.object({
+      brief: z.string().trim().min(3).max(4000),
+      tone: z.enum(["friendly", "formal", "urgent", "promotional"]).default("friendly"),
+    }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+
+    const { resolveAiModel } = await import("@/lib/ai-provider.server");
+    const { streamText, Output, NoObjectGeneratedError } = await import("ai");
+
+    const schema = z.object({
+      subject: z.string(),
+      body_html: z.string(),
+      notification_title: z.string(),
+      notification_body: z.string(),
+    });
+
+    const system = [
+      "You write merchant-facing announcement emails for ORZEN, a Bangladeshi multi-tenant e-commerce platform.",
+      "The platform owner gives a short raw note (often Bengali or Banglish). Expand it into a polished announcement.",
+      "Rules:",
+      "- Reply in the SAME language the note is written in (Bengali note => Bengali output).",
+      "- subject: max 80 chars, clear, no clickbait, no emoji spam.",
+      "- body_html: clean simple HTML only using <p>, <ul>, <li>, <strong>, <br>, <a>. No <html>, <head>, <body>, <style>, no inline CSS, no images.",
+      "- Start with a greeting using {{store_name}}. End with a short sign-off from {{platform_name}}.",
+      "- Available variables: {{store_name}}, {{owner_email}}, {{platform_name}}. Use them naturally; never invent other variables.",
+      "- Never invent facts, dates, prices, or links that are not in the note.",
+      "- notification_title: max 60 chars. notification_body: max 160 chars, plain text.",
+      `- Tone: ${data.tone}.`,
+    ].join("\n");
+
+    const model = (await resolveAiModel({ fast: true })).model;
+
+    try {
+      const result = streamText({
+        model,
+        system,
+        prompt: `Owner's note:\n\n${data.brief}`,
+        output: Output.object({ schema }),
+      });
+      const out: any = await result.output;
+      return {
+        subject: String(out?.subject ?? "").slice(0, 200),
+        body_html: String(out?.body_html ?? "").slice(0, 20000),
+        notification_title: String(out?.notification_title ?? "").slice(0, 120),
+        notification_body: String(out?.notification_body ?? "").slice(0, 400),
+      };
+    } catch (e: any) {
+      if (NoObjectGeneratedError.isInstance(e)) {
+        const raw = (e as any).text ?? "";
+        try {
+          const m = raw.match(/\{[\s\S]*\}/);
+          if (m) {
+            const p = JSON.parse(m[0]);
+            return {
+              subject: String(p.subject ?? ""),
+              body_html: String(p.body_html ?? ""),
+              notification_title: String(p.notification_title ?? ""),
+              notification_body: String(p.notification_body ?? ""),
+            };
+          }
+        } catch { /* fall through */ }
+      }
+      throw new Error(e?.message ?? "AI draft failed");
+    }
+  });
