@@ -3,10 +3,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Send, Users, Save } from "lucide-react";
+import { Send, Users, Save, Sparkles, Loader2, Code2 } from "lucide-react";
 import {
   previewCommunication, sendCommunication,
   listOwnerTemplates, saveOwnerTemplate, getGmailStatus,
+  generateCommunicationDraft,
 } from "@/lib/communication.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
