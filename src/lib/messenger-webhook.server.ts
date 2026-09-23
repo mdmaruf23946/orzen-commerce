@@ -767,6 +767,70 @@ async function transcribeAudioAttachment(url: string): Promise<string | null> {
   }
 }
 
+/**
+ * Look at a photo the customer sent and describe it, so the sales agent can act
+ * on it (find the product, say it is unavailable, or answer about a receipt).
+ */
+async function describeImageAttachment(
+  url: string,
+): Promise<{ description: string; keywords: string[]; is_product: boolean } | null> {
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key || !url) return null;
+  try {
+    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`,
+        "Lovable-API-Key": key,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text:
+                  "A customer sent this photo to an online shop. Reply with ONLY minified JSON: " +
+                  '{"description":"...","keywords":["..."],"is_product":true|false}. ' +
+                  "description: one short English sentence naming the item, its type, colour, material and any visible brand/text. " +
+                  "keywords: 2-6 short English search terms for finding this item in a product catalogue. " +
+                  "is_product: true only if the photo shows a physical product the customer might want to buy " +
+                  "(false for payment receipts, screenshots, documents, selfies, memes).",
+              },
+              { type: "image_url", image_url: { url } },
+            ],
+          },
+        ],
+      }),
+    });
+    if (!r.ok) return null;
+    const j = (await r.json().catch(() => null)) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    } | null;
+    const raw = j?.choices?.[0]?.message?.content?.trim() ?? "";
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    const parsed = JSON.parse(match[0]) as {
+      description?: string;
+      keywords?: unknown;
+      is_product?: boolean;
+    };
+    const description = String(parsed.description ?? "").trim().slice(0, 400);
+    if (!description) return null;
+    const keywords = Array.isArray(parsed.keywords)
+      ? parsed.keywords.map((k) => String(k).trim()).filter(Boolean).slice(0, 6)
+      : [];
+    return { description, keywords, is_product: parsed.is_product !== false };
+  } catch {
+    return null;
+  }
+}
+
+
+
 
 function productCardInput(storeSlug: string | null | undefined, product: ProductRow): ProductCardInput {
   const priceLine = `৳${Number(product.price).toFixed(0)}`;
@@ -1485,6 +1549,30 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                 const transcript = await transcribeAudioAttachment(audioUrl);
                 if (transcript) effectiveText = transcript;
               }
+              // Photos: describe the image so the agent can look the item up in the
+              // catalogue instead of leaving the customer with silence.
+              if (parsed.message_type === "image") {
+                const imageUrl = (parsed.attachments?.[0]?.url as string) || "";
+                const seen = await describeImageAttachment(imageUrl);
+                if (seen) {
+                  const terms = seen.keywords.length ? ` Search terms: ${seen.keywords.join(", ")}.` : "";
+                  effectiveText = seen.is_product
+                    ? `[The customer sent a photo of a product. The photo shows: ${seen.description}.${terms}] ` +
+                      `Find this exact or closest product in the store catalogue using the product search tool. ` +
+                      `If found, show the product card with price and stock and ask if this is the one they want. ` +
+                      `If nothing matching exists, say politely in the customer's own language that this product is not available right now, ` +
+                      `mention what you saw in the photo, and offer the closest alternatives. Never invent a product.`
+                    : `[The customer sent a photo. The photo shows: ${seen.description}.] ` +
+                      `Answer about this photo naturally in the customer's language. Do not search the product catalogue unless they ask.`;
+                  parsed.attachments = (parsed.attachments ?? []).map((a: any, i: number) =>
+                    i === 0 ? { ...a, ai_description: seen.description, ai_keywords: seen.keywords, is_product: seen.is_product } : a,
+                  );
+                } else {
+                  effectiveText =
+                    "[The customer sent a photo but it could not be analysed.] " +
+                    "Apologise briefly in the customer's language and ask them to type the product name or model they are looking for.";
+                }
+              }
 
               // Merchant command path: only a verified merchant identity of THIS
               // store reaches the Master Agent. Everyone else falls through to
@@ -1550,12 +1638,13 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               if (handoff !== "ai") continue;
               if ((integ as any).human_takeover || (integ as any).ai_auto_reply === false) continue;
               if (!token) continue;
-              // Only text-shaped inputs go to the LLM. Audio was transcribed above; other
-              // attachments (image, sticker, file) fall through until vision is wired in.
+              // Audio was transcribed and images were described above; stickers and
+              // files still have no text form, so they do not reach the LLM.
               if (
                 parsed.message_type !== "text" &&
                 parsed.message_type !== "quick_reply" &&
-                parsed.message_type !== "audio"
+                parsed.message_type !== "audio" &&
+                parsed.message_type !== "image"
               ) continue;
               if (!effectiveText.trim()) continue;
 
@@ -1641,7 +1730,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                       .from("ai_messages")
                       .select("role,content,message_type")
                       .eq("conversation_id", conv!.id)
-                      .in("message_type", ["text", "quick_reply", "postback", "audio"])
+                      .in("message_type", ["text", "quick_reply", "postback", "audio", "image"])
                       .order("created_at", { ascending: false })
                       .limit(historyLimit)
                   : Promise.resolve({ data: [] as any[] }),
