@@ -1,4 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+// Shared Messenger webhook processing. The public route and the queue worker
+// both call these directly — never over HTTP to our own origin (a self-request
+// from the Worker back through Cloudflare fails with 522 and drops replies).
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { buildSystemPrompt, generateAgentReply, loadAiContext, resolveFocusProduct } from "@/lib/ai-agent.server";
@@ -1152,10 +1154,10 @@ function parseMessage(msg: any): IncomingContent {
   return { text: "", message_type: "text", attachments: [] };
 }
 
-export const Route = createFileRoute("/api/public/messenger/webhook")({
-  server: {
-    handlers: {
-      GET: async ({ request }) => {
+export async function handleMessengerVerify(request: Request): Promise<Response> {
+  {
+    {
+      {
         const url = new URL(request.url);
         const mode = url.searchParams.get("hub.mode");
         const token = url.searchParams.get("hub.verify_token");
@@ -1170,8 +1172,15 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
           if (data) return new Response(challenge ?? "", { status: 200 });
         }
         return new Response("forbidden", { status: 403 });
-      },
-      POST: async ({ request }) => {
+      }
+    }
+  }
+}
+
+export async function handleMessengerWebhook(request: Request): Promise<Response> {
+  {
+    {
+      {
         // Facebook signs every webhook delivery. Read the RAW body first so the
         // HMAC is computed over the exact bytes Facebook signed.
         const rawBody = await request.text();
@@ -1774,7 +1783,7 @@ export const Route = createFileRoute("/api/public/messenger/webhook")({
         }
         if (queuedProcessingError) return new Response(queuedProcessingError.message, { status: 503 });
         return new Response("ok");
-      },
-    },
-  },
-});
+      }
+    }
+  }
+}
