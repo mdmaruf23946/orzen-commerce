@@ -77,6 +77,31 @@ type ProductRow = {
   is_featured?: boolean | null;
 };
 
+type ImageAnalysis = {
+  description: string;
+  keywords: string[];
+  is_product: boolean;
+  product_type: string;
+  category: string;
+  primary_color: string | null;
+  secondary_colors: string[];
+  material: string | null;
+  style: string | null;
+  shape: string | null;
+  pattern: string | null;
+  visible_text: string[];
+  brand: string | null;
+  distinctive_features: string[];
+  confidence: number;
+  image_data_url: string;
+};
+
+type VisualMatch = {
+  product: ProductRow;
+  confidence: number;
+  reason: string;
+};
+
 function admin() {
   return createClient<Database>(
     process.env.SUPABASE_URL!,
@@ -773,7 +798,7 @@ async function transcribeAudioAttachment(url: string): Promise<string | null> {
  */
 async function describeImageAttachment(
   url: string,
-): Promise<{ description: string; keywords: string[]; is_product: boolean } | null> {
+): Promise<ImageAnalysis | null> {
   const key = process.env.LOVABLE_API_KEY;
   if (!key || !url) return null;
   try {
@@ -800,7 +825,9 @@ async function describeImageAttachment(
         "Lovable-API-Key": key,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "openai/gpt-6-astra",
+        reasoning_effort: "low",
+        stream: true,
         messages: [
           {
             role: "user",
@@ -808,12 +835,12 @@ async function describeImageAttachment(
               {
                 type: "text",
                 text:
-                  "A customer sent this photo to an online shop. Reply with ONLY minified JSON: " +
-                  '{"description":"...","keywords":["..."],"is_product":true|false}. ' +
-                  "description: one short English sentence naming the item, its type, colour, material and any visible brand/text. " +
-                  "keywords: 2-6 short English search terms for finding this item in a product catalogue. " +
-                  "is_product: true only if the photo shows a physical product the customer might want to buy " +
-                  "(false for payment receipts, screenshots, documents, selfies, memes).",
+                  "A customer sent this photo to an online shop. Inspect the actual sale item carefully, not the model/person/background. " +
+                  "Return ONLY minified JSON with keys description,keywords,is_product,product_type,category,primary_color,secondary_colors," +
+                  "material,style,shape,pattern,visible_text,brand,distinctive_features,confidence. " +
+                  "Use null for uncertain single-value attributes and [] for absent lists. confidence is 0..1. " +
+                  "Do not guess a colour under ambiguous lighting; name exact visible colours only when confident. " +
+                  "keywords must contain 2-8 concise catalogue terms. is_product is false for receipts, screenshots, documents, selfies or memes.",
               },
               { type: "image_url", image_url: { url: dataUrl } },
             ],
@@ -821,24 +848,123 @@ async function describeImageAttachment(
         ],
       }),
     });
-    if (!r.ok) return null;
-    const j = (await r.json().catch(() => null)) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    } | null;
-    const raw = j?.choices?.[0]?.message?.content?.trim() ?? "";
+    if (!r.ok || !r.body) return null;
+    const rawStream = await r.text();
+    let raw = "";
+    for (const line of rawStream.split("\n")) {
+      if (!line.startsWith("data:")) continue;
+      const payload = line.slice(5).trim();
+      if (!payload || payload === "[DONE]") continue;
+      try {
+        const event = JSON.parse(payload) as any;
+        raw += String(event?.delta ?? event?.choices?.[0]?.delta?.content ?? "");
+      } catch {
+        /* ignore incomplete/non-JSON SSE lines */
+      }
+    }
     const match = raw.match(/\{[\s\S]*\}/);
     if (!match) return null;
     const parsed = JSON.parse(match[0]) as {
       description?: string;
       keywords?: unknown;
       is_product?: boolean;
+      product_type?: string;
+      category?: string;
+      primary_color?: string | null;
+      secondary_colors?: unknown;
+      material?: string | null;
+      style?: string | null;
+      shape?: string | null;
+      pattern?: string | null;
+      visible_text?: unknown;
+      brand?: string | null;
+      distinctive_features?: unknown;
+      confidence?: number;
     };
     const description = String(parsed.description ?? "").trim().slice(0, 400);
     if (!description) return null;
     const keywords = Array.isArray(parsed.keywords)
       ? parsed.keywords.map((k) => String(k).trim()).filter(Boolean).slice(0, 6)
       : [];
-    return { description, keywords, is_product: parsed.is_product !== false };
+    const list = (value: unknown, max: number) => Array.isArray(value)
+      ? value.map((v) => String(v).trim()).filter(Boolean).slice(0, max)
+      : [];
+    const nullable = (value: unknown) => {
+      const text = typeof value === "string" ? value.trim() : "";
+      return text ? text.slice(0, 100) : null;
+    };
+    return {
+      description,
+      keywords: keywords.slice(0, 8),
+      is_product: parsed.is_product !== false,
+      product_type: String(parsed.product_type ?? "").trim().slice(0, 100),
+      category: String(parsed.category ?? "").trim().slice(0, 100),
+      primary_color: nullable(parsed.primary_color),
+      secondary_colors: list(parsed.secondary_colors, 5),
+      material: nullable(parsed.material),
+      style: nullable(parsed.style),
+      shape: nullable(parsed.shape),
+      pattern: nullable(parsed.pattern),
+      visible_text: list(parsed.visible_text, 8),
+      brand: nullable(parsed.brand),
+      distinctive_features: list(parsed.distinctive_features, 10),
+      confidence: Math.max(0, Math.min(1, Number(parsed.confidence) || 0)),
+      image_data_url: dataUrl,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function visuallyMatchProduct(
+  sb: ReturnType<typeof admin>,
+  storeId: string,
+  analysis: ImageAnalysis,
+): Promise<VisualMatch | null> {
+  if (!analysis.is_product) return null;
+  const query = [analysis.product_type, analysis.category, analysis.description, ...analysis.keywords].filter(Boolean).join(" ");
+  const candidates = await searchDirectProducts(sb, storeId, query, 8);
+  const withImages = candidates.filter((p) => firstProductImage(p)).lk).slice(0, 8);
+  if (!withImages.length) return null;
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key) return null;
+  const content: any[] = [{
+    type: "text",
+    text: "Compare CUSTOMER_IMAGE to the numbered catalogue images. Return ONLY minified JSON: " +
+      '{"best_index":number|null,"confidence":number,"reason":"short factual reason"}. ' +
+      "Use confidence >=0.88 only for the same product/model or a clearly identical catalogue photo; 0.60-0.87 for a plausible close match. " +
+      "Colour/style similarity alone is not an exact match. CUSTOMER_IMAGE follows.",
+  }, { type: "image_url", image_url: { url: analysis.image_data_url } }];
+  for (let i = 0; i < withImages.length; i += 1) {
+    const image = firstProductImage(withImages[i]);
+    if (!image) continue;
+    content.push({ type: "text", text: `CATALOGUE_${i}: ${withImages[i].name}` });
+    content.push({ type: "image_url", image_url: { url: image } });
+  }
+  try {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}`, "Lovable-API-Key": key },
+      body: JSON.stringify({ model: "openai/gpt-6-astra", reasoning_effort: "low", stream: true, messages: [{ role: "user", content }] }),
+    });
+    if (!response.ok || !response.body) return null;
+    let text = "";
+    for (const line of (await response.text()).split("\n")) {
+      if (!line.startsWith("data:")) continue;
+      const value = line.slice(5).trim();
+      if (!value || value === "[DONE]") continue;
+      try {
+        const event = JSON.parse(value) as any;
+        text += String(event?.delta ?? event?.choices?.[0]?.delta?.content ?? "");
+      } catch { /* non-content event */ }
+    }
+    const object = text.match(/\{[\s\S]*\}/)?.[0];
+    if (!object) return null;
+    const parsed = JSON.parse(object) as { best_index?: number | null; confidence?: number; reason?: string };
+    const index = Number(parsed.best_index);
+    const product = Number.isInteger(index) ? withImages[index] : undefined;
+    const confidence = Math.max(0, Math.min(1, Number(parsed.confidence) || 0));
+    return product ? { product, confidence, reason: String(parsed.reason ?? "").slice(0, 300) } : null;
   } catch {
     return null;
   }
