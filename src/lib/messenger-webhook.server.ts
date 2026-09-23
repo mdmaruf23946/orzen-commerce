@@ -1549,6 +1549,30 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                 const transcript = await transcribeAudioAttachment(audioUrl);
                 if (transcript) effectiveText = transcript;
               }
+              // Photos: describe the image so the agent can look the item up in the
+              // catalogue instead of leaving the customer with silence.
+              if (parsed.message_type === "image") {
+                const imageUrl = (parsed.attachments?.[0]?.url as string) || "";
+                const seen = await describeImageAttachment(imageUrl);
+                if (seen) {
+                  const terms = seen.keywords.length ? ` Search terms: ${seen.keywords.join(", ")}.` : "";
+                  effectiveText = seen.is_product
+                    ? `[The customer sent a photo of a product. The photo shows: ${seen.description}.${terms}] ` +
+                      `Find this exact or closest product in the store catalogue using the product search tool. ` +
+                      `If found, show the product card with price and stock and ask if this is the one they want. ` +
+                      `If nothing matching exists, say politely in the customer's own language that this product is not available right now, ` +
+                      `mention what you saw in the photo, and offer the closest alternatives. Never invent a product.`
+                    : `[The customer sent a photo. The photo shows: ${seen.description}.] ` +
+                      `Answer about this photo naturally in the customer's language. Do not search the product catalogue unless they ask.`;
+                  parsed.attachments = (parsed.attachments ?? []).map((a: any, i: number) =>
+                    i === 0 ? { ...a, ai_description: seen.description, ai_keywords: seen.keywords, is_product: seen.is_product } : a,
+                  );
+                } else {
+                  effectiveText =
+                    "[The customer sent a photo but it could not be analysed.] " +
+                    "Apologise briefly in the customer's language and ask them to type the product name or model they are looking for.";
+                }
+              }
 
               // Merchant command path: only a verified merchant identity of THIS
               // store reaches the Master Agent. Everyone else falls through to
