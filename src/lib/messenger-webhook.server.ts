@@ -817,32 +817,30 @@ async function describeImageAttachment(
     }
     const dataUrl = `data:${type};base64,${btoa(binary)}`;
 
-    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const prompt =
+      "A customer sent this photo to an online shop. Inspect the actual sale item carefully, not the model/person/background. " +
+      "Return ONLY minified JSON with keys description,keywords,is_product,product_type,category,primary_color,secondary_colors," +
+      "material,style,shape,pattern,visible_text,brand,distinctive_features,confidence. " +
+      "Use null for uncertain single-value attributes and [] for absent lists. confidence is 0..1. " +
+      "Do not guess a colour under ambiguous lighting; name exact visible colours only when confident. " +
+      "keywords must contain 2-8 concise catalogue terms. is_product is false for receipts, screenshots, documents, selfies or memes.";
+    const r = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${key}`,
         "Lovable-API-Key": key,
+        "X-Lovable-AIG-SDK": "fetch",
       },
       body: JSON.stringify({
         model: "openai/gpt-6-astra",
-        reasoning_effort: "low",
         stream: true,
-        messages: [
+        reasoning: { effort: "low", summary: "auto" },
+        input: [
           {
             role: "user",
             content: [
-              {
-                type: "text",
-                text:
-                  "A customer sent this photo to an online shop. Inspect the actual sale item carefully, not the model/person/background. " +
-                  "Return ONLY minified JSON with keys description,keywords,is_product,product_type,category,primary_color,secondary_colors," +
-                  "material,style,shape,pattern,visible_text,brand,distinctive_features,confidence. " +
-                  "Use null for uncertain single-value attributes and [] for absent lists. confidence is 0..1. " +
-                  "Do not guess a colour under ambiguous lighting; name exact visible colours only when confident. " +
-                  "keywords must contain 2-8 concise catalogue terms. is_product is false for receipts, screenshots, documents, selfies or memes.",
-              },
-              { type: "image_url", image_url: { url: dataUrl } },
+              { type: "input_text", text: prompt },
+              { type: "input_image", image_url: dataUrl },
             ],
           },
         ],
@@ -857,7 +855,7 @@ async function describeImageAttachment(
       if (!payload || payload === "[DONE]") continue;
       try {
         const event = JSON.parse(payload) as any;
-        raw += String(event?.delta ?? event?.choices?.[0]?.delta?.content ?? "");
+        if (event?.type === "response.output_text.delta") raw += String(event.delta ?? "");
       } catch {
         /* ignore incomplete/non-JSON SSE lines */
       }
@@ -924,28 +922,33 @@ async function visuallyMatchProduct(
   if (!analysis.is_product) return null;
   const query = [analysis.product_type, analysis.category, analysis.description, ...analysis.keywords].filter(Boolean).join(" ");
   const candidates = await searchDirectProducts(sb, storeId, query, 8);
-  const withImages = candidates.filter((p) => firstProductImage(p)).lk).slice(0, 8);
+  const withImages = candidates.filter((p) => firstProductImage(p)).slice(0, 8);
   if (!withImages.length) return null;
   const key = process.env.LOVABLE_API_KEY;
   if (!key) return null;
   const content: any[] = [{
-    type: "text",
+    type: "input_text",
     text: "Compare CUSTOMER_IMAGE to the numbered catalogue images. Return ONLY minified JSON: " +
       '{"best_index":number|null,"confidence":number,"reason":"short factual reason"}. ' +
       "Use confidence >=0.88 only for the same product/model or a clearly identical catalogue photo; 0.60-0.87 for a plausible close match. " +
       "Colour/style similarity alone is not an exact match. CUSTOMER_IMAGE follows.",
-  }, { type: "image_url", image_url: { url: analysis.image_data_url } }];
+  }, { type: "input_image", image_url: analysis.image_data_url }];
   for (let i = 0; i < withImages.length; i += 1) {
     const image = firstProductImage(withImages[i]);
     if (!image) continue;
-    content.push({ type: "text", text: `CATALOGUE_${i}: ${withImages[i].name}` });
-    content.push({ type: "image_url", image_url: { url: image } });
+    content.push({ type: "input_text", text: `CATALOGUE_${i}: ${withImages[i].name}` });
+    content.push({ type: "input_image", image_url: image });
   }
   try {
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}`, "Lovable-API-Key": key },
-      body: JSON.stringify({ model: "openai/gpt-6-astra", reasoning_effort: "low", stream: true, messages: [{ role: "user", content }] }),
+      headers: { "Content-Type": "application/json", "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "fetch" },
+      body: JSON.stringify({
+        model: "openai/gpt-6-astra",
+        reasoning: { effort: "low", summary: "auto" },
+        stream: true,
+        input: [{ role: "user", content }],
+      }),
     });
     if (!response.ok || !response.body) return null;
     let text = "";
@@ -955,7 +958,7 @@ async function visuallyMatchProduct(
       if (!value || value === "[DONE]") continue;
       try {
         const event = JSON.parse(value) as any;
-        text += String(event?.delta ?? event?.choices?.[0]?.delta?.content ?? "");
+        if (event?.type === "response.output_text.delta") text += String(event.delta ?? "");
       } catch { /* non-content event */ }
     }
     const object = text.match(/\{[\s\S]*\}/)?.[0];
@@ -968,6 +971,68 @@ async function visuallyMatchProduct(
   } catch {
     return null;
   }
+}
+
+async function markQueuedReply(
+  sb: ReturnType<typeof admin>,
+  queuedJobId: string | null,
+  text: string,
+  outboundMessageId?: string | null,
+) {
+  if (!queuedJobId) return;
+  await sb
+    .from("messenger_jobs")
+    .update({ reply_text: text.slice(0, 2000), outbound_message_id: outboundMessageId ?? null } as any)
+    .eq("id", queuedJobId);
+}
+
+async function sendVisualProductResult(opts: {
+  sb: ReturnType<typeof admin>;
+  token: string;
+  psid: string;
+  conversationId: string;
+  storeId: string;
+  storeSlug: string | null | undefined;
+  sourceMid: string | null;
+  queuedJobId: string | null;
+  analysis: ImageAnalysis;
+  match: VisualMatch | null;
+}) {
+  const { sb, token, psid, conversationId, storeId, storeSlug, sourceMid, queuedJobId, analysis, match } = opts;
+  const color = analysis.confidence >= 0.75 && analysis.primary_color ? ` (${analysis.primary_color})` : "";
+  if (!match || match.confidence < 0.6) {
+    const item = analysis.product_type || analysis.category || "প্রোডাক্ট";
+    const text = `দুঃখিত, ছবির ${item}${color} আমাদের বর্তমান ক্যাটালগে নিশ্চিতভাবে পাওয়া যায়নি। প্রোডাক্টের নাম বা মডেল লিখলে আমি আবার খুঁজে দেখব।`;
+    const sent = await fbSend(token, psid, text);
+    await markQueuedReply(sb, queuedJobId, text, sent.message_id);
+    await sb.from("ai_messages").insert({
+      conversation_id: conversationId, role: "assistant", direction: "out", message_type: "text",
+      content: text, attachments: [{ in_reply_to_mid: sourceMid, visual_match_confidence: match?.confidence ?? 0 }],
+      mid: sent.message_id ?? null, delivery_status: "sent",
+    } as any);
+    return;
+  }
+
+  const exact = match.confidence >= 0.88;
+  const text = exact
+    ? `জি, ছবিটির সঙ্গে আমাদের ${match.product.name} প্রোডাক্টটি মিলেছে। নিচে দাম ও স্টকসহ বিস্তারিত দিলাম—আপনি কি এটিই নিতে চান?`
+    : `ছবিটির কাছাকাছি মিল হিসেবে আমাদের ${match.product.name} পাওয়া গেছে। আপনি কি এই প্রোডাক্টটিই খুঁজছেন?`;
+  const sent = await fbSend(token, psid, text);
+  await markQueuedReply(sb, queuedJobId, text, sent.message_id);
+  await sb.from("ai_messages").insert({
+    conversation_id: conversationId, role: "assistant", direction: "out", message_type: "text",
+    content: text, attachments: [{ in_reply_to_mid: sourceMid, product_id: match.product.id, visual_match_confidence: match.confidence }],
+    mid: sent.message_id ?? null, delivery_status: "sent",
+  } as any);
+  await logProductRecommendations(sb, storeId, conversationId, [match.product], `image:${sourceMid ?? "unknown"}`);
+  const card = productCardInput(storeSlug, match.product);
+  const cardSent = await sendProductCard(token, psid, card);
+  await sb.from("ai_messages").insert({
+    conversation_id: conversationId, role: "assistant", direction: "out", message_type: "product_card",
+    content: `[card] ${card.title}`,
+    attachments: [{ type: "product_card", product_id: match.product.id, element: card, in_reply_to_mid: sourceMid }],
+    mid: cardSent.message_id ?? null, delivery_status: "sent",
+  } as any);
 }
 
 
