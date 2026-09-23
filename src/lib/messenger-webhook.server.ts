@@ -767,6 +767,70 @@ async function transcribeAudioAttachment(url: string): Promise<string | null> {
   }
 }
 
+/**
+ * Look at a photo the customer sent and describe it, so the sales agent can act
+ * on it (find the product, say it is unavailable, or answer about a receipt).
+ */
+async function describeImageAttachment(
+  url: string,
+): Promise<{ description: string; keywords: string[]; is_product: boolean } | null> {
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key || !url) return null;
+  try {
+    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`,
+        "Lovable-API-Key": key,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text:
+                  "A customer sent this photo to an online shop. Reply with ONLY minified JSON: " +
+                  '{"description":"...","keywords":["..."],"is_product":true|false}. ' +
+                  "description: one short English sentence naming the item, its type, colour, material and any visible brand/text. " +
+                  "keywords: 2-6 short English search terms for finding this item in a product catalogue. " +
+                  "is_product: true only if the photo shows a physical product the customer might want to buy " +
+                  "(false for payment receipts, screenshots, documents, selfies, memes).",
+              },
+              { type: "image_url", image_url: { url } },
+            ],
+          },
+        ],
+      }),
+    });
+    if (!r.ok) return null;
+    const j = (await r.json().catch(() => null)) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    } | null;
+    const raw = j?.choices?.[0]?.message?.content?.trim() ?? "";
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    const parsed = JSON.parse(match[0]) as {
+      description?: string;
+      keywords?: unknown;
+      is_product?: boolean;
+    };
+    const description = String(parsed.description ?? "").trim().slice(0, 400);
+    if (!description) return null;
+    const keywords = Array.isArray(parsed.keywords)
+      ? parsed.keywords.map((k) => String(k).trim()).filter(Boolean).slice(0, 6)
+      : [];
+    return { description, keywords, is_product: parsed.is_product !== false };
+  } catch {
+    return null;
+  }
+}
+
+
+
 
 function productCardInput(storeSlug: string | null | undefined, product: ProductRow): ProductCardInput {
   const priceLine = `৳${Number(product.price).toFixed(0)}`;
