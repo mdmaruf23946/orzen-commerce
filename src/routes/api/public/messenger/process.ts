@@ -7,6 +7,18 @@ const inputSchema = z.object({
   wake_token: z.string().uuid(),
 });
 
+type MessengerJob = {
+  id: string;
+  wake_token: string;
+  store_id: string;
+  sender_id: string;
+  attempts?: number;
+  started_at?: string | null;
+  reply_text?: string | null;
+  outbound_message_id?: string | null;
+  event_payload?: unknown;
+};
+
 /**
  * Run the queued delivery IN-PROCESS. A self-`fetch` back to our own hostname
  * goes out through Cloudflare and comes back as 522, which silently killed
@@ -76,67 +88,123 @@ export const Route = createFileRoute("/api/public/messenger/process")({
           if (!claimedJob) return new Response("No due job", { status: 202 });
         }
 
-        const job = claimedJob;
-        const payload = (job.event_payload ?? {}) as {
-          raw?: string;
-          signature?: string;
-          message_id?: string;
-        };
-        if (!payload.raw || !payload.signature || !payload.message_id) {
-          await supabaseAdmin
-            .from("messenger_jobs")
-            .update({ status: "failed", completed_at: new Date().toISOString(), last_error: "Invalid queued event" } as any)
-            .eq("id", job.id);
-          return new Response("Invalid job", { status: 422 });
-        }
+        let job = claimedJob as MessengerJob;
+        // Drain this sender's due jobs in order. A newer webhook wake may arrive
+        // while the older image is still processing; draining here prevents it
+        // from waiting for the one-minute recovery sweep.
+        for (let drained = 0; drained < 10; drained += 1) {
+          const payload = (job.event_payload ?? {}) as {
+            raw?: string;
+            signature?: string;
+            message_id?: string;
+          };
+          if (!payload.raw || !payload.signature || !payload.message_id) {
+            await supabaseAdmin
+              .from("messenger_jobs")
+              .update({ status: "failed", completed_at: new Date().toISOString(), last_error: "Invalid queued event" } as any)
+              .eq("id", job.id);
+            return new Response("Invalid job", { status: 422 });
+          }
 
-        const started = Date.now();
-        try {
-          const response = await runQueuedDelivery(
-            request.url,
-            payload as { raw: string; signature: string; message_id: string },
-            job,
-          );
-          if (!response.ok) {
-            const detail = (await response.text().catch(() => "")).slice(0, 200);
-            throw new Error(`Processor returned ${response.status}${detail ? `: ${detail}` : ""}`);
+          const started = Date.now();
+          try {
+            // A previous attempt can send successfully and then fail while doing
+            // bookkeeping. Once recorded, never send that customer reply again.
+            if (!job.reply_text && !job.outbound_message_id) {
+              const response = await runQueuedDelivery(
+                request.url,
+                payload as { raw: string; signature: string; message_id: string },
+                job,
+              );
+              if (!response.ok) {
+                const detail = (await response.text().catch(() => "")).slice(0, 200);
+                throw new Error(`Processor returned ${response.status}${detail ? `: ${detail}` : ""}`);
+              }
+            }
+            await supabaseAdmin
+              .from("messenger_jobs")
+              .update({
+                status: "sent",
+                completed_at: new Date().toISOString(),
+                processing_ms: Date.now() - started,
+                last_error: null,
+              } as any)
+              .eq("id", job.id)
+              .eq("status", "processing");
+          } catch (cause) {
+            // If an outbound message was logged after this attempt began, the
+            // customer already got a reply. Treat the job as sent, not retryable.
+            const { data: incoming } = await supabaseAdmin
+              .from("ai_messages")
+              .select("conversation_id")
+              .eq("mid", payload.message_id)
+              .maybeSingle();
+            const { data: sentReply } = incoming
+              ? await supabaseAdmin
+                  .from("ai_messages")
+                  .select("mid,content")
+                  .eq("conversation_id", incoming.conversation_id)
+                  .eq("direction", "out")
+                  .neq("delivery_status", "failed")
+                  .gte("created_at", job.started_at ?? new Date(started).toISOString())
+                  .order("created_at", { ascending: true })
+                  .limit(1)
+                  .maybeSingle()
+              : { data: null };
+            if (sentReply) {
+              await supabaseAdmin
+                .from("messenger_jobs")
+                .update({
+                  status: "sent",
+                  completed_at: new Date().toISOString(),
+                  processing_ms: Date.now() - started,
+                  reply_text: sentReply.content ?? "sent",
+                  outbound_message_id: sentReply.mid ?? null,
+                  last_error: null,
+                } as any)
+                .eq("id", job.id);
+            } else {
+              const message = cause instanceof Error ? cause.message : "Messenger processing failed";
+              const attempts = Number(job.attempts ?? 1);
+              const exhausted = attempts >= 5;
+              const backoffSeconds = [5, 15, 45, 120, 300][Math.min(attempts - 1, 4)] ?? 300;
+              await supabaseAdmin
+                .from("messenger_jobs")
+                .update({
+                  status: exhausted ? "failed" : "retry",
+                  available_at: new Date(Date.now() + backoffSeconds * 1000).toISOString(),
+                  completed_at: exhausted ? new Date().toISOString() : null,
+                  processing_ms: Date.now() - started,
+                  last_error: message.slice(0, 500),
+                } as any)
+                .eq("id", job.id);
+              if (exhausted) {
+                await runQueuedDelivery(request.url, payload as { raw: string; signature: string; message_id: string }, job, true)
+                  .catch(() => undefined);
+              }
+              return new Response(exhausted ? "Failed" : "Retry scheduled", { status: exhausted ? 422 : 503 });
+            }
           }
-          await supabaseAdmin
+
+          const { data: next } = await supabaseAdmin
             .from("messenger_jobs")
-            .update({
-              status: "sent",
-              completed_at: new Date().toISOString(),
-              processing_ms: Date.now() - started,
-              last_error: null,
-            } as any)
-            .eq("id", job.id)
-            .eq("status", "processing");
-          return new Response("ok");
-        } catch (cause) {
-          const message = cause instanceof Error ? cause.message : "Messenger processing failed";
-          const attempts = Number(job.attempts ?? 1);
-          const exhausted = attempts >= 5;
-          const backoffSeconds = [5, 15, 45, 120, 300][Math.min(attempts - 1, 4)];
-          await supabaseAdmin
-            .from("messenger_jobs")
-            .update({
-              status: exhausted ? "failed" : "retry",
-              available_at: new Date(Date.now() + backoffSeconds * 1000).toISOString(),
-              completed_at: exhausted ? new Date().toISOString() : null,
-              processing_ms: Date.now() - started,
-              last_error: message.slice(0, 500),
-            } as any)
-            .eq("id", job.id);
-          if (exhausted) {
-            await runQueuedDelivery(
-              request.url,
-              payload as { raw: string; signature: string; message_id: string },
-              job,
-              true,
-            ).catch(() => undefined);
-          }
-          return new Response(exhausted ? "Failed" : "Retry scheduled", { status: exhausted ? 422 : 503 });
+            .select("id,wake_token")
+            .eq("store_id", job.store_id)
+            .eq("sender_id", job.sender_id)
+            .in("status", ["pending", "retry"])
+            .lte("available_at", new Date().toISOString())
+            .order("created_at", { ascending: true })
+            .limit(1)
+            .maybeSingle();
+          if (!next) break;
+          const nextClaim = await supabaseAdmin.rpc("claim_messenger_job", {
+            _job_id: next.id,
+            _wake_token: next.wake_token,
+          });
+          if (!nextClaim.data) break;
+          job = nextClaim.data as MessengerJob;
         }
+        return new Response("ok");
       },
     },
   },
