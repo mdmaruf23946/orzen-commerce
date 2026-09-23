@@ -1638,12 +1638,13 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               if (handoff !== "ai") continue;
               if ((integ as any).human_takeover || (integ as any).ai_auto_reply === false) continue;
               if (!token) continue;
-              // Only text-shaped inputs go to the LLM. Audio was transcribed above; other
-              // attachments (image, sticker, file) fall through until vision is wired in.
+              // Audio was transcribed and images were described above; stickers and
+              // files still have no text form, so they do not reach the LLM.
               if (
                 parsed.message_type !== "text" &&
                 parsed.message_type !== "quick_reply" &&
-                parsed.message_type !== "audio"
+                parsed.message_type !== "audio" &&
+                parsed.message_type !== "image"
               ) continue;
               if (!effectiveText.trim()) continue;
 
