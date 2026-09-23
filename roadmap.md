@@ -13,6 +13,8 @@
 
 ## Tasks
 
+45. [ ] **Messenger image accuracy + ordered single replies** — compare each customer image directly with that store's catalogue images, persist detailed visual attributes and current-turn match, process same-sender jobs in order without cron delay, and prevent retries after an outbound reply has already been sent; then verify on production.
+
 1. [x] **Auth users migration** — 6 auth.users + 6 identities copied with password hashes (confirmed_at/identities.email are generated cols, excluded). Sessions/refresh_tokens intentionally NOT copied (JWT secret differs).
 2. [x] **Data migration** — pg_dump --data-only of public (triggers disabled during load, re-enabled after; target truncated first to drop migration seed rows). Fixed drift found during load: store_invoice_settings PK -> (store_id, order_type) + order_type CHECK.
 3. [x] **Verification** — 182 tables / 1344 rows identical; constraints 535=535, indexes 416=416 (no missing/extra/differing); merchant codes A000001..A000005 intact; merchant_code_seq=5 both; wallet total 180.00 both; orders 24; auth users 6.

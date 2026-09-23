@@ -62,7 +62,7 @@ export const Route = createFileRoute("/api/public/messenger/process")({
         });
         if (error) return new Response("Claim failed", { status: 500 });
 
-        let claimedJob = claimed as any;
+        let claimedJob = claimed as MessengerJob | null;
         if (!claimedJob) {
           // The job may simply be waiting out the merchant's configured reply
           // delay. Wait it out here (bounded) so short delays are honoured
@@ -83,7 +83,7 @@ export const Route = createFileRoute("/api/public/messenger/process")({
               _job_id: input.job_id,
               _wake_token: input.wake_token,
             });
-            claimedJob = retry.data as any;
+            claimedJob = retry.data as MessengerJob | null;
           }
           if (!claimedJob) return new Response("No due job", { status: 202 });
         }

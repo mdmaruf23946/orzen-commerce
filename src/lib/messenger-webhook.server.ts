@@ -1705,6 +1705,9 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                 if (existingMessage && !queuedJobId) continue;
               }
               const parsed = parseMessage(msg);
+              const sourceCreatedAt = Number(ev.timestamp) > 0
+                ? new Date(Number(ev.timestamp)).toISOString()
+                : new Date().toISOString();
 
               // "Buy now" taps: card buttons arrive as postbacks, quick replies
               // arrive as ordinary messages. Both mean the same intent and must
@@ -1719,6 +1722,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                   content: msg.text || "Buy Now",
                   attachments: parsed.attachments,
                   mid: msg.mid ?? null,
+                  created_at: sourceCreatedAt,
                 });
                 await sb
                   .from("ai_conversations")
@@ -1750,6 +1754,8 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
 
               // Voice notes: transcribe upstream so the LLM sees text, not "[audio]".
               let effectiveText = parsed.text;
+              let imageAnalysis: ImageAnalysis | null = null;
+              let imageMatch: VisualMatch | null = null;
               if (parsed.message_type === "audio") {
                 const audioUrl = (parsed.attachments?.[0]?.url as string) || "";
                 const transcript = await transcribeAudioAttachment(audioUrl);
@@ -1761,6 +1767,8 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                 const imageUrl = (parsed.attachments?.[0]?.url as string) || "";
                 const seen = await describeImageAttachment(imageUrl);
                 if (seen) {
+                  imageAnalysis = seen;
+                  imageMatch = seen.is_product ? await visuallyMatchProduct(sb, integ.store_id, seen) : null;
                   const terms = seen.keywords.length ? ` Search terms: ${seen.keywords.join(", ")}.` : "";
                   effectiveText = seen.is_product
                     ? `[The customer sent a photo of a product. The photo shows: ${seen.description}.${terms}] ` +
@@ -1770,9 +1778,29 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                       `mention what you saw in the photo, and offer the closest alternatives. Never invent a product.`
                     : `[The customer sent a photo. The photo shows: ${seen.description}.] ` +
                       `Answer about this photo naturally in the customer's language. Do not search the product catalogue unless they ask.`;
-                  parsed.attachments = (parsed.attachments ?? []).map((a: any, i: number) =>
-                    i === 0 ? { ...a, ai_description: seen.description, ai_keywords: seen.keywords, is_product: seen.is_product } : a,
-                  );
+                  parsed.attachments = (parsed.attachments ?? []).map((a: any, i: number) => i === 0 ? {
+                    ...a,
+                    ai_description: seen.description,
+                    ai_keywords: seen.keywords,
+                    is_product: seen.is_product,
+                    visual_attributes: {
+                      product_type: seen.product_type,
+                      category: seen.category,
+                      primary_color: seen.primary_color,
+                      secondary_colors: seen.secondary_colors,
+                      material: seen.material,
+                      style: seen.style,
+                      shape: seen.shape,
+                      pattern: seen.pattern,
+                      visible_text: seen.visible_text,
+                      brand: seen.brand,
+                      distinctive_features: seen.distinctive_features,
+                      confidence: seen.confidence,
+                    },
+                    matched_product_id: imageMatch?.product.id ?? null,
+                    visual_match_confidence: imageMatch?.confidence ?? 0,
+                    visual_match_reason: imageMatch?.reason ?? null,
+                  } : a);
                 } else {
                   effectiveText =
                     "[The customer sent a photo but it could not be analysed.] " +
@@ -1796,7 +1824,10 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                     effectiveText,
                   );
                   if (merchant?.handled) {
-                    if (token) await sendText(token, senderId, merchant.reply);
+                    if (token) {
+                      const result = await sendText(token, senderId, merchant.reply);
+                      await markQueuedReply(sb, queuedJobId, merchant.reply, (result as any)?.message_id ?? null);
+                    }
                     continue;
                   }
                 } catch (err) {
@@ -1828,6 +1859,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                   content: effectiveText || preview,
                   attachments: parsed.attachments,
                   mid: msg.mid ?? null,
+                  created_at: sourceCreatedAt,
                 });
                 await sb
                   .from("ai_conversations")
@@ -1854,11 +1886,40 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               ) continue;
               if (!effectiveText.trim()) continue;
 
+              // Product photos are resolved deterministically from the current
+              // image turn. This prevents an older recommendation or free-form
+              // model reply from replacing the newest photo's product context.
+              if (parsed.message_type === "image" && imageAnalysis?.is_product) {
+                const { data: storeRow } = await sb
+                  .from("stores")
+                  .select("slug")
+                  .eq("id", integ.store_id)
+                  .maybeSingle();
+                await sendVisualProductResult({
+                  sb,
+                  token,
+                  psid: senderId,
+                  conversationId: conv!.id,
+                  storeId: integ.store_id,
+                  storeSlug: storeRow?.slug,
+                  sourceMid: msg.mid ?? null,
+                  queuedJobId,
+                  analysis: imageAnalysis,
+                  match: imageMatch,
+                });
+                await sb
+                  .from("messenger_integrations")
+                  .update({ last_error: null } as any)
+                  .eq("id", (integ as any).id);
+                continue;
+              }
+
               if (fallbackOnly) {
                 const fallback = /[\u0980-\u09ff]/.test(effectiveText)
                   ? "দুঃখিত, এই মুহূর্তে আপনার মেসেজের পূর্ণ উত্তর তৈরি করা যায়নি। আপনার মেসেজটি সংরক্ষিত আছে—অনুগ্রহ করে একটু পরে আবার চেষ্টা করুন।"
                   : "Sorry, I couldn't complete the full answer right now. Your message is saved—please try again shortly.";
                 const sent = await fbSend(token, senderId, fallback);
+                await markQueuedReply(sb, queuedJobId, fallback, sent.message_id);
                 await sb.from("ai_messages").insert({
                   conversation_id: conv!.id,
                   role: "assistant",
@@ -1878,6 +1939,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                   ? smallTalkReply(effectiveText)
                   : "Hello! How can I help you today?";
                 const sent = await fbSend(token, senderId, instantReply);
+                await markQueuedReply(sb, queuedJobId, instantReply, sent.message_id);
                 await sb.from("ai_messages").insert({
                   conversation_id: conv!.id,
                   role: "assistant",
@@ -2026,6 +2088,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
 
               try {
                 const sent = await fbSend(token, senderId, replyText);
+                await markQueuedReply(sb, queuedJobId, replyText, sent.message_id);
                 await sb.from("ai_messages").insert({
                   conversation_id: conv!.id,
                   role: "assistant",
