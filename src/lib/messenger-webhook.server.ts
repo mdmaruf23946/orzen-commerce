@@ -1730,7 +1730,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                       .from("ai_messages")
                       .select("role,content,message_type")
                       .eq("conversation_id", conv!.id)
-                      .in("message_type", ["text", "quick_reply", "postback", "audio"])
+                      .in("message_type", ["text", "quick_reply", "postback", "audio", "image"])
                       .order("created_at", { ascending: false })
                       .limit(historyLimit)
                   : Promise.resolve({ data: [] as any[] }),
