@@ -1,10 +1,36 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
+import { handleMessengerWebhook } from "@/lib/messenger-webhook.server";
 
 const inputSchema = z.object({
   job_id: z.string().uuid(),
   wake_token: z.string().uuid(),
 });
+
+/**
+ * Run the queued delivery IN-PROCESS. A self-`fetch` back to our own hostname
+ * goes out through Cloudflare and comes back as 522, which silently killed
+ * every queued reply — so the webhook logic is called directly instead.
+ */
+function runQueuedDelivery(
+  requestUrl: string,
+  payload: { raw: string; signature: string; message_id: string },
+  job: { id: string; wake_token: string },
+  fallbackOnly = false,
+) {
+  const target = new URL("/api/public/messenger/webhook", requestUrl);
+  const headers = new Headers({
+    "content-type": "application/json",
+    "x-hub-signature-256": payload.signature,
+    "x-orzen-queue-job": String(job.id),
+    "x-orzen-queue-token": String(job.wake_token),
+    "x-orzen-queue-mid": payload.message_id,
+  });
+  if (fallbackOnly) headers.set("x-orzen-queue-fallback", "1");
+  return handleMessengerWebhook(
+    new Request(target, { method: "POST", headers, body: payload.raw }),
+  );
+}
 
 export const Route = createFileRoute("/api/public/messenger/process")({
   server: {
@@ -66,19 +92,15 @@ export const Route = createFileRoute("/api/public/messenger/process")({
 
         const started = Date.now();
         try {
-          const target = new URL("/api/public/messenger/webhook", request.url);
-          const response = await fetch(target, {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-              "x-hub-signature-256": payload.signature,
-              "x-orzen-queue-job": String(job.id),
-              "x-orzen-queue-token": String(job.wake_token),
-              "x-orzen-queue-mid": payload.message_id,
-            },
-            body: payload.raw,
-          });
-          if (!response.ok) throw new Error(`Processor returned ${response.status}`);
+          const response = await runQueuedDelivery(
+            request.url,
+            payload as { raw: string; signature: string; message_id: string },
+            job,
+          );
+          if (!response.ok) {
+            const detail = (await response.text().catch(() => "")).slice(0, 200);
+            throw new Error(`Processor returned ${response.status}${detail ? `: ${detail}` : ""}`);
+          }
           await supabaseAdmin
             .from("messenger_jobs")
             .update({
@@ -106,19 +128,12 @@ export const Route = createFileRoute("/api/public/messenger/process")({
             } as any)
             .eq("id", job.id);
           if (exhausted) {
-            const target = new URL("/api/public/messenger/webhook", request.url);
-            await fetch(target, {
-              method: "POST",
-              headers: {
-                "content-type": "application/json",
-                "x-hub-signature-256": payload.signature,
-                "x-orzen-queue-job": String(job.id),
-                "x-orzen-queue-token": String(job.wake_token),
-                "x-orzen-queue-mid": payload.message_id,
-                "x-orzen-queue-fallback": "1",
-              },
-              body: payload.raw,
-            }).catch(() => undefined);
+            await runQueuedDelivery(
+              request.url,
+              payload as { raw: string; signature: string; message_id: string },
+              job,
+              true,
+            ).catch(() => undefined);
           }
           return new Response(exhausted ? "Failed" : "Retry scheduled", { status: exhausted ? 422 : 503 });
         }
