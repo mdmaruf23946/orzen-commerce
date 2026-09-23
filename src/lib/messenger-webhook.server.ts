@@ -921,8 +921,22 @@ async function visuallyMatchProduct(
 ): Promise<VisualMatch | null> {
   if (!analysis.is_product) return null;
   const query = [analysis.product_type, analysis.category, analysis.description, ...analysis.keywords].filter(Boolean).join(" ");
-  const candidates = await searchDirectProducts(sb, storeId, query, 8);
-  const withImages = candidates.filter((p) => firstProductImage(p)).slice(0, 8);
+  const productSelect =
+    "id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,primary_image_url,gallery,features,specifications,variants,total_sold,rating,is_featured";
+  const [textMatches, allProductsResult, blockedResult] = await Promise.all([
+    searchDirectProducts(sb, storeId, query, 12),
+    sb.from("products").select(productSelect).eq("store_id", storeId).eq("status", "active").gt("stock", 0).limit(100),
+    sb.from("ai_product_blacklist").select("product_id").eq("store_id", storeId),
+  ]);
+  const blockedIds = new Set((blockedResult.data ?? []).map((row: any) => String(row.product_id)));
+  const ordered = new Map<string, ProductRow>();
+  for (const product of [...textMatches, ...((allProductsResult.data ?? []) as ProductRow[])]) {
+    if (!blockedIds.has(product.id) && firstProductImage(product)) ordered.set(product.id, product);
+  }
+  // Text-ranked candidates go first, but every active catalogue image is still
+  // eligible. This avoids excluding the exact item when its title lacks the
+  // customer's visually observed colour/style words.
+  const withImages = Array.from(ordered.values()).slice(0, 40);
   if (!withImages.length) return null;
   const key = process.env.LOVABLE_API_KEY;
   if (!key) return null;
@@ -1014,9 +1028,12 @@ async function sendVisualProductResult(opts: {
   }
 
   const exact = match.confidence >= 0.88;
+  const observedColor = analysis.confidence >= 0.75 && analysis.primary_color
+    ? ` ছবিতে ${analysis.primary_color} রঙটি স্পষ্ট দেখা যাচ্ছে।`
+    : "";
   const text = exact
-    ? `জি, ছবিটির সঙ্গে আমাদের ${match.product.name} প্রোডাক্টটি মিলেছে। নিচে দাম ও স্টকসহ বিস্তারিত দিলাম—আপনি কি এটিই নিতে চান?`
-    : `ছবিটির কাছাকাছি মিল হিসেবে আমাদের ${match.product.name} পাওয়া গেছে। আপনি কি এই প্রোডাক্টটিই খুঁজছেন?`;
+    ? `জি, ছবিটির সঙ্গে আমাদের ${match.product.name} প্রোডাক্টটি মিলেছে।${observedColor} নিচে দাম ও স্টকসহ বিস্তারিত দিলাম—আপনি কি এটিই নিতে চান?`
+    : `ছবিটির কাছাকাছি মিল হিসেবে আমাদের ${match.product.name} পাওয়া গেছে।${observedColor} এটি নিশ্চিত exact match নয়—আপনি কি এই প্রোডাক্টটিই খুঁজছেন?`;
   const sent = await fbSend(token, psid, text);
   await markQueuedReply(sb, queuedJobId, text, sent.message_id);
   await sb.from("ai_messages").insert({
