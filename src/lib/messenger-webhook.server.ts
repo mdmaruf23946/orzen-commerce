@@ -107,7 +107,7 @@ class ImageProcessingError extends Error {
   readonly retryable: boolean;
 
   constructor(code: string, message: string, retryable: boolean) {
-    super(message);
+    super(`IMAGE_${retryable ? "RETRYABLE" : "TERMINAL"}_${code}: ${message}`.slice(0, 450));
     this.name = "ImageProcessingError";
     this.code = code;
     this.retryable = retryable;
@@ -120,7 +120,7 @@ const IMAGE_FETCH_HEADERS = {
 };
 
 function imageFailure(code: string, detail: string, retryable: boolean): never {
-  throw new ImageProcessingError(code, `IMAGE_${code}: ${detail}`.slice(0, 450), retryable);
+  throw new ImageProcessingError(code, detail, retryable);
 }
 
 async function responseErrorMessage(response: Response) {

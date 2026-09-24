@@ -166,7 +166,8 @@ export const Route = createFileRoute("/api/public/messenger/process")({
             } else {
               const message = cause instanceof Error ? cause.message : "Messenger processing failed";
               const attempts = Number(job.attempts ?? 1);
-              const exhausted = attempts >= 5;
+              const terminalImageFailure = message.startsWith("IMAGE_TERMINAL_");
+              const exhausted = terminalImageFailure || attempts >= 5;
               const backoffSeconds = [5, 15, 45, 120, 300][Math.min(attempts - 1, 4)] ?? 300;
               await supabaseAdmin
                 .from("messenger_jobs")
