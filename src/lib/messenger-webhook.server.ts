@@ -1148,9 +1148,10 @@ async function visuallyMatchProduct(
     const shortlistResult = await requestJson("MATCH", [{
       type: "input_text",
       text: [
-        "Select only catalogue products that could be the SAME product/model as the photographed item. Product function/type compatibility is mandatory.",
-        "A shared colour, outline or generic shape never makes two different product types compatible.",
-        "Return ONLY minified JSON: {\"candidate_indices\":[number],\"reason\":\"short factual reason\"}. Return at most 10 indices; [] is correct when none are compatible.",
+        "Select catalogue products whose BROAD product type matches the photographed item (e.g. any jacket/coat for a jacket, any charger for a charger). Function/type compatibility is mandatory.",
+        "Merchant-written names, colours and materials are often inaccurate (a product named 'Denim Jacket' may actually be an olive utility jacket), so NEVER exclude a same-type product because its name, colour, material or style wording differs. Images are verified later.",
+        "A shared colour, outline or generic shape never makes two different product types compatible (charger vs speaker is incompatible).",
+        "Return ONLY minified JSON: {\"candidate_indices\":[number],\"reason\":\"short factual reason\"}. Return at most 10 indices, same-type products first; [] only when no product has the same broad type.",
         `PHOTO IDENTITY: ${query}`,
         "CATALOGUE:",
         ...catalogLines,
@@ -1179,7 +1180,8 @@ async function visuallyMatchProduct(
         type: "input_text",
         text: "Compare CUSTOMER_IMAGE with each candidate's images. Product function/type must match. Return ONLY minified JSON: " +
           '{"results":[{"index":number,"verdict":"same|close|different","type_compatible":boolean,"confidence":number,"reason":"short visual evidence"}]}. ' +
-          "Use same only when model-defining construction, ports, controls, branding/text and proportions agree; colour or shape alone is insufficient.",
+          "Use same only when model-defining construction, ports, controls, branding/text and proportions agree; colour or shape alone is insufficient. " +
+          "Judge by the IMAGES: catalogue names/descriptions may be wrong and are not evidence against a match. If the customer image is the same photograph as a catalogue image (even cropped, resized or recompressed), return same with confidence 0.99.",
       }, { type: "input_image", image_url: analysis.image_data_url }];
       batch.forEach((product, index) => {
         content.push({ type: "input_text", text: `CANDIDATE_${index}: ${productIdentityText(product, categoryNames.get(String(product.category_id ?? "")) ?? "")}` });
@@ -1210,7 +1212,9 @@ async function visuallyMatchProduct(
       const content: any[] = [{
         type: "input_text",
         text: "Final independent verification. Decide whether CUSTOMER_IMAGE and CATALOGUE_IMAGES show the exact same sale product/model. " +
-          "Reject if function/type, connector layout, controls, proportions, logo/model text or defining construction conflict. " +
+          "Reject if function/type, connector layout, controls, proportions, logo/model text or defining construction conflict in the IMAGES. " +
+          "The catalogue name/description text is merchant-written and may be inaccurate (wrong colour or material word): a text-vs-image mismatch is NOT conflicting evidence. " +
+          "If the customer image is the same photograph as a catalogue image (crop/resize/compression only), return exact with confidence 0.99. " +
           "Return ONLY minified JSON: {\"verdict\":\"exact|close|different\",\"type_compatible\":boolean,\"confidence\":number," +
           "\"matching_evidence\":[string],\"conflicting_evidence\":[string],\"reason\":\"short factual reason\"}.",
       }, { type: "input_text", text: `PHOTO IDENTITY: ${query}` },
