@@ -1159,15 +1159,15 @@ async function visuallyMatchProduct(
     const aiIndices = Array.isArray(shortlistResult.candidate_indices)
       ? shortlistResult.candidate_indices.map(Number).filter((index) => Number.isInteger(index) && index >= 0 && index < allProducts.length).slice(0, 10)
       : [];
+    const textRank = new Map(textMatches.map((product, index) => [product.id, index]));
     const compatible = new Map<string, ProductRow>();
-    for (const product of textMatches) {
-      if (!blockedIds.has(product.id) && productImages(product, 1).length > 0) compatible.set(product.id, product);
-    }
     for (const index of aiIndices) {
       const product = allProducts[index];
       if (product) compatible.set(product.id, product);
     }
-    const candidates = Array.from(compatible.values()).slice(0, 12);
+    const candidates = Array.from(compatible.values())
+      .sort((left, right) => (textRank.get(left.id) ?? 999) - (textRank.get(right.id) ?? 999))
+      .slice(0, 10);
     if (!candidates.length) return null;
 
     // Stage 2: compare small batches using primary + gallery images. Keeping
