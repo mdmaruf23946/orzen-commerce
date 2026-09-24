@@ -102,6 +102,119 @@ type VisualMatch = {
   reason: string;
 };
 
+class ImageProcessingError extends Error {
+  readonly code: string;
+  readonly retryable: boolean;
+
+  constructor(code: string, message: string, retryable: boolean) {
+    super(message);
+    this.name = "ImageProcessingError";
+    this.code = code;
+    this.retryable = retryable;
+  }
+}
+
+const IMAGE_FETCH_HEADERS = {
+  Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+  "User-Agent": "Mozilla/5.0 (compatible; ORZEN-Messenger/1.0)",
+};
+
+function imageFailure(code: string, detail: string, retryable: boolean): never {
+  throw new ImageProcessingError(code, `IMAGE_${code}: ${detail}`.slice(0, 450), retryable);
+}
+
+async function responseErrorMessage(response: Response) {
+  const body = await response.text().catch(() => "");
+  try {
+    const parsed = JSON.parse(body) as { message?: string; error?: { message?: string } };
+    return String(parsed.message ?? parsed.error?.message ?? `HTTP ${response.status}`).slice(0, 240);
+  } catch {
+    return `HTTP ${response.status}`;
+  }
+}
+
+async function refreshMessengerImageUrl(pageToken: string, messageId: string) {
+  if (!pageToken || !messageId) return null;
+  const response = await fetch(
+    `https://graph.facebook.com/v19.0/${encodeURIComponent(messageId)}?fields=attachments&access_token=${encodeURIComponent(pageToken)}`,
+    { headers: { Accept: "application/json" } },
+  );
+  if (!response.ok) return null;
+  const payload = await response.json().catch(() => null) as any;
+  const attachments = payload?.attachments?.data;
+  if (!Array.isArray(attachments)) return null;
+  for (const attachment of attachments) {
+    const candidate = attachment?.image_data?.url ?? attachment?.file_url ?? attachment?.payload?.url;
+    if (typeof candidate === "string" && /^https:\/\//i.test(candidate)) return candidate;
+  }
+  return null;
+}
+
+async function downloadMessengerImage(url: string, pageToken: string, messageId: string) {
+  if (!url) imageFailure("URL_MISSING", "Messenger supplied no image URL", false);
+  let currentUrl = url;
+  let refreshed = false;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    let response: Response;
+    try {
+      response = await fetch(currentUrl, { headers: IMAGE_FETCH_HEADERS });
+    } catch (cause) {
+      if (attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+        continue;
+      }
+      imageFailure("DOWNLOAD_NETWORK", cause instanceof Error ? cause.message : "Image download failed", true);
+    }
+    if (!response.ok) {
+      if (!refreshed && [401, 403, 404].includes(response.status)) {
+        const freshUrl = await refreshMessengerImageUrl(pageToken, messageId);
+        if (freshUrl) {
+          currentUrl = freshUrl;
+          refreshed = true;
+          continue;
+        }
+      }
+      if ((response.status === 429 || response.status >= 500) && attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+        continue;
+      }
+      imageFailure("DOWNLOAD_HTTP", `Facebook image returned HTTP ${response.status}`, response.status === 429 || response.status >= 500);
+    }
+    const type = (response.headers.get("content-type") ?? "").split(";")[0]?.trim().toLowerCase() ?? "";
+    if (!type.startsWith("image/")) imageFailure("CONTENT_TYPE", `Facebook returned ${type || "no content type"}`, false);
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (!bytes.byteLength) imageFailure("EMPTY", "Facebook returned an empty image", true);
+    if (bytes.byteLength > 8_000_000) imageFailure("TOO_LARGE", `Image is ${bytes.byteLength} bytes`, false);
+    return { bytes, type };
+  }
+  imageFailure("DOWNLOAD_RETRY_EXHAUSTED", "Image download retries were exhausted", true);
+}
+
+function parseResponsesText(rawStream: string, stage: "ANALYSIS" | "MATCH") {
+  let text = "";
+  let terminalError = "";
+  for (const line of rawStream.split("\n")) {
+    if (!line.startsWith("data:")) continue;
+    const payload = line.slice(5).trim();
+    if (!payload || payload === "[DONE]") continue;
+    try {
+      const event = JSON.parse(payload) as any;
+      if (event?.type === "response.output_text.delta") text += String(event.delta ?? "");
+      if (event?.type === "response.failed" || event?.type === "error") {
+        terminalError = String(event?.response?.error?.message ?? event?.error?.message ?? event?.message ?? "Gateway stream failed");
+      }
+      if (event?.type === "response.completed" && !text) {
+        text = String(event?.response?.output_text ?? "");
+      }
+    } catch {
+      // SSE frames are line-delimited JSON; non-JSON metadata is not content.
+    }
+  }
+  if (terminalError) imageFailure(`${stage}_STREAM`, terminalError, true);
+  if (!text.trim()) imageFailure(`${stage}_EMPTY`, "AI returned no answer text", true);
+  return text;
+}
+
 function admin() {
   return createClient<Database>(
     process.env.SUPABASE_URL!,
@@ -798,19 +911,16 @@ async function transcribeAudioAttachment(url: string): Promise<string | null> {
  */
 async function describeImageAttachment(
   url: string,
-): Promise<ImageAnalysis | null> {
+  pageToken: string,
+  messageId: string,
+): Promise<ImageAnalysis> {
   const key = process.env.LOVABLE_API_KEY;
-  if (!key || !url) return null;
+  if (!key) imageFailure("CONFIG", "AI service is not configured", false);
   try {
     // The model provider cannot fetch Facebook's signed CDN links itself
     // (it returns "Cannot fetch content from the provided URL"), so the bytes
     // are downloaded here and sent inline as a data URL.
-    const img = await fetch(url);
-    if (!img.ok) return null;
-    const type = (img.headers.get("content-type") ?? "").split(";")[0]!.trim();
-    if (!type.startsWith("image/")) return null;
-    const bytes = new Uint8Array(await img.arrayBuffer());
-    if (!bytes.byteLength || bytes.byteLength > 8_000_000) return null;
+    const { bytes, type } = await downloadMessengerImage(url, pageToken, messageId);
     let binary = "";
     for (let i = 0; i < bytes.length; i += 0x8000) {
       binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
@@ -846,23 +956,15 @@ async function describeImageAttachment(
         ],
       }),
     });
-    if (!r.ok || !r.body) return null;
-    const rawStream = await r.text();
-    let raw = "";
-    for (const line of rawStream.split("\n")) {
-      if (!line.startsWith("data:")) continue;
-      const payload = line.slice(5).trim();
-      if (!payload || payload === "[DONE]") continue;
-      try {
-        const event = JSON.parse(payload) as any;
-        if (event?.type === "response.output_text.delta") raw += String(event.delta ?? "");
-      } catch {
-        /* ignore incomplete/non-JSON SSE lines */
-      }
+    if (!r.ok) {
+      const detail = await responseErrorMessage(r);
+      imageFailure("ANALYSIS_HTTP", detail, r.status === 429 || r.status >= 500);
     }
+    if (!r.body) imageFailure("ANALYSIS_BODY", "AI response had no stream", true);
+    const raw = parseResponsesText(await r.text(), "ANALYSIS");
     const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) return null;
-    const parsed = JSON.parse(match[0]) as {
+    if (!match) imageFailure("ANALYSIS_JSON", "AI answer did not contain JSON", true);
+    let parsed: {
       description?: string;
       keywords?: unknown;
       is_product?: boolean;
@@ -879,8 +981,13 @@ async function describeImageAttachment(
       distinctive_features?: unknown;
       confidence?: number;
     };
+    try {
+      parsed = JSON.parse(match[0]);
+    } catch {
+      imageFailure("ANALYSIS_JSON", "AI answer contained invalid JSON", true);
+    }
     const description = String(parsed.description ?? "").trim().slice(0, 400);
-    if (!description) return null;
+    if (!description) imageFailure("ANALYSIS_SCHEMA", "AI answer omitted the image description", true);
     const keywords = Array.isArray(parsed.keywords)
       ? parsed.keywords.map((k) => String(k).trim()).filter(Boolean).slice(0, 6)
       : [];
@@ -909,8 +1016,9 @@ async function describeImageAttachment(
       confidence: Math.max(0, Math.min(1, Number(parsed.confidence) || 0)),
       image_data_url: dataUrl,
     };
-  } catch {
-    return null;
+  } catch (cause) {
+    if (cause instanceof ImageProcessingError) throw cause;
+    imageFailure("ANALYSIS_EXCEPTION", cause instanceof Error ? cause.message : "Unexpected image analysis failure", true);
   }
 }
 
@@ -964,26 +1072,27 @@ async function visuallyMatchProduct(
         input: [{ role: "user", content }],
       }),
     });
-    if (!response.ok || !response.body) return null;
-    let text = "";
-    for (const line of (await response.text()).split("\n")) {
-      if (!line.startsWith("data:")) continue;
-      const value = line.slice(5).trim();
-      if (!value || value === "[DONE]") continue;
-      try {
-        const event = JSON.parse(value) as any;
-        if (event?.type === "response.output_text.delta") text += String(event.delta ?? "");
-      } catch { /* non-content event */ }
+    if (!response.ok) {
+      const detail = await responseErrorMessage(response);
+      imageFailure("MATCH_HTTP", detail, response.status === 429 || response.status >= 500);
     }
+    if (!response.body) imageFailure("MATCH_BODY", "AI match response had no stream", true);
+    const text = parseResponsesText(await response.text(), "MATCH");
     const object = text.match(/\{[\s\S]*\}/)?.[0];
-    if (!object) return null;
-    const parsed = JSON.parse(object) as { best_index?: number | null; confidence?: number; reason?: string };
+    if (!object) imageFailure("MATCH_JSON", "AI match answer did not contain JSON", true);
+    let parsed: { best_index?: number | null; confidence?: number; reason?: string };
+    try {
+      parsed = JSON.parse(object);
+    } catch {
+      imageFailure("MATCH_JSON", "AI match answer contained invalid JSON", true);
+    }
     const index = Number(parsed.best_index);
     const product = Number.isInteger(index) ? withImages[index] : undefined;
     const confidence = Math.max(0, Math.min(1, Number(parsed.confidence) || 0));
     return product ? { product, confidence, reason: String(parsed.reason ?? "").slice(0, 300) } : null;
-  } catch {
-    return null;
+  } catch (cause) {
+    if (cause instanceof ImageProcessingError) throw cause;
+    imageFailure("MATCH_EXCEPTION", cause instanceof Error ? cause.message : "Unexpected catalogue match failure", true);
   }
 }
 
@@ -1782,8 +1891,24 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               // catalogue instead of leaving the customer with silence.
               if (parsed.message_type === "image") {
                 const imageUrl = (parsed.attachments?.[0]?.url as string) || "";
-                const seen = await describeImageAttachment(imageUrl);
-                if (seen) {
+                if (fallbackOnly) {
+                  const fallback = "দুঃখিত, সাময়িক সমস্যার কারণে ছবিটি এখন বিশ্লেষণ করা যায়নি। ছবিটি সংরক্ষিত আছে—অনুগ্রহ করে একটু পরে আবার পাঠান।";
+                  const sent = await fbSend(token, senderId, fallback);
+                  await markQueuedReply(sb, queuedJobId, fallback, sent.message_id);
+                  await sb.from("ai_messages").insert({
+                    conversation_id: conv!.id,
+                    role: "assistant",
+                    direction: "out",
+                    message_type: "text",
+                    content: fallback,
+                    attachments: [{ in_reply_to_mid: msg.mid ?? null, image_processing_failed: true }],
+                    mid: sent.message_id ?? null,
+                    delivery_status: "sent",
+                  });
+                  continue;
+                }
+                const seen = await describeImageAttachment(imageUrl, token, String(msg.mid ?? ""));
+                {
                   imageAnalysis = seen;
                   imageMatch = seen.is_product ? await visuallyMatchProduct(sb, integ.store_id, seen) : null;
                   const terms = seen.keywords.length ? ` Search terms: ${seen.keywords.join(", ")}.` : "";
@@ -1818,10 +1943,6 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                     visual_match_confidence: imageMatch?.confidence ?? 0,
                     visual_match_reason: imageMatch?.reason ?? null,
                   } : a);
-                } else {
-                  effectiveText =
-                    "[The customer sent a photo but it could not be analysed.] " +
-                    "Apologise briefly in the customer's language and ask them to type the product name or model they are looking for.";
                 }
               }
 
