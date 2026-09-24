@@ -82,6 +82,7 @@ type ImageAnalysis = {
   keywords: string[];
   is_product: boolean;
   product_type: string;
+  product_subtype: string | null;
   category: string;
   primary_color: string | null;
   secondary_colors: string[];
@@ -91,7 +92,13 @@ type ImageAnalysis = {
   pattern: string | null;
   visible_text: string[];
   brand: string | null;
+  model_number: string | null;
+  functions: string[];
+  connectors: string[];
+  controls: string[];
+  package_specs: string[];
   distinctive_features: string[];
+  field_confidence: Record<string, number>;
   confidence: number;
   image_data_url: string;
 };
@@ -100,6 +107,8 @@ type VisualMatch = {
   product: ProductRow;
   confidence: number;
   reason: string;
+  verdict: "exact" | "close";
+  evidence: string[];
 };
 
 class ImageProcessingError extends Error {
@@ -297,6 +306,28 @@ function firstProductImage(product: ProductRow) {
   if (product.primary_image_url) return publicImageUrl(product.primary_image_url);
   const gallery = Array.isArray(product.gallery) ? product.gallery : [];
   return publicImageUrl(gallery.find(Boolean));
+}
+
+function productImages(product: ProductRow, limit = 4) {
+  const values = [product.primary_image_url, ...(Array.isArray(product.gallery) ? product.gallery : [])]
+    .map((value) => publicImageUrl(value))
+    .filter((value): value is string => Boolean(value));
+  return Array.from(new Set(values)).slice(0, limit);
+}
+
+function productIdentityText(product: ProductRow, categoryName = "") {
+  return [
+    product.name,
+    product.brand,
+    categoryName,
+    product.sku,
+    product.product_code,
+    product.short_description,
+    product.description,
+    stringifyField(product.features),
+    stringifyField(product.specifications),
+    stringifyField(product.variants),
+  ].filter(Boolean).join(" ").replace(/\s+/g, " ").slice(0, 900);
 }
 
 function stringifyField(value: unknown): string {
@@ -929,10 +960,14 @@ async function describeImageAttachment(
 
     const prompt =
       "A customer sent this photo to an online shop. Inspect the actual sale item carefully, not the model/person/background. " +
-      "Return ONLY minified JSON with keys description,keywords,is_product,product_type,category,primary_color,secondary_colors," +
-      "material,style,shape,pattern,visible_text,brand,distinctive_features,confidence. " +
+      "Read every visible logo, label, model number and package specification. Identify ports/connectors, buttons, display, controls, " +
+      "physical construction and likely function. Distinguish visually similar but functionally different products (for example a charger, " +
+      "adapter, tracker, speaker, hub or power bank). Return ONLY minified JSON with keys description,keywords,is_product,product_type," +
+      "product_subtype,category,primary_color,secondary_colors,material,style,shape,pattern,visible_text,brand,model_number,functions," +
+      "connectors,controls,package_specs,distinctive_features,field_confidence,confidence. " +
       "Use null for uncertain single-value attributes and [] for absent lists. confidence is 0..1. " +
-      "Do not guess a colour under ambiguous lighting; name exact visible colours only when confident. " +
+      "field_confidence is an object whose keys are only attributes actually observed and whose values are 0..1. " +
+      "Never invent specifications that are not visible or reliably identifiable. Do not guess a colour under ambiguous lighting; name exact visible colours only when confident. " +
       "keywords must contain 2-8 concise catalogue terms. is_product is false for receipts, screenshots, documents, selfies or memes.";
     const r = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
@@ -969,6 +1004,7 @@ async function describeImageAttachment(
       keywords?: unknown;
       is_product?: boolean;
       product_type?: string;
+      product_subtype?: string | null;
       category?: string;
       primary_color?: string | null;
       secondary_colors?: unknown;
@@ -978,7 +1014,13 @@ async function describeImageAttachment(
       pattern?: string | null;
       visible_text?: unknown;
       brand?: string | null;
+      model_number?: string | null;
+      functions?: unknown;
+      connectors?: unknown;
+      controls?: unknown;
+      package_specs?: unknown;
       distinctive_features?: unknown;
+      field_confidence?: unknown;
       confidence?: number;
     };
     try {
@@ -998,11 +1040,19 @@ async function describeImageAttachment(
       const text = typeof value === "string" ? value.trim() : "";
       return text ? text.slice(0, 100) : null;
     };
+    const fieldConfidence = parsed.field_confidence && typeof parsed.field_confidence === "object" && !Array.isArray(parsed.field_confidence)
+      ? Object.fromEntries(
+          Object.entries(parsed.field_confidence as Record<string, unknown>)
+            .slice(0, 20)
+            .map(([name, value]) => [name.slice(0, 60), Math.max(0, Math.min(1, Number(value) || 0))]),
+        )
+      : {};
     return {
       description,
       keywords: keywords.slice(0, 8),
       is_product: parsed.is_product !== false,
       product_type: String(parsed.product_type ?? "").trim().slice(0, 100),
+      product_subtype: nullable(parsed.product_subtype),
       category: String(parsed.category ?? "").trim().slice(0, 100),
       primary_color: nullable(parsed.primary_color),
       secondary_colors: list(parsed.secondary_colors, 5),
@@ -1012,7 +1062,13 @@ async function describeImageAttachment(
       pattern: nullable(parsed.pattern),
       visible_text: list(parsed.visible_text, 8),
       brand: nullable(parsed.brand),
+      model_number: nullable(parsed.model_number),
+      functions: list(parsed.functions, 8),
+      connectors: list(parsed.connectors, 8),
+      controls: list(parsed.controls, 8),
+      package_specs: list(parsed.package_specs, 10),
       distinctive_features: list(parsed.distinctive_features, 10),
+      field_confidence: fieldConfidence,
       confidence: Math.max(0, Math.min(1, Number(parsed.confidence) || 0)),
       image_data_url: dataUrl,
     };
@@ -1028,68 +1084,169 @@ async function visuallyMatchProduct(
   analysis: ImageAnalysis,
 ): Promise<VisualMatch | null> {
   if (!analysis.is_product) return null;
-  const query = [analysis.product_type, analysis.category, analysis.description, ...analysis.keywords].filter(Boolean).join(" ");
+  const query = [
+    analysis.product_type,
+    analysis.product_subtype,
+    analysis.category,
+    analysis.brand,
+    analysis.model_number,
+    analysis.description,
+    ...analysis.visible_text,
+    ...analysis.functions,
+    ...analysis.connectors,
+    ...analysis.keywords,
+  ].filter(Boolean).join(" ");
   const productSelect =
     "id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,primary_image_url,gallery,features,specifications,variants,total_sold,rating,is_featured";
-  const [textMatches, allProductsResult, blockedResult] = await Promise.all([
-    searchDirectProducts(sb, storeId, query, 12),
-    sb.from("products").select(productSelect).eq("store_id", storeId).eq("status", "active").gt("stock", 0).limit(100),
+  const [textMatches, allProductsResult, blockedResult, categoriesResult] = await Promise.all([
+    searchDirectProducts(sb, storeId, query, 20),
+    sb.from("products").select(productSelect).eq("store_id", storeId).eq("status", "active").gt("stock", 0).limit(500),
     sb.from("ai_product_blacklist").select("product_id").eq("store_id", storeId),
+    sb.from("categories").select("id,name").eq("store_id", storeId),
   ]);
   const blockedIds = new Set((blockedResult.data ?? []).map((row: any) => String(row.product_id)));
-  const ordered = new Map<string, ProductRow>();
-  for (const product of [...textMatches, ...((allProductsResult.data ?? []) as ProductRow[])]) {
-    if (!blockedIds.has(product.id) && firstProductImage(product)) ordered.set(product.id, product);
-  }
-  // Text-ranked candidates go first, but every active catalogue image is still
-  // eligible. This avoids excluding the exact item when its title lacks the
-  // customer's visually observed colour/style words.
-  const withImages = Array.from(ordered.values()).slice(0, 40);
-  if (!withImages.length) return null;
+  const categoryNames = new Map((categoriesResult.data ?? []).map((row: any) => [String(row.id), String(row.name ?? "")]));
+  const allProducts = ((allProductsResult.data ?? []) as ProductRow[])
+    .filter((product) => !blockedIds.has(product.id) && productImages(product, 1).length > 0);
+  if (!allProducts.length) return null;
   const key = process.env.LOVABLE_API_KEY;
   if (!key) return null;
-  const content: any[] = [{
-    type: "input_text",
-    text: "Compare CUSTOMER_IMAGE to the numbered catalogue images. Return ONLY minified JSON: " +
-      '{"best_index":number|null,"confidence":number,"reason":"short factual reason"}. ' +
-      "Use confidence >=0.88 only for the same product/model or a clearly identical catalogue photo; 0.60-0.87 for a plausible close match. " +
-      "Colour/style similarity alone is not an exact match. CUSTOMER_IMAGE follows.",
-  }, { type: "input_image", image_url: analysis.image_data_url }];
-  for (let i = 0; i < withImages.length; i += 1) {
-    const image = firstProductImage(withImages[i]);
-    if (!image) continue;
-    content.push({ type: "input_text", text: `CATALOGUE_${i}: ${withImages[i].name}` });
-    content.push({ type: "input_image", image_url: image });
-  }
-  try {
+
+  const requestJson = async (stage: "MATCH", content: any[]) => {
     const response = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "fetch" },
       body: JSON.stringify({
         model: "openai/gpt-6-astra",
-        reasoning: { effort: "low", summary: "auto" },
+        reasoning: { effort: "medium", summary: "auto" },
         stream: true,
         input: [{ role: "user", content }],
       }),
     });
     if (!response.ok) {
       const detail = await responseErrorMessage(response);
-      imageFailure("MATCH_HTTP", detail, response.status === 429 || response.status >= 500);
+      imageFailure(`${stage}_HTTP`, detail, response.status === 429 || response.status >= 500);
     }
-    if (!response.body) imageFailure("MATCH_BODY", "AI match response had no stream", true);
-    const text = parseResponsesText(await response.text(), "MATCH");
+    if (!response.body) imageFailure(`${stage}_BODY`, "AI match response had no stream", true);
+    const text = parseResponsesText(await response.text(), stage);
     const object = text.match(/\{[\s\S]*\}/)?.[0];
-    if (!object) imageFailure("MATCH_JSON", "AI match answer did not contain JSON", true);
-    let parsed: { best_index?: number | null; confidence?: number; reason?: string };
+    if (!object) imageFailure(`${stage}_JSON`, "AI match answer did not contain JSON", true);
     try {
-      parsed = JSON.parse(object);
+      return JSON.parse(object) as Record<string, unknown>;
     } catch {
-      imageFailure("MATCH_JSON", "AI match answer contained invalid JSON", true);
+      imageFailure(`${stage}_JSON`, "AI match answer contained invalid JSON", true);
     }
-    const index = Number(parsed.best_index);
-    const product = Number.isInteger(index) ? withImages[index] : undefined;
-    const confidence = Math.max(0, Math.min(1, Number(parsed.confidence) || 0));
-    return product ? { product, confidence, reason: String(parsed.reason ?? "").slice(0, 300) } : null;
+  };
+
+  try {
+    // Stage 1: classify catalogue metadata before sending any product image.
+    // This hard gate prevents functionally different products (charger vs
+    // speaker, watch vs clock, hub vs power bank) from entering visual ranking.
+    const catalogLines = allProducts.map((product, index) =>
+      `P${index}: ${productIdentityText(product, categoryNames.get(String(product.category_id ?? "")) ?? "")}`,
+    );
+    const shortlistResult = await requestJson("MATCH", [{
+      type: "input_text",
+      text: [
+        "Select only catalogue products that could be the SAME product/model as the photographed item. Product function/type compatibility is mandatory.",
+        "A shared colour, outline or generic shape never makes two different product types compatible.",
+        "Return ONLY minified JSON: {\"candidate_indices\":[number],\"reason\":\"short factual reason\"}. Return at most 10 indices; [] is correct when none are compatible.",
+        `PHOTO IDENTITY: ${query}`,
+        "CATALOGUE:",
+        ...catalogLines,
+      ].join("\n"),
+    }]);
+    const aiIndices = Array.isArray(shortlistResult.candidate_indices)
+      ? shortlistResult.candidate_indices.map(Number).filter((index) => Number.isInteger(index) && index >= 0 && index < allProducts.length).slice(0, 10)
+      : [];
+    const compatible = new Map<string, ProductRow>();
+    for (const product of textMatches) {
+      if (!blockedIds.has(product.id) && productImages(product, 1).length > 0) compatible.set(product.id, product);
+    }
+    for (const index of aiIndices) {
+      const product = allProducts[index];
+      if (product) compatible.set(product.id, product);
+    }
+    const candidates = Array.from(compatible.values()).slice(0, 12);
+    if (!candidates.length) return null;
+
+    // Stage 2: compare small batches using primary + gallery images. Keeping
+    // batches small prevents index confusion from the old 40-image prompt.
+    const ranked: Array<{ product: ProductRow; confidence: number; reason: string; verdict: string }> = [];
+    for (let offset = 0; offset < candidates.length; offset += 4) {
+      const batch = candidates.slice(offset, offset + 4);
+      const content: any[] = [{
+        type: "input_text",
+        text: "Compare CUSTOMER_IMAGE with each candidate's images. Product function/type must match. Return ONLY minified JSON: " +
+          '{"results":[{"index":number,"verdict":"same|close|different","type_compatible":boolean,"confidence":number,"reason":"short visual evidence"}]}. ' +
+          "Use same only when model-defining construction, ports, controls, branding/text and proportions agree; colour or shape alone is insufficient.",
+      }, { type: "input_image", image_url: analysis.image_data_url }];
+      batch.forEach((product, index) => {
+        content.push({ type: "input_text", text: `CANDIDATE_${index}: ${productIdentityText(product, categoryNames.get(String(product.category_id ?? "")) ?? "")}` });
+        productImages(product, 3).forEach((image) => content.push({ type: "input_image", image_url: image }));
+      });
+      const compared = await requestJson("MATCH", content);
+      const results = Array.isArray(compared.results) ? compared.results : [];
+      for (const raw of results) {
+        if (!raw || typeof raw !== "object") continue;
+        const value = raw as Record<string, unknown>;
+        const index = Number(value.index);
+        const product = Number.isInteger(index) ? batch[index] : undefined;
+        if (!product || value.type_compatible !== true) continue;
+        const verdict = String(value.verdict ?? "different");
+        const confidence = Math.max(0, Math.min(1, Number(value.confidence) || 0));
+        if ((verdict === "same" || verdict === "close") && confidence >= 0.72) {
+          ranked.push({ product, confidence, verdict, reason: String(value.reason ?? "").slice(0, 300) });
+        }
+      }
+    }
+    ranked.sort((left, right) => right.confidence - left.confidence);
+    if (!ranked.length) return null;
+
+    // Stage 3: independently verify the strongest candidates one at a time.
+    // Only this pass can authorize a customer-facing product card.
+    let closest: VisualMatch | null = null;
+    for (const candidate of ranked.slice(0, 3)) {
+      const content: any[] = [{
+        type: "input_text",
+        text: "Final independent verification. Decide whether CUSTOMER_IMAGE and CATALOGUE_IMAGES show the exact same sale product/model. " +
+          "Reject if function/type, connector layout, controls, proportions, logo/model text or defining construction conflict. " +
+          "Return ONLY minified JSON: {\"verdict\":\"exact|close|different\",\"type_compatible\":boolean,\"confidence\":number," +
+          "\"matching_evidence\":[string],\"conflicting_evidence\":[string],\"reason\":\"short factual reason\"}.",
+      }, { type: "input_text", text: `PHOTO IDENTITY: ${query}` },
+      { type: "input_image", image_url: analysis.image_data_url },
+      { type: "input_text", text: `CATALOGUE PRODUCT: ${productIdentityText(candidate.product, categoryNames.get(String(candidate.product.category_id ?? "")) ?? "")}` }];
+      productImages(candidate.product, 4).forEach((image) => content.push({ type: "input_image", image_url: image }));
+      const verified = await requestJson("MATCH", content);
+      const verdict = String(verified.verdict ?? "different");
+      const confidence = Math.max(0, Math.min(1, Number(verified.confidence) || 0));
+      const matchingEvidence = Array.isArray(verified.matching_evidence)
+        ? verified.matching_evidence.map(String).filter(Boolean).slice(0, 8)
+        : [];
+      const conflicts = Array.isArray(verified.conflicting_evidence)
+        ? verified.conflicting_evidence.map(String).filter(Boolean).slice(0, 8)
+        : [];
+      if (verified.type_compatible !== true || verdict === "different") continue;
+      if (verdict === "exact" && confidence >= 0.92 && matchingEvidence.length >= 2 && conflicts.length === 0) {
+        return {
+          product: candidate.product,
+          confidence,
+          verdict: "exact",
+          evidence: matchingEvidence,
+          reason: String(verified.reason ?? candidate.reason).slice(0, 300),
+        };
+      }
+      if (!closest || confidence > closest.confidence) {
+        closest = {
+          product: candidate.product,
+          confidence,
+          verdict: "close",
+          evidence: matchingEvidence,
+          reason: String(verified.reason ?? candidate.reason).slice(0, 300),
+        };
+      }
+    }
+    return closest;
   } catch (cause) {
     if (cause instanceof ImageProcessingError) throw cause;
     imageFailure("MATCH_EXCEPTION", cause instanceof Error ? cause.message : "Unexpected catalogue match failure", true);
@@ -1123,9 +1280,13 @@ async function sendVisualProductResult(opts: {
 }) {
   const { sb, token, psid, conversationId, storeId, storeSlug, sourceMid, queuedJobId, analysis, match } = opts;
   const color = analysis.confidence >= 0.75 && analysis.primary_color ? ` (${analysis.primary_color})` : "";
-  if (!match || match.confidence < 0.6) {
-    const item = analysis.product_type || analysis.category || "প্রোডাক্ট";
-    const text = `দুঃখিত, ছবির ${item}${color} আমাদের বর্তমান ক্যাটালগে নিশ্চিতভাবে পাওয়া যায়নি। প্রোডাক্টের নাম বা মডেল লিখলে আমি আবার খুঁজে দেখব।`;
+  if (!match || match.verdict !== "exact") {
+    const item = analysis.product_subtype || analysis.product_type || analysis.category || "প্রোডাক্ট";
+    const identity = [analysis.brand, analysis.model_number].filter(Boolean).join(" ");
+    const detail = identity ? ` (${identity})` : color;
+    const text = match?.verdict === "close"
+      ? `ছবিতে ${item}${detail} দেখা যাচ্ছে, তবে ক্যাটালগে একই মডেলটি নিশ্চিত করা যায়নি। ব্র্যান্ড/মডেল নম্বর লিখুন অথবা আরেকটি পরিষ্কার ছবি দিন।`
+      : `দুঃখিত, ছবির ${item}${detail} আমাদের বর্তমান ক্যাটালগে নিশ্চিতভাবে পাওয়া যায়নি। প্রোডাক্টের নাম বা মডেল লিখলে আমি আবার খুঁজে দেখব।`;
     const sent = await fbSend(token, psid, text);
     await markQueuedReply(sb, queuedJobId, text, sent.message_id);
     await sb.from("ai_messages").insert({
@@ -1136,28 +1297,24 @@ async function sendVisualProductResult(opts: {
     return;
   }
 
-  const exact = match.confidence >= 0.88;
-  const observedColor = analysis.confidence >= 0.75 && analysis.primary_color
-    ? ` ছবিতে ${analysis.primary_color} রঙটি স্পষ্ট দেখা যাচ্ছে।`
-    : "";
-  const text = exact
-    ? `জি, ছবিটির সঙ্গে আমাদের ${match.product.name} প্রোডাক্টটি মিলেছে।${observedColor} নিচে দাম ও স্টকসহ বিস্তারিত দিলাম—আপনি কি এটিই নিতে চান?`
-    : `ছবিটির কাছাকাছি মিল হিসেবে আমাদের ${match.product.name} পাওয়া গেছে।${observedColor} এটি নিশ্চিত exact match নয়—আপনি কি এই প্রোডাক্টটিই খুঁজছেন?`;
-  const sent = await fbSend(token, psid, text);
-  await markQueuedReply(sb, queuedJobId, text, sent.message_id);
-  await sb.from("ai_messages").insert({
-    conversation_id: conversationId, role: "assistant", direction: "out", message_type: "text",
-    content: text, attachments: [{ in_reply_to_mid: sourceMid, product_id: match.product.id, visual_match_confidence: match.confidence }],
-    mid: sent.message_id ?? null, delivery_status: "sent",
-  } as any);
   await logProductRecommendations(sb, storeId, conversationId, [match.product], `image:${sourceMid ?? "unknown"}`);
   const card = productCardInput(storeSlug, match.product);
   const cardSent = await sendProductCard(token, psid, card);
+  await markQueuedReply(sb, queuedJobId, `[card] ${card.title}`, cardSent.message_id);
   await sb.from("ai_messages").insert({
     conversation_id: conversationId, role: "assistant", direction: "out", message_type: "product_card",
     content: `[card] ${card.title}`,
     attachments: [{ type: "product_card", product_id: match.product.id, element: card, in_reply_to_mid: sourceMid }],
     mid: cardSent.message_id ?? null, delivery_status: "sent",
+  } as any);
+  const text = "এই প্রোডাক্টটি নিতে চান?";
+  const sent = await fbSend(token, psid, text);
+  await markQueuedReply(sb, queuedJobId, text, sent.message_id);
+  await sb.from("ai_messages").insert({
+    conversation_id: conversationId, role: "assistant", direction: "out", message_type: "text",
+    content: text,
+    attachments: [{ in_reply_to_mid: sourceMid, product_id: match.product.id, visual_match_confidence: match.confidence, match_verdict: match.verdict }],
+    mid: sent.message_id ?? null, delivery_status: "sent",
   } as any);
 }
 
@@ -1927,6 +2084,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                     is_product: seen.is_product,
                     visual_attributes: {
                       product_type: seen.product_type,
+                      product_subtype: seen.product_subtype,
                       category: seen.category,
                       primary_color: seen.primary_color,
                       secondary_colors: seen.secondary_colors,
@@ -1936,12 +2094,20 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                       pattern: seen.pattern,
                       visible_text: seen.visible_text,
                       brand: seen.brand,
+                      model_number: seen.model_number,
+                      functions: seen.functions,
+                      connectors: seen.connectors,
+                      controls: seen.controls,
+                      package_specs: seen.package_specs,
                       distinctive_features: seen.distinctive_features,
+                      field_confidence: seen.field_confidence,
                       confidence: seen.confidence,
                     },
-                    matched_product_id: imageMatch?.product.id ?? null,
+                    matched_product_id: imageMatch?.verdict === "exact" ? imageMatch.product.id : null,
+                    visual_match_verdict: imageMatch?.verdict ?? "none",
                     visual_match_confidence: imageMatch?.confidence ?? 0,
                     visual_match_reason: imageMatch?.reason ?? null,
+                    visual_match_evidence: imageMatch?.evidence ?? [],
                   } : a);
                 }
               }
