@@ -534,6 +534,7 @@ export const connectMessenger = createServerFn({ method: "POST" })
       .object({
         page_id: z.string().trim().min(2).max(120),
         page_access_token: z.string().trim().min(10).max(1000),
+        facebook_page_access_token: z.string().trim().max(1000).optional().nullable(),
         app_id: z.string().trim().max(64).optional().nullable(),
         app_secret: z.string().trim().max(200).optional().nullable(),
         privacy_policy_url: z
@@ -638,6 +639,7 @@ export const connectMessenger = createServerFn({ method: "POST" })
     const facebook = await syncFacebookPageAgent(context, storeId, {
       page_id: data.page_id,
       token: data.page_access_token,
+      fb_token: data.facebook_page_access_token?.trim() || null,
       app_id: data.app_id ?? null,
       app_secret: data.app_secret ?? (await decryptToken(row?.app_secret_encrypted ?? null)),
     });
