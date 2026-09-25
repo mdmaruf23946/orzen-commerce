@@ -2102,11 +2102,6 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               });
               if (res.page || res.app) {
                 console.log("[messenger] postback subscription", pageId, JSON.stringify(res));
-                await sb
-                  .from("messenger_integrations")
-                  .update({ subscription_status: `postbacks page=${res.page ?? "-"} app=${res.app ?? "-"}` } as any)
-                  .eq("id", (integ as any).id)
-                  .then(() => undefined, () => undefined);
               }
             } catch (e) {
               console.warn("[messenger] postback check failed", (e as Error).message);
