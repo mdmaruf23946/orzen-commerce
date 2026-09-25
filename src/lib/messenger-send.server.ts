@@ -67,7 +67,7 @@ export type ProductCardInput = {
   image_url?: string;
   buy_url?: string; // opens storefront checkout / product page
   product_id?: string; // used for postback "buy now via AI"
-  /** signed first-party URL that starts the Messenger order flow without postback delivery */
+  /** deprecated: the card never links out to an order page anymore */
   order_url?: string;
   /** false for digital/service/subscription — purchase happens on the website only */
   orderable?: boolean;
