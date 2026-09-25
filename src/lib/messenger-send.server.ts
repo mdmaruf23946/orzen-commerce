@@ -78,11 +78,10 @@ export type ProductCardInput = {
 function buildElement(p: ProductCardInput) {
   const buttons: any[] = [];
   const orderable = p.orderable !== false;
-  // "Buy Now" comes first so it is the most visible action inside the card.
-  // It is a native Messenger postback: the tap is delivered over the Page's
-  // `messaging_postbacks` subscription and starts the order flow inside the
-  // chat. It never opens a web page.
-  if (p.product_id && orderable) {
+  // Legacy postback remains available only when no secure checkout URL was
+  // supplied. New cards use an in-Messenger WebView so payment data never
+  // passes through chat messages.
+  if (p.product_id && orderable && !p.buy_url) {
     buttons.push({
       type: "postback",
       title: "Buy Now",
@@ -93,7 +92,7 @@ function buildElement(p: ProductCardInput) {
     buttons.push({
       type: "web_url",
       url: p.buy_url,
-      title: (p.link_title || "View site").slice(0, 20),
+      title: (p.link_title || (orderable ? "Buy Now" : "View site")).slice(0, 20),
       webview_height_ratio: "tall",
     });
   }
