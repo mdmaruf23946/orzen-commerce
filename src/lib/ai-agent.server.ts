@@ -1393,6 +1393,7 @@ export function buildTools(ctx: AgentContext) {
           : "Buy on website";
         const subtitle = `${priceLine} · ${statusLine}${product.short_description ? " — " + product.short_description : ""}`;
         try {
+          const { createMessengerBuyLink } = await import("@/lib/messenger-buy-link.server");
           await fbSendProductCard(ctx.pageToken!, ctx.psid!, {
             title: product.name,
             subtitle,
@@ -1400,6 +1401,9 @@ export function buildTools(ctx: AgentContext) {
             buy_url: productUrl(ctx, product.slug, product.id),
             product_id: product.id,
             orderable,
+            order_url: orderable
+              ? createMessengerBuyLink({ storeId, psid: ctx.psid!, productId: product.id })
+              : undefined,
           });
           // Card buttons rely on postback delivery, which some Page/app setups
           // never deliver. Quick replies arrive as ordinary message events, so

@@ -1532,7 +1532,7 @@ async function sendVisualProductResult(opts: {
   }
 
   await logProductRecommendations(sb, storeId, conversationId, [match.product], `image:${sourceMid ?? "unknown"}`);
-  const card = productCardInput(storeSlug, match.product);
+  const card = await productCardInput(storeSlug, match.product, storeId, psid);
   const cardSent = await sendProductCard(token, psid, card);
   await markQueuedReply(sb, queuedJobId, `[card] ${card.title}`, cardSent.message_id);
   await sb.from("ai_messages").insert({
@@ -1570,15 +1570,22 @@ async function sendVisualProductResult(opts: {
 
 
 
-function productCardInput(storeSlug: string | null | undefined, product: ProductRow): ProductCardInput {
+async function productCardInput(
+  storeSlug: string | null | undefined,
+  product: ProductRow,
+  storeId: string,
+  psid: string,
+): Promise<ProductCardInput> {
   const priceLine = `৳${Number(product.price).toFixed(0)}`;
   const stockLine = product.stock > 0 ? "In stock" : "Out of stock";
+  const { createMessengerBuyLink } = await import("@/lib/messenger-buy-link.server");
   return {
     title: product.name,
     subtitle: `${priceLine} · ${stockLine}`,
     image_url: firstProductImage(product),
     buy_url: productPageUrl(storeSlug, product),
     product_id: product.id,
+    order_url: createMessengerBuyLink({ storeId, psid, productId: product.id }),
   };
 }
 
@@ -1739,7 +1746,7 @@ async function maybeSendDirectProductReply(opts: {
     : "জি, মিল থাকা প্রোডাক্টগুলো ছবিসহ পাঠাচ্ছি।";
   await sendAndLogText(sb, token, psid, conversationId, intro, { hasCard: true });
 
-  const cards = products.map((p) => productCardInput(storeSlug, p));
+  const cards = await Promise.all(products.map((p) => productCardInput(storeSlug, p, storeId, psid)));
   try {
     if (cards.length === 1) {
       const result = await sendProductCard(token, psid, cards[0]);
@@ -1814,7 +1821,7 @@ async function maybeSendDirectProductReply(opts: {
   }
 }
 
-async function handleBuyPostback(opts: {
+export async function handleBuyPostback(opts: {
   sb: ReturnType<typeof admin>;
   storeId: string;
   conversationId: string;
