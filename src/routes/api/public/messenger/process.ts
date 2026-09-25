@@ -132,34 +132,24 @@ export const Route = createFileRoute("/api/public/messenger/process")({
               .eq("id", job.id)
               .eq("status", "processing");
           } catch (cause) {
-            // If an outbound message was logged after this attempt began, the
-            // customer already got a reply. Treat the job as sent, not retryable.
-            const { data: incoming } = await supabaseAdmin
-              .from("ai_messages")
-              .select("conversation_id")
-              .eq("mid", payload.message_id)
+            // A previous attempt of THIS job can send successfully and then fail
+            // while doing bookkeeping. Only treat the job as sent when its own
+            // row recorded the reply — never credit another job's outbound
+            // message in the same conversation, or this job would be closed
+            // without ever delivering anything.
+            const { data: ownJob } = await supabaseAdmin
+              .from("messenger_jobs")
+              .select("reply_text,outbound_message_id")
+              .eq("id", job.id)
               .maybeSingle();
-            const { data: sentReply } = incoming
-              ? await supabaseAdmin
-                  .from("ai_messages")
-                  .select("mid,content")
-                  .eq("conversation_id", incoming.conversation_id)
-                  .eq("direction", "out")
-                  .neq("delivery_status", "failed")
-                  .gte("created_at", job.started_at ?? new Date(started).toISOString())
-                  .order("created_at", { ascending: true })
-                  .limit(1)
-                  .maybeSingle()
-              : { data: null };
-            if (sentReply) {
+            const ownReply = ownJob as { reply_text?: string | null; outbound_message_id?: string | null } | null;
+            if (ownReply?.reply_text || ownReply?.outbound_message_id) {
               await supabaseAdmin
                 .from("messenger_jobs")
                 .update({
                   status: "sent",
                   completed_at: new Date().toISOString(),
                   processing_ms: Date.now() - started,
-                  reply_text: sentReply.content ?? "sent",
-                  outbound_message_id: sentReply.mid ?? null,
                   last_error: null,
                 } as any)
                 .eq("id", job.id);
