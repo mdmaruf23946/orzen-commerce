@@ -1547,7 +1547,17 @@ async function sendVisualProductResult(opts: {
     "হ্যাঁ, এটা আমাদের কাছে পাওয়া যাচ্ছে। অর্ডার করতে চাইলে জানান 😊",
   ];
   const text = askList[Math.floor(Math.random() * askList.length)];
-  const sent = await fbSend(token, psid, text);
+  // The card's own "Buy Now" is a postback, which some Page/app setups never
+  // deliver — the tap then looks like nothing happened. A quick reply arrives
+  // over the always-delivered "messages" field, so the tap always works.
+  const canOrderHere =
+    String((match.product as any).product_type ?? "physical") === "physical" &&
+    Number(match.product.stock) > 0;
+  const sent = canOrderHere
+    ? await sendQuickReplies(token, psid, text, [
+        { title: "🛒 এখনই কিনব", payload: `BUY_${match.product.id}` },
+      ])
+    : await fbSend(token, psid, text);
   await markQueuedReply(sb, queuedJobId, text, sent.message_id);
   await sb.from("ai_messages").insert({
     conversation_id: conversationId, role: "assistant", direction: "out", message_type: "text",
