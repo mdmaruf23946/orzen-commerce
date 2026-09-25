@@ -3516,6 +3516,7 @@ export type Database = {
           last_error: string | null
           last_verified_at: string | null
           last_webhook_at: string | null
+          manual_token: boolean
           page_access_token_encrypted: string | null
           page_id: string | null
           page_name: string | null
@@ -3539,6 +3540,7 @@ export type Database = {
           last_error?: string | null
           last_verified_at?: string | null
           last_webhook_at?: string | null
+          manual_token?: boolean
           page_access_token_encrypted?: string | null
           page_id?: string | null
           page_name?: string | null
@@ -3562,6 +3564,7 @@ export type Database = {
           last_error?: string | null
           last_verified_at?: string | null
           last_webhook_at?: string | null
+          manual_token?: boolean
           page_access_token_encrypted?: string | null
           page_id?: string | null
           page_name?: string | null
