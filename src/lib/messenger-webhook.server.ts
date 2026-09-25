@@ -1772,11 +1772,16 @@ async function maybeSendDirectProductReply(opts: {
       .map((card, i) => ({ card, product: products[i] }))
       .filter((x) => x.card.orderable !== false && x.card.product_id);
     if (buyable.length) {
+      // Quick-reply titles are capped at 20 characters by Messenger, so a long
+      // product name would be cut into an unreadable label. Keep them short.
       await sendQuickReplies(
         token,
         psid,
         "অর্ডার করতে নিচের বাটনে চাপুন 👇",
-        buyable.slice(0, 10).map((x) => ({ title: `কিনব: ${x.product.name}`, payload: `BUY_${x.product.id}` })),
+        buyable.slice(0, 10).map((x, i) => ({
+          title: buyable.length === 1 ? "🛒 এখনই কিনব" : `🛒 ${i + 1}. ${x.product.name}`.slice(0, 20),
+          payload: `BUY_${x.product.id}`,
+        })),
       ).catch(() => undefined);
     }
     const image = firstProductImage(products[0]);
