@@ -432,7 +432,7 @@ function sanitizeMessengerReply(reply: string, latestText: string) {
 
 async function searchDirectProducts(sb: ReturnType<typeof admin>, storeId: string, text: string, limit = 6) {
   const productSelect =
-    "id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,primary_image_url,gallery,features,specifications,variants,total_sold,rating,is_featured";
+    "product_id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,primary_image_url,gallery,features,specifications,variants,total_sold,rating,is_featured";
   const [{ data: products }, { data: categories }, { data: blocked }] = await Promise.all([
     sb.from("ai_product_catalog").select(productSelect).eq("store_id", storeId).eq("status", "active").gt("stock", 0).limit(500),
     sb.from("categories").select("id,name").eq("store_id", storeId),
@@ -442,7 +442,8 @@ async function searchDirectProducts(sb: ReturnType<typeof admin>, storeId: strin
   const cats = new Map((categories ?? []).map((c: any) => [c.id, c.name]));
   const terms = productSearchTerms(text);
   const phrase = text.toLowerCase().trim();
-  const scored = ((products ?? []) as ProductRow[])
+  const scored = ((products ?? []) as unknown as Array<Omit<ProductRow, "id"> & { product_id: string }>)
+    .map((product) => ({ ...product, id: product.product_id }))
     .filter((p) => !blockedIds.has(p.id))
     .map((p) => {
       const categoryName = cats.get(p.category_id ?? "") ?? "";
@@ -1210,7 +1211,7 @@ async function visuallyMatchProduct(
     ...analysis.keywords,
   ].filter(Boolean).join(" ");
   const productSelect =
-    "id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,primary_image_url,gallery,features,specifications,variants,total_sold,rating,is_featured";
+    "product_id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,primary_image_url,gallery,features,specifications,variants,total_sold,rating,is_featured";
   const [textMatches, blockedResult, categoriesResult] = await Promise.all([
     searchDirectProducts(sb, storeId, query, 20),
     sb.from("ai_product_blacklist").select("product_id").eq("store_id", storeId),
@@ -1228,9 +1229,9 @@ async function visuallyMatchProduct(
     .gt("stock", 0)
     .in("product_id", candidateIds);
   if (candidateError) imageFailure("CATALOGUE_QUERY", candidateError.message, true);
-  const allProducts = ((candidateRows ?? []) as Array<ProductRow & { product_id?: string }>).map((product) => ({
+  const allProducts = ((candidateRows ?? []) as unknown as Array<Omit<ProductRow, "id"> & { product_id: string }>).map((product) => ({
     ...product,
-    id: product.product_id ?? product.id,
+    id: product.product_id,
   })).filter((product) => !blockedIds.has(product.id) && productImages(product, 1).length > 0);
   if (!allProducts.length) return null;
   const key = process.env.LOVABLE_API_KEY;

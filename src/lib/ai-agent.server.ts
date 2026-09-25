@@ -1012,6 +1012,8 @@ export function buildTools(ctx: AgentContext) {
 
   const productSelect =
     "id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,status,product_type,meta,primary_image_url,gallery,features,specifications,variants,video_url,delivery_charge,delivery_time_days,rating,total_sold,warranty,return_policy,shipping_info,is_featured,created_at";
+  const catalogProductSelect =
+    "product_id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,status,product_type,meta,primary_image_url,gallery,features,specifications,variants,video_url,delivery_charge,delivery_time_days,rating,total_sold,warranty,return_policy,shipping_info,is_featured,created_at";
 
   const convId = ctx.conversationId ?? null;
 
@@ -1063,8 +1065,8 @@ export function buildTools(ctx: AgentContext) {
       }),
       execute: async (input) => {
         let q = sb
-          .from("products")
-          .select(productSelect)
+          .from("ai_product_catalog")
+          .select(catalogProductSelect)
           .eq("store_id", storeId)
           .eq("status", "active");
         if (input.brand) q = q.ilike("brand", `%${input.brand}%`);
