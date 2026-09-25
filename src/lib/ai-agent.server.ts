@@ -1395,7 +1395,6 @@ export function buildTools(ctx: AgentContext) {
           : "Buy on website";
         const subtitle = `${priceLine} · ${statusLine}${product.short_description ? " — " + product.short_description : ""}`;
         try {
-          const { createMessengerBuyLink } = await import("@/lib/messenger-buy-link.server");
           await fbSendProductCard(messengerPageToken, messengerPsid, {
             title: product.name,
             subtitle,
@@ -1403,10 +1402,8 @@ export function buildTools(ctx: AgentContext) {
             buy_url: productUrl(ctx, product.slug, product.id),
             product_id: product.id,
             orderable,
-            order_url: orderable
-              ? createMessengerBuyLink({ storeId, psid: messengerPsid, productId: product.id })
-              : undefined,
           });
+
           // Card buttons rely on postback delivery, which some Page/app setups
           // never deliver. Quick replies arrive as ordinary message events, so
           // the customer always has a working "Buy now" tap.
@@ -1415,7 +1412,7 @@ export function buildTools(ctx: AgentContext) {
               messengerPageToken,
               messengerPsid,
               "অর্ডার করতে নিচের বাটনে চাপুন 👇",
-              [{ title: "🛒 এখনই কিনব", payload: `BUY_${product.id}` }],
+              [{ title: "🛒 Buy Now", payload: `BUY_${product.id}` }],
             ).catch(() => undefined);
           }
           if (ctx.conversationId) {

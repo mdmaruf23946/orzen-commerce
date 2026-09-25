@@ -1555,7 +1555,7 @@ async function sendVisualProductResult(opts: {
     Number(match.product.stock) > 0;
   const sent = canOrderHere
     ? await sendQuickReplies(token, psid, text, [
-        { title: "🛒 এখনই কিনব", payload: `BUY_${match.product.id}` },
+        { title: "🛒 Buy Now", payload: `BUY_${match.product.id}` },
       ])
     : await fbSend(token, psid, text);
   await markQueuedReply(sb, queuedJobId, text, sent.message_id);
@@ -1578,15 +1578,14 @@ async function productCardInput(
 ): Promise<ProductCardInput> {
   const priceLine = `৳${Number(product.price).toFixed(0)}`;
   const stockLine = product.stock > 0 ? "In stock" : "Out of stock";
-  const { createMessengerBuyLink } = await import("@/lib/messenger-buy-link.server");
   return {
     title: product.name,
     subtitle: `${priceLine} · ${stockLine}`,
     image_url: firstProductImage(product),
     buy_url: productPageUrl(storeSlug, product),
     product_id: product.id,
-    order_url: createMessengerBuyLink({ storeId, psid, productId: product.id }),
   };
+
 }
 
 async function logProductRecommendations(sb: ReturnType<typeof admin>, storeId: string, conversationId: string, products: ProductRow[], context: string) {
@@ -1786,7 +1785,7 @@ async function maybeSendDirectProductReply(opts: {
         psid,
         "অর্ডার করতে নিচের বাটনে চাপুন 👇",
         buyable.slice(0, 10).map((x, i) => ({
-          title: buyable.length === 1 ? "🛒 এখনই কিনব" : `🛒 ${i + 1}. ${x.product.name}`.slice(0, 20),
+          title: buyable.length === 1 ? "🛒 Buy Now" : `🛒 ${i + 1}. ${x.product.name}`.slice(0, 20),
           payload: `BUY_${x.product.id}`,
         })),
       ).catch(() => undefined);
