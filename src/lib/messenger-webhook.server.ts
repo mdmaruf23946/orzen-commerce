@@ -99,6 +99,11 @@ type ImageAnalysis = {
   package_specs: string[];
   distinctive_features: string[];
   field_confidence: Record<string, number>;
+  visibility_warnings: string[];
+  object_boundary_confidence: number;
+  text_legibility: number;
+  recognition_status: "clear" | "uncertain";
+  inspection_passes: 1 | 2;
   confidence: number;
   image_data_url: string;
 };
@@ -960,12 +965,15 @@ async function describeImageAttachment(
 
     const prompt =
       "A customer sent this photo to an online shop. Inspect the actual sale item carefully, not the model/person/background. " +
+      "First separate the sale item's outline from the background using edges, shadows, seams, cap/port/button boundaries, label layout and texture—not colour contrast alone. " +
+      "Handle white-on-white, black-on-black, transparent, reflective, backlit and overexposed items without assuming their colour. " +
       "Read every visible logo, label, model number and package specification. Identify ports/connectors, buttons, display, controls, " +
       "physical construction and likely function. Distinguish visually similar but functionally different products (for example a charger, " +
       "adapter, tracker, speaker, hub or power bank). Return ONLY minified JSON with keys description,keywords,is_product,product_type," +
       "product_subtype,category,primary_color,secondary_colors,material,style,shape,pattern,visible_text,brand,model_number,functions," +
-      "connectors,controls,package_specs,distinctive_features,field_confidence,confidence. " +
+      "connectors,controls,package_specs,distinctive_features,field_confidence,visibility_warnings,object_boundary_confidence,text_legibility,confidence. " +
       "Use null for uncertain single-value attributes and [] for absent lists. confidence is 0..1. " +
+      "object_boundary_confidence and text_legibility MUST each be a JSON number from 0 to 1, never text. visibility_warnings may contain ONLY these exact codes: low_contrast, blur, overexposure, underexposure, reflection, transparency, occlusion. " +
       "field_confidence is an object whose keys are only attributes actually observed and whose values are 0..1. " +
       "Never invent specifications that are not visible or reliably identifiable. Do not guess a colour under ambiguous lighting; name exact visible colours only when confident. " +
       "keywords must contain 2-8 concise catalogue terms. is_product is false for receipts, screenshots, documents, selfies or memes.";
@@ -1021,12 +1029,102 @@ async function describeImageAttachment(
       package_specs?: unknown;
       distinctive_features?: unknown;
       field_confidence?: unknown;
+      visibility_warnings?: unknown;
+      object_boundary_confidence?: number;
+      text_legibility?: number;
       confidence?: number;
     };
     try {
       parsed = JSON.parse(match[0]);
     } catch {
       imageFailure("ANALYSIS_JSON", "AI answer contained invalid JSON", true);
+    }
+
+    const firstConfidence = Math.max(0, Math.min(1, Number(parsed.confidence) || 0));
+    const firstFieldConfidence = parsed.field_confidence && typeof parsed.field_confidence === "object" && !Array.isArray(parsed.field_confidence)
+      ? parsed.field_confidence as Record<string, unknown>
+      : {};
+    const hasFirstTypeConfidence = typeof firstFieldConfidence.product_type === "number";
+    const firstTypeConfidence = Math.max(0, Math.min(1, Number(firstFieldConfidence.product_type) || 0));
+    const hasFirstBoundaryConfidence = typeof parsed.object_boundary_confidence === "number";
+    const firstBoundaryConfidence = Math.max(0, Math.min(1, Number(parsed.object_boundary_confidence) || 0));
+    const needsFocusedInspection = parsed.is_product !== false && (
+      !String(parsed.product_type ?? "").trim() ||
+      firstConfidence < 0.82 ||
+      (hasFirstTypeConfidence && firstTypeConfidence < 0.68) ||
+      (hasFirstBoundaryConfidence && firstBoundaryConfidence < 0.62)
+    );
+    let inspectionPasses: 1 | 2 = 1;
+    if (needsFocusedInspection) {
+      const focusedPrompt =
+        "Re-inspect this difficult product photo independently. Ignore background colour and isolate the sale item using silhouette edges, local shadows, seams, cap/base, ports, controls, printed-label layout, texture and proportions. " +
+        "Pay special attention to white-on-white, black-on-black, transparent, reflective, blurred, backlit or overexposed regions. Read faint text only when genuinely legible. " +
+        "Do not invent a brand, model, specification or colour. Return ONLY minified JSON with keys description,keywords,is_product,product_type,product_subtype,category,primary_color,secondary_colors,material,style,shape,pattern,visible_text,brand,model_number,functions,connectors,controls,package_specs,distinctive_features,field_confidence,visibility_warnings,object_boundary_confidence,text_legibility,confidence. " +
+        "Use null for uncertain single values and [] for absent lists. object_boundary_confidence, text_legibility, confidence and every field_confidence value MUST be JSON numbers from 0 to 1, never text. visibility_warnings may contain ONLY these exact codes: low_contrast, blur, overexposure, underexposure, reflection, transparency, occlusion.";
+      const focusedResponse = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Lovable-API-Key": key,
+          "X-Lovable-AIG-SDK": "fetch",
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-6-astra",
+          stream: true,
+          reasoning: { effort: "medium", summary: "auto" },
+          input: [{ role: "user", content: [
+            { type: "input_text", text: focusedPrompt },
+            { type: "input_image", image_url: dataUrl },
+          ] }],
+        }),
+      });
+      if (!focusedResponse.ok) {
+        const detail = await responseErrorMessage(focusedResponse);
+        imageFailure("FOCUSED_ANALYSIS_HTTP", detail, focusedResponse.status === 429 || focusedResponse.status >= 500);
+      }
+      if (!focusedResponse.body) imageFailure("FOCUSED_ANALYSIS_BODY", "Focused AI response had no stream", true);
+      const focusedRaw = parseResponsesText(await focusedResponse.text(), "ANALYSIS");
+      const focusedObject = focusedRaw.match(/\{[\s\S]*\}/)?.[0];
+      if (!focusedObject) imageFailure("FOCUSED_ANALYSIS_JSON", "Focused AI answer did not contain JSON", true);
+      let focused: typeof parsed;
+      try {
+        focused = JSON.parse(focusedObject);
+      } catch {
+        imageFailure("FOCUSED_ANALYSIS_JSON", "Focused AI answer contained invalid JSON", true);
+      }
+      const mergeList = (left: unknown, right: unknown, max: number) => Array.from(new Set([
+        ...(Array.isArray(left) ? left : []),
+        ...(Array.isArray(right) ? right : []),
+      ].map((value) => String(value).trim()).filter(Boolean))).slice(0, max);
+      const focusedFields = focused.field_confidence && typeof focused.field_confidence === "object" && !Array.isArray(focused.field_confidence)
+        ? focused.field_confidence as Record<string, unknown>
+        : {};
+      const firstFields = parsed.field_confidence && typeof parsed.field_confidence === "object" && !Array.isArray(parsed.field_confidence)
+        ? parsed.field_confidence as Record<string, unknown>
+        : {};
+      const mergedFields: Record<string, number> = {};
+      for (const name of new Set([...Object.keys(firstFields), ...Object.keys(focusedFields)])) {
+        mergedFields[name] = Math.max(Number(firstFields[name]) || 0, Number(focusedFields[name]) || 0);
+      }
+      const preferFocused = Math.max(0, Math.min(1, Number(focused.confidence) || 0)) >= firstConfidence - 0.08;
+      parsed = {
+        ...(preferFocused ? parsed : focused),
+        ...(preferFocused ? focused : parsed),
+        keywords: mergeList(parsed.keywords, focused.keywords, 8),
+        secondary_colors: mergeList(parsed.secondary_colors, focused.secondary_colors, 5),
+        visible_text: mergeList(parsed.visible_text, focused.visible_text, 10),
+        functions: mergeList(parsed.functions, focused.functions, 8),
+        connectors: mergeList(parsed.connectors, focused.connectors, 8),
+        controls: mergeList(parsed.controls, focused.controls, 8),
+        package_specs: mergeList(parsed.package_specs, focused.package_specs, 10),
+        distinctive_features: mergeList(parsed.distinctive_features, focused.distinctive_features, 10),
+        visibility_warnings: mergeList(parsed.visibility_warnings, focused.visibility_warnings, 8),
+        field_confidence: mergedFields,
+        object_boundary_confidence: Math.max(Number(parsed.object_boundary_confidence) || 0, Number(focused.object_boundary_confidence) || 0),
+        text_legibility: Math.max(Number(parsed.text_legibility) || 0, Number(focused.text_legibility) || 0),
+        confidence: Math.max(firstConfidence, Number(focused.confidence) || 0),
+      };
+      inspectionPasses = 2;
     }
     const description = String(parsed.description ?? "").trim().slice(0, 400);
     if (!description) imageFailure("ANALYSIS_SCHEMA", "AI answer omitted the image description", true);
@@ -1047,11 +1145,18 @@ async function describeImageAttachment(
             .map(([name, value]) => [name.slice(0, 60), Math.max(0, Math.min(1, Number(value) || 0))]),
         )
       : {};
+    const confidence = Math.max(0, Math.min(1, Number(parsed.confidence) || 0));
+    const productType = String(parsed.product_type ?? "").trim().slice(0, 100);
+    const hasBoundaryConfidence = typeof parsed.object_boundary_confidence === "number";
+    const boundaryConfidence = Math.max(0, Math.min(1, Number(parsed.object_boundary_confidence) || 0));
+    const recognitionStatus = parsed.is_product !== false && confidence >= 0.72 && Boolean(productType) && (!hasBoundaryConfidence || boundaryConfidence >= 0.48)
+      ? "clear"
+      : "uncertain";
     return {
       description,
       keywords: keywords.slice(0, 8),
       is_product: parsed.is_product !== false,
-      product_type: String(parsed.product_type ?? "").trim().slice(0, 100),
+      product_type: productType,
       product_subtype: nullable(parsed.product_subtype),
       category: String(parsed.category ?? "").trim().slice(0, 100),
       primary_color: nullable(parsed.primary_color),
@@ -1069,7 +1174,14 @@ async function describeImageAttachment(
       package_specs: list(parsed.package_specs, 10),
       distinctive_features: list(parsed.distinctive_features, 10),
       field_confidence: fieldConfidence,
-      confidence: Math.max(0, Math.min(1, Number(parsed.confidence) || 0)),
+      visibility_warnings: list(parsed.visibility_warnings, 8).filter((warning) => [
+        "low_contrast", "blur", "overexposure", "underexposure", "reflection", "transparency", "occlusion",
+      ].includes(warning.toLowerCase())).map((warning) => warning.toLowerCase()),
+      object_boundary_confidence: boundaryConfidence,
+      text_legibility: Math.max(0, Math.min(1, Number(parsed.text_legibility) || 0)),
+      recognition_status: recognitionStatus,
+      inspection_passes: inspectionPasses,
+      confidence,
       image_data_url: dataUrl,
     };
   } catch (cause) {
@@ -1083,7 +1195,7 @@ async function visuallyMatchProduct(
   storeId: string,
   analysis: ImageAnalysis,
 ): Promise<VisualMatch | null> {
-  if (!analysis.is_product) return null;
+  if (!analysis.is_product || analysis.recognition_status !== "clear") return null;
   const query = [
     analysis.product_type,
     analysis.product_subtype,
@@ -1288,14 +1400,24 @@ async function sendVisualProductResult(opts: {
     const item = analysis.product_subtype || analysis.product_type || analysis.category || "প্রোডাক্ট";
     const identity = [analysis.brand, analysis.model_number].filter(Boolean).join(" ");
     const detail = identity ? ` (${identity})` : color;
-    const text = match?.verdict === "close"
+    const text = analysis.recognition_status === "uncertain"
+      ? "ছবিতে প্রোডাক্টটি পরিষ্কারভাবে শনাক্ত করা যাচ্ছে না। অনুগ্রহ করে label/model লেখা দেখা যায় এমন আরেকটি পরিষ্কার ছবি দিন।"
+      : match?.verdict === "close"
       ? `ছবিতে ${item}${detail} দেখা যাচ্ছে, তবে ক্যাটালগে একই মডেলটি নিশ্চিত করা যায়নি। ব্র্যান্ড/মডেল নম্বর লিখুন অথবা আরেকটি পরিষ্কার ছবি দিন।`
-      : `দুঃখিত, ছবির ${item}${detail} আমাদের বর্তমান ক্যাটালগে নিশ্চিতভাবে পাওয়া যায়নি। প্রোডাক্টের নাম বা মডেল লিখলে আমি আবার খুঁজে দেখব।`;
+      : `ছবিতে ${item}${detail} শনাক্ত করেছি, তবে এই exact productটি আমাদের বর্তমান ক্যাটালগে নেই। প্রোডাক্টের নাম বা মডেল লিখলে আমি আবার খুঁজে দেখব।`;
     const sent = await fbSend(token, psid, text);
     await markQueuedReply(sb, queuedJobId, text, sent.message_id);
     await sb.from("ai_messages").insert({
       conversation_id: conversationId, role: "assistant", direction: "out", message_type: "text",
-      content: text, attachments: [{ in_reply_to_mid: sourceMid, visual_match_confidence: match?.confidence ?? 0 }],
+      content: text, attachments: [{
+        in_reply_to_mid: sourceMid,
+        recognition_status: analysis.recognition_status,
+        recognition_confidence: analysis.confidence,
+        visibility_warnings: analysis.visibility_warnings,
+        visual_match_verdict: match?.verdict ?? "none",
+        visual_match_confidence: match?.confidence ?? 0,
+        visual_match_reason: match?.reason ?? null,
+      }],
       mid: sent.message_id ?? null, delivery_status: "sent",
     } as any);
     return;
@@ -2105,6 +2227,11 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                       package_specs: seen.package_specs,
                       distinctive_features: seen.distinctive_features,
                       field_confidence: seen.field_confidence,
+                      visibility_warnings: seen.visibility_warnings,
+                      object_boundary_confidence: seen.object_boundary_confidence,
+                      text_legibility: seen.text_legibility,
+                      recognition_status: seen.recognition_status,
+                      inspection_passes: seen.inspection_passes,
                       confidence: seen.confidence,
                     },
                     matched_product_id: imageMatch?.verdict === "exact" ? imageMatch.product.id : null,
