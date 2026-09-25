@@ -1210,16 +1210,28 @@ async function visuallyMatchProduct(
   ].filter(Boolean).join(" ");
   const productSelect =
     "id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,primary_image_url,gallery,features,specifications,variants,total_sold,rating,is_featured";
-  const [textMatches, allProductsResult, blockedResult, categoriesResult] = await Promise.all([
+  const [textMatches, blockedResult, categoriesResult] = await Promise.all([
     searchDirectProducts(sb, storeId, query, 20),
-    sb.from("products").select(productSelect).eq("store_id", storeId).eq("status", "active").gt("stock", 0).limit(500),
     sb.from("ai_product_blacklist").select("product_id").eq("store_id", storeId),
     sb.from("categories").select("id,name").eq("store_id", storeId),
   ]);
   const blockedIds = new Set((blockedResult.data ?? []).map((row: any) => String(row.product_id)));
   const categoryNames = new Map((categoriesResult.data ?? []).map((row: any) => [String(row.id), String(row.name ?? "")]));
-  const allProducts = ((allProductsResult.data ?? []) as ProductRow[])
-    .filter((product) => !blockedIds.has(product.id) && productImages(product, 1).length > 0);
+  const allProducts: ProductRow[] = [];
+  for (let from = 0; ; from += 500) {
+    const { data, error } = await sb
+      .from("products")
+      .select(productSelect)
+      .eq("store_id", storeId)
+      .eq("status", "active")
+      .gt("stock", 0)
+      .order("id", { ascending: true })
+      .range(from, from + 499);
+    if (error) imageFailure("CATALOGUE_QUERY", error.message, true);
+    const page = (data ?? []) as ProductRow[];
+    allProducts.push(...page.filter((product) => !blockedIds.has(product.id) && productImages(product, 1).length > 0));
+    if (page.length < 500) break;
+  }
   if (!allProducts.length) return null;
   const key = process.env.LOVABLE_API_KEY;
   if (!key) return null;
@@ -1251,49 +1263,29 @@ async function visuallyMatchProduct(
   };
 
   try {
-    // Stage 1: classify catalogue metadata before sending any product image.
-    // This hard gate prevents functionally different products (charger vs
-    // speaker, watch vs clock, hub vs power bank) from entering visual ranking.
-    const catalogLines = allProducts.map((product, index) =>
-      `P${index}: ${productIdentityText(product, categoryNames.get(String(product.category_id ?? "")) ?? "")}`,
-    );
-    const shortlistResult = await requestJson("MATCH", [{
-      type: "input_text",
-      text: [
-        "Select catalogue products whose BROAD product type matches the photographed item (e.g. any jacket/coat for a jacket, any charger for a charger). Function/type compatibility is mandatory.",
-        "Merchant-written names, colours and materials are often inaccurate (a product named 'Denim Jacket' may actually be an olive utility jacket), so NEVER exclude a same-type product because its name, colour, material or style wording differs. Images are verified later.",
-        "A shared colour, outline or generic shape never makes two different product types compatible (charger vs speaker is incompatible).",
-        "Return ONLY minified JSON: {\"candidate_indices\":[number],\"reason\":\"short factual reason\"}. Return at most 10 indices, same-type products first; [] only when no product has the same broad type.",
-        `PHOTO IDENTITY: ${query}`,
-        "CATALOGUE:",
-        ...catalogLines,
-      ].join("\n"),
-    }]);
-    const aiIndices = Array.isArray(shortlistResult.candidate_indices)
-      ? shortlistResult.candidate_indices.map(Number).filter((index) => Number.isInteger(index) && index >= 0 && index < allProducts.length).slice(0, 10)
-      : [];
+    // Merchant-written names and categories can be wrong. Text relevance only
+    // controls comparison order; every image-bearing product in this store is
+    // still visually inspected, so an exact catalogue photo cannot be removed
+    // before the image comparison stage.
     const textRank = new Map(textMatches.map((product, index) => [product.id, index]));
-    const compatible = new Map<string, ProductRow>();
-    for (const index of aiIndices) {
-      const product = allProducts[index];
-      if (product) compatible.set(product.id, product);
-    }
-    const candidates = Array.from(compatible.values())
-      .sort((left, right) => (textRank.get(left.id) ?? 999) - (textRank.get(right.id) ?? 999))
-      .slice(0, 10);
-    if (!candidates.length) return null;
+    const candidates = [...allProducts].sort((left, right) => {
+      const rankDelta = (textRank.get(left.id) ?? Number.MAX_SAFE_INTEGER) - (textRank.get(right.id) ?? Number.MAX_SAFE_INTEGER);
+      if (rankDelta !== 0) return rankDelta;
+      return left.id.localeCompare(right.id);
+    });
 
-    // Stage 2: compare small batches using primary + gallery images. Keeping
-    // batches small prevents index confusion from the old 40-image prompt.
+    // Stage 1: compare the customer's photo with every eligible image in the
+    // current store. Eight products × up to three images stays below the model's
+    // image limit while covering large catalogues through deterministic batches.
     const ranked: Array<{ product: ProductRow; confidence: number; reason: string; verdict: string }> = [];
-    for (let offset = 0; offset < candidates.length; offset += 4) {
-      const batch = candidates.slice(offset, offset + 4);
+    for (let offset = 0; offset < candidates.length; offset += 8) {
+      const batch = candidates.slice(offset, offset + 8);
       const content: any[] = [{
         type: "input_text",
         text: "Compare CUSTOMER_IMAGE with each candidate's images. Product function/type must match. Return ONLY minified JSON: " +
           '{"results":[{"index":number,"verdict":"same|close|different","type_compatible":boolean,"confidence":number,"reason":"short visual evidence"}]}. ' +
           "Use same only when model-defining construction, ports, controls, branding/text and proportions agree; colour or shape alone is insufficient. " +
-          "Judge by the IMAGES: catalogue names/descriptions may be wrong and are not evidence against a match. If the customer image is the same photograph as a catalogue image (even cropped, resized or recompressed), return same with confidence 0.99.",
+          "Judge by the IMAGES: catalogue names, categories and descriptions may be wrong and must never override an image match. If the customer image is the same photograph as a catalogue image (even cropped, resized, recompressed or Messenger-encoded), return same with confidence 0.99.",
       }, { type: "input_image", image_url: analysis.image_data_url }];
       batch.forEach((product, index) => {
         content.push({ type: "input_text", text: `CANDIDATE_${index}: ${productIdentityText(product, categoryNames.get(String(product.category_id ?? "")) ?? "")}` });
@@ -1317,16 +1309,23 @@ async function visuallyMatchProduct(
     ranked.sort((left, right) => right.confidence - left.confidence);
     if (!ranked.length) return null;
 
-    // Stage 3: independently verify the strongest candidates one at a time.
+    // Stage 2: independently verify the strongest candidates one at a time.
     // Only this pass can authorize a customer-facing product card.
     let closest: VisualMatch | null = null;
-    for (const candidate of ranked.slice(0, 3)) {
+    const strongest = [...ranked]
+      .sort((left, right) => {
+        if (left.verdict === "same" && right.verdict !== "same") return -1;
+        if (right.verdict === "same" && left.verdict !== "same") return 1;
+        return right.confidence - left.confidence;
+      })
+      .slice(0, 6);
+    for (const candidate of strongest) {
       const content: any[] = [{
         type: "input_text",
         text: "Final independent verification. Decide whether CUSTOMER_IMAGE and CATALOGUE_IMAGES show the exact same sale product/model. " +
           "Reject if function/type, connector layout, controls, proportions, logo/model text or defining construction conflict in the IMAGES. " +
-          "The catalogue name/description text is merchant-written and may be inaccurate (wrong colour or material word): a text-vs-image mismatch is NOT conflicting evidence. " +
-          "If the customer image is the same photograph as a catalogue image (crop/resize/compression only), return exact with confidence 0.99. " +
+          "The catalogue name/category/description text is merchant-written and may be inaccurate: any text-vs-image metadata mismatch is NOT conflicting evidence. " +
+          "If the customer image is the same photograph as a catalogue image (crop/resize/compression/Messenger encoding only), return exact with confidence 0.99. " +
           "Return ONLY minified JSON: {\"verdict\":\"exact|close|different\",\"type_compatible\":boolean,\"confidence\":number," +
           "\"matching_evidence\":[string],\"conflicting_evidence\":[string],\"reason\":\"short factual reason\"}.",
       }, { type: "input_text", text: `PHOTO IDENTITY: ${query}` },
