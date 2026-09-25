@@ -812,7 +812,12 @@ const DEICTIC_TOKENS = [
 ];
 
 const PRODUCT_SELECT_MIN =
-  "id,name,slug,brand,product_code,sku,category_id,short_description,price,old_price,stock,status,product_type,meta,primary_image_url,gallery,features,variants,total_sold,rating,is_featured";
+  "product_id,name,slug,brand,product_code,sku,category_id,short_description,price,old_price,stock,status,product_type,meta,primary_image_url,gallery,features,variants,total_sold,rating,is_featured";
+
+function normalizeCatalogProduct<T extends { product_id: string; source_created_at?: string }>(product: T) {
+  const { product_id, source_created_at, ...rest } = product;
+  return { ...rest, id: product_id, created_at: source_created_at };
+}
 
 /** Pure scoring function — exposed for tests. Returns 0 when no meaningful signal. */
 export function scoreProductAgainstQuery(
@@ -908,18 +913,18 @@ export async function resolveFocusProduct(opts: {
     const ids = Array.from(new Set((recs ?? []).map((r: any) => r.product_id).filter(Boolean)));
     if (ids.length > 0) {
       const { data: p } = await sb
-        .from("products")
+        .from("ai_product_catalog")
         .select(PRODUCT_SELECT_MIN)
         .eq("store_id", opts.storeId)
-        .eq("id", ids[0])
+        .eq("product_id", ids[0])
         .eq("status", "active")
         .maybeSingle();
       if (p)
         return {
-          product: p,
+          product: normalizeCatalogProduct(p as any),
           ambiguous: false,
           candidates: [],
-          canonical_caption: canonicalCaption(p as any),
+          canonical_caption: canonicalCaption(normalizeCatalogProduct(p as any) as any),
         };
     }
     // Multiple recent products → let the search branch below try to
@@ -931,7 +936,7 @@ export async function resolveFocusProduct(opts: {
   if (!terms.length && !hasDeictic) return { product: null, ambiguous: false, candidates: [] };
 
   const { data: rows } = await sb
-    .from("products")
+    .from("ai_product_catalog")
     .select(PRODUCT_SELECT_MIN)
     .eq("store_id", opts.storeId)
     .eq("status", "active")
@@ -942,7 +947,7 @@ export async function resolveFocusProduct(opts: {
     .eq("store_id", opts.storeId);
   const blocked = new Set((bl ?? []).map((r: any) => r.product_id));
 
-  const scored = (rows ?? [])
+  const scored = (rows ?? []).map((row: any) => normalizeCatalogProduct(row))
     .filter((r: any) => !blocked.has(r.id))
     .map((r: any) => ({ product: r, score: scoreProductAgainstQuery(r, terms, raw) }))
     .filter((row) => row.score >= 25)
@@ -966,16 +971,18 @@ export async function resolveFocusProduct(opts: {
           .from("ai_product_catalog")
           .select(PRODUCT_SELECT_MIN)
           .eq("store_id", opts.storeId)
-          .in("id", ids);
+          .in("product_id", ids);
         return {
           product: null,
           ambiguous: true,
-          candidates: (prods ?? []).map((p: any) => ({
+          candidates: (prods ?? []).map((row: any) => {
+            const p = normalizeCatalogProduct(row);
+            return ({
             id: p.id,
             name: p.name,
             price: p.price,
             primary_image_url: p.primary_image_url,
-          })),
+          });}),
         };
       }
     }
@@ -1010,10 +1017,8 @@ export function buildTools(ctx: AgentContext) {
   const sb = admin();
   const storeId = ctx.storeId;
 
-  const productSelect =
-    "id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,status,product_type,meta,primary_image_url,gallery,features,specifications,variants,video_url,delivery_charge,delivery_time_days,rating,total_sold,warranty,return_policy,shipping_info,is_featured,created_at";
   const catalogProductSelect =
-    "product_id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,status,product_type,meta,primary_image_url,gallery,features,specifications,variants,video_url,delivery_charge,delivery_time_days,rating,total_sold,warranty,return_policy,shipping_info,is_featured,created_at";
+    "product_id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,status,product_type,meta,primary_image_url,gallery,features,specifications,variants,video_url,delivery_charge,delivery_time_days,rating,total_sold,warranty,return_policy,shipping_info,is_featured,low_stock_threshold,related_product_ids,source_created_at";
 
   const convId = ctx.conversationId ?? null;
 
@@ -1094,10 +1099,7 @@ export function buildTools(ctx: AgentContext) {
             .order("is_featured", { ascending: false })
             .order("total_sold", { ascending: false });
         const { data: catalogRows } = await q.limit(500);
-        const data = (catalogRows ?? []).map((product: any) => ({
-          ...product,
-          id: product.product_id ?? product.id,
-        }));
+        const data = (catalogRows ?? []).map((product: any) => normalizeCatalogProduct(product));
         const blocked = await getBlacklistedIds();
         const terms = searchTerms(input.query);
         const phrase = input.query.toLowerCase().trim();
@@ -1189,13 +1191,16 @@ export function buildTools(ctx: AgentContext) {
           getBlacklistedIds(),
           categoryMap(),
           sb
-            .from("products")
-            .select(productSelect)
+            .from("ai_product_catalog")
+            .select(catalogProductSelect)
             .eq("store_id", storeId)
             .eq("status", "active")
-            .in("id", ids),
+            .in("product_id", ids),
         ]);
-        const byId = new Map((productsResult.data ?? []).map((p: any) => [p.id, p]));
+        const byId = new Map((productsResult.data ?? []).map((row: any) => {
+          const p = normalizeCatalogProduct(row);
+          return [p.id, p];
+        }));
         const products = ids
           .map((id) => byId.get(id))
           .filter((p: any) => p && !blocked.has(p.id))
@@ -1214,14 +1219,15 @@ export function buildTools(ctx: AgentContext) {
           return { blocked: true, message: "This product is unavailable. Suggest an alternative." };
         }
         const { data } = await sb
-          .from("products")
-          .select(productSelect)
+          .from("ai_product_catalog")
+          .select(catalogProductSelect)
           .eq("store_id", storeId)
-          .eq("id", productId)
+          .eq("product_id", productId)
           .maybeSingle();
-        if (data) await logRecommendations("getProduct", [data], "detail_view");
+        const product = data ? normalizeCatalogProduct(data as any) : null;
+        if (product) await logRecommendations("getProduct", [product], "detail_view");
         const cats = await categoryMap();
-        return data ? productSummary(ctx, data, cats.get(data.category_id)) : null;
+        return product ? productSummary(ctx, product, cats.get(product.category_id)) : null;
       },
     }),
 
@@ -1239,7 +1245,7 @@ export function buildTools(ctx: AgentContext) {
       inputSchema: z.object({}),
       execute: async () => {
         const { data } = await sb
-          .from("products")
+          .from("ai_product_catalog")
           .select("brand")
           .eq("store_id", storeId)
           .not("brand", "is", null);
@@ -1256,10 +1262,10 @@ export function buildTools(ctx: AgentContext) {
       }),
       execute: async ({ productId, variant }) => {
         const { data } = await sb
-          .from("products")
-          .select("id,name,stock,variants,low_stock_threshold")
+          .from("ai_product_catalog")
+          .select("product_id,name,stock,variants,low_stock_threshold")
           .eq("store_id", storeId)
-          .eq("id", productId)
+          .eq("product_id", productId)
           .maybeSingle();
         if (!data) return { found: false };
         let variantStock: number | null = null;

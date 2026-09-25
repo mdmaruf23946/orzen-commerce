@@ -1398,9 +1398,9 @@ async function fastImageLookup(
     if (!hit || hit.similarity < 0.86 || margin < 0.12) return { analysis: null, match: null, candidateIds };
     const [{ data: product }, { data: blocked }] = await Promise.all([
       sb
-        .from("products")
-        .select("id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,primary_image_url,gallery,features,specifications,variants,total_sold,rating,is_featured")
-        .eq("id", hit.productId)
+        .from("ai_product_catalog")
+        .select("product_id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,primary_image_url,gallery,features,specifications,variants,total_sold,rating,is_featured")
+        .eq("product_id", hit.productId)
         .eq("store_id", storeId)
         .eq("status", "active")
         .gt("stock", 0)
@@ -1408,7 +1408,7 @@ async function fastImageLookup(
       sb.from("ai_product_blacklist").select("product_id").eq("store_id", storeId).eq("product_id", hit.productId).maybeSingle(),
     ]);
     if (!product || blocked) return { analysis: null, match: null, candidateIds };
-    const row = product as unknown as ProductRow;
+    const row = { ...(product as any), id: (product as any).product_id } as ProductRow;
     const confidence = Math.min(0.99, Math.round(hit.similarity * 100) / 100);
     const analysis: ImageAnalysis = {
       description: row.name,
@@ -2303,7 +2303,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                   const terms = seen.keywords.length ? ` Search terms: ${seen.keywords.join(", ")}.` : "";
                   effectiveText = seen.is_product
                     ? `[The customer sent a photo of a product. The photo shows: ${seen.description}.${terms}] ` +
-                      `Find this exact or closest product in the store catalogue using the product search tool. ` +
+                      `Use the synchronized store catalogue as the authoritative product list; do not browse the website. ` +
                       `If found, show the product card with price and stock and ask if this is the one they want. ` +
                       `If nothing matching exists, say politely in the customer's own language that this product is not available right now, ` +
                       `mention what you saw in the photo, and offer the closest alternatives. Never invent a product.`
