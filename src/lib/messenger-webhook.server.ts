@@ -973,7 +973,7 @@ async function describeImageAttachment(
       "product_subtype,category,primary_color,secondary_colors,material,style,shape,pattern,visible_text,brand,model_number,functions," +
       "connectors,controls,package_specs,distinctive_features,field_confidence,visibility_warnings,object_boundary_confidence,text_legibility,confidence. " +
       "Use null for uncertain single-value attributes and [] for absent lists. confidence is 0..1. " +
-      "object_boundary_confidence and text_legibility are 0..1. visibility_warnings may contain only concise observed issues such as low_contrast, blur, overexposure, underexposure, reflection, transparency or occlusion. " +
+      "object_boundary_confidence and text_legibility MUST each be a JSON number from 0 to 1, never text. visibility_warnings may contain ONLY these exact codes: low_contrast, blur, overexposure, underexposure, reflection, transparency, occlusion. " +
       "field_confidence is an object whose keys are only attributes actually observed and whose values are 0..1. " +
       "Never invent specifications that are not visible or reliably identifiable. Do not guess a colour under ambiguous lighting; name exact visible colours only when confident. " +
       "keywords must contain 2-8 concise catalogue terms. is_product is false for receipts, screenshots, documents, selfies or memes.";
@@ -1044,13 +1044,14 @@ async function describeImageAttachment(
     const firstFieldConfidence = parsed.field_confidence && typeof parsed.field_confidence === "object" && !Array.isArray(parsed.field_confidence)
       ? parsed.field_confidence as Record<string, unknown>
       : {};
+    const hasFirstTypeConfidence = typeof firstFieldConfidence.product_type === "number";
     const firstTypeConfidence = Math.max(0, Math.min(1, Number(firstFieldConfidence.product_type) || 0));
     const hasFirstBoundaryConfidence = typeof parsed.object_boundary_confidence === "number";
     const firstBoundaryConfidence = Math.max(0, Math.min(1, Number(parsed.object_boundary_confidence) || 0));
     const needsFocusedInspection = parsed.is_product !== false && (
       !String(parsed.product_type ?? "").trim() ||
       firstConfidence < 0.82 ||
-      firstTypeConfidence < 0.68 ||
+      (hasFirstTypeConfidence && firstTypeConfidence < 0.68) ||
       (hasFirstBoundaryConfidence && firstBoundaryConfidence < 0.62)
     );
     let inspectionPasses: 1 | 2 = 1;
@@ -1059,7 +1060,7 @@ async function describeImageAttachment(
         "Re-inspect this difficult product photo independently. Ignore background colour and isolate the sale item using silhouette edges, local shadows, seams, cap/base, ports, controls, printed-label layout, texture and proportions. " +
         "Pay special attention to white-on-white, black-on-black, transparent, reflective, blurred, backlit or overexposed regions. Read faint text only when genuinely legible. " +
         "Do not invent a brand, model, specification or colour. Return ONLY minified JSON with keys description,keywords,is_product,product_type,product_subtype,category,primary_color,secondary_colors,material,style,shape,pattern,visible_text,brand,model_number,functions,connectors,controls,package_specs,distinctive_features,field_confidence,visibility_warnings,object_boundary_confidence,text_legibility,confidence. " +
-        "Use null for uncertain single values and [] for absent lists; all confidence values are 0..1.";
+        "Use null for uncertain single values and [] for absent lists. object_boundary_confidence, text_legibility, confidence and every field_confidence value MUST be JSON numbers from 0 to 1, never text. visibility_warnings may contain ONLY these exact codes: low_contrast, blur, overexposure, underexposure, reflection, transparency, occlusion.";
       const focusedResponse = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
         method: "POST",
         headers: {
@@ -1173,7 +1174,9 @@ async function describeImageAttachment(
       package_specs: list(parsed.package_specs, 10),
       distinctive_features: list(parsed.distinctive_features, 10),
       field_confidence: fieldConfidence,
-      visibility_warnings: list(parsed.visibility_warnings, 8),
+      visibility_warnings: list(parsed.visibility_warnings, 8).filter((warning) => [
+        "low_contrast", "blur", "overexposure", "underexposure", "reflection", "transparency", "occlusion",
+      ].includes(warning.toLowerCase())).map((warning) => warning.toLowerCase()),
       object_boundary_confidence: boundaryConfidence,
       text_legibility: Math.max(0, Math.min(1, Number(parsed.text_legibility) || 0)),
       recognition_status: recognitionStatus,
