@@ -191,16 +191,22 @@ async function handleBuyButton(opts: {
     await sendAndLog(sb, phoneNumberId, token, to, conversationId, "দুঃখিত, এই প্রোডাক্টটি এখন স্টকে নেই।");
     return;
   }
-  const checkoutUrl = await (await import("@/lib/conversational-checkout.server")).createConversationalCheckoutLink({
-    storeId,
-    productId: product.id,
-    conversationId,
-    channel: "whatsapp",
-    externalCustomerId: to,
-    origin: (process.env["PUBLIC_APP_URL"] || "https://orzen.top").replace(/\/$/, ""),
+
+  const current = await pendingOrder(sb, conversationId);
+  const slot = await patchPendingOrder(sb, conversationId, {
+    ...current,
+    product_id: product.id,
+    product_name: product.name,
+    qty: current["qty"] ?? 1,
   });
-  const { sendWaCtaUrl } = await import("@/lib/whatsapp-send.server");
-  await sendWaCtaUrl(phoneNumberId, token, to, `${product.name} নিরাপদে অর্ডার করুন`, checkoutUrl, "Buy now");
+  const cfg = await loadOrderFlow(storeId);
+  const missing = requiredSlotFields(cfg)
+    .filter((k) => k !== "product_id" && !slot[k])
+    .map((k) => ORDER_FIELD_BN[k] ?? ORDER_FIELD_LABELS[k as OrderFieldKey] ?? k);
+  const text = missing.length
+    ? `${cfg.buy_now_message}\n\n${product.name} অর্ডার করতে দিন: ${missing.join(", ")}।`
+    : `${product.name} অর্ডারের সব তথ্য পেয়েছি। কনফার্ম করতে "হ্যাঁ" লিখুন।`;
+  await sendAndLog(sb, phoneNumberId, token, to, conversationId, text);
 }
 
 export const Route = createFileRoute("/api/public/whatsapp/webhook")({
