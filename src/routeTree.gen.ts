@@ -181,6 +181,7 @@ import { Route as ApiPublicFbCapiTrackRouteImport } from './routes/api/public/fb
 import { Route as ApiPublicFacebookWebhookRouteImport } from './routes/api/public/facebook/webhook'
 import { Route as ApiPublicCronSyncParcelsRouteImport } from './routes/api/public/cron/sync-parcels'
 import { Route as ApiPublicCronSubscriptionRenewalsRouteImport } from './routes/api/public/cron/subscription-renewals'
+import { Route as ApiPublicCronProductImageEmbeddingsRouteImport } from './routes/api/public/cron/product-image-embeddings'
 import { Route as ApiPublicCronNotifyOrdersRouteImport } from './routes/api/public/cron/notify-orders'
 import { Route as ApiPublicCronDomainIdleRouteImport } from './routes/api/public/cron/domain-idle'
 import { Route as ApiPublicCronAiCallsRouteImport } from './routes/api/public/cron/ai-calls'
@@ -1200,6 +1201,12 @@ const ApiPublicCronSubscriptionRenewalsRoute =
     path: '/api/public/cron/subscription-renewals',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicCronProductImageEmbeddingsRoute =
+  ApiPublicCronProductImageEmbeddingsRouteImport.update({
+    id: '/api/public/cron/product-image-embeddings',
+    path: '/api/public/cron/product-image-embeddings',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicCronNotifyOrdersRoute =
   ApiPublicCronNotifyOrdersRouteImport.update({
     id: '/api/public/cron/notify-orders',
@@ -1716,6 +1723,7 @@ export interface FileRoutesByFullPath {
   '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
   '/api/public/cron/domain-idle': typeof ApiPublicCronDomainIdleRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
+  '/api/public/cron/product-image-embeddings': typeof ApiPublicCronProductImageEmbeddingsRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
   '/api/public/facebook/webhook': typeof ApiPublicFacebookWebhookRoute
@@ -1934,6 +1942,7 @@ export interface FileRoutesByTo {
   '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
   '/api/public/cron/domain-idle': typeof ApiPublicCronDomainIdleRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
+  '/api/public/cron/product-image-embeddings': typeof ApiPublicCronProductImageEmbeddingsRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
   '/api/public/facebook/webhook': typeof ApiPublicFacebookWebhookRoute
@@ -2164,6 +2173,7 @@ export interface FileRoutesById {
   '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
   '/api/public/cron/domain-idle': typeof ApiPublicCronDomainIdleRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
+  '/api/public/cron/product-image-embeddings': typeof ApiPublicCronProductImageEmbeddingsRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
   '/api/public/facebook/webhook': typeof ApiPublicFacebookWebhookRoute
@@ -2394,6 +2404,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/ai-calls'
     | '/api/public/cron/domain-idle'
     | '/api/public/cron/notify-orders'
+    | '/api/public/cron/product-image-embeddings'
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
     | '/api/public/facebook/webhook'
@@ -2612,6 +2623,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/ai-calls'
     | '/api/public/cron/domain-idle'
     | '/api/public/cron/notify-orders'
+    | '/api/public/cron/product-image-embeddings'
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
     | '/api/public/facebook/webhook'
@@ -2841,6 +2853,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/ai-calls'
     | '/api/public/cron/domain-idle'
     | '/api/public/cron/notify-orders'
+    | '/api/public/cron/product-image-embeddings'
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
     | '/api/public/facebook/webhook'
@@ -2917,6 +2930,7 @@ export interface RootRouteChildren {
   ApiPublicCronAiCallsRoute: typeof ApiPublicCronAiCallsRoute
   ApiPublicCronDomainIdleRoute: typeof ApiPublicCronDomainIdleRoute
   ApiPublicCronNotifyOrdersRoute: typeof ApiPublicCronNotifyOrdersRoute
+  ApiPublicCronProductImageEmbeddingsRoute: typeof ApiPublicCronProductImageEmbeddingsRoute
   ApiPublicCronSubscriptionRenewalsRoute: typeof ApiPublicCronSubscriptionRenewalsRoute
   ApiPublicCronSyncParcelsRoute: typeof ApiPublicCronSyncParcelsRoute
   ApiPublicFacebookWebhookRoute: typeof ApiPublicFacebookWebhookRoute
@@ -4144,6 +4158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronSubscriptionRenewalsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cron/product-image-embeddings': {
+      id: '/api/public/cron/product-image-embeddings'
+      path: '/api/public/cron/product-image-embeddings'
+      fullPath: '/api/public/cron/product-image-embeddings'
+      preLoaderRoute: typeof ApiPublicCronProductImageEmbeddingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/cron/notify-orders': {
       id: '/api/public/cron/notify-orders'
       path: '/api/public/cron/notify-orders'
@@ -5111,6 +5132,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicCronAiCallsRoute: ApiPublicCronAiCallsRoute,
   ApiPublicCronDomainIdleRoute: ApiPublicCronDomainIdleRoute,
   ApiPublicCronNotifyOrdersRoute: ApiPublicCronNotifyOrdersRoute,
+  ApiPublicCronProductImageEmbeddingsRoute:
+    ApiPublicCronProductImageEmbeddingsRoute,
   ApiPublicCronSubscriptionRenewalsRoute:
     ApiPublicCronSubscriptionRenewalsRoute,
   ApiPublicCronSyncParcelsRoute: ApiPublicCronSyncParcelsRoute,

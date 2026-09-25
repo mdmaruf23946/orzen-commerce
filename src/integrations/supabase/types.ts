@@ -5790,6 +5790,61 @@ export type Database = {
         }
         Relationships: []
       }
+      product_image_embeddings: {
+        Row: {
+          created_at: string
+          embedding: string | null
+          image_url: string
+          last_error: string | null
+          model: string
+          product_id: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          embedding?: string | null
+          image_url: string
+          last_error?: string | null
+          model?: string
+          product_id: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          embedding?: string | null
+          image_url?: string
+          last_error?: string | null
+          model?: string
+          product_id?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_image_embeddings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_image_embeddings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "storefront_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_image_embeddings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_import_export_history: {
         Row: {
           created_at: string
@@ -10933,6 +10988,13 @@ export type Database = {
         }[]
       }
       list_store_pages_public: { Args: { _slug: string }; Returns: Json }
+      match_product_image_embeddings: {
+        Args: { _embedding: string; _limit?: number; _store_id: string }
+        Returns: {
+          product_id: string
+          similarity: number
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
