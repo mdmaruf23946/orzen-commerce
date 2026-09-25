@@ -1816,8 +1816,10 @@ async function handleBuyPostback(opts: {
   psid: string;
   token: string;
   payload: string;
+  queuedJobId?: string | null;
 }) {
   const { sb, storeId, conversationId, psid, token, payload } = opts;
+  const queuedJobId = opts.queuedJobId ?? null;
   const productId = payload.replace(/^BUY_/, "");
   if (!/^[0-9a-f-]{36}$/i.test(productId)) return false;
   const { data: product } = await sb
@@ -1827,7 +1829,9 @@ async function handleBuyPostback(opts: {
     .eq("id", productId)
     .maybeSingle();
   if (!product || product.status !== "active") {
-    await sendAndLogText(sb, token, psid, conversationId, "দুঃখিত, এই প্রোডাক্টটি এখন পাওয়া যাচ্ছে না। চাইলে কাছাকাছি অন্য প্রোডাক্ট দেখাতে পারি।");
+    const miss = "দুঃখিত, এই প্রোডাক্টটি এখন পাওয়া যাচ্ছে না। চাইলে কাছাকাছি অন্য প্রোডাক্ট দেখাতে পারি।";
+    await sendAndLogText(sb, token, psid, conversationId, miss);
+    await markQueuedReply(sb, queuedJobId, miss, null);
     return true;
   }
   // Only physical products can be ordered inside Messenger.
@@ -1835,18 +1839,15 @@ async function handleBuyPostback(opts: {
     const { data: store } = await sb.from("stores").select("slug").eq("id", storeId).maybeSingle();
     const origin = (process.env["PUBLIC_APP_URL"] || process.env["VITE_APP_URL"] || "https://orzen-commerce.lovable.app").replace(/\/$/, "");
     const url = store?.slug ? `${origin}/store/${store.slug}/product/${product.id}` : `${origin}/product/${product.id}`;
-    await sendAndLogViewSiteButton(
-      sb,
-      token,
-      psid,
-      conversationId,
-      "এই প্রোডাক্টটি আমাদের ওয়েবসাইট থেকে নিরাপদে কিনতে পারবেন",
-      url,
-    );
+    const webText = "এই প্রোডাক্টটি আমাদের ওয়েবসাইট থেকে নিরাপদে কিনতে পারবেন";
+    await sendAndLogViewSiteButton(sb, token, psid, conversationId, webText, url);
+    await markQueuedReply(sb, queuedJobId, webText, null);
     return true;
   }
   if (Number(product.stock) <= 0) {
-    await sendAndLogText(sb, token, psid, conversationId, "দুঃখিত, এই প্রোডাক্টটি এখন স্টকে নেই। চাইলে কাছাকাছি অন্য প্রোডাক্ট দেখাতে পারি।");
+    const oos = "দুঃখিত, এই প্রোডাক্টটি এখন স্টকে নেই। চাইলে কাছাকাছি অন্য প্রোডাক্ট দেখাতে পারি।";
+    await sendAndLogText(sb, token, psid, conversationId, oos);
+    await markQueuedReply(sb, queuedJobId, oos, null);
     return true;
   }
 
@@ -1860,7 +1861,7 @@ async function handleBuyPostback(opts: {
   const missing = orderMissingFields(slot, cfg);
   const reply = missing.length
     ? `${cfg.buy_now_message}\n\n${product.name} — কনফার্ম করতে ${missing.join(", ")} দিন।`
-    : `ঠিক আছে, ${product.name} অর্ডারের তথ্য পেয়েছি। কনফার্ম করার আগে আর কিছু যোগ করতে চান?`;
+    : `ঠিক আছে, ${product.name} অর্ডারের তথ্য পেয়েছি। কনফার্ম করার আগে আর কিছু যোগ করতে চান?`;
   await sendAndLogText(
     sb,
     token,
@@ -1868,6 +1869,7 @@ async function handleBuyPostback(opts: {
     conversationId,
     reply,
   );
+  await markQueuedReply(sb, queuedJobId, reply, null);
   return true;
 }
 
