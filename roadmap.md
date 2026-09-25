@@ -39,6 +39,8 @@ RULE: never publish orzen.top from the Lovable Publish button. Always redeploy t
 
 ## New task (2026-09-16)
 
+51. [ ] **Messenger card Buy Now reliability** — replace the card's undelivered Facebook postback with a signed first-party order action, then build, deploy, and verify live.
+
 8. [x] **Trial expiry enforcement** (done 2026-09-16: expire_due_subscriptions + hourly cron on both DBs; PlanLockGate blocks panel; deployed worker version 4ea48ea1) — 3-day trial must actually end: after trial_ends_at the store loses all access (no auto-drop to Free). Merchant sees a blocking screen with "Activate Free plan" button or upgrade to a paid plan. Applies to every account, new and existing. No plan active = no panel access.
 
 9. [x] **Winner Admin Panel audit & fixes** (done 2026-09-16, worker version 0154bc34) — fixed AI Admin → Notifications infinite update crash; built real Store Health page (per-store plan/activity/catalogue/customers/domains + health score) and AI Usage page (7/30/90d requests, tokens, cost, per-store & per-model tables, 30d chart, CSV); dashboard Sparkline empty-state guard. Both new owner server fns verify owner then read platform-wide via admin client. Swept all 62 owner routes — no console errors, no 4xx/5xx.

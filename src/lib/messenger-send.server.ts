@@ -67,6 +67,8 @@ export type ProductCardInput = {
   image_url?: string;
   buy_url?: string; // opens storefront checkout / product page
   product_id?: string; // used for postback "buy now via AI"
+  /** signed first-party URL that starts the Messenger order flow without postback delivery */
+  order_url?: string;
   /** false for digital/service/subscription — purchase happens on the website only */
   orderable?: boolean;
   /** overrides the web_url button label (default: "View site") */
@@ -84,7 +86,14 @@ function buildElement(p: ProductCardInput) {
       webview_height_ratio: "tall",
     });
   }
-  if (p.product_id && orderable) {
+  if (p.order_url && orderable) {
+    buttons.push({
+      type: "web_url",
+      url: p.order_url,
+      title: "Buy Now",
+      webview_height_ratio: "compact",
+    });
+  } else if (p.product_id && orderable) {
     buttons.push({
       type: "postback",
       title: "Buy Now",
