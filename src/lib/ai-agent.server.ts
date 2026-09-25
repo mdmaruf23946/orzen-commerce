@@ -1360,6 +1360,8 @@ export function buildTools(ctx: AgentContext) {
 
   // Messenger-only tools that need PSID + token
   if (ctx.psid && ctx.pageToken) {
+    const messengerPsid = ctx.psid;
+    const messengerPageToken = ctx.pageToken;
     tools.sendProductCard = tool({
       description:
         "Send one product to the customer as a rich Messenger card with Buy Now / View Product buttons. Prefer this over describing a product in plain text.",
@@ -1394,7 +1396,7 @@ export function buildTools(ctx: AgentContext) {
         const subtitle = `${priceLine} · ${statusLine}${product.short_description ? " — " + product.short_description : ""}`;
         try {
           const { createMessengerBuyLink } = await import("@/lib/messenger-buy-link.server");
-          await fbSendProductCard(ctx.pageToken!, ctx.psid!, {
+          await fbSendProductCard(messengerPageToken, messengerPsid, {
             title: product.name,
             subtitle,
             image_url: firstImage(ctx, product),
@@ -1402,7 +1404,7 @@ export function buildTools(ctx: AgentContext) {
             product_id: product.id,
             orderable,
             order_url: orderable
-              ? createMessengerBuyLink({ storeId, psid: ctx.psid!, productId: product.id })
+              ? createMessengerBuyLink({ storeId, psid: messengerPsid, productId: product.id })
               : undefined,
           });
           // Card buttons rely on postback delivery, which some Page/app setups
@@ -1410,8 +1412,8 @@ export function buildTools(ctx: AgentContext) {
           // the customer always has a working "Buy now" tap.
           if (orderable && product.stock > 0) {
             await fbSendQuickReplies(
-              ctx.pageToken!,
-              ctx.psid!,
+              messengerPageToken,
+              messengerPsid,
               "অর্ডার করতে নিচের বাটনে চাপুন 👇",
               [{ title: "🛒 এখনই কিনব", payload: `BUY_${product.id}` }],
             ).catch(() => undefined);
