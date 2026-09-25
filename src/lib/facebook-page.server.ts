@@ -382,14 +382,14 @@ export async function syncFacebookPageFromMessenger(
     if (error) throw new Error(error.message);
 
     try {
-      await subscribePageToApp(creds.page_id, creds.token);
+      await subscribePageToApp(creds.page_id, effectiveToken);
     } catch {
       /* messaging still works; page events may need pages_manage_metadata */
     }
 
     let verified: any = null;
     try {
-      verified = await probeCapabilities(creds.page_id, creds.token);
+      verified = await probeCapabilities(creds.page_id, effectiveToken);
       await supabase
         .from("facebook_page_integrations")
         .update({ permissions_verified: verified, permissions_checked_at: new Date().toISOString() })
@@ -398,7 +398,7 @@ export async function syncFacebookPageFromMessenger(
       /* capability probing is advisory */
     }
 
-    return { connected: true, page_name: pageName, verified, error: null };
+    return { connected: true, page_name: pageName, verified, error: null, manual_token: manualToken };
   } catch (e) {
     const message = (e as Error).message;
     try {
