@@ -434,7 +434,7 @@ async function searchDirectProducts(sb: ReturnType<typeof admin>, storeId: strin
   const productSelect =
     "id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,primary_image_url,gallery,features,specifications,variants,total_sold,rating,is_featured";
   const [{ data: products }, { data: categories }, { data: blocked }] = await Promise.all([
-    sb.from("products").select(productSelect).eq("store_id", storeId).eq("status", "active").gt("stock", 0).limit(150),
+    sb.from("ai_product_catalog").select(productSelect).eq("store_id", storeId).eq("status", "active").gt("stock", 0).limit(500),
     sb.from("categories").select("id,name").eq("store_id", storeId),
     sb.from("ai_product_blacklist").select("product_id").eq("store_id", storeId),
   ]);
@@ -1194,6 +1194,7 @@ async function visuallyMatchProduct(
   sb: ReturnType<typeof admin>,
   storeId: string,
   analysis: ImageAnalysis,
+  imageCandidateIds: string[] = [],
 ): Promise<VisualMatch | null> {
   if (!analysis.is_product || analysis.recognition_status !== "clear") return null;
   const query = [
@@ -1217,21 +1218,20 @@ async function visuallyMatchProduct(
   ]);
   const blockedIds = new Set((blockedResult.data ?? []).map((row: any) => String(row.product_id)));
   const categoryNames = new Map((categoriesResult.data ?? []).map((row: any) => [String(row.id), String(row.name ?? "")]));
-  const allProducts: ProductRow[] = [];
-  for (let from = 0; ; from += 500) {
-    const { data, error } = await sb
-      .from("products")
-      .select(productSelect)
-      .eq("store_id", storeId)
-      .eq("status", "active")
-      .gt("stock", 0)
-      .order("id", { ascending: true })
-      .range(from, from + 499);
-    if (error) imageFailure("CATALOGUE_QUERY", error.message, true);
-    const page = (data ?? []) as ProductRow[];
-    allProducts.push(...page.filter((product) => !blockedIds.has(product.id) && productImages(product, 1).length > 0));
-    if (page.length < 500) break;
-  }
+  const candidateIds = Array.from(new Set([...imageCandidateIds, ...textMatches.map((product) => product.id)])).slice(0, 20);
+  if (!candidateIds.length) return null;
+  const { data: candidateRows, error: candidateError } = await sb
+    .from("ai_product_catalog")
+    .select(productSelect)
+    .eq("store_id", storeId)
+    .eq("status", "active")
+    .gt("stock", 0)
+    .in("product_id", candidateIds);
+  if (candidateError) imageFailure("CATALOGUE_QUERY", candidateError.message, true);
+  const allProducts = ((candidateRows ?? []) as Array<ProductRow & { product_id?: string }>).map((product) => ({
+    ...product,
+    id: product.product_id ?? product.id,
+  })).filter((product) => !blockedIds.has(product.id) && productImages(product, 1).length > 0);
   if (!allProducts.length) return null;
   const key = process.env.LOVABLE_API_KEY;
   if (!key) return null;
@@ -1263,10 +1263,9 @@ async function visuallyMatchProduct(
   };
 
   try {
-    // Merchant-written names and categories can be wrong. Text relevance only
-    // controls comparison order; every image-bearing product in this store is
-    // still visually inspected, so an exact catalogue photo cannot be removed
-    // before the image comparison stage.
+    // The photo index and the preloaded catalogue narrow the store to a small,
+    // deterministic candidate set. Merchant-written metadata only controls
+    // comparison order and can never override the visual verdict.
     const textRank = new Map(textMatches.map((product, index) => [product.id, index]));
     const candidates = [...allProducts].sort((left, right) => {
       const rankDelta = (textRank.get(left.id) ?? Number.MAX_SAFE_INTEGER) - (textRank.get(right.id) ?? Number.MAX_SAFE_INTEGER);
@@ -1387,12 +1386,15 @@ async function fastImageLookup(
   imageUrl: string,
   pageToken: string,
   messageId: string,
-): Promise<{ analysis: ImageAnalysis; match: VisualMatch } | null> {
+): Promise<{ analysis: ImageAnalysis | null; match: VisualMatch | null; candidateIds: string[] }> {
   try {
-    const { findFastImageMatch } = await import("@/lib/product-image-embeddings.server");
+    const { rankProductImageMatches } = await import("@/lib/product-image-embeddings.server");
     const { bytes, type } = await downloadMessengerImage(imageUrl, pageToken, messageId);
-    const hit = await findFastImageMatch(sb as any, storeId, bytes, type);
-    if (!hit) return null;
+    const ranked = await rankProductImageMatches(sb as any, storeId, bytes, type, 8);
+    const hit = ranked[0];
+    const margin = hit ? hit.similarity - (ranked[1]?.similarity ?? 0) : 0;
+    const candidateIds = ranked.filter((row) => row.similarity >= 0.45).map((row) => row.productId);
+    if (!hit || hit.similarity < 0.86 || margin < 0.12) return { analysis: null, match: null, candidateIds };
     const [{ data: product }, { data: blocked }] = await Promise.all([
       sb
         .from("products")
@@ -1404,7 +1406,7 @@ async function fastImageLookup(
         .maybeSingle(),
       sb.from("ai_product_blacklist").select("product_id").eq("store_id", storeId).eq("product_id", hit.productId).maybeSingle(),
     ]);
-    if (!product || blocked) return null;
+    if (!product || blocked) return { analysis: null, match: null, candidateIds };
     const row = product as unknown as ProductRow;
     const confidence = Math.min(0.99, Math.round(hit.similarity * 100) / 100);
     const analysis: ImageAnalysis = {
@@ -1443,13 +1445,14 @@ async function fastImageLookup(
         product: row,
         confidence,
         verdict: "exact",
-        reason: `Photo fingerprint match (similarity ${hit.similarity.toFixed(3)}, margin ${hit.margin.toFixed(3)})`,
+        reason: `Photo fingerprint match (similarity ${hit.similarity.toFixed(3)}, margin ${margin.toFixed(3)})`,
         evidence: ["fast_image_fingerprint"],
       },
+      candidateIds,
     };
   } catch {
-    // Any fast-path problem simply falls back to the full inspection.
-    return null;
+    // Any index problem falls back to description plus the preloaded text index.
+    return { analysis: null, match: null, candidateIds: [] };
   }
 }
 
@@ -2290,12 +2293,12 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                 // store's own products answers in ~1s; anything uncertain falls
                 // through to the full AI inspection below.
                 const fast = await fastImageLookup(sb, integ.store_id, imageUrl, token, String(msg.mid ?? ""));
-                const seen = fast?.analysis ?? await describeImageAttachment(imageUrl, token, String(msg.mid ?? ""));
+                const seen = fast.analysis ?? await describeImageAttachment(imageUrl, token, String(msg.mid ?? ""));
                 {
                   imageAnalysis = seen;
-                  imageMatch = fast
-                    ? fast.match
-                    : seen.is_product ? await visuallyMatchProduct(sb, integ.store_id, seen) : null;
+                  imageMatch = fast.match ?? (seen.is_product
+                    ? await visuallyMatchProduct(sb, integ.store_id, seen, fast.candidateIds)
+                    : null);
                   const terms = seen.keywords.length ? ` Search terms: ${seen.keywords.join(", ")}.` : "";
                   effectiveText = seen.is_product
                     ? `[The customer sent a photo of a product. The photo shows: ${seen.description}.${terms}] ` +

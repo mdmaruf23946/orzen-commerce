@@ -963,7 +963,7 @@ export async function resolveFocusProduct(opts: {
       ).slice(0, 4);
       if (ids.length >= 2) {
         const { data: prods } = await sb
-          .from("products")
+          .from("ai_product_catalog")
           .select(PRODUCT_SELECT_MIN)
           .eq("store_id", opts.storeId)
           .in("id", ids);
@@ -1091,7 +1091,11 @@ export function buildTools(ctx: AgentContext) {
           q = q
             .order("is_featured", { ascending: false })
             .order("total_sold", { ascending: false });
-        const { data } = await q.limit(120);
+        const { data: catalogRows } = await q.limit(500);
+        const data = (catalogRows ?? []).map((product: any) => ({
+          ...product,
+          id: product.product_id ?? product.id,
+        }));
         const blocked = await getBlacklistedIds();
         const terms = searchTerms(input.query);
         const phrase = input.query.toLowerCase().trim();
