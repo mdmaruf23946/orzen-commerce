@@ -1547,17 +1547,9 @@ async function sendVisualProductResult(opts: {
     "হ্যাঁ, এটা আমাদের কাছে পাওয়া যাচ্ছে। অর্ডার করতে চাইলে জানান 😊",
   ];
   const text = askList[Math.floor(Math.random() * askList.length)];
-  // The card's own "Buy Now" is a postback, which some Page/app setups never
-  // deliver — the tap then looks like nothing happened. A quick reply arrives
-  // over the always-delivered "messages" field, so the tap always works.
-  const canOrderHere =
-    String((match.product as any).product_type ?? "physical") === "physical" &&
-    Number(match.product.stock) > 0;
-  const sent = canOrderHere
-    ? await sendQuickReplies(token, psid, text, [
-        { title: "🛒 Buy Now", payload: `BUY_${match.product.id}` },
-      ])
-    : await fbSend(token, psid, text);
+  // Ordering happens through the card's own "Buy Now" postback button, so no
+  // separate quick reply is attached below the message.
+  const sent = await fbSend(token, psid, text);
   await markQueuedReply(sb, queuedJobId, text, sent.message_id);
   await sb.from("ai_messages").insert({
     conversation_id: conversationId, role: "assistant", direction: "out", message_type: "text",
@@ -1772,24 +1764,8 @@ async function maybeSendDirectProductReply(opts: {
         delivery_status: "sent",
       } as any);
     }
-    // Quick-reply mirror of the card's Buy Now button (postbacks are not
-    // delivered by every Page/app setup; message events always are).
-    const buyable = cards
-      .map((card, i) => ({ card, product: products[i] }))
-      .filter((x) => x.card.orderable !== false && x.card.product_id);
-    if (buyable.length) {
-      // Quick-reply titles are capped at 20 characters by Messenger, so a long
-      // product name would be cut into an unreadable label. Keep them short.
-      await sendQuickReplies(
-        token,
-        psid,
-        "অর্ডার করতে নিচের বাটনে চাপুন 👇",
-        buyable.slice(0, 10).map((x, i) => ({
-          title: buyable.length === 1 ? "🛒 Buy Now" : `🛒 ${i + 1}. ${x.product.name}`.slice(0, 20),
-          payload: `BUY_${x.product.id}`,
-        })),
-      ).catch(() => undefined);
-    }
+    // Ordering runs through each card's own "Buy Now" postback button, so no
+    // extra quick reply row is attached below the carousel.
     const image = firstProductImage(products[0]);
     if (photoIntent && image) {
       const imgSent = await fbSendImage(token, psid, image);
