@@ -408,7 +408,7 @@ async function decryptToken(enc: string | null): Promise<string | null> {
 async function syncFacebookPageAgent(
   context: any,
   storeId: string,
-  creds: { page_id: string; token: string; app_id?: string | null; app_secret?: string | null },
+  creds: { page_id: string; token: string; app_id?: string | null; app_secret?: string | null; fb_token?: string | null },
 ) {
   try {
     await assertPlan(context.supabase, context.userId, "facebook_page");
@@ -490,7 +490,24 @@ export const getMessengerIntegration = createServerFn({ method: "GET" })
       if (updated) row = updated as any;
     }
 
+    // Posts/comments agent token state (may be a dedicated token).
+    let fbTokenState = { has_facebook_token: false, facebook_manual_token: false };
+    try {
+      const { data: fbRow } = await context.supabase
+        .from("facebook_page_integrations")
+        .select("page_access_token_encrypted,manual_token")
+        .eq("store_id", storeId)
+        .maybeSingle();
+      if (fbRow) {
+        fbTokenState = {
+          has_facebook_token: !!fbRow.page_access_token_encrypted,
+          facebook_manual_token: !!fbRow.manual_token,
+        };
+      }
+    } catch {}
+
     return {
+      ...fbTokenState,
       connected: row.status === "connected",
       webhook_url: webhookUrl,
       page_id: row.page_id,
@@ -534,6 +551,7 @@ export const connectMessenger = createServerFn({ method: "POST" })
       .object({
         page_id: z.string().trim().min(2).max(120),
         page_access_token: z.string().trim().min(10).max(1000),
+        facebook_page_access_token: z.string().trim().max(1000).optional().nullable(),
         app_id: z.string().trim().max(64).optional().nullable(),
         app_secret: z.string().trim().max(200).optional().nullable(),
         privacy_policy_url: z
@@ -638,6 +656,7 @@ export const connectMessenger = createServerFn({ method: "POST" })
     const facebook = await syncFacebookPageAgent(context, storeId, {
       page_id: data.page_id,
       token: data.page_access_token,
+      fb_token: data.facebook_page_access_token?.trim() || null,
       app_id: data.app_id ?? null,
       app_secret: data.app_secret ?? (await decryptToken(row?.app_secret_encrypted ?? null)),
     });
