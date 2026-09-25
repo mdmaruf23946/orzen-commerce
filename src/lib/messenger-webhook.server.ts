@@ -2031,7 +2031,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
           const { data: integ } = await sb
             .from("messenger_integrations")
             .select(
-              "id,store_id,page_access_token,page_access_token_encrypted,app_secret_encrypted,ai_auto_reply,human_takeover,conversation_history,delivery_failures,reply_delay_seconds,reply_speed",
+              "id,store_id,page_access_token,page_access_token_encrypted,app_secret_encrypted,ai_auto_reply,human_takeover,conversation_history,delivery_failures,reply_delay_seconds,reply_speed,app_id,verify_token",
             )
             .eq("page_id", pageId)
             .maybeSingle();
@@ -2088,6 +2088,25 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
           const token =
             (await decryptToken((integ as any).page_access_token_encrypted)) ||
             (integ as any).page_access_token;
+
+          // Card "Buy Now" taps need the messaging_postbacks webhook field.
+          if (token) {
+            try {
+              const { ensurePostbacksDelivered } = await import("@/lib/messenger-subscribe.server");
+              const res = await ensurePostbacksDelivered({
+                pageId,
+                token,
+                appId: (integ as any).app_id ?? null,
+                appSecret: appSecret,
+                verifyToken: (integ as any).verify_token ?? null,
+              });
+              if (res.page || res.app) {
+                console.log("[messenger] postback subscription", pageId, JSON.stringify(res));
+              }
+            } catch (e) {
+              console.warn("[messenger] postback check failed", (e as Error).message);
+            }
+          }
 
 
           // Handle standby events (log only)
