@@ -408,7 +408,7 @@ async function decryptToken(enc: string | null): Promise<string | null> {
 async function syncFacebookPageAgent(
   context: any,
   storeId: string,
-  creds: { page_id: string; token: string; app_id?: string | null; app_secret?: string | null },
+  creds: { page_id: string; token: string; app_id?: string | null; app_secret?: string | null; fb_token?: string | null },
 ) {
   try {
     await assertPlan(context.supabase, context.userId, "facebook_page");
