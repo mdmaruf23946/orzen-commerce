@@ -1506,10 +1506,14 @@ export type Database = {
           brand: string | null
           category_id: string | null
           created_at: string
+          delivery_charge: number | null
+          delivery_time_days: string | null
           description: string | null
           features: Json
           gallery: Json
           is_featured: boolean
+          low_stock_threshold: number
+          meta: Json
           name: string
           old_price: number | null
           price: number
@@ -1518,10 +1522,14 @@ export type Database = {
           product_id: string
           product_type: string
           rating: number | null
+          related_product_ids: string[]
+          return_policy: string | null
           search_text: string
+          shipping_info: string | null
           short_description: string | null
           sku: string | null
           slug: string | null
+          source_created_at: string
           source_updated_at: string
           specifications: Json
           status: Database["public"]["Enums"]["product_status"]
@@ -1530,15 +1538,21 @@ export type Database = {
           total_sold: number
           updated_at: string
           variants: Json
+          video_url: string | null
+          warranty: string | null
         }
         Insert: {
           brand?: string | null
           category_id?: string | null
           created_at?: string
+          delivery_charge?: number | null
+          delivery_time_days?: string | null
           description?: string | null
           features?: Json
           gallery?: Json
           is_featured?: boolean
+          low_stock_threshold?: number
+          meta?: Json
           name: string
           old_price?: number | null
           price?: number
@@ -1547,10 +1561,14 @@ export type Database = {
           product_id: string
           product_type?: string
           rating?: number | null
+          related_product_ids?: string[]
+          return_policy?: string | null
           search_text?: string
+          shipping_info?: string | null
           short_description?: string | null
           sku?: string | null
           slug?: string | null
+          source_created_at?: string
           source_updated_at: string
           specifications?: Json
           status: Database["public"]["Enums"]["product_status"]
@@ -1559,15 +1577,21 @@ export type Database = {
           total_sold?: number
           updated_at?: string
           variants?: Json
+          video_url?: string | null
+          warranty?: string | null
         }
         Update: {
           brand?: string | null
           category_id?: string | null
           created_at?: string
+          delivery_charge?: number | null
+          delivery_time_days?: string | null
           description?: string | null
           features?: Json
           gallery?: Json
           is_featured?: boolean
+          low_stock_threshold?: number
+          meta?: Json
           name?: string
           old_price?: number | null
           price?: number
@@ -1576,10 +1600,14 @@ export type Database = {
           product_id?: string
           product_type?: string
           rating?: number | null
+          related_product_ids?: string[]
+          return_policy?: string | null
           search_text?: string
+          shipping_info?: string | null
           short_description?: string | null
           sku?: string | null
           slug?: string | null
+          source_created_at?: string
           source_updated_at?: string
           specifications?: Json
           status?: Database["public"]["Enums"]["product_status"]
@@ -1588,6 +1616,8 @@ export type Database = {
           total_sold?: number
           updated_at?: string
           variants?: Json
+          video_url?: string | null
+          warranty?: string | null
         }
         Relationships: [
           {
