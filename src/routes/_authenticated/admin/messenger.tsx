@@ -460,7 +460,7 @@ function AdminMessenger() {
           <Field label="Facebook Page ID" required>
             <Input value={pageId} onChange={(e) => setPageId(e.target.value)} inputMode="numeric" />
           </Field>
-          <Field label="Long-lived Page Access Token" required>
+          <Field label="Messenger Access Token (chat & orders)" required>
             <div className="flex gap-2">
               <Input
                 type={showToken ? "text" : "password"}
@@ -475,6 +475,35 @@ function AdminMessenger() {
                 <Copy className="h-4 w-4" />
               </IconBtn>
             </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Generate this in Messenger → Messenger API Settings → Generate token. Used for chat replies, product
+              cards and in-chat orders.
+            </p>
+          </Field>
+          <Field label="Facebook Page Access Token (posts & comments)">
+            <div className="flex gap-2">
+              <Input
+                type={showFbToken ? "text" : "password"}
+                value={fbToken}
+                onChange={(e) => setFbToken(e.target.value)}
+                placeholder={
+                  d.has_facebook_token
+                    ? d.facebook_manual_token
+                      ? "•••••• (leave empty to keep saved token)"
+                      : "•••••• (currently using the Messenger token)"
+                    : "Leave empty to reuse the Messenger token"
+                }
+              />
+              <IconBtn onClick={() => setShowFbToken((s) => !s)} title="Show/hide">
+                {showFbToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </IconBtn>
+              <IconBtn onClick={() => copy(fbToken, "Token copied")} title="Copy">
+                <Copy className="h-4 w-4" />
+              </IconBtn>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Optional. Used for Page posts, comments and auto-replies. Leave empty to reuse the Messenger token.
+            </p>
           </Field>
           <Field label="App ID (optional)">
             <Input value={appId} onChange={(e) => setAppId(e.target.value)} inputMode="numeric" />
