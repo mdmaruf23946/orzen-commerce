@@ -301,15 +301,38 @@ export async function pageSubscribedFields(pageId: string, token: string): Promi
 export async function syncFacebookPageFromMessenger(
   supabase: any,
   storeId: string,
-  creds: { page_id: string; token: string; app_id?: string | null; app_secret?: string | null },
-): Promise<{ connected: boolean; page_name: string | null; verified: any | null; error: string | null; skipped?: boolean }> {
+  creds: {
+    page_id: string;
+    token: string;
+    app_id?: string | null;
+    app_secret?: string | null;
+    /** Dedicated Page token for posts/comments. When set it overrides the Messenger token. */
+    fb_token?: string | null;
+  },
+): Promise<{ connected: boolean; page_name: string | null; verified: any | null; error: string | null; skipped?: boolean; manual_token?: boolean }> {
   try {
-    const { encryptJSON } = await import("@/lib/crypto/credentials.server");
+    const { encryptJSON, decryptJSON } = await import("@/lib/crypto/credentials.server");
     const { row } = await loadPageContext(supabase, storeId);
+
+    // Token precedence: explicitly supplied Page token > previously saved
+    // dedicated Page token > mirrored Messenger token.
+    let effectiveToken = creds.token;
+    let manualToken = false;
+    if (creds.fb_token) {
+      effectiveToken = creds.fb_token;
+      manualToken = true;
+    } else if (row?.manual_token && row?.page_access_token_encrypted) {
+      try {
+        effectiveToken = decryptJSON<string>(row.page_access_token_encrypted);
+        manualToken = true;
+      } catch {
+        /* fall back to the Messenger token */
+      }
+    }
 
     let pageName: string | null = row?.page_name ?? null;
     try {
-      const page: any = await graphGet(`/${encodeURIComponent(creds.page_id)}`, creds.token, { fields: "name" });
+      const page: any = await graphGet(`/${encodeURIComponent(creds.page_id)}`, effectiveToken, { fields: "name" });
       pageName = page?.name ?? pageName;
     } catch {
       /* keep the previous name */
@@ -319,7 +342,7 @@ export async function syncFacebookPageFromMessenger(
     let expiresAt: string | null = null;
     if (creds.app_id && creds.app_secret) {
       try {
-        const info = await debugToken(creds.token, creds.app_id, creds.app_secret);
+        const info = await debugToken(effectiveToken, creds.app_id, creds.app_secret);
         permissions = info.scopes;
         expiresAt = info.expires_at;
       } catch {
@@ -328,7 +351,7 @@ export async function syncFacebookPageFromMessenger(
     }
     if (!permissions.length) {
       try {
-        permissions = await inferScopes(creds.page_id, creds.token);
+        permissions = await inferScopes(creds.page_id, effectiveToken);
       } catch {
         permissions = (row?.permissions as string[]) ?? [];
       }
@@ -340,7 +363,8 @@ export async function syncFacebookPageFromMessenger(
         page_id: creds.page_id,
         page_name: pageName,
         page_picture_url: pagePicture(creds.page_id),
-        page_access_token_encrypted: encryptJSON(creds.token),
+        page_access_token_encrypted: encryptJSON(effectiveToken),
+        manual_token: manualToken,
         app_id: creds.app_id || null,
         app_secret_encrypted: creds.app_secret
           ? encryptJSON(creds.app_secret)
