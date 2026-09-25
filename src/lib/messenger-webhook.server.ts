@@ -1570,7 +1570,8 @@ async function productCardInput(
 ): Promise<ProductCardInput> {
   const priceLine = `৳${Number(product.price).toFixed(0)}`;
   const stockLine = product.stock > 0 ? "In stock" : "Out of stock";
-  const checkoutUrl = product.stock > 0 && String((product as any).product_type ?? "physical") === "physical"
+  const canCheckout = product.stock > 0 && String((product as any).product_type ?? "physical") === "physical";
+  const checkoutUrl = canCheckout
     ? await (await import("@/lib/conversational-checkout.server")).createConversationalCheckoutLink({
         storeId,
         productId: product.id,
@@ -1585,8 +1586,8 @@ async function productCardInput(
     image_url: firstProductImage(product),
     buy_url: checkoutUrl,
     product_id: undefined,
-    orderable: String((product as any).product_type ?? "physical") === "physical",
-    link_title: String((product as any).product_type ?? "physical") === "physical" ? "Buy Now" : "View site",
+    orderable: canCheckout,
+    link_title: canCheckout ? "Buy Now" : "View site",
   };
 
 }

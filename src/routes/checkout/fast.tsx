@@ -4,7 +4,8 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, LockKeyhole, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
-import { getFastCheckout, submitFastCheckout } from "@/lib/fast-checkout.functions";
+import { getFastCheckout } from "@/lib/fast-checkout.functions";
+import { placeOrder, startOnlineCheckout } from "@/lib/storefront.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,7 +39,8 @@ function CheckoutUnavailable() {
 function FastCheckoutPage() {
   const { token } = Route.useSearch();
   const { data } = useSuspenseQuery(checkoutQuery(token));
-  const submit = useServerFn(submitFastCheckout);
+  const place = useServerFn(placeOrder);
+  const startPayment = useServerFn(startOnlineCheckout);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -60,6 +62,8 @@ function FastCheckoutPage() {
   const selectedZone = data.available ? data.zones.find((zone) => zone.id === zoneId) : undefined;
   const total = useMemo(() => data.available ? data.product.price * data.quantity + Number(selectedZone?.charge ?? 0) : 0, [data, selectedZone]);
   if (!data.available) return <CheckoutUnavailable />;
+  const checkoutStore = data.store;
+  const checkoutProduct = data.product;
   if (complete) return <main className="flex min-h-screen items-center justify-center bg-muted/30 px-5"><div className="max-w-sm text-center"><CheckCircle2 className="mx-auto h-12 w-12 text-primary"/><h1 className="mt-4 text-2xl font-semibold">অর্ডার গ্রহণ করা হয়েছে</h1><p className="mt-2 text-muted-foreground">অর্ডার নম্বর: <strong className="text-foreground">{complete.slice(0, 8).toUpperCase()}</strong></p><p className="mt-4 text-sm text-muted-foreground">Confirmation message আপনার chat-এ পাঠানো হয়েছে। এই window বন্ধ করতে পারেন।</p></div></main>;
 
   const selectedMethod = data.methods.find((item) => item.id === method);
@@ -67,9 +71,14 @@ function FastCheckoutPage() {
     event.preventDefault();
     setBusy(true);
     try {
-      const result = await submit({ data: { token, customerName: name, phone, email: email.trim() || undefined, address, area: area.trim() || undefined, deliveryZoneId: zoneId || undefined, paymentMethod: method, txnId: selectedMethod?.manual ? txnId : undefined } });
+      const result = await place({ data: { checkoutToken: token, storeId: checkoutStore.id, customerName: name, phone, email: email.trim() || undefined, address, area: area.trim() || undefined, deliveryZoneId: zoneId || undefined, paymentMethod: method, txnId: selectedMethod?.manual ? txnId : undefined, items: [{ productId: checkoutProduct.id, qty: data.quantity }] } });
       if (result.warning) toast.warning(result.warning);
-      if (result.redirectUrl) { window.location.assign(result.redirectUrl); return; }
+      if (selectedMethod?.online) {
+        const payment = await startPayment({ data: { orderId: result.orderId, gatewayKey: method } });
+        if (!payment.redirect_url) throw new Error("পেমেন্ট শুরু করা যায়নি। অন্য পেমেন্ট মাধ্যম ব্যবহার করুন।");
+        window.location.assign(payment.redirect_url);
+        return;
+      }
       setComplete(result.orderId);
     } catch (error) { toast.error((error as Error).message); }
     finally { setBusy(false); }
