@@ -1578,15 +1578,14 @@ async function productCardInput(
 ): Promise<ProductCardInput> {
   const priceLine = `৳${Number(product.price).toFixed(0)}`;
   const stockLine = product.stock > 0 ? "In stock" : "Out of stock";
-  const { createMessengerBuyLink } = await import("@/lib/messenger-buy-link.server");
   return {
     title: product.name,
     subtitle: `${priceLine} · ${stockLine}`,
     image_url: firstProductImage(product),
     buy_url: productPageUrl(storeSlug, product),
     product_id: product.id,
-    order_url: createMessengerBuyLink({ storeId, psid, productId: product.id }),
   };
+
 }
 
 async function logProductRecommendations(sb: ReturnType<typeof admin>, storeId: string, conversationId: string, products: ProductRow[], context: string) {

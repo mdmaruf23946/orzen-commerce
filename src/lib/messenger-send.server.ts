@@ -86,20 +86,11 @@ function buildElement(p: ProductCardInput) {
       webview_height_ratio: "tall",
     });
   }
-  if (p.order_url && orderable) {
-    buttons.push({
-      type: "web_url",
-      url: p.order_url,
-      title: "Buy Now",
-      webview_height_ratio: "compact",
-    });
-  } else if (p.product_id && orderable) {
-    buttons.push({
-      type: "postback",
-      title: "Buy Now",
-      payload: `BUY_${p.product_id}`,
-    });
-  }
+  // No "Buy Now" button inside the card: Messenger card buttons can only open a
+  // web page or fire a postback, and postbacks are not delivered for this Page.
+  // Ordering happens through the quick reply sent right below the card, which
+  // posts the customer's own "Buy Now" message into the chat.
+
   return {
     title: p.title.slice(0, 80),
     subtitle: p.subtitle?.slice(0, 80),
