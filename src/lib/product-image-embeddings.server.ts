@@ -103,7 +103,7 @@ export async function findFastImageMatch(
  */
 export async function syncProductImageEmbeddings(
   sb: Sb,
-  opts: { storeId?: string; limit?: number } = {},
+  opts: { storeId?: string; limit?: number; retryFailed?: Set<string> } = {},
 ) {
   const limit = Math.min(Math.max(opts.limit ?? 10, 1), 40);
   let done = 0;
@@ -128,14 +128,26 @@ export async function syncProductImageEmbeddings(
     for (const product of page) {
       if (done + failed >= limit) break;
       const image = primaryImage(product);
-      if (!image || known.get(product.id) === image) continue;
+      if (!image || (known.get(product.id) === image && !opts.retryFailed?.has(product.id))) continue;
       try {
-        const url = absoluteImageUrl(image)!;
-        const res = await fetch(url, { headers: { Accept: "image/*" } });
-        if (!res.ok) throw new Error(`Image HTTP ${res.status}`);
-        const mime = (res.headers.get("content-type") ?? "image/jpeg").split(";")[0]!.trim();
+        let bytes: Uint8Array;
+        let mime: string;
+        const storagePath = /^https?:\/\//i.test(image) ? null : image.replace(/^\/?(api\/img\/)?/, "");
+        if (storagePath && (sb as any).storage) {
+          // Our own image proxy cannot be fetched from inside the Worker (522),
+          // so store-hosted photos are read straight from storage.
+          const { data: blob, error: dlError } = await (sb as any).storage.from("store-assets").download(storagePath);
+          if (dlError || !blob) throw new Error(`Storage download failed: ${dlError?.message ?? "empty"}`);
+          bytes = new Uint8Array(await blob.arrayBuffer());
+          const ext = storagePath.split(".").pop()?.toLowerCase() ?? "jpg";
+          mime = blob.type?.startsWith("image/") ? blob.type : ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
+        } else {
+          const res = await fetch(absoluteImageUrl(image)!, { headers: { Accept: "image/*" } });
+          if (!res.ok) throw new Error(`Image HTTP ${res.status}`);
+          mime = (res.headers.get("content-type") ?? "image/jpeg").split(";")[0]!.trim();
+          bytes = new Uint8Array(await res.arrayBuffer());
+        }
         if (!mime.startsWith("image/")) throw new Error(`Not an image (${mime})`);
-        const bytes = new Uint8Array(await res.arrayBuffer());
         if (!bytes.byteLength || bytes.byteLength > 8_000_000) throw new Error("Image size unsupported");
         const vector = await embedImageBytes(bytes, mime);
         await sb.from("product_image_embeddings").upsert({

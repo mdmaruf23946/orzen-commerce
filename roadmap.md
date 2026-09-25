@@ -92,3 +92,5 @@ RULE: never publish orzen.top from the Lovable Publish button. Always redeploy t
 45. [x] **Winner Admin Payment Brand Assets mobile fit** — constrained the owner content, branding tabs, gateway grid, cards, previews, logos and form fields to the phone width while preserving the desktop two-column layout.
 46. [x] **Installed App Icon correction** — restored the separate 192×192 and 512×512 App Icon uploads as the manifest icons, removed the misleading Splash Logo control, and preserved existing uploaded data.
 47. [x] **Messenger terminal image failure detection** — processor now recognises wrapped 503 "Processor returned 503: IMAGE_TERMINAL_*" bodies (was startsWith, never matched), so unreadable photos get the immediate apology instead of ~8 minutes of pointless retries; retryable image errors still retry (deploy 5687d4da, live orzen.top boot 2026-09-25T01:33:41Z).
+
+- [x] 49. Fast Messenger photo replies: store-scoped product photo fingerprints (auto-updated every 5 min); unclear photos fall back to full AI check.
