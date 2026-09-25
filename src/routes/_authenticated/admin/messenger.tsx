@@ -66,11 +66,13 @@ function AdminMessenger() {
   const [fbSync, setFbSync] = useState<any>(null);
   const [pageId, setPageId] = useState("");
   const [token, setToken] = useState("");
+  const [fbToken, setFbToken] = useState("");
   const [appId, setAppId] = useState("");
   const [appSecret, setAppSecret] = useState("");
   const [privacyUrl, setPrivacyUrl] = useState("");
   const [termsUrl, setTermsUrl] = useState("");
   const [showToken, setShowToken] = useState(false);
+  const [showFbToken, setShowFbToken] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
   const [showVerify, setShowVerify] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -147,6 +149,7 @@ function AdminMessenger() {
         data: {
           page_id: pageId.trim(),
           page_access_token: token.trim(),
+          facebook_page_access_token: fbToken.trim() || null,
           app_id: appId.trim() || null,
           app_secret: appSecret.trim() || null,
           privacy_policy_url: privacyUrl.trim(),
@@ -155,6 +158,7 @@ function AdminMessenger() {
       });
       setFbSync(res?.facebook ?? null);
       setToken("");
+      setFbToken("");
       setAppSecret("");
       qc.invalidateQueries({ queryKey: ["admin", "messenger"] });
       toast.success("Connected");
