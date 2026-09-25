@@ -1093,7 +1093,7 @@ export function buildTools(ctx: AgentContext) {
         if (input.sort === "price_asc") q = q.order("price", { ascending: true });
         else if (input.sort === "price_desc") q = q.order("price", { ascending: false });
         else if (input.sort === "bestseller") q = q.order("total_sold", { ascending: false });
-        else if (input.sort === "newest") q = q.order("created_at", { ascending: false });
+        else if (input.sort === "newest") q = q.order("source_created_at", { ascending: false });
         else
           q = q
             .order("is_featured", { ascending: false })
@@ -1294,10 +1294,10 @@ export function buildTools(ctx: AgentContext) {
       }),
       execute: async ({ productId, kind, limit }) => {
         const { data: p } = await sb
-          .from("products")
-          .select("id,category_id,related_product_ids")
+          .from("ai_product_catalog")
+          .select("product_id,category_id,related_product_ids")
           .eq("store_id", storeId)
-          .eq("id", productId)
+          .eq("product_id", productId)
           .maybeSingle();
         if (!p) return [];
         if (
@@ -1306,26 +1306,26 @@ export function buildTools(ctx: AgentContext) {
           p.related_product_ids.length
         ) {
           const { data } = await sb
-            .from("products")
-            .select(productSelect)
+            .from("ai_product_catalog")
+            .select(catalogProductSelect)
             .eq("store_id", storeId)
-            .in("id", p.related_product_ids as any)
+            .in("product_id", p.related_product_ids as any)
             .eq("status", "active")
             .gt("stock", 0)
             .limit(limit);
-          return data ?? [];
+          return (data ?? []).map((row: any) => normalizeCatalogProduct(row));
         }
         if (!p.category_id) return [];
         const { data } = await sb
-          .from("products")
-          .select(productSelect)
+          .from("ai_product_catalog")
+          .select(catalogProductSelect)
           .eq("store_id", storeId)
           .eq("category_id", p.category_id)
-          .neq("id", productId)
+          .neq("product_id", productId)
           .eq("status", "active")
           .gt("stock", 0)
           .limit(limit);
-        return data ?? [];
+        return (data ?? []).map((row: any) => normalizeCatalogProduct(row));
       },
     }),
 
@@ -1337,11 +1337,11 @@ export function buildTools(ctx: AgentContext) {
       }),
       execute: async ({ productIds }) => {
         const { data } = await sb
-          .from("products")
-          .select("id,name,price,old_price,stock,features,specifications,rating,total_sold")
+          .from("ai_product_catalog")
+          .select("product_id,name,price,old_price,stock,features,specifications,rating,total_sold")
           .eq("store_id", storeId)
-          .in("id", productIds);
-        const rows = data ?? [];
+          .in("product_id", productIds);
+        const rows = (data ?? []).map((row: any) => normalizeCatalogProduct(row));
         // Score: rating * 20 + in-stock bonus + normalized price (lower better)
         const maxPrice = Math.max(...rows.map((r) => Number(r.price) || 0), 1);
         const scored = rows.map((r) => {
@@ -1373,42 +1373,43 @@ export function buildTools(ctx: AgentContext) {
           };
         }
         const { data: p } = await sb
-          .from("products")
+          .from("ai_product_catalog")
           .select(
-            "id,name,slug,short_description,price,old_price,stock,product_type,meta,primary_image_url,gallery",
+            "product_id,name,slug,short_description,price,old_price,stock,product_type,meta,primary_image_url,gallery",
           )
           .eq("store_id", storeId)
-          .eq("id", productId)
+          .eq("product_id", productId)
           .maybeSingle();
         if (!p) return { sent: false, error: "not_found" };
+        const product = normalizeCatalogProduct(p as any);
 
-        const kind = productKind(p);
+        const kind = productKind(product);
         const orderable = kind === "physical";
-        const priceLine = p.old_price ? `৳${p.price} (was ৳${p.old_price})` : `৳${p.price}`;
+        const priceLine = product.old_price ? `৳${product.price} (was ৳${product.old_price})` : `৳${product.price}`;
         const statusLine = orderable
-          ? p.stock > 0
+          ? product.stock > 0
             ? "In stock"
             : "Out of stock"
           : "Buy on website";
-        const subtitle = `${priceLine} · ${statusLine}${p.short_description ? " — " + p.short_description : ""}`;
+        const subtitle = `${priceLine} · ${statusLine}${product.short_description ? " — " + product.short_description : ""}`;
         try {
           await fbSendProductCard(ctx.pageToken!, ctx.psid!, {
-            title: p.name,
+            title: product.name,
             subtitle,
-            image_url: firstImage(ctx, p),
-            buy_url: productUrl(ctx, p.slug, p.id),
-            product_id: p.id,
+            image_url: firstImage(ctx, product),
+            buy_url: productUrl(ctx, product.slug, product.id),
+            product_id: product.id,
             orderable,
           });
           // Card buttons rely on postback delivery, which some Page/app setups
           // never deliver. Quick replies arrive as ordinary message events, so
           // the customer always has a working "Buy now" tap.
-          if (orderable && p.stock > 0) {
+          if (orderable && product.stock > 0) {
             await fbSendQuickReplies(
               ctx.pageToken!,
               ctx.psid!,
               "অর্ডার করতে নিচের বাটনে চাপুন 👇",
-              [{ title: `কিনব: ${p.name}`, payload: `BUY_${p.id}` }],
+              [{ title: `কিনব: ${product.name}`, payload: `BUY_${product.id}` }],
             ).catch(() => undefined);
           }
           if (ctx.conversationId) {
@@ -1417,19 +1418,19 @@ export function buildTools(ctx: AgentContext) {
               role: "assistant",
               direction: "out",
               message_type: "product_card",
-              content: `[card] ${p.name}`,
-              attachments: [{ type: "product_card", product_id: p.id }],
+              content: `[card] ${product.name}`,
+              attachments: [{ type: "product_card", product_id: product.id }],
             } as any);
           }
           return {
             sent: true,
-            canonical_caption: canonicalCaption(p as any),
-            product_id: p.id,
-            name: p.name,
+            canonical_caption: canonicalCaption(product as any),
+            product_id: product.id,
+            name: product.name,
             product_type: kind,
             purchase_channel: orderable ? "messenger" : "website",
-            product_url: productUrl(ctx, p.slug, p.id),
-            ...(kind === "subscription" ? { subscription: subscriptionBilling(p) } : {}),
+            product_url: productUrl(ctx, product.slug, product.id),
+            ...(kind === "subscription" ? { subscription: subscriptionBilling(product) } : {}),
           };
         } catch (e) {
           return { sent: false, error: (e as Error).message };
@@ -1445,13 +1446,14 @@ export function buildTools(ctx: AgentContext) {
       }),
       execute: async ({ productIds }) => {
         const { data } = await sb
-          .from("products")
+          .from("ai_product_catalog")
           .select(
-            "id,name,slug,short_description,price,old_price,stock,product_type,meta,primary_image_url,gallery",
+            "product_id,name,slug,short_description,price,old_price,stock,product_type,meta,primary_image_url,gallery",
           )
           .eq("store_id", storeId)
-          .in("id", productIds);
-        const items = (data ?? []).map((p) => {
+          .in("product_id", productIds);
+        const items = (data ?? []).map((row: any) => {
+          const p = normalizeCatalogProduct(row);
           const kind = productKind(p);
           const orderable = kind === "physical";
           return {
@@ -1522,13 +1524,14 @@ export function buildTools(ctx: AgentContext) {
       }),
       execute: async ({ productId, text }) => {
         const { data: p } = await sb
-          .from("products")
-          .select("id,name,slug,product_type")
+          .from("ai_product_catalog")
+          .select("product_id,name,slug,product_type")
           .eq("store_id", storeId)
-          .eq("id", productId)
+          .eq("product_id", productId)
           .maybeSingle();
         if (!p) return { sent: false, error: "not_found" };
-        const url = productUrl(ctx, p.slug, p.id);
+        const product = normalizeCatalogProduct(p as any);
+        const url = productUrl(ctx, product.slug, product.id);
         try {
           await fbSendViewSiteButton(ctx.pageToken!, ctx.psid!, text, url);
           return { sent: true, product_url: url };
@@ -1670,9 +1673,12 @@ export function buildTools(ctx: AgentContext) {
       const [blocked, cats, res] = await Promise.all([
         getBlacklistedIds(),
         categoryMap(),
-        sb.from("products").select(productSelect).eq("store_id", storeId).in("id", ids),
+        sb.from("ai_product_catalog").select(catalogProductSelect).eq("store_id", storeId).in("product_id", ids),
       ]);
-      const byId = new Map((res.data ?? []).map((p: any) => [p.id, p]));
+      const byId = new Map((res.data ?? []).map((row: any) => {
+        const p = normalizeCatalogProduct(row);
+        return [p.id, p];
+      }));
       return ids
         .map((id) => byId.get(id))
         .filter((p: any) => p && !blocked.has(p.id))
@@ -1744,19 +1750,20 @@ export function buildTools(ctx: AgentContext) {
         // Hard rule: only physical products can be ordered inside Messenger.
         if (patch.product_id) {
           const { data: p } = await sb
-            .from("products")
-            .select("id,name,slug,product_type")
+            .from("ai_product_catalog")
+            .select("product_id,name,slug,product_type")
             .eq("store_id", storeId)
-            .eq("id", patch.product_id)
+            .eq("product_id", patch.product_id)
             .maybeSingle();
           if (!p) return { saved: {}, error: "product_not_found" };
-          if (!isMessengerOrderable(p)) {
+          const product = normalizeCatalogProduct(p as any);
+          if (!isMessengerOrderable(product)) {
             return {
               saved: {},
               error: "not_orderable_in_messenger",
-              product_type: productKind(p),
-              product_name: p.name,
-              product_url: productUrl(ctx, p.slug, p.id),
+              product_type: productKind(product),
+              product_name: product.name,
+              product_url: productUrl(ctx, product.slug, product.id),
               instruction:
                 "This product is purchased on the website only. Do not collect order or payment details. Politely tell the customer and send the product_url.",
             };
