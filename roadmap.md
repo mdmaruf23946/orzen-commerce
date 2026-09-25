@@ -39,7 +39,7 @@ RULE: never publish orzen.top from the Lovable Publish button. Always redeploy t
 
 ## New task (2026-09-16)
 
-51. [ ] **Messenger card Buy Now reliability** — replace the card's undelivered Facebook postback with a signed first-party order action, then build, deploy, and verify live.
+51. [x] **Messenger card Buy Now reliability** — replaced the card's undelivered Facebook postback with a signed, customer/product-bound first-party order action. Build passed; production version `ecc412f5` deployed at 100%; live home, protected webhook, invalid-link rejection, and signed-link round-trip checks passed. Awaiting one real customer card tap to confirm Meta's in-app webview behavior end-to-end. The unrelated parity gate still reports six pre-existing merchant accounts without stores.
 
 8. [x] **Trial expiry enforcement** (done 2026-09-16: expire_due_subscriptions + hourly cron on both DBs; PlanLockGate blocks panel; deployed worker version 4ea48ea1) — 3-day trial must actually end: after trial_ends_at the store loses all access (no auto-drop to Free). Merchant sees a blocking screen with "Activate Free plan" button or upgrade to a paid plan. Applies to every account, new and existing. No plan active = no panel access.
 
