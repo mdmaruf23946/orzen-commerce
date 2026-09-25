@@ -1501,6 +1501,118 @@ export type Database = {
           },
         ]
       }
+      ai_product_catalog: {
+        Row: {
+          brand: string | null
+          category_id: string | null
+          created_at: string
+          description: string | null
+          features: Json
+          gallery: Json
+          is_featured: boolean
+          name: string
+          old_price: number | null
+          price: number
+          primary_image_url: string | null
+          product_code: string | null
+          product_id: string
+          product_type: string
+          rating: number | null
+          search_text: string
+          short_description: string | null
+          sku: string | null
+          slug: string | null
+          source_updated_at: string
+          specifications: Json
+          status: Database["public"]["Enums"]["product_status"]
+          stock: number
+          store_id: string
+          total_sold: number
+          updated_at: string
+          variants: Json
+        }
+        Insert: {
+          brand?: string | null
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          features?: Json
+          gallery?: Json
+          is_featured?: boolean
+          name: string
+          old_price?: number | null
+          price?: number
+          primary_image_url?: string | null
+          product_code?: string | null
+          product_id: string
+          product_type?: string
+          rating?: number | null
+          search_text?: string
+          short_description?: string | null
+          sku?: string | null
+          slug?: string | null
+          source_updated_at: string
+          specifications?: Json
+          status: Database["public"]["Enums"]["product_status"]
+          stock?: number
+          store_id: string
+          total_sold?: number
+          updated_at?: string
+          variants?: Json
+        }
+        Update: {
+          brand?: string | null
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          features?: Json
+          gallery?: Json
+          is_featured?: boolean
+          name?: string
+          old_price?: number | null
+          price?: number
+          primary_image_url?: string | null
+          product_code?: string | null
+          product_id?: string
+          product_type?: string
+          rating?: number | null
+          search_text?: string
+          short_description?: string | null
+          sku?: string | null
+          slug?: string | null
+          source_updated_at?: string
+          specifications?: Json
+          status?: Database["public"]["Enums"]["product_status"]
+          stock?: number
+          store_id?: string
+          total_sold?: number
+          updated_at?: string
+          variants?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_product_catalog_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_product_catalog_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "storefront_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_product_catalog_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_product_recommendations: {
         Row: {
           context: string | null
