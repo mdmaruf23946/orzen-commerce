@@ -70,6 +70,39 @@ export async function embedImageBytes(bytes: Uint8Array, mime: string): Promise<
   throw new Error("Embedding failed");
 }
 
+export type RankedImageMatch = { productId: string; similarity: number };
+
+/**
+ * Returns the nearest same-store catalogue photos from the pre-built index.
+ * The caller may use the confidence gate below for an instant answer, or pass
+ * these few candidates to visual verification instead of scanning the store.
+ */
+export async function rankProductImageMatches(
+  sb: Sb,
+  storeId: string,
+  bytes: Uint8Array,
+  mime: string,
+  limit = 8,
+): Promise<RankedImageMatch[]> {
+  const { count } = await sb
+    .from("product_image_embeddings")
+    .select("product_id", { count: "exact", head: true })
+    .eq("store_id", storeId)
+    .not("embedding", "is", null);
+  if (!count) return [];
+  const vector = await embedImageBytes(bytes, mime);
+  const { data, error } = await sb.rpc("match_product_image_embeddings", {
+    _store_id: storeId,
+    _embedding: `[${vector.join(",")}]`,
+    _limit: Math.min(Math.max(limit, 1), 20),
+  });
+  if (error || !Array.isArray(data)) return [];
+  return data.map((row: any) => ({
+    productId: String(row.product_id),
+    similarity: Number(row.similarity) || 0,
+  }));
+}
+
 /** Returns the best same-store product when the photo is an unambiguous match. */
 export async function findFastImageMatch(
   sb: Sb,
@@ -77,24 +110,13 @@ export async function findFastImageMatch(
   bytes: Uint8Array,
   mime: string,
 ): Promise<{ productId: string; similarity: number; margin: number } | null> {
-  const { count } = await sb
-    .from("product_image_embeddings")
-    .select("product_id", { count: "exact", head: true })
-    .eq("store_id", storeId)
-    .not("embedding", "is", null);
-  if (!count) return null;
-  const vector = await embedImageBytes(bytes, mime);
-  const { data, error } = await sb.rpc("match_product_image_embeddings", {
-    _store_id: storeId,
-    _embedding: `[${vector.join(",")}]`,
-    _limit: 3,
-  });
-  if (error || !Array.isArray(data) || !data.length) return null;
-  const top = data[0] as { product_id: string; similarity: number };
-  const second = (data[1] as { similarity: number } | undefined)?.similarity ?? 0;
+  const ranked = await rankProductImageMatches(sb, storeId, bytes, mime, 3);
+  const top = ranked[0];
+  if (!top) return null;
+  const second = ranked[1]?.similarity ?? 0;
   const margin = top.similarity - second;
   if (top.similarity < FAST_MATCH_MIN_SIMILARITY || margin < FAST_MATCH_MIN_MARGIN) return null;
-  return { productId: top.product_id, similarity: top.similarity, margin };
+  return { productId: top.productId, similarity: top.similarity, margin };
 }
 
 /**
