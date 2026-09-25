@@ -1381,6 +1381,78 @@ async function markQueuedReply(
     .eq("id", queuedJobId);
 }
 
+async function fastImageLookup(
+  sb: ReturnType<typeof admin>,
+  storeId: string,
+  imageUrl: string,
+  pageToken: string,
+  messageId: string,
+): Promise<{ analysis: ImageAnalysis; match: VisualMatch } | null> {
+  try {
+    const { findFastImageMatch } = await import("@/lib/product-image-embeddings.server");
+    const { bytes, type } = await downloadMessengerImage(imageUrl, pageToken, messageId);
+    const hit = await findFastImageMatch(sb as any, storeId, bytes, type);
+    if (!hit) return null;
+    const [{ data: product }, { data: blocked }] = await Promise.all([
+      sb
+        .from("products")
+        .select("id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,primary_image_url,gallery,features,specifications,variants,total_sold,rating,is_featured")
+        .eq("id", hit.productId)
+        .eq("store_id", storeId)
+        .eq("status", "active")
+        .gt("stock", 0)
+        .maybeSingle(),
+      sb.from("ai_product_blacklist").select("product_id").eq("store_id", storeId).eq("product_id", hit.productId).maybeSingle(),
+    ]);
+    if (!product || blocked) return null;
+    const row = product as unknown as ProductRow;
+    const confidence = Math.min(0.99, Math.round(hit.similarity * 100) / 100);
+    const analysis: ImageAnalysis = {
+      description: row.name,
+      keywords: [row.name],
+      is_product: true,
+      product_type: row.name,
+      product_subtype: null,
+      category: "",
+      primary_color: null,
+      secondary_colors: [],
+      material: null,
+      style: null,
+      shape: null,
+      pattern: null,
+      visible_text: [],
+      brand: row.brand ?? null,
+      model_number: null,
+      functions: [],
+      connectors: [],
+      controls: [],
+      package_specs: [],
+      distinctive_features: [],
+      field_confidence: {},
+      visibility_warnings: [],
+      object_boundary_confidence: confidence,
+      text_legibility: 0,
+      recognition_status: "clear",
+      inspection_passes: 1,
+      confidence,
+      image_data_url: "",
+    };
+    return {
+      analysis,
+      match: {
+        product: row,
+        confidence,
+        verdict: "exact",
+        reason: `Photo fingerprint match (similarity ${hit.similarity.toFixed(3)}, margin ${hit.margin.toFixed(3)})`,
+        evidence: ["fast_image_fingerprint"],
+      },
+    };
+  } catch {
+    // Any fast-path problem simply falls back to the full inspection.
+    return null;
+  }
+}
+
 async function sendVisualProductResult(opts: {
   sb: ReturnType<typeof admin>;
   token: string;
@@ -2189,10 +2261,16 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                   });
                   continue;
                 }
-                const seen = await describeImageAttachment(imageUrl, token, String(msg.mid ?? ""));
+                // Fast path: an unambiguous photo-fingerprint match against this
+                // store's own products answers in ~1s; anything uncertain falls
+                // through to the full AI inspection below.
+                const fast = await fastImageLookup(sb, integ.store_id, imageUrl, token, String(msg.mid ?? ""));
+                const seen = fast?.analysis ?? await describeImageAttachment(imageUrl, token, String(msg.mid ?? ""));
                 {
                   imageAnalysis = seen;
-                  imageMatch = seen.is_product ? await visuallyMatchProduct(sb, integ.store_id, seen) : null;
+                  imageMatch = fast
+                    ? fast.match
+                    : seen.is_product ? await visuallyMatchProduct(sb, integ.store_id, seen) : null;
                   const terms = seen.keywords.length ? ` Search terms: ${seen.keywords.join(", ")}.` : "";
                   effectiveText = seen.is_product
                     ? `[The customer sent a photo of a product. The photo shows: ${seen.description}.${terms}] ` +
@@ -2345,6 +2423,14 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                   .from("messenger_integrations")
                   .update({ last_error: null } as any)
                   .eq("id", (integ as any).id);
+                // After replying, fingerprint a few new/changed products of this
+                // store so later photos of them also take the fast path.
+                try {
+                  const { syncProductImageEmbeddings } = await import("@/lib/product-image-embeddings.server");
+                  await syncProductImageEmbeddings(sb as any, { storeId: integ.store_id, limit: 3 });
+                } catch {
+                  /* best effort; the scheduled sync covers it */
+                }
                 continue;
               }
 
