@@ -490,7 +490,24 @@ export const getMessengerIntegration = createServerFn({ method: "GET" })
       if (updated) row = updated as any;
     }
 
+    // Posts/comments agent token state (may be a dedicated token).
+    let fbTokenState = { has_facebook_token: false, facebook_manual_token: false };
+    try {
+      const { data: fbRow } = await context.supabase
+        .from("facebook_page_integrations")
+        .select("page_access_token_encrypted,manual_token")
+        .eq("store_id", storeId)
+        .maybeSingle();
+      if (fbRow) {
+        fbTokenState = {
+          has_facebook_token: !!fbRow.page_access_token_encrypted,
+          facebook_manual_token: !!fbRow.manual_token,
+        };
+      }
+    } catch {}
+
     return {
+      ...fbTokenState,
       connected: row.status === "connected",
       webhook_url: webhookUrl,
       page_id: row.page_id,
