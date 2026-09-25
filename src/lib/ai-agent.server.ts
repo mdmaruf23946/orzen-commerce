@@ -1395,13 +1395,24 @@ export function buildTools(ctx: AgentContext) {
           : "Buy on website";
         const subtitle = `${priceLine} · ${statusLine}${product.short_description ? " — " + product.short_description : ""}`;
         try {
+          const checkoutUrl = orderable && product.stock > 0
+            ? await (await import("./conversational-checkout.server")).createConversationalCheckoutLink({
+                storeId,
+                productId: product.id,
+                conversationId: ctx.conversationId,
+                channel: "messenger",
+                externalCustomerId: messengerPsid,
+                origin: publicOrigin(ctx),
+              })
+            : productUrl(ctx, product.slug, product.id);
           await fbSendProductCard(messengerPageToken, messengerPsid, {
             title: product.name,
             subtitle,
             image_url: firstImage(ctx, product),
-            buy_url: productUrl(ctx, product.slug, product.id),
-            product_id: product.id,
+            buy_url: checkoutUrl,
+            product_id: orderable ? undefined : product.id,
             orderable,
+            link_title: orderable ? "Buy Now" : "View site",
           });
 
           // Ordering runs through the card's own "Buy Now" postback button, so
@@ -1446,20 +1457,31 @@ export function buildTools(ctx: AgentContext) {
           )
           .eq("store_id", storeId)
           .in("product_id", productIds);
-        const items = (data ?? []).map((row: any) => {
+        const items = await Promise.all((data ?? []).map(async (row: any) => {
           const p = normalizeCatalogProduct(row);
           const kind = productKind(p);
           const orderable = kind === "physical";
+          const buyUrl = orderable && p.stock > 0
+            ? await (await import("./conversational-checkout.server")).createConversationalCheckoutLink({
+                storeId,
+                productId: p.id,
+                conversationId: ctx.conversationId,
+                channel: "messenger",
+                externalCustomerId: ctx.psid!,
+                origin: publicOrigin(ctx),
+              })
+            : productUrl(ctx, p.slug, p.id);
           return {
             title: p.name,
             subtitle: `${p.old_price ? `৳${p.price} (was ৳${p.old_price})` : `৳${p.price}`} · ${orderable ? (p.stock > 0 ? "In stock" : "Out of stock") : "Buy on website"}`,
             image_url: firstImage(ctx, p),
-            buy_url: productUrl(ctx, p.slug, p.id),
-            product_id: p.id,
+            buy_url: buyUrl,
+            product_id: orderable ? undefined : p.id,
             orderable,
+            link_title: orderable ? "Buy Now" : "View site",
             product_type: kind,
           };
-        });
+        }));
 
         if (!items.length) return { sent: false, error: "no_products" };
         try {
@@ -1572,9 +1594,15 @@ export function buildTools(ctx: AgentContext) {
             await wa.sendWaText(ctx.waPhoneNumberId!, ctx.waToken!, ctx.waTo!, caption);
           }
           if (orderable && p.stock > 0) {
-            await wa.sendWaButtons(ctx.waPhoneNumberId!, ctx.waToken!, ctx.waTo!, "কী করতে চান?", [
-              { id: `BUY_${p.id}`, title: "Buy now" },
-            ]);
+            const checkoutUrl = await (await import("./conversational-checkout.server")).createConversationalCheckoutLink({
+              storeId,
+              productId: p.id,
+              conversationId: ctx.conversationId,
+              channel: "whatsapp",
+              externalCustomerId: ctx.waTo!,
+              origin: publicOrigin(ctx),
+            });
+            await wa.sendWaCtaUrl(ctx.waPhoneNumberId!, ctx.waToken!, ctx.waTo!, "নিরাপদে অর্ডার সম্পন্ন করুন", checkoutUrl, "Buy now");
           } else {
             await wa.sendWaCtaUrl(
               ctx.waPhoneNumberId!,

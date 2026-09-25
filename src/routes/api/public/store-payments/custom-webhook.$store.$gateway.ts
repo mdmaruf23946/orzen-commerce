@@ -190,6 +190,10 @@ export const Route = createFileRoute("/api/public/store-payments/custom-webhook/
                     const { handlePaymentConfirmed } = await import("@/lib/orders-confirm.server");
                     await handlePaymentConfirmed(supabaseAdmin as any, ord.id);
                   } catch { /* non-fatal */ }
+                  try {
+                    const { notifyConversationalOrder } = await import("@/lib/conversational-checkout.server");
+                    await notifyConversationalOrder(ord.id, true);
+                  } catch { /* non-fatal */ }
 
                 }
               }
