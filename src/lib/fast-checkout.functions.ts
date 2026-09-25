@@ -55,6 +55,7 @@ export const submitFastCheckout = createServerFn({ method: "POST" })
     const checkout = await import("@/lib/conversational-checkout.server");
     const session = await checkout.claimConversationalCheckout(data.token);
     if (!session) throw new Error("এই checkout link-এর মেয়াদ শেষ অথবা এটি ইতিমধ্যে ব্যবহার করা হয়েছে।");
+    let orderId: string | null = null;
     try {
       const result = await placeOrder({ data: {
         storeId: session.store_id,
@@ -68,6 +69,7 @@ export const submitFastCheckout = createServerFn({ method: "POST" })
         txnId: data.txnId,
         items: [{ productId: session.product_id, qty: session.quantity }],
       } });
+      orderId = result.orderId;
       await checkout.attachConversationalOrder(session.id, result.orderId);
       const online = data.paymentMethod.startsWith("builtin:") || data.paymentMethod.startsWith("custom:");
       if (online) {
@@ -77,7 +79,7 @@ export const submitFastCheckout = createServerFn({ method: "POST" })
       await checkout.notifyConversationalOrder(result.orderId, false);
       return { orderId: result.orderId, redirectUrl: null, warning: result.warning };
     } catch (error) {
-      await checkout.releaseConversationalCheckout(session.id);
+      if (!orderId) await checkout.releaseConversationalCheckout(session.id);
       throw error;
     }
   });
