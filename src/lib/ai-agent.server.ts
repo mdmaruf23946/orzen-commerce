@@ -1404,17 +1404,8 @@ export function buildTools(ctx: AgentContext) {
             orderable,
           });
 
-          // Card buttons rely on postback delivery, which some Page/app setups
-          // never deliver. Quick replies arrive as ordinary message events, so
-          // the customer always has a working "Buy now" tap.
-          if (orderable && product.stock > 0) {
-            await fbSendQuickReplies(
-              messengerPageToken,
-              messengerPsid,
-              "অর্ডার করতে নিচের বাটনে চাপুন 👇",
-              [{ title: "🛒 Buy Now", payload: `BUY_${product.id}` }],
-            ).catch(() => undefined);
-          }
+          // Ordering runs through the card's own "Buy Now" postback button, so
+          // no extra quick reply is attached below the card.
           if (ctx.conversationId) {
             await sb.from("ai_messages").insert({
               conversation_id: ctx.conversationId,
@@ -1473,22 +1464,8 @@ export function buildTools(ctx: AgentContext) {
         if (!items.length) return { sent: false, error: "no_products" };
         try {
           await fbSendProductCarousel(ctx.pageToken!, ctx.psid!, items);
-          // Quick replies mirror the card's Buy Now button over the "messages"
-          // webhook field, which is always delivered.
-          const buyable = items.filter((i) => i.orderable);
-          if (buyable.length) {
-            await fbSendQuickReplies(
-              ctx.pageToken!,
-              ctx.psid!,
-              "কোনটি অর্ডার করতে চান? নিচের বাটনে চাপুন 👇",
-              buyable
-                .slice(0, 10)
-                .map((i, n) => ({
-                  title: `🛒 ${n + 1}. ${i.title}`.slice(0, 20),
-                  payload: `BUY_${i.product_id}`,
-                })),
-            ).catch(() => undefined);
-          }
+          // Ordering runs through each card's own "Buy Now" postback button, so
+          // no extra quick reply row is attached below the carousel.
           if (ctx.conversationId) {
             await sb.from("ai_messages").insert({
               conversation_id: ctx.conversationId,
