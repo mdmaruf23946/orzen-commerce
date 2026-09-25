@@ -2217,6 +2217,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                     psid: senderId,
                     token,
                     payload: String(ev.postback.payload),
+                    queuedJobId,
                   });
                   await sb
                     .from("messenger_integrations")
@@ -2280,6 +2281,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                     psid: senderId,
                     token,
                     payload: qrPayload,
+                    queuedJobId,
                   });
                 }
                 continue;
