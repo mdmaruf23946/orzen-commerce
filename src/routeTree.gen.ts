@@ -28,7 +28,6 @@ import { Route as SplatRouteImport } from './routes/$'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LpSlugRouteImport } from './routes/lp.$slug'
-import { Route as CheckoutFastRouteImport } from './routes/checkout/fast'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as StoreSlugRouteRouteImport } from './routes/store/$slug/route'
@@ -332,11 +331,6 @@ const IndexRoute = IndexRouteImport.update({
 const LpSlugRoute = LpSlugRouteImport.update({
   id: '/lp/$slug',
   path: '/lp/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CheckoutFastRoute = CheckoutFastRouteImport.update({
-  id: '/checkout/fast',
-  path: '/checkout/fast',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Char91DotwellKnownChar93OauthProtectedResourceRoute =
@@ -1568,7 +1562,6 @@ export interface FileRoutesByFullPath {
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
-  '/checkout/fast': typeof CheckoutFastRoute
   '/lp/$slug': typeof LpSlugRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
   '/admin/facebook': typeof AuthenticatedAdminFacebookRouteRouteWithChildren
@@ -1796,7 +1789,6 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
-  '/checkout/fast': typeof CheckoutFastRoute
   '/lp/$slug': typeof LpSlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -2022,7 +2014,6 @@ export interface FileRoutesById {
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
-  '/checkout/fast': typeof CheckoutFastRoute
   '/lp/$slug': typeof LpSlugRoute
   '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
   '/_authenticated/admin/facebook': typeof AuthenticatedAdminFacebookRouteRouteWithChildren
@@ -2255,7 +2246,6 @@ export interface FileRouteTypes {
     | '/store/$slug'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
-    | '/checkout/fast'
     | '/lp/$slug'
     | '/admin/billing'
     | '/admin/facebook'
@@ -2483,7 +2473,6 @@ export interface FileRouteTypes {
     | '/terms'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
-    | '/checkout/fast'
     | '/lp/$slug'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -2708,7 +2697,6 @@ export interface FileRouteTypes {
     | '/store/$slug'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
-    | '/checkout/fast'
     | '/lp/$slug'
     | '/_authenticated/admin/billing'
     | '/_authenticated/admin/facebook'
@@ -2939,7 +2927,6 @@ export interface RootRouteChildren {
   StoreSlugRouteRoute: typeof StoreSlugRouteRouteWithChildren
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
-  CheckoutFastRoute: typeof CheckoutFastRoute
   LpSlugRoute: typeof LpSlugRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -3111,13 +3098,6 @@ declare module '@tanstack/react-router' {
       path: '/lp/$slug'
       fullPath: '/lp/$slug'
       preLoaderRoute: typeof LpSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/checkout/fast': {
-      id: '/checkout/fast'
-      path: '/checkout/fast'
-      fullPath: '/checkout/fast'
-      preLoaderRoute: typeof CheckoutFastRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/.well-known/oauth-protected-resource': {
@@ -5156,7 +5136,6 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
-  CheckoutFastRoute: CheckoutFastRoute,
   LpSlugRoute: LpSlugRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
