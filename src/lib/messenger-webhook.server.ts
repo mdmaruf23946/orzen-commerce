@@ -1453,6 +1453,19 @@ async function fastImageLookup(
   }
 }
 
+function friendlyItemName(a: ImageAnalysis): string {
+  const s = [a.product_subtype, a.product_type, a.category].filter(Boolean).join(" ").toLowerCase();
+  const map: Array<[RegExp, string]> = [
+    [/watch/, "ঘড়ি"], [/shoe|sneaker|boot|sandal|footwear/, "জুতা"], [/bag|backpack|purse/, "ব্যাগ"],
+    [/shirt|t-shirt|tee|top/, "শার্ট"], [/dress|saree|sari|kurti|clothing|apparel/, "পোশাক"],
+    [/phone|mobile/, "ফোন"], [/headphone|earbud|earphone/, "হেডফোন"], [/speaker/, "স্পিকার"],
+    [/lipstick/, "লিপস্টিক"], [/perfume|fragrance/, "পারফিউম"], [/serum|lotion|cream|moisturi|skincare|cosmetic|beauty/, "প্রোডাক্ট"],
+    [/mug|cup/, "মগ"], [/glass|sunglass/, "চশমা"], [/jewel|ring|necklace|earring|bracelet/, "গয়না"],
+  ];
+  for (const [re, bn] of map) if (re.test(s)) return bn;
+  return "প্রোডাক্ট";
+}
+
 async function sendVisualProductResult(opts: {
   sb: ReturnType<typeof admin>;
   token: string;
@@ -1466,16 +1479,23 @@ async function sendVisualProductResult(opts: {
   match: VisualMatch | null;
 }) {
   const { sb, token, psid, conversationId, storeId, storeSlug, sourceMid, queuedJobId, analysis, match } = opts;
-  const color = analysis.confidence >= 0.75 && analysis.primary_color ? ` (${analysis.primary_color})` : "";
   if (!match || match.verdict !== "exact") {
-    const item = analysis.product_subtype || analysis.product_type || analysis.category || "প্রোডাক্ট";
-    const identity = [analysis.brand, analysis.model_number].filter(Boolean).join(" ");
-    const detail = identity ? ` (${identity})` : color;
+    const noun = friendlyItemName(analysis);
+    const pick = (list: string[]) => list[Math.floor(Math.random() * list.length)];
     const text = analysis.recognition_status === "uncertain"
-      ? "ছবিতে প্রোডাক্টটি পরিষ্কারভাবে শনাক্ত করা যাচ্ছে না। অনুগ্রহ করে label/model লেখা দেখা যায় এমন আরেকটি পরিষ্কার ছবি দিন।"
+      ? pick([
+          "ছবিটা একটু অস্পষ্ট লাগছে, ঠিকমতো বুঝতে পারছি না 😊 আরেকটু কাছ থেকে বা আলোতে একটা ছবি দিবেন? চাইলে প্রোডাক্টের নামটাও লিখে দিতে পারেন।",
+          "দুঃখিত, ছবিটা ঠিক পরিষ্কার আসেনি। আরেকটা ছবি পাঠাবেন প্লিজ? নাম জানলে লিখে দিলেও আমি খুঁজে দিচ্ছি।",
+        ])
       : match?.verdict === "close"
-      ? `ছবিতে ${item}${detail} দেখা যাচ্ছে, তবে ক্যাটালগে একই মডেলটি নিশ্চিত করা যায়নি। ব্র্যান্ড/মডেল নম্বর লিখুন অথবা আরেকটি পরিষ্কার ছবি দিন।`
-      : `ছবিতে ${item}${detail} শনাক্ত করেছি, তবে এই exact productটি আমাদের বর্তমান ক্যাটালগে নেই। প্রোডাক্টের নাম বা মডেল লিখলে আমি আবার খুঁজে দেখব।`;
+      ? pick([
+          `${noun} দেখে আমাদের কাছে প্রায় এরকম একটা আছে মনে হচ্ছে, তবে একদম একই কিনা নিশ্চিত হতে পারছি না। নামটা একটু লিখে দিবেন, বা আরেকটা ছবি? তাহলে ঠিকঠাক মিলিয়ে দিতে পারব 😊`,
+          `এরকম ${noun} আমাদের কাছে থাকতে পারে, কিন্তু হুবহু এটাই কিনা শিওর না। প্রোডাক্টের নাম বা আরেকটা ছবি দিলে আমি ভালো করে দেখে জানাচ্ছি।`,
+        ])
+      : pick([
+          `সুন্দর ${noun} 😊 কিন্তু দুঃখিত, এই ${noun}টা এখন আমাদের কাছে নেই। অন্য কিছু খুঁজলে বলুন, আমি সাহায্য করছি।`,
+          `আহা, এই ${noun}টা এই মুহূর্তে আমাদের দোকানে নেই, দুঃখিত! আপনার পছন্দের অন্য কিছু থাকলে জানান, খুঁজে দিচ্ছি।`,
+        ]);
     const sent = await fbSend(token, psid, text);
     await markQueuedReply(sb, queuedJobId, text, sent.message_id);
     await sb.from("ai_messages").insert({
@@ -1504,7 +1524,12 @@ async function sendVisualProductResult(opts: {
     attachments: [{ type: "product_card", product_id: match.product.id, element: card, in_reply_to_mid: sourceMid }],
     mid: cardSent.message_id ?? null, delivery_status: "sent",
   } as any);
-  const text = "এই প্রোডাক্টটি নিতে চান?";
+  const askList = [
+    "জি, এটা আমাদের কাছে আছে 😊 নিতে চাইলে বলুন, অর্ডার করে দিচ্ছি।",
+    "পেয়ে গেছি! এটাই তো আমাদের এই প্রোডাক্টটা। নিবেন?",
+    "হ্যাঁ, এটা আমাদের কাছে পাওয়া যাচ্ছে। অর্ডার করতে চাইলে জানান 😊",
+  ];
+  const text = askList[Math.floor(Math.random() * askList.length)];
   const sent = await fbSend(token, psid, text);
   await markQueuedReply(sb, queuedJobId, text, sent.message_id);
   await sb.from("ai_messages").insert({
