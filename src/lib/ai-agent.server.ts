@@ -1412,7 +1412,7 @@ export function buildTools(ctx: AgentContext) {
               messengerPageToken,
               messengerPsid,
               "অর্ডার করতে নিচের বাটনে চাপুন 👇",
-              [{ title: "🛒 এখনই কিনব", payload: `BUY_${product.id}` }],
+              [{ title: "🛒 Buy Now", payload: `BUY_${product.id}` }],
             ).catch(() => undefined);
           }
           if (ctx.conversationId) {
