@@ -2106,6 +2106,90 @@ export type Database = {
         }
         Relationships: []
       }
+      conversational_checkout_sessions: {
+        Row: {
+          channel: string
+          conversation_id: string | null
+          created_at: string
+          expires_at: string
+          external_customer_id: string
+          id: string
+          order_id: string | null
+          product_id: string
+          quantity: number
+          store_id: string
+          token_hash: string
+          updated_at: string
+          used_at: string | null
+        }
+        Insert: {
+          channel: string
+          conversation_id?: string | null
+          created_at?: string
+          expires_at: string
+          external_customer_id: string
+          id?: string
+          order_id?: string | null
+          product_id: string
+          quantity?: number
+          store_id: string
+          token_hash: string
+          updated_at?: string
+          used_at?: string | null
+        }
+        Update: {
+          channel?: string
+          conversation_id?: string | null
+          created_at?: string
+          expires_at?: string
+          external_customer_id?: string
+          id?: string
+          order_id?: string | null
+          product_id?: string
+          quantity?: number
+          store_id?: string
+          token_hash?: string
+          updated_at?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversational_checkout_sessions_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversational_checkout_sessions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversational_checkout_sessions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversational_checkout_sessions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "storefront_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversational_checkout_sessions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupon_redemptions: {
         Row: {
           coupon_id: string
