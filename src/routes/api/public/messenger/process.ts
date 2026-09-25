@@ -156,7 +156,10 @@ export const Route = createFileRoute("/api/public/messenger/process")({
             } else {
               const message = cause instanceof Error ? cause.message : "Messenger processing failed";
               const attempts = Number(job.attempts ?? 1);
-              const terminalImageFailure = message.startsWith("IMAGE_TERMINAL_");
+              // The webhook wraps image failures in a 503 response body, so the
+              // processor sees "Processor returned 503: IMAGE_TERMINAL_<code>: ..."
+              // rather than the bare prefix. Search anywhere in the message.
+              const terminalImageFailure = message.includes("IMAGE_TERMINAL_");
               const exhausted = terminalImageFailure || attempts >= 5;
               const backoffSeconds = [5, 15, 45, 120, 300][Math.min(attempts - 1, 4)] ?? 300;
               await supabaseAdmin
