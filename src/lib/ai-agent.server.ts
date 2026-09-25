@@ -1524,13 +1524,14 @@ export function buildTools(ctx: AgentContext) {
       }),
       execute: async ({ productId, text }) => {
         const { data: p } = await sb
-          .from("products")
-          .select("id,name,slug,product_type")
+          .from("ai_product_catalog")
+          .select("product_id,name,slug,product_type")
           .eq("store_id", storeId)
-          .eq("id", productId)
+          .eq("product_id", productId)
           .maybeSingle();
         if (!p) return { sent: false, error: "not_found" };
-        const url = productUrl(ctx, p.slug, p.id);
+        const product = normalizeCatalogProduct(p as any);
+        const url = productUrl(ctx, product.slug, product.id);
         try {
           await fbSendViewSiteButton(ctx.pageToken!, ctx.psid!, text, url);
           return { sent: true, product_url: url };
@@ -1749,19 +1750,20 @@ export function buildTools(ctx: AgentContext) {
         // Hard rule: only physical products can be ordered inside Messenger.
         if (patch.product_id) {
           const { data: p } = await sb
-            .from("products")
-            .select("id,name,slug,product_type")
+            .from("ai_product_catalog")
+            .select("product_id,name,slug,product_type")
             .eq("store_id", storeId)
-            .eq("id", patch.product_id)
+            .eq("product_id", patch.product_id)
             .maybeSingle();
           if (!p) return { saved: {}, error: "product_not_found" };
-          if (!isMessengerOrderable(p)) {
+          const product = normalizeCatalogProduct(p as any);
+          if (!isMessengerOrderable(product)) {
             return {
               saved: {},
               error: "not_orderable_in_messenger",
-              product_type: productKind(p),
-              product_name: p.name,
-              product_url: productUrl(ctx, p.slug, p.id),
+              product_type: productKind(product),
+              product_name: product.name,
+              product_url: productUrl(ctx, product.slug, product.id),
               instruction:
                 "This product is purchased on the website only. Do not collect order or payment details. Politely tell the customer and send the product_url.",
             };
