@@ -1045,12 +1045,13 @@ async function describeImageAttachment(
       ? parsed.field_confidence as Record<string, unknown>
       : {};
     const firstTypeConfidence = Math.max(0, Math.min(1, Number(firstFieldConfidence.product_type) || 0));
+    const hasFirstBoundaryConfidence = typeof parsed.object_boundary_confidence === "number";
     const firstBoundaryConfidence = Math.max(0, Math.min(1, Number(parsed.object_boundary_confidence) || 0));
     const needsFocusedInspection = parsed.is_product !== false && (
       !String(parsed.product_type ?? "").trim() ||
       firstConfidence < 0.82 ||
       firstTypeConfidence < 0.68 ||
-      firstBoundaryConfidence < 0.62
+      (hasFirstBoundaryConfidence && firstBoundaryConfidence < 0.62)
     );
     let inspectionPasses: 1 | 2 = 1;
     if (needsFocusedInspection) {
@@ -1145,8 +1146,9 @@ async function describeImageAttachment(
       : {};
     const confidence = Math.max(0, Math.min(1, Number(parsed.confidence) || 0));
     const productType = String(parsed.product_type ?? "").trim().slice(0, 100);
+    const hasBoundaryConfidence = typeof parsed.object_boundary_confidence === "number";
     const boundaryConfidence = Math.max(0, Math.min(1, Number(parsed.object_boundary_confidence) || 0));
-    const recognitionStatus = parsed.is_product !== false && confidence >= 0.72 && Boolean(productType) && boundaryConfidence >= 0.48
+    const recognitionStatus = parsed.is_product !== false && confidence >= 0.72 && Boolean(productType) && (!hasBoundaryConfidence || boundaryConfidence >= 0.48)
       ? "clear"
       : "uncertain";
     return {
