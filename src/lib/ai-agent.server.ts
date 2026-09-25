@@ -1409,7 +1409,7 @@ export function buildTools(ctx: AgentContext) {
               ctx.pageToken!,
               ctx.psid!,
               "অর্ডার করতে নিচের বাটনে চাপুন 👇",
-              [{ title: `কিনব: ${product.name}`, payload: `BUY_${product.id}` }],
+              [{ title: "🛒 এখনই কিনব", payload: `BUY_${product.id}` }],
             ).catch(() => undefined);
           }
           if (ctx.conversationId) {
@@ -1480,7 +1480,10 @@ export function buildTools(ctx: AgentContext) {
               "কোনটি অর্ডার করতে চান? নিচের বাটনে চাপুন 👇",
               buyable
                 .slice(0, 10)
-                .map((i) => ({ title: `কিনব: ${i.title}`, payload: `BUY_${i.product_id}` })),
+                .map((i, n) => ({
+                  title: `🛒 ${n + 1}. ${i.title}`.slice(0, 20),
+                  payload: `BUY_${i.product_id}`,
+                })),
             ).catch(() => undefined);
           }
           if (ctx.conversationId) {
