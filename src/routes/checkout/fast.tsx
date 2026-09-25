@@ -4,7 +4,8 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, LockKeyhole, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
-import { getFastCheckout, submitFastCheckout } from "@/lib/fast-checkout.functions";
+import { getFastCheckout } from "@/lib/fast-checkout.functions";
+import { placeOrder, startOnlineCheckout } from "@/lib/storefront.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,7 +39,8 @@ function CheckoutUnavailable() {
 function FastCheckoutPage() {
   const { token } = Route.useSearch();
   const { data } = useSuspenseQuery(checkoutQuery(token));
-  const submit = useServerFn(submitFastCheckout);
+  const place = useServerFn(placeOrder);
+  const startPayment = useServerFn(startOnlineCheckout);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -67,9 +69,14 @@ function FastCheckoutPage() {
     event.preventDefault();
     setBusy(true);
     try {
-      const result = await submit({ data: { token, customerName: name, phone, email: email.trim() || undefined, address, area: area.trim() || undefined, deliveryZoneId: zoneId || undefined, paymentMethod: method, txnId: selectedMethod?.manual ? txnId : undefined } });
+      const result = await place({ data: { checkoutToken: token, storeId: data.store.id, customerName: name, phone, email: email.trim() || undefined, address, area: area.trim() || undefined, deliveryZoneId: zoneId || undefined, paymentMethod: method, txnId: selectedMethod?.manual ? txnId : undefined, items: [{ productId: data.product.id, qty: data.quantity }] } });
       if (result.warning) toast.warning(result.warning);
-      if (result.redirectUrl) { window.location.assign(result.redirectUrl); return; }
+      if (selectedMethod?.online) {
+        const payment = await startPayment({ data: { orderId: result.orderId, gatewayKey: method } });
+        if (!payment.redirect_url) throw new Error("পেমেন্ট শুরু করা যায়নি। অন্য পেমেন্ট মাধ্যম ব্যবহার করুন।");
+        window.location.assign(payment.redirect_url);
+        return;
+      }
       setComplete(result.orderId);
     } catch (error) { toast.error((error as Error).message); }
     finally { setBusy(false); }

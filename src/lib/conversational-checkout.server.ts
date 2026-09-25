@@ -75,6 +75,29 @@ export async function attachConversationalOrder(sessionId: string, orderId: stri
     .eq("id", sessionId);
 }
 
+export async function listConversationalGateways(storeId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const out: { key: string; label: string }[] = [];
+  const [{ data: builtins }, { data: customs }] = await Promise.all([
+    supabaseAdmin.from("store_payment_gateways").select("provider_id").eq("store_id", storeId).eq("enabled", true).eq("status", "connected"),
+    supabaseAdmin.from("custom_payment_gateways").select("id,name").eq("store_id", storeId).eq("is_active", true).eq("status", "connected"),
+  ]);
+  if (builtins?.length) {
+    const { PROVIDERS } = await import("@/lib/subscription-pay/providers/registry");
+    const ids = builtins.map((item) => item.provider_id);
+    const { data: platform } = await supabaseAdmin.from("platform_payment_gateways").select("id,label,enabled").in("id", ids);
+    const labels = new Map((platform ?? []).map((item) => [item.id, item]));
+    for (const item of builtins) {
+      const provider = labels.get(item.provider_id);
+      if (provider?.enabled !== false && provider && PROVIDERS[item.provider_id]?.meta.storefrontCheckout) {
+        out.push({ key: `builtin:${item.provider_id}`, label: provider.label });
+      }
+    }
+  }
+  for (const item of customs ?? []) out.push({ key: `custom:${item.id}`, label: item.name });
+  return out;
+}
+
 export async function notifyConversationalOrder(orderId: string, paid = false) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const [{ data: session }, { data: order }] = await Promise.all([

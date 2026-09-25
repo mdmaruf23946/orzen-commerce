@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { listStoreOnlineGateways, placeOrder, startOnlineCheckout } from "@/lib/storefront.functions";
 
 const tokenSchema = z.string().trim().min(32).max(200);
 
@@ -21,7 +20,8 @@ export const getFastCheckout = createServerFn({ method: "GET" })
     if (!store || store.status !== "active" || !product || product.status !== "active" || product.product_type !== "physical") {
       return { available: false as const, reason: "unavailable" };
     }
-    const gateways = await listStoreOnlineGateways({ data: { storeId: session.store_id } });
+    const { listConversationalGateways } = await import("@/lib/conversational-checkout.server");
+    const gateways = await listConversationalGateways(session.store_id);
     const payments = (store.payments_config ?? {}) as Record<string, any>;
     const methods = [
       ...(payments.cod?.enabled !== false ? [{ id: "cod", label: "Cash on Delivery", detail: "পণ্য হাতে পেয়ে পেমেন্ট করুন", online: false }] : []),
@@ -37,49 +37,4 @@ export const getFastCheckout = createServerFn({ method: "GET" })
       zones: ((zones as any[]) ?? []).map((zone) => ({ id: zone.id, name: zone.name, charge: Number(zone.charge), eta: zone.eta, isDefault: zone.is_default })),
       methods,
     };
-  });
-
-export const submitFastCheckout = createServerFn({ method: "POST" })
-  .inputValidator((data) => z.object({
-    token: tokenSchema,
-    customerName: z.string().trim().min(1).max(120),
-    phone: z.string().trim().min(9).max(40),
-    email: z.string().trim().email().max(160).optional(),
-    address: z.string().trim().min(3).max(500),
-    area: z.string().trim().max(120).optional(),
-    deliveryZoneId: z.string().uuid().optional(),
-    paymentMethod: z.string().trim().min(2).max(120),
-    txnId: z.string().trim().max(120).optional(),
-  }).parse(data))
-  .handler(async ({ data }) => {
-    const checkout = await import("@/lib/conversational-checkout.server");
-    const session = await checkout.claimConversationalCheckout(data.token);
-    if (!session) throw new Error("এই checkout link-এর মেয়াদ শেষ অথবা এটি ইতিমধ্যে ব্যবহার করা হয়েছে।");
-    let orderId: string | null = null;
-    try {
-      const result = await placeOrder({ data: {
-        storeId: session.store_id,
-        customerName: data.customerName,
-        phone: data.phone,
-        email: data.email,
-        address: data.address,
-        area: data.area,
-        deliveryZoneId: data.deliveryZoneId,
-        paymentMethod: data.paymentMethod,
-        txnId: data.txnId,
-        items: [{ productId: session.product_id, qty: session.quantity }],
-      } });
-      orderId = result.orderId;
-      await checkout.attachConversationalOrder(session.id, result.orderId);
-      const online = data.paymentMethod.startsWith("builtin:") || data.paymentMethod.startsWith("custom:");
-      if (online) {
-        const payment = await startOnlineCheckout({ data: { orderId: result.orderId, gatewayKey: data.paymentMethod } });
-        return { orderId: result.orderId, redirectUrl: payment.redirect_url ?? null, warning: result.warning };
-      }
-      await checkout.notifyConversationalOrder(result.orderId, false);
-      return { orderId: result.orderId, redirectUrl: null, warning: result.warning };
-    } catch (error) {
-      if (!orderId) await checkout.releaseConversationalCheckout(session.id);
-      throw error;
-    }
   });

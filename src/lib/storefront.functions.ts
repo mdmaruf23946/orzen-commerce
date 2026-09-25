@@ -860,6 +860,7 @@ export const placeOrder = createServerFn({ method: "POST" })
         customerToken: z.string().min(16).max(128).optional(),
         fingerprint: z.string().trim().max(128).optional(),
         deviceId: z.string().trim().max(128).optional(),
+        checkoutToken: z.string().trim().min(32).max(200).optional(),
         // Service-only intake payload. Never used by physical / digital /
         // subscription checkout — those paths ignore it entirely.
         service: z
@@ -897,6 +898,18 @@ export const placeOrder = createServerFn({ method: "POST" })
     // Use service-role admin client so writes bypass RLS; all pricing is
     // recomputed server-side below from trusted product/coupon rows.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let conversationalSession: Awaited<ReturnType<typeof import("@/lib/conversational-checkout.server")["readConversationalCheckout"]>> = null;
+    if (data.checkoutToken) {
+      const { readConversationalCheckout } = await import("@/lib/conversational-checkout.server");
+      conversationalSession = await readConversationalCheckout(data.checkoutToken);
+      const item = data.items[0];
+      if (!conversationalSession || conversationalSession.used_at || new Date(conversationalSession.expires_at).getTime() <= Date.now()) {
+        throw new Error("এই checkout link-এর মেয়াদ শেষ অথবা এটি ইতিমধ্যে ব্যবহার করা হয়েছে।");
+      }
+      if (conversationalSession.store_id !== data.storeId || data.items.length !== 1 || item?.productId !== conversationalSession.product_id || item.qty !== conversationalSession.quantity) {
+        throw new Error("Checkout তথ্য যাচাই করা যায়নি। নতুন Buy Now link ব্যবহার করুন।");
+      }
+    }
     const sb = supabaseAdmin;
     const { data: store } = await sb
       .from("stores")
@@ -1274,6 +1287,14 @@ export const placeOrder = createServerFn({ method: "POST" })
       };
     }
 
+    if (data.checkoutToken && conversationalSession) {
+      const { claimConversationalCheckout } = await import("@/lib/conversational-checkout.server");
+      const claimed = await claimConversationalCheckout(data.checkoutToken);
+      if (!claimed || claimed.id !== conversationalSession.id) {
+        throw new Error("এই checkout link ইতিমধ্যে ব্যবহার করা হয়েছে।");
+      }
+    }
+
     const { data: order, error: oErr } = await sb
       .from("orders")
       .insert({
@@ -1431,6 +1452,14 @@ export const placeOrder = createServerFn({ method: "POST" })
       const { enqueueOrderConfirmationCall } = await import("@/lib/ai-call-provision.server");
       await enqueueOrderConfirmationCall(sb, data.storeId, order.id);
     } catch { /* non-fatal */ }
+
+    if (conversationalSession) {
+      const { attachConversationalOrder, notifyConversationalOrder } = await import("@/lib/conversational-checkout.server");
+      await attachConversationalOrder(conversationalSession.id, order.id);
+      if (!data.paymentMethod.startsWith("builtin:") && !data.paymentMethod.startsWith("custom:")) {
+        await notifyConversationalOrder(order.id, false);
+      }
+    }
 
     return { orderId: order.id, warning: warned ? DUPLICATE_MESSAGE : null };
   });
