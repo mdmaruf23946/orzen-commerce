@@ -753,8 +753,8 @@ async function blockDuplicateMessengerToolOrder(opts: {
   });
   if (dup.action === "allow") return null;
 
-  const invoice = dup.matchedOrder?.invoice_no || dup.matchedOrder?.id || "—";
-  const status = dup.matchedOrder?.status || "pending";
+  const invoice = shortOrderNo(dup.matchedOrder?.invoice_no, dup.matchedOrder?.id);
+  const status = orderStatusBn(dup.matchedOrder?.status);
   const defaultReply = [
     "আপনার এই পণ্যের একটি অর্ডার ইতোমধ্যে রয়েছে।",
     `অর্ডার নম্বর: #${invoice}`,
