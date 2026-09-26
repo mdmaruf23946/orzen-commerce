@@ -78,7 +78,7 @@ export const startMetaAutoConnect = createServerFn({ method: "POST" })
       MESSENGER_OAUTH_SCOPES,
       WHATSAPP_OAUTH_SCOPES,
     } = await import("@/lib/meta-oauth.server");
-    const creds = metaAppCreds();
+    const creds = await metaAppCreds();
     if (!creds)
       throw new Error(
         "Auto Connect is not available yet because the platform Facebook app is not configured. Use Manual Connect, or ask the platform owner to finish the Facebook app setup.",
@@ -181,7 +181,7 @@ export const autoConnectMessengerPage = createServerFn({ method: "POST" })
     const { token } = await loadSession(storeId, "messenger", data.session_id);
 
     const { listUserPages, metaAppCreds, GRAPH } = await import("@/lib/meta-oauth.server");
-    const creds = metaAppCreds();
+    const creds = await metaAppCreds();
     const pages = await listUserPages(token);
     const page = pages.find((p) => p.id === data.page_id);
     if (!page || !page.access_token)
@@ -310,7 +310,7 @@ export const autoConnectWhatsappNumber = createServerFn({ method: "POST" })
 
     const { encryptJSON } = await import("@/lib/crypto/credentials.server");
     const { metaAppCreds } = await import("@/lib/meta-oauth.server");
-    const creds = metaAppCreds();
+    const creds = await metaAppCreds();
     const { randomBytes } = await import("node:crypto");
 
     const patch: Record<string, any> = {
