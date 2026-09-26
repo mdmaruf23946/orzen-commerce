@@ -703,7 +703,7 @@ async function finalizePendingMessengerOrder(opts: {
   const missing = orderMissingFields(slot, flowCfg);
   if (!slot.product_id) missing.unshift("প্রোডাক্ট");
   if (missing.length) {
-    await sendAndLogText(sb, token, psid, conversationId, `অর্ডার কনফার্ম করতে ${missing.join(", ")} দিন।`);
+    await sendAndLogText(sb, token, psid, conversationId, buildMissingFieldsMessage(missing));
     return true;
   }
 
@@ -736,7 +736,15 @@ async function finalizePendingMessengerOrder(opts: {
   if (blocked) return true;
 
   const subtotal = Number(product.price) * qty;
-  const delivery = Number((product as any).delivery_charge ?? 0);
+  const addressText = [slot.full_address, slot.area, slot.village, slot.union, slot.upazila, slot.district]
+    .filter(Boolean)
+    .join(", ");
+  const zones = await fetchDeliveryZones(sb, storeId);
+  const { charge: delivery, zone } = resolveDeliveryCharge(
+    addressText,
+    zones,
+    (product as any).delivery_charge,
+  );
   const total = subtotal + delivery;
   const { data: invoiceNo } = await sb.rpc("generate_invoice_no", { _store_id: storeId } as any);
   const { data: order, error: orderError } = await sb
@@ -745,15 +753,22 @@ async function finalizePendingMessengerOrder(opts: {
       store_id: storeId,
       customer_name: String(slot.customer_name).trim(),
       phone: normalizePhone(slot.phone) ?? String(slot.phone).trim(),
+      email: slot.email ? String(slot.email).trim() : null,
       address: String(slot.full_address).trim(),
-      area: [slot.village, slot.union, slot.upazila, slot.district].filter(Boolean).join(", ") || null,
-      payment_method: slot.payment_method,
+      area:
+        [slot.village, slot.union, slot.upazila, slot.district].filter(Boolean).join(", ") ||
+        zone?.name ||
+        null,
+      payment_method: "cod",
       subtotal: total,
       delivery_amount: delivery,
+      delivery_zone_id: zone?.id ?? null,
       discount_amount: 0,
       status: "pending",
       invoice_no: invoiceNo || null,
-      notes: "Placed via Messenger AI Sales Agent",
+      notes: slot.note
+        ? `Placed via Messenger AI Sales Agent — ${String(slot.note).slice(0, 300)}`
+        : "Placed via Messenger AI Sales Agent",
     } as any)
     .select("id,invoice_no")
     .single();
