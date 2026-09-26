@@ -5,7 +5,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { assertPlan } from "@/lib/plan-guard";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { generateText, Output, NoObjectGeneratedError } from "ai";
 
 const MAX_IMAGES = 8;
