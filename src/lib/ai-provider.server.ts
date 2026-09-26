@@ -546,10 +546,12 @@ export function toChatContent(parts: VisionPart[]): any[] {
  */
 export async function routedVisionText(
   parts: VisionPart[],
-  opts?: { modelOverride?: string; jsonOnly?: boolean },
+  opts?: { modelOverride?: string; jsonOnly?: boolean; maxTokens?: number },
 ): Promise<string> {
   const text = await routedChatCompletion({
     messages: [{ role: "user", content: toChatContent(parts) }],
+    temperature: 0,
+    maxTokens: opts?.maxTokens ?? 400,
     ...(opts?.modelOverride ? { modelOverride: opts.modelOverride } : {}),
     ...(opts?.jsonOnly ? { jsonOnly: true } : {}),
   });
