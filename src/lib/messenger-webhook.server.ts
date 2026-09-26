@@ -1050,7 +1050,7 @@ async function describeImageAttachment(
       raw = await routedVisionText([
         { type: "input_text", text: prompt },
         { type: "input_image", image_url: dataUrl },
-      ]);
+      ], { jsonOnly: true });
     } catch (cause) {
       imageFailure("ANALYSIS_HTTP", (cause as Error).message, true);
     }
@@ -1115,7 +1115,7 @@ async function describeImageAttachment(
         focusedRaw = await routedVisionText([
           { type: "input_text", text: focusedPrompt },
           { type: "input_image", image_url: dataUrl },
-        ]);
+        ], { jsonOnly: true });
       } catch (cause) {
         imageFailure("FOCUSED_ANALYSIS_HTTP", (cause as Error).message, true);
       }
@@ -1272,7 +1272,7 @@ async function visuallyMatchProduct(
   const requestJson = async (stage: "MATCH", content: any[]) => {
     let text: string;
     try {
-      text = await routedVisionText(content);
+      text = await routedVisionText(content, { jsonOnly: true });
     } catch (cause) {
       imageFailure(`${stage}_HTTP`, (cause as Error).message, true);
     }
