@@ -82,6 +82,7 @@ export function AIProductBuilderDialog({
   const [uploading, setUploading] = useState(false);
   const [uploadErrors, setUploadErrors] = useState<{ name: string; reason: string }[]>([]);
   const [description, setDescription] = useState("");
+  const [contentLang, setContentLang] = useState<"en" | "bn" | "mixed">("en");
   const [categoryId, setCategoryId] = useState("");
   const [subcategoryId, setSubcategoryId] = useState("");
   const [brand, setBrand] = useState("");
@@ -239,6 +240,7 @@ export function AIProductBuilderDialog({
           subcategoryName,
           brand,
           knownFacts: knownFacts(),
+          contentLang,
         },
       });
       setStage(STAGES.length - 1);
@@ -352,13 +354,39 @@ export function AIProductBuilderDialog({
             ) : step === 2 ? (
               <StepEssentials storeId={storeId} productType={productType} ess={ess} set={set} />
             ) : (
-              <StepDescribe
-                productType={productType}
-                description={description}
-                setDescription={setDescription}
-                extras={extras}
-                setExtras={setExtras}
-              />
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <div className="text-sm font-medium">Product language</div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      ["en", "English"],
+                      ["bn", "বাংলা"],
+                      ["mixed", "বাংলা + English"],
+                    ] as const).map(([v, label]) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => setContentLang(v)}
+                        aria-pressed={contentLang === v}
+                        className={`rounded-md border px-2 py-2 text-xs font-medium transition-colors ${
+                          contentLang === v
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-background hover:bg-muted"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <StepDescribe
+                  productType={productType}
+                  description={description}
+                  setDescription={setDescription}
+                  extras={extras}
+                  setExtras={setExtras}
+                />
+              </div>
             )}
 
             <input
