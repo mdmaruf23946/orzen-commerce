@@ -817,11 +817,15 @@ async function finalizePendingMessengerOrder(opts: {
       meta: { order_id: order.id, conversation_id: conversationId },
     } as any),
     sb.from("ai_conversations").update({
-      customer_name: String(slot.customer_name).trim(),
       phone: normalizePhone(slot.phone) ?? String(slot.phone).trim(),
       address: String(slot.full_address).trim(),
       lead_status: "ordered",
     } as any).eq("id", conversationId),
+    // The inbox shows the customer's real Facebook name; only use the typed
+    // order name when Facebook gave us nothing.
+    sb.from("ai_conversations").update({
+      customer_name: String(slot.customer_name).trim(),
+    } as any).eq("id", conversationId).is("customer_name", null),
   ]);
 
   await replaceConversationProfile(sb, conversationId, (profile) => {
@@ -1960,16 +1964,8 @@ async function decryptToken(enc: string | null | undefined): Promise<string | nu
 }
 
 async function fetchPsidProfile(token: string, psid: string) {
-  try {
-    const r = await fetch(
-      `https://graph.facebook.com/v19.0/${encodeURIComponent(psid)}?fields=first_name,last_name,name,profile_pic,locale,timezone&access_token=${encodeURIComponent(token)}`,
-    );
-    if (!r.ok) return null;
-    const j = (await r.json()) as Record<string, any>;
-    return { ...j, fetched_at: new Date().toISOString() } as Record<string, any>;
-  } catch {
-    return null;
-  }
+  const { fetchMessengerProfile } = await import("@/lib/messenger-profile.server");
+  return fetchMessengerProfile(token, psid);
 }
 
 /** Profile pictures are signed CDN links that expire — refresh every few hours. */
@@ -2242,14 +2238,16 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               } else if (token && profileIsStale(conv.psid_profile as any)) {
                 const profile = await fetchPsidProfile(token, senderId);
                 if (profile) {
+                  const fbName =
+                    (profile["name"] as string | undefined) ||
+                    [profile["first_name"], profile["last_name"]].filter(Boolean).join(" ") ||
+                    null;
                   await sb
                     .from("ai_conversations")
                     .update({
-                      psid_profile: profile,
-                      customer_name:
-                        (profile["name"] as string | undefined) ||
-                        [profile["first_name"], profile["last_name"]].filter(Boolean).join(" ") ||
-                        null,
+                      // keep order/pending data stored alongside the profile
+                      psid_profile: { ...((conv.psid_profile ?? {}) as Record<string, any>), ...profile },
+                      ...(fbName ? { customer_name: fbName } : {}),
                     })
                     .eq("id", conv.id);
                 }
