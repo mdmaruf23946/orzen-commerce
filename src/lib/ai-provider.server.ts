@@ -498,6 +498,7 @@ export async function routedChatCompletion(opts: {
   modelOverride?: string;
   temperature?: number;
   jsonOnly?: boolean;
+  maxTokens?: number;
 }): Promise<string | null> {
   const sb = admin();
   const { data: settings } = await sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle();
@@ -512,6 +513,9 @@ export async function routedChatCompletion(opts: {
       model: modelId,
       messages: opts.messages,
       ...(typeof opts.temperature === "number" ? { temperature: opts.temperature } : {}),
+      // A hard output cap keeps the model from writing long explanations, which
+      // is the slowest part of a photo answer.
+      ...(typeof opts.maxTokens === "number" ? { max_tokens: opts.maxTokens } : {}),
       ...(opts.jsonOnly ? { response_format: { type: "json_object" } } : {}),
     }),
   });
