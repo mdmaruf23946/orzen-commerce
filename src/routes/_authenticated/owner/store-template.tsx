@@ -367,7 +367,7 @@ function StoreTemplatePage() {
               ["subscription", "Subscription"],
             ] as const
           ).map(([k, label]) => (
-            <DropdownMenuItem key={k} onClick={() => setAiType(k)}>
+            <DropdownMenuItem key={k} onClick={() => { setPIndex(null); setAiType(k); }}>
               {label}
             </DropdownMenuItem>
           ))}
