@@ -4900,6 +4900,53 @@ export type Database = {
           },
         ]
       }
+      meta_oauth_sessions: {
+        Row: {
+          access_token_encrypted: string | null
+          channel: string
+          created_at: string
+          error: string | null
+          expires_at: string
+          id: string
+          state: string
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          access_token_encrypted?: string | null
+          channel: string
+          created_at?: string
+          error?: string | null
+          expires_at?: string
+          id?: string
+          state: string
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          access_token_encrypted?: string | null
+          channel?: string
+          created_at?: string
+          error?: string | null
+          expires_at?: string
+          id?: string
+          state?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meta_oauth_sessions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_campaigns: {
         Row: {
           action_label: string | null
