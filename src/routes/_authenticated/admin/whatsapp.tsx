@@ -176,7 +176,7 @@ function WhatsappPage() {
       )}
 
       {/* Auto Connect — sits next to, and never replaces, the manual credentials below */}
-      <MetaAutoConnect channel="whatsapp" onConnected={() => qc.invalidateQueries({ queryKey: ["whatsapp"] })} />
+      <MetaAutoConnect channel="whatsapp" onConnected={() => qc.invalidateQueries({ queryKey: ["admin", "whatsapp"] })} />
 
       {/* Connection */}
       <section className="space-y-4 rounded-xl border bg-card p-4">
