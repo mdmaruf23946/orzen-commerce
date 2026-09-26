@@ -117,7 +117,6 @@ export const Route = createFileRoute("/api/public/messenger/process")({
               .eq("id", job.id);
           } else
           try {
-          try {
             // A previous attempt can send successfully and then fail while doing
             // bookkeeping. Once recorded, never send that customer reply again.
             if (!job.reply_text && !job.outbound_message_id) {
