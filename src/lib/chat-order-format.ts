@@ -20,6 +20,25 @@ export function money(amount: number) {
   return `৳${toBnDigits(Math.round(amount))}`;
 }
 
+/** Short, customer-friendly order number. Never shows the long internal id. */
+export function shortOrderNo(invoiceNo: string | null | undefined, id: string | null | undefined) {
+  if (invoiceNo && String(invoiceNo).trim()) return String(invoiceNo).trim();
+  if (!id) return "—";
+  return String(id).replace(/-/g, "").slice(0, 8).toUpperCase();
+}
+
+const STATUS_BN: Record<string, string> = {
+  pending: "অপেক্ষমাণ",
+  confirmed: "কনফার্মড",
+  processing: "প্রস্তুত হচ্ছে",
+  delivered: "ডেলিভারি হয়েছে",
+  cancelled: "বাতিল",
+};
+export function orderStatusBn(status: string | null | undefined) {
+  const s = String(status ?? "pending");
+  return STATUS_BN[s] ?? s;
+}
+
 /** Active delivery zones for a store, cheapest first. */
 export async function fetchDeliveryZones(sb: any, storeId: string): Promise<DeliveryZone[]> {
   const { data } = await sb
