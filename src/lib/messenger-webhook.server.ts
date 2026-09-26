@@ -1097,12 +1097,14 @@ async function describeImageAttachment(
     const firstTypeConfidence = Math.max(0, Math.min(1, Number(firstFieldConfidence.product_type) || 0));
     const hasFirstBoundaryConfidence = typeof parsed.object_boundary_confidence === "number";
     const firstBoundaryConfidence = Math.max(0, Math.min(1, Number(parsed.object_boundary_confidence) || 0));
-    const needsFocusedInspection = parsed.is_product !== false && (
-      !String(parsed.product_type ?? "").trim() ||
-      firstConfidence < 0.82 ||
-      (hasFirstTypeConfidence && firstTypeConfidence < 0.68) ||
-      (hasFirstBoundaryConfidence && firstBoundaryConfidence < 0.62)
-    );
+    // Speed: a second inspection pass doubled the wait on every photo while
+    // rarely changing the verdict. Only re-inspect when the first pass gave us
+    // nothing usable at all.
+    const needsFocusedInspection = parsed.is_product !== false &&
+      !String(parsed.product_type ?? "").trim() &&
+      firstConfidence < 0.4 &&
+      (!hasFirstTypeConfidence || firstTypeConfidence < 0.3) &&
+      (!hasFirstBoundaryConfidence || firstBoundaryConfidence < 0.3);
     let inspectionPasses: 1 | 2 = 1;
     if (needsFocusedInspection) {
       const focusedPrompt =
