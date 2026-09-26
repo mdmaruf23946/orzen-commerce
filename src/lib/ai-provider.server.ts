@@ -65,6 +65,13 @@ function geminiModel(modelId: string) {
   return "gemini-flash-latest";
 }
 
+/** Sibling Gemini models tried on the same key when the first is busy or out of quota. */
+function geminiFallbackModels(primary: string): string[] {
+  if (primary === "gemini-pro-latest") return ["gemini-flash-latest", "gemini-2.5-flash"];
+  if (primary === "gemini-flash-lite-latest") return ["gemini-2.5-flash-lite"];
+  return ["gemini-3.7-flash", "gemini-2.5-flash"];
+}
+
 function openaiModel(modelId: string) {
   if (modelId.startsWith("openai/")) return stripVendor(modelId);
   return "gpt-4o-mini";
@@ -271,6 +278,7 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
 
     let geminiBody: any = null;
     let lastError = "AI request failed";
+    const isChat = suffix.startsWith("/chat/completions");
     for (const c of candidates) {
       const headers = new Headers(init?.headers);
       headers.delete("authorization");
@@ -282,28 +290,42 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
         geminiBody ??= await inlineRemoteImages(bodyObj);
         payload = geminiBody;
       }
-      const body = payload ? JSON.stringify({ ...payload, model: c.modelId }) : (init?.body as any);
-
-      try {
-        const res = await fetch(`${c.baseURL}${suffix}`, { ...init, headers, body });
-        if (res.ok) {
-          onUse({ provider: c.provider, label: c.label });
-          return res;
+      // Google quotas and overload are per model, so a busy or exhausted model
+      // falls through to a sibling model on the same key before the next key.
+      const models = c.provider === "gemini" && isChat && payload
+        ? [c.modelId, ...geminiFallbackModels(c.modelId)]
+        : [c.modelId];
+      let quotaHits = 0;
+      let keyDead = false;
+      for (const modelId of models) {
+        const body = payload ? JSON.stringify({ ...payload, model: modelId }) : (init?.body as any);
+        try {
+          const res = await fetch(`${c.baseURL}${suffix}`, { ...init, headers, body });
+          if (res.ok) {
+            onUse({ provider: c.provider, label: c.label });
+            return res;
+          }
+          const text = await res.text().catch(() => "");
+          lastError = `${c.label}: HTTP ${res.status} ${text.slice(0, 300)}`;
+          if (!retryable(res.status)) {
+            onUse({ provider: c.provider, label: c.label });
+            return new Response(text, { status: res.status, headers: res.headers });
+          }
+          const invalidKey = res.status === 401 || res.status === 403 || (res.status === 400 && /api key/i.test(text));
+          if (invalidKey) {
+            keyDead = true;
+            break;
+          }
+          if (res.status === 429) quotaHits += 1;
+        } catch (e) {
+          lastError = `${c.label}: ${(e as Error).message}`;
         }
-        const text = await res.text().catch(() => "");
-        lastError = `${c.label}: HTTP ${res.status} ${text.slice(0, 300)}`;
-        if (!retryable(res.status)) {
-          onUse({ provider: c.provider, label: c.label });
-          return new Response(text, { status: res.status, headers: res.headers });
-        }
-        // Only a key-level problem (bad key, revoked, quota) parks the key for
-        // the day. Provider overload or a request-shape problem is not the
-        // key's fault — move on to the next candidate without disabling it.
-        if (c.provider === "gemini" && c.keyId && keyLevelFailure(res.status)) {
-          void markGeminiFailure(c.keyId, lastError);
-        }
-      } catch (e) {
-        lastError = `${c.label}: ${(e as Error).message}`;
+      }
+      // Only park a key for the day when the key itself is bad or every model
+      // on it is out of quota. Overload or a request-shape problem is not the
+      // key's fault.
+      if (c.provider === "gemini" && c.keyId && (keyDead || quotaHits === models.length)) {
+        void markGeminiFailure(c.keyId, lastError);
       }
     }
     throw new Error(lastError);
