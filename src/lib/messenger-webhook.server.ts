@@ -587,26 +587,60 @@ function isPaymentLine(line: string) {
   return !!normalizePaymentMethod(line) && line.trim().replace(/[\s.,।-]+/g, "").length <= 24;
 }
 
+function extractEmail(text: string) {
+  const m = String(text ?? "").match(/[\w.+-]+@[\w-]+\.[\w.-]{2,}/);
+  return m ? m[0].toLowerCase().slice(0, 160) : null;
+}
+
+/** Strip a leading serial marker like "1." / "১)" / "৩-" from a line. */
+const SERIAL_RE = /^\s*[(\[]?[\d০-৯]{1,2}\s*[).:\-–।]\s*/;
+
+function stripSerial(line: string) {
+  return line.replace(SERIAL_RE, "").trim();
+}
+
 function parseOrderDetailsText(text: string) {
-  const lines = text
+  const rawLines = text
     .split(/\r?\n+/)
     .map((line) => line.trim())
     .filter(Boolean);
   const phone = extractPhone(text);
-  const payment_method = normalizePaymentMethod(text);
+  const email = extractEmail(text);
   const qty = extractQty(text);
 
-  const cleanedLines = lines
-    .map((line) => (phone ? line.replace(/(?:\+?88[-\s]?)?01[3-9][\d\s-]{8,12}/g, "") : line).trim())
+  const patch: Record<string, any> = {};
+
+  // Customers answer the numbered prompt: 1) name 2) phone 3) email 4) address 5) note
+  const serialLines = rawLines.filter((l) => SERIAL_RE.test(l));
+  if (serialLines.length >= 2) {
+    const parts = serialLines.map(stripSerial).filter(Boolean);
+    const [p1, p2, p3, p4, p5] = parts;
+    const nonPhone = (v?: string) => (v && !extractPhone(v) && !extractEmail(v) ? v : undefined);
+    const name = nonPhone(p1);
+    if (name) patch.customer_name = name.slice(0, 120);
+    const addressCandidates = [p4, p5, p3]
+      .filter((v): v is string => !!v && !extractPhone(v) && !extractEmail(v))
+      .filter((v) => v !== name);
+    if (addressCandidates.length) patch.full_address = addressCandidates[0]!.slice(0, 500);
+    const note = p5 && p5 !== patch.full_address && !extractEmail(p5) && !extractPhone(p5) ? p5 : null;
+    if (note) patch.note = note.slice(0, 300);
+    if (!patch.full_address && p2 && !extractPhone(p2)) patch.full_address = p2.slice(0, 500);
+  }
+
+  const cleanedLines = rawLines
+    .map((line) => stripSerial(line))
+    .map((line) => (phone ? line.replace(/(?:\+?88[-\s]?)?01[3-9][\d\s-]{8,12}/g, "") : line))
+    .map((line) => (email ? line.replace(/[\w.+-]+@[\w-]+\.[\w.-]{2,}/g, "") : line))
+    .map((line) => line.trim())
     .filter((line) => line && !isPaymentLine(line));
 
-  let customer_name: string | undefined;
-  let full_address: string | undefined;
+  let customer_name: string | undefined = patch.customer_name;
+  let full_address: string | undefined = patch.full_address;
 
   const nameMatch = text.match(/(?:^|\n|\b)(?:name|নাম)\s*[:：-]?\s*([^\n,;|]+)/i);
-  if (nameMatch?.[1]) customer_name = nameMatch[1].trim();
+  if (!customer_name && nameMatch?.[1]) customer_name = nameMatch[1].trim();
   const addressMatch = text.match(/(?:address|ঠিকানা|এড্রেস)\s*[:：-]?\s*([^|]+)/i);
-  if (addressMatch?.[1]) full_address = addressMatch[1].trim();
+  if (!full_address && addressMatch?.[1]) full_address = addressMatch[1].trim();
 
   if (!customer_name) {
     const firstNameLike = cleanedLines.find((line) => {
@@ -621,11 +655,12 @@ function parseOrderDetailsText(text: string) {
     if (addressLines.length) full_address = addressLines.join(", ");
   }
 
-  const patch: Record<string, any> = {};
   if (customer_name) patch.customer_name = customer_name.slice(0, 120);
   if (phone) patch.phone = phone;
+  if (email) patch.email = email;
   if (full_address) patch.full_address = full_address.slice(0, 500);
-  if (payment_method) patch.payment_method = payment_method;
+  // Chat orders are always cash on delivery — no payment choice is asked for.
+  patch.payment_method = "cod";
   if (qty) patch.qty = qty;
   return patch;
 }
