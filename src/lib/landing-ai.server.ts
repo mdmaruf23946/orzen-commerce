@@ -311,18 +311,15 @@ export async function generateLandingCopy(
   facts: LandingAiFacts,
   contentLang: LandingContentLang = "en",
 ): Promise<LandingContent | null> {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) return null;
-
   const manifest = landingFieldManifest();
 
-  const provider = createOpenAICompatible({
-    name: "lovable",
-    baseURL: "https://ai.gateway.lovable.dev/v1",
-    supportsStructuredOutputs: true,
-    headers: { "Lovable-API-Key": apiKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
-  });
-  const model = provider("google/gemini-3.7-flash");
+  // Runs on the platform owner's own provider keys (Winner Admin → AI).
+  let model: any;
+  try {
+    model = await routedStructuredModel("google/gemini-2.5-flash");
+  } catch {
+    return null;
+  }
 
   const system = [
     "You write conversion-focused copy for a single-product e-commerce landing page in Bangladesh.",

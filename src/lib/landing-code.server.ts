@@ -38,7 +38,7 @@ function cleanOutput(text: string): string {
 }
 
 async function run(system: string, prompt: string): Promise<string | null> {
-  const m = model();
+  const m = await model();
   if (!m) return null;
   try {
     const { text } = await generateText({ model: m, system, prompt, maxOutputTokens: 32_000 });
