@@ -1387,7 +1387,7 @@ async function fastImageLookup(
   imageUrl: string,
   pageToken: string,
   messageId: string,
-): Promise<{ analysis: ImageAnalysis | null; match: VisualMatch | null; candidateIds: string[]; definiteMiss?: boolean; topSimilarity?: number }> {
+): Promise<{ analysis: ImageAnalysis | null; match: VisualMatch | null; candidateIds: string[] }> {
   try {
     const { rankProductImageMatches } = await import("@/lib/product-image-embeddings.server");
     const { bytes, type } = await downloadMessengerImage(imageUrl, pageToken, messageId);
