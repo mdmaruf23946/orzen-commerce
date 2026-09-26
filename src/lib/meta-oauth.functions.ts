@@ -69,7 +69,7 @@ export const startMetaAutoConnect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ channel: z.enum(["messenger", "whatsapp"]) }).parse(d))
   .handler(async ({ context, data }) => {
-    await assertPlan(context.supabase, context.userId, data.channel === "messenger" ? "ai_messenger" : "ai_whatsapp");
+    await assertPlan(context.supabase, context.userId, data.channel === "messenger" ? "ai_messenger" : "ai_messenger");
     const storeId = await ownedStoreId(context.supabase, context.userId);
     const {
       metaAppCreds,
@@ -155,7 +155,7 @@ export const listMetaAutoConnectNumbers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ session_id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    await assertPlan(context.supabase, context.userId, "ai_whatsapp");
+    await assertPlan(context.supabase, context.userId, "ai_messenger");
     const storeId = await ownedStoreId(context.supabase, context.userId);
     const { token } = await loadSession(storeId, "whatsapp", data.session_id);
     const { listWhatsappNumbers } = await import("@/lib/meta-oauth.server");
@@ -289,7 +289,7 @@ export const autoConnectWhatsappNumber = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
-    await assertPlan(context.supabase, context.userId, "ai_whatsapp");
+    await assertPlan(context.supabase, context.userId, "ai_messenger");
     const storeId = await ownedStoreId(context.supabase, context.userId);
     const { token } = await loadSession(storeId, "whatsapp", data.session_id);
 
