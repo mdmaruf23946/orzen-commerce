@@ -1775,9 +1775,15 @@ async function maybeSendDirectProductReply(opts: {
       await logProductRecommendations(sb, storeId, conversationId, [product], text);
       return finalizePendingMessengerOrder({ sb, storeId, conversationId, psid, token });
     }
-    const textReply = missing.length
-      ? `ঠিক আছে, ${product.name} অর্ডার শুরু করলাম। অর্ডার কনফার্ম করতে ${missing.join(", ")} দিন।`
-      : `ঠিক আছে, ${product.name} অর্ডারের তথ্য পেয়েছি। কনফার্ম করার আগে আর কিছু যোগ করতে চান?`;
+    const zones = await fetchDeliveryZones(sb, storeId);
+    const textReply = buildBuyNowMessage({
+      productName: product.name,
+      price: Number((product as any).price ?? 0),
+      qty: Number(slot.qty ?? 1) || 1,
+      zones,
+      productDeliveryCharge: (product as any).delivery_charge,
+      intro: `ঠিক আছে, ${product.name} অর্ডার শুরু করলাম।`,
+    });
     await logProductRecommendations(sb, storeId, conversationId, [product], text);
     await sendAndLogText(sb, token, psid, conversationId, textReply);
     return true;
