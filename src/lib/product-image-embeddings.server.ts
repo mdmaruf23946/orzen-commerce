@@ -41,9 +41,14 @@ function toBase64(bytes: Uint8Array) {
   return btoa(binary);
 }
 
+/**
+ * The photo index needs a multimodal embedding endpoint. The store's own
+ * provider keys do not offer one, so this stays disabled and photo matching
+ * falls back to visual verification.
+ */
 export async function embedImageBytes(bytes: Uint8Array, mime: string): Promise<number[]> {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("AI service is not configured");
+  const key = "";
+  if (!key) throw new Error("Image embedding is not available");
   const body = JSON.stringify({
     model: IMAGE_EMBEDDING_MODEL,
     input: [{ content: [{ type: "image_url", image_url: { url: `data:${mime};base64,${toBase64(bytes)}` } }] }],
