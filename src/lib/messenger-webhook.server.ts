@@ -2465,14 +2465,8 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                   .from("messenger_integrations")
                   .update({ last_error: null } as any)
                   .eq("id", (integ as any).id);
-                // After replying, fingerprint a few new/changed products of this
-                // store so later photos of them also take the fast path.
-                try {
-                  const { syncProductImageEmbeddings } = await import("@/lib/product-image-embeddings.server");
-                  await syncProductImageEmbeddings(sb as any, { storeId: integ.store_id, limit: 3 });
-                } catch {
-                  /* best effort; the scheduled sync covers it */
-                }
+                // Photo fingerprints are unavailable on the current provider
+                // keys, so nothing is indexed here any more.
                 continue;
               }
 
