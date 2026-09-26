@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { buildSystemPrompt, generateAgentReply, loadAiContext, resolveFocusProduct } from "@/lib/ai-agent.server";
 import { routedChatCompletion, routedVisionText } from "@/lib/ai-provider.server";
+import { getStoreMemory, recallByText, recallForImage } from "@/lib/catalog-memory.server";
 import {
   sendProductCard,
   sendProductCarousel,
@@ -441,51 +442,11 @@ function sanitizeMessengerReply(reply: string, latestText: string) {
   return text;
 }
 
+// Answers from the store's memorised catalogue (see catalog-memory.server.ts):
+// no per-message full-table read, no AI call — an in-memory index lookup.
 async function searchDirectProducts(sb: ReturnType<typeof admin>, storeId: string, text: string, limit = 6) {
-  const productSelect =
-    "product_id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,primary_image_url,gallery,features,specifications,variants,total_sold,rating,is_featured";
-  const [{ data: products }, { data: categories }, { data: blocked }] = await Promise.all([
-    sb.from("ai_product_catalog").select(productSelect).eq("store_id", storeId).eq("status", "active").gt("stock", 0).limit(500),
-    sb.from("categories").select("id,name").eq("store_id", storeId),
-    sb.from("ai_product_blacklist").select("product_id").eq("store_id", storeId),
-  ]);
-  const blockedIds = new Set((blocked ?? []).map((r: any) => r.product_id));
-  const cats = new Map((categories ?? []).map((c: any) => [c.id, c.name]));
-  const terms = productSearchTerms(text);
-  const phrase = text.toLowerCase().trim();
-  const scored = ((products ?? []) as unknown as Array<Omit<ProductRow, "id"> & { product_id: string }>)
-    .map((product) => ({ ...product, id: product.product_id }))
-    .filter((p) => !blockedIds.has(p.id))
-    .map((p) => {
-      const categoryName = cats.get(p.category_id ?? "") ?? "";
-      const haystack = [
-        p.name,
-        p.brand,
-        p.sku,
-        p.product_code,
-        categoryName,
-        p.short_description,
-        p.description,
-        stringifyField(p.features),
-        stringifyField(p.specifications),
-        stringifyField(p.variants),
-      ].join(" ").toLowerCase();
-      let score = 0;
-      if (phrase && haystack.includes(phrase)) score += 60;
-      for (const term of terms) {
-        if (haystack.includes(term)) score += 25;
-        if (String(p.name ?? "").toLowerCase().includes(term)) score += 20;
-        if (String(categoryName).toLowerCase().includes(term)) score += 15;
-      }
-      if (p.primary_image_url || (Array.isArray(p.gallery) && p.gallery.length > 0)) score += 12;
-      if (p.is_featured) score += 6;
-      score += Math.min(Number(p.total_sold) || 0, 50) / 10;
-      score += Math.min(Number(p.rating) || 0, 5);
-      return { product: p, score };
-    });
-  const ranked = terms.length ? scored.filter((r) => r.score >= 25) : scored;
-  ranked.sort((a, b) => b.score - a.score);
-  return ranked.slice(0, limit).map((r) => r.product);
+  const memory = await getStoreMemory(sb as any, storeId);
+  return recallByText(memory, text, limit) as unknown as ProductRow[];
 }
 
 async function getRecentRecommendedProducts(sb: ReturnType<typeof admin>, storeId: string, conversationId: string, limit = 5) {
@@ -1242,30 +1203,25 @@ async function visuallyMatchProduct(
     ...analysis.connectors,
     ...analysis.keywords,
   ].filter(Boolean).join(" ");
-  const productSelect =
-    "product_id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,primary_image_url,gallery,features,specifications,variants,total_sold,rating,is_featured";
-  const [textMatches, blockedResult, categoriesResult] = await Promise.all([
-    searchDirectProducts(sb, storeId, query, 20),
-    sb.from("ai_product_blacklist").select("product_id").eq("store_id", storeId),
-    sb.from("categories").select("id,name").eq("store_id", storeId),
-  ]);
-  const blockedIds = new Set((blockedResult.data ?? []).map((row: any) => String(row.product_id)));
-  const categoryNames = new Map((categoriesResult.data ?? []).map((row: any) => [String(row.id), String(row.name ?? "")]));
-  const candidateIds = Array.from(new Set([...imageCandidateIds, ...textMatches.map((product) => product.id)])).slice(0, 20);
-  if (!candidateIds.length) return null;
-  const { data: candidateRows, error: candidateError } = await sb
-    .from("ai_product_catalog")
-    .select(productSelect)
-    .eq("store_id", storeId)
-    .eq("status", "active")
-    .gt("stock", 0)
-    .in("product_id", candidateIds);
-  if (candidateError) imageFailure("CATALOGUE_QUERY", candidateError.message, true);
-  const allProducts = ((candidateRows ?? []) as unknown as Array<Omit<ProductRow, "id"> & { product_id: string }>).map((product) => ({
-    ...product,
-    id: product.product_id,
-  })).filter((product) => !blockedIds.has(product.id) && productImages(product, 1).length > 0);
+  // Candidates come straight out of the memorised catalogue — instant, and
+  // already free of blacklisted / out-of-stock / imageless products.
+  const memory = await getStoreMemory(sb as any, storeId);
+  const categoryNames = memory.categoryNames;
+  const recalled = recallForImage(memory, {
+    type: analysis.product_type,
+    subtype: analysis.product_subtype,
+    category: analysis.category,
+    brand: analysis.brand,
+    keywords: [...analysis.keywords, ...analysis.functions, ...analysis.connectors],
+    text: analysis.visible_text,
+  }, 12) as unknown as ProductRow[];
+  const pinned = imageCandidateIds
+    .map((id) => memory.byId.get(id)?.product as unknown as ProductRow | undefined)
+    .filter((product): product is ProductRow => Boolean(product));
+  const textMatches = Array.from(new Map([...pinned, ...recalled].map((p) => [p.id, p])).values());
+  const allProducts = textMatches.filter((product) => productImages(product, 1).length > 0);
   if (!allProducts.length) return null;
+  void query;
   // Runs on the platform owner's own provider keys (Winner Admin → AI).
   const requestJson = async (stage: "MATCH", content: any[]) => {
     let text: string;
