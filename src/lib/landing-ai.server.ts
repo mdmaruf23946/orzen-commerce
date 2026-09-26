@@ -5,7 +5,7 @@
 // as a manifest of dotted paths, ask the model to fill those paths, and merge
 // the returned values back by path. Adding a new editable text field or a new
 // section = adding one manifest entry; no prompt or parser rewrite.
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { routedStructuredModel } from "@/lib/ai-provider.server";
 import { generateText, Output, NoObjectGeneratedError } from "ai";
 import { z } from "zod";
 import {
@@ -472,20 +472,18 @@ export function seoFromContent(content: LandingContent, title: string, storeName
  * slug candidates only — the caller checks availability before offering them.
  */
 export async function suggestSubdomainLabels(pageTitle: string, storeName: string): Promise<string[]> {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) return [];
-
-  const provider = createOpenAICompatible({
-    name: "lovable",
-    baseURL: "https://ai.gateway.lovable.dev/v1",
-    supportsStructuredOutputs: true,
-    headers: { "Lovable-API-Key": apiKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
-  });
+  // Runs on the platform owner's own provider keys (Winner Admin → AI).
+  let labelModel: any;
+  try {
+    labelModel = await routedStructuredModel("google/gemini-2.5-flash");
+  } catch {
+    return [];
+  }
   const schema = z.object({ labels: z.array(z.string()).min(1) });
 
   try {
     const { output } = await generateText({
-      model: provider("google/gemini-3.7-flash"),
+      model: labelModel,
       output: Output.object({ schema }),
       system: [
         "You suggest subdomain labels for a single-product e-commerce landing page.",
