@@ -1097,12 +1097,14 @@ async function describeImageAttachment(
     const firstTypeConfidence = Math.max(0, Math.min(1, Number(firstFieldConfidence.product_type) || 0));
     const hasFirstBoundaryConfidence = typeof parsed.object_boundary_confidence === "number";
     const firstBoundaryConfidence = Math.max(0, Math.min(1, Number(parsed.object_boundary_confidence) || 0));
-    const needsFocusedInspection = parsed.is_product !== false && (
-      !String(parsed.product_type ?? "").trim() ||
-      firstConfidence < 0.82 ||
-      (hasFirstTypeConfidence && firstTypeConfidence < 0.68) ||
-      (hasFirstBoundaryConfidence && firstBoundaryConfidence < 0.62)
-    );
+    // Speed: a second inspection pass doubled the wait on every photo while
+    // rarely changing the verdict. Only re-inspect when the first pass gave us
+    // nothing usable at all.
+    const needsFocusedInspection = parsed.is_product !== false &&
+      !String(parsed.product_type ?? "").trim() &&
+      firstConfidence < 0.4 &&
+      (!hasFirstTypeConfidence || firstTypeConfidence < 0.3) &&
+      (!hasFirstBoundaryConfidence || firstBoundaryConfidence < 0.3);
     let inspectionPasses: 1 | 2 = 1;
     if (needsFocusedInspection) {
       const focusedPrompt =
@@ -1299,91 +1301,47 @@ async function visuallyMatchProduct(
     // Stage 1: compare the customer's photo with every eligible image in the
     // current store. Eight products × up to three images stays below the model's
     // image limit while covering large catalogues through deterministic batches.
-    const ranked: Array<{ product: ProductRow; confidence: number; reason: string; verdict: string }> = [];
-    for (let offset = 0; offset < candidates.length; offset += 8) {
-      const batch = candidates.slice(offset, offset + 8);
-      const content: any[] = [{
-        type: "input_text",
-        text: "Compare CUSTOMER_IMAGE with each candidate's images. Product function/type must match. Return ONLY minified JSON: " +
-          '{"results":[{"index":number,"verdict":"same|close|different","type_compatible":boolean,"confidence":number,"reason":"short visual evidence"}]}. ' +
-          "Use same only when model-defining construction, ports, controls, branding/text and proportions agree; colour or shape alone is insufficient. " +
-          "Judge by the IMAGES: catalogue names, categories and descriptions may be wrong and must never override an image match. If the customer image is the same photograph as a catalogue image (even cropped, resized, recompressed or Messenger-encoded), return same with confidence 0.99.",
-      }, { type: "input_image", image_url: analysis.image_data_url }];
-      batch.forEach((product, index) => {
-        content.push({ type: "input_text", text: `CANDIDATE_${index}: ${productIdentityText(product, categoryNames.get(String(product.category_id ?? "")) ?? "")}` });
-        productImages(product, 3).forEach((image) => content.push({ type: "input_image", image_url: image }));
-      });
-      const compared = await requestJson("MATCH", content);
-      const results = Array.isArray(compared.results) ? compared.results : [];
-      for (const raw of results) {
-        if (!raw || typeof raw !== "object") continue;
-        const value = raw as Record<string, unknown>;
-        const index = Number(value.index);
-        const product = Number.isInteger(index) ? batch[index] : undefined;
-        if (!product || value.type_compatible !== true) continue;
-        const verdict = String(value.verdict ?? "different");
-        const confidence = Math.max(0, Math.min(1, Number(value.confidence) || 0));
-        if ((verdict === "same" || verdict === "close") && confidence >= 0.72) {
-          ranked.push({ product, confidence, verdict, reason: String(value.reason ?? "").slice(0, 300) });
-        }
-      }
+    // Single pass: one comparison call over the most likely candidates decides
+    // the verdict. The old two-stage chain issued up to a dozen vision calls per
+    // photo, which is what pushed replies past three minutes on free keys.
+    const batch = candidates.slice(0, 8);
+    const content: any[] = [{
+      type: "input_text",
+      text: "Compare CUSTOMER_IMAGE with each candidate's images and decide if one is the exact same sale product/model. Return ONLY minified JSON: " +
+        '{"results":[{"index":number,"verdict":"same|close|different","type_compatible":boolean,"confidence":number,"reason":"short visual evidence"}]}. ' +
+        "Use same only when function/type, ports, controls, branding/text and proportions agree; colour or shape alone is insufficient. " +
+        "Judge by the IMAGES: catalogue names and descriptions may be wrong and must never override an image match. If the customer image is the same photograph as a catalogue image (even cropped, resized, recompressed or Messenger-encoded), return same with confidence 0.99.",
+    }, { type: "input_image", image_url: analysis.image_data_url }];
+    batch.forEach((product, index) => {
+      content.push({ type: "input_text", text: `CANDIDATE_${index}: ${productIdentityText(product, categoryNames.get(String(product.category_id ?? "")) ?? "")}` });
+      productImages(product, 2).forEach((image) => content.push({ type: "input_image", image_url: image }));
+    });
+    const compared = await requestJson("MATCH", content);
+    const results = Array.isArray(compared.results) ? compared.results : [];
+    let best: VisualMatch | null = null;
+    for (const raw of results) {
+      if (!raw || typeof raw !== "object") continue;
+      const value = raw as Record<string, unknown>;
+      const index = Number(value.index);
+      const product = Number.isInteger(index) ? batch[index] : undefined;
+      if (!product || value.type_compatible !== true) continue;
+      const verdict = String(value.verdict ?? "different");
+      if (verdict === "different") continue;
+      const confidence = Math.max(0, Math.min(1, Number(value.confidence) || 0));
+      if (confidence < 0.7) continue;
+      const candidate: VisualMatch = {
+        product,
+        confidence,
+        verdict: verdict === "same" && confidence >= 0.85 ? "exact" : "close",
+        evidence: [String(value.reason ?? "").slice(0, 300)].filter(Boolean),
+        reason: String(value.reason ?? "").slice(0, 300),
+      };
+      const better = !best
+        || (candidate.verdict === "exact" && best.verdict !== "exact")
+        || (candidate.verdict === best.verdict && candidate.confidence > best.confidence);
+      if (better) best = candidate;
     }
-    ranked.sort((left, right) => right.confidence - left.confidence);
-    if (!ranked.length) return null;
-
-    // Stage 2: independently verify the strongest candidates one at a time.
-    // Only this pass can authorize a customer-facing product card.
-    let closest: VisualMatch | null = null;
-    const strongest = [...ranked]
-      .sort((left, right) => {
-        if (left.verdict === "same" && right.verdict !== "same") return -1;
-        if (right.verdict === "same" && left.verdict !== "same") return 1;
-        return right.confidence - left.confidence;
-      })
-      .slice(0, 6);
-    for (const candidate of strongest) {
-      const content: any[] = [{
-        type: "input_text",
-        text: "Final independent verification. Decide whether CUSTOMER_IMAGE and CATALOGUE_IMAGES show the exact same sale product/model. " +
-          "Reject if function/type, connector layout, controls, proportions, logo/model text or defining construction conflict in the IMAGES. " +
-          "The catalogue name/category/description text is merchant-written and may be inaccurate: any text-vs-image metadata mismatch is NOT conflicting evidence. " +
-          "If the customer image is the same photograph as a catalogue image (crop/resize/compression/Messenger encoding only), return exact with confidence 0.99. " +
-          "Return ONLY minified JSON: {\"verdict\":\"exact|close|different\",\"type_compatible\":boolean,\"confidence\":number," +
-          "\"matching_evidence\":[string],\"conflicting_evidence\":[string],\"reason\":\"short factual reason\"}.",
-      }, { type: "input_text", text: `PHOTO IDENTITY: ${query}` },
-      { type: "input_image", image_url: analysis.image_data_url },
-      { type: "input_text", text: `CATALOGUE PRODUCT: ${productIdentityText(candidate.product, categoryNames.get(String(candidate.product.category_id ?? "")) ?? "")}` }];
-      productImages(candidate.product, 4).forEach((image) => content.push({ type: "input_image", image_url: image }));
-      const verified = await requestJson("MATCH", content);
-      const verdict = String(verified.verdict ?? "different");
-      const confidence = Math.max(0, Math.min(1, Number(verified.confidence) || 0));
-      const matchingEvidence = Array.isArray(verified.matching_evidence)
-        ? verified.matching_evidence.map(String).filter(Boolean).slice(0, 8)
-        : [];
-      const conflicts = Array.isArray(verified.conflicting_evidence)
-        ? verified.conflicting_evidence.map(String).filter(Boolean).slice(0, 8)
-        : [];
-      if (verified.type_compatible !== true || verdict === "different") continue;
-      if (verdict === "exact" && confidence >= 0.92 && matchingEvidence.length >= 2 && conflicts.length === 0) {
-        return {
-          product: candidate.product,
-          confidence,
-          verdict: "exact",
-          evidence: matchingEvidence,
-          reason: String(verified.reason ?? candidate.reason).slice(0, 300),
-        };
-      }
-      if (!closest || confidence > closest.confidence) {
-        closest = {
-          product: candidate.product,
-          confidence,
-          verdict: "close",
-          evidence: matchingEvidence,
-          reason: String(verified.reason ?? candidate.reason).slice(0, 300),
-        };
-      }
-    }
-    return closest;
+    return best;
   } catch (cause) {
     if (cause instanceof ImageProcessingError) throw cause;
     imageFailure("MATCH_EXCEPTION", cause instanceof Error ? cause.message : "Unexpected catalogue match failure", true);
@@ -1410,6 +1368,11 @@ async function fastImageLookup(
   pageToken: string,
   messageId: string,
 ): Promise<{ analysis: ImageAnalysis | null; match: VisualMatch | null; candidateIds: string[] }> {
+  // Image fingerprints are unavailable on the current provider keys, so this
+  // pre-pass can only cost an extra image download. Skip it entirely and let
+  // the single-pass visual match below answer directly.
+  return { analysis: null, match: null, candidateIds: [] };
+  // eslint-disable-next-line no-unreachable
   try {
     const { rankProductImageMatches } = await import("@/lib/product-image-embeddings.server");
     const { bytes, type } = await downloadMessengerImage(imageUrl, pageToken, messageId);
