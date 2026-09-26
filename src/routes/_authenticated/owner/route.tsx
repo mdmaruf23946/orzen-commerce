@@ -38,6 +38,7 @@ const groups: NavGroup[] = [
     { to: "/owner/communication", label: "Communication & Emails", icon: Mail },
   ]},
   { label: "Integrations", links: [
+    { to: "/owner/meta-app", label: "Meta App / Auto Connect", icon: Sparkles },
     { to: "/owner/couriers", label: "Couriers", icon: Truck },
     { to: "/owner/marketing", label: "Marketing", icon: Megaphone },
     { to: "/owner/ads", label: "Advertisement Management", icon: Megaphone },
