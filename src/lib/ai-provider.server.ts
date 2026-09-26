@@ -257,11 +257,11 @@ async function downloadImageBytes(url: string): Promise<Uint8Array | null> {
     const path = decodeURIComponent(parsed.pathname.slice("/api/img/".length));
     const base = requireServerEnv("SUPABASE_URL").replace(/\/$/, "");
     const key = requireServerEnv("SUPABASE_SERVICE_ROLE_KEY");
-    const auth: Record<string, string> = { apikey: key };
+    const auth: Record<string, string> = { apikey: key, accept: RENDITION_ACCEPT };
     if (!key.startsWith("sb_")) auth.authorization = `Bearer ${key}`;
     const encoded = path.split("/").map(encodeURIComponent).join("/");
     const small = await fetchBytes(
-      `${base}/storage/v1/render/image/authenticated/store-assets/${encoded}?width=512&quality=65&resize=contain`,
+      `${base}/storage/v1/render/image/authenticated/store-assets/${encoded}?${RENDITION_QUERY}`,
       auth,
     );
     if (small && small.length) return small;
@@ -272,10 +272,10 @@ async function downloadImageBytes(url: string): Promise<Uint8Array | null> {
   if (parsed.pathname.includes("/storage/v1/object/public/")) {
     const rendered = new URL(url);
     rendered.pathname = parsed.pathname.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/");
-    rendered.searchParams.set("width", "512");
-    rendered.searchParams.set("quality", "65");
+    rendered.searchParams.set("width", "320");
+    rendered.searchParams.set("quality", "50");
     rendered.searchParams.set("resize", "contain");
-    const small = await fetchBytes(rendered.toString(), {});
+    const small = await fetchBytes(rendered.toString(), { accept: RENDITION_ACCEPT });
     if (small && small.length) return small;
   }
   return fetchBytes(url, { "user-agent": "Mozilla/5.0 (compatible; OrzenBot/1.0)" });
