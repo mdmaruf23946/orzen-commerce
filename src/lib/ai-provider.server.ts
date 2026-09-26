@@ -433,10 +433,14 @@ export function toChatContent(parts: VisionPart[]): any[] {
  * Vision call returning the model's raw text, routed through the owner's keys.
  * Accepts Responses-style content parts so existing prompts stay unchanged.
  */
-export async function routedVisionText(parts: VisionPart[], opts?: { modelOverride?: string }): Promise<string> {
+export async function routedVisionText(
+  parts: VisionPart[],
+  opts?: { modelOverride?: string; jsonOnly?: boolean },
+): Promise<string> {
   const text = await routedChatCompletion({
     messages: [{ role: "user", content: toChatContent(parts) }],
     ...(opts?.modelOverride ? { modelOverride: opts.modelOverride } : {}),
+    ...(opts?.jsonOnly ? { jsonOnly: true } : {}),
   });
   return text ?? "";
 }
