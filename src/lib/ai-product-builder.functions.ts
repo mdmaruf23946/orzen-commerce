@@ -21,6 +21,8 @@ const inputSchema = z.object({
   /** Free-form facts the seller already filled in (price, delivery, plans…). */
   knownFacts: z.string().trim().max(2000).default(""),
   contentLang: z.enum(["en", "bn", "mixed"]).default("en"),
+  /** Winner Admin default-product template (platform owner only). */
+  asTemplate: z.boolean().default(false),
 });
 
 // Small, flat, constraint-free schema for structured output.
@@ -99,7 +101,17 @@ export const generateProductDraft = createServerFn({ method: "POST" })
   .inputValidator((d) => inputSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const storeId = await assertPlan(supabase, userId, "ai_product_builder");
+    let storeId: string;
+    if (data.asTemplate) {
+      const { data: isOwner, error: roleErr } = await supabase.rpc("has_role", {
+        _user_id: userId,
+        _role: "owner",
+      });
+      if (roleErr || isOwner !== true) throw new Error("Only the platform owner can use this");
+      storeId = "_template";
+    } else {
+      storeId = await assertPlan(supabase, userId, "ai_product_builder");
+    }
 
     if ((data.imagePaths?.length ?? 0) === 0 && !data.description?.trim()) {
       throw new Error("Please add at least one image or description");
@@ -259,7 +271,7 @@ export const generateProductDraft = createServerFn({ method: "POST" })
     let matchedCategoryId: string | null = null;
     let matchedSubcategoryId: string | null = null;
 
-    try {
+    if (!data.asTemplate) try {
       // Try to match category/subcategory guesses to existing rows (case-insensitive).
       if (draft.category_guess || draft.subcategory_guess) {
         const { data: cats, error: catsError } = await supabase
