@@ -1031,20 +1031,16 @@ async function describeImageAttachment(
     }
     const dataUrl = `data:${type};base64,${btoa(binary)}`;
 
+    // Speed: the old prompt asked for 25 fields and took 15-20s to generate on
+    // free keys. The agent only ever uses a handful of them, so the model now
+    // writes one short object and the rest keep their safe defaults.
     const prompt =
-      "A customer sent this photo to an online shop. Inspect the actual sale item carefully, not the model/person/background. " +
-      "First separate the sale item's outline from the background using edges, shadows, seams, cap/port/button boundaries, label layout and texture—not colour contrast alone. " +
-      "Handle white-on-white, black-on-black, transparent, reflective, backlit and overexposed items without assuming their colour. " +
-      "Read every visible logo, label, model number and package specification. Identify ports/connectors, buttons, display, controls, " +
-      "physical construction and likely function. Distinguish visually similar but functionally different products (for example a charger, " +
-      "adapter, tracker, speaker, hub or power bank). Return ONLY minified JSON with keys description,keywords,is_product,product_type," +
-      "product_subtype,category,primary_color,secondary_colors,material,style,shape,pattern,visible_text,brand,model_number,functions," +
-      "connectors,controls,package_specs,distinctive_features,field_confidence,visibility_warnings,object_boundary_confidence,text_legibility,confidence. " +
-      "Use null for uncertain single-value attributes and [] for absent lists. confidence is 0..1. " +
-      "object_boundary_confidence and text_legibility MUST each be a JSON number from 0 to 1, never text. visibility_warnings may contain ONLY these exact codes: low_contrast, blur, overexposure, underexposure, reflection, transparency, occlusion. " +
-      "field_confidence is an object whose keys are only attributes actually observed and whose values are 0..1. " +
-      "Never invent specifications that are not visible or reliably identifiable. Do not guess a colour under ambiguous lighting; name exact visible colours only when confident. " +
-      "keywords must contain 2-8 concise catalogue terms. is_product is false for receipts, screenshots, documents, selfies or memes.";
+      "A customer sent this photo to an online shop. Identify the sale item (ignore people, hands and background). " +
+      "Read any visible brand, model number or label text. Answer FAST and SHORT. " +
+      'Return ONLY minified JSON: {"description":"one short sentence","keywords":["2-6 catalogue search words"],' +
+      '"is_product":true|false,"product_type":"short noun","brand":null|"...","model_number":null|"...",' +
+      '"primary_color":null|"...","confidence":0..1}. ' +
+      "Never invent a brand, model or specification that is not visible. is_product is false for receipts, screenshots, documents, selfies or memes.";
     let raw: string;
     try {
       raw = await routedVisionText([
