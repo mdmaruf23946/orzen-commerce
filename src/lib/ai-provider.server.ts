@@ -67,9 +67,9 @@ function geminiModel(modelId: string) {
 
 /** Sibling Gemini models tried on the same key when the first is busy or out of quota. */
 function geminiFallbackModels(primary: string): string[] {
-  if (primary === "gemini-pro-latest") return ["gemini-flash-latest", "gemini-2.5-flash"];
-  if (primary === "gemini-flash-lite-latest") return ["gemini-2.5-flash-lite"];
-  return ["gemini-3.7-flash", "gemini-2.5-flash"];
+  if (primary === "gemini-pro-latest") return ["gemini-flash-latest", "gemini-3.6-flash", "gemini-3.5-flash"];
+  if (primary === "gemini-flash-lite-latest") return ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
+  return ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3-flash-preview"];
 }
 
 function openaiModel(modelId: string) {
