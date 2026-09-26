@@ -11,6 +11,13 @@ import {
 } from "./messenger-send.server";
 import { checkDuplicate } from "./duplicate-guard.server";
 import {
+  fetchDeliveryZones,
+  money,
+  orderStatusBn,
+  resolveDeliveryCharge,
+  shortOrderNo,
+} from "./chat-order-format";
+import {
   ORDER_FIELD_LABELS,
   messengerPaymentMethods,
   normalizeOrderFlow,
@@ -1815,7 +1822,16 @@ export function buildTools(ctx: AgentContext) {
         if (duplicateBlocked) return duplicateBlocked;
 
         const subtotal = Number(product.price) * Number(slot.qty);
-        const delivery = Number(product.delivery_charge ?? 0);
+        // Delivery charge follows the merchant's delivery areas, matched by address.
+        const addressText = [slot.full_address, slot.village, slot.union, slot.upazila, slot.district]
+          .filter(Boolean)
+          .join(", ");
+        const zones = await fetchDeliveryZones(sb, storeId);
+        const { charge: delivery, zone } = resolveDeliveryCharge(
+          addressText,
+          zones,
+          product.delivery_charge,
+        );
 
         // Link to store_customers by phone
         let customerId: string | null = null;
@@ -1830,6 +1846,9 @@ export function buildTools(ctx: AgentContext) {
           if (existing) customerId = existing.id;
         }
 
+        // Short, readable order number (e.g. PH-000123) from the store's invoice settings.
+        const { data: invoiceNo } = await sb.rpc("generate_invoice_no", { _store_id: storeId } as any);
+
         const { data: order, error } = await sb
           .from("orders")
           .insert({
@@ -1839,10 +1858,13 @@ export function buildTools(ctx: AgentContext) {
             address: slot.full_address,
             area:
               [slot.village, slot.union, slot.upazila, slot.district].filter(Boolean).join(", ") ||
+              zone?.name ||
               null,
-            payment_method: slot.payment_method,
-            subtotal,
+            payment_method: slot.payment_method || "cod",
+            subtotal: subtotal + delivery,
             delivery_amount: delivery,
+            delivery_zone_id: zone?.id ?? null,
+            invoice_no: (invoiceNo as string | null) || null,
             status: "pending",
             notes: "Placed via AI Sales Agent (Messenger)",
             customer_id: customerId,
