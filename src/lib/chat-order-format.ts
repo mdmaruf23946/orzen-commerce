@@ -59,11 +59,19 @@ export function pickDeliveryZone(address: string, zones: DeliveryZone[]): Delive
   const text = String(address ?? "").toLowerCase();
   if (!text.trim()) return zones.find((z) => z.is_default) ?? zones[0]!;
 
+  // Address tokens, so "ঢাকা" still matches a zone named "ঢাকার ভিতরে".
+  const tokens = text.split(/[\s,./|()-]+/).map((t) => t.trim()).filter((t) => t.length >= 3);
+  const matches = (word: string) => {
+    const w = word.toLowerCase();
+    if (text.includes(w)) return true;
+    return tokens.some((t) => t.startsWith(w.slice(0, 3)) && (t.startsWith(w) || w.startsWith(t)));
+  };
+
   let best: { zone: DeliveryZone; score: number } | null = null;
   for (const zone of zones) {
     const isOutside = OUTSIDE_RE.test(zone.name);
     const words = zoneKeywords(zone.name);
-    const hits = words.filter((w) => text.includes(w.toLowerCase())).length;
+    const hits = words.filter((w) => matches(w)).length;
     if (!hits) continue;
     // "Outside Dhaka" should not win just because the address says Dhaka.
     const score = isOutside ? hits - 0.5 : hits + (INSIDE_RE.test(zone.name) ? 0.5 : 0);
