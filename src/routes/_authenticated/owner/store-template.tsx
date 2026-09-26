@@ -3,7 +3,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, ImageIcon, Eye, EyeOff, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, ImageIcon, Eye, EyeOff, Package, Sparkles } from "lucide-react";
+import { AIProductBuilderDialog } from "@/components/admin/product-form/AIProductBuilderDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { getStoreTemplate, updateStoreTemplate } from "@/lib/owner.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -155,6 +162,7 @@ function StoreTemplatePage() {
   const [pq, setPq] = useState("");
   const [pOpen, setPOpen] = useState(false);
   const [pIndex, setPIndex] = useState<number | null>(null);
+  const [aiType, setAiType] = useState<"physical" | "digital" | "service" | "subscription" | null>(null);
 
   // Categories
   const [cq, setCq] = useState("");
@@ -343,14 +351,37 @@ function StoreTemplatePage() {
   }
 
   const addProductBtn = (
-    <Button
-      onClick={() => {
-        setPIndex(null);
-        setPOpen(true);
-      }}
-    >
-      <Plus className="mr-1 h-4 w-4" /> Add product
-    </Button>
+    <div className="flex flex-wrap gap-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline">
+            <Sparkles className="mr-1 h-4 w-4" /> Add with AI
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {(
+            [
+              ["physical", "Physical product"],
+              ["digital", "Digital product"],
+              ["service", "Service"],
+              ["subscription", "Subscription"],
+            ] as const
+          ).map(([k, label]) => (
+            <DropdownMenuItem key={k} onClick={() => setAiType(k)}>
+              {label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Button
+        onClick={() => {
+          setPIndex(null);
+          setPOpen(true);
+        }}
+      >
+        <Plus className="mr-1 h-4 w-4" /> Add product
+      </Button>
+    </div>
   );
   const addCategoryBtn = (
     <Button
@@ -706,6 +737,22 @@ function StoreTemplatePage() {
       </Tabs>
 
       {saving && <p className="text-xs text-muted-foreground">Saving…</p>}
+
+      {aiType && (
+        <AIProductBuilderDialog
+          templateMode
+          storeId={TEMPLATE_FOLDER}
+          categories={categoriesForDialog as any}
+          productDefaults={null}
+          productType={aiType}
+          onClose={() => setAiType(null)}
+          onSave={async (payload: any) => {
+            setPIndex(null);
+            await saveProduct(payload);
+            setAiType(null);
+          }}
+        />
+      )}
 
       {pOpen && (
         <ProductDialog
