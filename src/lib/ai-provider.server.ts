@@ -407,7 +407,8 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
 }
 
 const NO_KEY_MESSAGE =
-  "No AI provider is configured. Add a Gemini or OpenAI key in Winner Admin → AI Control Center.";
+  "No AI provider is configured. Add an API key in Winner Admin → AI Control Center.";
+
 
 /**
  * Builds one AI SDK model that routes through the owner's keys with fallback.
