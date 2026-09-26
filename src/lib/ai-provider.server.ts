@@ -342,25 +342,31 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
       }
     }
 
-    let geminiBody: any = null;
+    let inlinedBody: any = null;
     let lastError = "AI request failed";
     const isChat = suffix.startsWith("/chat/completions");
-    for (const c of candidates) {
+    const needsVision = Array.isArray(bodyObj?.messages)
+      && bodyObj.messages.some((m: any) =>
+        Array.isArray(m?.content) && m.content.some((p: any) => p?.type === "image_url"),
+      );
+    const usable = needsVision ? candidates.filter((c) => c.vision) : candidates;
+    if (!usable.length) throw new Error("No AI key on this site can read images. Enable a vision-capable key.");
+    for (const c of usable) {
       const headers = new Headers(init?.headers);
       headers.delete("authorization");
       headers.delete("Lovable-API-Key");
       headers.set("content-type", "application/json");
       headers.set("authorization", `Bearer ${c.apiKey}`);
+      for (const [hk, hv] of Object.entries(c.headers)) headers.set(hk, hv);
       let payload = bodyObj;
-      if (bodyObj && c.provider === "gemini") {
-        geminiBody ??= await inlineRemoteImages(bodyObj);
-        payload = geminiBody;
+      if (bodyObj && needsVision) {
+        // Every provider accepts inline base64; Gemini accepts nothing else.
+        inlinedBody ??= await inlineRemoteImages(bodyObj);
+        payload = inlinedBody;
       }
-      // Google quotas and overload are per model, so a busy or exhausted model
-      // falls through to a sibling model on the same key before the next key.
-      const models = c.provider === "gemini" && isChat && payload
-        ? [c.modelId, ...geminiFallbackModels(c.modelId)]
-        : [c.modelId];
+      // Quotas and overload are per model, so a busy or exhausted model falls
+      // through to a sibling model on the same key before the next key.
+      const models = isChat && payload ? [c.modelId, ...c.fallbacks] : [c.modelId];
       let quotaHits = 0;
       let keyDead = false;
       for (const modelId of models) {
@@ -390,10 +396,11 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
       // Only park a key for the day when the key itself is bad or every model
       // on it is out of quota. Overload or a request-shape problem is not the
       // key's fault.
-      if (c.provider === "gemini" && c.keyId && (keyDead || quotaHits === models.length)) {
+      if (c.keyId && (keyDead || quotaHits === models.length)) {
         void markGeminiFailure(c.keyId, lastError);
       }
     }
+
     throw new Error(lastError);
   };
   return routedFetch;
