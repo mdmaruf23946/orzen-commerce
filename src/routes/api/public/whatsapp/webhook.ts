@@ -15,6 +15,7 @@ import {
 import { sanitizeOutgoingText } from "@/lib/messenger-text";
 import { ORDER_FIELD_LABELS, requiredSlotFields, type OrderFieldKey } from "@/lib/messenger-order-flow";
 import { friendlyWaError, sendWaText, markWaRead } from "@/lib/whatsapp-send.server";
+import { buildBuyNowMessage, fetchDeliveryZones } from "@/lib/chat-order-format";
 
 const ORDER_FIELD_BN: Record<string, string> = {
   customer_name: "নাম",
@@ -165,7 +166,7 @@ async function handleBuyButton(opts: {
   const { sb, storeId, conversationId, to, token, phoneNumberId, productId } = opts;
   const { data: product } = await sb
     .from("products")
-    .select("id,name,slug,stock,status,product_type")
+    .select("id,name,slug,price,stock,status,product_type,delivery_charge")
     .eq("store_id", storeId)
     .eq("id", productId)
     .maybeSingle();
@@ -201,11 +202,19 @@ async function handleBuyButton(opts: {
   });
   const cfg = await loadOrderFlow(storeId);
   const missing = requiredSlotFields(cfg)
-    .filter((k) => k !== "product_id" && !slot[k])
+    .filter((k) => k !== "product_id" && k !== "payment_method" && !slot[k])
     .map((k) => ORDER_FIELD_BN[k] ?? ORDER_FIELD_LABELS[k as OrderFieldKey] ?? k);
+  const zones = await fetchDeliveryZones(sb, storeId);
   const text = missing.length
-    ? `${cfg.buy_now_message}\n\n${product.name} অর্ডার করতে দিন: ${missing.join(", ")}।`
-    : `${product.name} অর্ডারের সব তথ্য পেয়েছি। কনফার্ম করতে "হ্যাঁ" লিখুন।`;
+    ? buildBuyNowMessage({
+        productName: product.name,
+        price: Number(product.price ?? 0),
+        qty: Number(slot["qty"] ?? 1) || 1,
+        zones,
+        productDeliveryCharge: product.delivery_charge,
+        intro: cfg.buy_now_message,
+      })
+    : `${product.name} অর্ডারের সব তথ্য পেয়েছি। কনফার্ম করতে "হ্যাঁ" লিখুন।`;
   await sendAndLog(sb, phoneNumberId, token, to, conversationId, text);
 }
 
