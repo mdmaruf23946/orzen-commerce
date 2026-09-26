@@ -980,8 +980,7 @@ async function maybeApplyPendingOrderText(opts: {
 }
 
 async function transcribeAudioAttachment(url: string): Promise<string | null> {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key || !url) return null;
+  if (!url) return null;
   try {
     const audioRes = await fetch(url);
     if (!audioRes.ok) return null;
@@ -991,29 +990,19 @@ async function transcribeAudioAttachment(url: string): Promise<string | null> {
     for (let i = 0; i < buf.byteLength; i++) bin += String.fromCharCode(buf[i]!);
     const b64 = btoa(bin);
     const mime = (audioRes.headers.get("content-type") || "audio/mp4").split(";")[0]!.trim();
-    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${key}`,
-        "Lovable-API-Key": key,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Transcribe this voice message verbatim. Return only the transcript text with no extra commentary." },
-              { type: "input_audio", input_audio: { data: b64, format: mime.replace(/^audio\//, "") } },
-            ],
-          },
-        ],
-      }),
+    // Runs on the platform owner's own provider keys (Winner Admin → AI).
+    const text = await routedChatCompletion({
+      modelOverride: "google/gemini-2.5-flash",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Transcribe this voice message verbatim. Return only the transcript text with no extra commentary." },
+            { type: "input_audio", input_audio: { data: b64, format: mime.replace(/^audio\//, "") } },
+          ],
+        },
+      ],
     });
-    if (!r.ok) return null;
-    const j = (await r.json().catch(() => null)) as { choices?: Array<{ message?: { content?: string } }> } | null;
-    const text = j?.choices?.[0]?.message?.content?.trim();
     return text || null;
   } catch {
     return null;
