@@ -1892,20 +1892,30 @@ export function buildTools(ctx: AgentContext) {
 
         await clearConversationSlot(convId);
 
-        const confirmation = renderConfirmation(cfg.confirmation_message, {
-          product: product.name,
-          qty,
-          total: `৳${subtotal + delivery}`,
-          customer_name: slot.customer_name,
-          address: slot.full_address,
-          payment_method: slot.payment_method,
-          invoice_no: order.invoice_no,
-        });
+        const orderNo = shortOrderNo(order.invoice_no, order.id);
+        const confirmation = [
+          renderConfirmation(cfg.confirmation_message, {
+            product: product.name,
+            qty,
+            total: money(subtotal + delivery),
+            customer_name: slot.customer_name,
+            address: slot.full_address,
+            payment_method: "ক্যাশ অন ডেলিভারি",
+            invoice_no: orderNo,
+          }),
+          `অর্ডার নম্বর: ${orderNo}`,
+          `পণ্যের মূল্য: ${money(subtotal)}`,
+          `ডেলিভারি চার্জ${zone ? ` (${zone.name})` : ""}: ${money(delivery)}`,
+          `সর্বমোট: ${money(subtotal + delivery)}`,
+          "পেমেন্ট: ক্যাশ অন ডেলিভারি",
+        ]
+          .filter(Boolean)
+          .join("\n");
 
         return {
           ok: true,
           orderId: order.id,
-          invoice_no: order.invoice_no,
+          invoice_no: orderNo,
           subtotal,
           delivery,
           grand_total: subtotal + delivery,
@@ -1913,7 +1923,7 @@ export function buildTools(ctx: AgentContext) {
           qty,
           confirmation_message: confirmation,
           instruction:
-            "Send confirmation_message to the customer as written (translate only if the customer's language clearly differs).",
+            "Send confirmation_message to the customer exactly as written. Never show the internal orderId; the order number is invoice_no.",
         };
       },
     });
