@@ -233,6 +233,12 @@ function toBase64(bytes: Uint8Array) {
   return btoa(binary);
 }
 
+// Comparing product photos works fine at a small size, and a 320px WebP
+// rendition is roughly 8-12 KB instead of several hundred KB, which is what
+// makes the vision answer come back in seconds instead of tens of seconds.
+const RENDITION_QUERY = "width=320&quality=50&resize=contain";
+const RENDITION_ACCEPT = "image/webp,image/jpeg,*/*";
+
 async function fetchBytes(url: string, headers: Record<string, string>): Promise<Uint8Array | null> {
   try {
     const res = await fetch(url, { headers, signal: AbortSignal.timeout(10_000) });
@@ -257,15 +263,26 @@ async function downloadImageBytes(url: string): Promise<Uint8Array | null> {
     const path = decodeURIComponent(parsed.pathname.slice("/api/img/".length));
     const base = requireServerEnv("SUPABASE_URL").replace(/\/$/, "");
     const key = requireServerEnv("SUPABASE_SERVICE_ROLE_KEY");
-    const auth: Record<string, string> = { apikey: key };
+    const auth: Record<string, string> = { apikey: key, accept: RENDITION_ACCEPT };
     if (!key.startsWith("sb_")) auth.authorization = `Bearer ${key}`;
     const encoded = path.split("/").map(encodeURIComponent).join("/");
     const small = await fetchBytes(
-      `${base}/storage/v1/render/image/authenticated/store-assets/${encoded}?width=640&quality=70&resize=contain`,
+      `${base}/storage/v1/render/image/authenticated/store-assets/${encoded}?${RENDITION_QUERY}`,
       auth,
     );
     if (small && small.length) return small;
     return fetchBytes(`${base}/storage/v1/object/store-assets/${encoded}`, auth);
+  }
+  // Public storage originals can be several megabytes each. Comparing photos
+  // only needs a small rendition, and the smaller download is much faster.
+  if (parsed.pathname.includes("/storage/v1/object/public/")) {
+    const rendered = new URL(url);
+    rendered.pathname = parsed.pathname.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/");
+    rendered.searchParams.set("width", "320");
+    rendered.searchParams.set("quality", "50");
+    rendered.searchParams.set("resize", "contain");
+    const small = await fetchBytes(rendered.toString(), { accept: RENDITION_ACCEPT });
+    if (small && small.length) return small;
   }
   return fetchBytes(url, { "user-agent": "Mozilla/5.0 (compatible; OrzenBot/1.0)" });
 }
@@ -487,6 +504,7 @@ export async function routedChatCompletion(opts: {
   modelOverride?: string;
   temperature?: number;
   jsonOnly?: boolean;
+  maxTokens?: number;
 }): Promise<string | null> {
   const sb = admin();
   const { data: settings } = await sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle();
@@ -501,6 +519,9 @@ export async function routedChatCompletion(opts: {
       model: modelId,
       messages: opts.messages,
       ...(typeof opts.temperature === "number" ? { temperature: opts.temperature } : {}),
+      // A hard output cap keeps the model from writing long explanations, which
+      // is the slowest part of a photo answer.
+      ...(typeof opts.maxTokens === "number" ? { max_tokens: opts.maxTokens } : {}),
       ...(opts.jsonOnly ? { response_format: { type: "json_object" } } : {}),
     }),
   });
@@ -531,10 +552,12 @@ export function toChatContent(parts: VisionPart[]): any[] {
  */
 export async function routedVisionText(
   parts: VisionPart[],
-  opts?: { modelOverride?: string; jsonOnly?: boolean },
+  opts?: { modelOverride?: string; jsonOnly?: boolean; maxTokens?: number },
 ): Promise<string> {
   const text = await routedChatCompletion({
     messages: [{ role: "user", content: toChatContent(parts) }],
+    temperature: 0,
+    maxTokens: opts?.maxTokens ?? 400,
     ...(opts?.modelOverride ? { modelOverride: opts.modelOverride } : {}),
     ...(opts?.jsonOnly ? { jsonOnly: true } : {}),
   });

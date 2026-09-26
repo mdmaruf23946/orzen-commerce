@@ -1031,20 +1031,16 @@ async function describeImageAttachment(
     }
     const dataUrl = `data:${type};base64,${btoa(binary)}`;
 
+    // Speed: the old prompt asked for 25 fields and took 15-20s to generate on
+    // free keys. The agent only ever uses a handful of them, so the model now
+    // writes one short object and the rest keep their safe defaults.
     const prompt =
-      "A customer sent this photo to an online shop. Inspect the actual sale item carefully, not the model/person/background. " +
-      "First separate the sale item's outline from the background using edges, shadows, seams, cap/port/button boundaries, label layout and texture—not colour contrast alone. " +
-      "Handle white-on-white, black-on-black, transparent, reflective, backlit and overexposed items without assuming their colour. " +
-      "Read every visible logo, label, model number and package specification. Identify ports/connectors, buttons, display, controls, " +
-      "physical construction and likely function. Distinguish visually similar but functionally different products (for example a charger, " +
-      "adapter, tracker, speaker, hub or power bank). Return ONLY minified JSON with keys description,keywords,is_product,product_type," +
-      "product_subtype,category,primary_color,secondary_colors,material,style,shape,pattern,visible_text,brand,model_number,functions," +
-      "connectors,controls,package_specs,distinctive_features,field_confidence,visibility_warnings,object_boundary_confidence,text_legibility,confidence. " +
-      "Use null for uncertain single-value attributes and [] for absent lists. confidence is 0..1. " +
-      "object_boundary_confidence and text_legibility MUST each be a JSON number from 0 to 1, never text. visibility_warnings may contain ONLY these exact codes: low_contrast, blur, overexposure, underexposure, reflection, transparency, occlusion. " +
-      "field_confidence is an object whose keys are only attributes actually observed and whose values are 0..1. " +
-      "Never invent specifications that are not visible or reliably identifiable. Do not guess a colour under ambiguous lighting; name exact visible colours only when confident. " +
-      "keywords must contain 2-8 concise catalogue terms. is_product is false for receipts, screenshots, documents, selfies or memes.";
+      "A customer sent this photo to an online shop. Identify the sale item (ignore people, hands and background). " +
+      "Read any visible brand, model number or label text. Answer FAST and SHORT. " +
+      'Return ONLY minified JSON: {"description":"one short sentence","keywords":["2-6 catalogue search words"],' +
+      '"is_product":true|false,"product_type":"short noun","brand":null|"...","model_number":null|"...",' +
+      '"primary_color":null|"...","confidence":0..1}. ' +
+      "Never invent a brand, model or specification that is not visible. is_product is false for receipts, screenshots, documents, selfies or memes.";
     let raw: string;
     try {
       raw = await routedVisionText([
@@ -1298,23 +1294,23 @@ async function visuallyMatchProduct(
       return left.id.localeCompare(right.id);
     });
 
-    // Stage 1: compare the customer's photo with every eligible image in the
-    // current store. Eight products × up to three images stays below the model's
-    // image limit while covering large catalogues through deterministic batches.
-    // Single pass: one comparison call over the most likely candidates decides
-    // the verdict. The old two-stage chain issued up to a dozen vision calls per
-    // photo, which is what pushed replies past three minutes on free keys.
-    const batch = candidates.slice(0, 8);
+    // Speed: one comparison call, and only the few catalogue photos that can
+    // plausibly win. Sending eight products × two photos meant downloading and
+    // inlining sixteen full-size images per customer photo, which is what made
+    // a found product slower to answer than a missing one.
+    const batch = candidates.slice(0, 4);
     const content: any[] = [{
       type: "input_text",
-      text: "Compare CUSTOMER_IMAGE with each candidate's images and decide if one is the exact same sale product/model. Return ONLY minified JSON: " +
-        '{"results":[{"index":number,"verdict":"same|close|different","type_compatible":boolean,"confidence":number,"reason":"short visual evidence"}]}. ' +
+      text: "CUSTOMER_IMAGE is first. Decide if any candidate photo shows the same sale product/model. Answer FAST and SHORT. " +
+        'Return ONLY minified JSON: {"results":[{"index":number,"verdict":"same|close|different","type_compatible":boolean,"confidence":0..1,"reason":"few words"}]}. ' +
         "Use same only when function/type, ports, controls, branding/text and proportions agree; colour or shape alone is insufficient. " +
-        "Judge by the IMAGES: catalogue names and descriptions may be wrong and must never override an image match. If the customer image is the same photograph as a catalogue image (even cropped, resized, recompressed or Messenger-encoded), return same with confidence 0.99.",
+        "Judge by the IMAGES: catalogue names may be wrong and must never override the photo. If the customer image is the same photograph as a candidate photo (even cropped, resized or recompressed), return same with confidence 0.99. " +
+        "Skip candidates that clearly differ instead of describing them.",
     }, { type: "input_image", image_url: analysis.image_data_url }];
     batch.forEach((product, index) => {
-      content.push({ type: "input_text", text: `CANDIDATE_${index}: ${productIdentityText(product, categoryNames.get(String(product.category_id ?? "")) ?? "")}` });
-      productImages(product, 2).forEach((image) => content.push({ type: "input_image", image_url: image }));
+      const identity = productIdentityText(product, categoryNames.get(String(product.category_id ?? "")) ?? "").slice(0, 220);
+      content.push({ type: "input_text", text: `CANDIDATE_${index}: ${identity}` });
+      productImages(product, 1).forEach((image) => content.push({ type: "input_image", image_url: image }));
     });
     const compared = await requestJson("MATCH", content);
     const results = Array.isArray(compared.results) ? compared.results : [];
@@ -2469,14 +2465,8 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                   .from("messenger_integrations")
                   .update({ last_error: null } as any)
                   .eq("id", (integ as any).id);
-                // After replying, fingerprint a few new/changed products of this
-                // store so later photos of them also take the fast path.
-                try {
-                  const { syncProductImageEmbeddings } = await import("@/lib/product-image-embeddings.server");
-                  await syncProductImageEmbeddings(sb as any, { storeId: integ.store_id, limit: 3 });
-                } catch {
-                  /* best effort; the scheduled sync covers it */
-                }
+                // Photo fingerprints are unavailable on the current provider
+                // keys, so nothing is indexed here any more.
                 continue;
               }
 
