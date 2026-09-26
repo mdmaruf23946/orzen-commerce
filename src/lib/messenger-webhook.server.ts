@@ -952,6 +952,15 @@ async function maybeApplyPendingOrderText(opts: {
     ? await patchConversationPendingOrder(sb, conversationId, { ...current, ...details })
     : current;
   if (!slot.product_id) return false;
+  // Customer just sent the details after Buy Now and nothing is missing:
+  // create the order and send the confirmation directly (no AI round-trip,
+  // which could time out and leave the customer without any reply).
+  if (hasNewOrderDetails) {
+    const missing = orderMissingFields(slot, await loadStoreOrderFlow(sb, storeId));
+    if (!missing.length) {
+      return finalizePendingMessengerOrder({ sb, storeId, conversationId, psid, token });
+    }
+  }
   const blocked = await maybeBlockDuplicateMessengerOrder({
     sb,
     storeId,
