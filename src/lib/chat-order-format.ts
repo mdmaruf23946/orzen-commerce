@@ -95,7 +95,7 @@ export function resolveDeliveryCharge(
   return { charge: Number(productCharge ?? 0), zone: null };
 }
 
-/** The numbered, easy-to-follow "give me your details" message. */
+/** The short, easy-to-follow "give me your details" message. */
 export function buildBuyNowMessage(opts: {
   productName: string;
   price: number;
@@ -104,47 +104,26 @@ export function buildBuyNowMessage(opts: {
   productDeliveryCharge?: number | null;
   intro?: string | null;
 }) {
-  const qty = Math.max(1, Number(opts.qty ?? 1) || 1);
-  const subtotal = Number(opts.price ?? 0) * qty;
   const lines: string[] = [];
 
-  if (opts.intro && opts.intro.trim()) lines.push(opts.intro.trim(), "");
-
-  lines.push(`🛍️ প্রোডাক্ট: ${opts.productName}`);
-  lines.push(`💰 মূল্য: ${money(subtotal)}${qty > 1 ? ` (${toBnDigits(qty)} পিস)` : ""}`);
-  lines.push("");
-
   if (opts.zones.length) {
-    lines.push("🚚 ডেলিভারি চার্জ:");
-    for (const z of opts.zones) {
-      lines.push(`• ${z.name}: ${money(z.charge)}${z.eta ? ` (${z.eta})` : ""}`);
-    }
-    lines.push("👉 আপনার ঠিকানা অনুযায়ী ডেলিভারি চার্জ যোগ হবে।");
+    lines.push("ডেলিভারি চার্জ:");
+    for (const z of opts.zones) lines.push(`- ${z.name}: ${money(z.charge)}`);
   } else {
     const dc = Number(opts.productDeliveryCharge ?? 0);
-    lines.push(`🚚 ডেলিভারি চার্জ: ${dc > 0 ? money(dc) : "ঠিকানা অনুযায়ী জানিয়ে দেব"}`);
+    lines.push(`ডেলিভারি চার্জ: ${dc > 0 ? money(dc) : "ঠিকানা অনুযায়ী জানিয়ে দেব"}`);
   }
 
+  lines.push("পেমেন্ট: ক্যাশ অন ডেলিভারি");
   lines.push("");
-  lines.push("💵 পেমেন্ট: ক্যাশ অন ডেলিভারি (পণ্য হাতে পেয়ে টাকা দেবেন)");
-  lines.push("────────────────");
-  lines.push("অর্ডার কনফার্ম করতে নিচের তথ্যগুলো সিরিয়াল অনুযায়ী লিখে পাঠান:");
-  lines.push("");
-  lines.push("১) আপনার পুরো নাম");
+  lines.push("অর্ডার করতে নিচের তথ্যগুলো লিখে পাঠান:");
+  lines.push("১) আপনার নাম");
   lines.push("২) মোবাইল নম্বর");
-  lines.push("৩) ইমেইল (না থাকলে বাদ দিন)");
-  lines.push("৪) সম্পূর্ণ ঠিকানা (গ্রাম/বাসা, থানা, জেলা)");
-  lines.push("৫) অতিরিক্ত নোট (ঐচ্ছিক)");
-  lines.push("");
-  lines.push("উদাহরণ:");
-  lines.push("১) রহিম উদ্দিন");
-  lines.push("২) ০১৭XXXXXXXX");
-  lines.push("৩) rahim@gmail.com");
-  lines.push("৪) বাড়ি ১২, রোড ৫, মিরপুর, ঢাকা");
-  lines.push("৫) বিকেলে ডেলিভারি দিলে ভালো হয়");
+  lines.push("৩) সম্পূর্ণ ঠিকানা");
 
   return lines.join("\n");
 }
+
 
 /** Short reminder listing only the fields still missing, in the same order. */
 export function buildMissingFieldsMessage(missingLabels: string[]) {
