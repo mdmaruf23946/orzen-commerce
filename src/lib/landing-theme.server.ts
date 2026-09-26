@@ -1,7 +1,7 @@
 // Server-only AI palette generation for the Landing Page Design tab.
 // The model only returns colors — it never touches product data, content,
 // sections, the order form, domains or settings.
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { routedStructuredModel } from "@/lib/ai-provider.server";
 import { generateText, Output, NoObjectGeneratedError } from "ai";
 import { z } from "zod";
 import { FALLBACK_THEMES, isHex, normalizeHex, type LandingThemePreset } from "@/lib/landing-theme";
@@ -43,16 +43,13 @@ function fallbackThemes(facts: ThemeProductFacts): LandingThemePreset[] {
 }
 
 export async function suggestThemes(facts: ThemeProductFacts): Promise<LandingThemePreset[]> {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) return fallbackThemes(facts);
-
-  const provider = createOpenAICompatible({
-    name: "lovable",
-    baseURL: "https://ai.gateway.lovable.dev/v1",
-    supportsStructuredOutputs: true,
-    headers: { "Lovable-API-Key": apiKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
-  });
-  const model = provider("google/gemini-3.7-flash");
+  // Runs on the platform owner's own provider keys (Winner Admin → AI).
+  let model: any;
+  try {
+    model = await routedStructuredModel("google/gemini-2.5-flash");
+  } catch {
+    return fallbackThemes(facts);
+  }
 
   const system = [
     "You are a senior brand designer choosing color palettes for a single-product e-commerce landing page.",

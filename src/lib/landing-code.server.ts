@@ -3,19 +3,17 @@
 // The AI may only ever produce CSS for the page's presentation layer. Its
 // output goes through the same validator as hand-written code, so it can
 // never introduce scripts, imports or anything outside the visual layer.
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { generateText } from "ai";
 import { autoFixDesignCode, validateDesignCode, MAX_DESIGN_CODE_BYTES } from "@/lib/landing-code";
+import { routedModel } from "@/lib/ai-provider.server";
 
-function model() {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) return null;
-  const provider = createOpenAICompatible({
-    name: "lovable",
-    baseURL: "https://ai.gateway.lovable.dev/v1",
-    headers: { "Lovable-API-Key": apiKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
-  });
-  return provider("google/gemini-3.7-flash");
+// Runs on the platform owner's own provider keys (Winner Admin → AI).
+async function model() {
+  try {
+    return await routedModel("google/gemini-2.5-flash");
+  } catch {
+    return null;
+  }
 }
 
 const RULES = [
@@ -40,7 +38,7 @@ function cleanOutput(text: string): string {
 }
 
 async function run(system: string, prompt: string): Promise<string | null> {
-  const m = model();
+  const m = await model();
   if (!m) return null;
   try {
     const { text } = await generateText({ model: m, system, prompt, maxOutputTokens: 32_000 });

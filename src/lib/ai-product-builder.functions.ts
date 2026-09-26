@@ -5,7 +5,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { assertPlan } from "@/lib/plan-guard";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { generateText, Output, NoObjectGeneratedError } from "ai";
 
 const MAX_IMAGES = 8;
@@ -125,22 +124,11 @@ export const generateProductDraft = createServerFn({ method: "POST" })
       }
     }
 
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("AI service not configured");
-
     const imageUrls = await signImages(supabase, data.imagePaths);
 
-    // Structured output on OpenAI requires strict json_schema — enable it.
-    const provider = createOpenAICompatible({
-      name: "lovable",
-      baseURL: "https://ai.gateway.lovable.dev/v1",
-      supportsStructuredOutputs: true,
-      headers: {
-        "Lovable-API-Key": apiKey,
-        "X-Lovable-AIG-SDK": "vercel-ai-sdk",
-      },
-    });
-    const model = provider("google/gemini-2.5-pro");
+    // Runs on the platform owner's own provider keys (Winner Admin → AI).
+    const { routedStructuredModel } = await import("@/lib/ai-provider.server");
+    const model = await routedStructuredModel("google/gemini-2.5-pro");
 
     const system = [
       "You are an e-commerce product listing generator for a Bangladeshi (BDT) storefront.",

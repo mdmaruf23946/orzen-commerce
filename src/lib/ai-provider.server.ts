@@ -14,19 +14,11 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { dhakaToday, normalizeGeminiKeys, pickActiveGeminiKey, type GeminiKey } from "./gemini-keys.server";
-import { requireServerEnv, serverEnv } from "./server-env";
+import { requireServerEnv } from "./server-env";
 
 const SENTINEL_BASE = "https://ai-router.internal/v1";
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai";
 const OPENAI_BASE = "https://api.openai.com/v1";
-const LOVABLE_BASE = "https://ai.gateway.lovable.dev/v1";
-
-/** Gateway model ids that are no longer served, mapped to a current one. */
-const PLATFORM_MODEL_ALIASES: Record<string, string> = {
-  "google/gemini-2.5-flash": "google/gemini-3.8-flash",
-  "google/gemini-2.5-flash-lite": "google/gemini-3.1-flash-lite",
-  "google/gemini-2.5-pro": "google/gemini-3.1-pro-preview",
-};
 
 export type AiProviderKind = "gemini" | "openai" | "platform";
 
@@ -121,25 +113,8 @@ function buildCandidates(settings: any, modelId: string): Candidate[] {
       headers: {},
     });
   }
-  // Platform (Lovable AI) — always the last resort, and the default when the
-  // owner has not stored any key of their own.
-  const saved = (settings?.provider_api_key || "").trim();
-  const looksLovable = saved.startsWith("lv_") || saved.startsWith("sk-lovable");
-  // Cloudflare supplies this as a per-request binding. `serverEnv` reads that
-  // binding even when the runtime's process.env object is empty/read-only.
-  const platformKey = (looksLovable ? saved : "") || serverEnv("LOVABLE_API_KEY") || "";
-  if (platformKey) {
-    out.push({
-      provider: "platform",
-      keyId: null,
-      label: "Lovable AI",
-      apiKey: platformKey,
-      baseURL: LOVABLE_BASE,
-      // A few older gateway ids are no longer served; map them to a live one.
-      modelId: PLATFORM_MODEL_ALIASES[modelId] ?? modelId,
-      headers: { "Lovable-API-Key": platformKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
-    });
-  }
+  // The platform (Lovable AI) gateway is intentionally NOT part of the chain:
+  // every AI request on this site must run on the owner's own provider keys.
   return out;
 }
 
@@ -167,19 +142,8 @@ function keyLevelFailure(status: number) {
   return status === 401 || status === 403 || status === 429;
 }
 
-/**
- * Builds one AI SDK model that routes through the owner's keys with fallback.
- * `modelId` is the gateway-style id stored in settings (e.g. "google/gemini-2.5-flash").
- */
-export function buildRoutedModel(settings: any, modelId: string): ResolvedAi {
-  const candidates = buildCandidates(settings, modelId);
-  if (!candidates.length) {
-    throw new Error(
-      "No AI provider is configured. Add a Gemini or OpenAI key in Winner Admin → AI, or configure the platform AI key.",
-    );
-  }
-  let used: { provider: AiProviderKind; label: string } | null = null;
-
+/** Builds a fetch that walks the owner's key chain, retrying on failure. */
+function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProviderKind; label: string }) => void) {
   const routedFetch: typeof fetch = async (input, init) => {
     const url = new URL(String(input instanceof Request ? input.url : input));
     const suffix = url.pathname.replace(/^\/v1/, "") + url.search;
@@ -198,23 +162,19 @@ export function buildRoutedModel(settings: any, modelId: string): ResolvedAi {
       headers.delete("authorization");
       headers.delete("Lovable-API-Key");
       headers.set("content-type", "application/json");
-      if (c.provider === "platform") {
-        for (const [k, v] of Object.entries(c.headers)) headers.set(k, v);
-      } else {
-        headers.set("authorization", `Bearer ${c.apiKey}`);
-      }
+      headers.set("authorization", `Bearer ${c.apiKey}`);
       const body = bodyObj ? JSON.stringify({ ...bodyObj, model: c.modelId }) : (init?.body as any);
 
       try {
         const res = await fetch(`${c.baseURL}${suffix}`, { ...init, headers, body });
         if (res.ok) {
-          used = { provider: c.provider, label: c.label };
+          onUse({ provider: c.provider, label: c.label });
           return res;
         }
         const text = await res.text().catch(() => "");
         lastError = `${c.label}: HTTP ${res.status} ${text.slice(0, 300)}`;
         if (!retryable(res.status)) {
-          used = { provider: c.provider, label: c.label };
+          onUse({ provider: c.provider, label: c.label });
           return new Response(text, { status: res.status, headers: res.headers });
         }
         // Only a key-level problem (bad key, revoked, quota) parks the key for
@@ -229,10 +189,32 @@ export function buildRoutedModel(settings: any, modelId: string): ResolvedAi {
     }
     throw new Error(lastError);
   };
+  return routedFetch;
+}
+
+const NO_KEY_MESSAGE =
+  "No AI provider is configured. Add a Gemini or OpenAI key in Winner Admin → AI Control Center.";
+
+/**
+ * Builds one AI SDK model that routes through the owner's keys with fallback.
+ * `modelId` is the gateway-style id stored in settings (e.g. "google/gemini-2.5-flash").
+ */
+export function buildRoutedModel(
+  settings: any,
+  modelId: string,
+  opts?: { structuredOutputs?: boolean },
+): ResolvedAi {
+  const candidates = buildCandidates(settings, modelId);
+  if (!candidates.length) throw new Error(NO_KEY_MESSAGE);
+  let used: { provider: AiProviderKind; label: string } | null = null;
+  const routedFetch = makeRoutedFetch(candidates, (u) => {
+    used = u;
+  });
 
   const provider = createOpenAICompatible({
-    name: "lovable",
+    name: "orzen-ai",
     baseURL: SENTINEL_BASE,
+    ...(opts?.structuredOutputs ? { supportsStructuredOutputs: true } : {}),
     fetch: routedFetch as any,
   });
 
@@ -271,4 +253,71 @@ export async function describeActiveAiProvider() {
 export async function routedModel(modelId: string) {
   const r = await resolveAiModel({ modelOverride: modelId });
   return r.model;
+}
+
+/** A routed model whose provider advertises JSON-schema structured output. */
+export async function routedStructuredModel(modelId?: string) {
+  const sb = admin();
+  const { data: settings } = await sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle();
+  const id = modelId || (settings as any)?.default_model || "google/gemini-2.5-flash";
+  return buildRoutedModel(settings, id, { structuredOutputs: true }).model;
+}
+
+/**
+ * Raw chat-completions call through the owner's key chain.
+ * Used by the places that previously called the platform gateway directly.
+ */
+export async function routedChatCompletion(opts: {
+  messages: any[];
+  modelOverride?: string;
+  temperature?: number;
+  jsonOnly?: boolean;
+}): Promise<string | null> {
+  const sb = admin();
+  const { data: settings } = await sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle();
+  const modelId = opts.modelOverride || (settings as any)?.default_model || "google/gemini-2.5-flash";
+  const candidates = buildCandidates(settings, modelId);
+  if (!candidates.length) return null;
+  const routedFetch = makeRoutedFetch(candidates, () => {});
+  const res = await routedFetch(`${SENTINEL_BASE}/chat/completions`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      model: modelId,
+      messages: opts.messages,
+      ...(typeof opts.temperature === "number" ? { temperature: opts.temperature } : {}),
+      ...(opts.jsonOnly ? { response_format: { type: "json_object" } } : {}),
+    }),
+  });
+  if (!res.ok) throw new Error(`AI request failed (${res.status}): ${(await res.text().catch(() => "")).slice(0, 300)}`);
+  const json = (await res.json().catch(() => null)) as
+    | { choices?: Array<{ message?: { content?: string } }> }
+    | null;
+  return json?.choices?.[0]?.message?.content?.trim() || null;
+}
+
+type VisionPart =
+  | { type: "input_text"; text: string }
+  | { type: "input_image"; image_url: string }
+  | Record<string, any>;
+
+/** Converts Responses-style content parts to chat-completions parts. */
+export function toChatContent(parts: VisionPart[]): any[] {
+  return parts.map((p: any) => {
+    if (p?.type === "input_text") return { type: "text", text: p.text };
+    if (p?.type === "input_image") return { type: "image_url", image_url: { url: p.image_url } };
+    return p;
+  });
+}
+
+/**
+ * Vision call returning the model's raw text, routed through the owner's keys.
+ * Accepts Responses-style content parts so existing prompts stay unchanged.
+ */
+export async function routedVisionText(parts: VisionPart[], opts?: { modelOverride?: string }): Promise<string> {
+  const text = await routedChatCompletion({
+    messages: [{ role: "user", content: toChatContent(parts) }],
+    ...(opts?.modelOverride ? { modelOverride: opts.modelOverride } : {}),
+  });
+  return text ?? "";
 }
