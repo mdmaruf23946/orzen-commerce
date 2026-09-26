@@ -850,12 +850,12 @@ async function finalizePendingMessengerOrder(opts: {
       customer_name: slot.customer_name,
       address: slot.full_address,
       payment_method: "ক্যাশ অন ডেলিভারি",
-      invoice_no: order.invoice_no || order.id,
+      invoice_no: shortOrderNo(order.invoice_no, order.id),
     }),
   ];
   // Only add the summary lines the admin's own template doesn't already cover.
   lines.push("────────────────");
-  if (!uses("invoice_no")) lines.push(`🧾 অর্ডার নম্বর: ${order.invoice_no || order.id}`);
+  if (!uses("invoice_no")) lines.push(`🧾 অর্ডার নম্বর: ${shortOrderNo(order.invoice_no, order.id)}`);
   if (!uses("product") && !uses("qty")) lines.push(`🛍️ প্রোডাক্ট: ${product.name} × ${toBnDigits(qty)}`);
   lines.push(`💰 পণ্যের মূল্য: ${money(subtotal)}`);
   lines.push(`🚚 ডেলিভারি চার্জ${zone ? ` (${zone.name})` : ""}: ${money(delivery)}`);
