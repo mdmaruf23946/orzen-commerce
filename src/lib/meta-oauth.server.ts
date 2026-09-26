@@ -21,12 +21,15 @@ export const WHATSAPP_OAUTH_SCOPES = [
   "business_management",
 ];
 
-export function metaAppCreds(): { appId: string; appSecret: string } | null {
-  const appId = serverEnv("META_APP_ID");
-  const appSecret = serverEnv("META_APP_SECRET");
-  if (!appId || !appSecret) return null;
-  return { appId, appSecret };
+/**
+ * Platform Facebook app credentials. The Owner panel value wins; hosting
+ * environment variables remain a fallback.
+ */
+export async function metaAppCreds(): Promise<{ appId: string; appSecret: string } | null> {
+  const { resolveMetaAppCreds } = await import("@/lib/platform-meta-app.server");
+  return await resolveMetaAppCreds();
 }
+
 
 export function oauthRedirectUri(origin: string): string {
   return `${origin.replace(/\/$/, "")}/api/public/meta/oauth-callback`;

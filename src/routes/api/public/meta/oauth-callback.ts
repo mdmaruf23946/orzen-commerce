@@ -64,7 +64,7 @@ export const Route = createFileRoute("/api/public/meta/oauth-callback")({
           const { metaAppCreds, oauthRedirectUri, exchangeCodeForUserToken } = await import(
             "@/lib/meta-oauth.server"
           );
-          const creds = metaAppCreds();
+          const creds = await metaAppCreds();
           if (!creds) return await fail("The platform Facebook app is not configured.");
           const token = await exchangeCodeForUserToken({
             appId: creds.appId,
