@@ -441,51 +441,11 @@ function sanitizeMessengerReply(reply: string, latestText: string) {
   return text;
 }
 
+// Answers from the store's memorised catalogue (see catalog-memory.server.ts):
+// no per-message full-table read, no AI call — an in-memory index lookup.
 async function searchDirectProducts(sb: ReturnType<typeof admin>, storeId: string, text: string, limit = 6) {
-  const productSelect =
-    "product_id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,primary_image_url,gallery,features,specifications,variants,total_sold,rating,is_featured";
-  const [{ data: products }, { data: categories }, { data: blocked }] = await Promise.all([
-    sb.from("ai_product_catalog").select(productSelect).eq("store_id", storeId).eq("status", "active").gt("stock", 0).limit(500),
-    sb.from("categories").select("id,name").eq("store_id", storeId),
-    sb.from("ai_product_blacklist").select("product_id").eq("store_id", storeId),
-  ]);
-  const blockedIds = new Set((blocked ?? []).map((r: any) => r.product_id));
-  const cats = new Map((categories ?? []).map((c: any) => [c.id, c.name]));
-  const terms = productSearchTerms(text);
-  const phrase = text.toLowerCase().trim();
-  const scored = ((products ?? []) as unknown as Array<Omit<ProductRow, "id"> & { product_id: string }>)
-    .map((product) => ({ ...product, id: product.product_id }))
-    .filter((p) => !blockedIds.has(p.id))
-    .map((p) => {
-      const categoryName = cats.get(p.category_id ?? "") ?? "";
-      const haystack = [
-        p.name,
-        p.brand,
-        p.sku,
-        p.product_code,
-        categoryName,
-        p.short_description,
-        p.description,
-        stringifyField(p.features),
-        stringifyField(p.specifications),
-        stringifyField(p.variants),
-      ].join(" ").toLowerCase();
-      let score = 0;
-      if (phrase && haystack.includes(phrase)) score += 60;
-      for (const term of terms) {
-        if (haystack.includes(term)) score += 25;
-        if (String(p.name ?? "").toLowerCase().includes(term)) score += 20;
-        if (String(categoryName).toLowerCase().includes(term)) score += 15;
-      }
-      if (p.primary_image_url || (Array.isArray(p.gallery) && p.gallery.length > 0)) score += 12;
-      if (p.is_featured) score += 6;
-      score += Math.min(Number(p.total_sold) || 0, 50) / 10;
-      score += Math.min(Number(p.rating) || 0, 5);
-      return { product: p, score };
-    });
-  const ranked = terms.length ? scored.filter((r) => r.score >= 25) : scored;
-  ranked.sort((a, b) => b.score - a.score);
-  return ranked.slice(0, limit).map((r) => r.product);
+  const memory = await getStoreMemory(sb as any, storeId);
+  return recallByText(memory, text, limit) as unknown as ProductRow[];
 }
 
 async function getRecentRecommendedProducts(sb: ReturnType<typeof admin>, storeId: string, conversationId: string, limit = 5) {
