@@ -1045,34 +1045,15 @@ async function describeImageAttachment(
       "field_confidence is an object whose keys are only attributes actually observed and whose values are 0..1. " +
       "Never invent specifications that are not visible or reliably identifiable. Do not guess a colour under ambiguous lighting; name exact visible colours only when confident. " +
       "keywords must contain 2-8 concise catalogue terms. is_product is false for receipts, screenshots, documents, selfies or memes.";
-    const r = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Lovable-API-Key": key,
-        "X-Lovable-AIG-SDK": "fetch",
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-6-astra",
-        stream: true,
-        reasoning: { effort: "low", summary: "auto" },
-        input: [
-          {
-            role: "user",
-            content: [
-              { type: "input_text", text: prompt },
-              { type: "input_image", image_url: dataUrl },
-            ],
-          },
-        ],
-      }),
-    });
-    if (!r.ok) {
-      const detail = await responseErrorMessage(r);
-      imageFailure("ANALYSIS_HTTP", detail, r.status === 429 || r.status >= 500);
+    let raw: string;
+    try {
+      raw = await routedVisionText([
+        { type: "input_text", text: prompt },
+        { type: "input_image", image_url: dataUrl },
+      ]);
+    } catch (cause) {
+      imageFailure("ANALYSIS_HTTP", (cause as Error).message, true);
     }
-    if (!r.body) imageFailure("ANALYSIS_BODY", "AI response had no stream", true);
-    const raw = parseResponsesText(await r.text(), "ANALYSIS");
     const match = raw.match(/\{[\s\S]*\}/);
     if (!match) imageFailure("ANALYSIS_JSON", "AI answer did not contain JSON", true);
     let parsed: {
