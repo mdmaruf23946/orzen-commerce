@@ -1071,7 +1071,7 @@ export const updateGlobalAiKeys = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// ---------- PLATFORM GEMINI API KEYS (serial rotation) ----------
+// ---------- PLATFORM AI PROVIDER KEYS (serial rotation, multi-provider) ----------
 async function loadGeminiKeys(sb: any) {
   const helpers = await import("@/lib/gemini-keys.server");
   const { data } = await sb.from("ai_global_settings").select("gemini_api_keys").eq("id", 1).maybeSingle();
@@ -1079,12 +1079,13 @@ async function loadGeminiKeys(sb: any) {
 }
 
 async function saveGeminiKeys(sb: any, keys: any[]) {
-  // Keep the legacy single-key column in sync with the first usable key.
+  // Keep the legacy single-key column in sync with the first usable Gemini key.
   const helpers = await import("@/lib/gemini-keys.server");
-  const active = helpers.pickActiveGeminiKey(keys as any);
+  const gemini = (keys as any[]).filter((k) => (k.provider ?? "gemini") === "gemini");
+  const active = helpers.pickActiveGeminiKey(gemini as any);
   const { error } = await sb
     .from("ai_global_settings")
-    .update({ gemini_api_keys: keys, gemini_api_key: active?.key ?? keys[0]?.key ?? null })
+    .update({ gemini_api_keys: keys, gemini_api_key: active?.key ?? gemini[0]?.key ?? null })
     .eq("id", 1);
   if (error) throw new Error(error.message);
 }
@@ -1100,9 +1101,23 @@ export const listGlobalGeminiKeys = createServerFn({ method: "GET" })
     return {
       today,
       active_id: active?.id ?? null,
+      providers: Object.values(helpers.PROVIDER_PRESETS).map((p) => ({
+        id: p.id,
+        name: p.name,
+        model: p.model,
+        vision: p.vision,
+        keyHint: p.keyHint,
+        signupUrl: p.signupUrl,
+      })),
       keys: keys.map((k, i) => ({
         id: k.id,
         label: k.label,
+        provider: k.provider,
+        provider_name: helpers.providerPreset(k.provider).name,
+        model: k.model,
+        effective_model: k.model || helpers.providerPreset(k.provider).model,
+        base_url: k.base_url,
+        vision: k.vision,
         masked: helpers.maskGeminiKey(k.key),
         enabled: k.enabled,
         failed_today: k.failed_on === today,
@@ -1114,16 +1129,38 @@ export const listGlobalGeminiKeys = createServerFn({ method: "GET" })
 
 export const addGlobalGeminiKey = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ label: z.string().max(60).optional(), key: z.string().min(10).max(500) }).parse(d))
+  .inputValidator((d) =>
+    z.object({
+      label: z.string().max(60).optional(),
+      key: z.string().min(10).max(500),
+      provider: z.enum(["gemini", "groq", "openrouter", "openai", "custom"]).default("gemini"),
+      base_url: z.string().max(300).optional(),
+      model: z.string().max(120).optional(),
+      vision: z.boolean().optional(),
+    }).parse(d),
+  )
   .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId);
     const sb: any = context.supabase;
+    const helpers = await import("@/lib/gemini-keys.server");
     const { keys } = await loadGeminiKeys(sb);
-    if (keys.length >= 10) throw new Error("Maximum of 10 Gemini keys.");
+    if (keys.length >= 20) throw new Error("Maximum of 20 API keys.");
+    const preset = helpers.providerPreset(data.provider);
+    const baseUrl = (data.base_url ?? "").trim();
+    if (data.provider === "custom" && !/^https?:\/\//i.test(baseUrl)) {
+      throw new Error("A custom provider needs an OpenAI-compatible base URL.");
+    }
+    if (data.provider === "custom" && !(data.model ?? "").trim()) {
+      throw new Error("A custom provider needs a model name.");
+    }
     keys.push({
       id: crypto.randomUUID(),
-      label: (data.label ?? "").trim() || `Key ${keys.length + 1}`,
+      label: (data.label ?? "").trim() || `${preset.name} ${keys.length + 1}`,
       key: data.key.trim(),
+      provider: data.provider,
+      base_url: baseUrl || null,
+      model: (data.model ?? "").trim() || null,
+      vision: data.vision ?? preset.vision,
       enabled: true,
       failed_on: null,
       last_error: null,
@@ -1139,6 +1176,8 @@ export const updateGlobalGeminiKey = createServerFn({ method: "POST" })
       id: z.string().min(1),
       label: z.string().max(60).optional(),
       enabled: z.boolean().optional(),
+      vision: z.boolean().optional(),
+      model: z.string().max(120).optional(),
       reset_failure: z.boolean().optional(),
     }).parse(d),
   )
@@ -1150,6 +1189,8 @@ export const updateGlobalGeminiKey = createServerFn({ method: "POST" })
     if (!k) throw new Error("Key not found");
     if (data.label !== undefined) k.label = data.label.trim() || k.label;
     if (data.enabled !== undefined) k.enabled = data.enabled;
+    if (data.vision !== undefined) k.vision = data.vision;
+    if (data.model !== undefined) k.model = data.model.trim() || null;
     if (data.reset_failure) {
       k.failed_on = null;
       k.last_error = null;
@@ -1193,7 +1234,7 @@ export const testGlobalGeminiKey = createServerFn({ method: "POST" })
     const { helpers, keys } = await loadGeminiKeys(sb);
     const k = keys.find((x) => x.id === data.id);
     if (!k) throw new Error("Key not found");
-    const res = await helpers.testGeminiKey(k.key);
+    const res = await helpers.testProviderKey(k);
     if (res.ok) {
       k.failed_on = null;
       k.last_error = null;
@@ -1204,6 +1245,7 @@ export const testGlobalGeminiKey = createServerFn({ method: "POST" })
     await saveGeminiKeys(sb, keys);
     return res;
   });
+
 
 
 

@@ -13,14 +13,22 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { dhakaToday, normalizeGeminiKeys, pickActiveGeminiKey, type GeminiKey } from "./gemini-keys.server";
+import {
+  dhakaToday,
+  keyBaseURL,
+  normalizeGeminiKeys,
+  pickActiveGeminiKey,
+  providerPreset,
+  type GeminiKey,
+  type KeyProvider,
+} from "./gemini-keys.server";
 import { requireServerEnv } from "./server-env";
 
 const SENTINEL_BASE = "https://ai-router.internal/v1";
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai";
 const OPENAI_BASE = "https://api.openai.com/v1";
 
-export type AiProviderKind = "gemini" | "openai" | "platform";
+export type AiProviderKind = KeyProvider | "platform";
 
 type Candidate = {
   provider: AiProviderKind;
@@ -29,6 +37,10 @@ type Candidate = {
   apiKey: string;
   baseURL: string;
   modelId: string;
+  /** Sibling models tried on the same key when the first is busy or out of quota. */
+  fallbacks: string[];
+  /** Whether this key's model can read images. */
+  vision: boolean;
   headers: Record<string, string>;
 };
 
@@ -77,24 +89,58 @@ function openaiModel(modelId: string) {
   return "gpt-4o-mini";
 }
 
-function buildCandidates(settings: any, modelId: string): Candidate[] {
-  const out: Candidate[] = [];
-  const geminiKeys = normalizeGeminiKeys(settings?.gemini_api_keys);
-  const active = pickActiveGeminiKey(geminiKeys);
-  // Serial rotation: start at the active key, then the remaining usable keys.
-  const ordered: GeminiKey[] = active
-    ? [active, ...geminiKeys.filter((k) => k.id !== active.id && k.enabled)]
-    : geminiKeys.filter((k) => k.enabled);
-  for (const k of ordered) {
-    out.push({
+/** Turns one saved key into a routing candidate. */
+function candidateFromKey(k: GeminiKey, modelId: string): Candidate | null {
+  const preset = providerPreset(k.provider);
+  const baseURL = keyBaseURL(k);
+  if (!baseURL) return null;
+  if (k.provider === "gemini") {
+    const chosen = k.model || geminiModel(modelId);
+    return {
       provider: "gemini",
       keyId: k.id,
       label: k.label || "Gemini key",
       apiKey: k.key,
-      baseURL: GEMINI_BASE,
-      modelId: geminiModel(modelId),
+      baseURL,
+      modelId: chosen,
+      fallbacks: k.model ? preset.fallbacks : geminiFallbackModels(chosen),
+      vision: k.vision,
       headers: {},
-    });
+    };
+  }
+  const chosen = k.model || preset.model;
+  if (!chosen) return null;
+  return {
+    provider: k.provider,
+    keyId: k.id,
+    label: k.label || preset.name,
+    apiKey: k.key,
+    baseURL,
+    modelId: chosen,
+    fallbacks: k.model ? [] : preset.fallbacks,
+    vision: k.vision,
+    headers:
+      k.provider === "openrouter"
+        ? { "http-referer": "https://orzen.top", "x-title": "Orzen Commerce" }
+        : {},
+  };
+}
+
+function buildCandidates(settings: any, modelId: string): Candidate[] {
+  const out: Candidate[] = [];
+  const allKeys = normalizeGeminiKeys(settings?.gemini_api_keys);
+  const active = pickActiveGeminiKey(allKeys);
+  const today = dhakaToday();
+  // Serial rotation: start at the active key, then the remaining usable keys,
+  // and finally keys that failed earlier today as a last resort.
+  const ordered: GeminiKey[] = active
+    ? [active, ...allKeys.filter((k) => k.id !== active.id && k.enabled)]
+    : allKeys.filter((k) => k.enabled);
+  const usable = ordered.filter((k) => k.id === active?.id || k.failed_on !== today);
+  const parked = ordered.filter((k) => !usable.includes(k));
+  for (const k of [...usable, ...parked]) {
+    const c = candidateFromKey(k, modelId);
+    if (c) out.push(c);
   }
   const single = (settings?.gemini_api_key || "").trim();
   if (single && !ordered.some((k) => k.key === single)) {
@@ -105,6 +151,8 @@ function buildCandidates(settings: any, modelId: string): Candidate[] {
       apiKey: single,
       baseURL: GEMINI_BASE,
       modelId: geminiModel(modelId),
+      fallbacks: geminiFallbackModels(geminiModel(modelId)),
+      vision: true,
       headers: {},
     });
   }
@@ -117,6 +165,8 @@ function buildCandidates(settings: any, modelId: string): Candidate[] {
       apiKey: openaiKey,
       baseURL: OPENAI_BASE,
       modelId: openaiModel(modelId),
+      fallbacks: [],
+      vision: true,
       headers: {},
     });
   }
@@ -124,6 +174,7 @@ function buildCandidates(settings: any, modelId: string): Candidate[] {
   // every AI request on this site must run on the owner's own provider keys.
   return out;
 }
+
 
 /** Pauses a Gemini key for the rest of the day and stores why it failed. */
 async function markGeminiFailure(keyId: string, error: string) {
@@ -291,25 +342,31 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
       }
     }
 
-    let geminiBody: any = null;
+    let inlinedBody: any = null;
     let lastError = "AI request failed";
     const isChat = suffix.startsWith("/chat/completions");
-    for (const c of candidates) {
+    const needsVision = Array.isArray(bodyObj?.messages)
+      && bodyObj.messages.some((m: any) =>
+        Array.isArray(m?.content) && m.content.some((p: any) => p?.type === "image_url"),
+      );
+    const usable = needsVision ? candidates.filter((c) => c.vision) : candidates;
+    if (!usable.length) throw new Error("No AI key on this site can read images. Enable a vision-capable key.");
+    for (const c of usable) {
       const headers = new Headers(init?.headers);
       headers.delete("authorization");
       headers.delete("Lovable-API-Key");
       headers.set("content-type", "application/json");
       headers.set("authorization", `Bearer ${c.apiKey}`);
+      for (const [hk, hv] of Object.entries(c.headers)) headers.set(hk, hv);
       let payload = bodyObj;
-      if (bodyObj && c.provider === "gemini") {
-        geminiBody ??= await inlineRemoteImages(bodyObj);
-        payload = geminiBody;
+      if (bodyObj && needsVision) {
+        // Every provider accepts inline base64; Gemini accepts nothing else.
+        inlinedBody ??= await inlineRemoteImages(bodyObj);
+        payload = inlinedBody;
       }
-      // Google quotas and overload are per model, so a busy or exhausted model
-      // falls through to a sibling model on the same key before the next key.
-      const models = c.provider === "gemini" && isChat && payload
-        ? [c.modelId, ...geminiFallbackModels(c.modelId)]
-        : [c.modelId];
+      // Quotas and overload are per model, so a busy or exhausted model falls
+      // through to a sibling model on the same key before the next key.
+      const models = isChat && payload ? [c.modelId, ...c.fallbacks] : [c.modelId];
       let quotaHits = 0;
       let keyDead = false;
       for (const modelId of models) {
@@ -339,17 +396,19 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
       // Only park a key for the day when the key itself is bad or every model
       // on it is out of quota. Overload or a request-shape problem is not the
       // key's fault.
-      if (c.provider === "gemini" && c.keyId && (keyDead || quotaHits === models.length)) {
+      if (c.keyId && (keyDead || quotaHits === models.length)) {
         void markGeminiFailure(c.keyId, lastError);
       }
     }
+
     throw new Error(lastError);
   };
   return routedFetch;
 }
 
 const NO_KEY_MESSAGE =
-  "No AI provider is configured. Add a Gemini or OpenAI key in Winner Admin → AI Control Center.";
+  "No AI provider is configured. Add an API key in Winner Admin → AI Control Center.";
+
 
 /**
  * Builds one AI SDK model that routes through the owner's keys with fallback.

@@ -500,11 +500,21 @@ function GeminiKeysManager() {
 
   const { data } = useQuery({ queryKey: ["ai", "gemini-keys"], queryFn: () => listFn() as any });
   const keys: any[] = (data as any)?.keys ?? [];
+  const providers: any[] = (data as any)?.providers ?? [];
   const activeId = (data as any)?.active_id ?? null;
 
   const [label, setLabel] = useState("");
   const [value, setValue] = useState("");
+  const [provider, setProvider] = useState("gemini");
+  const [model, setModel] = useState("");
+  const [baseUrl, setBaseUrl] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+
+  const preset = providers.find((p) => p.id === provider);
+  const isCustom = provider === "custom";
+  const canAdd =
+    value.trim().length >= 10 &&
+    (!isCustom || (/^https?:\/\//i.test(baseUrl.trim()) && model.trim().length > 0));
 
   async function run(id: string, fn: () => Promise<any>, ok: string) {
     setBusy(id);
@@ -512,6 +522,7 @@ function GeminiKeysManager() {
       await fn();
       qc.invalidateQueries({ queryKey: ["ai", "gemini-keys"] });
       qc.invalidateQueries({ queryKey: ["ai", "overview"] });
+      qc.invalidateQueries({ queryKey: ["ai", "provider-status"] });
       toast.success(ok);
     } catch (e) {
       toast.error((e as Error).message);
@@ -524,28 +535,34 @@ function GeminiKeysManager() {
     <div className="rounded-xl border bg-muted/20 p-3 min-w-0">
       <div className="flex items-center gap-2">
         <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-sm font-medium">Gemini API keys ({keys.length})</span>
+        <span className="text-sm font-medium">AI provider keys ({keys.length})</span>
       </div>
       <p className="mt-1 text-[11px] text-muted-foreground">
-        Keys are used one at a time, in this order. If the first key stops working it is paused for the day and the
-        next key takes over automatically. Every day the rotation restarts from key 1.
+        Mix keys from Gemini, Groq, OpenRouter, OpenAI or any OpenAI-compatible provider. Keys are used one at a time,
+        in this order. If one stops working it is paused for the day and the next key takes over automatically. Every
+        day the rotation restarts from key 1.
       </p>
 
       <div className="mt-3 space-y-2">
-        {keys.length === 0 && <p className="text-xs text-muted-foreground">No Gemini key added yet.</p>}
+        {keys.length === 0 && <p className="text-xs text-muted-foreground">No API key added yet.</p>}
         {keys.map((k, i) => (
           <div key={k.id} className="overflow-hidden rounded-lg border bg-card p-2.5 min-w-0">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
               <div className="min-w-0">
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                   <span className="truncate text-xs font-medium">{k.order}. {k.label}</span>
+                  <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
+                    {k.provider_name}
+                  </span>
                   {k.id === activeId && (
                     <span className="shrink-0 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-600">Active</span>
                   )}
                   {!k.enabled && <span className="shrink-0 text-[10px] text-muted-foreground">Disabled</span>}
                   {k.failed_today && <span className="shrink-0 text-[10px] text-destructive">Paused today</span>}
+                  {!k.vision && <span className="shrink-0 text-[10px] text-muted-foreground">No image support</span>}
                 </div>
                 <div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">{k.masked}</div>
+                <div className="truncate font-mono text-[10px] text-muted-foreground">{k.effective_model}</div>
                 {k.last_error && <div className="mt-0.5 line-clamp-2 text-[10px] text-destructive">{k.last_error}</div>}
               </div>
               <Switch
@@ -573,6 +590,10 @@ function GeminiKeysManager() {
                 }>
                 <Zap className="mr-1 h-3.5 w-3.5" /> Test
               </Button>
+              <Button size="sm" variant="outline" className="h-8 shrink-0 px-2 text-[11px]" disabled={busy === k.id}
+                onClick={() => run(k.id, () => updFn({ data: { id: k.id, vision: !k.vision } }), "Image support updated")}>
+                {k.vision ? "Images on" : "Images off"}
+              </Button>
               {k.failed_today && (
                 <Button size="sm" variant="outline" className="h-8 flex-1" disabled={busy === k.id}
                   onClick={() => run(k.id, () => updFn({ data: { id: k.id, reset_failure: true } }), "Key resumed")}>
@@ -581,7 +602,7 @@ function GeminiKeysManager() {
               )}
               <Button size="sm" variant="ghost" className="h-8 w-8 shrink-0 px-0 text-destructive" disabled={busy === k.id}
                 onClick={() => {
-                  if (confirm("Remove this Gemini key?")) run(k.id, () => delFn({ data: { id: k.id } }), "Key removed");
+                  if (confirm("Remove this API key?")) run(k.id, () => delFn({ data: { id: k.id } }), "Key removed");
                 }}>
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
@@ -591,17 +612,55 @@ function GeminiKeysManager() {
       </div>
 
       <div className="mt-3 space-y-2 rounded-lg border bg-card p-2.5">
+        <div className="flex flex-wrap gap-1.5">
+          {providers.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => { setProvider(p.id); setModel(""); setBaseUrl(""); }}
+              className={`rounded-full border px-2.5 py-1 text-[11px] ${
+                provider === p.id ? "border-primary bg-primary/10 text-primary" : "text-muted-foreground"
+              }`}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+        {preset?.signupUrl && (
+          <a href={preset.signupUrl} target="_blank" rel="noreferrer" className="block text-[11px] text-primary underline">
+            Get a free {preset.name} key
+          </a>
+        )}
         <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label (optional) — e.g. Main key" className="h-9" />
-        <Input type="password" value={value} onChange={(e) => setValue(e.target.value)} placeholder="AIza…" className="h-9" />
+        <Input type="password" value={value} onChange={(e) => setValue(e.target.value)} placeholder={preset?.keyHint ?? "API key"} className="h-9" />
+        {isCustom && (
+          <Input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="Base URL — https://…/v1" className="h-9" />
+        )}
+        <Input
+          value={model}
+          onChange={(e) => setModel(e.target.value)}
+          placeholder={isCustom ? "Model name (required)" : `Model (optional) — default ${preset?.model ?? ""}`}
+          className="h-9"
+        />
         <Button
           size="sm"
           className="h-9 w-full"
-          disabled={value.trim().length < 10 || busy === "new"}
+          disabled={!canAdd || busy === "new"}
           onClick={() =>
             run("new", async () => {
-              await addFn({ data: { key: value.trim(), label: label.trim() || undefined } });
+              await addFn({
+                data: {
+                  key: value.trim(),
+                  provider: provider as any,
+                  label: label.trim() || undefined,
+                  model: model.trim() || undefined,
+                  base_url: baseUrl.trim() || undefined,
+                },
+              });
               setValue("");
               setLabel("");
+              setModel("");
+              setBaseUrl("");
             }, "Key added")
           }
         >
@@ -611,6 +670,7 @@ function GeminiKeysManager() {
     </div>
   );
 }
+
 
 
 
