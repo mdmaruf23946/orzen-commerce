@@ -836,18 +836,21 @@ async function finalizePendingMessengerOrder(opts: {
     renderConfirmation(template, {
       product: product.name,
       qty,
-      total: `৳${total.toFixed(0)}`,
+      total: money(total),
       customer_name: slot.customer_name,
       address: slot.full_address,
-      payment_method: String(slot.payment_method ?? "").toUpperCase(),
+      payment_method: "ক্যাশ অন ডেলিভারি",
       invoice_no: order.invoice_no || order.id,
     }),
   ];
   // Only add the summary lines the admin's own template doesn't already cover.
-  if (!uses("invoice_no")) lines.push(`অর্ডার নম্বর: ${order.invoice_no || order.id}`);
-  if (!uses("product") && !uses("qty")) lines.push(`প্রোডাক্ট: ${product.name} × ${qty}`);
-  if (!uses("total")) lines.push(`মোট: ৳${total.toFixed(0)}`);
-  if (!uses("payment_method")) lines.push(`পেমেন্ট: ${String(slot.payment_method).toUpperCase()}`);
+  lines.push("────────────────");
+  if (!uses("invoice_no")) lines.push(`🧾 অর্ডার নম্বর: ${order.invoice_no || order.id}`);
+  if (!uses("product") && !uses("qty")) lines.push(`🛍️ প্রোডাক্ট: ${product.name} × ${toBnDigits(qty)}`);
+  lines.push(`💰 পণ্যের মূল্য: ${money(subtotal)}`);
+  lines.push(`🚚 ডেলিভারি চার্জ${zone ? ` (${zone.name})` : ""}: ${money(delivery)}`);
+  if (!uses("total")) lines.push(`✅ সর্বমোট: ${money(total)}`);
+  if (!uses("payment_method")) lines.push("💵 পেমেন্ট: ক্যাশ অন ডেলিভারি");
   const confirmation = lines.filter(Boolean).join("\n");
   await sendAndLogText(sb, token, psid, conversationId, confirmation);
   return true;
