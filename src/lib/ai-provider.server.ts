@@ -254,3 +254,70 @@ export async function routedModel(modelId: string) {
   const r = await resolveAiModel({ modelOverride: modelId });
   return r.model;
 }
+
+/** A routed model whose provider advertises JSON-schema structured output. */
+export async function routedStructuredModel(modelId?: string) {
+  const sb = admin();
+  const { data: settings } = await sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle();
+  const id = modelId || (settings as any)?.default_model || "google/gemini-2.5-flash";
+  return buildRoutedModel(settings, id, { structuredOutputs: true }).model;
+}
+
+/**
+ * Raw chat-completions call through the owner's key chain.
+ * Used by the places that previously called the platform gateway directly.
+ */
+export async function routedChatCompletion(opts: {
+  messages: any[];
+  modelOverride?: string;
+  temperature?: number;
+  jsonOnly?: boolean;
+}): Promise<string | null> {
+  const sb = admin();
+  const { data: settings } = await sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle();
+  const modelId = opts.modelOverride || (settings as any)?.default_model || "google/gemini-2.5-flash";
+  const candidates = buildCandidates(settings, modelId);
+  if (!candidates.length) return null;
+  const routedFetch = makeRoutedFetch(candidates, () => {});
+  const res = await routedFetch(`${SENTINEL_BASE}/chat/completions`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      model: modelId,
+      messages: opts.messages,
+      ...(typeof opts.temperature === "number" ? { temperature: opts.temperature } : {}),
+      ...(opts.jsonOnly ? { response_format: { type: "json_object" } } : {}),
+    }),
+  });
+  if (!res.ok) throw new Error(`AI request failed (${res.status}): ${(await res.text().catch(() => "")).slice(0, 300)}`);
+  const json = (await res.json().catch(() => null)) as
+    | { choices?: Array<{ message?: { content?: string } }> }
+    | null;
+  return json?.choices?.[0]?.message?.content?.trim() || null;
+}
+
+type VisionPart =
+  | { type: "input_text"; text: string }
+  | { type: "input_image"; image_url: string }
+  | Record<string, any>;
+
+/** Converts Responses-style content parts to chat-completions parts. */
+export function toChatContent(parts: VisionPart[]): any[] {
+  return parts.map((p: any) => {
+    if (p?.type === "input_text") return { type: "text", text: p.text };
+    if (p?.type === "input_image") return { type: "image_url", image_url: { url: p.image_url } };
+    return p;
+  });
+}
+
+/**
+ * Vision call returning the model's raw text, routed through the owner's keys.
+ * Accepts Responses-style content parts so existing prompts stay unchanged.
+ */
+export async function routedVisionText(parts: VisionPart[], opts?: { modelOverride?: string }): Promise<string> {
+  const text = await routedChatCompletion({
+    messages: [{ role: "user", content: toChatContent(parts) }],
+    ...(opts?.modelOverride ? { modelOverride: opts.modelOverride } : {}),
+  });
+  return text ?? "";
+}
