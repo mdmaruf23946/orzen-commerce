@@ -1308,7 +1308,8 @@ async function visuallyMatchProduct(
         "Skip candidates that clearly differ instead of describing them.",
     }, { type: "input_image", image_url: analysis.image_data_url }];
     batch.forEach((product, index) => {
-      content.push({ type: "input_text", text: `CANDIDATE_${index}: ${productIdentityText(product, categoryNames.get(String(product.category_id ?? "")) ?? "")}` });
+      const identity = productIdentityText(product, categoryNames.get(String(product.category_id ?? "")) ?? "").slice(0, 220);
+      content.push({ type: "input_text", text: `CANDIDATE_${index}: ${identity}` });
       productImages(product, 1).forEach((image) => content.push({ type: "input_image", image_url: image }));
     });
     const compared = await requestJson("MATCH", content);
