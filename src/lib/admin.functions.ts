@@ -427,6 +427,7 @@ export const upsertProduct = createServerFn({ method: "POST" })
     } as any;
 
     // Cross-type guard: a product may only reference a category of its own type.
+    // "both" and legacy NULL categories are shared and always allowed.
     if (data.category_id) {
       const { data: cat } = await supabase
         .from("categories")
@@ -435,10 +436,9 @@ export const upsertProduct = createServerFn({ method: "POST" })
         .eq("store_id", store.id)
         .maybeSingle();
       if (!cat) throw new Error("Category not found");
-      if (
-        (cat as any).product_type &&
-        (cat as any).product_type !== (data.product_type ?? "physical")
-      ) {
+      const catType = (cat as any).product_type as string | null | undefined;
+      const shared = !catType || catType === "both";
+      if (!shared && catType !== (data.product_type ?? "physical")) {
         throw new Error("Category belongs to a different product type");
       }
     }
@@ -787,11 +787,11 @@ export const listMyCategories = createServerFn({ method: "GET" })
     const store = await myStoreRow(supabase, userId, "id");
     if (!store) return [];
     let q = supabase.from("categories").select("*").eq("store_id", store.id);
-    if (input?.product_type === "physical") {
-      // Legacy rows stored "both" or NULL — they belong to Physical.
-      q = q.or("product_type.eq.physical,product_type.eq.both,product_type.is.null");
-    } else if (input?.product_type) {
-      q = q.eq("product_type", input.product_type);
+    if (input?.product_type) {
+      // "both" and legacy NULL rows are shared across every product type.
+      q = q.or(
+        `product_type.eq.${input.product_type},product_type.eq.both,product_type.is.null`,
+      );
     }
     const { data, error } = await q
       .order("sort_order", { ascending: true })

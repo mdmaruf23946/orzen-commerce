@@ -330,7 +330,9 @@ export function ProductDialog({
     if (!newCatName.trim()) return;
     setAddingCat(true);
     try {
-      const created = await createCat({ data: { name: newCatName.trim() } });
+      const created = await createCat({
+        data: { name: newCatName.trim(), product_type: (productType ?? "physical") as any },
+      });
       await qc.invalidateQueries({ queryKey: ["admin", "categories"] });
       if (created && "id" in created) setCategoryId((created as any).id);
       setNewCatName("");
