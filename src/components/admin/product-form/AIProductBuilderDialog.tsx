@@ -64,6 +64,8 @@ type Props = {
   productType?: AiProductType;
   onClose: () => void;
   onSave: (data: any) => Promise<void>;
+  /** Winner Admin default-product template mode (owner only, no plan gate). */
+  templateMode?: boolean;
 };
 
 export function AIProductBuilderDialog({
@@ -73,8 +75,11 @@ export function AIProductBuilderDialog({
   productType = "physical",
   onClose,
   onSave,
+  templateMode = false,
 }: Props) {
-  const { allowed, loading: gateLoading } = useFeature("ai_product_builder");
+  const feature = useFeature("ai_product_builder");
+  const allowed = templateMode || feature.allowed;
+  const gateLoading = templateMode ? false : feature.loading;
   const gen = useServerFn(generateProductDraft);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -241,6 +246,7 @@ export function AIProductBuilderDialog({
           brand,
           knownFacts: knownFacts(),
           contentLang,
+          asTemplate: templateMode,
         },
       });
       setStage(STAGES.length - 1);
