@@ -107,6 +107,16 @@ export const Route = createFileRoute("/api/public/messenger/process")({
           }
 
           const started = Date.now();
+          // A job whose worker kept dying mid-run (never reaching the catch
+          // below) would otherwise be re-claimed forever and block every newer
+          // message from this customer. Give up on it and move on.
+          if (Number(job.attempts ?? 1) > 5 && !job.reply_text && !job.outbound_message_id) {
+            await supabaseAdmin
+              .from("messenger_jobs")
+              .update({ status: "failed", completed_at: new Date().toISOString(), last_error: "Abandoned after repeated timeouts" } as any)
+              .eq("id", job.id);
+          } else
+          try {
           try {
             // A previous attempt can send successfully and then fail while doing
             // bookkeeping. Once recorded, never send that customer reply again.
