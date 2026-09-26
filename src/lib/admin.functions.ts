@@ -787,11 +787,11 @@ export const listMyCategories = createServerFn({ method: "GET" })
     const store = await myStoreRow(supabase, userId, "id");
     if (!store) return [];
     let q = supabase.from("categories").select("*").eq("store_id", store.id);
-    if (input?.product_type === "physical") {
-      // Legacy rows stored "both" or NULL — they belong to Physical.
-      q = q.or("product_type.eq.physical,product_type.eq.both,product_type.is.null");
-    } else if (input?.product_type) {
-      q = q.eq("product_type", input.product_type);
+    if (input?.product_type) {
+      // "both" and legacy NULL rows are shared across every product type.
+      q = q.or(
+        `product_type.eq.${input.product_type},product_type.eq.both,product_type.is.null`,
+      );
     }
     const { data, error } = await q
       .order("sort_order", { ascending: true })
