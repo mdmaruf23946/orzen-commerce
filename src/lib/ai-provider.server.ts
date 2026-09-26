@@ -144,11 +144,6 @@ function retryable(status: number) {
   return status === 400 || status === 401 || status === 403 || status === 404 || status === 429 || status >= 500;
 }
 
-/** Statuses that mean the key itself is the problem. */
-function keyLevelFailure(status: number) {
-  return status === 401 || status === 403 || status === 429;
-}
-
 // ---------------------------------------------------------------------------
 // Gemini's OpenAI-compatible endpoint rejects remote image links with
 // "400 Request contains an invalid argument" — it only accepts inline base64
