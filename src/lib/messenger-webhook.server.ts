@@ -1110,29 +1110,15 @@ async function describeImageAttachment(
         "Pay special attention to white-on-white, black-on-black, transparent, reflective, blurred, backlit or overexposed regions. Read faint text only when genuinely legible. " +
         "Do not invent a brand, model, specification or colour. Return ONLY minified JSON with keys description,keywords,is_product,product_type,product_subtype,category,primary_color,secondary_colors,material,style,shape,pattern,visible_text,brand,model_number,functions,connectors,controls,package_specs,distinctive_features,field_confidence,visibility_warnings,object_boundary_confidence,text_legibility,confidence. " +
         "Use null for uncertain single values and [] for absent lists. object_boundary_confidence, text_legibility, confidence and every field_confidence value MUST be JSON numbers from 0 to 1, never text. visibility_warnings may contain ONLY these exact codes: low_contrast, blur, overexposure, underexposure, reflection, transparency, occlusion.";
-      const focusedResponse = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Lovable-API-Key": key,
-          "X-Lovable-AIG-SDK": "fetch",
-        },
-        body: JSON.stringify({
-          model: "openai/gpt-6-astra",
-          stream: true,
-          reasoning: { effort: "medium", summary: "auto" },
-          input: [{ role: "user", content: [
-            { type: "input_text", text: focusedPrompt },
-            { type: "input_image", image_url: dataUrl },
-          ] }],
-        }),
-      });
-      if (!focusedResponse.ok) {
-        const detail = await responseErrorMessage(focusedResponse);
-        imageFailure("FOCUSED_ANALYSIS_HTTP", detail, focusedResponse.status === 429 || focusedResponse.status >= 500);
+      let focusedRaw: string;
+      try {
+        focusedRaw = await routedVisionText([
+          { type: "input_text", text: focusedPrompt },
+          { type: "input_image", image_url: dataUrl },
+        ]);
+      } catch (cause) {
+        imageFailure("FOCUSED_ANALYSIS_HTTP", (cause as Error).message, true);
       }
-      if (!focusedResponse.body) imageFailure("FOCUSED_ANALYSIS_BODY", "Focused AI response had no stream", true);
-      const focusedRaw = parseResponsesText(await focusedResponse.text(), "ANALYSIS");
       const focusedObject = focusedRaw.match(/\{[\s\S]*\}/)?.[0];
       if (!focusedObject) imageFailure("FOCUSED_ANALYSIS_JSON", "Focused AI answer did not contain JSON", true);
       let focused: typeof parsed;
