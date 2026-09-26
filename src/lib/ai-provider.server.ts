@@ -233,6 +233,12 @@ function toBase64(bytes: Uint8Array) {
   return btoa(binary);
 }
 
+// Comparing product photos works fine at a small size, and a 320px WebP
+// rendition is roughly 8-12 KB instead of several hundred KB, which is what
+// makes the vision answer come back in seconds instead of tens of seconds.
+const RENDITION_QUERY = "width=320&quality=50&resize=contain";
+const RENDITION_ACCEPT = "image/webp,image/jpeg,*/*";
+
 async function fetchBytes(url: string, headers: Record<string, string>): Promise<Uint8Array | null> {
   try {
     const res = await fetch(url, { headers, signal: AbortSignal.timeout(10_000) });
