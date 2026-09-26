@@ -95,7 +95,12 @@ export async function rankProductImageMatches(
     .eq("store_id", storeId)
     .not("embedding", "is", null);
   if (!count) return [];
-  const vector = await embedImageBytes(bytes, mime);
+  let vector: number[];
+  try {
+    vector = await embedImageBytes(bytes, mime);
+  } catch {
+    return [];
+  }
   const { data, error } = await sb.rpc("match_product_image_embeddings", {
     _store_id: storeId,
     _embedding: `[${vector.join(",")}]`,
