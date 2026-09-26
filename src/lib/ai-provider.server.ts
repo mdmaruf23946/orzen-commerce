@@ -142,19 +142,8 @@ function keyLevelFailure(status: number) {
   return status === 401 || status === 403 || status === 429;
 }
 
-/**
- * Builds one AI SDK model that routes through the owner's keys with fallback.
- * `modelId` is the gateway-style id stored in settings (e.g. "google/gemini-2.5-flash").
- */
-export function buildRoutedModel(settings: any, modelId: string): ResolvedAi {
-  const candidates = buildCandidates(settings, modelId);
-  if (!candidates.length) {
-    throw new Error(
-      "No AI provider is configured. Add a Gemini or OpenAI key in Winner Admin → AI, or configure the platform AI key.",
-    );
-  }
-  let used: { provider: AiProviderKind; label: string } | null = null;
-
+/** Builds a fetch that walks the owner's key chain, retrying on failure. */
+function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProviderKind; label: string }) => void) {
   const routedFetch: typeof fetch = async (input, init) => {
     const url = new URL(String(input instanceof Request ? input.url : input));
     const suffix = url.pathname.replace(/^\/v1/, "") + url.search;
@@ -173,23 +162,19 @@ export function buildRoutedModel(settings: any, modelId: string): ResolvedAi {
       headers.delete("authorization");
       headers.delete("Lovable-API-Key");
       headers.set("content-type", "application/json");
-      if (c.provider === "platform") {
-        for (const [k, v] of Object.entries(c.headers)) headers.set(k, v);
-      } else {
-        headers.set("authorization", `Bearer ${c.apiKey}`);
-      }
+      headers.set("authorization", `Bearer ${c.apiKey}`);
       const body = bodyObj ? JSON.stringify({ ...bodyObj, model: c.modelId }) : (init?.body as any);
 
       try {
         const res = await fetch(`${c.baseURL}${suffix}`, { ...init, headers, body });
         if (res.ok) {
-          used = { provider: c.provider, label: c.label };
+          onUse({ provider: c.provider, label: c.label });
           return res;
         }
         const text = await res.text().catch(() => "");
         lastError = `${c.label}: HTTP ${res.status} ${text.slice(0, 300)}`;
         if (!retryable(res.status)) {
-          used = { provider: c.provider, label: c.label };
+          onUse({ provider: c.provider, label: c.label });
           return new Response(text, { status: res.status, headers: res.headers });
         }
         // Only a key-level problem (bad key, revoked, quota) parks the key for
@@ -204,10 +189,32 @@ export function buildRoutedModel(settings: any, modelId: string): ResolvedAi {
     }
     throw new Error(lastError);
   };
+  return routedFetch;
+}
+
+const NO_KEY_MESSAGE =
+  "No AI provider is configured. Add a Gemini or OpenAI key in Winner Admin → AI Control Center.";
+
+/**
+ * Builds one AI SDK model that routes through the owner's keys with fallback.
+ * `modelId` is the gateway-style id stored in settings (e.g. "google/gemini-2.5-flash").
+ */
+export function buildRoutedModel(
+  settings: any,
+  modelId: string,
+  opts?: { structuredOutputs?: boolean },
+): ResolvedAi {
+  const candidates = buildCandidates(settings, modelId);
+  if (!candidates.length) throw new Error(NO_KEY_MESSAGE);
+  let used: { provider: AiProviderKind; label: string } | null = null;
+  const routedFetch = makeRoutedFetch(candidates, (u) => {
+    used = u;
+  });
 
   const provider = createOpenAICompatible({
-    name: "lovable",
+    name: "orzen-ai",
     baseURL: SENTINEL_BASE,
+    ...(opts?.structuredOutputs ? { supportsStructuredOutputs: true } : {}),
     fetch: routedFetch as any,
   });
 
