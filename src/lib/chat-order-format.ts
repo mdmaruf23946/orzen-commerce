@@ -37,17 +37,24 @@ export async function fetchDeliveryZones(sb: any, storeId: string): Promise<Deli
   }));
 }
 
-const OUTSIDE_RE = /outside|বাইরে|বাহিরে|out\s*of/i;
-const INSIDE_RE = /inside|ভিতরে|ভেতরে|মধ্যে|within/i;
-const NOISE_RE =
-  /\b(inside|outside|within|zone|area|delivery|charge|ভিতরে|ভেতরে|মধ্যে|বাইরে|বাহিরে|এর|ডেলিভারি|চার্জ|এলাকা)\b/gi;
+const OUTSIDE_RE = /outside|বাইরে|বাহিরে|বাইর|out\s*of/i;
+const INSIDE_RE = /inside|ভিতরে|ভেতরে|বিতরে|বিতর|মধ্যে|within/i;
+const NOISE = new Set([
+  "inside", "outside", "within", "zone", "area", "delivery", "charge", "city",
+  "ভিতরে", "ভেতরে", "বিতরে", "মধ্যে", "বাইরে", "বাহিরে", "এর", "ডেলিভারি", "চার্জ", "এলাকা",
+]);
+// Common English/Bangla spellings of the same place.
+const ALIASES: Record<string, string[]> = {
+  "ঢাকা": ["dhaka"], "ঢাকার": ["dhaka"], "dhaka": ["ঢাকা"],
+  "চট্টগ্রাম": ["chittagong", "chattogram"], "chittagong": ["চট্টগ্রাম", "chattogram"], "chattagram": ["chittagong", "chattogram", "চট্টগ্রাম"],
+};
 
 function zoneKeywords(name: string) {
-  return name
-    .replace(NOISE_RE, " ")
+  const base = name
     .split(/[\s,/|()-]+/)
     .map((w) => w.trim())
-    .filter((w) => w.length >= 3);
+    .filter((w) => w.length >= 3 && !NOISE.has(w.toLowerCase()));
+  return base.flatMap((w) => [w, ...(ALIASES[w.toLowerCase()] ?? [])]);
 }
 
 /**
