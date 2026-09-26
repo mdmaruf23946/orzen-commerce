@@ -1019,8 +1019,7 @@ async function describeImageAttachment(
   pageToken: string,
   messageId: string,
 ): Promise<ImageAnalysis> {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) imageFailure("CONFIG", "AI service is not configured", false);
+  // Runs on the platform owner's own provider keys (Winner Admin → AI).
   try {
     // The model provider cannot fetch Facebook's signed CDN links itself
     // (it returns "Cannot fetch content from the provided URL"), so the bytes
