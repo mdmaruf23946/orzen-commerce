@@ -261,11 +261,22 @@ async function downloadImageBytes(url: string): Promise<Uint8Array | null> {
     if (!key.startsWith("sb_")) auth.authorization = `Bearer ${key}`;
     const encoded = path.split("/").map(encodeURIComponent).join("/");
     const small = await fetchBytes(
-      `${base}/storage/v1/render/image/authenticated/store-assets/${encoded}?width=640&quality=70&resize=contain`,
+      `${base}/storage/v1/render/image/authenticated/store-assets/${encoded}?width=512&quality=65&resize=contain`,
       auth,
     );
     if (small && small.length) return small;
     return fetchBytes(`${base}/storage/v1/object/store-assets/${encoded}`, auth);
+  }
+  // Public storage originals can be several megabytes each. Comparing photos
+  // only needs a small rendition, and the smaller download is much faster.
+  if (parsed.pathname.includes("/storage/v1/object/public/")) {
+    const rendered = new URL(url);
+    rendered.pathname = parsed.pathname.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/");
+    rendered.searchParams.set("width", "512");
+    rendered.searchParams.set("quality", "65");
+    rendered.searchParams.set("resize", "contain");
+    const small = await fetchBytes(rendered.toString(), {});
+    if (small && small.length) return small;
   }
   return fetchBytes(url, { "user-agent": "Mozilla/5.0 (compatible; OrzenBot/1.0)" });
 }
