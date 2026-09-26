@@ -4,6 +4,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { buildSystemPrompt, generateAgentReply, loadAiContext, resolveFocusProduct } from "@/lib/ai-agent.server";
+import { routedChatCompletion, routedVisionText } from "@/lib/ai-provider.server";
 import {
   sendProductCard,
   sendProductCarousel,
@@ -1018,8 +1019,7 @@ async function describeImageAttachment(
   pageToken: string,
   messageId: string,
 ): Promise<ImageAnalysis> {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) imageFailure("CONFIG", "AI service is not configured", false);
+  // Runs on the platform owner's own provider keys (Winner Admin → AI).
   try {
     // The model provider cannot fetch Facebook's signed CDN links itself
     // (it returns "Cannot fetch content from the provided URL"), so the bytes
@@ -1045,34 +1045,15 @@ async function describeImageAttachment(
       "field_confidence is an object whose keys are only attributes actually observed and whose values are 0..1. " +
       "Never invent specifications that are not visible or reliably identifiable. Do not guess a colour under ambiguous lighting; name exact visible colours only when confident. " +
       "keywords must contain 2-8 concise catalogue terms. is_product is false for receipts, screenshots, documents, selfies or memes.";
-    const r = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Lovable-API-Key": key,
-        "X-Lovable-AIG-SDK": "fetch",
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-6-astra",
-        stream: true,
-        reasoning: { effort: "low", summary: "auto" },
-        input: [
-          {
-            role: "user",
-            content: [
-              { type: "input_text", text: prompt },
-              { type: "input_image", image_url: dataUrl },
-            ],
-          },
-        ],
-      }),
-    });
-    if (!r.ok) {
-      const detail = await responseErrorMessage(r);
-      imageFailure("ANALYSIS_HTTP", detail, r.status === 429 || r.status >= 500);
+    let raw: string;
+    try {
+      raw = await routedVisionText([
+        { type: "input_text", text: prompt },
+        { type: "input_image", image_url: dataUrl },
+      ]);
+    } catch (cause) {
+      imageFailure("ANALYSIS_HTTP", (cause as Error).message, true);
     }
-    if (!r.body) imageFailure("ANALYSIS_BODY", "AI response had no stream", true);
-    const raw = parseResponsesText(await r.text(), "ANALYSIS");
     const match = raw.match(/\{[\s\S]*\}/);
     if (!match) imageFailure("ANALYSIS_JSON", "AI answer did not contain JSON", true);
     let parsed: {
@@ -1129,29 +1110,15 @@ async function describeImageAttachment(
         "Pay special attention to white-on-white, black-on-black, transparent, reflective, blurred, backlit or overexposed regions. Read faint text only when genuinely legible. " +
         "Do not invent a brand, model, specification or colour. Return ONLY minified JSON with keys description,keywords,is_product,product_type,product_subtype,category,primary_color,secondary_colors,material,style,shape,pattern,visible_text,brand,model_number,functions,connectors,controls,package_specs,distinctive_features,field_confidence,visibility_warnings,object_boundary_confidence,text_legibility,confidence. " +
         "Use null for uncertain single values and [] for absent lists. object_boundary_confidence, text_legibility, confidence and every field_confidence value MUST be JSON numbers from 0 to 1, never text. visibility_warnings may contain ONLY these exact codes: low_contrast, blur, overexposure, underexposure, reflection, transparency, occlusion.";
-      const focusedResponse = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Lovable-API-Key": key,
-          "X-Lovable-AIG-SDK": "fetch",
-        },
-        body: JSON.stringify({
-          model: "openai/gpt-6-astra",
-          stream: true,
-          reasoning: { effort: "medium", summary: "auto" },
-          input: [{ role: "user", content: [
-            { type: "input_text", text: focusedPrompt },
-            { type: "input_image", image_url: dataUrl },
-          ] }],
-        }),
-      });
-      if (!focusedResponse.ok) {
-        const detail = await responseErrorMessage(focusedResponse);
-        imageFailure("FOCUSED_ANALYSIS_HTTP", detail, focusedResponse.status === 429 || focusedResponse.status >= 500);
+      let focusedRaw: string;
+      try {
+        focusedRaw = await routedVisionText([
+          { type: "input_text", text: focusedPrompt },
+          { type: "input_image", image_url: dataUrl },
+        ]);
+      } catch (cause) {
+        imageFailure("FOCUSED_ANALYSIS_HTTP", (cause as Error).message, true);
       }
-      if (!focusedResponse.body) imageFailure("FOCUSED_ANALYSIS_BODY", "Focused AI response had no stream", true);
-      const focusedRaw = parseResponsesText(await focusedResponse.text(), "ANALYSIS");
       const focusedObject = focusedRaw.match(/\{[\s\S]*\}/)?.[0];
       if (!focusedObject) imageFailure("FOCUSED_ANALYSIS_JSON", "Focused AI answer did not contain JSON", true);
       let focused: typeof parsed;
@@ -1301,26 +1268,14 @@ async function visuallyMatchProduct(
     id: product.product_id,
   })).filter((product) => !blockedIds.has(product.id) && productImages(product, 1).length > 0);
   if (!allProducts.length) return null;
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) return null;
-
+  // Runs on the platform owner's own provider keys (Winner Admin → AI).
   const requestJson = async (stage: "MATCH", content: any[]) => {
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "fetch" },
-      body: JSON.stringify({
-        model: "openai/gpt-6-astra",
-        reasoning: { effort: "medium", summary: "auto" },
-        stream: true,
-        input: [{ role: "user", content }],
-      }),
-    });
-    if (!response.ok) {
-      const detail = await responseErrorMessage(response);
-      imageFailure(`${stage}_HTTP`, detail, response.status === 429 || response.status >= 500);
+    let text: string;
+    try {
+      text = await routedVisionText(content);
+    } catch (cause) {
+      imageFailure(`${stage}_HTTP`, (cause as Error).message, true);
     }
-    if (!response.body) imageFailure(`${stage}_BODY`, "AI match response had no stream", true);
-    const text = parseResponsesText(await response.text(), stage);
     const object = text.match(/\{[\s\S]*\}/)?.[0];
     if (!object) imageFailure(`${stage}_JSON`, "AI match answer did not contain JSON", true);
     try {
