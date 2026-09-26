@@ -18,6 +18,7 @@ import {
   clearMessengerLastError,
 } from "@/lib/ai.functions";
 import { MessengerMark } from "@/components/admin/brand/MessengerMark";
+import { MetaAutoConnect } from "@/components/admin/MetaAutoConnect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -457,10 +458,17 @@ function AdminMessenger() {
         </div>
       ) : null}
 
+      {/* Auto Connect — an alternative to, never a replacement for, the manual form */}
+      <MetaAutoConnect
+        channel="messenger"
+        onConnected={() => qc.invalidateQueries({ queryKey: ["admin", "messenger"] })}
+      />
+
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Connection */}
         <form onSubmit={onConnect} className="space-y-4 rounded-xl border bg-card p-3 sm:p-4">
-          <div className="text-sm font-semibold">Connection</div>
+          <div className="text-sm font-semibold">Manual Connect</div>
+
           <Field label="Facebook Page ID" required>
             <Input value={pageId} onChange={(e) => setPageId(e.target.value)} inputMode="numeric" />
           </Field>
