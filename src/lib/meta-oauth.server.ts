@@ -1,7 +1,6 @@
 // Server-only helpers for the "Auto Connect" (Facebook Login / Meta OAuth)
 // flow used by the Messenger and WhatsApp integration pages. The manual
 // connect path is untouched; this only adds a guided alternative.
-import { serverEnv } from "@/lib/server-env";
 
 export const GRAPH = "https://graph.facebook.com/v19.0";
 
