@@ -548,7 +548,11 @@ async function loadStoreOrderFlow(sb: ReturnType<typeof admin>, storeId: string)
 }
 
 function orderMissingFields(slot: Record<string, any>, cfg?: OrderFlowConfig) {
-  const keys = requiredSlotFields(cfg ?? normalizeOrderFlow(null)).filter((k) => k !== "product_id");
+  // Chat orders are always cash on delivery, so the customer is never asked
+  // to choose a payment method.
+  const keys = requiredSlotFields(cfg ?? normalizeOrderFlow(null)).filter(
+    (k) => k !== "product_id" && k !== "payment_method",
+  );
   return keys.filter((k) => !slot[k]).map((k) => ORDER_FIELD_BN[k] ?? k);
 }
 
@@ -659,8 +663,6 @@ function parseOrderDetailsText(text: string) {
   if (phone) patch.phone = phone;
   if (email) patch.email = email;
   if (full_address) patch.full_address = full_address.slice(0, 500);
-  // Chat orders are always cash on delivery — no payment choice is asked for.
-  patch.payment_method = "cod";
   if (qty) patch.qty = qty;
   return patch;
 }
