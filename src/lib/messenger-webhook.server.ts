@@ -1268,26 +1268,14 @@ async function visuallyMatchProduct(
     id: product.product_id,
   })).filter((product) => !blockedIds.has(product.id) && productImages(product, 1).length > 0);
   if (!allProducts.length) return null;
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) return null;
-
+  // Runs on the platform owner's own provider keys (Winner Admin → AI).
   const requestJson = async (stage: "MATCH", content: any[]) => {
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "fetch" },
-      body: JSON.stringify({
-        model: "openai/gpt-6-astra",
-        reasoning: { effort: "medium", summary: "auto" },
-        stream: true,
-        input: [{ role: "user", content }],
-      }),
-    });
-    if (!response.ok) {
-      const detail = await responseErrorMessage(response);
-      imageFailure(`${stage}_HTTP`, detail, response.status === 429 || response.status >= 500);
+    let text: string;
+    try {
+      text = await routedVisionText(content);
+    } catch (cause) {
+      imageFailure(`${stage}_HTTP`, (cause as Error).message, true);
     }
-    if (!response.body) imageFailure(`${stage}_BODY`, "AI match response had no stream", true);
-    const text = parseResponsesText(await response.text(), stage);
     const object = text.match(/\{[\s\S]*\}/)?.[0];
     if (!object) imageFailure(`${stage}_JSON`, "AI match answer did not contain JSON", true);
     try {
