@@ -548,7 +548,11 @@ async function loadStoreOrderFlow(sb: ReturnType<typeof admin>, storeId: string)
 }
 
 function orderMissingFields(slot: Record<string, any>, cfg?: OrderFlowConfig) {
-  const keys = requiredSlotFields(cfg ?? normalizeOrderFlow(null)).filter((k) => k !== "product_id");
+  // Chat orders are always cash on delivery, so the customer is never asked
+  // to choose a payment method.
+  const keys = requiredSlotFields(cfg ?? normalizeOrderFlow(null)).filter(
+    (k) => k !== "product_id" && k !== "payment_method",
+  );
   return keys.filter((k) => !slot[k]).map((k) => ORDER_FIELD_BN[k] ?? k);
 }
 
@@ -587,26 +591,60 @@ function isPaymentLine(line: string) {
   return !!normalizePaymentMethod(line) && line.trim().replace(/[\s.,।-]+/g, "").length <= 24;
 }
 
+function extractEmail(text: string) {
+  const m = String(text ?? "").match(/[\w.+-]+@[\w-]+\.[\w.-]{2,}/);
+  return m ? m[0].toLowerCase().slice(0, 160) : null;
+}
+
+/** Strip a leading serial marker like "1." / "১)" / "৩-" from a line. */
+const SERIAL_RE = /^\s*[(\[]?[\d০-৯]{1,2}\s*[).:\-–।]\s*/;
+
+function stripSerial(line: string) {
+  return line.replace(SERIAL_RE, "").trim();
+}
+
 function parseOrderDetailsText(text: string) {
-  const lines = text
+  const rawLines = text
     .split(/\r?\n+/)
     .map((line) => line.trim())
     .filter(Boolean);
   const phone = extractPhone(text);
-  const payment_method = normalizePaymentMethod(text);
+  const email = extractEmail(text);
   const qty = extractQty(text);
 
-  const cleanedLines = lines
-    .map((line) => (phone ? line.replace(/(?:\+?88[-\s]?)?01[3-9][\d\s-]{8,12}/g, "") : line).trim())
+  const patch: Record<string, any> = {};
+
+  // Customers answer the numbered prompt: 1) name 2) phone 3) email 4) address 5) note
+  const serialLines = rawLines.filter((l) => SERIAL_RE.test(l));
+  if (serialLines.length >= 2) {
+    const parts = serialLines.map(stripSerial).filter(Boolean);
+    const [p1, p2, p3, p4, p5] = parts;
+    const nonPhone = (v?: string) => (v && !extractPhone(v) && !extractEmail(v) ? v : undefined);
+    const name = nonPhone(p1);
+    if (name) patch.customer_name = name.slice(0, 120);
+    const addressCandidates = [p4, p5, p3]
+      .filter((v): v is string => !!v && !extractPhone(v) && !extractEmail(v))
+      .filter((v) => v !== name);
+    if (addressCandidates.length) patch.full_address = addressCandidates[0]!.slice(0, 500);
+    const note = p5 && p5 !== patch.full_address && !extractEmail(p5) && !extractPhone(p5) ? p5 : null;
+    if (note) patch.note = note.slice(0, 300);
+    if (!patch.full_address && p2 && !extractPhone(p2)) patch.full_address = p2.slice(0, 500);
+  }
+
+  const cleanedLines = rawLines
+    .map((line) => stripSerial(line))
+    .map((line) => (phone ? line.replace(/(?:\+?88[-\s]?)?01[3-9][\d\s-]{8,12}/g, "") : line))
+    .map((line) => (email ? line.replace(/[\w.+-]+@[\w-]+\.[\w.-]{2,}/g, "") : line))
+    .map((line) => line.trim())
     .filter((line) => line && !isPaymentLine(line));
 
-  let customer_name: string | undefined;
-  let full_address: string | undefined;
+  let customer_name: string | undefined = patch.customer_name;
+  let full_address: string | undefined = patch.full_address;
 
   const nameMatch = text.match(/(?:^|\n|\b)(?:name|নাম)\s*[:：-]?\s*([^\n,;|]+)/i);
-  if (nameMatch?.[1]) customer_name = nameMatch[1].trim();
+  if (!customer_name && nameMatch?.[1]) customer_name = nameMatch[1].trim();
   const addressMatch = text.match(/(?:address|ঠিকানা|এড্রেস)\s*[:：-]?\s*([^|]+)/i);
-  if (addressMatch?.[1]) full_address = addressMatch[1].trim();
+  if (!full_address && addressMatch?.[1]) full_address = addressMatch[1].trim();
 
   if (!customer_name) {
     const firstNameLike = cleanedLines.find((line) => {
@@ -621,11 +659,10 @@ function parseOrderDetailsText(text: string) {
     if (addressLines.length) full_address = addressLines.join(", ");
   }
 
-  const patch: Record<string, any> = {};
   if (customer_name) patch.customer_name = customer_name.slice(0, 120);
   if (phone) patch.phone = phone;
+  if (email) patch.email = email;
   if (full_address) patch.full_address = full_address.slice(0, 500);
-  if (payment_method) patch.payment_method = payment_method;
   if (qty) patch.qty = qty;
   return patch;
 }
@@ -666,7 +703,7 @@ async function finalizePendingMessengerOrder(opts: {
   const missing = orderMissingFields(slot, flowCfg);
   if (!slot.product_id) missing.unshift("প্রোডাক্ট");
   if (missing.length) {
-    await sendAndLogText(sb, token, psid, conversationId, `অর্ডার কনফার্ম করতে ${missing.join(", ")} দিন।`);
+    await sendAndLogText(sb, token, psid, conversationId, buildMissingFieldsMessage(missing));
     return true;
   }
 
@@ -699,7 +736,15 @@ async function finalizePendingMessengerOrder(opts: {
   if (blocked) return true;
 
   const subtotal = Number(product.price) * qty;
-  const delivery = Number((product as any).delivery_charge ?? 0);
+  const addressText = [slot.full_address, slot.area, slot.village, slot.union, slot.upazila, slot.district]
+    .filter(Boolean)
+    .join(", ");
+  const zones = await fetchDeliveryZones(sb, storeId);
+  const { charge: delivery, zone } = resolveDeliveryCharge(
+    addressText,
+    zones,
+    (product as any).delivery_charge,
+  );
   const total = subtotal + delivery;
   const { data: invoiceNo } = await sb.rpc("generate_invoice_no", { _store_id: storeId } as any);
   const { data: order, error: orderError } = await sb
@@ -708,15 +753,22 @@ async function finalizePendingMessengerOrder(opts: {
       store_id: storeId,
       customer_name: String(slot.customer_name).trim(),
       phone: normalizePhone(slot.phone) ?? String(slot.phone).trim(),
+      email: slot.email ? String(slot.email).trim() : null,
       address: String(slot.full_address).trim(),
-      area: [slot.village, slot.union, slot.upazila, slot.district].filter(Boolean).join(", ") || null,
-      payment_method: slot.payment_method,
+      area:
+        [slot.village, slot.union, slot.upazila, slot.district].filter(Boolean).join(", ") ||
+        zone?.name ||
+        null,
+      payment_method: "cod",
       subtotal: total,
       delivery_amount: delivery,
+      delivery_zone_id: zone?.id ?? null,
       discount_amount: 0,
       status: "pending",
       invoice_no: invoiceNo || null,
-      notes: "Placed via Messenger AI Sales Agent",
+      notes: slot.note
+        ? `Placed via Messenger AI Sales Agent — ${String(slot.note).slice(0, 300)}`
+        : "Placed via Messenger AI Sales Agent",
     } as any)
     .select("id,invoice_no")
     .single();
@@ -784,18 +836,21 @@ async function finalizePendingMessengerOrder(opts: {
     renderConfirmation(template, {
       product: product.name,
       qty,
-      total: `৳${total.toFixed(0)}`,
+      total: money(total),
       customer_name: slot.customer_name,
       address: slot.full_address,
-      payment_method: String(slot.payment_method ?? "").toUpperCase(),
+      payment_method: "ক্যাশ অন ডেলিভারি",
       invoice_no: order.invoice_no || order.id,
     }),
   ];
   // Only add the summary lines the admin's own template doesn't already cover.
-  if (!uses("invoice_no")) lines.push(`অর্ডার নম্বর: ${order.invoice_no || order.id}`);
-  if (!uses("product") && !uses("qty")) lines.push(`প্রোডাক্ট: ${product.name} × ${qty}`);
-  if (!uses("total")) lines.push(`মোট: ৳${total.toFixed(0)}`);
-  if (!uses("payment_method")) lines.push(`পেমেন্ট: ${String(slot.payment_method).toUpperCase()}`);
+  lines.push("────────────────");
+  if (!uses("invoice_no")) lines.push(`🧾 অর্ডার নম্বর: ${order.invoice_no || order.id}`);
+  if (!uses("product") && !uses("qty")) lines.push(`🛍️ প্রোডাক্ট: ${product.name} × ${toBnDigits(qty)}`);
+  lines.push(`💰 পণ্যের মূল্য: ${money(subtotal)}`);
+  lines.push(`🚚 ডেলিভারি চার্জ${zone ? ` (${zone.name})` : ""}: ${money(delivery)}`);
+  if (!uses("total")) lines.push(`✅ সর্বমোট: ${money(total)}`);
+  if (!uses("payment_method")) lines.push("💵 পেমেন্ট: ক্যাশ অন ডেলিভারি");
   const confirmation = lines.filter(Boolean).join("\n");
   await sendAndLogText(sb, token, psid, conversationId, confirmation);
   return true;
