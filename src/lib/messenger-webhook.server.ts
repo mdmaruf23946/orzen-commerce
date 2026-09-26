@@ -1202,30 +1202,25 @@ async function visuallyMatchProduct(
     ...analysis.connectors,
     ...analysis.keywords,
   ].filter(Boolean).join(" ");
-  const productSelect =
-    "product_id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,primary_image_url,gallery,features,specifications,variants,total_sold,rating,is_featured";
-  const [textMatches, blockedResult, categoriesResult] = await Promise.all([
-    searchDirectProducts(sb, storeId, query, 20),
-    sb.from("ai_product_blacklist").select("product_id").eq("store_id", storeId),
-    sb.from("categories").select("id,name").eq("store_id", storeId),
-  ]);
-  const blockedIds = new Set((blockedResult.data ?? []).map((row: any) => String(row.product_id)));
-  const categoryNames = new Map((categoriesResult.data ?? []).map((row: any) => [String(row.id), String(row.name ?? "")]));
-  const candidateIds = Array.from(new Set([...imageCandidateIds, ...textMatches.map((product) => product.id)])).slice(0, 20);
-  if (!candidateIds.length) return null;
-  const { data: candidateRows, error: candidateError } = await sb
-    .from("ai_product_catalog")
-    .select(productSelect)
-    .eq("store_id", storeId)
-    .eq("status", "active")
-    .gt("stock", 0)
-    .in("product_id", candidateIds);
-  if (candidateError) imageFailure("CATALOGUE_QUERY", candidateError.message, true);
-  const allProducts = ((candidateRows ?? []) as unknown as Array<Omit<ProductRow, "id"> & { product_id: string }>).map((product) => ({
-    ...product,
-    id: product.product_id,
-  })).filter((product) => !blockedIds.has(product.id) && productImages(product, 1).length > 0);
+  // Candidates come straight out of the memorised catalogue — instant, and
+  // already free of blacklisted / out-of-stock / imageless products.
+  const memory = await getStoreMemory(sb as any, storeId);
+  const categoryNames = memory.categoryNames;
+  const recalled = recallForImage(memory, {
+    type: analysis.product_type,
+    subtype: analysis.product_subtype,
+    category: analysis.category,
+    brand: analysis.brand,
+    keywords: [...analysis.keywords, ...analysis.functions, ...analysis.connectors],
+    text: analysis.visible_text,
+  }, 12) as unknown as ProductRow[];
+  const pinned = imageCandidateIds
+    .map((id) => memory.byId.get(id)?.product as unknown as ProductRow | undefined)
+    .filter((product): product is ProductRow => Boolean(product));
+  const textMatches = Array.from(new Map([...pinned, ...recalled].map((p) => [p.id, p])).values());
+  const allProducts = textMatches.filter((product) => productImages(product, 1).length > 0);
   if (!allProducts.length) return null;
+  void query;
   // Runs on the platform owner's own provider keys (Winner Admin → AI).
   const requestJson = async (stage: "MATCH", content: any[]) => {
     let text: string;
