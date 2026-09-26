@@ -67,9 +67,9 @@ function geminiModel(modelId: string) {
 
 /** Sibling Gemini models tried on the same key when the first is busy or out of quota. */
 function geminiFallbackModels(primary: string): string[] {
-  if (primary === "gemini-pro-latest") return ["gemini-flash-latest", "gemini-2.5-flash"];
-  if (primary === "gemini-flash-lite-latest") return ["gemini-2.5-flash-lite"];
-  return ["gemini-3.7-flash", "gemini-2.5-flash"];
+  if (primary === "gemini-pro-latest") return ["gemini-flash-latest", "gemini-3.6-flash", "gemini-3.5-flash"];
+  if (primary === "gemini-flash-lite-latest") return ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
+  return ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3-flash-preview"];
 }
 
 function openaiModel(modelId: string) {
@@ -144,20 +144,20 @@ function retryable(status: number) {
   return status === 400 || status === 401 || status === 403 || status === 404 || status === 429 || status >= 500;
 }
 
-/** Statuses that mean the key itself is the problem. */
-function keyLevelFailure(status: number) {
-  return status === 401 || status === 403 || status === 429;
-}
-
 // ---------------------------------------------------------------------------
 // Gemini's OpenAI-compatible endpoint rejects remote image links with
 // "400 Request contains an invalid argument" — it only accepts inline base64
 // data URLs. Every product photo is a link, so photo matching failed. We
 // download each linked image once and inline it before sending to Gemini.
 // ---------------------------------------------------------------------------
-const INLINE_MAX_IMAGE_BYTES = 4 * 1024 * 1024;
-const INLINE_TOTAL_BUDGET = 12 * 1024 * 1024; // keeps the request under Gemini's 20 MB limit
+// The model downsizes images to ~768px anyway, so product photos are fetched as
+// a small rendition. Full-size photos (some are 2-3 MB PNGs) exhausted the
+// Worker's memory and killed the job before it could reply.
+const INLINE_MAX_IMAGE_BYTES = 1_500_000;
+const INLINE_TOTAL_BUDGET = 8 * 1024 * 1024; // keeps the request well under Gemini's 20 MB limit
+const INLINE_CACHE_BYTES = 6 * 1024 * 1024;
 const inlineCache = new Map<string, string | null>();
+let inlineCacheBytes = 0;
 
 function sniffImageMime(bytes: Uint8Array): string | null {
   if (bytes[0] === 0xff && bytes[1] === 0xd8) return "image/jpeg";
@@ -182,6 +182,16 @@ function toBase64(bytes: Uint8Array) {
   return btoa(binary);
 }
 
+async function fetchBytes(url: string, headers: Record<string, string>): Promise<Uint8Array | null> {
+  try {
+    const res = await fetch(url, { headers, signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) return null;
+    return new Uint8Array(await res.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
 async function downloadImageBytes(url: string): Promise<Uint8Array | null> {
   let parsed: URL;
   try {
@@ -189,27 +199,24 @@ async function downloadImageBytes(url: string): Promise<Uint8Array | null> {
   } catch {
     return null;
   }
-  // Our own /api/img proxy: read straight from storage. A Worker fetching its
-  // own hostname loops back through Cloudflare and fails (522).
+  // Our own /api/img proxy: read straight from storage (a Worker fetching its
+  // own hostname loops back through Cloudflare and fails with 522). Ask
+  // storage for a small rendition first, then the original as a fallback.
   if (parsed.pathname.startsWith("/api/img/")) {
     const path = decodeURIComponent(parsed.pathname.slice("/api/img/".length));
-    try {
-      const { data, error } = await admin().storage.from("store-assets").download(path);
-      if (!error && data) return new Uint8Array(await data.arrayBuffer());
-    } catch {
-      /* fall through to a normal fetch */
-    }
+    const base = requireServerEnv("SUPABASE_URL").replace(/\/$/, "");
+    const key = requireServerEnv("SUPABASE_SERVICE_ROLE_KEY");
+    const auth: Record<string, string> = { apikey: key };
+    if (!key.startsWith("sb_")) auth.authorization = `Bearer ${key}`;
+    const encoded = path.split("/").map(encodeURIComponent).join("/");
+    const small = await fetchBytes(
+      `${base}/storage/v1/render/image/authenticated/store-assets/${encoded}?width=640&quality=70&resize=contain`,
+      auth,
+    );
+    if (small && small.length) return small;
+    return fetchBytes(`${base}/storage/v1/object/store-assets/${encoded}`, auth);
   }
-  try {
-    const res = await fetch(url, {
-      headers: { "user-agent": "Mozilla/5.0 (compatible; OrzenBot/1.0)" },
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!res.ok) return null;
-    return new Uint8Array(await res.arrayBuffer());
-  } catch {
-    return null;
-  }
+  return fetchBytes(url, { "user-agent": "Mozilla/5.0 (compatible; OrzenBot/1.0)" });
 }
 
 async function inlineImageUrl(url: string): Promise<string | null> {
@@ -220,8 +227,16 @@ async function inlineImageUrl(url: string): Promise<string | null> {
     const mime = sniffImageMime(bytes);
     if (mime) out = `data:${mime};base64,${toBase64(bytes)}`;
   }
-  if (inlineCache.size > 60) inlineCache.delete(inlineCache.keys().next().value as string);
-  inlineCache.set(url, out);
+  const size = out?.length ?? 0;
+  while (inlineCache.size && inlineCacheBytes + size > INLINE_CACHE_BYTES) {
+    const oldest = inlineCache.keys().next().value as string;
+    inlineCacheBytes -= inlineCache.get(oldest)?.length ?? 0;
+    inlineCache.delete(oldest);
+  }
+  if (size <= INLINE_CACHE_BYTES) {
+    inlineCache.set(url, out);
+    inlineCacheBytes += size;
+  }
   return out;
 }
 
