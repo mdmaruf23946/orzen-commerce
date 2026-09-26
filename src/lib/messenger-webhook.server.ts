@@ -20,6 +20,14 @@ import {
   requiredSlotFields,
   type OrderFlowConfig,
 } from "@/lib/messenger-order-flow";
+import {
+  buildBuyNowMessage,
+  buildMissingFieldsMessage,
+  fetchDeliveryZones,
+  money,
+  resolveDeliveryCharge,
+  toBnDigits,
+} from "@/lib/chat-order-format";
 
 // Absolute origin used for images and product links sent to Messenger.
 // Configurable per deployment so it follows the live custom domain.
