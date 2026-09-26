@@ -1294,23 +1294,22 @@ async function visuallyMatchProduct(
       return left.id.localeCompare(right.id);
     });
 
-    // Stage 1: compare the customer's photo with every eligible image in the
-    // current store. Eight products × up to three images stays below the model's
-    // image limit while covering large catalogues through deterministic batches.
-    // Single pass: one comparison call over the most likely candidates decides
-    // the verdict. The old two-stage chain issued up to a dozen vision calls per
-    // photo, which is what pushed replies past three minutes on free keys.
-    const batch = candidates.slice(0, 8);
+    // Speed: one comparison call, and only the few catalogue photos that can
+    // plausibly win. Sending eight products × two photos meant downloading and
+    // inlining sixteen full-size images per customer photo, which is what made
+    // a found product slower to answer than a missing one.
+    const batch = candidates.slice(0, 4);
     const content: any[] = [{
       type: "input_text",
-      text: "Compare CUSTOMER_IMAGE with each candidate's images and decide if one is the exact same sale product/model. Return ONLY minified JSON: " +
-        '{"results":[{"index":number,"verdict":"same|close|different","type_compatible":boolean,"confidence":number,"reason":"short visual evidence"}]}. ' +
+      text: "CUSTOMER_IMAGE is first. Decide if any candidate photo shows the same sale product/model. Answer FAST and SHORT. " +
+        'Return ONLY minified JSON: {"results":[{"index":number,"verdict":"same|close|different","type_compatible":boolean,"confidence":0..1,"reason":"few words"}]}. ' +
         "Use same only when function/type, ports, controls, branding/text and proportions agree; colour or shape alone is insufficient. " +
-        "Judge by the IMAGES: catalogue names and descriptions may be wrong and must never override an image match. If the customer image is the same photograph as a catalogue image (even cropped, resized, recompressed or Messenger-encoded), return same with confidence 0.99.",
+        "Judge by the IMAGES: catalogue names may be wrong and must never override the photo. If the customer image is the same photograph as a candidate photo (even cropped, resized or recompressed), return same with confidence 0.99. " +
+        "Skip candidates that clearly differ instead of describing them.",
     }, { type: "input_image", image_url: analysis.image_data_url }];
     batch.forEach((product, index) => {
       content.push({ type: "input_text", text: `CANDIDATE_${index}: ${productIdentityText(product, categoryNames.get(String(product.category_id ?? "")) ?? "")}` });
-      productImages(product, 2).forEach((image) => content.push({ type: "input_image", image_url: image }));
+      productImages(product, 1).forEach((image) => content.push({ type: "input_image", image_url: image }));
     });
     const compared = await requestJson("MATCH", content);
     const results = Array.isArray(compared.results) ? compared.results : [];
