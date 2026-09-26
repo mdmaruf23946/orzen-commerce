@@ -5877,6 +5877,30 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_meta_app: {
+        Row: {
+          app_id: string | null
+          app_secret_encrypted: string | null
+          created_at: string
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          app_id?: string | null
+          app_secret_encrypted?: string | null
+          created_at?: string
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          app_id?: string | null
+          app_secret_encrypted?: string | null
+          created_at?: string
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_notices: {
         Row: {
           body: string | null
