@@ -805,15 +805,10 @@ export const refreshMessengerProfiles = createServerFn({ method: "POST" })
       await Promise.all(
         chunk.map(async (row) => {
           try {
-            const r = await fetch(
-              `https://graph.facebook.com/v19.0/${encodeURIComponent(row.external_id)}?fields=first_name,last_name,name,profile_pic&access_token=${encodeURIComponent(token)}`,
-            );
-            if (!r.ok) return;
-            const p = (await r.json()) as Record<string, any>;
-            const name =
-              (p.name as string | undefined) ||
-              [p.first_name, p.last_name].filter(Boolean).join(" ") ||
-              null;
+            const { fetchMessengerProfile, profileDisplayName } = await import("@/lib/messenger-profile.server");
+            const p = await fetchMessengerProfile(token, row.external_id);
+            if (!p) return;
+            const name = profileDisplayName(p);
             const pic = (p.profile_pic as string | undefined) || null;
             if (!name && !pic) return;
             const merged = {
