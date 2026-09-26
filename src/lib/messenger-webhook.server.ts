@@ -1865,7 +1865,7 @@ export async function handleBuyPostback(opts: {
   if (!/^[0-9a-f-]{36}$/i.test(productId)) return false;
   const { data: product } = await sb
     .from("products")
-    .select("id,name,slug,stock,status,product_type")
+    .select("id,name,slug,price,stock,status,product_type,delivery_charge")
     .eq("store_id", storeId)
     .eq("id", productId)
     .maybeSingle();
@@ -1900,9 +1900,17 @@ export async function handleBuyPostback(opts: {
   });
   const cfg = await loadStoreOrderFlow(sb, storeId);
   const missing = orderMissingFields(slot, cfg);
+  const zones = await fetchDeliveryZones(sb, storeId);
   const reply = missing.length
-    ? `${cfg.buy_now_message}\n\n${product.name} — কনফার্ম করতে ${missing.join(", ")} দিন।`
-    : `ঠিক আছে, ${product.name} অর্ডারের তথ্য পেয়েছি। কনফার্ম করার আগে আর কিছু যোগ করতে চান?`;
+    ? buildBuyNowMessage({
+        productName: product.name,
+        price: Number((product as any).price ?? 0),
+        qty: Number(slot.qty ?? 1) || 1,
+        zones,
+        productDeliveryCharge: (product as any).delivery_charge,
+        intro: cfg.buy_now_message,
+      })
+    : `ঠিক আছে, ${product.name} অর্ডারের তথ্য পেয়েছি। কনফার্ম করতে "হ্যাঁ" লিখুন।`;
   await sendAndLogText(
     sb,
     token,
