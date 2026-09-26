@@ -1410,6 +1410,11 @@ async function fastImageLookup(
   pageToken: string,
   messageId: string,
 ): Promise<{ analysis: ImageAnalysis | null; match: VisualMatch | null; candidateIds: string[] }> {
+  // Image fingerprints are unavailable on the current provider keys, so this
+  // pre-pass can only cost an extra image download. Skip it entirely and let
+  // the single-pass visual match below answer directly.
+  return { analysis: null, match: null, candidateIds: [] };
+  // eslint-disable-next-line no-unreachable
   try {
     const { rankProductImageMatches } = await import("@/lib/product-image-embeddings.server");
     const { bytes, type } = await downloadMessengerImage(imageUrl, pageToken, messageId);
