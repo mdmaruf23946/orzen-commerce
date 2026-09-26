@@ -121,25 +121,8 @@ function buildCandidates(settings: any, modelId: string): Candidate[] {
       headers: {},
     });
   }
-  // Platform (Lovable AI) — always the last resort, and the default when the
-  // owner has not stored any key of their own.
-  const saved = (settings?.provider_api_key || "").trim();
-  const looksLovable = saved.startsWith("lv_") || saved.startsWith("sk-lovable");
-  // Cloudflare supplies this as a per-request binding. `serverEnv` reads that
-  // binding even when the runtime's process.env object is empty/read-only.
-  const platformKey = (looksLovable ? saved : "") || serverEnv("LOVABLE_API_KEY") || "";
-  if (platformKey) {
-    out.push({
-      provider: "platform",
-      keyId: null,
-      label: "Lovable AI",
-      apiKey: platformKey,
-      baseURL: LOVABLE_BASE,
-      // A few older gateway ids are no longer served; map them to a live one.
-      modelId: PLATFORM_MODEL_ALIASES[modelId] ?? modelId,
-      headers: { "Lovable-API-Key": platformKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
-    });
-  }
+  // The platform (Lovable AI) gateway is intentionally NOT part of the chain:
+  // every AI request on this site must run on the owner's own provider keys.
   return out;
 }
 
