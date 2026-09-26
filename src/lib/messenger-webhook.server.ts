@@ -1391,23 +1391,14 @@ async function fastImageLookup(
   try {
     const { rankProductImageMatches } = await import("@/lib/product-image-embeddings.server");
     const { bytes, type } = await downloadMessengerImage(imageUrl, pageToken, messageId);
-    const [ranked, activeRes, indexedRes] = await Promise.all([
-      rankProductImageMatches(sb as any, storeId, bytes, type, 8),
-      sb.from("ai_product_catalog").select("product_id", { count: "exact", head: true })
-        .eq("store_id", storeId).eq("status", "active").not("primary_image_url", "is", null),
-      sb.from("product_image_embeddings").select("product_id", { count: "exact", head: true })
-        .eq("store_id", storeId).not("embedding", "is", null),
-    ]);
+    const ranked = await rankProductImageMatches(sb as any, storeId, bytes, type, 8);
     const hit = ranked[0];
     const margin = hit ? hit.similarity - (ranked[1]?.similarity ?? 0) : 0;
     const candidateIds = ranked.filter((row) => row.similarity >= 0.45).map((row) => row.productId);
-    // Index fully covers this store's catalogue and nothing is even close:
-    // the product is certainly not sold here, so answer instantly.
-    const indexComplete = (indexedRes.count ?? 0) > 0 && (indexedRes.count ?? 0) >= (activeRes.count ?? 0);
-    const top = hit?.similarity ?? 0;
-    if (indexComplete && top < 0.72) {
-      return { analysis: null, match: null, candidateIds: [], definiteMiss: true, topSimilarity: top };
-    }
+    // Never declare "not available" from fingerprints alone: embeddings cover
+    // only one photo per product, so a different angle/source photo of a real
+    // catalogue item can score low. Uncertain photos always fall through to
+    // the full AI inspection below.
     if (!hit || hit.similarity < 0.86 || margin < 0.12) return { analysis: null, match: null, candidateIds };
     const [{ data: product }, { data: blocked }] = await Promise.all([
       sb
@@ -2327,27 +2318,6 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                 // store's own products answers in ~1s; anything uncertain falls
                 // through to the full AI inspection below.
                 const fast = await fastImageLookup(sb, integ.store_id, imageUrl, token, String(msg.mid ?? ""));
-                if (fast.definiteMiss) {
-                  const replies = [
-                    "দুঃখিত, এই প্রোডাক্টটি এখন আমাদের কাছে নেই 😊 অন্য কিছু খুঁজলে জানাবেন, আমি সাহায্য করব।",
-                    "এই প্রোডাক্টটি এই মুহূর্তে আমাদের কালেকশনে নেই। অন্য কোনো প্রোডাক্ট দেখতে চাইলে বলুন 😊",
-                    "এই প্রোডাক্টটি এখন আমাদের স্টকে নেই, দুঃখিত। চাইলে আমাদের অন্য প্রোডাক্টগুলো দেখাতে পারি 🙂",
-                  ];
-                  const reply = replies[Math.floor(Math.random() * replies.length)]!;
-                  const sent = await fbSend(token, senderId, reply);
-                  await markQueuedReply(sb, queuedJobId, reply, sent.message_id);
-                  await sb.from("ai_messages").insert({
-                    conversation_id: conv!.id,
-                    role: "assistant",
-                    direction: "out",
-                    message_type: "text",
-                    content: reply,
-                    attachments: [{ in_reply_to_mid: msg.mid ?? null, image_match: "none", evidence: "fast_image_fingerprint", top_similarity: fast.topSimilarity ?? 0 }],
-                    mid: sent.message_id ?? null,
-                    delivery_status: "sent",
-                  });
-                  continue;
-                }
                 const seen = fast.analysis ?? await describeImageAttachment(imageUrl, token, String(msg.mid ?? ""));
                 {
                   imageAnalysis = seen;
