@@ -1,3 +1,4 @@
+import { sizedImg } from "@/lib/img-url";
 import { StoreErrorState } from "@/components/storefront/StoreErrorState";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { keepPreviousData, queryOptions, useQuery } from "@tanstack/react-query";
@@ -632,7 +633,7 @@ function CategoryTile({
           </span>
         ) : image ? (
           <img
-            src={image}
+            src={sizedImg(image, 160)}
             alt={label}
             loading="lazy"
             className="h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-110"

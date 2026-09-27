@@ -1,3 +1,4 @@
+import { sizedImg } from "@/lib/img-url";
 import { createFileRoute, Link, Outlet, notFound, useRouterState } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -411,7 +412,7 @@ function StoreHeader({
             >
               {logoUrl ? (
                 <img
-                  src={logoUrl}
+                  src={sizedImg(logoUrl, 160)}
                   alt=""
                   className="h-7 w-7 shrink-0 rounded-full object-cover"
                   loading="eager"
@@ -479,7 +480,7 @@ function StoreHeader({
               className={`flex min-w-0 items-center gap-2 ${theme.header.logo_align === "center" ? "mx-auto" : ""}`}
             >
               {logoUrl ? (
-                <img src={logoUrl} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" loading="eager" />
+                <img src={sizedImg(logoUrl, 160)} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" loading="eager" />
               ) : (
                 <div
                   className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-bold text-white"
