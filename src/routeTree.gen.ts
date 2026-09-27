@@ -171,7 +171,6 @@ import { Route as StoreSlugAuthResetRouteImport } from './routes/store/$slug/aut
 import { Route as StoreSlugAuthLoginRouteImport } from './routes/store/$slug/auth.login'
 import { Route as StoreSlugAuthForgotRouteImport } from './routes/store/$slug/auth.forgot'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
-import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
 import { Route as ApiPublicTiktokTrackRouteImport } from './routes/api/public/tiktok/track'
 import { Route as ApiPublicMetaOauthCallbackRouteImport } from './routes/api/public/meta/oauth-callback'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
@@ -1149,12 +1148,6 @@ const LovableEmailQueueProcessRoute =
     path: '/lovable/email/queue/process',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicWhatsappWebhookRoute =
-  ApiPublicWhatsappWebhookRouteImport.update({
-    id: '/api/public/whatsapp/webhook',
-    path: '/api/public/whatsapp/webhook',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiPublicTiktokTrackRoute = ApiPublicTiktokTrackRouteImport.update({
   id: '/api/public/tiktok/track',
   path: '/api/public/tiktok/track',
@@ -1757,7 +1750,6 @@ export interface FileRoutesByFullPath {
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/meta/oauth-callback': typeof ApiPublicMetaOauthCallbackRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
-  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
@@ -1979,7 +1971,6 @@ export interface FileRoutesByTo {
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/meta/oauth-callback': typeof ApiPublicMetaOauthCallbackRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
-  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
@@ -2213,7 +2204,6 @@ export interface FileRoutesById {
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/meta/oauth-callback': typeof ApiPublicMetaOauthCallbackRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
-  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/store/$slug/auth/forgot': typeof StoreSlugAuthForgotRoute
   '/store/$slug/auth/login': typeof StoreSlugAuthLoginRoute
@@ -2447,7 +2437,6 @@ export interface FileRouteTypes {
     | '/api/public/messenger/webhook'
     | '/api/public/meta/oauth-callback'
     | '/api/public/tiktok/track'
-    | '/api/public/whatsapp/webhook'
     | '/lovable/email/queue/process'
     | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
@@ -2669,7 +2658,6 @@ export interface FileRouteTypes {
     | '/api/public/messenger/webhook'
     | '/api/public/meta/oauth-callback'
     | '/api/public/tiktok/track'
-    | '/api/public/whatsapp/webhook'
     | '/lovable/email/queue/process'
     | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
@@ -2902,7 +2890,6 @@ export interface FileRouteTypes {
     | '/api/public/messenger/webhook'
     | '/api/public/meta/oauth-callback'
     | '/api/public/tiktok/track'
-    | '/api/public/whatsapp/webhook'
     | '/lovable/email/queue/process'
     | '/store/$slug/auth/forgot'
     | '/store/$slug/auth/login'
@@ -2981,7 +2968,6 @@ export interface RootRouteChildren {
   ApiPublicMessengerWebhookRoute: typeof ApiPublicMessengerWebhookRoute
   ApiPublicMetaOauthCallbackRoute: typeof ApiPublicMetaOauthCallbackRoute
   ApiPublicTiktokTrackRoute: typeof ApiPublicTiktokTrackRoute
-  ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   ApiPublicCallsTwilioStatusStoreRoute: typeof ApiPublicCallsTwilioStatusStoreRoute
   ApiPublicLandingPagesConnectionIdOrdersRoute: typeof ApiPublicLandingPagesConnectionIdOrdersRoute
@@ -4128,13 +4114,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/whatsapp/webhook': {
-      id: '/api/public/whatsapp/webhook'
-      path: '/api/public/whatsapp/webhook'
-      fullPath: '/api/public/whatsapp/webhook'
-      preLoaderRoute: typeof ApiPublicWhatsappWebhookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/tiktok/track': {
       id: '/api/public/tiktok/track'
       path: '/api/public/tiktok/track'
@@ -5210,7 +5189,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicMessengerWebhookRoute: ApiPublicMessengerWebhookRoute,
   ApiPublicMetaOauthCallbackRoute: ApiPublicMetaOauthCallbackRoute,
   ApiPublicTiktokTrackRoute: ApiPublicTiktokTrackRoute,
-  ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   ApiPublicCallsTwilioStatusStoreRoute: ApiPublicCallsTwilioStatusStoreRoute,
   ApiPublicLandingPagesConnectionIdOrdersRoute:
