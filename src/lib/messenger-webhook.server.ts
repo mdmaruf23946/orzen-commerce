@@ -1471,16 +1471,15 @@ async function sendVisualProductResult(opts: {
     return;
   }
 
-  await logProductRecommendations(sb, storeId, conversationId, [match.product], `image:${sourceMid ?? "unknown"}`);
-  const card = await productCardInput(storeSlug, match.product, storeId, psid);
+  // Speed: the customer only waits for the card itself. Building the card and
+  // logging the recommendation happen together, and the follow-up line plus the
+  // two conversation records are written while the card is already on its way.
+  const [card] = await Promise.all([
+    productCardInput(storeSlug, match.product, storeId, psid),
+    logProductRecommendations(sb, storeId, conversationId, [match.product], `image:${sourceMid ?? "unknown"}`)
+      .catch(() => undefined),
+  ]);
   const cardSent = await sendProductCard(token, psid, card);
-  await markQueuedReply(sb, queuedJobId, `[card] ${card.title}`, cardSent.message_id);
-  await sb.from("ai_messages").insert({
-    conversation_id: conversationId, role: "assistant", direction: "out", message_type: "product_card",
-    content: `[card] ${card.title}`,
-    attachments: [{ type: "product_card", product_id: match.product.id, element: card, in_reply_to_mid: sourceMid }],
-    mid: cardSent.message_id ?? null, delivery_status: "sent",
-  } as any);
   const askList = [
     "জি, এটা আমাদের কাছে আছে 😊 নিতে চাইলে বলুন, অর্ডার করে দিচ্ছি।",
     "পেয়ে গেছি! এটাই তো আমাদের এই প্রোডাক্টটা। নিবেন?",
@@ -1489,14 +1488,24 @@ async function sendVisualProductResult(opts: {
   const text = askList[Math.floor(Math.random() * askList.length)];
   // Ordering happens through the card's own "Buy Now" postback button, so no
   // separate quick reply is attached below the message.
-  const sent = await fbSend(token, psid, text);
-  await markQueuedReply(sb, queuedJobId, text, sent.message_id);
-  await sb.from("ai_messages").insert({
-    conversation_id: conversationId, role: "assistant", direction: "out", message_type: "text",
-    content: text,
-    attachments: [{ in_reply_to_mid: sourceMid, product_id: match.product.id, visual_match_confidence: match.confidence, match_verdict: match.verdict }],
-    mid: sent.message_id ?? null, delivery_status: "sent",
-  } as any);
+  const [sent] = await Promise.all([
+    fbSend(token, psid, text),
+    sb.from("ai_messages").insert({
+      conversation_id: conversationId, role: "assistant", direction: "out", message_type: "product_card",
+      content: `[card] ${card.title}`,
+      attachments: [{ type: "product_card", product_id: match.product.id, element: card, in_reply_to_mid: sourceMid }],
+      mid: cardSent.message_id ?? null, delivery_status: "sent",
+    } as any),
+  ]);
+  await Promise.all([
+    markQueuedReply(sb, queuedJobId, text, sent.message_id),
+    sb.from("ai_messages").insert({
+      conversation_id: conversationId, role: "assistant", direction: "out", message_type: "text",
+      content: text,
+      attachments: [{ in_reply_to_mid: sourceMid, product_id: match.product.id, visual_match_confidence: match.confidence, match_verdict: match.verdict }],
+      mid: sent.message_id ?? null, delivery_status: "sent",
+    } as any),
+  ]);
 }
 
 
