@@ -91,11 +91,11 @@ function ApiKeysManager() {
   const [busy, setBusy] = useState<string | null>(null);
   const [tested, setTested] = useState<Record<string, { ok: boolean; msg?: string }>>({});
 
-  const urlOk = /^https?:\/\/\S+$/i.test(baseUrl.trim());
+  const urlOk = baseUrl.trim().length === 0 || /^https?:\/\/\S+$/i.test(baseUrl.trim());
   const editing = editingId !== null;
   const canConnect = editing
-    ? name.trim().length > 0 && urlOk && model.trim().length > 0 && (apiKey.trim().length === 0 || apiKey.trim().length >= 10)
-    : name.trim().length > 0 && urlOk && model.trim().length > 0 && apiKey.trim().length >= 10;
+    ? name.trim().length > 0 && urlOk && (apiKey.trim().length === 0 || apiKey.trim().length >= 10)
+    : name.trim().length > 0 && urlOk && apiKey.trim().length >= 10;
 
   function startEdit(k: any) {
     setEditingId(k.id);
