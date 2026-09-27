@@ -1,7 +1,6 @@
 // WhatsApp Cloud API webhook — per-store, signature verified.
 // Mirrors the Messenger webhook flow: log event → upsert conversation →
 // store inbound message → AI reply (unless a human took over).
-import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Database } from "@/integrations/supabase/types";
@@ -218,289 +217,336 @@ async function handleBuyButton(opts: {
   await sendAndLog(sb, phoneNumberId, token, to, conversationId, text);
 }
 
-export const Route = createFileRoute("/api/public/whatsapp/webhook")({
-  server: {
-    handlers: {
-      // Meta webhook verification
-      GET: async ({ request }) => {
-        const url = new URL(request.url);
-        const mode = url.searchParams.get("hub.mode");
-        const token = url.searchParams.get("hub.verify_token");
-        const challenge = url.searchParams.get("hub.challenge") ?? "";
-        if (mode !== "subscribe" || !token) return new Response("Bad request", { status: 400 });
-        const sb = admin();
-        const { data } = await sb
+/** Meta webhook verification (GET). */
+export async function handleWhatsAppVerify(request: Request) {
+  const url = new URL(request.url);
+  const mode = url.searchParams.get("hub.mode");
+  const token = url.searchParams.get("hub.verify_token");
+  const challenge = url.searchParams.get("hub.challenge") ?? "";
+  if (mode !== "subscribe" || !token) return new Response("Bad request", { status: 400 });
+  const sb = admin();
+  const { data } = await sb.from("whatsapp_integrations").select("id").eq("verify_token", token).maybeSingle();
+  if (!data) return new Response("Forbidden", { status: 403 });
+  return new Response(challenge, { status: 200, headers: { "content-type": "text/plain" } });
+}
+
+export type WaJobPayload = {
+  text: string;
+  type: string;
+  button_payload: string | null;
+  profile_name: string | null;
+};
+
+/**
+ * Webhook (POST): verify → store → queue → ACK. No AI and no Meta send work
+ * happens here, so Meta always gets its answer quickly.
+ */
+export async function handleWhatsAppWebhook(request: Request) {
+  const raw = await request.text();
+  const signature = request.headers.get("x-hub-signature-256");
+  let body: any;
+  try {
+    body = JSON.parse(raw);
+  } catch {
+    return new Response("ok", { status: 200 });
+  }
+  const sb = admin();
+
+  for (const entry of body?.entry ?? []) {
+    for (const change of entry?.changes ?? []) {
+      const value = change?.value ?? {};
+      const phoneNumberId = value?.metadata?.phone_number_id as string | undefined;
+      if (!phoneNumberId) continue;
+
+      const { data: integ } = await sb
+        .from("whatsapp_integrations")
+        .select("*")
+        .eq("phone_number_id", phoneNumberId)
+        .maybeSingle();
+      if (!integ) continue;
+
+      const appSecret = await decrypt((integ as any).app_secret_encrypted);
+      if (appSecret) {
+        if (!verifySignature(raw, signature, appSecret)) {
+          await sb.from("whatsapp_webhook_events").insert({
+            store_id: (integ as any).store_id,
+            phone_number_id: phoneNumberId,
+            event_type: "invalid_signature",
+            error: "Signature verification failed",
+          } as any);
+          return new Response("Invalid signature", { status: 401 });
+        }
+      } else {
+        await sb.from("whatsapp_webhook_events").insert({
+          store_id: (integ as any).store_id,
+          phone_number_id: phoneNumberId,
+          event_type: "unverified_webhook",
+          error: "No app secret configured — webhook accepted without signature verification",
+        } as any);
+      }
+
+      const storeId = (integ as any).store_id as string;
+
+      for (const st of value?.statuses ?? []) {
+        await sb.from("whatsapp_webhook_events").insert({
+          store_id: storeId,
+          phone_number_id: phoneNumberId,
+          event_type: `status:${st.status}`,
+          external_id: `st_${st.id}_${st.status}`,
+          payload: st,
+          error: st?.errors?.[0]?.title ?? null,
+        } as any);
+        await sb
+          .from("ai_messages")
+          .update({
+            delivery_status: String(st.status ?? ""),
+            ...(st?.errors?.[0]?.title ? { error: friendlyWaError(st.errors[0].title) } : {}),
+          } as any)
+          .eq("mid", st.id);
+      }
+
+      for (const msg of value?.messages ?? []) {
+        const waId = String(msg.from ?? "");
+        const mid = String(msg.id ?? "");
+        if (!waId || !mid) continue;
+        const profileName = value?.contacts?.[0]?.profile?.name ?? null;
+
+        let text = "";
+        let type = String(msg.type ?? "text");
+        let buttonPayload: string | null = null;
+        const attachments: any[] = [];
+        if (msg.type === "text") text = msg.text?.body ?? "";
+        else if (msg.type === "interactive") {
+          const inter = msg.interactive ?? {};
+          buttonPayload = inter?.button_reply?.id ?? inter?.list_reply?.id ?? null;
+          text = inter?.button_reply?.title ?? inter?.list_reply?.title ?? "";
+          type = "quick_reply";
+        } else if (msg.type === "button") {
+          buttonPayload = msg.button?.payload ?? null;
+          text = msg.button?.text ?? "";
+          type = "quick_reply";
+        } else if (["image", "video", "audio", "document", "sticker"].includes(String(msg.type))) {
+          text = msg[msg.type]?.caption ?? `[${msg.type}]`;
+          attachments.push({ type: msg.type, media_id: msg[msg.type]?.id ?? null });
+        } else {
+          text = `[${msg.type}]`;
+        }
+
+        const { conv, created } = await upsertConversation(sb, storeId, waId, profileName);
+        if (!conv) return new Response("Conversation store failed", { status: 500 });
+
+        // Unique (phone_number_id, message_id): a Meta retry never creates a second job.
+        const payload: WaJobPayload = { text, type, button_payload: buttonPayload, profile_name: profileName };
+        const { data: job, error: jobErr } = await (sb as any)
+          .from("whatsapp_jobs")
+          .upsert(
+            {
+              store_id: storeId,
+              integration_id: (integ as any).id,
+              phone_number_id: phoneNumberId,
+              sender_id: waId,
+              message_id: mid,
+              conversation_id: conv.id,
+              event_payload: payload,
+            },
+            { onConflict: "phone_number_id,message_id", ignoreDuplicates: true },
+          )
+          .select("id");
+        if (jobErr) return new Response("Queue failed", { status: 500 });
+        if (!job || (job as any[]).length === 0) continue; // duplicate delivery
+
+        await sb.from("whatsapp_webhook_events").insert({
+          store_id: storeId,
+          phone_number_id: phoneNumberId,
+          event_type: `message:${msg.type}`,
+          external_id: mid,
+          payload: { from: waId, type: msg.type },
+        } as any);
+        await logInbound(sb, conv.id, { text, type, attachments, mid });
+        await sb
+          .from("ai_conversations")
+          .update({
+            last_message_at: new Date().toISOString(),
+            last_message_preview: (text || `[${type}]`).slice(0, 200),
+            unread_count: (conv.unread_count ?? 0) + 1,
+            status: "open",
+          })
+          .eq("id", conv.id);
+        await sb
           .from("whatsapp_integrations")
-          .select("id")
-          .eq("verify_token", token)
-          .maybeSingle();
-        if (!data) return new Response("Forbidden", { status: 403 });
-        return new Response(challenge, { status: 200, headers: { "content-type": "text/plain" } });
-      },
+          .update({
+            last_webhook_at: new Date().toISOString(),
+            last_webhook_type: `message:${msg.type}`,
+            last_webhook_error: null,
+          } as any)
+          .eq("id", (integ as any).id);
 
-      POST: async ({ request }) => {
-        const raw = await request.text();
-        const signature = request.headers.get("x-hub-signature-256");
-        let body: any;
         try {
-          body = JSON.parse(raw);
+          const { dispatchNotification } = await import("@/lib/notify-dispatch.server");
+          void dispatchNotification(sb, {
+            storeId,
+            event: created ? "new_order" : "order_status",
+            subject: created ? "New WhatsApp conversation" : "New WhatsApp message",
+            message: `${profileName || waId}: ${(text || `[${type}]`).slice(0, 300)}`,
+          });
         } catch {
-          return new Response("ok", { status: 200 });
+          /* best-effort */
         }
-        const sb = admin();
+      }
+    }
+  }
 
-        for (const entry of body?.entry ?? []) {
-          for (const change of entry?.changes ?? []) {
-            const value = change?.value ?? {};
-            const phoneNumberId = value?.metadata?.phone_number_id as string | undefined;
-            if (!phoneNumberId) continue;
+  return new Response("ok", { status: 200 });
+}
 
-            const { data: integ } = await sb
-              .from("whatsapp_integrations")
-              .select("*")
-              .eq("phone_number_id", phoneNumberId)
-              .maybeSingle();
-            if (!integ) continue;
+export type WaJobRow = {
+  id: string;
+  wake_token: string;
+  store_id: string;
+  integration_id: string;
+  phone_number_id: string;
+  sender_id: string;
+  message_id: string;
+  conversation_id: string | null;
+  event_payload: WaJobPayload;
+  attempts: number;
+  reply_text: string | null;
+};
 
-            const appSecret = await decrypt((integ as any).app_secret_encrypted);
-            if (appSecret) {
-              if (!verifySignature(raw, signature, appSecret)) {
-                await sb.from("whatsapp_webhook_events").insert({
-                  store_id: (integ as any).store_id,
-                  phone_number_id: phoneNumberId,
-                  event_type: "invalid_signature",
-                  error: "Signature verification failed",
-                } as any);
-                return new Response("Invalid signature", { status: 401 });
-              }
-            } else {
-              // Legacy integrations connected before the app secret became required:
-              // keep delivering messages, but record a warning so the admin can fix it.
-              await sb.from("whatsapp_webhook_events").insert({
-                store_id: (integ as any).store_id,
-                phone_number_id: phoneNumberId,
-                event_type: "unverified_webhook",
-                error: "No app secret configured — webhook accepted without signature verification",
-              } as any);
-            }
+export const WA_FALLBACK_TEXT =
+  "দুঃখিত, এই মুহূর্তে উত্তর দিতে একটু সমস্যা হচ্ছে। আমাদের টিম শীঘ্রই আপনার সাথে যোগাযোগ করবে। / Sorry, we're having a brief issue — our team will reply shortly.";
 
+export async function sendWhatsAppFallback(job: WaJobRow) {
+  const sb = admin();
+  const { data: integ } = await sb.from("whatsapp_integrations").select("*").eq("id", job.integration_id).maybeSingle();
+  const token = integ ? await decrypt((integ as any).access_token_encrypted) : null;
+  if (!token || !job.conversation_id) return;
+  await sendAndLog(sb, job.phone_number_id, token, job.sender_id, job.conversation_id, WA_FALLBACK_TEXT);
+}
 
+/** Worker: produce and send the reply for one claimed job. Throws on retryable failure. */
+export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string | null; skipped?: string }> {
+  const sb = admin();
+  const { data: integ } = await sb.from("whatsapp_integrations").select("*").eq("id", job.integration_id).maybeSingle();
+  if (!integ) return { reply: null, skipped: "integration removed" };
+  const token = await decrypt((integ as any).access_token_encrypted);
+  if (!token) return { reply: null, skipped: "no access token" };
 
-            const storeId = (integ as any).store_id as string;
-            const token = await decrypt((integ as any).access_token_encrypted);
+  const storeId = job.store_id;
+  const phoneNumberId = job.phone_number_id;
+  const waId = job.sender_id;
+  const { text = "", type = "text", button_payload: buttonPayload = null } = job.event_payload ?? ({} as WaJobPayload);
+  const conversationId = job.conversation_id;
+  if (!conversationId) return { reply: null, skipped: "no conversation" };
 
-            // --- Delivery / read statuses ---
-            for (const st of value?.statuses ?? []) {
-              await sb.from("whatsapp_webhook_events").insert({
-                store_id: storeId,
-                phone_number_id: phoneNumberId,
-                event_type: `status:${st.status}`,
-                external_id: `st_${st.id}_${st.status}`,
-                payload: st,
-                error: st?.errors?.[0]?.title ?? null,
-              } as any);
-              const status = String(st.status ?? "");
-              const mapped = status === "failed" ? "failed" : status === "read" ? "read" : status;
-              await sb
-                .from("ai_messages")
-                .update({
-                  delivery_status: mapped,
-                  ...(st?.errors?.[0]?.title ? { error: friendlyWaError(st.errors[0].title) } : {}),
-                } as any)
-                .eq("mid", st.id);
-            }
+  void markWaRead(phoneNumberId, token, job.message_id);
 
-            // --- Incoming messages ---
-            for (const msg of value?.messages ?? []) {
-              const waId = String(msg.from ?? "");
-              if (!waId) continue;
-              const profileName = value?.contacts?.[0]?.profile?.name ?? null;
+  if (text.trim()) {
+    try {
+      const { handleMerchantChannelMessage } = await import("@/lib/merchant-ai/router.server");
+      const merchant = await handleMerchantChannelMessage(sb, storeId, "whatsapp", waId, text);
+      if (merchant?.handled) {
+        await sendWaText(phoneNumberId, token, waId, merchant.reply);
+        return { reply: merchant.reply };
+      }
+    } catch (err) {
+      try {
+        const { logActivity } = await import("@/lib/merchant-ai/core.server");
+        await logActivity(sb as any, storeId, {
+          agent: "master",
+          actionKey: "channel_router_failed",
+          level: "error",
+          message: err instanceof Error ? err.message : "Merchant command router failed",
+          meta: { channel: "whatsapp" },
+        });
+      } catch {
+        /* logging must not break delivery */
+      }
+    }
+  }
 
-              await sb.from("whatsapp_webhook_events").insert({
-                store_id: storeId,
-                phone_number_id: phoneNumberId,
-                event_type: `message:${msg.type}`,
-                external_id: msg.id ?? null,
-                payload: { from: waId, type: msg.type },
-              } as any);
+  // Read fresh so a human takeover made after queueing is honoured.
+  const { data: conv } = await sb.from("ai_conversations").select("id,handoff_mode").eq("id", conversationId).maybeSingle();
+  if (!conv) return { reply: null, skipped: "conversation removed" };
+  if (((conv as any).handoff_mode ?? "ai") !== "ai") return { reply: null, skipped: "human handoff" };
+  if ((integ as any).human_takeover || (integ as any).ai_auto_reply === false)
+    return { reply: null, skipped: "auto-reply off" };
 
-              const { conv, created } = await upsertConversation(sb, storeId, waId, profileName);
-              if (!conv) continue;
+  if (buttonPayload && /^BUY_[0-9a-f-]{36}$/i.test(buttonPayload)) {
+    await handleBuyButton({
+      sb,
+      storeId,
+      conversationId,
+      to: waId,
+      token,
+      phoneNumberId,
+      productId: buttonPayload.replace(/^BUY_/, ""),
+    });
+    return { reply: "[buy-now flow]" };
+  }
 
-              let text = "";
-              let type = String(msg.type ?? "text");
-              let buttonPayload: string | null = null;
-              const attachments: any[] = [];
-              if (msg.type === "text") text = msg.text?.body ?? "";
-              else if (msg.type === "interactive") {
-                const inter = msg.interactive ?? {};
-                buttonPayload = inter?.button_reply?.id ?? inter?.list_reply?.id ?? null;
-                text = inter?.button_reply?.title ?? inter?.list_reply?.title ?? "";
-                type = "quick_reply";
-              } else if (msg.type === "button") {
-                buttonPayload = msg.button?.payload ?? null;
-                text = msg.button?.text ?? "";
-                type = "quick_reply";
-              } else if (["image", "video", "audio", "document", "sticker"].includes(String(msg.type))) {
-                text = msg[msg.type]?.caption ?? `[${msg.type}]`;
-                attachments.push({ type: msg.type, media_id: msg[msg.type]?.id ?? null });
-              } else {
-                text = `[${msg.type}]`;
-              }
+  if (!text.trim() || (type !== "text" && type !== "quick_reply")) return { reply: null, skipped: "non-text" };
 
-              // Merchant command path: only a verified merchant identity of THIS
-              // store reaches the Master Agent; everyone else keeps the existing
-              // customer flow.
-              if (text.trim()) {
-                try {
-                  const { handleMerchantChannelMessage } = await import(
-                    "@/lib/merchant-ai/router.server"
-                  );
-                  const merchant = await handleMerchantChannelMessage(
-                    sb,
-                    storeId,
-                    "whatsapp",
-                    waId,
-                    text,
-                  );
-                  if (merchant?.handled) {
-                    if (token) await sendWaText(phoneNumberId, token, waId, merchant.reply);
-                    continue;
-                  }
-                } catch (err) {
-                  // Must never break customer messaging — but must be visible in the logs.
-                  try {
-                    const { logActivity } = await import("@/lib/merchant-ai/core.server");
-                    await logActivity(sb as any, storeId, {
-                      agent: "master",
-                      actionKey: "channel_router_failed",
-                      level: "error",
-                      message: err instanceof Error ? err.message : "Merchant command router failed",
-                      meta: { channel: "whatsapp" },
-                    });
-                  } catch {
-                    /* logging must not break delivery */
-                  }
-                }
+  try {
+    const { store, agent, settings } = await loadAiContext(storeId);
+    const useHistory = (integ as any).conversation_history !== false;
+    const history = useHistory
+      ? (
+          await sb
+            .from("ai_messages")
+            .select("role,content,message_type")
+            .eq("conversation_id", conversationId)
+            .in("message_type", ["text", "quick_reply"])
+            .order("created_at", { ascending: false })
+            .limit(30)
+        ).data ?? []
+      : [];
+    const messages = [...history]
+      .reverse()
+      .filter((m: any) => m.role === "user" || m.role === "assistant")
+      .map((m: any) => ({ role: m.role as "user" | "assistant", content: m.content ?? "" }));
+    const latest = [...messages].reverse().find((m) => m.role === "user")?.content?.trim();
+    if (latest !== text.trim()) messages.push({ role: "user", content: text.trim() });
 
-              }
+    const pending = await pendingOrder(sb, conversationId);
+    const focus = await resolveFocusProduct({ storeId, conversationId, text });
 
-              await logInbound(sb, conv.id, { text, type, attachments, mid: msg.id ?? null });
-              await sb
-                .from("ai_conversations")
-                .update({
-                  last_message_at: new Date().toISOString(),
-                  last_message_preview: (text || `[${type}]`).slice(0, 200),
-                  unread_count: (conv.unread_count ?? 0) + 1,
-                  status: "open",
-                })
-                .eq("id", conv.id);
-              await sb
-                .from("whatsapp_integrations")
-                .update({
-                  last_webhook_at: new Date().toISOString(),
-                  last_webhook_type: `message:${msg.type}`,
-                  last_webhook_error: null,
-                } as any)
-                .eq("id", (integ as any).id);
-
-              // Notify the store admin about new conversations / messages.
-              try {
-                const { dispatchNotification } = await import("@/lib/notify-dispatch.server");
-                void dispatchNotification(sb, {
-                  storeId,
-                  event: created ? "new_order" : "order_status",
-                  subject: created ? "New WhatsApp conversation" : "New WhatsApp message",
-                  message: `${profileName || waId}: ${(text || `[${type}]`).slice(0, 300)}`,
-                });
-              } catch {
-                /* notifications are best-effort */
-              }
-
-              if (!token) continue;
-              if (msg.id) void markWaRead(phoneNumberId, token, msg.id);
-
-              // AI reply gate — a human takeover silences the agent.
-              if (((conv as any).handoff_mode ?? "ai") !== "ai") continue;
-              if ((integ as any).human_takeover || (integ as any).ai_auto_reply === false) continue;
-
-              // "Buy now" button
-              if (buttonPayload && /^BUY_[0-9a-f-]{36}$/i.test(buttonPayload)) {
-                await handleBuyButton({
-                  sb,
-                  storeId,
-                  conversationId: conv.id,
-                  to: waId,
-                  token,
-                  phoneNumberId,
-                  productId: buttonPayload.replace(/^BUY_/, ""),
-                });
-                continue;
-              }
-
-              if (!text.trim() || (type !== "text" && type !== "quick_reply")) continue;
-
-              try {
-                const { store, agent, settings } = await loadAiContext(storeId);
-                const useHistory = (integ as any).conversation_history !== false;
-                const history = useHistory
-                  ? (
-                      await sb
-                        .from("ai_messages")
-                        .select("role,content,message_type")
-                        .eq("conversation_id", conv.id)
-                        .in("message_type", ["text", "quick_reply"])
-                        .order("created_at", { ascending: false })
-                        .limit(30)
-                    ).data ?? []
-                  : [];
-                const messages = [...history]
-                  .reverse()
-                  .filter((m: any) => m.role === "user" || m.role === "assistant")
-                  .map((m: any) => ({ role: m.role as "user" | "assistant", content: m.content ?? "" }));
-                const latest = [...messages].reverse().find((m) => m.role === "user")?.content?.trim();
-                if (latest !== text.trim()) messages.push({ role: "user", content: text.trim() });
-
-                const pending = await pendingOrder(sb, conv.id);
-                const focus = await resolveFocusProduct({ storeId, conversationId: conv.id, text });
-
-                const reply = await generateAgentReply({
-                  ctx: {
-                    storeId,
-                    storeSlug: (store as any).slug,
-                    conversationId: conv.id,
-                    channel: "whatsapp",
-                    waTo: waId,
-                    waToken: token,
-                    waPhoneNumberId: phoneNumberId,
-                    focusProductId: focus.product?.id ?? null,
-                  },
-                  messages,
-                  system: buildSystemPrompt(store, agent, {
-                    channel: "whatsapp",
-                    settings,
-                    state: { pending_order: pending, last_order: null, recent_product_ids: [] },
-                    focus,
-                    latestUserText: text,
-                  }),
-                  fast: true,
-                });
-
-                const replyText = sanitizeOutgoingText(reply?.text ?? "", reply?.facts ?? {});
-                if (replyText) await sendAndLog(sb, phoneNumberId, token, waId, conv.id, replyText);
-                await sb.from("whatsapp_integrations").update({ last_error: null } as any).eq("id", (integ as any).id);
-              } catch (e) {
-                await sb
-                  .from("whatsapp_integrations")
-                  .update({ last_error: friendlyWaError((e as Error).message) } as any)
-                  .eq("id", (integ as any).id);
-              }
-            }
-          }
-        }
-
-        return new Response("ok", { status: 200 });
+    const reply = await generateAgentReply({
+      ctx: {
+        storeId,
+        storeSlug: (store as any).slug,
+        conversationId,
+        channel: "whatsapp",
+        waTo: waId,
+        waToken: token,
+        waPhoneNumberId: phoneNumberId,
+        focusProductId: focus.product?.id ?? null,
       },
-    },
-  },
-});
+      messages,
+      system: buildSystemPrompt(store, agent, {
+        channel: "whatsapp",
+        settings,
+        state: { pending_order: pending, last_order: null, recent_product_ids: [] },
+        focus,
+        latestUserText: text,
+      }),
+      fast: true,
+    });
+
+    const replyText = sanitizeOutgoingText(reply?.text ?? "", reply?.facts ?? {});
+    if (replyText) {
+      await sendAndLog(sb, phoneNumberId, token, waId, conversationId, replyText);
+      // Record at once so a later crash never re-sends this reply.
+      await (sb as any).from("whatsapp_jobs").update({ reply_text: replyText }).eq("id", job.id);
+    }
+    await sb.from("whatsapp_integrations").update({ last_error: null } as any).eq("id", (integ as any).id);
+    return { reply: replyText || null };
+  } catch (e) {
+    const message = (e as Error).message || "AI reply failed";
+    await sb
+      .from("whatsapp_integrations")
+      .update({ last_error: `AI reply failed: ${message.slice(0, 300)}` } as any)
+      .eq("id", (integ as any).id);
+    throw e;
+  }
+}
