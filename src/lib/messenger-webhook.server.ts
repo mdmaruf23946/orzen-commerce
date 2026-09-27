@@ -1264,7 +1264,7 @@ async function visuallyMatchProduct(
     // plausibly win. Sending eight products × two photos meant downloading and
     // inlining sixteen full-size images per customer photo, which is what made
     // a found product slower to answer than a missing one.
-    const batch = candidates.slice(0, 4);
+    const batch = candidates.slice(0, 3);
     const content: any[] = [{
       type: "input_text",
       text: "CUSTOMER_IMAGE is first. Decide if any candidate photo shows the same sale product/model. Answer FAST and SHORT. " +
@@ -2275,7 +2275,8 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                 // store's own products answers in ~1s; anything uncertain falls
                 // through to the full AI inspection below.
                 const fast = await fastImageLookup(sb, integ.store_id, imageUrl, token, String(msg.mid ?? ""));
-                const seen = fast.analysis ?? await describeImageAttachment(imageUrl, token, String(msg.mid ?? ""));
+                const seen = fast.analysis
+                  ?? await describeImageAttachment(imageUrl, token, String(msg.mid ?? ""), fast.photo);
                 {
                   imageAnalysis = seen;
                   imageMatch = fast.match ?? (seen.is_product
