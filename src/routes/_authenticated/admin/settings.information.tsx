@@ -1,33 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { toast } from "sonner";
 import {
   Store as StoreIcon,
   Phone as PhoneIcon,
   Share2,
   Building2,
   Image as ImageIcon,
-  AlertTriangle,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
 import { ImageUploader } from "@/components/admin/ImageUploader";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { resetStoreToTemplate } from "@/lib/admin.functions";
 import {
   Section,
   Field,
@@ -53,24 +35,8 @@ export const Route = createFileRoute("/_authenticated/admin/settings/information
 
 function StoreInformationPage() {
   const { form, set, submit, saving, dirty } = useStoreForm();
-  const resetFn = useServerFn(resetStoreToTemplate);
-  const qc = useQueryClient();
-  const [resetting, setResetting] = useState(false);
 
   if (!form) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
-
-  async function reset() {
-    setResetting(true);
-    try {
-      await resetFn();
-      await qc.invalidateQueries();
-      toast.success("Store reset to the latest default template.");
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setResetting(false);
-    }
-  }
 
   return (
     <form onSubmit={submit} className="pb-32">
@@ -287,41 +253,6 @@ function StoreInformationPage() {
             </Field>
           </div>
         </Section>
-
-        <section className="rounded-2xl border border-destructive/40 bg-destructive/5 p-4 sm:p-6">
-          <div className="mb-3 flex items-start gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-destructive/10 text-destructive">
-              <AlertTriangle className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-base font-semibold text-destructive">Danger Zone</h2>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Replace your current design, banners, categories and products with the latest default template. This cannot be undone.
-              </p>
-            </div>
-          </div>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button type="button" variant="destructive" size="sm" disabled={resetting}>
-                {resetting ? "Resetting…" : "Reset to Default Template"}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Reset to default template?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Your current banners, categories and products will be deleted and replaced with the platform's
-                  latest default template. Your store settings (design, theme, defaults) will also be overwritten.
-                  This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={reset}>Yes, reset</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </section>
 
         <SaveBar label="Save Store Information" saving={saving} dirty={dirty} fixed={false} />
       </div>
