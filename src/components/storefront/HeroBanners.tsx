@@ -1,3 +1,4 @@
+import { sizedImg, sizedSrcSet } from "@/lib/img-url";
 import { useEffect, useRef, useState } from "react";
 import { useStoreT } from "@/lib/store-i18n";
 
@@ -66,7 +67,9 @@ function SideRotator({ items, delay }: { items: HeroBanner[]; delay: number }) {
           <div key={b.id} className="h-full w-full flex-shrink-0">
             <BannerLink banner={b}>
               <img
-                src={b.image_url}
+                src={sizedImg(b.image_url, 640)}
+                srcSet={sizedSrcSet(b.image_url, [480, 640, 960])}
+                sizes="(min-width:1024px) 33vw, 100vw"
                 alt=""
                 loading="lazy"
                 decoding="async"
@@ -149,7 +152,9 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
             <div key={b.id} className="h-full w-full flex-shrink-0">
               <BannerLink banner={b}>
                 <img
-                  src={b.image_url}
+                  src={sizedImg(b.image_url, 960)}
+                  srcSet={sizedSrcSet(b.image_url, [480, 640, 960, 1280, 1920])}
+                  sizes="(min-width:1024px) 66vw, 100vw"
                   alt=""
                   draggable={false}
                   loading={i === 0 ? "eager" : "lazy"}
