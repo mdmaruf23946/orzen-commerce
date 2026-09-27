@@ -85,9 +85,7 @@ export const Route = createFileRoute("/api/public/whatsapp/process")({
         if (!job) return new Response("No due job", { status: 202 });
 
         for (let drained = 0; drained < 10 && job; drained += 1) {
-          const lead = job.id;
           job = await foldBurst(sb, job);
-          if (job.id !== lead && (job as any).status === "merged") break;
           const started = Date.now();
           try {
             const res: { reply: string | null; skipped?: string } = job.reply_text
