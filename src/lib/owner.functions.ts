@@ -1179,6 +1179,9 @@ export const updateGlobalGeminiKey = createServerFn({ method: "POST" })
       enabled: z.boolean().optional(),
       vision: z.boolean().optional(),
       model: z.string().max(120).optional(),
+      base_url: z.string().max(300).optional(),
+      key: z.string().min(10).max(500).optional(),
+      provider: z.enum(["gemini", "groq", "openrouter", "openai", "custom"]).optional(),
       reset_failure: z.boolean().optional(),
     }).parse(d),
   )
@@ -1192,9 +1195,22 @@ export const updateGlobalGeminiKey = createServerFn({ method: "POST" })
     if (data.enabled !== undefined) k.enabled = data.enabled;
     if (data.vision !== undefined) k.vision = data.vision;
     if (data.model !== undefined) k.model = data.model.trim() || null;
+    if (data.base_url !== undefined) k.base_url = data.base_url.trim() || null;
+    if (data.provider !== undefined) k.provider = data.provider;
+    if (data.key !== undefined && data.key.trim() !== k.key) {
+      k.key = data.key.trim();
+      // The old failure belongs to the old key — clear it so the new one starts fresh.
+      k.failed_on = null;
+      k.last_error = null;
+    }
     if (data.reset_failure) {
       k.failed_on = null;
       k.last_error = null;
+    }
+    if (k.provider === "custom") {
+      const baseUrl = (k.base_url ?? "").trim();
+      if (!/^https?:\/\//i.test(baseUrl)) throw new Error("A custom provider needs an OpenAI-compatible base URL.");
+      if (!(k.model ?? "").trim()) throw new Error("A custom provider needs a model name.");
     }
     await saveGeminiKeys(sb, keys);
     return { ok: true };
