@@ -171,9 +171,16 @@ export default {
         headers.set("cache-control", "no-store, must-revalidate");
         return new Response(normalized.body, { status: normalized.status, headers });
       }
+      const headers = applySecurityHeaders(new Headers(normalized.headers), request);
+      // Platform pages include hashed asset references. Never cache their HTML,
+      // otherwise an already-open Merchant Panel can keep rendering an older UI
+      // after a production deployment even though the new assets are live.
+      if (isHtml) {
+        headers.set("cache-control", "no-store, must-revalidate");
+      }
       return new Response(normalized.body, {
         status: normalized.status,
-        headers: applySecurityHeaders(new Headers(normalized.headers), request),
+        headers,
       });
     } catch (error) {
       console.error(error);
