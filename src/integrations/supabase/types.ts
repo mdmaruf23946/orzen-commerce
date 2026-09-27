@@ -11368,6 +11368,7 @@ export type Database = {
       is_store_active: { Args: { _store_id: string }; Returns: boolean }
       is_store_employee: { Args: { _store_id: string }; Returns: boolean }
       is_store_owner: { Args: { _store_id: string }; Returns: boolean }
+      kick_whatsapp_job: { Args: { _job_id: string }; Returns: undefined }
       landing_public_host: { Args: { _slug: string }; Returns: string }
       list_ai_call_tones_public: {
         Args: never
