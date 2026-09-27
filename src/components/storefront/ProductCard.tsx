@@ -5,6 +5,7 @@ import { addToCart } from "@/lib/cart";
 import { isInWishlist, toggleWishlist } from "@/lib/wishlist";
 import { isStockless } from "@/lib/product-stock";
 import { useStoreT } from "@/lib/store-i18n";
+import { sizedImg, sizedSrcSet } from "@/lib/img-url";
 import { useReveal } from "@/hooks/use-reveal";
 
 type Product = {
@@ -92,9 +93,12 @@ export function ProductCard({ slug, p, index = 0 }: { slug: string; p: Product; 
       >
         {p.primary_image_url ? (
           <img
-            src={p.primary_image_url}
+            src={sizedImg(p.primary_image_url, 480)}
+            srcSet={sizedSrcSet(p.primary_image_url, [320, 480, 640])}
+            sizes="(min-width:1024px) 20vw, (min-width:640px) 33vw, 50vw"
             alt={p.name}
             loading={index < 4 ? "eager" : "lazy"}
+            fetchPriority={index < 2 ? "high" : "auto"}
             decoding="async"
             width={480}
             height={480}

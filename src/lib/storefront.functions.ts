@@ -1,3 +1,4 @@
+import { swr } from "@/lib/swr-cache";
 // Public server functions: storefront reads + guest checkout.
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
@@ -35,6 +36,7 @@ function imgUrl(path: string | null): string | null {
 export const getStoreBySlug = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ slug: z.string().min(1).max(120) }).parse(d))
   .handler(async ({ data }) => {
+    return swr(`store:${data.slug}`, async () => {
     const sb = publicClient();
     const { data: row, error } = await sb.rpc("get_public_store_by_slug", { _slug: data.slug });
     if (error) throw new Error(error.message);
@@ -50,6 +52,7 @@ export const getStoreBySlug = createServerFn({ method: "GET" })
       favicon_url: imgUrl(store.favicon_url),
       custom_favicon_url: imgUrl(store.custom_favicon_url),
     };
+    });
   });
 
 export const getStoreActiveGateway = createServerFn({ method: "GET" })
@@ -431,6 +434,7 @@ export const verifyOrderPayment = createServerFn({ method: "POST" })
 export const listStoreBanners = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ storeId: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
+    return swr(`banners:${data.storeId}`, async () => {
     const sb = publicClient();
     const { data: banners, error } = await sb
       .from("banners")
@@ -442,6 +446,7 @@ export const listStoreBanners = createServerFn({ method: "GET" })
       .limit(24);
     if (error) throw new Error(error.message);
     return (banners ?? []).map((b) => ({ ...b, image_url: imgUrl(b.image_url)! }));
+    });
   });
 
 const PRODUCT_CARD_COLS =
@@ -459,6 +464,7 @@ export const listStoreProducts = createServerFn({ method: "GET" })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    return swr(`products:${data.storeId}:${data.limit ?? "all"}`, async () => {
     const sb = publicClient();
     let q = (sb as any)
       .from("storefront_products")
@@ -470,12 +476,14 @@ export const listStoreProducts = createServerFn({ method: "GET" })
     const { data: products, error } = await q;
     if (error) throw new Error(error.message);
     return (products ?? []).map((p: any) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }));
+    });
   });
 
 
 export const listBestSellingProducts = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ storeId: z.string().uuid(), limit: z.number().int().min(1).max(24).optional() }).parse(d))
   .handler(async ({ data }) => {
+    return swr(`best:${data.storeId}:${data.limit ?? 12}`, async () => {
     const sb = publicClient();
     const limit = data.limit ?? 12;
     const { data: rows, error } = await sb.rpc("get_store_bestsellers", {
@@ -497,6 +505,7 @@ export const listBestSellingProducts = createServerFn({ method: "GET" })
     return (products ?? [])
       .map((p: any) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }))
       .sort((a: any, b: any) => (order.get(a.id)! - order.get(b.id)!));
+    });
   });
 
 
@@ -504,6 +513,7 @@ export const listBestSellingProducts = createServerFn({ method: "GET" })
 export const listStoreCategories = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ storeId: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
+    return swr(`cats:${data.storeId}`, async () => {
     const sb = publicClient();
     const { data: cats, error } = await sb
       .from("categories")
@@ -521,6 +531,7 @@ export const listStoreCategories = createServerFn({ method: "GET" })
           : `/api/img/${c.image_url}`
         : null,
     }));
+    });
   });
 
 export const getProduct = createServerFn({ method: "GET" })
