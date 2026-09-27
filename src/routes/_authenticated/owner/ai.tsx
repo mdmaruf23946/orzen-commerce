@@ -150,20 +150,38 @@ function ApiKeysManager() {
     setBusy("new");
     try {
       const url = baseUrl.trim().replace(/\/+$/, "");
-      const r: any = await addFn({
-        data: {
+      if (editing && editingId) {
+        const payload: any = {
+          id: editingId,
           label: name.trim(),
-          key: apiKey.trim(),
-          provider: detectProvider(url),
-          base_url: url,
           model: model.trim(),
+          base_url: url,
           vision,
-        },
-      });
-      setName(""); setBaseUrl(""); setModel(""); setApiKey(""); setVision(true);
-      refresh();
-      toast.success("API key added — testing connection…");
-      if (r?.id) await test(r.id);
+          provider: detectProvider(url),
+        };
+        if (apiKey.trim().length >= 10) payload.key = apiKey.trim();
+        await updFn({ data: payload });
+        setEditingId(null);
+        setName(""); setBaseUrl(""); setModel(""); setApiKey(""); setVision(true);
+        refresh();
+        toast.success("Changes saved — testing connection…");
+        await test(editingId);
+      } else {
+        const r: any = await addFn({
+          data: {
+            label: name.trim(),
+            key: apiKey.trim(),
+            provider: detectProvider(url),
+            base_url: url,
+            model: model.trim(),
+            vision,
+          },
+        });
+        setName(""); setBaseUrl(""); setModel(""); setApiKey(""); setVision(true);
+        refresh();
+        toast.success("API key added — testing connection…");
+        if (r?.id) await test(r.id);
+      }
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
