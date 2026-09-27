@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { buildSystemPrompt, generateAgentReply, loadAiContext, resolveFocusProduct } from "@/lib/ai-agent.server";
 import { routedChatCompletion, routedVisionText } from "@/lib/ai-provider.server";
-import { getStoreMemory, recallByText, recallForImage, recallByFingerprint } from "@/lib/catalog-memory.server";
+import { getStoreMemory, recallByText, recallByFingerprint } from "@/lib/catalog-memory.server";
 import {
   sendProductCard,
   sendProductCarousel,
