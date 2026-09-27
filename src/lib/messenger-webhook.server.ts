@@ -1210,14 +1210,21 @@ async function visuallyMatchProduct(
   // already free of blacklisted / out-of-stock / imageless products.
   const memory = await getStoreMemory(sb as any, storeId);
   const categoryNames = memory.categoryNames;
-  const recalled = recallForImage(memory, {
-    type: analysis.product_type,
-    subtype: analysis.product_subtype,
-    category: analysis.category,
-    brand: analysis.brand,
-    keywords: [...analysis.keywords, ...analysis.functions, ...analysis.connectors],
-    text: analysis.visible_text,
-  }, 12) as unknown as ProductRow[];
+  // Speed: only products the memory genuinely associates with this photo are
+  // worth a vision comparison. The older helper padded the list with best
+  // sellers whenever the words matched nothing, so a product the shop does not
+  // stock still triggered a full four-photo comparison (~40s) before answering
+  // "not available". Unrelated photos now skip the comparison entirely.
+  const recalled = recallByText(memory, [
+    analysis.product_type,
+    analysis.product_subtype,
+    analysis.category,
+    analysis.brand,
+    ...analysis.keywords,
+    ...analysis.functions,
+    ...analysis.connectors,
+    ...analysis.visible_text,
+  ].filter(Boolean).join(" "), 6) as unknown as ProductRow[];
   const pinned = imageCandidateIds
     .map((id) => memory.byId.get(id)?.product as unknown as ProductRow | undefined)
     .filter((product): product is ProductRow => Boolean(product));
