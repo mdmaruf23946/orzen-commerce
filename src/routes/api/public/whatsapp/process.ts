@@ -57,7 +57,7 @@ export const Route = createFileRoute("/api/public/whatsapp/process")({
             return new Response(exhausted ? "Failed" : "Retry scheduled", { status: exhausted ? 422 : 503 });
           }
 
-          const { data: next } = await sb
+          const { data: next }: { data: { id: string; wake_token: string } | null } = await sb
             .from("whatsapp_jobs")
             .select("id,wake_token")
             .eq("store_id", job.store_id)
@@ -68,7 +68,7 @@ export const Route = createFileRoute("/api/public/whatsapp/process")({
             .limit(1)
             .maybeSingle();
           if (!next) break;
-          const nc = await sb.rpc("claim_whatsapp_job", { _job_id: next.id, _wake_token: next.wake_token });
+          const nc: { data: unknown } = await sb.rpc("claim_whatsapp_job", { _job_id: next.id, _wake_token: next.wake_token });
           job = (nc.data as WaJobRow | null) ?? null;
         }
         return new Response("ok");
