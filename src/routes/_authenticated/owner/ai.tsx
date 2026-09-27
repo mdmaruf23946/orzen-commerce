@@ -219,7 +219,7 @@ function ApiKeysManager() {
             <Input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="e.g. https://api.groq.com/openai/v1" />
           </Field>
           <Field label="API key" className="sm:col-span-2">
-            <Input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="Paste your API key" autoComplete="off" />
+            <Input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder={editing ? "Leave empty to keep the current key" : "Paste your API key"} autoComplete="off" />
           </Field>
         </div>
 
@@ -231,9 +231,16 @@ function ApiKeysManager() {
           <Switch checked={vision} onCheckedChange={setVision} />
         </div>
 
-        <Button className="mt-4 w-full" disabled={!canConnect || busy === "new"} onClick={connect}>
-          <Plug className="mr-1.5 h-4 w-4" /> {busy === "new" ? "Connecting…" : "Connect & test"}
-        </Button>
+        <div className="mt-4 flex gap-2">
+          {editing && (
+            <Button variant="outline" className="flex-1" disabled={busy === "new"} onClick={cancelEdit}>Cancel</Button>
+          )}
+          <Button className="flex-1" disabled={!canConnect || busy === "new"} onClick={connect}>
+            {editing
+              ? (<><CheckCircle2 className="mr-1.5 h-4 w-4" /> {busy === "new" ? "Saving…" : "Save changes & test"}</>)
+              : (<><Plug className="mr-1.5 h-4 w-4" /> {busy === "new" ? "Connecting…" : "Connect & test"}</>)}
+          </Button>
+        </div>
       </div>
 
       {/* Key list */}
