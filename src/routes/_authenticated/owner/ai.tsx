@@ -157,8 +157,8 @@ function ApiKeysManager() {
           model: model.trim(),
           base_url: url,
           vision,
-          provider: detectProvider(url),
         };
+        if (url) payload.provider = detectProvider(url);
         if (apiKey.trim().length >= 10) payload.key = apiKey.trim();
         await updFn({ data: payload });
         setEditingId(null);
@@ -167,16 +167,19 @@ function ApiKeysManager() {
         toast.success("Changes saved — testing connection…");
         await test(editingId);
       } else {
-        const r: any = await addFn({
-          data: {
-            label: name.trim(),
-            key: apiKey.trim(),
-            provider: detectProvider(url),
-            base_url: url,
-            model: model.trim(),
-            vision,
-          },
-        });
+        const payload: any = {
+          label: name.trim(),
+          key: apiKey.trim(),
+          vision,
+        };
+        // Only send provider/URL/model when filled — otherwise the server
+        // detects the provider from the key and uses its defaults.
+        if (url) {
+          payload.provider = detectProvider(url);
+          payload.base_url = url;
+        }
+        if (model.trim()) payload.model = model.trim();
+        const r: any = await addFn({ data: payload });
         setName(""); setBaseUrl(""); setModel(""); setApiKey(""); setVision(true);
         refresh();
         toast.success("API key added — testing connection…");
@@ -205,18 +208,18 @@ function ApiKeysManager() {
         <p className="mt-1 text-xs text-muted-foreground">
           {editing
             ? "Leave the API key field empty to keep the current key."
-            : "Works with any OpenAI-compatible API (Gemini, Groq, OpenRouter, OpenAI, DeepSeek, Mistral, Together and more)."}
+            : "Just paste the API key and a name — the provider, URL and model are detected automatically. Fill them in only for a custom provider."}
         </p>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <Field label="Display name">
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Groq main" maxLength={60} />
           </Field>
-          <Field label="Model ID">
-            <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="e.g. llama-3.3-70b-versatile" />
+          <Field label="Model ID (optional)">
+            <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="Auto-detected if empty" />
           </Field>
-          <Field label="API base URL" className="sm:col-span-2">
-            <Input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="e.g. https://api.groq.com/openai/v1" />
+          <Field label="API base URL (optional)" className="sm:col-span-2">
+            <Input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="Auto-detected if empty" />
           </Field>
           <Field label="API key" className="sm:col-span-2">
             <Input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder={editing ? "Leave empty to keep the current key" : "Paste your API key"} autoComplete="off" />
