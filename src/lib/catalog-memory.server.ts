@@ -7,6 +7,7 @@
 // call and no per-message full-table read.
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { fingerprintDistance } from "@/lib/photo-fingerprint.server";
 
 type Sb = ReturnType<typeof createClient<Database>>;
 
@@ -50,6 +51,8 @@ export type StoreMemory = {
   byId: Map<string, IndexedProduct>;
   tokenIndex: Map<string, number[]>;
   categoryNames: Map<string, string>;
+  /** Memorised photo fingerprints: productId -> 128-bit hex fingerprint. */
+  fingerprints: Map<string, string>;
 };
 
 const CATALOG_SELECT =
@@ -122,10 +125,11 @@ export function tokenize(raw: string): string[] {
 }
 
 async function loadMemory(sb: Sb, storeId: string): Promise<StoreMemory> {
-  const [{ data: rows }, { data: categories }, { data: blocked }] = await Promise.all([
+  const [{ data: rows }, { data: categories }, { data: blocked }, { data: prints }] = await Promise.all([
     sb.from("ai_product_catalog").select(CATALOG_SELECT).eq("store_id", storeId).eq("status", "active").gt("stock", 0).limit(MAX_PRODUCTS),
     sb.from("categories").select("id,name").eq("store_id", storeId),
     sb.from("ai_product_blacklist").select("product_id").eq("store_id", storeId),
+    (sb as any).from("product_image_embeddings").select("product_id,phash").eq("store_id", storeId).not("phash", "is", null).limit(MAX_PRODUCTS),
   ]);
   const blockedIds = new Set((blocked ?? []).map((r: any) => String(r.product_id)));
   const categoryNames = new Map<string, string>((categories ?? []).map((c: any) => [String(c.id), String(c.name ?? "")]));
@@ -170,7 +174,13 @@ async function loadMemory(sb: Sb, storeId: string): Promise<StoreMemory> {
     }
   }
 
-  return { storeId, loadedAt: Date.now(), products, byId, tokenIndex, categoryNames };
+  const fingerprints = new Map<string, string>();
+  for (const row of (prints ?? []) as any[]) {
+    const id = String(row.product_id);
+    if (byId.has(id) && typeof row.phash === "string" && row.phash.length === 32) fingerprints.set(id, row.phash);
+  }
+
+  return { storeId, loadedAt: Date.now(), products, byId, tokenIndex, categoryNames, fingerprints };
 }
 
 /** Memorised catalogue for a store, loaded at most once per TTL per isolate. */
@@ -263,4 +273,16 @@ export function recallAlternatives(memory: StoreMemory, hintText: string, limit 
 
 export function memoryCategoryName(memory: StoreMemory, categoryId: string | null | undefined) {
   return memory.categoryNames.get(String(categoryId ?? "")) ?? "";
+}
+
+/** Instant photo recognition against memorised fingerprints (no AI call). */
+export function recallByFingerprint(memory: StoreMemory, fingerprint: string, limit = 8) {
+  const ranked: Array<{ product: MemoryProduct; distance: number }> = [];
+  for (const [id, stored] of memory.fingerprints) {
+    const entry = memory.byId.get(id);
+    if (!entry) continue;
+    ranked.push({ product: entry.product, distance: fingerprintDistance(fingerprint, stored) });
+  }
+  ranked.sort((a, b) => a.distance - b.distance);
+  return ranked.slice(0, limit);
 }
