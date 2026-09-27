@@ -10840,6 +10840,87 @@ export type Database = {
           },
         ]
       }
+      whatsapp_jobs: {
+        Row: {
+          attempts: number
+          available_at: string
+          completed_at: string | null
+          conversation_id: string | null
+          created_at: string
+          event_payload: Json
+          id: string
+          integration_id: string
+          last_error: string | null
+          message_id: string
+          phone_number_id: string
+          processing_ms: number | null
+          reply_text: string | null
+          sender_id: string
+          started_at: string | null
+          status: string
+          store_id: string
+          updated_at: string
+          wake_token: string
+        }
+        Insert: {
+          attempts?: number
+          available_at?: string
+          completed_at?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          event_payload?: Json
+          id?: string
+          integration_id: string
+          last_error?: string | null
+          message_id: string
+          phone_number_id: string
+          processing_ms?: number | null
+          reply_text?: string | null
+          sender_id: string
+          started_at?: string | null
+          status?: string
+          store_id: string
+          updated_at?: string
+          wake_token?: string
+        }
+        Update: {
+          attempts?: number
+          available_at?: string
+          completed_at?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          event_payload?: Json
+          id?: string
+          integration_id?: string
+          last_error?: string | null
+          message_id?: string
+          phone_number_id?: string
+          processing_ms?: number | null
+          reply_text?: string | null
+          sender_id?: string
+          started_at?: string | null
+          status?: string
+          store_id?: string
+          updated_at?: string
+          wake_token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_jobs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_jobs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_templates: {
         Row: {
           body_preview: string | null
@@ -11067,6 +11148,10 @@ export type Database = {
       }
       _normalize_phone: { Args: { _phone: string }; Returns: string }
       claim_messenger_job: {
+        Args: { _job_id: string; _wake_token: string }
+        Returns: Json
+      }
+      claim_whatsapp_job: {
         Args: { _job_id: string; _wake_token: string }
         Returns: Json
       }
