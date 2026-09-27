@@ -274,7 +274,9 @@ export async function testProviderKey(k: GeminiKey): Promise<{ ok: boolean; erro
     }
     const base = keyBaseURL(k);
     if (!base) return { ok: false, error: "No base URL configured for this key." };
-    const res = await fetch(`${base}/models`, { headers: { authorization: `Bearer ${k.key}` } });
+    // OpenRouter lists models without checking the key; /key does check it.
+    const path = k.provider === "openrouter" || /openrouter\.ai/i.test(base) ? "/key" : "/models";
+    const res = await fetch(`${base}${path}`, { headers: { authorization: `Bearer ${k.key}` } });
     if (res.ok) return { ok: true };
     return { ok: false, error: `HTTP ${res.status}: ${(await res.text()).slice(0, 200)}` };
   } catch (e) {
