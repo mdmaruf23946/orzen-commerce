@@ -1145,26 +1145,44 @@ export const addGlobalGeminiKey = createServerFn({ method: "POST" })
     const helpers = await import("@/lib/gemini-keys.server");
     const { keys } = await loadGeminiKeys(sb);
     if (keys.length >= 20) throw new Error("Maximum of 20 API keys.");
-    const baseUrl = (data.base_url ?? "").trim();
-    const modelName = (data.model ?? "").trim();
-    // When the caller gives only a key (+name), detect the provider from the key
-    // itself and fall back to that provider's default URL and model.
-    const provider = data.provider ?? helpers.guessProviderFromKey(data.key);
+    let baseUrl = (data.base_url ?? "").trim();
+    let modelName = (data.model ?? "").trim();
+    const cleanKey = helpers.cleanApiKey(data.key);
+    if (cleanKey.length < 10) throw new Error("Please paste a valid API key.");
+    // When the caller gives only a key (+name), work out the provider: first by
+    // the key's shape, then by asking known AI services which one accepts it.
+    let provider = data.provider ?? helpers.guessProviderFromKey(cleanKey);
+    let detectedName: string | null = null;
+    if (!data.provider && !baseUrl) {
+      const { detected, lastError } = await helpers.detectKeyProvider(cleanKey);
+      if (detected) {
+        provider = detected.provider;
+        detectedName = detected.service;
+        if (detected.base_url) baseUrl = detected.base_url;
+        if (!modelName && detected.model) modelName = detected.model;
+      } else {
+        throw new Error(
+          "This key did not work with any known AI service. Please check that the key is correct and active" +
+            (lastError ? ` (${lastError.slice(0, 120)})` : "") +
+            ". If it is from a different AI service, also fill in the API base URL and Model ID.",
+        );
+      }
+    }
     const preset = helpers.providerPreset(provider);
     if (provider === "custom" && !/^https?:\/\//i.test(baseUrl)) {
-      throw new Error("This key's provider could not be recognized. Please also fill in the API base URL and Model ID.");
+      throw new Error("Please fill in the API base URL (it must start with https://).");
     }
     if (provider === "custom" && !modelName) {
-      throw new Error("A custom provider needs a model name.");
+      throw new Error("Please fill in the Model ID for this AI service.");
     }
     const newId = crypto.randomUUID();
     keys.push({
       id: newId,
-      label: (data.label ?? "").trim() || `${preset.name} ${keys.length + 1}`,
-      key: data.key.trim(),
+      label: (data.label ?? "").trim() || `${detectedName ?? preset.name} ${keys.length + 1}`,
+      key: cleanKey,
       provider,
       base_url: baseUrl || null,
-      model: (data.model ?? "").trim() || null,
+      model: modelName || null,
       vision: data.vision ?? preset.vision,
       enabled: true,
       failed_on: null,
@@ -1201,8 +1219,9 @@ export const updateGlobalGeminiKey = createServerFn({ method: "POST" })
     if (data.model !== undefined) k.model = data.model.trim() || null;
     if (data.base_url !== undefined) k.base_url = data.base_url.trim() || null;
     if (data.provider !== undefined) k.provider = data.provider;
-    if (data.key !== undefined && data.key.trim() !== k.key) {
-      k.key = data.key.trim();
+    const newKey = data.key !== undefined ? data.key.trim().replace(/^["'`]+|["'`]+$/g, "").trim().replace(/^bearer\s+/i, "").replace(/\s+/g, "") : undefined;
+    if (newKey !== undefined && newKey && newKey !== k.key) {
+      k.key = newKey;
       // The old failure belongs to the old key — clear it so the new one starts fresh.
       k.failed_on = null;
       k.last_error = null;
