@@ -120,21 +120,43 @@ export function guessProviderFromKey(key: string): KeyProvider {
 }
 
 /** Other well-known OpenAI-compatible AI services, tried when the key shape is not one of the presets. */
-// `prefixOnly`: the service lists models without checking the key, so it is
-// only considered when the key has that service's prefix, and it is verified
-// with a tiny chat request instead.
-const OPENAI_COMPATIBLE_SERVICES: { name: string; baseURL: string; prefix?: RegExp; prefixOnly?: boolean; model?: string }[] = [
+// `prefixOnly`: only considered when the key has that service's prefix, and it
+// is verified with a tiny chat request.
+// `chatCheck`: the service lists models without checking the key, so it is
+// always verified with a tiny chat request instead of the model list.
+type CompatService = { name: string; baseURL: string; prefix?: RegExp; prefixOnly?: boolean; chatCheck?: boolean; model?: string };
+const OPENAI_COMPATIBLE_SERVICES: CompatService[] = [
   { name: "xAI Grok", baseURL: "https://api.x.ai/v1", prefix: /^xai-/ },
   { name: "Cerebras", baseURL: "https://api.cerebras.ai/v1", prefix: /^csk-/ },
   { name: "NVIDIA", baseURL: "https://integrate.api.nvidia.com/v1", prefix: /^nvapi-/, prefixOnly: true, model: "meta/llama-3.3-70b-instruct" },
   { name: "Hugging Face", baseURL: "https://router.huggingface.co/v1", prefix: /^hf_/, prefixOnly: true, model: "meta-llama/Llama-3.3-70B-Instruct" },
-  { name: "Fireworks", baseURL: "https://api.fireworks.ai/inference/v1", prefix: /^fw_/ },
   { name: "Perplexity", baseURL: "https://api.perplexity.ai", prefix: /^pplx-/, prefixOnly: true, model: "sonar" },
+  { name: "Anthropic Claude", baseURL: "https://api.anthropic.com/v1", prefix: /^sk-ant-/, prefixOnly: true, model: "claude-haiku-4-5" },
+  { name: "GitHub Models", baseURL: "https://models.github.ai/inference", prefix: /^(ghp_|github_pat_)/, prefixOnly: true, model: "openai/gpt-4o-mini" },
+  { name: "Fireworks", baseURL: "https://api.fireworks.ai/inference/v1", prefix: /^fw_/ },
   { name: "DeepSeek", baseURL: "https://api.deepseek.com/v1", prefix: /^sk-/ },
+  { name: "Moonshot Kimi", baseURL: "https://api.moonshot.ai/v1", prefix: /^sk-/ },
+  { name: "SiliconFlow", baseURL: "https://api.siliconflow.com/v1", prefix: /^sk-/ },
+  { name: "SiliconFlow China", baseURL: "https://api.siliconflow.cn/v1", prefix: /^sk-/ },
+  { name: "Alibaba Qwen", baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1", prefix: /^sk-/ },
+  { name: "StepFun", baseURL: "https://api.stepfun.com/v1" },
+  { name: "Zhipu GLM", baseURL: "https://api.z.ai/api/paas/v4" },
   { name: "Mistral", baseURL: "https://api.mistral.ai/v1" },
   { name: "Together AI", baseURL: "https://api.together.xyz/v1" },
   { name: "Cohere", baseURL: "https://api.cohere.ai/compatibility/v1" },
   { name: "DeepInfra", baseURL: "https://api.deepinfra.com/v1/openai" },
+  { name: "Nebius", baseURL: "https://api.studio.nebius.com/v1" },
+  { name: "Hyperbolic", baseURL: "https://api.hyperbolic.xyz/v1" },
+  { name: "Chutes", baseURL: "https://llm.chutes.ai/v1" },
+  { name: "SambaNova", baseURL: "https://api.sambanova.ai/v1", chatCheck: true, model: "Meta-Llama-3.3-70B-Instruct" },
+  { name: "Novita", baseURL: "https://api.novita.ai/v3/openai", chatCheck: true, model: "meta-llama/llama-3.3-70b-instruct" },
+  { name: "Venice", baseURL: "https://api.venice.ai/api/v1", chatCheck: true, model: "llama-3.3-70b" },
+];
+
+/** Names of every AI service the auto-detection checks. */
+export const DETECTABLE_SERVICE_NAMES: string[] = [
+  "Google Gemini", "Groq", "OpenRouter", "OpenAI",
+  ...OPENAI_COMPATIBLE_SERVICES.map((s) => s.name),
 ];
 
 async function fetchWithTimeout(url: string, init: RequestInit, ms = 7000): Promise<Response | null> {
@@ -203,8 +225,8 @@ export async function detectKeyProvider(rawKey: string): Promise<{ detected: Det
 
   const presetProbes = presetOrder.map((p) => tryPreset(p));
   const serviceProbes = services.map(async (s): Promise<DetectedKey | null> => {
-    if (s.prefixOnly) {
-      if (!s.prefix?.test(key) || !s.model) return null;
+    if (s.prefixOnly || s.chatCheck) {
+      if (!s.model || (s.prefixOnly && !s.prefix?.test(key))) return null;
       const r = await chatProbe(s.baseURL, key, s.model);
       return r.ok ? { provider: "custom", base_url: s.baseURL, model: s.model, service: s.name } : null;
     }
