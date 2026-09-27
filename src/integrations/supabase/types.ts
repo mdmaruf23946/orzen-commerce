@@ -10851,10 +10851,12 @@ export type Database = {
           id: string
           integration_id: string
           last_error: string | null
+          merged_into: string | null
           message_id: string
           phone_number_id: string
           processing_ms: number | null
           reply_text: string | null
+          route: string | null
           sender_id: string
           started_at: string | null
           status: string
@@ -10872,10 +10874,12 @@ export type Database = {
           id?: string
           integration_id: string
           last_error?: string | null
+          merged_into?: string | null
           message_id: string
           phone_number_id: string
           processing_ms?: number | null
           reply_text?: string | null
+          route?: string | null
           sender_id: string
           started_at?: string | null
           status?: string
@@ -10893,10 +10897,12 @@ export type Database = {
           id?: string
           integration_id?: string
           last_error?: string | null
+          merged_into?: string | null
           message_id?: string
           phone_number_id?: string
           processing_ms?: number | null
           reply_text?: string | null
+          route?: string | null
           sender_id?: string
           started_at?: string | null
           status?: string
