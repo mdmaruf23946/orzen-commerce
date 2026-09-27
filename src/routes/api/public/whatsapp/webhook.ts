@@ -100,7 +100,7 @@ async function logInbound(
     content: opts.text,
     attachments: opts.attachments ?? [],
     mid: opts.mid ?? null,
-    delivery_status: "received",
+    delivery_status: "delivered",
   } as any);
 }
 

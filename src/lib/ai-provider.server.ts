@@ -387,7 +387,8 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
       let quotaHits = 0;
       let keyDead = false;
       for (const modelId of models) {
-        const body = payload ? JSON.stringify({ ...payload, model: modelId }) : (init?.body as any);
+        const sendPayload = payload && c.provider === "gemini" ? withThoughtSignatures(payload) : payload;
+        const body = sendPayload ? JSON.stringify({ ...sendPayload, model: modelId }) : (init?.body as any);
         try {
           const res = await fetch(`${c.baseURL}${suffix}`, { ...init, headers, body });
           if (res.ok) {
@@ -421,6 +422,27 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
     throw new Error(lastError);
   };
   return routedFetch;
+}
+
+/** Gemini rejects replayed tool calls without a thought_signature; the
+ * OpenAI-compatible SDK drops them, so attach Google's documented bypass. */
+function withThoughtSignatures(payload: any) {
+  if (!Array.isArray(payload?.messages)) return payload;
+  return {
+    ...payload,
+    messages: payload.messages.map((m: any) =>
+      m?.role === "assistant" && Array.isArray(m.tool_calls)
+        ? {
+            ...m,
+            tool_calls: m.tool_calls.map((t: any) =>
+              t?.extra_content?.google?.thought_signature
+                ? t
+                : { ...t, extra_content: { google: { thought_signature: "skip_thought_signature_validator" } } },
+            ),
+          }
+        : m,
+    ),
+  };
 }
 
 const NO_KEY_MESSAGE =
