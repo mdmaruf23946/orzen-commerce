@@ -4,7 +4,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { buildSystemPrompt, generateAgentReply, loadAiContext, resolveFocusProduct } from "@/lib/ai-agent.server";
-import { routedChatCompletion, routedVisionText } from "@/lib/ai-provider.server";
+import { routedChatCompletion, routedTranscribeAudio, routedVisionText } from "@/lib/ai-provider.server";
 import { getStoreMemory, recallByText, recallByFingerprint } from "@/lib/catalog-memory.server";
 import {
   sendProductCard,
@@ -947,26 +947,12 @@ async function transcribeAudioAttachment(url: string): Promise<string | null> {
     const audioRes = await fetch(url);
     if (!audioRes.ok) return null;
     const buf = new Uint8Array(await audioRes.arrayBuffer());
-    if (!buf.byteLength) return null;
-    let bin = "";
-    for (let i = 0; i < buf.byteLength; i++) bin += String.fromCharCode(buf[i]!);
-    const b64 = btoa(bin);
+    if (!buf.byteLength || buf.byteLength > 15 * 1024 * 1024) return null;
     const mime = (audioRes.headers.get("content-type") || "audio/mp4").split(";")[0]!.trim();
     // Runs on the platform owner's own provider keys (Winner Admin → AI).
-    const text = await routedChatCompletion({
-      modelOverride: "google/gemini-2.5-flash",
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "Transcribe this voice message verbatim. Return only the transcript text with no extra commentary." },
-            { type: "input_audio", input_audio: { data: b64, format: mime.replace(/^audio\//, "") } },
-          ],
-        },
-      ],
-    });
-    return text || null;
-  } catch {
+    return await routedTranscribeAudio(buf, mime);
+  } catch (e) {
+    console.error("[messenger] voice transcription failed", e);
     return null;
   }
 }
@@ -2260,7 +2246,13 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               if (parsed.message_type === "audio") {
                 const audioUrl = (parsed.attachments?.[0]?.url as string) || "";
                 const transcript = await transcribeAudioAttachment(audioUrl);
-                if (transcript) effectiveText = transcript;
+                effectiveText = transcript
+                  ? transcript
+                  : "[The customer sent a voice message that could not be understood. Reply briefly in Bangla asking them to send it again or type the message.]";
+                if (transcript) {
+                  void sb.from("ai_messages").update({ content: `[voice] ${transcript}` })
+                    .eq("conversation_id", conv!.id).eq("mid", String(msg.mid ?? "")).then(() => {}, () => {});
+                }
               }
               // Photos: describe the image so the agent can look the item up in the
               // catalogue instead of leaving the customer with silence.
