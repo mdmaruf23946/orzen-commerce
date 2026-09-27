@@ -1402,10 +1402,11 @@ async function fastImageLookup(
         evidence: ["fast_image_fingerprint"],
       },
       candidateIds,
+      photo,
     };
   } catch {
     // Any index problem falls back to description plus the preloaded text index.
-    return { analysis: null, match: null, candidateIds: [] };
+    return { analysis: null, match: null, candidateIds: [], photo };
   }
 }
 
