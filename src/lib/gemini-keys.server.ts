@@ -101,8 +101,9 @@ export function providerPreset(p: string | null | undefined): ProviderPreset {
 export function cleanApiKey(key: string): string {
   return key
     .trim()
-    .replace(/^bearer\s+/i, "")
     .replace(/^["'`]+|["'`]+$/g, "")
+    .trim()
+    .replace(/^bearer\s+/i, "")
     .replace(/\s+/g, "");
 }
 
