@@ -297,6 +297,10 @@ function ApiKeysManager() {
                   <Button size="sm" variant="outline" className="h-8 flex-1" disabled={busy === k.id} onClick={() => test(k.id)}>
                     <Zap className="mr-1 h-3.5 w-3.5" /> {busy === k.id ? "Testing…" : "Test"}
                   </Button>
+                  <Button size="sm" variant="outline" className="h-8" disabled={busy === k.id || busy === "new"}
+                    onClick={() => { cancelEdit(); startEdit(k); }}>
+                    <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+                  </Button>
                   {k.failed_today && (
                     <Button size="sm" variant="outline" className="h-8" disabled={busy === k.id}
                       onClick={() => run(k.id, () => updFn({ data: { id: k.id, reset_failure: true } }), "Key resumed")}>
