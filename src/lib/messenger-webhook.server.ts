@@ -947,26 +947,12 @@ async function transcribeAudioAttachment(url: string): Promise<string | null> {
     const audioRes = await fetch(url);
     if (!audioRes.ok) return null;
     const buf = new Uint8Array(await audioRes.arrayBuffer());
-    if (!buf.byteLength) return null;
-    let bin = "";
-    for (let i = 0; i < buf.byteLength; i++) bin += String.fromCharCode(buf[i]!);
-    const b64 = btoa(bin);
+    if (!buf.byteLength || buf.byteLength > 15 * 1024 * 1024) return null;
     const mime = (audioRes.headers.get("content-type") || "audio/mp4").split(";")[0]!.trim();
     // Runs on the platform owner's own provider keys (Winner Admin → AI).
-    const text = await routedChatCompletion({
-      modelOverride: "google/gemini-2.5-flash",
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "Transcribe this voice message verbatim. Return only the transcript text with no extra commentary." },
-            { type: "input_audio", input_audio: { data: b64, format: mime.replace(/^audio\//, "") } },
-          ],
-        },
-      ],
-    });
-    return text || null;
-  } catch {
+    return await routedTranscribeAudio(buf, mime);
+  } catch (e) {
+    console.error("[messenger] voice transcription failed", e);
     return null;
   }
 }

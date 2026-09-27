@@ -563,3 +563,67 @@ export async function routedVisionText(
   });
   return text ?? "";
 }
+
+/**
+ * Voice-note transcription on the owner's keys. Gemini's OpenAI-compatible
+ * endpoint only accepts wav/mp3, but Messenger sends AAC in an mp4 box, so we
+ * call Gemini's native endpoint with inline audio. Groq/OpenAI keys use their
+ * Whisper-style transcription endpoint. Tries each enabled key in order.
+ */
+export async function routedTranscribeAudio(bytes: Uint8Array, mime: string): Promise<string | null> {
+  const sb = admin();
+  const { data: settings } = await sb.from("ai_global_settings").select("gemini_api_keys").eq("id", 1).maybeSingle();
+  const { normalizeGeminiKeys, dhakaToday } = await import("./gemini-keys.server");
+  const today = dhakaToday();
+  const keys = normalizeGeminiKeys((settings as any)?.gemini_api_keys).filter(
+    (k) => k.enabled && k.key && k.failed_on !== today,
+  );
+  let bin = "";
+  for (let i = 0; i < bytes.byteLength; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  const b64 = btoa(bin);
+  const audioMime = mime.replace(/^video\//, "audio/") || "audio/mp4";
+  const prompt =
+    "Transcribe this customer voice message exactly as spoken (Bangla, Banglish or English). Return only the transcript text. If there is no speech, return an empty string.";
+  for (const k of keys) {
+    try {
+      if (k.provider === "gemini") {
+        for (const model of ["gemini-flash-lite-latest", "gemini-flash-latest"]) {
+          const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(k.key)}`,
+            {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: audioMime, data: b64 } }] }],
+                generationConfig: { temperature: 0, thinkingConfig: { thinkingBudget: 0 } },
+              }),
+            },
+          );
+          if (!res.ok) continue;
+          const j: any = await res.json().catch(() => null);
+          const text = (j?.candidates?.[0]?.content?.parts ?? [])
+            .map((p: any) => (p?.thought ? "" : p?.text ?? ""))
+            .join("")
+            .trim();
+          if (text) return text;
+        }
+      } else if (k.provider === "groq" || k.provider === "openai") {
+        const base = k.provider === "groq" ? "https://api.groq.com/openai/v1" : "https://api.openai.com/v1";
+        const form = new FormData();
+        form.append("file", new Blob([bytes], { type: audioMime }), "voice.m4a");
+        form.append("model", k.provider === "groq" ? "whisper-large-v3-turbo" : "whisper-1");
+        const res = await fetch(`${base}/audio/transcriptions`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${k.key}` },
+          body: form,
+        });
+        if (!res.ok) continue;
+        const j: any = await res.json().catch(() => null);
+        if (j?.text?.trim()) return j.text.trim();
+      }
+    } catch {
+      // try next key
+    }
+  }
+  return null;
+}
