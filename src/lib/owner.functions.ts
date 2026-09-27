@@ -1133,7 +1133,7 @@ export const addGlobalGeminiKey = createServerFn({ method: "POST" })
     z.object({
       label: z.string().max(60).optional(),
       key: z.string().min(10).max(500),
-      provider: z.enum(["gemini", "groq", "openrouter", "openai", "custom"]).default("gemini"),
+      provider: z.enum(["gemini", "groq", "openrouter", "openai", "custom"]).optional(),
       base_url: z.string().max(300).optional(),
       model: z.string().max(120).optional(),
       vision: z.boolean().optional(),
@@ -1145,12 +1145,16 @@ export const addGlobalGeminiKey = createServerFn({ method: "POST" })
     const helpers = await import("@/lib/gemini-keys.server");
     const { keys } = await loadGeminiKeys(sb);
     if (keys.length >= 20) throw new Error("Maximum of 20 API keys.");
-    const preset = helpers.providerPreset(data.provider);
     const baseUrl = (data.base_url ?? "").trim();
-    if (data.provider === "custom" && !/^https?:\/\//i.test(baseUrl)) {
-      throw new Error("A custom provider needs an OpenAI-compatible base URL.");
+    const modelName = (data.model ?? "").trim();
+    // When the caller gives only a key (+name), detect the provider from the key
+    // itself and fall back to that provider's default URL and model.
+    const provider = data.provider ?? helpers.guessProviderFromKey(data.key);
+    const preset = helpers.providerPreset(provider);
+    if (provider === "custom" && !/^https?:\/\//i.test(baseUrl)) {
+      throw new Error("This key's provider could not be recognized. Please also fill in the API base URL and Model ID.");
     }
-    if (data.provider === "custom" && !(data.model ?? "").trim()) {
+    if (provider === "custom" && !modelName) {
       throw new Error("A custom provider needs a model name.");
     }
     const newId = crypto.randomUUID();
@@ -1158,7 +1162,7 @@ export const addGlobalGeminiKey = createServerFn({ method: "POST" })
       id: newId,
       label: (data.label ?? "").trim() || `${preset.name} ${keys.length + 1}`,
       key: data.key.trim(),
-      provider: data.provider,
+      provider,
       base_url: baseUrl || null,
       model: (data.model ?? "").trim() || null,
       vision: data.vision ?? preset.vision,

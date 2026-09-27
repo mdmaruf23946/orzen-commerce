@@ -97,6 +97,16 @@ export function providerPreset(p: string | null | undefined): ProviderPreset {
   return PROVIDER_PRESETS[(p as KeyProvider) in PROVIDER_PRESETS ? (p as KeyProvider) : "gemini"];
 }
 
+/** Guess the provider from the key's shape so a key can be added with just a name. */
+export function guessProviderFromKey(key: string): KeyProvider {
+  const k = key.trim();
+  if (/^AIza[\w-]{20,}$/.test(k)) return "gemini";
+  if (/^gsk_[\w-]{20,}$/.test(k)) return "groq";
+  if (/^sk-or-[\w-]{10,}$/.test(k)) return "openrouter";
+  if (/^sk-[\w-]{20,}$/.test(k)) return "openai";
+  return "custom";
+}
+
 export function dhakaToday(): string {
   return new Date(Date.now() + 6 * 3600_000).toISOString().slice(0, 10);
 }
