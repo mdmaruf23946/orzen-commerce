@@ -1153,8 +1153,9 @@ export const addGlobalGeminiKey = createServerFn({ method: "POST" })
     if (data.provider === "custom" && !(data.model ?? "").trim()) {
       throw new Error("A custom provider needs a model name.");
     }
+    const newId = crypto.randomUUID();
     keys.push({
-      id: crypto.randomUUID(),
+      id: newId,
       label: (data.label ?? "").trim() || `${preset.name} ${keys.length + 1}`,
       key: data.key.trim(),
       provider: data.provider,
@@ -1166,7 +1167,7 @@ export const addGlobalGeminiKey = createServerFn({ method: "POST" })
       last_error: null,
     });
     await saveGeminiKeys(sb, keys);
-    return { ok: true };
+    return { ok: true, id: newId };
   });
 
 export const updateGlobalGeminiKey = createServerFn({ method: "POST" })
