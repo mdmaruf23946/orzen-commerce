@@ -87,11 +87,30 @@ function ApiKeysManager() {
   const [model, setModel] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [vision, setVision] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [tested, setTested] = useState<Record<string, { ok: boolean; msg?: string }>>({});
 
   const urlOk = /^https?:\/\/\S+$/i.test(baseUrl.trim());
-  const canConnect = name.trim().length > 0 && urlOk && model.trim().length > 0 && apiKey.trim().length >= 10;
+  const editing = editingId !== null;
+  const canConnect = editing
+    ? name.trim().length > 0 && urlOk && model.trim().length > 0 && (apiKey.trim().length === 0 || apiKey.trim().length >= 10)
+    : name.trim().length > 0 && urlOk && model.trim().length > 0 && apiKey.trim().length >= 10;
+
+  function startEdit(k: any) {
+    setEditingId(k.id);
+    setName(k.label ?? "");
+    setModel(k.model ?? "");
+    setBaseUrl(k.base_url ?? "");
+    setApiKey("");
+    setVision(!!k.vision);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setName(""); setBaseUrl(""); setModel(""); setApiKey(""); setVision(true);
+  }
 
   function refresh() {
     qc.invalidateQueries({ queryKey: ["ai", "gemini-keys"] });
