@@ -1454,20 +1454,22 @@ async function sendVisualProductResult(opts: {
           `আহা, এই ${noun}টা এই মুহূর্তে আমাদের দোকানে নেই, দুঃখিত! আপনার পছন্দের অন্য কিছু থাকলে জানান, খুঁজে দিচ্ছি।`,
         ]);
     const sent = await fbSend(token, psid, text);
-    await markQueuedReply(sb, queuedJobId, text, sent.message_id);
-    await sb.from("ai_messages").insert({
-      conversation_id: conversationId, role: "assistant", direction: "out", message_type: "text",
-      content: text, attachments: [{
-        in_reply_to_mid: sourceMid,
-        recognition_status: analysis.recognition_status,
-        recognition_confidence: analysis.confidence,
-        visibility_warnings: analysis.visibility_warnings,
-        visual_match_verdict: match?.verdict ?? "none",
-        visual_match_confidence: match?.confidence ?? 0,
-        visual_match_reason: match?.reason ?? null,
-      }],
-      mid: sent.message_id ?? null, delivery_status: "sent",
-    } as any);
+    await Promise.all([
+      markQueuedReply(sb, queuedJobId, text, sent.message_id),
+      sb.from("ai_messages").insert({
+        conversation_id: conversationId, role: "assistant", direction: "out", message_type: "text",
+        content: text, attachments: [{
+          in_reply_to_mid: sourceMid,
+          recognition_status: analysis.recognition_status,
+          recognition_confidence: analysis.confidence,
+          visibility_warnings: analysis.visibility_warnings,
+          visual_match_verdict: match?.verdict ?? "none",
+          visual_match_confidence: match?.confidence ?? 0,
+          visual_match_reason: match?.reason ?? null,
+        }],
+        mid: sent.message_id ?? null, delivery_status: "sent",
+      } as any),
+    ]);
     return;
   }
 
