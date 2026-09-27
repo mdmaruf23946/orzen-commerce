@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   Sparkles, KeyRound, Zap, DollarSign, Activity, Cpu,
-  ArrowUp, ArrowDown, RotateCcw, Trash2, Plug, CheckCircle2, XCircle,
+  ArrowUp, ArrowDown, RotateCcw, Trash2, Plug, CheckCircle2, XCircle, Pencil,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/owner/ai")({
@@ -87,11 +87,30 @@ function ApiKeysManager() {
   const [model, setModel] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [vision, setVision] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [tested, setTested] = useState<Record<string, { ok: boolean; msg?: string }>>({});
 
   const urlOk = /^https?:\/\/\S+$/i.test(baseUrl.trim());
-  const canConnect = name.trim().length > 0 && urlOk && model.trim().length > 0 && apiKey.trim().length >= 10;
+  const editing = editingId !== null;
+  const canConnect = editing
+    ? name.trim().length > 0 && urlOk && model.trim().length > 0 && (apiKey.trim().length === 0 || apiKey.trim().length >= 10)
+    : name.trim().length > 0 && urlOk && model.trim().length > 0 && apiKey.trim().length >= 10;
+
+  function startEdit(k: any) {
+    setEditingId(k.id);
+    setName(k.label ?? "");
+    setModel(k.model ?? "");
+    setBaseUrl(k.base_url ?? "");
+    setApiKey("");
+    setVision(!!k.vision);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setName(""); setBaseUrl(""); setModel(""); setApiKey(""); setVision(true);
+  }
 
   function refresh() {
     qc.invalidateQueries({ queryKey: ["ai", "gemini-keys"] });
@@ -131,20 +150,38 @@ function ApiKeysManager() {
     setBusy("new");
     try {
       const url = baseUrl.trim().replace(/\/+$/, "");
-      const r: any = await addFn({
-        data: {
+      if (editing && editingId) {
+        const payload: any = {
+          id: editingId,
           label: name.trim(),
-          key: apiKey.trim(),
-          provider: detectProvider(url),
-          base_url: url,
           model: model.trim(),
+          base_url: url,
           vision,
-        },
-      });
-      setName(""); setBaseUrl(""); setModel(""); setApiKey(""); setVision(true);
-      refresh();
-      toast.success("API key added — testing connection…");
-      if (r?.id) await test(r.id);
+          provider: detectProvider(url),
+        };
+        if (apiKey.trim().length >= 10) payload.key = apiKey.trim();
+        await updFn({ data: payload });
+        setEditingId(null);
+        setName(""); setBaseUrl(""); setModel(""); setApiKey(""); setVision(true);
+        refresh();
+        toast.success("Changes saved — testing connection…");
+        await test(editingId);
+      } else {
+        const r: any = await addFn({
+          data: {
+            label: name.trim(),
+            key: apiKey.trim(),
+            provider: detectProvider(url),
+            base_url: url,
+            model: model.trim(),
+            vision,
+          },
+        });
+        setName(""); setBaseUrl(""); setModel(""); setApiKey(""); setVision(true);
+        refresh();
+        toast.success("API key added — testing connection…");
+        if (r?.id) await test(r.id);
+      }
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -154,14 +191,21 @@ function ApiKeysManager() {
 
   return (
     <div className="space-y-4">
-      {/* Add form */}
-      <div className="rounded-xl border bg-card p-4 min-w-0">
-        <div className="flex items-center gap-2">
-          <Plug className="h-4 w-4 text-primary" />
-          <h2 className="text-base font-semibold">Connect an AI API key</h2>
+      {/* Add / edit form */}
+      <div className={`rounded-xl border bg-card p-4 min-w-0 ${editing ? "ring-1 ring-primary/40" : ""}`}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Pencil className="h-4 w-4 text-primary" />
+            <h2 className="text-base font-semibold">{editing ? "Edit API key" : "Connect an AI API key"}</h2>
+          </div>
+          {editing && (
+            <Button size="sm" variant="ghost" onClick={cancelEdit} disabled={busy === "new"}>Cancel</Button>
+          )}
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          Works with any OpenAI-compatible API (Gemini, Groq, OpenRouter, OpenAI, DeepSeek, Mistral, Together and more).
+          {editing
+            ? "Leave the API key field empty to keep the current key."
+            : "Works with any OpenAI-compatible API (Gemini, Groq, OpenRouter, OpenAI, DeepSeek, Mistral, Together and more)."}
         </p>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -175,7 +219,7 @@ function ApiKeysManager() {
             <Input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="e.g. https://api.groq.com/openai/v1" />
           </Field>
           <Field label="API key" className="sm:col-span-2">
-            <Input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="Paste your API key" autoComplete="off" />
+            <Input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder={editing ? "Leave empty to keep the current key" : "Paste your API key"} autoComplete="off" />
           </Field>
         </div>
 
@@ -187,9 +231,16 @@ function ApiKeysManager() {
           <Switch checked={vision} onCheckedChange={setVision} />
         </div>
 
-        <Button className="mt-4 w-full" disabled={!canConnect || busy === "new"} onClick={connect}>
-          <Plug className="mr-1.5 h-4 w-4" /> {busy === "new" ? "Connecting…" : "Connect & test"}
-        </Button>
+        <div className="mt-4 flex gap-2">
+          {editing && (
+            <Button variant="outline" className="flex-1" disabled={busy === "new"} onClick={cancelEdit}>Cancel</Button>
+          )}
+          <Button className="flex-1" disabled={!canConnect || busy === "new"} onClick={connect}>
+            {editing
+              ? (<><CheckCircle2 className="mr-1.5 h-4 w-4" /> {busy === "new" ? "Saving…" : "Save changes & test"}</>)
+              : (<><Plug className="mr-1.5 h-4 w-4" /> {busy === "new" ? "Connecting…" : "Connect & test"}</>)}
+          </Button>
+        </div>
       </div>
 
       {/* Key list */}
@@ -209,7 +260,7 @@ function ApiKeysManager() {
           {keys.map((k, i) => {
             const r = tested[k.id];
             return (
-              <div key={k.id} className="rounded-lg border p-3 min-w-0">
+              <div key={k.id} className={`rounded-lg border p-3 min-w-0 ${editingId === k.id ? "ring-1 ring-primary/40" : ""}`}>
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5">
@@ -245,6 +296,10 @@ function ApiKeysManager() {
                 <div className="mt-3 flex flex-wrap items-center gap-1.5">
                   <Button size="sm" variant="outline" className="h-8 flex-1" disabled={busy === k.id} onClick={() => test(k.id)}>
                     <Zap className="mr-1 h-3.5 w-3.5" /> {busy === k.id ? "Testing…" : "Test"}
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-8" disabled={busy === k.id || busy === "new"}
+                    onClick={() => { cancelEdit(); startEdit(k); }}>
+                    <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
                   </Button>
                   {k.failed_today && (
                     <Button size="sm" variant="outline" className="h-8" disabled={busy === k.id}
