@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { buildSystemPrompt, generateAgentReply, loadAiContext, resolveFocusProduct } from "@/lib/ai-agent.server";
 import { routedChatCompletion, routedVisionText } from "@/lib/ai-provider.server";
-import { getStoreMemory, recallByText, recallForImage } from "@/lib/catalog-memory.server";
+import { getStoreMemory, recallByText, recallForImage, recallByFingerprint } from "@/lib/catalog-memory.server";
 import {
   sendProductCard,
   sendProductCarousel,
@@ -1320,36 +1320,30 @@ async function fastImageLookup(
   pageToken: string,
   messageId: string,
 ): Promise<{ analysis: ImageAnalysis | null; match: VisualMatch | null; candidateIds: string[] }> {
-  // Image fingerprints are unavailable on the current provider keys, so this
-  // pre-pass can only cost an extra image download. Skip it entirely and let
-  // the single-pass visual match below answer directly.
-  return { analysis: null, match: null, candidateIds: [] };
-  // eslint-disable-next-line no-unreachable
+  // Memorised photo fingerprints: a catalogue photo sent back by a customer is
+  // recognised in milliseconds with no AI call. Anything uncertain falls
+  // through to the AI inspection below, with the closest products pinned.
   try {
-    const { rankProductImageMatches } = await import("@/lib/product-image-embeddings.server");
-    const { bytes, type } = await downloadMessengerImage(imageUrl, pageToken, messageId);
-    const ranked = await rankProductImageMatches(sb as any, storeId, bytes, type, 8);
-    const hit = ranked[0];
-    const margin = hit ? hit.similarity - (ranked[1]?.similarity ?? 0) : 0;
-    const candidateIds = ranked.filter((row) => row.similarity >= 0.45).map((row) => row.productId);
-    // Never declare "not available" from fingerprints alone: embeddings cover
-    // only one photo per product, so a different angle/source photo of a real
-    // catalogue item can score low. Uncertain photos always fall through to
-    // the full AI inspection below.
-    if (!hit || hit.similarity < 0.86 || margin < 0.12) return { analysis: null, match: null, candidateIds };
-    const [{ data: product }, { data: blocked }] = await Promise.all([
-      sb
-        .from("ai_product_catalog")
-        .select("product_id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,primary_image_url,gallery,features,specifications,variants,total_sold,rating,is_featured")
-        .eq("product_id", hit.productId)
-        .eq("store_id", storeId)
-        .eq("status", "active")
-        .gt("stock", 0)
-        .maybeSingle(),
-      sb.from("ai_product_blacklist").select("product_id").eq("store_id", storeId).eq("product_id", hit.productId).maybeSingle(),
+    const { fingerprintImage, FINGERPRINT_MATCH_MAX, FINGERPRINT_MIN_MARGIN, FINGERPRINT_CANDIDATE_MAX } =
+      await import("@/lib/photo-fingerprint.server");
+    const [memory, download] = await Promise.all([
+      getStoreMemory(sb as any, storeId),
+      downloadMessengerImage(imageUrl, pageToken, messageId),
     ]);
-    if (!product || blocked) return { analysis: null, match: null, candidateIds };
-    const row = { ...(product as any), id: (product as any).product_id } as ProductRow;
+    if (!memory.fingerprints.size) return { analysis: null, match: null, candidateIds: [] };
+    const print = fingerprintImage(download.bytes);
+    if (!print) return { analysis: null, match: null, candidateIds: [] };
+    const ranked = recallByFingerprint(memory, print, 8);
+    const top = ranked[0];
+    const margin = top ? (ranked[1]?.distance ?? 128) - top.distance : 0;
+    const candidateIds = ranked.filter((r) => r.distance <= FINGERPRINT_CANDIDATE_MAX).map((r) => r.product.id);
+    console.log(`[messenger] photo fingerprint store=${storeId} best=${top?.distance ?? "-"} margin=${margin}`);
+    if (!top || top.distance > FINGERPRINT_MATCH_MAX || margin < FINGERPRINT_MIN_MARGIN) {
+      return { analysis: null, match: null, candidateIds };
+    }
+    const product = top.product as any;
+    const hit = { similarity: 1 - top.distance / 128 };
+    const row = { ...product, id: product.id } as ProductRow;
     const confidence = Math.min(0.99, Math.round(hit.similarity * 100) / 100);
     const analysis: ImageAnalysis = {
       description: row.name,
@@ -1387,7 +1381,7 @@ async function fastImageLookup(
         product: row,
         confidence,
         verdict: "exact",
-        reason: `Photo fingerprint match (similarity ${hit.similarity.toFixed(3)}, margin ${margin.toFixed(3)})`,
+        reason: `Memorised photo match (distance ${top.distance}, margin ${margin})`,
         evidence: ["fast_image_fingerprint"],
       },
       candidateIds,

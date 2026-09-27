@@ -154,9 +154,13 @@ export async function syncProductImageEmbeddings(
     if (!page.length) break;
     const { data: existing } = await sb
       .from("product_image_embeddings")
-      .select("product_id,image_url")
+      .select("product_id,image_url,phash,last_error")
       .in("product_id", page.map((p) => p.id));
-    const known = new Map((existing ?? []).map((row: any) => [String(row.product_id), String(row.image_url)]));
+    // A product is "memorised" once its current photo has a fingerprint (or a
+    // recorded fingerprint failure for that same photo).
+    const known = new Map((existing ?? [])
+      .filter((row: any) => row.phash || String(row.last_error ?? "").startsWith("FP:"))
+      .map((row: any) => [String(row.product_id), String(row.image_url)]));
     for (const product of page) {
       if (done + failed >= limit) break;
       const image = primaryImage(product);
@@ -168,7 +172,9 @@ export async function syncProductImageEmbeddings(
         if (storagePath && (sb as any).storage) {
           // Our own image proxy cannot be fetched from inside the Worker (522),
           // so store-hosted photos are read straight from storage.
-          const { data: blob, error: dlError } = await (sb as any).storage.from("store-assets").download(storagePath);
+          const { data: blob, error: dlError } = await (sb as any).storage.from("store-assets").download(storagePath, {
+            transform: { width: 256, height: 256, resize: "contain", quality: 80, format: "origin" },
+          }).then((r: any) => (r?.data ? r : (sb as any).storage.from("store-assets").download(storagePath)));
           if (dlError || !blob) throw new Error(`Storage download failed: ${dlError?.message ?? "empty"}`);
           bytes = new Uint8Array(await blob.arrayBuffer());
           const ext = storagePath.split(".").pop()?.toLowerCase() ?? "jpg";
@@ -181,13 +187,15 @@ export async function syncProductImageEmbeddings(
         }
         if (!mime.startsWith("image/")) throw new Error(`Not an image (${mime})`);
         if (!bytes.byteLength || bytes.byteLength > 8_000_000) throw new Error("Image size unsupported");
-        const vector = await embedImageBytes(bytes, mime);
+        const { fingerprintImage } = await import("@/lib/photo-fingerprint.server");
+        const phash = fingerprintImage(bytes);
+        if (!phash) throw new Error(`Unsupported photo format (${mime})`);
         await sb.from("product_image_embeddings").upsert({
           product_id: product.id,
           store_id: product.store_id,
           image_url: image,
-          embedding: `[${vector.join(",")}]`,
-          model: IMAGE_EMBEDDING_MODEL,
+          phash,
+          model: "phash-v1",
           last_error: null,
           updated_at: new Date().toISOString(),
         });
@@ -199,9 +207,9 @@ export async function syncProductImageEmbeddings(
           product_id: product.id,
           store_id: product.store_id,
           image_url: image,
-          embedding: null,
-          model: IMAGE_EMBEDDING_MODEL,
-          last_error: (cause instanceof Error ? cause.message : "Embedding failed").slice(0, 300),
+          phash: null,
+          model: "phash-v1",
+          last_error: `FP: ${(cause instanceof Error ? cause.message : "Fingerprint failed")}`.slice(0, 300),
           updated_at: new Date().toISOString(),
         });
         failed += 1;
