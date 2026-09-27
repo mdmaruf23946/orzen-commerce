@@ -52,7 +52,7 @@ const bannersQuery = (storeId: string) =>
   });
 
 /** First screenful — blocks the initial render so the page paints fast. */
-const FIRST_PRODUCTS = 48;
+const FIRST_PRODUCTS = 12;
 
 const firstProductsQuery = (storeId: string) =>
   queryOptions({
