@@ -1219,8 +1219,9 @@ export const updateGlobalGeminiKey = createServerFn({ method: "POST" })
     if (data.model !== undefined) k.model = data.model.trim() || null;
     if (data.base_url !== undefined) k.base_url = data.base_url.trim() || null;
     if (data.provider !== undefined) k.provider = data.provider;
-    if (data.key !== undefined && data.key.trim() !== k.key) {
-      k.key = data.key.trim();
+    const newKey = data.key !== undefined ? data.key.trim().replace(/^bearer\s+/i, "").replace(/^["'`]+|["'`]+$/g, "").replace(/\s+/g, "") : undefined;
+    if (newKey !== undefined && newKey && newKey !== k.key) {
+      k.key = newKey;
       // The old failure belongs to the old key — clear it so the new one starts fresh.
       k.failed_on = null;
       k.last_error = null;
