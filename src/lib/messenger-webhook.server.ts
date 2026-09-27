@@ -979,13 +979,16 @@ async function describeImageAttachment(
   url: string,
   pageToken: string,
   messageId: string,
+  prepared?: { bytes: Uint8Array; type: string } | null,
 ): Promise<ImageAnalysis> {
   // Runs on the platform owner's own provider keys (Winner Admin → AI).
   try {
     // The model provider cannot fetch Facebook's signed CDN links itself
     // (it returns "Cannot fetch content from the provided URL"), so the bytes
-    // are downloaded here and sent inline as a data URL.
-    const { bytes, type } = await downloadMessengerImage(url, pageToken, messageId);
+    // are downloaded here and sent inline as a data URL. The fingerprint step
+    // already downloaded the photo, so its bytes are reused instead of pulling
+    // the same image from Facebook a second time.
+    const { bytes, type } = prepared ?? await downloadMessengerImage(url, pageToken, messageId);
     let binary = "";
     for (let i = 0; i < bytes.length; i += 0x8000) {
       binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
