@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   Sparkles, KeyRound, Zap, DollarSign, Activity, Cpu,
-  ArrowUp, ArrowDown, RotateCcw, Trash2, Plug, CheckCircle2, XCircle,
+  ArrowUp, ArrowDown, RotateCcw, Trash2, Plug, CheckCircle2, XCircle, Pencil,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/owner/ai")({
