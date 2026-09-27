@@ -37,6 +37,7 @@ export const Route = createFileRoute("/api/public/whatsapp/process")({
                 completed_at: new Date().toISOString(),
                 processing_ms: Date.now() - started,
                 last_error: res.skipped ?? null,
+                reply_text: res.reply,
               })
               .eq("id", job.id);
           } catch (cause) {
