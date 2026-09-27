@@ -9,7 +9,7 @@ export const Route = createFileRoute("/api/public/cron/product-image-embeddings"
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { syncProductImageEmbeddings } = await import("@/lib/product-image-embeddings.server");
         try {
-          const result = await syncProductImageEmbeddings(supabaseAdmin as any, { limit: 25 });
+          const result = await syncProductImageEmbeddings(supabaseAdmin as any, { limit: 40 });
           return Response.json({ ok: true, ...result });
         } catch {
           return Response.json({ ok: false }, { status: 500 });
