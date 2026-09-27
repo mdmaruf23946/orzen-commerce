@@ -260,7 +260,7 @@ function ApiKeysManager() {
           {keys.map((k, i) => {
             const r = tested[k.id];
             return (
-              <div key={k.id} className="rounded-lg border p-3 min-w-0">
+              <div key={k.id} className={`rounded-lg border p-3 min-w-0 ${editingId === k.id ? "ring-1 ring-primary/40" : ""}`}>
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5">
