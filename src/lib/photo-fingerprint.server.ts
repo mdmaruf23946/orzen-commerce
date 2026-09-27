@@ -94,6 +94,6 @@ export function fingerprintDistance(left: string, right: string): number {
 }
 
 /** Same photo: close fingerprint AND clearly closer than the next product. */
-export const FINGERPRINT_MATCH_MAX = 18;
-export const FINGERPRINT_MIN_MARGIN = 8;
+export const FINGERPRINT_MATCH_MAX = 24;
+export const FINGERPRINT_MIN_MARGIN = 12;
 export const FINGERPRINT_CANDIDATE_MAX = 34;
