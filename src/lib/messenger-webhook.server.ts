@@ -2246,7 +2246,13 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               if (parsed.message_type === "audio") {
                 const audioUrl = (parsed.attachments?.[0]?.url as string) || "";
                 const transcript = await transcribeAudioAttachment(audioUrl);
-                if (transcript) effectiveText = transcript;
+                effectiveText = transcript
+                  ? transcript
+                  : "[The customer sent a voice message that could not be understood. Reply briefly in Bangla asking them to send it again or type the message.]";
+                if (transcript) {
+                  void sb.from("ai_messages").update({ content: `[voice] ${transcript}` })
+                    .eq("conversation_id", conv!.id).eq("mid", String(msg.mid ?? "")).then(() => {}, () => {});
+                }
               }
               // Photos: describe the image so the agent can look the item up in the
               // catalogue instead of leaving the customer with silence.
