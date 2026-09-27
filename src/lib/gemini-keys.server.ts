@@ -119,19 +119,20 @@ export function guessProviderFromKey(key: string): KeyProvider {
 }
 
 /** Other well-known OpenAI-compatible AI services, tried when the key shape is not one of the presets. */
-const OPENAI_COMPATIBLE_SERVICES: { name: string; baseURL: string; prefix?: RegExp }[] = [
+// `prefixOnly`: the service lists models without checking the key, so it is
+// only considered when the key has that service's prefix, and it is verified
+// with a tiny chat request instead.
+const OPENAI_COMPATIBLE_SERVICES: { name: string; baseURL: string; prefix?: RegExp; prefixOnly?: boolean; model?: string }[] = [
   { name: "xAI Grok", baseURL: "https://api.x.ai/v1", prefix: /^xai-/ },
   { name: "Cerebras", baseURL: "https://api.cerebras.ai/v1", prefix: /^csk-/ },
-  { name: "NVIDIA", baseURL: "https://integrate.api.nvidia.com/v1", prefix: /^nvapi-/ },
-  { name: "Hugging Face", baseURL: "https://router.huggingface.co/v1", prefix: /^hf_/ },
+  { name: "NVIDIA", baseURL: "https://integrate.api.nvidia.com/v1", prefix: /^nvapi-/, prefixOnly: true, model: "meta/llama-3.3-70b-instruct" },
+  { name: "Hugging Face", baseURL: "https://router.huggingface.co/v1", prefix: /^hf_/, prefixOnly: true, model: "meta-llama/Llama-3.3-70B-Instruct" },
   { name: "Fireworks", baseURL: "https://api.fireworks.ai/inference/v1", prefix: /^fw_/ },
-  { name: "Perplexity", baseURL: "https://api.perplexity.ai", prefix: /^pplx-/ },
+  { name: "Perplexity", baseURL: "https://api.perplexity.ai", prefix: /^pplx-/, prefixOnly: true, model: "sonar" },
   { name: "DeepSeek", baseURL: "https://api.deepseek.com/v1", prefix: /^sk-/ },
   { name: "Mistral", baseURL: "https://api.mistral.ai/v1" },
   { name: "Together AI", baseURL: "https://api.together.xyz/v1" },
-  { name: "SambaNova", baseURL: "https://api.sambanova.ai/v1" },
   { name: "Cohere", baseURL: "https://api.cohere.ai/compatibility/v1" },
-  { name: "Novita", baseURL: "https://api.novita.ai/v3/openai" },
   { name: "DeepInfra", baseURL: "https://api.deepinfra.com/v1/openai" },
 ];
 
@@ -201,6 +202,11 @@ export async function detectKeyProvider(rawKey: string): Promise<{ detected: Det
 
   const presetProbes = presetOrder.map((p) => tryPreset(p));
   const serviceProbes = services.map(async (s): Promise<DetectedKey | null> => {
+    if (s.prefixOnly) {
+      if (!s.prefix?.test(key) || !s.model) return null;
+      const r = await chatProbe(s.baseURL, key, s.model);
+      return r.ok ? { provider: "custom", base_url: s.baseURL, model: s.model, service: s.name } : null;
+    }
     const res = await fetchWithTimeout(`${s.baseURL}/models`, { headers: { authorization: `Bearer ${key}` } });
     if (!res || !res.ok) return null;
     try {
@@ -261,6 +267,27 @@ export function maskGeminiKey(key: string): string {
   return key.length <= 8 ? "••••" : `${key.slice(0, 4)}••••${key.slice(-4)}`;
 }
 
+/** Smallest possible chat request — proves the key really works with that model. */
+async function chatProbe(base: string, key: string, model: string): Promise<{ ok: boolean; error?: string }> {
+  const send = async (withLimit: boolean) => {
+    const body: Record<string, unknown> = { model, messages: [{ role: "user", content: "Hi" }] };
+    if (withLimit) body["max_tokens"] = 5;
+    return fetchWithTimeout(
+      `${base.replace(/\/$/, "")}/chat/completions`,
+      { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" }, body: JSON.stringify(body) },
+      15000,
+    );
+  };
+  let res = await send(true);
+  if (res && res.status === 400) {
+    const txt = await res.clone().text();
+    if (/max_tokens|max_completion_tokens/i.test(txt)) res = await send(false);
+  }
+  if (!res) return { ok: false, error: "No answer from the AI service (timeout or network error)." };
+  if (res.ok) return { ok: true };
+  return { ok: false, error: `HTTP ${res.status}: ${(await res.text()).slice(0, 200)}` };
+}
+
 /** Live check against the provider's own API. */
 export async function testProviderKey(k: GeminiKey): Promise<{ ok: boolean; error?: string }> {
   try {
@@ -274,6 +301,9 @@ export async function testProviderKey(k: GeminiKey): Promise<{ ok: boolean; erro
     }
     const base = keyBaseURL(k);
     if (!base) return { ok: false, error: "No base URL configured for this key." };
+    // Custom services: a real (tiny) chat request is the only reliable check,
+    // since some services list models without checking the key.
+    if (k.provider === "custom" && k.model) return chatProbe(base, k.key, k.model);
     // OpenRouter lists models without checking the key; /key does check it.
     const path = k.provider === "openrouter" || /openrouter\.ai/i.test(base) ? "/key" : "/models";
     const res = await fetch(`${base}${path}`, { headers: { authorization: `Bearer ${k.key}` } });
