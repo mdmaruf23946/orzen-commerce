@@ -93,6 +93,12 @@ fi
 echo "Building the guarded production candidate…"
 NODE_ENV=production bun run build
 
+# Content-hashed JS/CSS never change: let browsers keep them for a year so
+# reloads don't re-check dozens of files. HTML stays no-store (src/server.ts).
+if [ -d dist/client ]; then
+  printf '/assets/*\n  Cache-Control: public, max-age=31536000, immutable\n' > dist/client/_headers
+fi
+
 
 # Assert on the actual Supabase endpoint compiled into the browser bundle, not
 # on a bare project id (guard constants in source contain the expected id and
