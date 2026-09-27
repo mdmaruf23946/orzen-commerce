@@ -1,80 +1,42 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import {
   aiControlCenterOverview,
-  listStoresAiConfig,
-  upsertStoreAiConfig,
-  updateGlobalAiKeys,
   listGlobalGeminiKeys,
   addGlobalGeminiKey,
   updateGlobalGeminiKey,
   deleteGlobalGeminiKey,
   moveGlobalGeminiKey,
   testGlobalGeminiKey,
-  getAiProviderStatus,
 } from "@/lib/owner.functions";
-import { getAiGlobalSettings, updateAiGlobalSettings } from "@/lib/ai.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle,
-} from "@/components/ui/sheet";
-import {
-  Sparkles, KeyRound, Zap, DollarSign, Activity, Cpu, CheckCircle2, XCircle, Settings2, Search,
-  ArrowUp, ArrowDown, RotateCcw, Trash2, Plus,
+  Sparkles, KeyRound, Zap, DollarSign, Activity, Cpu,
+  ArrowUp, ArrowDown, RotateCcw, Trash2, Plug, CheckCircle2, XCircle,
 } from "lucide-react";
-
 
 export const Route = createFileRoute("/_authenticated/owner/ai")({
   component: AIControlCenter,
 });
 
-const MODELS = [
-  "google/gemini-3-flash-preview",
-  "google/gemini-2.5-flash",
-  "google/gemini-2.5-pro",
-];
-
 function AIControlCenter() {
   const overviewFn = useServerFn(aiControlCenterOverview);
-  const listFn = useServerFn(listStoresAiConfig);
-  const getGlobal = useServerFn(getAiGlobalSettings);
-
   const { data: overview } = useQuery({ queryKey: ["ai", "overview"], queryFn: () => overviewFn(), staleTime: 30_000 });
-  const { data: stores } = useQuery({ queryKey: ["ai", "stores"], queryFn: () => listFn(), staleTime: 15_000 });
-  const { data: global } = useQuery({ queryKey: ["ai", "global"], queryFn: () => getGlobal() });
-  const providerFn = useServerFn(getAiProviderStatus);
-  const { data: provider } = useQuery({
-    queryKey: ["ai", "provider-status"],
-    queryFn: () => providerFn(),
-    staleTime: 15_000,
-  });
-
-  const [search, setSearch] = useState("");
-  const [openId, setOpenId] = useState<string | null>(null);
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return ((stores as any[]) ?? []).filter((s) =>
-      !q || `${s.name} ${s.slug}`.toLowerCase().includes(q),
-    );
-  }, [stores, search]);
-
-  const t = (overview as any)?.totals ?? { requests: 0, tokens: 0, cost: 0, req7: 0, cost7: 0 };
-  const g = (overview as any)?.global ?? {};
+  const t = (overview as any)?.totals ?? { requests: 0, tokens: 0, cost: 0, cost7: 0 };
 
   return (
-    <div className="space-y-5 min-w-0">
+    <div className="mx-auto w-full max-w-4xl space-y-5 min-w-0">
       <div>
         <h1 className="text-2xl font-semibold">AI Control Center</h1>
-        <p className="text-sm text-muted-foreground">Manage OpenAI and Gemini per store · monitor platform-wide AI usage.</p>
+        <p className="text-sm text-muted-foreground">Connect any AI provider. Every AI agent on the platform uses these keys.</p>
       </div>
 
-      {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <Kpi icon={Activity} label="Requests (30d)" value={t.requests.toLocaleString()} />
         <Kpi icon={Cpu} label="Tokens (30d)" value={`${(t.tokens / 1000).toFixed(1)}k`} />
@@ -83,157 +45,7 @@ function AIControlCenter() {
         <Kpi icon={Sparkles} label="Enabled stores" value={`${(overview as any)?.enabledStores ?? 0}/${(overview as any)?.configuredStores ?? 0}`} />
       </div>
 
-      {/* Which key serves AI requests right now */}
-      <div className="rounded-xl border bg-card p-4 min-w-0">
-        <div className="mb-2 text-xs font-semibold text-muted-foreground">Active AI routing</div>
-        {provider ? (
-          <div className="space-y-1.5">
-            <div className="text-sm">
-              Model: <span className="font-mono">{(provider as any).model}</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {((provider as any).chain ?? []).map((c: any, i: number) => (
-                <span
-                  key={`${c.label}-${i}`}
-                  className={`rounded-full border px-2 py-0.5 text-xs ${
-                    i === 0 ? "border-primary text-primary" : "text-muted-foreground"
-                  }`}
-                >
-                  {i + 1}. {c.label}
-                </span>
-              ))}
-              {(((provider as any).chain ?? []).length === 0) && (
-                <span className="text-xs text-muted-foreground">No AI key configured.</span>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Requests try each key in order and fall back automatically; the platform AI is used last.
-            </p>
-          </div>
-        ) : (
-          <div className="text-xs text-muted-foreground">Loading…</div>
-        )}
-      </div>
-
-      {/* Sparkline + model breakdown */}
-      <div className="grid gap-3 lg:grid-cols-2">
-        <div className="rounded-xl border bg-card p-4 min-w-0">
-          <div className="mb-2 flex items-center justify-between text-xs">
-            <span className="font-semibold text-muted-foreground">Cost — last 7 days</span>
-            <span className="text-muted-foreground">${t.cost7.toFixed(2)}</span>
-          </div>
-          <Sparkline data={(overview as any)?.spark ?? []} />
-        </div>
-        <div className="rounded-xl border bg-card p-4 min-w-0">
-          <div className="mb-2 text-xs font-semibold text-muted-foreground">Top models (30d)</div>
-          <div className="space-y-1.5">
-            {((overview as any)?.byModel ?? []).slice(0, 5).map((m: any) => {
-              const pct = t.cost ? Math.min(100, Math.round((m.cost / t.cost) * 100)) : 0;
-              return (
-                <div key={m.model} className="min-w-0">
-                  <div className="flex items-center justify-between gap-2 text-xs">
-                    <span className="truncate font-mono">{m.model}</span>
-                    <span className="shrink-0 text-muted-foreground">${m.cost.toFixed(3)} · {m.requests}</span>
-                  </div>
-                  <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              );
-            })}
-            {(((overview as any)?.byModel ?? []).length === 0) && (
-              <div className="text-xs text-muted-foreground">No AI activity yet.</div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Platform provider settings */}
-      <PlatformSettings global={global} overview={overview} />
-
-      {/* Per-store list */}
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold">Stores</h2>
-          <div className="relative w-full sm:w-64">
-            <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search store…"
-              className="h-9 w-full rounded-md border bg-background pl-7 pr-3 text-sm"
-            />
-          </div>
-        </div>
-
-        {/* Mobile cards */}
-        <div className="grid gap-3 sm:hidden">
-          {filtered.map((s: any) => (
-            <StoreCard key={s.id} row={s} onEdit={() => setOpenId(s.id)} />
-          ))}
-          {filtered.length === 0 && (
-            <div className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">No stores.</div>
-          )}
-        </div>
-
-        {/* Desktop table */}
-        <div className="hidden overflow-x-auto rounded-xl border bg-card sm:block">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-muted/50 text-left text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="p-3">Store</th>
-                <th className="p-3">Enabled</th>
-                <th className="p-3">Provider</th>
-                <th className="p-3">Keys</th>
-                <th className="p-3 text-right">Usage 30d</th>
-                <th className="p-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((s: any) => (
-                <tr key={s.id} className="border-b last:border-0">
-                  <td className="p-3">
-                    <div className="font-medium">{s.name}</div>
-                    <div className="text-[11px] text-muted-foreground">/{s.slug}</div>
-                  </td>
-                  <td className="p-3">
-                    {s.config?.enabled === false ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><XCircle className="h-3 w-3" /> Off</span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-xs text-emerald-600"><CheckCircle2 className="h-3 w-3" /> On</span>
-                    )}
-                  </td>
-                  <td className="p-3 text-xs uppercase">{s.config?.provider ?? "platform"}</td>
-                  <td className="p-3">
-                    <div className="flex flex-wrap gap-1 text-[10px]">
-                      <KeyPill label="OpenAI" on={s.config?.has_openai} />
-                      <KeyPill label="Gemini" on={s.config?.has_gemini} />
-                    </div>
-                  </td>
-                  <td className="p-3 text-right text-xs">
-                    <div>{s.usage30d.requests} req</div>
-                    <div className="text-muted-foreground">${s.usage30d.cost.toFixed(3)}</div>
-                  </td>
-                  <td className="p-3 text-right">
-                    <Button size="sm" variant="outline" onClick={() => setOpenId(s.id)}>
-                      <Settings2 className="mr-1 h-3 w-3" /> Configure
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr><td colSpan={6} className="p-8 text-center text-sm text-muted-foreground">No stores.</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <StoreAiSheet
-        storeId={openId}
-        row={filtered.find((s: any) => s.id === openId) ?? null}
-        onClose={() => setOpenId(null)}
-      />
+      <ApiKeysManager />
     </div>
   );
 }
@@ -247,249 +59,17 @@ function Kpi({ icon: Icon, label, value }: any) {
   );
 }
 
-function KeyPill({ label, on }: { label: string; on?: boolean }) {
-  return (
-    <span className={`rounded-full border px-1.5 py-0.5 ${on ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "text-muted-foreground"}`}>
-      {label}{on ? " ✓" : ""}
-    </span>
-  );
+/** Keep provider-specific handling (fallback models, headers) when the URL is a known one. */
+function detectProvider(url: string): "gemini" | "groq" | "openrouter" | "openai" | "custom" {
+  const u = url.toLowerCase();
+  if (u.includes("generativelanguage.googleapis.com")) return "gemini";
+  if (u.includes("api.groq.com")) return "groq";
+  if (u.includes("openrouter.ai")) return "openrouter";
+  if (u.includes("api.openai.com")) return "openai";
+  return "custom";
 }
 
-function Sparkline({ data }: { data: { date: string; cost: number }[] }) {
-  const max = Math.max(0.001, ...data.map((d) => d.cost));
-  const w = 100, h = 40;
-  const pts = data.map((d, i) => `${(i / (data.length - 1 || 1)) * w},${h - (d.cost / max) * h}`).join(" ");
-  return (
-    <div>
-      <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="h-16 w-full">
-        <polyline fill="none" stroke="currentColor" strokeWidth="1.5" points={pts} className="text-primary" />
-      </svg>
-      <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-        {data.map((d) => <span key={d.date}>{d.date}</span>)}
-      </div>
-    </div>
-  );
-}
-
-function PlatformSettings({ global, overview }: { global: any; overview: any }) {
-  const qc = useQueryClient();
-  const saveBasic = useServerFn(updateAiGlobalSettings);
-  const saveKeys = useServerFn(updateGlobalAiKeys);
-  const [form, setForm] = useState({
-    enabled: true,
-    default_model: MODELS[0],
-    fallback_model: "",
-    temperature: 0.7,
-    max_tokens: 2048,
-    global_system_prompt: "",
-    safety_rules: "",
-    brand_voice: "",
-    supported_languages: "bn, en",
-  });
-  const [openai, setOpenai] = useState("");
-  const [gemini, setGemini] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (global)
-      setForm({
-        enabled: !!global.enabled,
-        default_model: global.default_model || MODELS[0],
-        fallback_model: global.fallback_model || "",
-        temperature: typeof global.temperature === "number" ? global.temperature : 0.7,
-        max_tokens: typeof global.max_tokens === "number" ? global.max_tokens : 2048,
-        global_system_prompt: global.global_system_prompt ?? "",
-        safety_rules: global.safety_rules ?? "",
-        brand_voice: global.brand_voice ?? "",
-        supported_languages: Array.isArray(global.supported_languages)
-          ? global.supported_languages.join(", ")
-          : "bn, en",
-      });
-  }, [global]);
-
-  const g = overview?.global ?? {};
-
-  async function submit() {
-    setSaving(true);
-    try {
-      const langs = form.supported_languages
-        .split(",")
-        .map((s) => s.trim().toLowerCase())
-        .filter(Boolean);
-      await saveBasic({
-        data: {
-          enabled: form.enabled,
-          default_model: form.default_model,
-          provider_api_key: null,
-          temperature: Number(form.temperature),
-          max_tokens: Number(form.max_tokens),
-          global_system_prompt: form.global_system_prompt,
-          safety_rules: form.safety_rules,
-          brand_voice: form.brand_voice,
-          supported_languages: langs,
-          fallback_model: form.fallback_model || null,
-        },
-      });
-      if (openai || gemini) {
-        await saveKeys({ data: { openai_api_key: openai || null, gemini_api_key: gemini || null } });
-        setOpenai(""); setGemini("");
-      }
-      qc.invalidateQueries({ queryKey: ["ai"] });
-      toast.success("Platform AI updated");
-    } catch (e) { toast.error((e as Error).message); }
-    finally { setSaving(false); }
-  }
-
-  async function clearKey(provider: "openai" | "gemini") {
-    if (!confirm(`Clear platform ${provider.toUpperCase()} key?`)) return;
-    await saveKeys({ data: provider === "openai" ? { clear_openai: true } : { clear_gemini: true } });
-    qc.invalidateQueries({ queryKey: ["ai"] });
-    toast.success("Cleared");
-  }
-
-  return (
-    <div className="rounded-xl border bg-card p-4 space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <h2 className="text-lg font-semibold">Platform defaults</h2>
-          <p className="text-xs text-muted-foreground">Applies to every store's AI agent (Messenger + web chat).</p>
-        </div>
-        <label className="flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Enabled</span>
-          <Switch checked={form.enabled} onCheckedChange={(v) => setForm({ ...form, enabled: v })} />
-        </label>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div>
-          <label className="text-xs font-medium text-muted-foreground">Default model</label>
-          <select value={form.default_model} onChange={(e) => setForm({ ...form, default_model: e.target.value })}
-            className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm">
-            {MODELS.map((m) => <option key={m} value={m}>{m}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="text-xs font-medium text-muted-foreground">
-            Fallback model <span className="opacity-60">(used on rate-limit / 5xx)</span>
-          </label>
-          <select
-            value={form.fallback_model}
-            onChange={(e) => setForm({ ...form, fallback_model: e.target.value })}
-            className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm"
-          >
-            <option value="">— none —</option>
-            {MODELS.filter((m) => m !== form.default_model).map((m) => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="text-xs font-medium text-muted-foreground">
-            Temperature <span className="opacity-60">({form.temperature.toFixed(2)})</span>
-          </label>
-          <input
-            type="range" min={0} max={2} step={0.05}
-            value={form.temperature}
-            onChange={(e) => setForm({ ...form, temperature: Number(e.target.value) })}
-            className="mt-2 w-full"
-          />
-        </div>
-        <div>
-          <label className="text-xs font-medium text-muted-foreground">Max output tokens</label>
-          <Input
-            type="number" min={64} max={32000}
-            value={form.max_tokens}
-            onChange={(e) => setForm({ ...form, max_tokens: Number(e.target.value) || 0 })}
-          />
-        </div>
-
-        <div className="sm:col-span-2">
-          <label className="text-xs font-medium text-muted-foreground">Supported languages (comma-separated)</label>
-          <Input
-            value={form.supported_languages}
-            onChange={(e) => setForm({ ...form, supported_languages: e.target.value })}
-            placeholder="bn, en"
-          />
-        </div>
-
-        <div className="sm:col-span-2">
-          <label className="text-xs font-medium text-muted-foreground">Global system prompt</label>
-          <textarea
-            value={form.global_system_prompt}
-            onChange={(e) => setForm({ ...form, global_system_prompt: e.target.value })}
-            rows={4}
-            placeholder="e.g. Always be concise. Always confirm the order total before finalizing."
-            className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
-          />
-        </div>
-        <div className="sm:col-span-2">
-          <label className="text-xs font-medium text-muted-foreground">Brand voice</label>
-          <textarea
-            value={form.brand_voice}
-            onChange={(e) => setForm({ ...form, brand_voice: e.target.value })}
-            rows={3}
-            placeholder="e.g. Warm, helpful, uses light Bangla humor when appropriate."
-            className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
-          />
-        </div>
-        <div className="sm:col-span-2">
-          <label className="text-xs font-medium text-muted-foreground">Safety & compliance rules</label>
-          <textarea
-            value={form.safety_rules}
-            onChange={(e) => setForm({ ...form, safety_rules: e.target.value })}
-            rows={3}
-            placeholder="e.g. Never share personal data. Never make medical or legal claims. Refuse abusive requests politely."
-            className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
-          />
-        </div>
-
-        <div className="sm:col-span-2 flex items-center text-xs text-muted-foreground">
-          {g.has_lovable_key ? "Lovable AI Gateway configured." : "Lovable AI Gateway auto-configured."}
-        </div>
-
-        <ProviderKeyField
-          icon={KeyRound}
-          label="OpenAI API key"
-          existing={g.openai_key_masked}
-          value={openai}
-          onChange={setOpenai}
-          onClear={() => clearKey("openai")}
-          placeholder="sk-…"
-        />
-        <div className="sm:col-span-2">
-          <GeminiKeysManager />
-        </div>
-
-      </div>
-
-      <div className="flex justify-end">
-        <Button onClick={submit} disabled={saving}>{saving ? "Saving…" : "Save platform settings"}</Button>
-      </div>
-    </div>
-  );
-}
-
-
-function ProviderKeyField({ icon: Icon, label, existing, value, onChange, onClear, placeholder }: any) {
-  return (
-    <div>
-      <label className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-        <Icon className="h-3 w-3" /> {label}
-        {existing && <span className="ml-2 text-emerald-600">({existing})</span>}
-      </label>
-      <div className="mt-1 flex gap-2">
-        <Input type="password" value={value} onChange={(e) => onChange(e.target.value)}
-          placeholder={existing ? "Leave blank to keep" : placeholder} />
-        {existing && (
-          <Button type="button" size="sm" variant="outline" onClick={onClear}>Clear</Button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function GeminiKeysManager() {
+function ApiKeysManager() {
   const listFn = useServerFn(listGlobalGeminiKeys);
   const addFn = useServerFn(addGlobalGeminiKey);
   const updFn = useServerFn(updateGlobalGeminiKey);
@@ -500,30 +80,71 @@ function GeminiKeysManager() {
 
   const { data } = useQuery({ queryKey: ["ai", "gemini-keys"], queryFn: () => listFn() as any });
   const keys: any[] = (data as any)?.keys ?? [];
-  const providers: any[] = (data as any)?.providers ?? [];
   const activeId = (data as any)?.active_id ?? null;
 
-  const [label, setLabel] = useState("");
-  const [value, setValue] = useState("");
-  const [provider, setProvider] = useState("gemini");
-  const [model, setModel] = useState("");
+  const [name, setName] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
+  const [model, setModel] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [vision, setVision] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [tested, setTested] = useState<Record<string, { ok: boolean; msg?: string }>>({});
 
-  const preset = providers.find((p) => p.id === provider);
-  const isCustom = provider === "custom";
-  const canAdd =
-    value.trim().length >= 10 &&
-    (!isCustom || (/^https?:\/\//i.test(baseUrl.trim()) && model.trim().length > 0));
+  const urlOk = /^https?:\/\/\S+$/i.test(baseUrl.trim());
+  const canConnect = name.trim().length > 0 && urlOk && model.trim().length > 0 && apiKey.trim().length >= 10;
 
-  async function run(id: string, fn: () => Promise<any>, ok: string) {
+  function refresh() {
+    qc.invalidateQueries({ queryKey: ["ai", "gemini-keys"] });
+    qc.invalidateQueries({ queryKey: ["ai", "provider-status"] });
+  }
+
+  async function run(id: string, fn: () => Promise<any>, ok?: string) {
     setBusy(id);
     try {
       await fn();
-      qc.invalidateQueries({ queryKey: ["ai", "gemini-keys"] });
-      qc.invalidateQueries({ queryKey: ["ai", "overview"] });
-      qc.invalidateQueries({ queryKey: ["ai", "provider-status"] });
-      toast.success(ok);
+      refresh();
+      if (ok) toast.success(ok);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function test(id: string) {
+    setBusy(id);
+    try {
+      const r: any = await testFn({ data: { id } });
+      const ok = !!r?.ok;
+      setTested((s) => ({ ...s, [id]: { ok, msg: ok ? undefined : r?.error ?? "Connection failed" } }));
+      ok ? toast.success("Connected successfully") : toast.error(r?.error ?? "Connection failed");
+    } catch (e) {
+      setTested((s) => ({ ...s, [id]: { ok: false, msg: (e as Error).message } }));
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(null);
+      refresh();
+    }
+  }
+
+  async function connect() {
+    setBusy("new");
+    try {
+      const url = baseUrl.trim().replace(/\/+$/, "");
+      const r: any = await addFn({
+        data: {
+          label: name.trim(),
+          key: apiKey.trim(),
+          provider: detectProvider(url),
+          base_url: url,
+          model: model.trim(),
+          vision,
+        },
+      });
+      setName(""); setBaseUrl(""); setModel(""); setApiKey(""); setVision(true);
+      refresh();
+      toast.success("API key added — testing connection…");
+      if (r?.id) await test(r.id);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -532,327 +153,132 @@ function GeminiKeysManager() {
   }
 
   return (
-    <div className="rounded-xl border bg-muted/20 p-3 min-w-0">
-      <div className="flex items-center gap-2">
-        <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-sm font-medium">AI provider keys ({keys.length})</span>
-      </div>
-      <p className="mt-1 text-[11px] text-muted-foreground">
-        Mix keys from Gemini, Groq, OpenRouter, OpenAI or any OpenAI-compatible provider. Keys are used one at a time,
-        in this order. If one stops working it is paused for the day and the next key takes over automatically. Every
-        day the rotation restarts from key 1.
-      </p>
-
-      <div className="mt-3 space-y-2">
-        {keys.length === 0 && <p className="text-xs text-muted-foreground">No API key added yet.</p>}
-        {keys.map((k, i) => (
-          <div key={k.id} className="overflow-hidden rounded-lg border bg-card p-2.5 min-w-0">
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                  <span className="truncate text-xs font-medium">{k.order}. {k.label}</span>
-                  <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
-                    {k.provider_name}
-                  </span>
-                  {k.id === activeId && (
-                    <span className="shrink-0 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-600">Active</span>
-                  )}
-                  {!k.enabled && <span className="shrink-0 text-[10px] text-muted-foreground">Disabled</span>}
-                  {k.failed_today && <span className="shrink-0 text-[10px] text-destructive">Paused today</span>}
-                  {!k.vision && <span className="shrink-0 text-[10px] text-muted-foreground">No image support</span>}
-                </div>
-                <div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">{k.masked}</div>
-                <div className="truncate font-mono text-[10px] text-muted-foreground">{k.effective_model}</div>
-                {k.last_error && <div className="mt-0.5 line-clamp-2 text-[10px] text-destructive">{k.last_error}</div>}
-              </div>
-              <Switch
-                checked={k.enabled}
-                disabled={busy === k.id}
-                onCheckedChange={(v) => run(k.id, () => updFn({ data: { id: k.id, enabled: v } }), v ? "Enabled" : "Disabled")}
-              />
-            </div>
-
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <Button size="sm" variant="ghost" className="h-8 w-8 shrink-0 px-0" disabled={i === 0 || busy === k.id}
-                onClick={() => run(k.id, () => moveFn({ data: { id: k.id, direction: "up" } }), "Order updated")}>
-                <ArrowUp className="h-3.5 w-3.5" />
-              </Button>
-              <Button size="sm" variant="ghost" className="h-8 w-8 shrink-0 px-0" disabled={i === keys.length - 1 || busy === k.id}
-                onClick={() => run(k.id, () => moveFn({ data: { id: k.id, direction: "down" } }), "Order updated")}>
-                <ArrowDown className="h-3.5 w-3.5" />
-              </Button>
-              <Button size="sm" variant="outline" className="h-8 flex-1" disabled={busy === k.id}
-                onClick={() =>
-                  run(k.id, async () => {
-                    const r: any = await testFn({ data: { id: k.id } });
-                    if (!r?.ok) throw new Error(r?.error ?? "Connection failed");
-                  }, "Key works")
-                }>
-                <Zap className="mr-1 h-3.5 w-3.5" /> Test
-              </Button>
-              <Button size="sm" variant="outline" className="h-8 shrink-0 px-2 text-[11px]" disabled={busy === k.id}
-                onClick={() => run(k.id, () => updFn({ data: { id: k.id, vision: !k.vision } }), "Image support updated")}>
-                {k.vision ? "Images on" : "Images off"}
-              </Button>
-              {k.failed_today && (
-                <Button size="sm" variant="outline" className="h-8 flex-1" disabled={busy === k.id}
-                  onClick={() => run(k.id, () => updFn({ data: { id: k.id, reset_failure: true } }), "Key resumed")}>
-                  <RotateCcw className="mr-1 h-3.5 w-3.5" /> Resume
-                </Button>
-              )}
-              <Button size="sm" variant="ghost" className="h-8 w-8 shrink-0 px-0 text-destructive" disabled={busy === k.id}
-                onClick={() => {
-                  if (confirm("Remove this API key?")) run(k.id, () => delFn({ data: { id: k.id } }), "Key removed");
-                }}>
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-3 space-y-2 rounded-lg border bg-card p-2.5">
-        <div className="flex flex-wrap gap-1.5">
-          {providers.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => { setProvider(p.id); setModel(""); setBaseUrl(""); }}
-              className={`rounded-full border px-2.5 py-1 text-[11px] ${
-                provider === p.id ? "border-primary bg-primary/10 text-primary" : "text-muted-foreground"
-              }`}
-            >
-              {p.name}
-            </button>
-          ))}
+    <div className="space-y-4">
+      {/* Add form */}
+      <div className="rounded-xl border bg-card p-4 min-w-0">
+        <div className="flex items-center gap-2">
+          <Plug className="h-4 w-4 text-primary" />
+          <h2 className="text-base font-semibold">Connect an AI API key</h2>
         </div>
-        {preset?.signupUrl && (
-          <a href={preset.signupUrl} target="_blank" rel="noreferrer" className="block text-[11px] text-primary underline">
-            Get a free {preset.name} key
-          </a>
-        )}
-        <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label (optional) — e.g. Main key" className="h-9" />
-        <Input type="password" value={value} onChange={(e) => setValue(e.target.value)} placeholder={preset?.keyHint ?? "API key"} className="h-9" />
-        {isCustom && (
-          <Input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="Base URL — https://…/v1" className="h-9" />
-        )}
-        <Input
-          value={model}
-          onChange={(e) => setModel(e.target.value)}
-          placeholder={isCustom ? "Model name (required)" : `Model (optional) — default ${preset?.model ?? ""}`}
-          className="h-9"
-        />
-        <Button
-          size="sm"
-          className="h-9 w-full"
-          disabled={!canAdd || busy === "new"}
-          onClick={() =>
-            run("new", async () => {
-              await addFn({
-                data: {
-                  key: value.trim(),
-                  provider: provider as any,
-                  label: label.trim() || undefined,
-                  model: model.trim() || undefined,
-                  base_url: baseUrl.trim() || undefined,
-                },
-              });
-              setValue("");
-              setLabel("");
-              setModel("");
-              setBaseUrl("");
-            }, "Key added")
-          }
-        >
-          <Plus className="mr-1 h-3.5 w-3.5" /> Add API key
+        <p className="mt-1 text-xs text-muted-foreground">
+          Works with any OpenAI-compatible API (Gemini, Groq, OpenRouter, OpenAI, DeepSeek, Mistral, Together and more).
+        </p>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <Field label="Display name">
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Groq main" maxLength={60} />
+          </Field>
+          <Field label="Model ID">
+            <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="e.g. llama-3.3-70b-versatile" />
+          </Field>
+          <Field label="API base URL" className="sm:col-span-2">
+            <Input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="e.g. https://api.groq.com/openai/v1" />
+          </Field>
+          <Field label="API key" className="sm:col-span-2">
+            <Input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="Paste your API key" autoComplete="off" />
+          </Field>
+        </div>
+
+        <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border bg-muted/30 px-3 py-2">
+          <div className="min-w-0">
+            <div className="text-sm font-medium">Model understands images</div>
+            <div className="text-[11px] text-muted-foreground">Turn off if this model can only read text.</div>
+          </div>
+          <Switch checked={vision} onCheckedChange={setVision} />
+        </div>
+
+        <Button className="mt-4 w-full" disabled={!canConnect || busy === "new"} onClick={connect}>
+          <Plug className="mr-1.5 h-4 w-4" /> {busy === "new" ? "Connecting…" : "Connect & test"}
         </Button>
       </div>
-    </div>
-  );
-}
 
-
-
-
-function StoreCard({ row, onEdit }: { row: any; onEdit: () => void }) {
-  return (
-    <div className="rounded-xl border bg-card p-3 min-w-0">
-      <div className="flex items-start justify-between gap-2 min-w-0">
-        <div className="min-w-0">
-          <div className="truncate font-medium">{row.name}</div>
-          <div className="truncate text-[11px] text-muted-foreground">/{row.slug}</div>
+      {/* Key list */}
+      <div className="rounded-xl border bg-card p-4 min-w-0">
+        <div className="flex items-center gap-2">
+          <KeyRound className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-base font-semibold">Connected keys ({keys.length})</h2>
         </div>
-        {row.config?.enabled === false
-          ? <span className="text-xs text-muted-foreground">Off</span>
-          : <span className="text-xs text-emerald-600">On</span>}
-      </div>
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
-        <span className="uppercase text-muted-foreground">{row.config?.provider ?? "platform"}</span>
-        <KeyPill label="OpenAI" on={row.config?.has_openai} />
-        <KeyPill label="Gemini" on={row.config?.has_gemini} />
-      </div>
-      <div className="mt-2 flex items-center justify-between text-[11px]">
-        <span className="text-muted-foreground">{row.usage30d.requests} req · ${row.usage30d.cost.toFixed(3)}</span>
-        <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]" onClick={onEdit}>Configure</Button>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Used top to bottom. If one fails, the next one takes over automatically.
+        </p>
+
+        <div className="mt-3 space-y-2">
+          {keys.length === 0 && (
+            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">No API key connected yet.</div>
+          )}
+          {keys.map((k, i) => {
+            const r = tested[k.id];
+            return (
+              <div key={k.id} className="rounded-lg border p-3 min-w-0">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="truncate text-sm font-medium">{k.order}. {k.label}</span>
+                      {k.id === activeId && k.enabled && (
+                        <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">In use</span>
+                      )}
+                      {!k.enabled && <span className="text-[10px] text-muted-foreground">Off</span>}
+                      {k.failed_today && <span className="text-[10px] text-destructive">Paused today</span>}
+                    </div>
+                    <div className="mt-1 grid gap-0.5 text-[11px] text-muted-foreground">
+                      <span className="truncate font-mono">Model: {k.effective_model}</span>
+                      <span className="truncate font-mono">Key: {k.masked}</span>
+                      <span>Images: {k.vision ? "yes" : "no"}</span>
+                    </div>
+                    {r?.ok && (
+                      <div className="mt-1 flex items-center gap-1 text-[11px] text-primary"><CheckCircle2 className="h-3 w-3" /> Connected</div>
+                    )}
+                    {(r && !r.ok ? r.msg : k.last_error) && (
+                      <div className="mt-1 flex items-start gap-1 text-[11px] text-destructive">
+                        <XCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                        <span className="line-clamp-2">{r && !r.ok ? r.msg : k.last_error}</span>
+                      </div>
+                    )}
+                  </div>
+                  <Switch
+                    checked={k.enabled}
+                    disabled={busy === k.id}
+                    onCheckedChange={(v) => run(k.id, () => updFn({ data: { id: k.id, enabled: v } }), v ? "Turned on" : "Turned off")}
+                  />
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                  <Button size="sm" variant="outline" className="h-8 flex-1" disabled={busy === k.id} onClick={() => test(k.id)}>
+                    <Zap className="mr-1 h-3.5 w-3.5" /> {busy === k.id ? "Testing…" : "Test"}
+                  </Button>
+                  {k.failed_today && (
+                    <Button size="sm" variant="outline" className="h-8" disabled={busy === k.id}
+                      onClick={() => run(k.id, () => updFn({ data: { id: k.id, reset_failure: true } }), "Key resumed")}>
+                      <RotateCcw className="mr-1 h-3.5 w-3.5" /> Resume
+                    </Button>
+                  )}
+                  <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Move up" disabled={i === 0 || busy === k.id}
+                    onClick={() => run(k.id, () => moveFn({ data: { id: k.id, direction: "up" } }))}>
+                    <ArrowUp className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Move down" disabled={i === keys.length - 1 || busy === k.id}
+                    onClick={() => run(k.id, () => moveFn({ data: { id: k.id, direction: "down" } }))}>
+                    <ArrowDown className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" aria-label="Remove" disabled={busy === k.id}
+                    onClick={() => { if (confirm("Remove this API key?")) run(k.id, () => delFn({ data: { id: k.id } }), "Key removed"); }}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
 }
 
-function StoreAiSheet({ storeId, row, onClose }: { storeId: string | null; row: any; onClose: () => void }) {
-  const qc = useQueryClient();
-  const save = useServerFn(upsertStoreAiConfig);
-  const [form, setForm] = useState({
-    enabled: true,
-    provider: "platform" as "platform" | "openai" | "gemini",
-    model: "",
-    monthly_token_limit: "" as string | number,
-    notes: "",
-  });
-  const [openai, setOpenai] = useState("");
-  const [gemini, setGemini] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!row) return;
-    const c = row.config;
-    setForm({
-      enabled: c?.enabled ?? true,
-      provider: (c?.provider as any) ?? "platform",
-      model: c?.model ?? "",
-      monthly_token_limit: c?.monthly_token_limit ?? "",
-      notes: c?.notes ?? "",
-    });
-    setOpenai(""); setGemini("");
-  }, [row?.id]);
-
-  async function submit() {
-    if (!storeId) return;
-    setSaving(true);
-    try {
-      const payload: any = {
-        storeId,
-        enabled: form.enabled,
-        provider: form.provider,
-        model: form.model || null,
-        monthly_token_limit: form.monthly_token_limit === "" ? null : Number(form.monthly_token_limit),
-        notes: form.notes || null,
-      };
-      if (openai) payload.openai_api_key = openai;
-      if (gemini) payload.gemini_api_key = gemini;
-      await save({ data: payload });
-      qc.invalidateQueries({ queryKey: ["ai"] });
-      toast.success("Store AI updated");
-      onClose();
-    } catch (e) { toast.error((e as Error).message); }
-    finally { setSaving(false); }
-  }
-
-  async function clearKey(provider: "openai" | "gemini") {
-    if (!storeId) return;
-    if (!confirm(`Clear ${provider.toUpperCase()} key for this store?`)) return;
-    await save({ data: provider === "openai" ? { storeId, clear_openai: true } : { storeId, clear_gemini: true } });
-    qc.invalidateQueries({ queryKey: ["ai"] });
-    toast.success("Cleared");
-  }
-
+function Field({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) {
   return (
-    <Sheet open={!!storeId} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle className="truncate">{row?.name ?? "Configure AI"}</SheetTitle>
-        </SheetHeader>
-        {row && (
-          <div className="mt-4 space-y-4 text-sm">
-            <div className="flex items-center justify-between rounded-lg border bg-card p-3">
-              <div>
-                <div className="font-medium">AI enabled</div>
-                <div className="text-xs text-muted-foreground">Turn off to disable AI for this store.</div>
-              </div>
-              <Switch checked={form.enabled} onCheckedChange={(v) => setForm({ ...form, enabled: v })} />
-            </div>
-
-            <div className="space-y-3 rounded-lg border bg-card p-3">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">Provider</label>
-                <select value={form.provider} onChange={(e) => setForm({ ...form, provider: e.target.value as any })}
-                  className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm">
-                  <option value="platform">Platform default (Lovable AI Gateway)</option>
-                  <option value="openai">OpenAI (this store's key)</option>
-                  <option value="gemini">Gemini (this store's key)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">Model override</label>
-                <select value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })}
-                  className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm">
-                  <option value="">Use platform default</option>
-                  {MODELS.map((m) => <option key={m} value={m}>{m}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">Monthly token limit</label>
-                <Input
-                  type="number" min={0}
-                  value={form.monthly_token_limit}
-                  onChange={(e) => setForm({ ...form, monthly_token_limit: e.target.value })}
-                  placeholder="0 = unlimited"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3 rounded-lg border bg-card p-3">
-              <div className="text-xs font-semibold text-muted-foreground">Provider keys (per-store)</div>
-              <ProviderKeyField
-                icon={KeyRound} label="OpenAI API key"
-                existing={row.config?.openai_key_masked}
-                value={openai} onChange={setOpenai}
-                onClear={() => clearKey("openai")} placeholder="sk-…"
-              />
-              <ProviderKeyField
-                icon={KeyRound} label="Gemini API key"
-                existing={row.config?.gemini_key_masked}
-                value={gemini} onChange={setGemini}
-                onClear={() => clearKey("gemini")} placeholder="AIza…"
-              />
-            </div>
-
-            <div className="rounded-lg border bg-card p-3">
-              <label className="text-xs font-medium text-muted-foreground">Notes</label>
-              <textarea
-                value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                className="mt-1 h-20 w-full rounded-md border bg-background p-2 text-sm"
-                placeholder="Internal notes…"
-              />
-            </div>
-
-            <div className="rounded-lg border bg-card p-3 text-xs">
-              <div className="mb-1 font-semibold text-muted-foreground">Usage (30d)</div>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <Cell label="Requests" value={row.usage30d.requests} />
-                <Cell label="Tokens" value={`${(row.usage30d.tokens / 1000).toFixed(1)}k`} />
-                <Cell label="Cost" value={`$${row.usage30d.cost.toFixed(3)}`} />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={onClose}>Cancel</Button>
-              <Button onClick={submit} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
-            </div>
-          </div>
-        )}
-      </SheetContent>
-    </Sheet>
-  );
-}
-
-function Cell({ label, value }: { label: string; value: any }) {
-  return (
-    <div className="rounded-md bg-muted p-2">
-      <div className="text-[10px] text-muted-foreground">{label}</div>
-      <div className="font-semibold">{value}</div>
+    <div className={`space-y-1.5 min-w-0 ${className ?? ""}`}>
+      <Label className="text-xs">{label}</Label>
+      {children}
     </div>
   );
 }
