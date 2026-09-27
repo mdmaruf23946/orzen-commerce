@@ -30,6 +30,8 @@ const ORDER_FIELD_BN: Record<string, string> = {
   note: "অতিরিক্ত নোট",
 };
 
+export const DEBOUNCE_MS = 2500;
+
 function admin() {
   return createClient<Database>(process.env["SUPABASE_URL"]!, process.env["SUPABASE_SERVICE_ROLE_KEY"]!, {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
@@ -348,6 +350,9 @@ export async function handleWhatsAppWebhook(request: Request) {
               message_id: mid,
               conversation_id: conv.id,
               event_payload: payload,
+              // Debounce plain text so a burst of messages gets one reply;
+              // buttons (Buy Now) and media stay instant.
+              available_at: new Date(Date.now() + (type === "text" ? DEBOUNCE_MS : 0)).toISOString(),
             },
             { onConflict: "phone_number_id,message_id", ignoreDuplicates: true },
           )
@@ -487,6 +492,19 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
 
   if (!text.trim() || (type !== "text" && type !== "quick_reply")) return { reply: null, skipped: "non-text" };
 
+  // Fast path: greetings, thanks and verified order-status lookups — no AI call.
+  try {
+    const { tryFastPath } = await import("@/lib/fast-path.server");
+    const fast = await tryFastPath(sb, { storeId, conversationId, text, customerPhone: waId });
+    if (fast) {
+      await sendAndLog(sb, phoneNumberId, token, waId, conversationId, fast.reply);
+      await (sb as any).from("whatsapp_jobs").update({ reply_text: fast.reply, route: `fast:${fast.kind}` }).eq("id", job.id);
+      return { reply: fast.reply };
+    }
+  } catch {
+    /* fall through to AI */
+  }
+
   try {
     const { store, agent, settings } = await loadAiContext(storeId);
     const useHistory = (integ as any).conversation_history !== false;
@@ -537,7 +555,7 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
     if (replyText) {
       await sendAndLog(sb, phoneNumberId, token, waId, conversationId, replyText);
       // Record at once so a later crash never re-sends this reply.
-      await (sb as any).from("whatsapp_jobs").update({ reply_text: replyText }).eq("id", job.id);
+      await (sb as any).from("whatsapp_jobs").update({ reply_text: replyText, route: "ai" }).eq("id", job.id);
     }
     await sb.from("whatsapp_integrations").update({ last_error: null } as any).eq("id", (integ as any).id);
     return { reply: replyText || null };
