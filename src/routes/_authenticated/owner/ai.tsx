@@ -191,14 +191,21 @@ function ApiKeysManager() {
 
   return (
     <div className="space-y-4">
-      {/* Add form */}
-      <div className="rounded-xl border bg-card p-4 min-w-0">
-        <div className="flex items-center gap-2">
-          <Plug className="h-4 w-4 text-primary" />
-          <h2 className="text-base font-semibold">Connect an AI API key</h2>
+      {/* Add / edit form */}
+      <div className={`rounded-xl border bg-card p-4 min-w-0 ${editing ? "ring-1 ring-primary/40" : ""}`}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Pencil className="h-4 w-4 text-primary" />
+            <h2 className="text-base font-semibold">{editing ? "Edit API key" : "Connect an AI API key"}</h2>
+          </div>
+          {editing && (
+            <Button size="sm" variant="ghost" onClick={cancelEdit} disabled={busy === "new"}>Cancel</Button>
+          )}
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          Works with any OpenAI-compatible API (Gemini, Groq, OpenRouter, OpenAI, DeepSeek, Mistral, Together and more).
+          {editing
+            ? "Leave the API key field empty to keep the current key."
+            : "Works with any OpenAI-compatible API (Gemini, Groq, OpenRouter, OpenAI, DeepSeek, Mistral, Together and more)."}
         </p>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
