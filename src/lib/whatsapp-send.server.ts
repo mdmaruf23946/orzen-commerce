@@ -6,14 +6,19 @@ const GRAPH = "https://graph.facebook.com/v20.0";
 export type WaSendResult = { message_id?: string };
 
 export function normalizeWaNumber(raw: string) {
-  return String(raw ?? "").replace(/[^\d]/g, "");
+  let d = String(raw ?? "").replace(/[^\d]/g, "");
+  if (d.startsWith("00")) d = d.slice(2);
+  // Bangladesh local format 01XXXXXXXXX → 8801XXXXXXXXX
+  if (/^01\d{9}$/.test(d)) d = `88${d}`;
+  return d;
 }
 
 /** Turns a raw Graph error into a short, admin-safe message. */
 export function friendlyWaError(raw: string) {
   const s = String(raw ?? "");
-  if (/190|access token|expired|OAuthException/i.test(s)) return "Access token is invalid or expired. Reconnect WhatsApp.";
+  if (/131030|allowed list/i.test(s)) return "This number is not in your Meta test recipient list. Add it in Meta → WhatsApp → API Setup → To, then try again.";
   if (/131047|24 hour|re-?engagement/i.test(s)) return "The 24-hour messaging window is closed. Send an approved template instead.";
+  if (/\b190\b|access token|expired/i.test(s)) return "Access token is invalid or expired. Reconnect WhatsApp.";
   if (/131026|not.*whatsapp/i.test(s)) return "This number is not reachable on WhatsApp.";
   if (/80007|rate limit|too many/i.test(s)) return "WhatsApp rate limit reached. Try again shortly.";
   if (/132000|132001|template/i.test(s)) return "Template problem: the template name/language is missing or not approved.";

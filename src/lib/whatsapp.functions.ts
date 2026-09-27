@@ -178,6 +178,14 @@ export const connectWhatsapp = createServerFn({ method: "POST" })
       patch["connected_at"] = new Date().toISOString();
       patch["last_verified_at"] = new Date().toISOString();
       patch["delivery_failures"] = 0;
+      // Subscribe our app to the WABA so incoming messages reach the webhook.
+      const waba = data.waba_id || row?.waba_id;
+      if (waba) {
+        await fetch(`https://graph.facebook.com/v20.0/${encodeURIComponent(waba)}/subscribed_apps`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${token}` },
+        }).catch(() => null);
+      }
     } catch (e) {
       patch["status"] = "error";
       patch["last_error"] = friendlyWaError((e as Error).message);
