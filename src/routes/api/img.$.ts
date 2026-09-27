@@ -82,6 +82,40 @@ async function fetchWithServiceRole(path: string): Promise<Blob | null> {
   }
 }
 
+const ALLOWED_WIDTHS = [160, 320, 480, 640, 960, 1280, 1920];
+
+/** Resized + re-encoded (WebP when accepted) copy via the storage render endpoint. */
+async function fetchResized(path: string, width: number, accept: string): Promise<Response | null> {
+  const url = process.env["SUPABASE_URL"] ?? process.env["VITE_SUPABASE_URL"];
+  const key =
+    process.env["SUPABASE_SERVICE_ROLE_KEY"] ??
+    process.env["SUPABASE_PUBLISHABLE_KEY"] ??
+    process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
+  if (!url || !key) return null;
+  try {
+    const res = await fetch(
+      `${url.replace(/\/$/, "")}/storage/v1/render/image/authenticated/store-assets/${path
+        .split("/")
+        .map(encodeURIComponent)
+        .join("/")}?width=${width}&quality=72&resize=contain`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: accept } },
+    );
+    if (!res.ok) return null;
+    const type = res.headers.get("content-type") || "";
+    if (!type.startsWith("image/")) return null;
+    return new Response(await res.arrayBuffer(), {
+      headers: {
+        ...BASE_HEADERS,
+        "cache-control": "public, max-age=31536000, immutable",
+        vary: "accept",
+        "content-type": type,
+      },
+    });
+  } catch {
+    return null;
+  }
+}
+
 export const Route = createFileRoute("/api/img/$")({
   server: {
     handlers: {
@@ -96,8 +130,10 @@ export const Route = createFileRoute("/api/img/$")({
           },
         }),
 
-      GET: async ({ params }) => {
+      GET: async ({ params, request }) => {
         const path = params._splat ?? "";
+        const reqUrl = new URL(request.url);
+        const wRaw = Number(reqUrl.searchParams.get("w") || 0);
         if (!path || path.includes("..") || path.includes("\\") || path.startsWith("/")) {
           return new Response("Bad path", { status: 400 });
         }
@@ -110,6 +146,12 @@ export const Route = createFileRoute("/api/img/$")({
         const ext = (segments[segments.length - 1] ?? "").split(".").pop()?.toLowerCase() ?? "";
         if (!IMAGE_EXT.has(ext)) {
           return new Response("Forbidden", { status: 403 });
+        }
+
+        if (wRaw > 0 && ext !== "svg" && ext !== "gif" && ext !== "ico") {
+          const width = ALLOWED_WIDTHS.find((w) => w >= wRaw) ?? 1920;
+          const resized = await fetchResized(path, width, request.headers.get("accept") || "image/webp");
+          if (resized) return resized;
         }
 
         const data = (await fetchWithServiceRole(path)) ?? (await fetchWithPublishableKey(path));
