@@ -1329,10 +1329,16 @@ async function fastImageLookup(
   imageUrl: string,
   pageToken: string,
   messageId: string,
-): Promise<{ analysis: ImageAnalysis | null; match: VisualMatch | null; candidateIds: string[] }> {
+): Promise<{
+  analysis: ImageAnalysis | null;
+  match: VisualMatch | null;
+  candidateIds: string[];
+  photo: { bytes: Uint8Array; type: string } | null;
+}> {
   // Memorised photo fingerprints: a catalogue photo sent back by a customer is
   // recognised in milliseconds with no AI call. Anything uncertain falls
   // through to the AI inspection below, with the closest products pinned.
+  let photo: { bytes: Uint8Array; type: string } | null = null;
   try {
     const { fingerprintImage, FINGERPRINT_MATCH_MAX, FINGERPRINT_MIN_MARGIN, FINGERPRINT_CANDIDATE_MAX } =
       await import("@/lib/photo-fingerprint.server");
@@ -1340,16 +1346,17 @@ async function fastImageLookup(
       getStoreMemory(sb as any, storeId),
       downloadMessengerImage(imageUrl, pageToken, messageId),
     ]);
-    if (!memory.fingerprints.size) return { analysis: null, match: null, candidateIds: [] };
+    photo = download;
+    if (!memory.fingerprints.size) return { analysis: null, match: null, candidateIds: [], photo };
     const print = fingerprintImage(download.bytes);
-    if (!print) return { analysis: null, match: null, candidateIds: [] };
+    if (!print) return { analysis: null, match: null, candidateIds: [], photo };
     const ranked = recallByFingerprint(memory, print, 8);
     const top = ranked[0];
     const margin = top ? (ranked[1]?.distance ?? 128) - top.distance : 0;
     const candidateIds = ranked.filter((r) => r.distance <= FINGERPRINT_CANDIDATE_MAX).map((r) => r.product.id);
     console.log(`[messenger] photo fingerprint store=${storeId} best=${top?.distance ?? "-"} margin=${margin}`);
     if (!top || top.distance > FINGERPRINT_MATCH_MAX || margin < FINGERPRINT_MIN_MARGIN) {
-      return { analysis: null, match: null, candidateIds };
+      return { analysis: null, match: null, candidateIds, photo };
     }
     const product = top.product as any;
     const hit = { similarity: 1 - top.distance / 128 };
