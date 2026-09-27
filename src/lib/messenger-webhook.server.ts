@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { buildSystemPrompt, generateAgentReply, loadAiContext, resolveFocusProduct } from "@/lib/ai-agent.server";
 import { routedChatCompletion, routedVisionText } from "@/lib/ai-provider.server";
-import { getStoreMemory, recallByText, recallForImage, recallByFingerprint } from "@/lib/catalog-memory.server";
+import { getStoreMemory, recallByText, recallByFingerprint } from "@/lib/catalog-memory.server";
 import {
   sendProductCard,
   sendProductCarousel,
@@ -979,13 +979,16 @@ async function describeImageAttachment(
   url: string,
   pageToken: string,
   messageId: string,
+  prepared?: { bytes: Uint8Array; type: string } | null,
 ): Promise<ImageAnalysis> {
   // Runs on the platform owner's own provider keys (Winner Admin → AI).
   try {
     // The model provider cannot fetch Facebook's signed CDN links itself
     // (it returns "Cannot fetch content from the provided URL"), so the bytes
-    // are downloaded here and sent inline as a data URL.
-    const { bytes, type } = await downloadMessengerImage(url, pageToken, messageId);
+    // are downloaded here and sent inline as a data URL. The fingerprint step
+    // already downloaded the photo, so its bytes are reused instead of pulling
+    // the same image from Facebook a second time.
+    const { bytes, type } = prepared ?? await downloadMessengerImage(url, pageToken, messageId);
     let binary = "";
     for (let i = 0; i < bytes.length; i += 0x8000) {
       binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
@@ -1207,14 +1210,21 @@ async function visuallyMatchProduct(
   // already free of blacklisted / out-of-stock / imageless products.
   const memory = await getStoreMemory(sb as any, storeId);
   const categoryNames = memory.categoryNames;
-  const recalled = recallForImage(memory, {
-    type: analysis.product_type,
-    subtype: analysis.product_subtype,
-    category: analysis.category,
-    brand: analysis.brand,
-    keywords: [...analysis.keywords, ...analysis.functions, ...analysis.connectors],
-    text: analysis.visible_text,
-  }, 12) as unknown as ProductRow[];
+  // Speed: only products the memory genuinely associates with this photo are
+  // worth a vision comparison. The older helper padded the list with best
+  // sellers whenever the words matched nothing, so a product the shop does not
+  // stock still triggered a full four-photo comparison (~40s) before answering
+  // "not available". Unrelated photos now skip the comparison entirely.
+  const recalled = recallByText(memory, [
+    analysis.product_type,
+    analysis.product_subtype,
+    analysis.category,
+    analysis.brand,
+    ...analysis.keywords,
+    ...analysis.functions,
+    ...analysis.connectors,
+    ...analysis.visible_text,
+  ].filter(Boolean).join(" "), 6) as unknown as ProductRow[];
   const pinned = imageCandidateIds
     .map((id) => memory.byId.get(id)?.product as unknown as ProductRow | undefined)
     .filter((product): product is ProductRow => Boolean(product));
@@ -1254,7 +1264,7 @@ async function visuallyMatchProduct(
     // plausibly win. Sending eight products × two photos meant downloading and
     // inlining sixteen full-size images per customer photo, which is what made
     // a found product slower to answer than a missing one.
-    const batch = candidates.slice(0, 4);
+    const batch = candidates.slice(0, 3);
     const content: any[] = [{
       type: "input_text",
       text: "CUSTOMER_IMAGE is first. Decide if any candidate photo shows the same sale product/model. Answer FAST and SHORT. " +
@@ -1319,10 +1329,16 @@ async function fastImageLookup(
   imageUrl: string,
   pageToken: string,
   messageId: string,
-): Promise<{ analysis: ImageAnalysis | null; match: VisualMatch | null; candidateIds: string[] }> {
+): Promise<{
+  analysis: ImageAnalysis | null;
+  match: VisualMatch | null;
+  candidateIds: string[];
+  photo: { bytes: Uint8Array; type: string } | null;
+}> {
   // Memorised photo fingerprints: a catalogue photo sent back by a customer is
   // recognised in milliseconds with no AI call. Anything uncertain falls
   // through to the AI inspection below, with the closest products pinned.
+  let photo: { bytes: Uint8Array; type: string } | null = null;
   try {
     const { fingerprintImage, FINGERPRINT_MATCH_MAX, FINGERPRINT_MIN_MARGIN, FINGERPRINT_CANDIDATE_MAX } =
       await import("@/lib/photo-fingerprint.server");
@@ -1330,16 +1346,17 @@ async function fastImageLookup(
       getStoreMemory(sb as any, storeId),
       downloadMessengerImage(imageUrl, pageToken, messageId),
     ]);
-    if (!memory.fingerprints.size) return { analysis: null, match: null, candidateIds: [] };
+    photo = download;
+    if (!memory.fingerprints.size) return { analysis: null, match: null, candidateIds: [], photo };
     const print = fingerprintImage(download.bytes);
-    if (!print) return { analysis: null, match: null, candidateIds: [] };
+    if (!print) return { analysis: null, match: null, candidateIds: [], photo };
     const ranked = recallByFingerprint(memory, print, 8);
     const top = ranked[0];
     const margin = top ? (ranked[1]?.distance ?? 128) - top.distance : 0;
     const candidateIds = ranked.filter((r) => r.distance <= FINGERPRINT_CANDIDATE_MAX).map((r) => r.product.id);
     console.log(`[messenger] photo fingerprint store=${storeId} best=${top?.distance ?? "-"} margin=${margin}`);
     if (!top || top.distance > FINGERPRINT_MATCH_MAX || margin < FINGERPRINT_MIN_MARGIN) {
-      return { analysis: null, match: null, candidateIds };
+      return { analysis: null, match: null, candidateIds, photo };
     }
     const product = top.product as any;
     const hit = { similarity: 1 - top.distance / 128 };
@@ -1385,10 +1402,11 @@ async function fastImageLookup(
         evidence: ["fast_image_fingerprint"],
       },
       candidateIds,
+      photo,
     };
   } catch {
     // Any index problem falls back to description plus the preloaded text index.
-    return { analysis: null, match: null, candidateIds: [] };
+    return { analysis: null, match: null, candidateIds: [], photo };
   }
 }
 
@@ -1436,33 +1454,34 @@ async function sendVisualProductResult(opts: {
           `আহা, এই ${noun}টা এই মুহূর্তে আমাদের দোকানে নেই, দুঃখিত! আপনার পছন্দের অন্য কিছু থাকলে জানান, খুঁজে দিচ্ছি।`,
         ]);
     const sent = await fbSend(token, psid, text);
-    await markQueuedReply(sb, queuedJobId, text, sent.message_id);
-    await sb.from("ai_messages").insert({
-      conversation_id: conversationId, role: "assistant", direction: "out", message_type: "text",
-      content: text, attachments: [{
-        in_reply_to_mid: sourceMid,
-        recognition_status: analysis.recognition_status,
-        recognition_confidence: analysis.confidence,
-        visibility_warnings: analysis.visibility_warnings,
-        visual_match_verdict: match?.verdict ?? "none",
-        visual_match_confidence: match?.confidence ?? 0,
-        visual_match_reason: match?.reason ?? null,
-      }],
-      mid: sent.message_id ?? null, delivery_status: "sent",
-    } as any);
+    await Promise.all([
+      markQueuedReply(sb, queuedJobId, text, sent.message_id),
+      sb.from("ai_messages").insert({
+        conversation_id: conversationId, role: "assistant", direction: "out", message_type: "text",
+        content: text, attachments: [{
+          in_reply_to_mid: sourceMid,
+          recognition_status: analysis.recognition_status,
+          recognition_confidence: analysis.confidence,
+          visibility_warnings: analysis.visibility_warnings,
+          visual_match_verdict: match?.verdict ?? "none",
+          visual_match_confidence: match?.confidence ?? 0,
+          visual_match_reason: match?.reason ?? null,
+        }],
+        mid: sent.message_id ?? null, delivery_status: "sent",
+      } as any),
+    ]);
     return;
   }
 
-  await logProductRecommendations(sb, storeId, conversationId, [match.product], `image:${sourceMid ?? "unknown"}`);
-  const card = await productCardInput(storeSlug, match.product, storeId, psid);
+  // Speed: the customer only waits for the card itself. Building the card and
+  // logging the recommendation happen together, and the follow-up line plus the
+  // two conversation records are written while the card is already on its way.
+  const [card] = await Promise.all([
+    productCardInput(storeSlug, match.product, storeId, psid),
+    logProductRecommendations(sb, storeId, conversationId, [match.product], `image:${sourceMid ?? "unknown"}`)
+      .catch(() => undefined),
+  ]);
   const cardSent = await sendProductCard(token, psid, card);
-  await markQueuedReply(sb, queuedJobId, `[card] ${card.title}`, cardSent.message_id);
-  await sb.from("ai_messages").insert({
-    conversation_id: conversationId, role: "assistant", direction: "out", message_type: "product_card",
-    content: `[card] ${card.title}`,
-    attachments: [{ type: "product_card", product_id: match.product.id, element: card, in_reply_to_mid: sourceMid }],
-    mid: cardSent.message_id ?? null, delivery_status: "sent",
-  } as any);
   const askList = [
     "জি, এটা আমাদের কাছে আছে 😊 নিতে চাইলে বলুন, অর্ডার করে দিচ্ছি।",
     "পেয়ে গেছি! এটাই তো আমাদের এই প্রোডাক্টটা। নিবেন?",
@@ -1471,14 +1490,24 @@ async function sendVisualProductResult(opts: {
   const text = askList[Math.floor(Math.random() * askList.length)];
   // Ordering happens through the card's own "Buy Now" postback button, so no
   // separate quick reply is attached below the message.
-  const sent = await fbSend(token, psid, text);
-  await markQueuedReply(sb, queuedJobId, text, sent.message_id);
-  await sb.from("ai_messages").insert({
-    conversation_id: conversationId, role: "assistant", direction: "out", message_type: "text",
-    content: text,
-    attachments: [{ in_reply_to_mid: sourceMid, product_id: match.product.id, visual_match_confidence: match.confidence, match_verdict: match.verdict }],
-    mid: sent.message_id ?? null, delivery_status: "sent",
-  } as any);
+  const [sent] = await Promise.all([
+    fbSend(token, psid, text),
+    sb.from("ai_messages").insert({
+      conversation_id: conversationId, role: "assistant", direction: "out", message_type: "product_card",
+      content: `[card] ${card.title}`,
+      attachments: [{ type: "product_card", product_id: match.product.id, element: card, in_reply_to_mid: sourceMid }],
+      mid: cardSent.message_id ?? null, delivery_status: "sent",
+    } as any),
+  ]);
+  await Promise.all([
+    markQueuedReply(sb, queuedJobId, text, sent.message_id),
+    sb.from("ai_messages").insert({
+      conversation_id: conversationId, role: "assistant", direction: "out", message_type: "text",
+      content: text,
+      attachments: [{ in_reply_to_mid: sourceMid, product_id: match.product.id, visual_match_confidence: match.confidence, match_verdict: match.verdict }],
+      mid: sent.message_id ?? null, delivery_status: "sent",
+    } as any),
+  ]);
 }
 
 
@@ -2257,7 +2286,8 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                 // store's own products answers in ~1s; anything uncertain falls
                 // through to the full AI inspection below.
                 const fast = await fastImageLookup(sb, integ.store_id, imageUrl, token, String(msg.mid ?? ""));
-                const seen = fast.analysis ?? await describeImageAttachment(imageUrl, token, String(msg.mid ?? ""));
+                const seen = fast.analysis
+                  ?? await describeImageAttachment(imageUrl, token, String(msg.mid ?? ""), fast.photo);
                 {
                   imageAnalysis = seen;
                   imageMatch = fast.match ?? (seen.is_product
