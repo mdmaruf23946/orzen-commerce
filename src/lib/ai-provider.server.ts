@@ -610,7 +610,7 @@ export async function routedTranscribeAudio(bytes: Uint8Array, mime: string): Pr
       } else if (k.provider === "groq" || k.provider === "openai") {
         const base = k.provider === "groq" ? "https://api.groq.com/openai/v1" : "https://api.openai.com/v1";
         const form = new FormData();
-        form.append("file", new Blob([bytes], { type: audioMime }), "voice.m4a");
+        form.append("file", new Blob([new Uint8Array(bytes)], { type: audioMime }), "voice.m4a");
         form.append("model", k.provider === "groq" ? "whisper-large-v3-turbo" : "whisper-1");
         const res = await fetch(`${base}/audio/transcriptions`, {
           method: "POST",
