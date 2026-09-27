@@ -128,8 +128,10 @@ export const Route = createFileRoute("/api/public/whatsapp/process")({
             .order("created_at", { ascending: true })
             .limit(1)
             .maybeSingle();
-          if (!next) break;
-          job = await claimWhenDue(sb, next.id, next.wake_token);
+          // Hand the next message to a fresh worker (own request budget)
+          // instead of draining here, which ran out of budget on long bursts.
+          if (next) await sb.rpc("kick_whatsapp_job", { _job_id: next.id });
+          break;
         }
         return new Response("ok");
       },
