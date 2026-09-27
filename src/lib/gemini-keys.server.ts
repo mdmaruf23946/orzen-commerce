@@ -101,6 +101,8 @@ export function providerPreset(p: string | null | undefined): ProviderPreset {
 export function guessProviderFromKey(key: string): KeyProvider {
   const k = key.trim();
   if (/^AIza[\w-]{20,}$/.test(k)) return "gemini";
+  // Newer Google AI Studio keys look like "AQ.Ab8R...".
+  if (/^AQ\.[\w.-]{20,}$/.test(k)) return "gemini";
   if (/^gsk_[\w-]{20,}$/.test(k)) return "groq";
   if (/^sk-or-[\w-]{10,}$/.test(k)) return "openrouter";
   if (/^sk-[\w-]{20,}$/.test(k)) return "openai";
