@@ -685,6 +685,10 @@ function parseOrderDetailsTextEx(text: string, ctx: ParseCtx = {}) {
   if (!full_address && addressMatch?.[1]) full_address = addressOk(addressMatch[1], true);
 
   const used = new Set<string>();
+  // Labelled lines are already handled; never feed them to the AI step.
+  for (const line of cleanedLines) {
+    if (/^(?:name|নাম|address|ঠিকানা|এড্রেস)\s*(?:হলো|হল|is)?\s*[:：-]/i.test(line)) used.add(line);
+  }
   if (!customer_name && mayTakeName) {
     const firstNameLike = cleanedLines.find((line) => !!nameOk(line));
     if (firstNameLike) {
@@ -982,6 +986,11 @@ async function maybeBlockDuplicateMessengerOrder(opts: {
   return true;
 }
 
+function isChitchatOrProductTalk(text: string) {
+  const c = checkPersonName(text);
+  return !c.ok && (c.reason === "chitchat" || c.reason === "product_talk");
+}
+
 const FIELD_ASK_BN: Record<string, string> = {
   customer_name: "নাম",
   full_address: "সম্পূর্ণ ঠিকানা",
@@ -1060,7 +1069,7 @@ async function maybeApplyPendingOrderText(opts: {
     !isOrderIntent(leftover) &&
     !isSmallTalkIntent(leftover) &&
     !isProductIntent(leftover) &&
-    !(checkPersonName(leftover) as any).reason?.match?.(/chitchat|product_talk/);
+    !isChitchatOrProductTalk(leftover);
   if (canUnderstand) {
     const { understandOrderReply } = await import("./order-understand.server");
     const u = await traceTime("understand", () => understandOrderReply(leftover, stillMissing));
