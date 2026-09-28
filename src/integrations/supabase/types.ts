@@ -6093,30 +6093,36 @@ export type Database = {
       product_image_embeddings: {
         Row: {
           created_at: string
+          embedded_url: string | null
           embedding: string | null
           image_url: string
           last_error: string | null
           model: string
+          phash: string | null
           product_id: string
           store_id: string
           updated_at: string
         }
         Insert: {
           created_at?: string
+          embedded_url?: string | null
           embedding?: string | null
           image_url: string
           last_error?: string | null
           model?: string
+          phash?: string | null
           product_id: string
           store_id: string
           updated_at?: string
         }
         Update: {
           created_at?: string
+          embedded_url?: string | null
           embedding?: string | null
           image_url?: string
           last_error?: string | null
           model?: string
+          phash?: string | null
           product_id?: string
           store_id?: string
           updated_at?: string
