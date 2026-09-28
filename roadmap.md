@@ -27,4 +27,4 @@
 - [x] Collapse "? ?" in replies
 - [x] Order Details total shows delivery twice
 - [x] Keep failed-attempt errors to diagnose slow replies
-- [ ] Test, deploy, parity
+- [x] Test (5/5 live test-mode), deploy e6d5aec7, parity passed
