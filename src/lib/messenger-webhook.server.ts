@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { buildSystemPrompt, generateAgentReply, loadAiContext, resolveFocusProduct } from "@/lib/ai-agent.server";
 import { routedChatCompletion, routedTranscribeAudio, routedVisionText } from "@/lib/ai-provider.server";
-import { getStoreMemory, recallByText, recallByFingerprint } from "@/lib/catalog-memory.server";
+import { getStoreMemory, recallByText } from "@/lib/catalog-memory.server";
 import {
   sendProductCard,
   sendProductCarousel,
@@ -1326,28 +1326,18 @@ async function fastImageLookup(
   // through to the AI inspection below, with the closest products pinned.
   let photo: { bytes: Uint8Array; type: string } | null = null;
   try {
-    const { fingerprintImage, FINGERPRINT_MATCH_MAX, FINGERPRINT_MIN_MARGIN, FINGERPRINT_CANDIDATE_MAX } =
-      await import("@/lib/photo-fingerprint.server");
-    const [memory, download] = await Promise.all([
-      getStoreMemory(sb as any, storeId),
-      downloadMessengerImage(imageUrl, pageToken, messageId),
-    ]);
+    const download = await downloadMessengerImage(imageUrl, pageToken, messageId);
     photo = download;
-    if (!memory.fingerprints.size) return { analysis: null, match: null, candidateIds: [], photo };
-    const print = fingerprintImage(download.bytes);
-    if (!print) return { analysis: null, match: null, candidateIds: [], photo };
-    const ranked = recallByFingerprint(memory, print, 8);
-    const top = ranked[0];
-    const margin = top ? (ranked[1]?.distance ?? 128) - top.distance : 0;
-    const candidateIds = ranked.filter((r) => r.distance <= FINGERPRINT_CANDIDATE_MAX).map((r) => r.product.id);
-    console.log(`[messenger] photo fingerprint store=${storeId} best=${top?.distance ?? "-"} margin=${margin}`);
-    if (!top || top.distance > FINGERPRINT_MATCH_MAX || margin < FINGERPRINT_MIN_MARGIN) {
-      return { analysis: null, match: null, candidateIds, photo };
-    }
-    const product = top.product as any;
-    const hit = { similarity: 1 - top.distance / 128 };
+    const { findProductByPhoto } = await import("@/lib/photo-match.server");
+    const found = await findProductByPhoto(sb, storeId, download.bytes, download.type || "image/jpeg");
+    const candidateIds = found.candidateIds;
+    console.log(`[messenger] photo match store=${storeId} method=${found.method ?? "none"} score=${found.score.toFixed(3)} ms=${found.ms}`);
+    if (!found.product) return { analysis: null, match: null, candidateIds, photo };
+    const product = found.product as any;
+    const top = { distance: Math.round((1 - found.score) * 128) };
+    const margin = found.margin;
     const row = { ...product, id: product.id } as ProductRow;
-    const confidence = Math.min(0.99, Math.round(hit.similarity * 100) / 100);
+    const confidence = Math.min(0.99, Math.round(found.score * 100) / 100);
     const analysis: ImageAnalysis = {
       description: row.name,
       keywords: [row.name],
@@ -1384,8 +1374,8 @@ async function fastImageLookup(
         product: row,
         confidence,
         verdict: "exact",
-        reason: `Memorised photo match (distance ${top.distance}, margin ${margin})`,
-        evidence: ["fast_image_fingerprint"],
+        reason: `Photo match via ${found.method} (score ${found.score.toFixed(3)}, margin ${margin.toFixed(3)}, ${found.ms}ms)`,
+        evidence: [found.method === "vector" ? "fast_image_vector" : "fast_image_fingerprint"],
       },
       candidateIds,
       photo,
