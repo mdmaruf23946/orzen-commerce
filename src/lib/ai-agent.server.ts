@@ -2122,7 +2122,8 @@ export async function getModelForStore(opts?: { fast?: boolean; modelOverride?: 
 function generationParams(settings: GlobalAiSettings | null | undefined, modelId?: string) {
   const params: { temperature?: number; maxOutputTokens?: number } = {};
   const t = settings?.temperature;
-  if (typeof t === "number" && Number.isFinite(t)) params.temperature = Math.max(0, Math.min(2, t));
+  // Sales replies must stay factual: cap creativity at 1.0 (values >1 caused slow, rambling output).
+  if (typeof t === "number" && Number.isFinite(t)) params.temperature = Math.max(0, Math.min(1, t));
   const m = settings?.max_tokens;
   // Skip maxOutputTokens for OpenAI models — newer models (o1/gpt-5 family) reject
   // `max_tokens` and require `max_completion_tokens`, which the AI SDK doesn't emit here.
@@ -2188,6 +2189,24 @@ function isTransientGatewayError(err: unknown) {
   return /\b(429|rate.?limit|timeout|overload|5\d\d)\b/i.test(String(msg));
 }
 
+/** Phase 2 tool diet: drop rarely-needed tools unless the latest message asks for them. */
+function toolsForTurn(ctx: AgentContext, messages: any[]) {
+  const all = buildTools(ctx) as Record<string, any>;
+  const last = [...messages].reverse().find((m) => m?.role === "user");
+  const text =
+    typeof last?.content === "string"
+      ? last.content
+      : Array.isArray(last?.content)
+        ? last.content.map((p: any) => (p?.type === "text" ? p.text : "")).join(" ")
+        : "";
+  const drop: string[] = [];
+  if (!/compare|তুলনা|vs|পার্থক্য|difference|কোনটা ভালো/i.test(text)) drop.push("compareProducts");
+  if (!/brand|ব্র্যান্ড|ব্রান্ড/i.test(text)) drop.push("listBrands");
+  if (!/track|ট্র্যাক|কোথায়|কই|order|অর্ডার|invoice|\d{5,}/i.test(text)) drop.push("trackOrder");
+  for (const k of drop) delete all[k];
+  return all;
+}
+
 async function runGenerate(opts: {
   ctx: AgentContext;
   messages: any[];
@@ -2199,14 +2218,26 @@ async function runGenerate(opts: {
     fast: opts.fast,
     modelOverride: opts.modelOverride,
   });
+  const tools = toolsForTurn(opts.ctx, opts.messages);
+  try {
+    const { setTraceMeta } = await import("./telemetry.server");
+    setTraceMeta("prompt_chars", opts.system.length);
+    setTraceMeta("tool_count", Object.keys(tools).length);
+  } catch {}
   const result = await generateText({
     model,
     system: opts.system,
     messages: opts.messages,
-    tools: buildTools(opts.ctx),
-    stopWhen: stepCountIs(opts.fast ? 6 : 8),
+    tools,
+    stopWhen: stepCountIs(opts.fast ? 5 : 6),
     ...generationParams(settings, modelId),
   });
+  try {
+    const { setTraceMeta } = await import("./telemetry.server");
+    const u: any = (result as any).totalUsage ?? result.usage;
+    setTraceMeta("input_tokens", u?.inputTokens ?? null);
+    setTraceMeta("output_tokens", u?.outputTokens ?? null);
+  } catch {}
   return { result, modelId, settings };
 }
 
