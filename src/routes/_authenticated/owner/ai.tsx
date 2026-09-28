@@ -272,7 +272,14 @@ function ApiKeysManager() {
                         <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">In use</span>
                       )}
                       {!k.enabled && <span className="text-[10px] text-muted-foreground">Off</span>}
-                      {k.failed_today && <span className="text-[10px] text-destructive">Paused today</span>}
+                      {k.failed_today && (
+                        <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive">
+                          {/HTTP 429/.test(k.last_error ?? "") ? "Quota finished today"
+                            : /HTTP (401|403)|api key/i.test(k.last_error ?? "") ? "Key invalid"
+                            : /HTTP 404/.test(k.last_error ?? "") ? "Wrong model"
+                            : "Paused today"}
+                        </span>
+                      )}
                     </div>
                     <div className="mt-1 grid gap-0.5 text-[11px] text-muted-foreground">
                       <span className="truncate font-mono">Model: {k.effective_model}</span>
