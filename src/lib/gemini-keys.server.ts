@@ -55,8 +55,9 @@ export const PROVIDER_PRESETS: Record<KeyProvider, ProviderPreset> = {
     id: "groq",
     name: "Groq",
     baseURL: "https://api.groq.com/openai/v1",
-    model: "meta-llama/llama-4-scout-17b-16e-instruct",
-    fallbacks: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
+    // Verified 2026-09-28 against the Groq /models list (older Llama ids retired).
+    model: "qwen/qwen3.8-27b",
+    fallbacks: ["openai/gpt-oss-120b", "openai/gpt-oss-20b"],
     vision: true,
     keyHint: "gsk_…",
     signupUrl: "https://console.groq.com/keys",
@@ -67,7 +68,7 @@ export const PROVIDER_PRESETS: Record<KeyProvider, ProviderPreset> = {
     baseURL: "https://openrouter.ai/api/v1",
     // Verified 2026-09-28 against openrouter.ai/api/v1/models: free, tool-calling, vision.
     model: "google/gemma-4-31b-it:free",
-    fallbacks: ["qwen/qwen3.8-27b:free", "google/gemma-4-26b-a4b-it:free"],
+    fallbacks: ["nvidia/nemotron-3-super-120b-a12b:free", "openrouter/free"],
     vision: true,
     keyHint: "sk-or-…",
     signupUrl: "https://openrouter.ai/keys",
