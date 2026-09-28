@@ -4675,6 +4675,7 @@ export type Database = {
           ai_auto_reply: boolean
           app_id: string | null
           app_secret_encrypted: string | null
+          compact_memory: boolean
           connected_at: string | null
           conversation_history: boolean
           created_at: string
@@ -4706,6 +4707,7 @@ export type Database = {
           ai_auto_reply?: boolean
           app_id?: string | null
           app_secret_encrypted?: string | null
+          compact_memory?: boolean
           connected_at?: string | null
           conversation_history?: boolean
           created_at?: string
@@ -4737,6 +4739,7 @@ export type Database = {
           ai_auto_reply?: boolean
           app_id?: string | null
           app_secret_encrypted?: string | null
+          compact_memory?: boolean
           connected_at?: string | null
           conversation_history?: boolean
           created_at?: string
@@ -10753,6 +10756,7 @@ export type Database = {
           access_token_encrypted: string | null
           ai_auto_reply: boolean
           app_secret_encrypted: string | null
+          compact_memory: boolean
           connected_at: string | null
           conversation_history: boolean
           created_at: string
@@ -10782,6 +10786,7 @@ export type Database = {
           access_token_encrypted?: string | null
           ai_auto_reply?: boolean
           app_secret_encrypted?: string | null
+          compact_memory?: boolean
           connected_at?: string | null
           conversation_history?: boolean
           created_at?: string
@@ -10811,6 +10816,7 @@ export type Database = {
           access_token_encrypted?: string | null
           ai_auto_reply?: boolean
           app_secret_encrypted?: string | null
+          compact_memory?: boolean
           connected_at?: string | null
           conversation_history?: boolean
           created_at?: string
