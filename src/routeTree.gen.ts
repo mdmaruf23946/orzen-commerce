@@ -77,6 +77,7 @@ import { Route as AuthenticatedOwnerPaymentSettingsRouteImport } from './routes/
 import { Route as AuthenticatedOwnerPaymentGatewaysRouteImport } from './routes/_authenticated/owner/payment-gateways'
 import { Route as AuthenticatedOwnerPackagesRouteImport } from './routes/_authenticated/owner/packages'
 import { Route as AuthenticatedOwnerNotificationsRouteImport } from './routes/_authenticated/owner/notifications'
+import { Route as AuthenticatedOwnerMetaTrackingRouteImport } from './routes/_authenticated/owner/meta-tracking'
 import { Route as AuthenticatedOwnerMetaAppRouteImport } from './routes/_authenticated/owner/meta-app'
 import { Route as AuthenticatedOwnerMessagePerformanceRouteImport } from './routes/_authenticated/owner/message-performance'
 import { Route as AuthenticatedOwnerMarketingRouteImport } from './routes/_authenticated/owner/marketing'
@@ -605,6 +606,12 @@ const AuthenticatedOwnerNotificationsRoute =
   AuthenticatedOwnerNotificationsRouteImport.update({
     id: '/notifications',
     path: '/notifications',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerMetaTrackingRoute =
+  AuthenticatedOwnerMetaTrackingRouteImport.update({
+    id: '/meta-tracking',
+    path: '/meta-tracking',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
 const AuthenticatedOwnerMetaAppRoute =
@@ -1683,6 +1690,7 @@ export interface FileRoutesByFullPath {
   '/owner/marketing': typeof AuthenticatedOwnerMarketingRoute
   '/owner/message-performance': typeof AuthenticatedOwnerMessagePerformanceRoute
   '/owner/meta-app': typeof AuthenticatedOwnerMetaAppRoute
+  '/owner/meta-tracking': typeof AuthenticatedOwnerMetaTrackingRoute
   '/owner/notifications': typeof AuthenticatedOwnerNotificationsRoute
   '/owner/packages': typeof AuthenticatedOwnerPackagesRoute
   '/owner/payment-gateways': typeof AuthenticatedOwnerPaymentGatewaysRoute
@@ -1909,6 +1917,7 @@ export interface FileRoutesByTo {
   '/owner/marketing': typeof AuthenticatedOwnerMarketingRoute
   '/owner/message-performance': typeof AuthenticatedOwnerMessagePerformanceRoute
   '/owner/meta-app': typeof AuthenticatedOwnerMetaAppRoute
+  '/owner/meta-tracking': typeof AuthenticatedOwnerMetaTrackingRoute
   '/owner/notifications': typeof AuthenticatedOwnerNotificationsRoute
   '/owner/packages': typeof AuthenticatedOwnerPackagesRoute
   '/owner/payment-gateways': typeof AuthenticatedOwnerPaymentGatewaysRoute
@@ -2147,6 +2156,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/marketing': typeof AuthenticatedOwnerMarketingRoute
   '/_authenticated/owner/message-performance': typeof AuthenticatedOwnerMessagePerformanceRoute
   '/_authenticated/owner/meta-app': typeof AuthenticatedOwnerMetaAppRoute
+  '/_authenticated/owner/meta-tracking': typeof AuthenticatedOwnerMetaTrackingRoute
   '/_authenticated/owner/notifications': typeof AuthenticatedOwnerNotificationsRoute
   '/_authenticated/owner/packages': typeof AuthenticatedOwnerPackagesRoute
   '/_authenticated/owner/payment-gateways': typeof AuthenticatedOwnerPaymentGatewaysRoute
@@ -2385,6 +2395,7 @@ export interface FileRouteTypes {
     | '/owner/marketing'
     | '/owner/message-performance'
     | '/owner/meta-app'
+    | '/owner/meta-tracking'
     | '/owner/notifications'
     | '/owner/packages'
     | '/owner/payment-gateways'
@@ -2611,6 +2622,7 @@ export interface FileRouteTypes {
     | '/owner/marketing'
     | '/owner/message-performance'
     | '/owner/meta-app'
+    | '/owner/meta-tracking'
     | '/owner/notifications'
     | '/owner/packages'
     | '/owner/payment-gateways'
@@ -2848,6 +2860,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/marketing'
     | '/_authenticated/owner/message-performance'
     | '/_authenticated/owner/meta-app'
+    | '/_authenticated/owner/meta-tracking'
     | '/_authenticated/owner/notifications'
     | '/_authenticated/owner/packages'
     | '/_authenticated/owner/payment-gateways'
@@ -3523,6 +3536,13 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/owner/notifications'
       preLoaderRoute: typeof AuthenticatedOwnerNotificationsRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/meta-tracking': {
+      id: '/_authenticated/owner/meta-tracking'
+      path: '/meta-tracking'
+      fullPath: '/owner/meta-tracking'
+      preLoaderRoute: typeof AuthenticatedOwnerMetaTrackingRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/owner/meta-app': {
@@ -5078,6 +5098,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerMarketingRoute: typeof AuthenticatedOwnerMarketingRoute
   AuthenticatedOwnerMessagePerformanceRoute: typeof AuthenticatedOwnerMessagePerformanceRoute
   AuthenticatedOwnerMetaAppRoute: typeof AuthenticatedOwnerMetaAppRoute
+  AuthenticatedOwnerMetaTrackingRoute: typeof AuthenticatedOwnerMetaTrackingRoute
   AuthenticatedOwnerNotificationsRoute: typeof AuthenticatedOwnerNotificationsRoute
   AuthenticatedOwnerPackagesRoute: typeof AuthenticatedOwnerPackagesRoute
   AuthenticatedOwnerPaymentGatewaysRoute: typeof AuthenticatedOwnerPaymentGatewaysRoute
@@ -5137,6 +5158,7 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerMessagePerformanceRoute:
       AuthenticatedOwnerMessagePerformanceRoute,
     AuthenticatedOwnerMetaAppRoute: AuthenticatedOwnerMetaAppRoute,
+    AuthenticatedOwnerMetaTrackingRoute: AuthenticatedOwnerMetaTrackingRoute,
     AuthenticatedOwnerNotificationsRoute: AuthenticatedOwnerNotificationsRoute,
     AuthenticatedOwnerPackagesRoute: AuthenticatedOwnerPackagesRoute,
     AuthenticatedOwnerPaymentGatewaysRoute:

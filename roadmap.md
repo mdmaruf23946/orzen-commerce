@@ -28,3 +28,8 @@
 - [x] Order Details total shows delivery twice
 - [x] Keep failed-attempt errors to diagnose slow replies
 - [x] Test (5/5 live test-mode), deploy e6d5aec7, parity passed
+
+## Main website Meta Pixel + CAPI (2026-09-28)
+- [x] Tables, admin page, pixel, CAPI, consent, payment hooks
+- [x] Verify, deploy
+- [ ] Live Meta check (needs Pixel ID + CAPI token from user)

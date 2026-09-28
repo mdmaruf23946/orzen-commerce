@@ -63,6 +63,16 @@ export const Route = createFileRoute("/api/public/subscription-pay/webhook/$prov
               .update({ status: "failed" })
               .eq("id", (inv as any).id);
           }
+          if (result.status === "paid") {
+            // Main-website Meta Purchase after verified payment (idempotent per invoice).
+            const { trackVerifiedPayment } = await import("@/lib/platform-meta.server");
+            await trackVerifiedPayment({
+              invoiceId: (inv as any).id,
+              userId: (inv as any).user_id,
+              amount: Number((inv as any).total ?? 0),
+              purpose: (inv as any).purpose === "wallet_topup" ? "wallet_topup" : "subscription",
+            });
+          }
           return Response.json({ ok: true, status: result.status });
         } catch (e: any) {
           console.error("[subscription-pay webhook]", e);
