@@ -609,7 +609,25 @@ export async function routedChatCompletion(opts: {
   const modelId = opts.modelOverride || (settings as any)?.default_model || "google/gemini-2.5-flash";
   const candidates = buildCandidates(settings, modelId);
   if (!candidates.length) return null;
-  const routedFetch = makeRoutedFetch(candidates, () => {});
+  // One provider can answer 200 with an empty body (e.g. a reasoning model that
+  // spent its budget thinking). Treat that as a miss and ask the chain once more.
+  let pool = candidates;
+  for (let attempt = 0; attempt < 2 && pool.length; attempt++) {
+    const { text, label } = await routedChatOnce(pool, modelId, opts);
+    if (text) return text;
+    console.warn("[ai-route] empty completion from", label, "- trying the next provider");
+    pool = pool.filter((c) => c.label !== label);
+  }
+  return null;
+}
+
+async function routedChatOnce(
+  candidates: ReturnType<typeof buildCandidates>,
+  modelId: string,
+  opts: { messages: any[]; temperature?: number; jsonOnly?: boolean; maxTokens?: number },
+): Promise<{ text: string | null; label: string | null }> {
+  let label: string | null = null;
+  const routedFetch = makeRoutedFetch(candidates, (u) => { label = u.label; });
   const res = await routedFetch(`${SENTINEL_BASE}/chat/completions`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -627,7 +645,8 @@ export async function routedChatCompletion(opts: {
   const json = (await res.json().catch(() => null)) as
     | { choices?: Array<{ message?: { content?: string } }> }
     | null;
-  return json?.choices?.[0]?.message?.content?.trim() || null;
+  const raw = json?.choices?.[0]?.message?.content ?? "";
+  return { text: raw.replace(/<think>[\s\S]*?<\/think>/gi, "").trim() || null, label };
 }
 
 type VisionPart =
