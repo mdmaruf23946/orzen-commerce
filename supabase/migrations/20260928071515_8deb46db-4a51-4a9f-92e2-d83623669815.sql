@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.tg_order_items_stock_guard() TO service_role;

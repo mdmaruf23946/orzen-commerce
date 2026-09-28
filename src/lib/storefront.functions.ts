@@ -1374,7 +1374,16 @@ export const placeOrder = createServerFn({ method: "POST" })
     const { error: iErr } = await sb
       .from("order_items")
       .insert(itemRows.map((r) => ({ ...r, order_id: order.id })));
-    if (iErr) throw new Error(iErr.message);
+    if (iErr) {
+      // Another customer took the last piece a moment earlier: remove the
+      // empty order so no invoice is left behind.
+      await sb.from("order_timeline").delete().eq("order_id", order.id);
+      await sb.from("orders").delete().eq("id", order.id);
+      if (/out_of_stock/.test(iErr.message)) {
+        throw new Error("দুঃখিত, এই মুহূর্তে পণ্যটির স্টক শেষ হয়ে গেছে। / Sorry, this item just sold out.");
+      }
+      throw new Error(iErr.message);
+    }
 
     // Digital fulfilment: create the entitlements now (locked), and unlock
     // straight away when there is nothing to pay.
