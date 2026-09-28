@@ -1946,7 +1946,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
           const { data: integ } = await sb
             .from("messenger_integrations")
             .select(
-              "id,store_id,page_access_token,page_access_token_encrypted,app_secret_encrypted,ai_auto_reply,human_takeover,conversation_history,delivery_failures,reply_delay_seconds,reply_speed,app_id,verify_token",
+              "id,store_id,page_access_token,page_access_token_encrypted,app_secret_encrypted,ai_auto_reply,human_takeover,conversation_history,compact_memory,delivery_failures,reply_delay_seconds,reply_speed,app_id,verify_token",
             )
             .eq("page_id", pageId)
             .maybeSingle();
