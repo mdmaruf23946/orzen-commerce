@@ -608,7 +608,26 @@ function stripSerial(line: string) {
   return line.replace(SERIAL_RE, "").trim();
 }
 
-function parseOrderDetailsText(text: string) {
+type ParseCtx = {
+  /** We asked this customer for their name (Buy Now started, name still missing). */
+  awaitingName?: boolean;
+  /** We asked this customer for their address. */
+  awaitingAddress?: boolean;
+};
+
+function parseOrderDetailsText(text: string, ctx: ParseCtx = {}) {
+  return parseOrderDetailsTextEx(text, ctx).patch;
+}
+
+/**
+ * Pull order details out of a customer message. A name or address is taken
+ * ONLY when it is clearly labelled, part of a numbered answer, or we asked for
+ * it — and it must pass the name/address checks. Questions, greetings and
+ * product talk are never stored ("ডেলিভারি সার্চ কত" is not a name).
+ * `leftover` = text we could not place while waiting for details (for the AI
+ * understanding step).
+ */
+function parseOrderDetailsTextEx(text: string, ctx: ParseCtx = {}) {
   const rawLines = text
     .split(/\r?\n+/)
     .map((line) => line.trim())
@@ -616,6 +635,18 @@ function parseOrderDetailsText(text: string) {
   const phone = extractPhone(text);
   const email = extractEmail(text);
   const qty = extractQty(text);
+  const detailsMessage = looksLikeOrderDetails(text);
+  const mayTakeName = !!ctx.awaitingName || detailsMessage;
+  const mayTakeFreeAddress = !!ctx.awaitingAddress || detailsMessage;
+
+  const nameOk = (v?: string | null) => {
+    const c = cleanNameValue(v);
+    return c && checkPersonName(c).ok ? c : undefined;
+  };
+  const addressOk = (v?: string | null, lenient = false) => {
+    const a = String(v ?? "").trim();
+    return a && isLikelyAddress(a, { lenient }) ? a : undefined;
+  };
 
   const patch: Record<string, any> = {};
 
@@ -625,43 +656,55 @@ function parseOrderDetailsText(text: string) {
     const parts = serialLines.map(stripSerial).filter(Boolean);
     const [p1, p2, p3, p4, p5] = parts;
     const nonPhone = (v?: string) => (v && !extractPhone(v) && !extractEmail(v) ? v : undefined);
-    const name = nonPhone(p1);
+    const name = nameOk(nonPhone(p1));
     if (name) patch.customer_name = name.slice(0, 120);
     const addressCandidates = [p4, p5, p3]
       .filter((v): v is string => !!v && !extractPhone(v) && !extractEmail(v))
-      .filter((v) => v !== name);
+      .filter((v) => v !== p1)
+      .filter((v) => !!addressOk(v, true));
     if (addressCandidates.length) patch.full_address = addressCandidates[0]!.slice(0, 500);
     const note = p5 && p5 !== patch.full_address && !extractEmail(p5) && !extractPhone(p5) ? p5 : null;
     if (note) patch.note = note.slice(0, 300);
-    if (!patch.full_address && p2 && !extractPhone(p2)) patch.full_address = p2.slice(0, 500);
+    if (!patch.full_address && p2 && !extractPhone(p2) && addressOk(p2, true)) patch.full_address = p2.slice(0, 500);
   }
 
   const cleanedLines = rawLines
     .map((line) => stripSerial(line))
     .map((line) => (phone ? line.replace(/(?:\+?88[-\s]?)?01[3-9][\d\s-]{8,12}/g, "") : line))
     .map((line) => (email ? line.replace(/[\w.+-]+@[\w-]+\.[\w.-]{2,}/g, "") : line))
-    .map((line) => line.trim())
+    .map((line) => line.replace(/^[\s,;:|.-]+|[\s,;:|-]+$/g, "").trim())
     .filter((line) => line && !isPaymentLine(line));
 
   let customer_name: string | undefined = patch.customer_name;
   let full_address: string | undefined = patch.full_address;
 
-  const nameMatch = text.match(/(?:^|\n|\b)(?:name|নাম)\s*[:：-]?\s*([^\n,;|]+)/i);
-  if (!customer_name && nameMatch?.[1]) customer_name = nameMatch[1].trim();
+  // Explicit labels are always honoured (still checked).
+  const nameMatch = text.match(/(?:^|\n|\b)(?:name|নাম)\s*(?:হলো|হল|হচ্ছে|is)?\s*[:：-]?\s*([^\n,;|]+)/i);
+  if (!customer_name && nameMatch?.[1]) customer_name = nameOk(nameMatch[1]);
   const addressMatch = text.match(/(?:address|ঠিকানা|এড্রেস)\s*[:：-]?\s*([^|]+)/i);
-  if (!full_address && addressMatch?.[1]) full_address = addressMatch[1].trim();
+  if (!full_address && addressMatch?.[1]) full_address = addressOk(addressMatch[1], true);
 
-  if (!customer_name) {
-    const firstNameLike = cleanedLines.find((line) => {
-      const withoutDigits = line.replace(/[\d+()-]/g, "").trim();
-      return withoutDigits.length >= 2 && withoutDigits.length <= 80 && !/,/.test(withoutDigits);
-    });
-    if (firstNameLike) customer_name = firstNameLike;
+  const used = new Set<string>();
+  if (!customer_name && mayTakeName) {
+    const firstNameLike = cleanedLines.find((line) => !!nameOk(line));
+    if (firstNameLike) {
+      customer_name = nameOk(firstNameLike);
+      used.add(firstNameLike);
+    }
   }
 
   if (!full_address) {
-    const addressLines = cleanedLines.filter((line) => line !== customer_name);
-    if (addressLines.length) full_address = addressLines.join(", ");
+    const addressLines = cleanedLines.filter((line) => !used.has(line) && line !== customer_name);
+    const joined = addressLines.join(", ");
+    // A clear address (commas / place names) is remembered even before Buy Now;
+    // a plain answer is accepted only when we asked for the address.
+    const clear = addressOk(joined);
+    const lenient = mayTakeFreeAddress ? addressOk(joined, true) : undefined;
+    const addr = clear ?? lenient;
+    if (addr) {
+      full_address = addr;
+      addressLines.forEach((l) => used.add(l));
+    }
   }
 
   if (customer_name) patch.customer_name = customer_name.slice(0, 120);
@@ -669,7 +712,12 @@ function parseOrderDetailsText(text: string) {
   if (email) patch.email = email;
   if (full_address) patch.full_address = full_address.slice(0, 500);
   if (qty) patch.qty = qty;
-  return patch;
+
+  const leftover = cleanedLines
+    .filter((l) => !used.has(l) && l !== customer_name && l !== full_address)
+    .join(" ")
+    .trim();
+  return { patch, leftover };
 }
 
 function looksLikeOrderDetails(text: string) {
