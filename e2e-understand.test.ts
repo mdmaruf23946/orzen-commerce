@@ -71,12 +71,12 @@ afterAll(async () => {
 async function newConv() {
   const { data, error } = await sb
     .from("ai_conversations")
-    .insert({ store_id: STORE, channel: "messenger", status: "open", psid: `loadtest_${crypto.randomUUID()}` })
-    .select("id,psid")
+    .insert({ store_id: STORE, channel: "messenger", status: "open", external_id: `loadtest_${crypto.randomUUID()}` })
+    .select("id,external_id")
     .single();
   if (error) throw error;
   convIds.push(data.id);
-  return data as { id: string; psid: string };
+  return { id: data.id as string, psid: data.external_id as string };
 }
 async function userSays(convId: string, text: string) {
   await sb.from("ai_messages").insert({ conversation_id: convId, role: "user", direction: "in", message_type: "text", content: text });
