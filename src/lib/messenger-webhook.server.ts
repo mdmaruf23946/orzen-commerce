@@ -1,4 +1,9 @@
-import { traceTime, setTraceMeta } from "./telemetry.server";
+import { traceTime, setTraceMeta, currentTrace } from "./telemetry.server";
+
+/** Load-test jobs (mid "loadtest_…") never reach Meta. */
+function isDryRun() {
+  return currentTrace()?.meta.dry_run === true;
+}
 // Shared Messenger webhook processing. The public route and the queue worker
 // both call these directly — never over HTTP to our own origin (a self-request
 // from the Worker back through Cloudflare fails with 522 and drops replies).
@@ -251,6 +256,7 @@ function admin() {
 }
 
 async function fbSend(pageToken: string, recipientId: string, text: string) {
+  if (isDryRun()) { await new Promise((r) => setTimeout(r, 300)); return { message_id: `dryrun_${crypto.randomUUID()}` }; }
   const r = await traceTime("send", () => fetch(
     `https://graph.facebook.com/v19.0/me/messages?access_token=${encodeURIComponent(pageToken)}`,
     {
@@ -270,6 +276,7 @@ async function fbSend(pageToken: string, recipientId: string, text: string) {
 
 /** Show the Page "typing…" bubble instantly so replies feel immediate. */
 async function fbTyping(pageToken: string, recipientId: string) {
+  if (isDryRun()) return;
   await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${encodeURIComponent(pageToken)}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -285,6 +292,7 @@ async function waitRemainingDelay(startedAt: number, delaySeconds: number) {
 }
 
 async function fbSendImage(pageToken: string, recipientId: string, imageUrl: string) {
+  if (isDryRun()) return { message_id: `dryrun_${crypto.randomUUID()}` };
   const r = await fetch(
     `https://graph.facebook.com/v19.0/me/messages?access_token=${encodeURIComponent(pageToken)}`,
     {
@@ -2177,6 +2185,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               const msg = ev.message;
               if (!msg || msg.is_echo) continue;
               if (queuedMessageId && String(msg.mid ?? "") !== queuedMessageId) continue;
+              if (String(msg.mid ?? "").startsWith("loadtest_")) setTraceMeta("dry_run", true);
               if (msg.mid) {
                 const { data: existingMessage } = await sb
                   .from("ai_messages")
