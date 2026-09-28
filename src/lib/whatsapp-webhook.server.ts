@@ -13,6 +13,7 @@ import {
   resolveFocusProduct,
 } from "@/lib/ai-agent.server";
 import { sanitizeOutgoingText } from "@/lib/messenger-text";
+import { sanitizeSlot } from "@/lib/slot-validate";
 import { ORDER_FIELD_LABELS, requiredSlotFields, type OrderFieldKey } from "@/lib/messenger-order-flow";
 import { friendlyWaError, sendWaText, markWaRead } from "@/lib/whatsapp-send.server";
 import { buildBuyNowMessage, fetchDeliveryZones } from "@/lib/chat-order-format";
@@ -144,7 +145,13 @@ async function sendAndLog(
 
 async function pendingOrder(sb: any, conversationId: string) {
   const { data } = await sb.from("ai_conversations").select("psid_profile").eq("id", conversationId).maybeSingle();
-  return (((data as any)?.psid_profile ?? {}).pending_order ?? {}) as Record<string, any>;
+  const profile = ((data as any)?.psid_profile ?? {}) as Record<string, any>;
+  // Drop a question/greeting that was stored as a name or address earlier.
+  const { slot, dropped } = sanitizeSlot((profile.pending_order ?? {}) as Record<string, any>);
+  if (dropped.length) {
+    await sb.from("ai_conversations").update({ psid_profile: { ...profile, pending_order: slot } } as any).eq("id", conversationId);
+  }
+  return slot;
 }
 
 async function patchPendingOrder(sb: any, conversationId: string, patch: Record<string, any>) {
