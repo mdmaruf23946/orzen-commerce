@@ -5778,6 +5778,36 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_consent_records: {
+        Row: {
+          choice: string
+          country: string | null
+          created_at: string
+          id: string
+          notice_version: string
+          user_agent: string | null
+          visitor_id: string
+        }
+        Insert: {
+          choice: string
+          country?: string | null
+          created_at?: string
+          id?: string
+          notice_version: string
+          user_agent?: string | null
+          visitor_id: string
+        }
+        Update: {
+          choice?: string
+          country?: string | null
+          created_at?: string
+          id?: string
+          notice_version?: string
+          user_agent?: string | null
+          visitor_id?: string
+        }
+        Relationships: []
+      }
       platform_email_automations: {
         Row: {
           description: string
@@ -5913,6 +5943,96 @@ export type Database = {
           created_at?: string
           id?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_meta_events: {
+        Row: {
+          attempts: number
+          created_at: string
+          error: string | null
+          event_id: string
+          event_name: string
+          id: string
+          response: Json | null
+          source: string
+          status: string
+          test_mode: boolean
+          updated_at: string
+          user_id: string | null
+          value: number | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          error?: string | null
+          event_id: string
+          event_name: string
+          id?: string
+          response?: Json | null
+          source?: string
+          status?: string
+          test_mode?: boolean
+          updated_at?: string
+          user_id?: string | null
+          value?: number | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          error?: string | null
+          event_id?: string
+          event_name?: string
+          id?: string
+          response?: Json | null
+          source?: string
+          status?: string
+          test_mode?: boolean
+          updated_at?: string
+          user_id?: string | null
+          value?: number | null
+        }
+        Relationships: []
+      }
+      platform_meta_tracking: {
+        Row: {
+          capi_enabled: boolean
+          capi_token_enc: string | null
+          enabled: boolean
+          events: Json
+          id: number
+          pixel_enabled: boolean
+          pixel_id: string | null
+          send_user_data: boolean
+          test_event_code: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          capi_enabled?: boolean
+          capi_token_enc?: string | null
+          enabled?: boolean
+          events?: Json
+          id?: number
+          pixel_enabled?: boolean
+          pixel_id?: string | null
+          send_user_data?: boolean
+          test_event_code?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          capi_enabled?: boolean
+          capi_token_enc?: string | null
+          enabled?: boolean
+          events?: Json
+          id?: number
+          pixel_enabled?: boolean
+          pixel_id?: string | null
+          send_user_data?: boolean
+          test_event_code?: string | null
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
