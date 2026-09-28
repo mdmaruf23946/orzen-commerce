@@ -120,3 +120,12 @@ export function isAffirmative(text: string) {
 export function isNegative(text: string) {
   return NO.test(String(text ?? "").trim());
 }
+
+/** "আমার নাম রহিম" / "my name is Rahim" / "নাম: রহিম" → "রহিম". */
+export function cleanNameValue(value: string | null | undefined) {
+  return String(value ?? "")
+    .trim()
+    .replace(/^(?:আমার\s+নাম(?:\s+হলো|\s+হল|\s+হচ্ছে)?|নাম(?:\s+হলো|\s+হল)?|আমি|my\s+name\s+is|my\s+name|name\s+is|name|i\s+am|i'm|this\s+is|amar\s+nam(?:\s+holo)?|ami)\s*[:：\-]?\s+/i, "")
+    .replace(/[\s.।!]+$/g, "")
+    .trim();
+}
