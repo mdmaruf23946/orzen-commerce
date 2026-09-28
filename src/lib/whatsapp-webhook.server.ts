@@ -518,6 +518,9 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
   const { text = "", type = "text", button_payload: buttonPayload = null } = job.event_payload ?? ({} as WaJobPayload);
   const conversationId = job.conversation_id;
   if (!conversationId) return { reply: null, skipped: "no conversation" };
+  if ((job.event_payload as any)?.dry_run === true && String(job.message_id ?? "").startsWith("loadtest_")) {
+    setTraceMeta("dry_run", true);
+  }
 
   void markWaRead(phoneNumberId, token, job.message_id);
 
@@ -602,7 +605,13 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
     ]);
 
     setTraceMeta("route", "ai");
-    const reply = await traceTime("ai", () => generateAgentReply({
+    // Job-level cap: finish (or fail into a clean retry) well inside the
+    // worker's request budget instead of being killed mid-run.
+    const withCap = <T,>(p: Promise<T>) => Promise.race([
+      p,
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error("AI reply took too long (45s cap)")), 45_000)),
+    ]);
+    const reply = await traceTime("ai", () => withCap(generateAgentReply({
       ctx: {
         storeId,
         storeSlug: (store as any).slug,
@@ -627,7 +636,7 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
         latestUserText: text,
       }),
       fast: true,
-    }));
+    })));
 
     const rawText = reply?.text ?? "";
     let guardedText = rawText;
