@@ -31,5 +31,5 @@
 
 ## Main website Meta Pixel + CAPI (2026-09-28)
 - [x] Tables, admin page, pixel, CAPI, consent, payment hooks
-- [ ] Verify, deploy
+- [x] Verify, deploy
 - [ ] Live Meta check (needs Pixel ID + CAPI token from user)
