@@ -201,7 +201,9 @@ async function guardVariants(
   let changed = false;
   const out = sentences.map((s) => {
     if (!CLAIM.test(s) || /নেই|not available|out of stock/i.test(s)) return s;
-    const words = s.toLowerCase().match(/[a-z0-9]+|[\u0980-\u09FF]+/g) ?? [];
+    const words = (s.match(/[A-Za-z0-9]+|[\u0980-\u09FF]+/g) ?? []).filter(
+      (w) => !(w.length === 1 && /[a-z]/.test(w)),
+    );
     const bad = new Set<string>();
     for (const w of words) {
       const n = norm(w);
