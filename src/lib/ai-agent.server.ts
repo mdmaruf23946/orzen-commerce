@@ -10,6 +10,7 @@ import {
   sendQuickReplies as fbSendQuickReplies,
 } from "./messenger-send.server";
 import { checkDuplicate } from "./duplicate-guard.server";
+import { collectVerifiedFacts } from "./reply-guard.server";
 import {
   fetchDeliveryZones,
   money,
@@ -228,8 +229,9 @@ export function buildSystemPrompt(
       : "- Stock data is OFF: do not state availability.",
     srcOn("categories") ? "- Categories: use listCategories." : "- Category data is OFF.",
     srcOn("delivery")
-      ? "- Delivery info: use the delivery facts below / delivery tools."
+      ? "- Delivery charge: ALWAYS call getDeliveryCharge before quoting any charge. Never estimate."
       : "- Delivery data is OFF: do not quote delivery charges or times.",
+    "- HARD RULE: any price, total, stock or delivery-charge number in your reply MUST come from a tool result in THIS turn. Replies with unverified numbers are automatically removed before sending.",
     srcOn("payments")
       ? "- Payment methods: use the payment facts below."
       : "- Payment data is OFF: do not list payment methods.",
@@ -415,7 +417,7 @@ At the start of each conversation call getCustomerMemory to see previous orders 
 
 ${latestBlock ? latestBlock + "\n\n" : ""}${focusBlock ? focusBlock + "\n\n" : ""}${stateBlock ? stateBlock + "\n\n" : ""}# Store facts
 ${srcOn("store_info") ? `Address: ${store.address || "n/a"}\nPhone: ${store.phone || "n/a"}` : ""}
-${srcOn("delivery") ? `Delivery: ${k.delivery_policy || JSON.stringify(store.delivery ?? {})}` : ""}
+${srcOn("delivery") ? `Delivery: ${k.delivery_policy ? k.delivery_policy + " " : ""}(exact charges: call getDeliveryCharge)` : ""}
 ${srcOn("returns") ? `Returns: ${k.return_policy || ""}` : ""}
 ${srcOn("warranty") ? `Warranty: ${k.warranty_policy || ""}` : ""}
 ${srcOn("payments") ? `Payment: ${k.payment_methods || ""}` : ""}
@@ -1292,6 +1294,36 @@ export function buildTools(ctx: AgentContext) {
           name: data.name,
           stock: variantStock ?? data.stock,
           low_stock: (variantStock ?? data.stock) <= (data.low_stock_threshold ?? 5),
+        };
+      },
+    }),
+
+    getDeliveryCharge: tool({
+      description:
+        "Get the exact delivery charge from the store's delivery areas. ALWAYS call this before quoting any delivery charge. Pass the customer's area/address if known, and productId if a product is being discussed.",
+      inputSchema: z.object({
+        area: z.string().optional().describe("Customer area/district/address, e.g. 'Dhaka' or 'Chittagong'"),
+        productId: z.string().uuid().optional(),
+      }),
+      execute: async ({ area, productId }) => {
+        const zones = await fetchDeliveryZones(sb, storeId);
+        let productCharge: number | null = null;
+        if (productId) {
+          const { data } = await sb
+            .from("products")
+            .select("delivery_charge")
+            .eq("store_id", storeId)
+            .eq("id", productId)
+            .maybeSingle();
+          productCharge = (data as any)?.delivery_charge ?? null;
+        }
+        const matched = area ? resolveDeliveryCharge(area, zones, productCharge) : null;
+        return {
+          zones: zones.map((z: any) => ({ name: z.name, charge: Number(z.charge ?? 0), eta: z.eta ?? null })),
+          matched_zone: matched?.zone?.name ?? null,
+          matched_charge: matched ? matched.charge : null,
+          product_delivery_charge: productCharge,
+          instruction: "Quote only these numbers. If area is unknown, list the zone charges.",
         };
       },
     }),
@@ -2195,7 +2227,8 @@ export async function generateAgentReply(opts: {
   }
   const { result, modelId } = attempt;
   void logUsage(opts.ctx.storeId, modelId, result.usage, "messenger");
+  const verified = collectVerifiedFacts(result);
   const duplicateReply = findDuplicateBlockedReply(result as any);
-  if (duplicateReply) return { text: duplicateReply, facts: {} as MessengerPayloadFacts };
-  return { text: result.text as string, facts: payloadFactsFromResult(result) };
+  if (duplicateReply) return { text: duplicateReply, facts: {} as MessengerPayloadFacts, verified, raw: true };
+  return { text: result.text as string, facts: payloadFactsFromResult(result), verified, raw: false };
 }

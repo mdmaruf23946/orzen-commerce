@@ -2563,8 +2563,18 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
 
 
 
+              let guardedText = reply?.text ?? "";
+              if (reply?.verified && !reply.raw && guardedText.trim()) {
+                const { guardReply, logGuardCorrections } = await import("@/lib/reply-guard.server");
+                const g = await guardReply(sb, guardedText, reply.verified, {
+                  storeId: (integ as any).store_id,
+                  focusProductId: focus?.product?.id ?? null,
+                });
+                await logGuardCorrections(sb, conv!.id, g, guardedText);
+                guardedText = g.text;
+              }
               const replyText = sanitizeOutgoingText(
-                sanitizeMessengerReply(reply?.text ?? "", effectiveText),
+                sanitizeMessengerReply(guardedText, effectiveText),
                 reply?.facts ?? {},
               );
               if (!replyText) {
