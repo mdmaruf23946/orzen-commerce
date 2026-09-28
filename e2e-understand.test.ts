@@ -172,3 +172,21 @@ test("stored bad name is dropped, unclear name is confirmed", async () => {
     expect(s2.customer_name).toBeTruthy();
   }
 }, 90_000);
+
+test("confirm question: yes saves, no asks again", async () => {
+  const conv = await newConv();
+  await sb.from("ai_conversations").update({
+    psid_profile: { pending_order: { product_id: productId, qty: 1, full_address: "Mirpur 10, Dhaka", confirm: { field: "customer_name", value: "করিম" } } },
+  }).eq("id", conv.id);
+  expect(await apply(conv, "না")).toBe(true);
+  expect(await lastBot(conv.id)).toContain("সঠিক নাম");
+  expect((await slot(conv.id)).customer_name).toBeUndefined();
+  await sb.from("ai_conversations").update({
+    psid_profile: { pending_order: { product_id: productId, qty: 1, full_address: "Mirpur 10, Dhaka", confirm: { field: "customer_name", value: "করিম" } } },
+  }).eq("id", conv.id);
+  expect(await apply(conv, "হ্যাঁ")).toBe(true);
+  const s = await slot(conv.id);
+  expect(s.customer_name).toBe("করিম");
+  console.log("after yes bot:", JSON.stringify(await lastBot(conv.id)));
+  expect(await lastBot(conv.id)).toContain("মোবাইল");
+}, 60_000);
