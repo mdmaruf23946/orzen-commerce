@@ -4,6 +4,8 @@ const GRAPH = "https://graph.facebook.com/v19.0";
 type SendResult = { message_id?: string };
 
 async function post(token: string, body: any): Promise<SendResult> {
+  const { currentTrace } = await import("./telemetry.server");
+  if (currentTrace()?.meta.dry_run === true) return { message_id: `dryrun_${crypto.randomUUID()}` };
   const r = await fetch(
     `${GRAPH}/me/messages?access_token=${encodeURIComponent(token)}`,
     {
