@@ -129,6 +129,10 @@ export function buildBuyNowMessage(opts: {
   zones: DeliveryZone[];
   productDeliveryCharge?: number | null;
   intro?: string | null;
+  /** Labels still missing; when given, only these are asked for. */
+  missing?: string[];
+  /** Details already collected in chat (shown so the customer can correct them). */
+  known?: Record<string, any>;
 }) {
   const lines: string[] = [];
   const intro = String(opts.intro ?? "").trim();
@@ -148,10 +152,30 @@ export function buildBuyNowMessage(opts: {
 
   lines.push("পেমেন্ট: ক্যাশ অন ডেলিভারি");
   lines.push("");
+
+  const k = opts.known ?? {};
+  const have: string[] = [];
+  const nm = k.customer_name ?? k.name;
+  if (nm) have.push(`নাম: ${nm}`);
+  if (k.phone) have.push(`মোবাইল: ${k.phone}`);
+  if (k.address) have.push(`ঠিকানা: ${k.address}`);
+
+  if (opts.missing && opts.missing.length && have.length) {
+    lines.push("আপনার দেওয়া তথ্য:");
+    for (const h of have) lines.push(`- ${h}`);
+    lines.push("");
+    if (opts.missing.length === 1) {
+      lines.push(`শুধু আপনার ${opts.missing[0]} লিখে পাঠান।`);
+    } else {
+      lines.push("শুধু নিচের তথ্যগুলো লিখে পাঠান:");
+      opts.missing.forEach((m, i) => lines.push(`${toBnDigits(i + 1)}) ${m}`));
+    }
+    return lines.join("\n");
+  }
+
   lines.push("অর্ডার করতে নিচের তথ্যগুলো লিখে পাঠান:");
-  lines.push("১) আপনার নাম");
-  lines.push("২) মোবাইল নম্বর");
-  lines.push("৩) সম্পূর্ণ ঠিকানা");
+  const ask = opts.missing && opts.missing.length ? opts.missing : ["আপনার নাম", "মোবাইল নম্বর", "সম্পূর্ণ ঠিকানা"];
+  ask.forEach((m, i) => lines.push(`${toBnDigits(i + 1)}) ${m}`));
 
   return lines.join("\n");
 }

@@ -1657,6 +1657,8 @@ async function maybeSendDirectProductReply(opts: {
       zones,
       productDeliveryCharge: (product as any).delivery_charge,
       intro: `ঠিক আছে, ${product.name} অর্ডার শুরু করলাম।`,
+      missing,
+      known: slot,
     });
     await logProductRecommendations(sb, storeId, conversationId, [product], text);
     await sendAndLogText(sb, token, psid, conversationId, textReply);
@@ -1789,6 +1791,8 @@ export async function handleBuyPostback(opts: {
         zones,
         productDeliveryCharge: (product as any).delivery_charge,
         intro: cfg.buy_now_message,
+        missing,
+        known: slot,
       })
     : `ঠিক আছে, ${product.name} অর্ডারের তথ্য পেয়েছি। কনফার্ম করতে "হ্যাঁ" লিখুন।`;
   await sendAndLogText(
