@@ -1314,7 +1314,8 @@ export function buildTools(ctx: AgentContext) {
         productId: z.string().uuid().optional(),
       }),
       execute: async ({ area, productId }) => {
-        const zones = await fetchDeliveryZones(sb, storeId);
+        const { cached } = await import("./ttl-cache.server");
+        const zones = await cached(`zones:${storeId}`, 60_000, () => fetchDeliveryZones(sb, storeId));
         let productCharge: number | null = null;
         if (productId) {
           const { data } = await sb
