@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { buildSystemPrompt, generateAgentReply, loadAiContext, resolveFocusProduct } from "@/lib/ai-agent.server";
 import { routedChatCompletion, routedTranscribeAudio, routedVisionText } from "@/lib/ai-provider.server";
-import { getStoreMemory, recallByText, recallByFingerprint } from "@/lib/catalog-memory.server";
+import { getStoreMemory, recallByText } from "@/lib/catalog-memory.server";
 import {
   sendProductCard,
   sendProductCarousel,
@@ -1374,8 +1374,8 @@ async function fastImageLookup(
         product: row,
         confidence,
         verdict: "exact",
-        reason: `Memorised photo match (distance ${top.distance}, margin ${margin})`,
-        evidence: ["fast_image_fingerprint"],
+        reason: `Photo match via ${found.method} (score ${found.score.toFixed(3)}, margin ${margin.toFixed(3)}, ${found.ms}ms)`,
+        evidence: [found.method === "vector" ? "fast_image_vector" : "fast_image_fingerprint"],
       },
       candidateIds,
       photo,
