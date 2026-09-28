@@ -10,6 +10,8 @@ export const RATE_RULES = {
   auth: { limit: 10, windowSec: 900 },
   ai_chat: { limit: 30, windowSec: 600 },
   contact: { limit: 5, windowSec: 600 },
+  platform_meta: { limit: 120, windowSec: 600 },
+  platform_consent: { limit: 10, windowSec: 600 },
 } as const satisfies Record<string, RateRule>;
 
 export type RateRuleName = keyof typeof RATE_RULES;
