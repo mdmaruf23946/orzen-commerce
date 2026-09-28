@@ -117,6 +117,8 @@ export type AgentState = {
   pending_order?: Record<string, any> | null;
   last_order?: Record<string, any> | null;
   recent_product_ids?: string[] | null;
+  /** Pre-rendered compact memory card (summary, facts, recent products). */
+  memory_card?: string | null;
 };
 
 export type FocusProduct = {
@@ -276,6 +278,9 @@ export function buildSystemPrompt(
       `Last confirmed order: #${lo.invoice_no || lo.order_id} — ${lo.product_name ?? "product"} × ${lo.qty ?? 1}`,
     );
   }
+  if (state?.memory_card) stateLines.push(state.memory_card);
+  else if (state?.recent_product_ids?.length)
+    stateLines.push(`Products discussed recently (ids): ${state.recent_product_ids.join(", ")}`);
   const stateBlock = stateLines.length ? `# Conversation state\n${stateLines.join("\n")}` : "";
   const latestBlock = latestUserText
     ? `# Latest customer message — answer this first\n${latestUserText}\n\nRule: Your next reply must answer this exact latest message. Use older conversation only as background, never as a replacement for the latest message.`
