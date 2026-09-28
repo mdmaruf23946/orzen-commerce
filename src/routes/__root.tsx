@@ -18,6 +18,7 @@ import {
   recoverFromChunkError,
 } from "../lib/chunk-recovery";
 import { Toaster } from "@/components/ui/sonner";
+import { PlatformPixel } from "@/components/PlatformPixel";
 import { Button } from "@/components/ui/button";
 import { usePlatformBranding } from "@/lib/platform-branding";
 import { PlatformInstallPrompt } from "@/components/PlatformInstallPrompt";
@@ -222,6 +223,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <PlatformFavicon />
       <PlatformInstallPrompt />
+      <PlatformPixel />
       <Outlet />
       <Toaster richColors position="top-center" />
     </QueryClientProvider>

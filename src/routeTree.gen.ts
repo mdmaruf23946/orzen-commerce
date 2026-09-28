@@ -175,6 +175,8 @@ import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/e
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
 import { Route as ApiPublicWhatsappProcessRouteImport } from './routes/api/public/whatsapp/process'
 import { Route as ApiPublicTiktokTrackRouteImport } from './routes/api/public/tiktok/track'
+import { Route as ApiPublicPlatformMetaTrackRouteImport } from './routes/api/public/platform-meta/track'
+import { Route as ApiPublicPlatformMetaConsentRouteImport } from './routes/api/public/platform-meta/consent'
 import { Route as ApiPublicMetaOauthCallbackRouteImport } from './routes/api/public/meta/oauth-callback'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
 import { Route as ApiPublicMessengerProcessRouteImport } from './routes/api/public/messenger/process'
@@ -1174,6 +1176,18 @@ const ApiPublicTiktokTrackRoute = ApiPublicTiktokTrackRouteImport.update({
   path: '/api/public/tiktok/track',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPlatformMetaTrackRoute =
+  ApiPublicPlatformMetaTrackRouteImport.update({
+    id: '/api/public/platform-meta/track',
+    path: '/api/public/platform-meta/track',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicPlatformMetaConsentRoute =
+  ApiPublicPlatformMetaConsentRouteImport.update({
+    id: '/api/public/platform-meta/consent',
+    path: '/api/public/platform-meta/consent',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicMetaOauthCallbackRoute =
   ApiPublicMetaOauthCallbackRouteImport.update({
     id: '/api/public/meta/oauth-callback',
@@ -1771,6 +1785,8 @@ export interface FileRoutesByFullPath {
   '/api/public/messenger/process': typeof ApiPublicMessengerProcessRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/meta/oauth-callback': typeof ApiPublicMetaOauthCallbackRoute
+  '/api/public/platform-meta/consent': typeof ApiPublicPlatformMetaConsentRoute
+  '/api/public/platform-meta/track': typeof ApiPublicPlatformMetaTrackRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/api/public/whatsapp/process': typeof ApiPublicWhatsappProcessRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -1995,6 +2011,8 @@ export interface FileRoutesByTo {
   '/api/public/messenger/process': typeof ApiPublicMessengerProcessRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/meta/oauth-callback': typeof ApiPublicMetaOauthCallbackRoute
+  '/api/public/platform-meta/consent': typeof ApiPublicPlatformMetaConsentRoute
+  '/api/public/platform-meta/track': typeof ApiPublicPlatformMetaTrackRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/api/public/whatsapp/process': typeof ApiPublicWhatsappProcessRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -2231,6 +2249,8 @@ export interface FileRoutesById {
   '/api/public/messenger/process': typeof ApiPublicMessengerProcessRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/meta/oauth-callback': typeof ApiPublicMetaOauthCallbackRoute
+  '/api/public/platform-meta/consent': typeof ApiPublicPlatformMetaConsentRoute
+  '/api/public/platform-meta/track': typeof ApiPublicPlatformMetaTrackRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/api/public/whatsapp/process': typeof ApiPublicWhatsappProcessRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -2467,6 +2487,8 @@ export interface FileRouteTypes {
     | '/api/public/messenger/process'
     | '/api/public/messenger/webhook'
     | '/api/public/meta/oauth-callback'
+    | '/api/public/platform-meta/consent'
+    | '/api/public/platform-meta/track'
     | '/api/public/tiktok/track'
     | '/api/public/whatsapp/process'
     | '/api/public/whatsapp/webhook'
@@ -2691,6 +2713,8 @@ export interface FileRouteTypes {
     | '/api/public/messenger/process'
     | '/api/public/messenger/webhook'
     | '/api/public/meta/oauth-callback'
+    | '/api/public/platform-meta/consent'
+    | '/api/public/platform-meta/track'
     | '/api/public/tiktok/track'
     | '/api/public/whatsapp/process'
     | '/api/public/whatsapp/webhook'
@@ -2926,6 +2950,8 @@ export interface FileRouteTypes {
     | '/api/public/messenger/process'
     | '/api/public/messenger/webhook'
     | '/api/public/meta/oauth-callback'
+    | '/api/public/platform-meta/consent'
+    | '/api/public/platform-meta/track'
     | '/api/public/tiktok/track'
     | '/api/public/whatsapp/process'
     | '/api/public/whatsapp/webhook'
@@ -3006,6 +3032,8 @@ export interface RootRouteChildren {
   ApiPublicMessengerProcessRoute: typeof ApiPublicMessengerProcessRoute
   ApiPublicMessengerWebhookRoute: typeof ApiPublicMessengerWebhookRoute
   ApiPublicMetaOauthCallbackRoute: typeof ApiPublicMetaOauthCallbackRoute
+  ApiPublicPlatformMetaConsentRoute: typeof ApiPublicPlatformMetaConsentRoute
+  ApiPublicPlatformMetaTrackRoute: typeof ApiPublicPlatformMetaTrackRoute
   ApiPublicTiktokTrackRoute: typeof ApiPublicTiktokTrackRoute
   ApiPublicWhatsappProcessRoute: typeof ApiPublicWhatsappProcessRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
@@ -4183,6 +4211,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicTiktokTrackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/platform-meta/track': {
+      id: '/api/public/platform-meta/track'
+      path: '/api/public/platform-meta/track'
+      fullPath: '/api/public/platform-meta/track'
+      preLoaderRoute: typeof ApiPublicPlatformMetaTrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/platform-meta/consent': {
+      id: '/api/public/platform-meta/consent'
+      path: '/api/public/platform-meta/consent'
+      fullPath: '/api/public/platform-meta/consent'
+      preLoaderRoute: typeof ApiPublicPlatformMetaConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/meta/oauth-callback': {
       id: '/api/public/meta/oauth-callback'
       path: '/api/public/meta/oauth-callback'
@@ -5253,6 +5295,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicMessengerProcessRoute: ApiPublicMessengerProcessRoute,
   ApiPublicMessengerWebhookRoute: ApiPublicMessengerWebhookRoute,
   ApiPublicMetaOauthCallbackRoute: ApiPublicMetaOauthCallbackRoute,
+  ApiPublicPlatformMetaConsentRoute: ApiPublicPlatformMetaConsentRoute,
+  ApiPublicPlatformMetaTrackRoute: ApiPublicPlatformMetaTrackRoute,
   ApiPublicTiktokTrackRoute: ApiPublicTiktokTrackRoute,
   ApiPublicWhatsappProcessRoute: ApiPublicWhatsappProcessRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,

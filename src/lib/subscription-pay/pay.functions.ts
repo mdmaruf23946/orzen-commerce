@@ -401,6 +401,24 @@ export const initiateSubscriptionCheckout = createServerFn({ method: "POST" })
       raw: (checkout.raw as any) ?? null,
     });
 
+    // Remember this visitor for the payment webhook, and report AddPaymentInfo.
+    try {
+      const { getRequest } = await import("@tanstack/react-start/server");
+      const { rememberCheckoutVisitor, sendPlatformEvent, visitorFromHeaders } = await import("@/lib/platform-meta.server");
+      const visitor = visitorFromHeaders(getRequest().headers);
+      await rememberCheckoutVisitor((inv as any).id, visitor);
+      await sendPlatformEvent({
+        event_name: "AddPaymentInfo",
+        event_id: `api_${(inv as any).id}`,
+        visitor,
+        user: { id: userId, email: data.customer_email ?? null },
+        value: total,
+        custom_data: { content_name: (pkg as any).name, order_id: (inv as any).id },
+      });
+    } catch {
+      /* tracking never blocks checkout */
+    }
+
     return {
       invoice_id: (inv as any).id,
       invoice_no: invoiceNo,
@@ -474,6 +492,19 @@ export const verifyAndActivateSubscription = createServerFn({ method: "POST" })
         .from("subscription_invoices")
         .update({ status: "paid", paid_at: new Date().toISOString() })
         .eq("id", (inv as any).id);
+      try {
+        const { getRequest } = await import("@tanstack/react-start/server");
+        const { trackVerifiedPayment, visitorFromHeaders } = await import("@/lib/platform-meta.server");
+        await trackVerifiedPayment({
+          invoiceId: (inv as any).id,
+          userId: (inv as any).user_id,
+          amount: Number((inv as any).total ?? 0),
+          purpose: "wallet_topup",
+          visitor: visitorFromHeaders(getRequest().headers),
+        });
+      } catch {
+        /* tracking never blocks the top-up */
+      }
       return { ok: true, status: "paid", purpose: "wallet_topup", invoice_no: data.invoice_no };
     }
 
@@ -602,6 +633,22 @@ export const verifyAndActivateSubscription = createServerFn({ method: "POST" })
       .from("subscription_invoices")
       .update({ status: "paid", paid_at: now.toISOString(), pdf_path: pdfPath })
       .eq("id", (inv as any).id);
+
+    // Main-website Meta Purchase — only now, after the gateway verified payment.
+    try {
+      const { getRequest } = await import("@tanstack/react-start/server");
+      const { trackVerifiedPayment, visitorFromHeaders } = await import("@/lib/platform-meta.server");
+      await trackVerifiedPayment({
+        invoiceId: (inv as any).id,
+        userId: (inv as any).user_id,
+        amount: Number((inv as any).total ?? 0),
+        purpose: "subscription",
+        visitor: visitorFromHeaders(getRequest().headers),
+        planName: (pkg as any)?.name ?? null,
+      });
+    } catch {
+      /* tracking never blocks activation */
+    }
 
     return { ok: true, status: "paid", invoice_no: data.invoice_no };
   });
