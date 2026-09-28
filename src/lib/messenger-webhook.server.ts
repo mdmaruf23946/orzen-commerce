@@ -2475,6 +2475,32 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                 continue;
               }
 
+              // Deterministic fast path (same as WhatsApp): thanks, generic
+              // delivery charges, verified order status — no AI call.
+              try {
+                const { tryFastPath } = await import("@/lib/fast-path.server");
+                const fast = await tryFastPath(sb, {
+                  storeId: integ.store_id,
+                  conversationId: conv!.id,
+                  text: effectiveText,
+                  customerPhone: null,
+                });
+                if (fast) {
+                  setTraceMeta("route", "fast");
+                  setTraceMeta("fast_kind", fast.kind);
+                  const sent = await fbSend(token, senderId, fast.reply);
+                  await markQueuedReply(sb, queuedJobId, fast.reply, sent.message_id);
+                  await logOutgoingText(sb, conv!.id, fast.reply, sent.message_id ?? null);
+                  await sb
+                    .from("ai_conversations")
+                    .update({ last_message_at: new Date().toISOString(), last_message_preview: fast.reply.slice(0, 200) })
+                    .eq("id", conv!.id);
+                  continue;
+                }
+              } catch {
+                /* fall through to AI */
+              }
+
               // Reply pacing is merchant-controlled. Timing starts the moment the
               // customer's message lands, so the AI's own thinking time counts
               // toward the configured delay instead of adding to it.
