@@ -718,13 +718,15 @@ async function finalizePendingMessengerOrder(opts: {
     (product as any).delivery_charge,
   );
   const total = subtotal + delivery;
-  const { data: invoiceNo } = await sb.rpc("generate_invoice_no", { _store_id: storeId } as any);
-  const { data: order, error: orderError } = await sb
-    .from("orders")
-    .insert({
-      store_id: storeId,
+  const phoneClean = normalizePhone(slot.phone) ?? String(slot.phone).trim();
+  const { buildIdempotencyKey, createChatOrder } = await import("./chat-order.server");
+  const created = await createChatOrder(
+    sb,
+    storeId,
+    buildIdempotencyKey({ channel: "messenger", conversationId, productId: product.id, qty, phone: phoneClean }),
+    {
       customer_name: String(slot.customer_name).trim(),
-      phone: normalizePhone(slot.phone) ?? String(slot.phone).trim(),
+      phone: phoneClean,
       email: slot.email ? String(slot.email).trim() : null,
       address: String(slot.full_address).trim(),
       area:
@@ -736,18 +738,20 @@ async function finalizePendingMessengerOrder(opts: {
       delivery_amount: delivery,
       delivery_zone_id: zone?.id ?? null,
       discount_amount: 0,
-      status: "pending",
-      invoice_no: invoiceNo || null,
       notes: slot.note
         ? `Placed via Messenger AI Sales Agent — ${String(slot.note).slice(0, 300)}`
         : "Placed via Messenger AI Sales Agent",
-    } as any)
-    .select("id,invoice_no")
-    .single();
+    },
+    [{ product_id: product.id, name: product.name, price: Number(product.price), qty }],
+  );
 
-  if (orderError || !order) {
-    const errorText = orderError?.message ?? "Order failed";
-    await sendAndLogText(sb, token, psid, conversationId, "দুঃখিত, অর্ডারটি কনফার্ম করতে সমস্যা হয়েছে। আমাদের টিম একটু পর দেখে জানাবে।");
+  if (!created.ok && created.error === "out_of_stock") {
+    await sendAndLogText(sb, token, psid, conversationId, `দুঃখিত, ${product.name} এর স্টক এখন ${(created as any).available}টি। কম quantity চাইলে বলুন।`);
+    return true;
+  }
+  if (!created.ok) {
+    const errorText = created.error ?? "Order failed";
+    await sendAndLogText(sb, token, psid, conversationId, "দুঃখিত, অর্ডারটি কনফার্ম করতে সমস্যা হয়েছে। আমাদের টিম একটু পর দেখে জানাবে।");
     await sb.from("ai_messages").insert({
       conversation_id: conversationId,
       role: "system",
@@ -759,15 +763,11 @@ async function finalizePendingMessengerOrder(opts: {
     } as any);
     throw new Error(errorText);
   }
-
-  const { error: itemError } = await sb.from("order_items").insert({
-    order_id: order.id,
-    product_id: product.id,
-    name_snapshot: product.name,
-    price_snapshot: product.price,
-    qty,
-  } as any);
-  if (itemError) throw new Error(itemError.message);
+  const order = { id: created.id, invoice_no: created.invoice_no };
+  if (created.existing) {
+    await sendAndLogText(sb, token, psid, conversationId, `আপনার অর্ডার #${shortOrderNo(order.invoice_no, order.id)} আগেই নেওয়া হয়েছে। নতুন করে কিছু করতে হবে না।`);
+    return true;
+  }
 
   await Promise.all([
     sb.from("order_timeline").insert({ store_id: storeId, order_id: order.id, stage: "placed", note: "Order placed via Messenger AI" } as any),

@@ -13,3 +13,4 @@
 - All HTML responses use `Cache-Control: no-store, must-revalidate` so deployed Merchant Panel changes replace stale browser/CDN shells immediately.
 - Customer photo matching uses `findProductByPhoto` (fingerprint, then 768-dim `gemini-embedding-2` vectors on the owner's Gemini keys, HNSW, store-scoped); one shared path keeps Messenger and WhatsApp consistent and independent of Lovable.
 - AI replies pass through `guardReply` (src/lib/reply-guard.server.ts) before sending: every money amount/stock claim must match this turn's tool results or a fresh store-scoped lookup; delivery charges come only from the `getDeliveryCharge` tool — prevents hallucinated prices on WhatsApp/Messenger.
+- Chat orders (AI finalizeOrder, Messenger direct order) are created only via the `create_chat_order` RPC with an idempotency key (src/lib/chat-order.server.ts): advisory lock + 30-min same-key reuse + stock check under row lock, so duplicate messages never create a second invoice.
