@@ -12,3 +12,9 @@
 - [x] Fixes: "ok thank you" fast path; AI call budget 25s + 45s job cap (no more workers killed mid-run).
 - [ ] BLOCKED (owner): AI keys exhausted under load — Gemini Key 2 hits 429/503, OpenRouter "5.1" key's model returns 404. Needs a working AI key/model.
 - [ ] Messenger not load-tested (jobs need Meta-signed payloads).
+
+## Sales Agent Phase 5 — E2E verification (2026-09-28) — done
+- Live-DB tests 19/19 after fix: fast-path (5), photo search 3/3 + unrelated rejected, size guard, price/policy guard, order + duplicate + no-oversell, cleanup, AI fallback 6/6.
+- Fixed: empty AI answer from a busy key now skips to the next key; Messenger test-mode (loadtest_) never sends to Meta.
+- Deployed version 79a36b42; parity passed; site/stores 200; webhooks reject wrong token (403).
+- Open: real Meta delivery needs the owner to send a live message; return policy unset in merchant panel.
