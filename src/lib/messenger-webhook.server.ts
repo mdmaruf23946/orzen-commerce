@@ -1,3 +1,4 @@
+import { traceTime, setTraceMeta } from "./telemetry.server";
 // Shared Messenger webhook processing. The public route and the queue worker
 // both call these directly — never over HTTP to our own origin (a self-request
 // from the Worker back through Cloudflare fails with 522 and drops replies).
@@ -250,7 +251,7 @@ function admin() {
 }
 
 async function fbSend(pageToken: string, recipientId: string, text: string) {
-  const r = await fetch(
+  const r = await traceTime("send", () => fetch(
     `https://graph.facebook.com/v19.0/me/messages?access_token=${encodeURIComponent(pageToken)}`,
     {
       method: "POST",
@@ -261,7 +262,7 @@ async function fbSend(pageToken: string, recipientId: string, text: string) {
         message: { text },
       }),
     },
-  );
+  ));
   const j = await r.json().catch(() => ({} as any));
   if (!r.ok) throw new Error(j?.error?.message || `Send failed (${r.status})`);
   return j as { message_id?: string };
@@ -280,7 +281,7 @@ async function fbTyping(pageToken: string, recipientId: string) {
 async function waitRemainingDelay(startedAt: number, delaySeconds: number) {
   const target = Math.max(0, Math.min(600, Number(delaySeconds) || 0)) * 1000;
   const left = target - (Date.now() - startedAt);
-  if (left > 0) await new Promise((r) => setTimeout(r, left));
+  if (left > 0) await traceTime("delay", () => new Promise((r) => setTimeout(r, left)));
 }
 
 async function fbSendImage(pageToken: string, recipientId: string, imageUrl: string) {
@@ -2532,7 +2533,8 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               const focus = focusRes as any;
               void replySpeed;
 
-              const reply = await generateAgentReply({
+              setTraceMeta("route", "ai");
+              const reply = await traceTime("ai", () => generateAgentReply({
                 ctx: {
                   storeId: integ.store_id,
                   storeSlug: (store as any).slug,
@@ -2557,7 +2559,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                   latestUserText: effectiveText,
                 }),
                 fast: true,
-              });
+              }));
               if (compact) void refreshSummary(sb, cc, conv!.id);
 
 
@@ -2566,10 +2568,10 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               let guardedText = reply?.text ?? "";
               if (reply?.verified && !reply.raw && guardedText.trim()) {
                 const { guardReply, logGuardCorrections } = await import("@/lib/reply-guard.server");
-                const g = await guardReply(sb, guardedText, reply.verified, {
+                const g = await traceTime("guard", () => guardReply(sb, guardedText, reply.verified, {
                   storeId: (integ as any).store_id,
                   focusProductId: focus?.product?.id ?? null,
-                });
+                }));
                 await logGuardCorrections(sb, conv!.id, g, guardedText);
                 guardedText = g.text;
               }

@@ -570,7 +570,7 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
     const handled = await traceTime("photo", () => handleWaPhoto({
       sb, storeId, conversationId, to: waId, token, phoneNumberId, jobId: job.id,
       mediaId: String((job.event_payload as WaJobPayload).media_id),
-    });
+    }));
     if (handled) return { reply: handled };
   }
 
