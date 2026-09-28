@@ -1,0 +1,2 @@
+ALTER TABLE public.whatsapp_integrations ADD COLUMN IF NOT EXISTS compact_memory boolean NOT NULL DEFAULT true;
+ALTER TABLE public.messenger_integrations ADD COLUMN IF NOT EXISTS compact_memory boolean NOT NULL DEFAULT true;
