@@ -6,7 +6,7 @@ import { orderStatusBn, shortOrderNo } from "@/lib/chat-order-format";
 const BENGALI = /[\u0980-\u09FF]/;
 
 const GREETING = /^(hi+|hello+|hey+|hlw|helo|assalamu? ?alaikum|salam|আসসালামু ?আলাইকুম|সালাম|হাই|হ্যালো|হেলো|হেই)[\s!.।,]*$/i;
-const THANKS = /^(thanks?|thank you|thx|tnx|ok+|okay|oky|accha|আচ্ছা|ঠিক আছে|ধন্যবাদ|ওকে|থ্যাংকস?|থ্যাঙ্ক ইউ)[\s!.।,]*$/i;
+const THANKS = /^((?:ok+|okay|ওকে)[\s,]+(?:thanks?|thank you|ধন্যবাদ)|thanks?|thank you|thx|tnx|ok+|okay|oky|accha|আচ্ছা|ঠিক আছে|ধন্যবাদ|ওকে|থ্যাংকস?|থ্যাঙ্ক ইউ)[\s!.।,]*$/i;
 const STATUS_WORDS = /(order|অর্ডার|অডার).{0,20}(status|kothay|koi|কই|কোথায়|কী অবস্থা|কি অবস্থা|track|ট্র্যাক|আপডেট|update)|(track|ট্র্যাক).{0,10}(order|অর্ডার)|parcel (koi|kothay)|পার্সেল (কই|কোথায়)/i;
 const ORDER_NO = /\b([A-Z]{1,6}[-_]?\d{3,}|\d{5,10})\b/i;
 

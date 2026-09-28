@@ -384,6 +384,10 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
 
     let inlinedBody: any = null;
     let lastError = "AI request failed";
+    // Whole-call budget: under provider overload, stop cycling keys/models
+    // before the worker's request budget runs out (job then retries cleanly).
+    const callStarted = Date.now();
+    const CALL_BUDGET_MS = 25_000;
     const isChat = suffix.startsWith("/chat/completions");
     const needsVision = Array.isArray(bodyObj?.messages)
       && bodyObj.messages.some((m: any) =>
@@ -419,7 +423,9 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
         try {
           const bKey = `${c.label}|${modelId}`;
           if (breakerOpen(bKey) && closed.length) continue;
-          const timeout = AbortSignal.timeout(ATTEMPT_TIMEOUT_MS);
+          const left = CALL_BUDGET_MS - (Date.now() - callStarted);
+          if (left < 1500) throw Object.assign(new Error(`AI busy: ${lastError}`), { budget: true });
+          const timeout = AbortSignal.timeout(Math.min(ATTEMPT_TIMEOUT_MS, left));
           const signal = init?.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
           const res = await fetch(`${c.baseURL}${suffix}`, { ...init, headers, body, signal });
           if (res.ok) {
