@@ -1,17 +1,18 @@
 /**
- * Fast visual product lookup for Messenger photos.
+ * Visual product lookup for Messenger/WhatsApp photos.
  *
- * Each product's main photo is turned into an image embedding once and stored
- * per store. A customer photo is embedded (~0.5s) and compared only against the
- * same store's embeddings, so an identical/near-identical product photo is
- * answered in about a second without the multi-step AI inspection.
+ * Each product's main photo is turned once into (a) a 128-bit fingerprint and
+ * (b) a 768-dim image vector from Google's multimodal embedding model, using
+ * the owner's saved Gemini keys. A customer photo is embedded (~0.5s) and
+ * compared only against the same store's vectors (HNSW index).
  */
-export const IMAGE_EMBEDDING_MODEL = "google/gemini-embedding-2";
+export const IMAGE_EMBEDDING_MODEL = "gemini-embedding-2";
+export const IMAGE_EMBEDDING_DIM = 768;
 
-// Calibrated on live catalogue data: the same product photo (cropped, Messenger
-// re-encoded, low contrast) scores ~0.90-0.95, unrelated products stay < 0.70.
-const FAST_MATCH_MIN_SIMILARITY = 0.86;
-const FAST_MATCH_MIN_MARGIN = 0.12;
+// Initial gate; recalibrated against live catalogue photos.
+export const VECTOR_MATCH_MIN_SIMILARITY = 0.86;
+export const VECTOR_MATCH_MIN_MARGIN = 0.05;
+export const VECTOR_CANDIDATE_MIN = 0.6;
 
 type Sb = { from: (t: string) => any; rpc: (fn: string, args: any) => any };
 
@@ -41,47 +42,53 @@ function toBase64(bytes: Uint8Array) {
   return btoa(binary);
 }
 
-/**
- * The photo index needs a multimodal embedding endpoint. The store's own
- * provider keys do not offer one, so this stays disabled and photo matching
- * falls back to visual verification.
- */
-export async function embedImageBytes(bytes: Uint8Array, mime: string): Promise<number[]> {
-  const key = "";
-  if (!key) throw new Error("Image embedding is not available");
+// Keys that hit quota/invalid are skipped for a while inside this isolate.
+const keyCooldown = new Map<string, number>();
+let keyCache: { keys: string[]; at: number } | null = null;
+
+async function geminiKeys(sb: Sb): Promise<string[]> {
+  if (keyCache && Date.now() - keyCache.at < 60_000) return keyCache.keys;
+  const { data } = await sb.from("ai_global_settings").select("gemini_api_keys").eq("id", 1).maybeSingle();
+  const { normalizeGeminiKeys } = await import("./gemini-keys.server");
+  const keys = normalizeGeminiKeys((data as any)?.gemini_api_keys)
+    .filter((k) => k.enabled && k.provider === "gemini" && k.key)
+    .map((k) => k.key);
+  keyCache = { keys, at: Date.now() };
+  return keys;
+}
+
+/** Image -> 768-dim vector on the owner's Gemini keys (tries each key once). */
+export async function embedImageBytes(sb: Sb, bytes: Uint8Array, mime: string): Promise<number[]> {
+  const keys = (await geminiKeys(sb)).filter((k) => (keyCooldown.get(k) ?? 0) < Date.now());
+  if (!keys.length) throw new Error("No working Gemini key for image search");
   const body = JSON.stringify({
-    model: IMAGE_EMBEDDING_MODEL,
-    input: [{ content: [{ type: "image_url", image_url: { url: `data:${mime};base64,${toBase64(bytes)}` } }] }],
-    encoding_format: "float",
+    content: { parts: [{ inline_data: { mime_type: mime, data: toBase64(bytes) } }] },
+    outputDimensionality: IMAGE_EMBEDDING_DIM,
   });
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "fetch" },
-      body,
-    });
-    if (res.ok) {
-      const json = (await res.json()) as { data?: Array<{ embedding?: number[] }> };
-      const vector = json.data?.[0]?.embedding;
-      if (!Array.isArray(vector) || !vector.length) throw new Error("Embedding response was empty");
-      return vector;
+  let lastError = "";
+  for (const key of keys) {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${IMAGE_EMBEDDING_MODEL}:embedContent?key=${encodeURIComponent(key)}`,
+      { method: "POST", headers: { "content-type": "application/json" }, body },
+    ).catch(() => null);
+    if (res?.ok) {
+      const json = (await res.json()) as { embedding?: { values?: number[] } };
+      const v = json.embedding?.values;
+      if (!Array.isArray(v) || v.length !== IMAGE_EMBEDDING_DIM) throw new Error("Embedding response was empty");
+      const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1;
+      return v.map((x) => x / norm);
     }
-    if ((res.status === 429 || res.status >= 500) && attempt === 0) {
-      await new Promise((r) => setTimeout(r, 600));
-      continue;
-    }
-    throw new Error(`Embedding failed (${res.status}): ${(await res.text().catch(() => "")).slice(0, 200)}`);
+    const status = res?.status ?? 0;
+    lastError = `HTTP ${status}: ${res ? (await res.text().catch(() => "")).slice(0, 160) : "network"}`;
+    if (status === 400 && !/api key/i.test(lastError)) throw new Error(lastError); // bad image, not the key
+    keyCooldown.set(key, Date.now() + (status === 429 ? 10 * 60_000 : 60 * 60_000));
   }
-  throw new Error("Embedding failed");
+  throw new Error(lastError || "Embedding failed");
 }
 
 export type RankedImageMatch = { productId: string; similarity: number };
 
-/**
- * Returns the nearest same-store catalogue photos from the pre-built index.
- * The caller may use the confidence gate below for an instant answer, or pass
- * these few candidates to visual verification instead of scanning the store.
- */
+/** Nearest same-store catalogue photos by vector similarity. */
 export async function rankProductImageMatches(
   sb: Sb,
   storeId: string,
@@ -89,16 +96,11 @@ export async function rankProductImageMatches(
   mime: string,
   limit = 8,
 ): Promise<RankedImageMatch[]> {
-  const { count } = await sb
-    .from("product_image_embeddings")
-    .select("product_id", { count: "exact", head: true })
-    .eq("store_id", storeId)
-    .not("embedding", "is", null);
-  if (!count) return [];
   let vector: number[];
   try {
-    vector = await embedImageBytes(bytes, mime);
-  } catch {
+    vector = await embedImageBytes(sb, bytes, mime);
+  } catch (e) {
+    console.log(`[photo-vector] embed failed store=${storeId}: ${e instanceof Error ? e.message : e}`);
     return [];
   }
   const { data, error } = await sb.rpc("match_product_image_embeddings", {
@@ -107,39 +109,44 @@ export async function rankProductImageMatches(
     _limit: Math.min(Math.max(limit, 1), 20),
   });
   if (error || !Array.isArray(data)) return [];
-  return data.map((row: any) => ({
-    productId: String(row.product_id),
-    similarity: Number(row.similarity) || 0,
-  }));
+  return data.map((row: any) => ({ productId: String(row.product_id), similarity: Number(row.similarity) || 0 }));
 }
 
-/** Returns the best same-store product when the photo is an unambiguous match. */
-export async function findFastImageMatch(
-  sb: Sb,
-  storeId: string,
-  bytes: Uint8Array,
-  mime: string,
-): Promise<{ productId: string; similarity: number; margin: number } | null> {
-  const ranked = await rankProductImageMatches(sb, storeId, bytes, mime, 3);
-  const top = ranked[0];
-  if (!top) return null;
-  const second = ranked[1]?.similarity ?? 0;
-  const margin = top.similarity - second;
-  if (top.similarity < FAST_MATCH_MIN_SIMILARITY || margin < FAST_MATCH_MIN_MARGIN) return null;
-  return { productId: top.productId, similarity: top.similarity, margin };
+async function loadImageBytes(sb: Sb, image: string): Promise<{ bytes: Uint8Array; mime: string }> {
+  const storagePath = /^https?:\/\//i.test(image) ? null : image.replace(/^\/?(api\/img\/)?/, "");
+  if (storagePath && (sb as any).storage) {
+    // Our own image proxy cannot be fetched from inside the Worker (522).
+    const bucket = (sb as any).storage.from("store-assets");
+    let r = await bucket.download(storagePath, {
+      transform: { width: 512, height: 512, resize: "contain", quality: 80, format: "origin" },
+    });
+    if (!r?.data) r = await bucket.download(storagePath);
+    if (r?.error || !r?.data) throw new Error(`Storage download failed: ${r?.error?.message ?? "empty"}`);
+    const bytes = new Uint8Array(await r.data.arrayBuffer());
+    const ext = storagePath.split(".").pop()?.toLowerCase() ?? "jpg";
+    const mime = r.data.type?.startsWith("image/") ? r.data.type : ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
+    return { bytes, mime };
+  }
+  const res = await fetch(absoluteImageUrl(image)!, { headers: { Accept: "image/*" } });
+  if (!res.ok) throw new Error(`Image HTTP ${res.status}`);
+  return {
+    mime: (res.headers.get("content-type") ?? "image/jpeg").split(";")[0]!.trim(),
+    bytes: new Uint8Array(await res.arrayBuffer()),
+  };
 }
 
 /**
- * Embed products whose main photo has no (or an outdated) fingerprint.
- * Bounded per call and idempotent: finished products are skipped next time.
+ * Fingerprint + embed products whose main photo is new/changed or not yet
+ * vectorised. Bounded per call and idempotent.
  */
 export async function syncProductImageEmbeddings(
   sb: Sb,
-  opts: { storeId?: string; limit?: number; retryFailed?: Set<string> } = {},
+  opts: { storeId?: string; productId?: string; limit?: number } = {},
 ) {
   const limit = Math.min(Math.max(opts.limit ?? 10, 1), 40);
   let done = 0;
   let failed = 0;
+  let embedDown = false;
   for (let from = 0; done + failed < limit; from += 500) {
     let query = sb
       .from("products")
@@ -148,74 +155,69 @@ export async function syncProductImageEmbeddings(
       .order("id", { ascending: true })
       .range(from, from + 499);
     if (opts.storeId) query = query.eq("store_id", opts.storeId);
+    if (opts.productId) query = query.eq("id", opts.productId);
     const { data: products, error } = await query;
     if (error) throw new Error(error.message);
     const page = (products ?? []) as Array<{ id: string; store_id: string; primary_image_url: string | null; gallery: unknown }>;
     if (!page.length) break;
     const { data: existing } = await sb
       .from("product_image_embeddings")
-      .select("product_id,image_url,phash,last_error")
+      .select("product_id,image_url,phash,embedded_url,last_error")
       .in("product_id", page.map((p) => p.id));
-    // A product is "memorised" once its current photo has a fingerprint (or a
-    // recorded fingerprint failure for that same photo).
-    const known = new Map((existing ?? [])
-      .filter((row: any) => row.phash || String(row.last_error ?? "").startsWith("FP:"))
-      .map((row: any) => [String(row.product_id), String(row.image_url)]));
+    const rows = new Map<string, any>((existing ?? []).map((r: any) => [String(r.product_id), r]));
     for (const product of page) {
       if (done + failed >= limit) break;
       const image = primaryImage(product);
-      if (!image || (known.get(product.id) === image && !opts.retryFailed?.has(product.id))) continue;
+      if (!image) continue;
+      const row = rows.get(product.id);
+      const sameImage = row && row.image_url === image;
+      const printOk = sameImage && (row.phash || String(row.last_error ?? "").startsWith("FP:"));
+      const vectorOk = sameImage && (row.embedded_url === image || embedDown);
+      if (printOk && vectorOk) continue;
       try {
-        let bytes: Uint8Array;
-        let mime: string;
-        const storagePath = /^https?:\/\//i.test(image) ? null : image.replace(/^\/?(api\/img\/)?/, "");
-        if (storagePath && (sb as any).storage) {
-          // Our own image proxy cannot be fetched from inside the Worker (522),
-          // so store-hosted photos are read straight from storage.
-          const { data: blob, error: dlError } = await (sb as any).storage.from("store-assets").download(storagePath, {
-            transform: { width: 256, height: 256, resize: "contain", quality: 80, format: "origin" },
-          }).then((r: any) => (r?.data ? r : (sb as any).storage.from("store-assets").download(storagePath)));
-          if (dlError || !blob) throw new Error(`Storage download failed: ${dlError?.message ?? "empty"}`);
-          bytes = new Uint8Array(await blob.arrayBuffer());
-          const ext = storagePath.split(".").pop()?.toLowerCase() ?? "jpg";
-          mime = blob.type?.startsWith("image/") ? blob.type : ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
-        } else {
-          const res = await fetch(absoluteImageUrl(image)!, { headers: { Accept: "image/*" } });
-          if (!res.ok) throw new Error(`Image HTTP ${res.status}`);
-          mime = (res.headers.get("content-type") ?? "image/jpeg").split(";")[0]!.trim();
-          bytes = new Uint8Array(await res.arrayBuffer());
-        }
-        if (!mime.startsWith("image/")) throw new Error(`Not an image (${mime})`);
-        if (!bytes.byteLength || bytes.byteLength > 8_000_000) throw new Error("Image size unsupported");
-        const { fingerprintImage } = await import("@/lib/photo-fingerprint.server");
-        const phash = fingerprintImage(bytes);
-        if (!phash) throw new Error(`Unsupported photo format (${mime})`);
-        await sb.from("product_image_embeddings").upsert({
+        const { bytes, mime } = await loadImageBytes(sb, image);
+        if (!mime.startsWith("image/")) throw new Error(`FP: Not an image (${mime})`);
+        if (!bytes.byteLength || bytes.byteLength > 8_000_000) throw new Error("FP: Image size unsupported");
+        const patch: Record<string, unknown> = {
           product_id: product.id,
           store_id: product.store_id,
           image_url: image,
-          phash,
-          model: "phash-v1",
+          model: `phash-v1+${IMAGE_EMBEDDING_MODEL}`,
           last_error: null,
           updated_at: new Date().toISOString(),
-        });
+        };
+        if (!printOk) {
+          const { fingerprintImage } = await import("@/lib/photo-fingerprint.server");
+          patch["phash"] = fingerprintImage(bytes);
+        }
+        if (!vectorOk) {
+          try {
+            const v = await embedImageBytes(sb, bytes, mime);
+            patch["embedding"] = `[${v.join(",")}]`;
+            patch["embedded_url"] = image;
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : "embed failed";
+            if (/No working Gemini key|HTTP 429|HTTP 5/.test(msg)) embedDown = true;
+            patch["last_error"] = `VEC: ${msg}`.slice(0, 300);
+            if (/HTTP 400/.test(msg)) patch["embedded_url"] = image; // unreadable image: don't retry forever
+          }
+        }
+        await sb.from("product_image_embeddings").upsert(patch);
         done += 1;
       } catch (cause) {
-        // Record the failure against this image so it is not retried every run;
-        // a new image URL on the product triggers a fresh attempt.
         await sb.from("product_image_embeddings").upsert({
           product_id: product.id,
           store_id: product.store_id,
           image_url: image,
           phash: null,
-          model: "phash-v1",
-          last_error: `FP: ${(cause instanceof Error ? cause.message : "Fingerprint failed")}`.slice(0, 300),
+          embedded_url: image,
+          last_error: `FP: ${(cause instanceof Error ? cause.message : "failed").replace(/^FP: /, "")}`.slice(0, 300),
           updated_at: new Date().toISOString(),
         });
         failed += 1;
       }
     }
-    if (page.length < 500) break;
+    if (page.length < 500 || opts.productId) break;
   }
   return { embedded: done, failed };
 }
