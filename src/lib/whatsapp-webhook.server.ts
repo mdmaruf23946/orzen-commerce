@@ -360,6 +360,18 @@ export async function handleWhatsAppWebhook(request: Request) {
         if (jobErr) return new Response("Queue failed", { status: 500 });
         if (!job || (job as any[]).length === 0) continue; // duplicate delivery
 
+        // Recovery: re-wake a few jobs whose wake-up was lost (due > 60s ago).
+        const { data: stuck } = await (sb as any)
+          .from("whatsapp_jobs")
+          .select("id")
+          .in("status", ["pending", "retry"])
+          .lt("available_at", new Date(Date.now() - 60_000).toISOString())
+          .order("available_at", { ascending: true })
+          .limit(3);
+        for (const s of (stuck ?? []) as any[]) {
+          await (sb as any).rpc("kick_whatsapp_job", { _job_id: s.id }).catch?.(() => undefined);
+        }
+
         await sb.from("whatsapp_webhook_events").insert({
           store_id: storeId,
           phone_number_id: phoneNumberId,

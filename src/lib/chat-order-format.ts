@@ -131,6 +131,12 @@ export function buildBuyNowMessage(opts: {
   intro?: string | null;
 }) {
   const lines: string[] = [];
+  const intro = String(opts.intro ?? "").trim();
+  if (intro) lines.push(intro, "");
+  const qty = Math.max(1, Number(opts.qty ?? 1) || 1);
+  lines.push(`পণ্য: ${opts.productName}${qty > 1 ? ` × ${toBnDigits(qty)}` : ""}`);
+  if (Number(opts.price) > 0) lines.push(`দাম: ${money(Number(opts.price) * qty)}`);
+  lines.push("");
 
   if (opts.zones.length) {
     lines.push("ডেলিভারি চার্জ:");
