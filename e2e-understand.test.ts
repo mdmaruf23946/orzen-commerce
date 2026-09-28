@@ -188,5 +188,5 @@ test("confirm question: yes saves, no asks again", async () => {
   const s = await slot(conv.id);
   expect(s.customer_name).toBe("করিম");
   console.log("after yes bot:", JSON.stringify(await lastBot(conv.id)));
-  expect(await lastBot(conv.id)).toContain("মোবাইল");
+  expect(await lastBot(conv.id)).toContain("ফোন");
 }, 60_000);
