@@ -12,6 +12,8 @@ export async function cached<T>(key: string, ttlMs: number, loader: () => Promis
   if (running) return running as Promise<T>;
   const p = loader()
     .then((value) => {
+      // Never cache a failed database read.
+      if ((value as any)?.error) return value;
       if (store.size >= MAX) store.delete(store.keys().next().value as string);
       store.set(key, { value, expiresAt: Date.now() + ttlMs });
       return value;
