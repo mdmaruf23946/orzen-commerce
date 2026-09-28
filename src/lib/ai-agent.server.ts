@@ -50,14 +50,22 @@ export type AgentContext = {
 
 export async function loadAiContext(storeId: string) {
   const sb = admin();
+  const { cached } = await import("./ttl-cache.server");
+  // Shared store/agent/global settings: short TTL cache (60s / 30s), per store.
   const [{ data: store }, { data: agent }, { data: settings }] = await Promise.all([
-    sb
-      .from("stores")
-      .select("id,slug,name,description,address,phone,whatsapp,facebook,delivery,payments_config")
-      .eq("id", storeId)
-      .maybeSingle(),
-    sb.from("store_ai_agents").select("*").eq("store_id", storeId).maybeSingle(),
-    sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle(),
+    cached(`ctx:store:${storeId}`, 60_000, async () =>
+      await sb
+        .from("stores")
+        .select("id,slug,name,description,address,phone,whatsapp,facebook,delivery,payments_config")
+        .eq("id", storeId)
+        .maybeSingle(),
+    ),
+    cached(`ctx:agent:${storeId}`, 60_000, async () =>
+      await sb.from("store_ai_agents").select("*").eq("store_id", storeId).maybeSingle(),
+    ),
+    cached(`ai_settings`, 30_000, async () =>
+      await sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle(),
+    ),
   ]);
   if (!store) throw new Error("Store not found");
   // A store may not have an agent row yet (older stores, or a failed seed).
@@ -1306,7 +1314,8 @@ export function buildTools(ctx: AgentContext) {
         productId: z.string().uuid().optional(),
       }),
       execute: async ({ area, productId }) => {
-        const zones = await fetchDeliveryZones(sb, storeId);
+        const { cached } = await import("./ttl-cache.server");
+        const zones = await cached(`zones:${storeId}`, 60_000, () => fetchDeliveryZones(sb, storeId));
         let productCharge: number | null = null;
         if (productId) {
           const { data } = await sb
