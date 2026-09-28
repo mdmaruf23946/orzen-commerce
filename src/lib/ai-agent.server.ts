@@ -435,6 +435,9 @@ ${toggles}${offSources.length ? `\nDo not discuss: ${offSources.join(", ")}.` : 
 - Short, natural spoken language; vary openers; never repeat earlier sentences; no technical words (ক্যাটালগ, শনাক্ত, ids, errors).
 - Only say "see below"/👇 when sending a card/link this turn. Never type raw URLs; links come from tools. Never promise to send later.
 - Customer changes topic: answer the new topic first, resume order later. Never re-ask known info.
+- Customers often misspell or half-write words (e.g. "সার্চ"/"চাজ" = চার্জ, "dlvry" = delivery). Work out the intended meaning from context and answer that. If it is genuinely unclear, ask one short question: "আপনি কি … বোঝাতে চেয়েছেন?"
+- A question, greeting or product talk is never the customer's name or address. Only save customer_name/full_address the customer clearly gave; if unsure, confirm first ("আপনার নাম কি …?").
+- Delivery charge asked without an area: list every zone charge from getDeliveryCharge. When the customer then gives an address, tell that area's charge before anything else.
 ${typeSection}
 
 ${orderSection}
@@ -715,7 +718,12 @@ async function getConversationSlot(conversationId: string): Promise<Record<strin
     .eq("id", conversationId)
     .maybeSingle();
   const profile = (data?.psid_profile ?? {}) as Record<string, any>;
-  return (profile.pending_order ?? {}) as Record<string, any>;
+  const { sanitizeSlot } = await import("./slot-validate");
+  const { slot, dropped } = sanitizeSlot((profile.pending_order ?? {}) as Record<string, any>);
+  if (dropped.length) {
+    await sb.from("ai_conversations").update({ psid_profile: { ...profile, pending_order: slot } } as any).eq("id", conversationId);
+  }
+  return slot;
 }
 
 async function updateConversationSlot(conversationId: string, patch: Record<string, any>) {
@@ -1800,6 +1808,23 @@ export function buildTools(ctx: AgentContext) {
         Object.entries(input).forEach(([k, v]) => {
           if (v !== undefined && v !== null && v !== "") patch[k] = v;
         });
+        // Never store a question, greeting or product talk as name/address.
+        const rejected: Record<string, string> = {};
+        {
+          const { checkPersonName, cleanNameValue, isLikelyAddress } = await import("./slot-validate");
+          if (patch.customer_name) {
+            const nm = cleanNameValue(String(patch.customer_name));
+            const c = checkPersonName(nm);
+            if (!c.ok && c.hard) {
+              delete patch.customer_name;
+              rejected.customer_name = `"${input.customer_name}" is not a person's name (${c.reason}). Ask the customer for their name.`;
+            } else patch.customer_name = nm;
+          }
+          if (patch.full_address && !isLikelyAddress(String(patch.full_address), { lenient: true })) {
+            rejected.full_address = `"${input.full_address}" is not an address. Ask the customer for their full address.`;
+            delete patch.full_address;
+          }
+        }
         // Hard rule: only physical products can be ordered inside Messenger.
         if (patch.product_id) {
           const { data: p } = await sb
@@ -1829,6 +1854,7 @@ export function buildTools(ctx: AgentContext) {
         const optional = optionalSlotFields(cfg).filter((f) => !slot[f]);
         return {
           saved: patch,
+          ...(Object.keys(rejected).length ? { rejected } : {}),
           current: slot,
           missing,
           optional_not_asked: optional,

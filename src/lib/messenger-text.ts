@@ -53,6 +53,8 @@ export function sanitizeOutgoingText(text: string, facts: PayloadFacts = {}): st
     .join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .replace(/^[\s।.,!?-]+/, "")
+    // "চান? ?" / "!!" / "।।" → one mark.
+    .replace(/([?？!।])(?:\s*[?？!।])+/g, "$1")
     .trim();
 
   return out;
