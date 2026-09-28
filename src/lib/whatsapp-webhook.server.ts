@@ -219,6 +219,61 @@ async function handleBuyButton(opts: {
   await sendAndLog(sb, phoneNumberId, token, to, conversationId, text);
 }
 
+/** Customer photo → same-store product via fingerprint/vector search (no AI chat call). */
+async function handleWaPhoto(opts: {
+  sb: any; storeId: string; conversationId: string; to: string; token: string; phoneNumberId: string; jobId: string; mediaId: string;
+}): Promise<string | null> {
+  const { sb, storeId, conversationId, to, token, phoneNumberId, jobId, mediaId } = opts;
+  try {
+    const { getWaMediaUrl, sendWaImage, sendWaButtons } = await import("@/lib/whatsapp-send.server");
+    const url = await getWaMediaUrl(mediaId, token);
+    if (!url) return null;
+    const res = await fetch(url, { headers: { authorization: `Bearer ${token}` } });
+    if (!res.ok) return null;
+    const mime = (res.headers.get("content-type") ?? "image/jpeg").split(";")[0]!.trim();
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    const { findProductByPhoto } = await import("@/lib/photo-match.server");
+    const found = await findProductByPhoto(sb, storeId, bytes, mime);
+    const { getStoreMemory } = await import("@/lib/catalog-memory.server");
+    const memory = await getStoreMemory(sb, storeId);
+    const money = (n: unknown) => `৳${Number(n ?? 0).toLocaleString("en-IN")}`;
+    const imgUrl = (p: any) => {
+      const v = p?.primary_image_url as string | null;
+      if (!v) return null;
+      const origin = (process.env["PUBLIC_SITE_ORIGIN"] || "https://orzen.top").replace(/\/$/, "");
+      return /^https?:/i.test(v) ? v : `${origin}/api/img/${v.replace(/^\/+/, "").replace(/^api\/img\//, "")}`;
+    };
+    let reply: string;
+    if (found.product) {
+      const p: any = found.product;
+      reply = `এটা আমাদের "${p.name}"।\nদাম: ${money(p.price)}${Number(p.stock) > 0 ? "" : " (এখন স্টকে নেই)"}`;
+      const link = imgUrl(p);
+      if (link) await sendWaImage(phoneNumberId, token, to, link, p.name).catch(() => null);
+      await sendWaButtons(phoneNumberId, token, to, reply, [{ id: `BUY_${p.id}`, title: "Buy Now" }]);
+      await logOutbound(sb, conversationId, reply);
+    } else if (found.candidateIds.length) {
+      const list = found.candidateIds.slice(0, 3).map((id) => memory.byId.get(id)?.product).filter(Boolean) as any[];
+      reply = `ছবির সাথে মিল আছে এমন পণ্য:\n${list.map((p, i) => `${i + 1}. ${p.name} — ${money(p.price)}`).join("\n")}\nকোনটা চাচ্ছেন জানালে অর্ডার করে দেব।`;
+      await sendWaButtons(phoneNumberId, token, to, reply, list.map((p) => ({ id: `BUY_${p.id}`, title: String(p.name).slice(0, 20) })));
+      await logOutbound(sb, conversationId, reply);
+    } else {
+      return null; // let the AI answer with alternatives
+    }
+    await sb.from("whatsapp_jobs").update({ reply_text: reply, route: `fast:photo_${found.method ?? "candidates"}` }).eq("id", jobId);
+    console.log(`[wa-photo] store=${storeId} method=${found.method ?? "none"} score=${found.score.toFixed(3)} ms=${found.ms}`);
+    return reply;
+  } catch (e) {
+    console.log(`[wa-photo] failed: ${e instanceof Error ? e.message : e}`);
+    return null;
+  }
+}
+
+async function logOutbound(sb: any, conversationId: string, text: string) {
+  await sb.from("ai_messages").insert({
+    conversation_id: conversationId, role: "assistant", content: text, direction: "outbound", message_type: "text", delivery_status: "sent",
+  });
+}
+
 /** Meta webhook verification (GET). */
 export async function handleWhatsAppVerify(request: Request) {
   const url = new URL(request.url);
@@ -237,6 +292,7 @@ export type WaJobPayload = {
   type: string;
   button_payload: string | null;
   profile_name: string | null;
+  media_id?: string | null;
 };
 
 /**
@@ -338,7 +394,13 @@ export async function handleWhatsAppWebhook(request: Request) {
         if (!conv) return new Response("Conversation store failed", { status: 500 });
 
         // Unique (phone_number_id, message_id): a Meta retry never creates a second job.
-        const payload: WaJobPayload = { text, type, button_payload: buttonPayload, profile_name: profileName };
+        const payload: WaJobPayload = {
+          text,
+          type,
+          button_payload: buttonPayload,
+          profile_name: profileName,
+          media_id: attachments[0]?.media_id ?? null,
+        };
         const { data: job, error: jobErr } = await (sb as any)
           .from("whatsapp_jobs")
           .upsert(
@@ -500,6 +562,14 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
       productId: buttonPayload.replace(/^BUY_/, ""),
     });
     return { reply: "[buy-now flow]" };
+  }
+
+  if (type === "image" && (job.event_payload as WaJobPayload)?.media_id) {
+    const handled = await handleWaPhoto({
+      sb, storeId, conversationId, to: waId, token, phoneNumberId, jobId: job.id,
+      mediaId: String((job.event_payload as WaJobPayload).media_id),
+    });
+    if (handled) return { reply: handled };
   }
 
   if (!text.trim() || (type !== "text" && type !== "quick_reply")) return { reply: null, skipped: "non-text" };
