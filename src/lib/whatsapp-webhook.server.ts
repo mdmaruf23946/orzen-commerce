@@ -518,6 +518,9 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
   const { text = "", type = "text", button_payload: buttonPayload = null } = job.event_payload ?? ({} as WaJobPayload);
   const conversationId = job.conversation_id;
   if (!conversationId) return { reply: null, skipped: "no conversation" };
+  if ((job.event_payload as any)?.dry_run === true && String(job.message_id ?? "").startsWith("loadtest_")) {
+    setTraceMeta("dry_run", true);
+  }
 
   void markWaRead(phoneNumberId, token, job.message_id);
 

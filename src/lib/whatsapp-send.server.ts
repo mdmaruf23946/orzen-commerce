@@ -27,6 +27,12 @@ export function friendlyWaError(raw: string) {
 }
 
 async function post(phoneNumberId: string, token: string, body: any): Promise<WaSendResult> {
+  // Load-test jobs (flag + "loadtest_" id, set by the worker) never reach Meta.
+  const { currentTrace } = await import("./telemetry.server");
+  if (currentTrace()?.meta.dry_run === true) {
+    await new Promise((r) => setTimeout(r, 300));
+    return { message_id: `dryrun_${crypto.randomUUID()}` };
+  }
   const r = await fetch(`${GRAPH}/${encodeURIComponent(phoneNumberId)}/messages`, {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
