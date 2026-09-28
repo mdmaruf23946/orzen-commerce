@@ -9,10 +9,10 @@
 export const IMAGE_EMBEDDING_MODEL = "gemini-embedding-2";
 export const IMAGE_EMBEDDING_DIM = 768;
 
-// Initial gate; recalibrated against live catalogue photos.
-export const VECTOR_MATCH_MIN_SIMILARITY = 0.86;
-export const VECTOR_MATCH_MIN_MARGIN = 0.05;
-export const VECTOR_CANDIDATE_MIN = 0.6;
+// Calibrated on live photos (cropped + recompressed): same product 0.90-0.96, next best <= 0.83.
+export const VECTOR_MATCH_MIN_SIMILARITY = 0.88;
+export const VECTOR_MATCH_MIN_MARGIN = 0.08;
+export const VECTOR_CANDIDATE_MIN = 0.75;
 
 type Sb = { from: (t: string) => any; rpc: (fn: string, args: any) => any };
 
