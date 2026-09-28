@@ -20,11 +20,11 @@
 - Open: real Meta delivery needs the owner to send a live message; return policy unset in merchant panel.
 
 ## Chat understanding fix (2026-09-28)
-- [ ] Never save questions/greetings as name/address (Messenger parser, AI tool, WhatsApp, stored slots)
-- [ ] Typo-tolerant fast path ("ডেলিভারি সার্চ কত")
-- [ ] AI "understand" step + confirm question when unsure
-- [ ] Delivery charge answered after address
-- [ ] Collapse "? ?" in replies
-- [ ] Order Details total shows delivery twice
-- [ ] Keep failed-attempt errors to diagnose slow replies
-- [ ] Test, deploy, parity
+- [x] Never save questions/greetings as name/address (Messenger parser, AI tool, WhatsApp, stored slots)
+- [x] Typo-tolerant fast path ("ডেলিভারি সার্চ কত")
+- [x] AI "understand" step + confirm question when unsure
+- [x] Delivery charge answered after address
+- [x] Collapse "? ?" in replies
+- [x] Order Details total shows delivery twice
+- [x] Keep failed-attempt errors to diagnose slow replies
+- [x] Test (5/5 live test-mode), deploy e6d5aec7, parity passed

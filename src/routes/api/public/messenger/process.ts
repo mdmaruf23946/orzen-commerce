@@ -135,6 +135,15 @@ export const Route = createFileRoute("/api/public/messenger/process")({
                 throw new Error(`Processor returned ${response.status}${detail ? `: ${detail}` : ""}`);
               }
             }
+            // Keep the reasons of earlier failed attempts next to the timings,
+            // so a slow (retried) reply can be explained afterwards.
+            const prevErrors = Array.isArray((job as any).timings?.attempt_errors)
+              ? ((job as any).timings.attempt_errors as string[])
+              : [];
+            const finalTimings =
+              timings || prevErrors.length
+                ? { ...((timings as Record<string, unknown>) ?? {}), ...(prevErrors.length ? { attempt_errors: prevErrors } : {}) }
+                : null;
             await supabaseAdmin
               .from("messenger_jobs")
               .update({
@@ -142,7 +151,7 @@ export const Route = createFileRoute("/api/public/messenger/process")({
                 completed_at: new Date().toISOString(),
                 processing_ms: Date.now() - started,
                 last_error: null,
-                ...(timings ? { timings } : {}),
+                ...(finalTimings ? { timings: finalTimings } : {}),
               } as any)
               .eq("id", job.id)
               .eq("status", "processing");
@@ -185,6 +194,12 @@ export const Route = createFileRoute("/api/public/messenger/process")({
                   completed_at: exhausted ? new Date().toISOString() : null,
                   processing_ms: Date.now() - started,
                   last_error: message.slice(0, 500),
+                  timings: {
+                    attempt_errors: [
+                      ...(Array.isArray((job as any).timings?.attempt_errors) ? (job as any).timings.attempt_errors : []),
+                      `#${attempts} ${message.slice(0, 200)}`,
+                    ].slice(-5),
+                  },
                 } as any)
                 .eq("id", job.id);
               if (exhausted) {

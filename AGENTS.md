@@ -20,3 +20,5 @@
 - AI system prompt is compact and conditional (order/non-physical/policy/FAQ sections only when the latest message needs them; max 3 matched FAQs; rarely-used tools dropped per turn; temperature capped at 1.0) — keeps prompts ~2k chars instead of ~12k for speed and cost.
 
 - Delivery time and return/exchange statements come only from `loadStorePolicy` (src/lib/store-policy.server.ts); `guardReply` also rewrites unavailable size/colour claims from the focus product's `variants` — prevents invented policies and variants in chat.
+- Chat name/address slots pass `src/lib/slot-validate.ts` (questions/greetings/product talk never stored; free-text names only while we are waiting for them; stored bad values dropped on read); unsure text goes to `understandOrderReply` and low confidence asks the customer to confirm — prevents questions like "ডেলিভারি সার্চ কত" becoming order names.
+- `orders.subtotal` stores the grand total (items + delivery − discount) for every order source; UIs derive the items total from `order_items` and never add delivery again.
