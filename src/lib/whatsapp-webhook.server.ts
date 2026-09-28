@@ -369,7 +369,7 @@ export async function handleWhatsAppWebhook(request: Request) {
           .order("available_at", { ascending: true })
           .limit(3);
         for (const s of (stuck ?? []) as any[]) {
-          await (sb as any).rpc("kick_whatsapp_job", { _job_id: s.id }).catch?.(() => undefined);
+          try { await (sb as any).rpc("kick_whatsapp_job", { _job_id: s.id }); } catch { /* best effort */ }
         }
 
         await sb.from("whatsapp_webhook_events").insert({
