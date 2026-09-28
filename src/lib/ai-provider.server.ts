@@ -117,7 +117,10 @@ function candidateFromKey(k: GeminiKey, modelId: string): Candidate | null {
     apiKey: k.key,
     baseURL,
     modelId: chosen,
-    fallbacks: k.model ? [] : preset.fallbacks,
+    // A hand-typed model may be retired (404); keep the preset models behind it.
+    fallbacks: k.model
+      ? [preset.model, ...preset.fallbacks].filter((m): m is string => !!m && m !== k.model)
+      : preset.fallbacks,
     vision: k.vision,
     headers:
       k.provider === "openrouter"
@@ -138,7 +141,12 @@ function buildCandidates(settings: any, modelId: string): Candidate[] {
     : allKeys.filter((k) => k.enabled);
   const usable = ordered.filter((k) => k.id === active?.id || k.failed_on !== today);
   const parked = ordered.filter((k) => !usable.includes(k));
-  for (const k of [...usable, ...parked]) {
+  // Usable keys first, ordered Gemini → Groq → OpenRouter → others (stable,
+  // so the active key stays first within its provider); parked keys last.
+  const rank = (p: string) => ({ gemini: 0, groq: 1, openrouter: 2, openai: 3 } as Record<string, number>)[p] ?? 4;
+  const byProvider = (a: GeminiKey, b: GeminiKey) =>
+    (a.id === active?.id ? -1 : 0) - (b.id === active?.id ? -1 : 0) || rank(a.provider) - rank(b.provider);
+  for (const k of [...[...usable].sort(byProvider), ...parked]) {
     const c = candidateFromKey(k, modelId);
     if (c) out.push(c);
   }
@@ -214,6 +222,18 @@ function breakerFail(k: string, why: string) {
   }
   breaker.set(k, b);
 }
+/** Opens the breaker immediately (dead key, quota, retired model). */
+function breakerTrip(k: string, ms: number, why: string) {
+  breaker.set(k, { fails: BREAKER_FAILS - 1, openUntil: Date.now() + ms });
+  console.warn(`[ai-route] breaker open ${Math.round(ms / 1000)}s:`, k, why.slice(0, 120));
+}
+function retryAfterMs(res: Response) {
+  const v = res.headers.get("retry-after");
+  const s = v ? Number(v) : NaN;
+  return Number.isFinite(s) && s > 0 ? Math.min(s * 1000, 3_600_000) : BREAKER_OPEN_MS;
+}
+const KEY_DEAD_MS = 6 * 3_600_000;
+const MODEL_GONE_MS = 3_600_000;
 function breakerSuccess(k: string) {
   breaker.delete(k);
 }

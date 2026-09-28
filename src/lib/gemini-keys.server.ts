@@ -65,8 +65,9 @@ export const PROVIDER_PRESETS: Record<KeyProvider, ProviderPreset> = {
     id: "openrouter",
     name: "OpenRouter",
     baseURL: "https://openrouter.ai/api/v1",
-    model: "google/gemini-2.0-flash-exp:free",
-    fallbacks: ["meta-llama/llama-3.2-11b-vision-instruct:free", "meta-llama/llama-3.3-70b-instruct:free"],
+    // Verified 2026-09-28 against openrouter.ai/api/v1/models: free, tool-calling, vision.
+    model: "google/gemma-4-31b-it:free",
+    fallbacks: ["qwen/qwen3.8-27b:free", "google/gemma-4-26b-a4b-it:free"],
     vision: true,
     keyHint: "sk-or-…",
     signupUrl: "https://openrouter.ai/keys",
