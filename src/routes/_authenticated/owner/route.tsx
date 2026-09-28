@@ -42,6 +42,7 @@ const groups: NavGroup[] = [
     { to: "/owner/meta-app", label: "Meta App / Auto Connect", icon: Sparkles },
     { to: "/owner/couriers", label: "Couriers", icon: Truck },
     { to: "/owner/marketing", label: "Marketing", icon: Megaphone },
+    { to: "/owner/meta-tracking", label: "Main Website Tracking", icon: Activity },
     { to: "/owner/ads", label: "Advertisement Management", icon: Megaphone },
   ]},
   { label: "Platform", links: [
