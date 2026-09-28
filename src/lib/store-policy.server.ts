@@ -94,5 +94,6 @@ export function returnPolicyText(p: StorePolicy, bn: boolean) {
     if (r.exchange) parts.push(r.exchange_days ? `Exchange within ${r.exchange_days} days.` : "Exchanges are accepted.");
   }
   if (r.note) parts.push(r.note);
-  return parts.join(" ");
+  const out = parts.join(" ");
+  return bn ? out.replace(/\d/g, (d) => BN[Number(d)]!) : out;
 }

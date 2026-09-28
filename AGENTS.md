@@ -18,3 +18,5 @@
 - AI provider routing uses a 12s per-attempt timeout and a per-isolate circuit breaker (3 fails → skip 120s); shared store/agent/settings/delivery-zone reads use a 30–60s TTL cache (src/lib/ttl-cache.server.ts) — never cache customer, order, stock or price-verification data.
 - Message telemetry: WhatsApp/Messenger workers run each job inside `runWithTrace` (src/lib/telemetry.server.ts, AsyncLocalStorage) and store stage ms in `*_jobs.timings`; helpers call `traceTime`/`setTraceMeta` — no parameter threading, and telemetry never throws.
 - AI system prompt is compact and conditional (order/non-physical/policy/FAQ sections only when the latest message needs them; max 3 matched FAQs; rarely-used tools dropped per turn; temperature capped at 1.0) — keeps prompts ~2k chars instead of ~12k for speed and cost.
+
+- Delivery time and return/exchange statements come only from `loadStorePolicy` (src/lib/store-policy.server.ts); `guardReply` also rewrites unavailable size/colour claims from the focus product's `variants` — prevents invented policies and variants in chat.

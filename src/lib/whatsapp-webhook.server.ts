@@ -215,6 +215,8 @@ async function handleBuyButton(opts: {
         zones,
         productDeliveryCharge: product.delivery_charge,
         intro: cfg.buy_now_message,
+        missing,
+        known: slot,
       })
     : `${product.name} অর্ডারের সব তথ্য পেয়েছি। কনফার্ম করতে "হ্যাঁ" লিখুন।`;
   await sendAndLog(sb, phoneNumberId, token, to, conversationId, text);
