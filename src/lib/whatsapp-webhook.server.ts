@@ -605,7 +605,13 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
     ]);
 
     setTraceMeta("route", "ai");
-    const reply = await traceTime("ai", () => generateAgentReply({
+    // Job-level cap: finish (or fail into a clean retry) well inside the
+    // worker's request budget instead of being killed mid-run.
+    const withCap = <T,>(p: Promise<T>) => Promise.race([
+      p,
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error("AI reply took too long (45s cap)")), 45_000)),
+    ]);
+    const reply = await traceTime("ai", () => withCap(generateAgentReply({
       ctx: {
         storeId,
         storeSlug: (store as any).slug,
@@ -630,7 +636,7 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
         latestUserText: text,
       }),
       fast: true,
-    }));
+    })));
 
     const rawText = reply?.text ?? "";
     let guardedText = rawText;

@@ -448,7 +448,7 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
           }
           if (res.status === 429) quotaHits += 1;
         } catch (e) {
-          if (init?.signal?.aborted) throw e;
+          if (init?.signal?.aborted || (e as any)?.budget) throw e;
           lastError = `${c.label}: ${(e as Error).name === "TimeoutError" ? `timeout ${ATTEMPT_TIMEOUT_MS}ms` : (e as Error).message}`;
           breakerFail(`${c.label}|${modelId}`, lastError);
           console.warn("[ai-route] switching:", lastError.slice(0, 160));
