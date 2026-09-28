@@ -4791,11 +4791,14 @@ export type Database = {
           outbound_message_id: string | null
           page_id: string
           processing_ms: number | null
+          received_at: string | null
           reply_text: string | null
           sender_id: string
           started_at: string | null
           status: string
           store_id: string
+          timings: Json | null
+          trace_id: string | null
           updated_at: string
           wake_token: string
         }
@@ -4812,11 +4815,14 @@ export type Database = {
           outbound_message_id?: string | null
           page_id: string
           processing_ms?: number | null
+          received_at?: string | null
           reply_text?: string | null
           sender_id: string
           started_at?: string | null
           status?: string
           store_id: string
+          timings?: Json | null
+          trace_id?: string | null
           updated_at?: string
           wake_token?: string
         }
@@ -4833,11 +4839,14 @@ export type Database = {
           outbound_message_id?: string | null
           page_id?: string
           processing_ms?: number | null
+          received_at?: string | null
           reply_text?: string | null
           sender_id?: string
           started_at?: string | null
           status?: string
           store_id?: string
+          timings?: Json | null
+          trace_id?: string | null
           updated_at?: string
           wake_token?: string
         }
@@ -10870,12 +10879,15 @@ export type Database = {
           message_id: string
           phone_number_id: string
           processing_ms: number | null
+          received_at: string | null
           reply_text: string | null
           route: string | null
           sender_id: string
           started_at: string | null
           status: string
           store_id: string
+          timings: Json | null
+          trace_id: string | null
           updated_at: string
           wake_token: string
         }
@@ -10893,12 +10905,15 @@ export type Database = {
           message_id: string
           phone_number_id: string
           processing_ms?: number | null
+          received_at?: string | null
           reply_text?: string | null
           route?: string | null
           sender_id: string
           started_at?: string | null
           status?: string
           store_id: string
+          timings?: Json | null
+          trace_id?: string | null
           updated_at?: string
           wake_token?: string
         }
@@ -10916,12 +10931,15 @@ export type Database = {
           message_id?: string
           phone_number_id?: string
           processing_ms?: number | null
+          received_at?: string | null
           reply_text?: string | null
           route?: string | null
           sender_id?: string
           started_at?: string | null
           status?: string
           store_id?: string
+          timings?: Json | null
+          trace_id?: string | null
           updated_at?: string
           wake_token?: string
         }
