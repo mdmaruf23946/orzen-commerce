@@ -2896,3 +2896,9 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
     }
   }
 }
+
+/** Internal helpers exposed for automated tests only. */
+export const __messengerTestHooks = {
+  parseOrderDetailsTextEx,
+  maybeApplyPendingOrderText,
+};
