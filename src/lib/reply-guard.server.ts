@@ -139,7 +139,135 @@ export async function guardReply(
   }
 
   amounts = [];
+
+  // Variant (size/colour) and merchant policy firewalls — never throw.
+  try {
+    out = await guardVariants(sb, out, opts, corrections);
+  } catch {
+    /* non-fatal */
+  }
+  try {
+    out = await guardPolicy(sb, out, opts, corrections);
+  } catch {
+    /* non-fatal */
+  }
   return { text: out, corrections };
+}
+
+const SIZE_ALIAS: Record<string, string> = {
+  "এক্সএস": "xs", "এস": "s", "এম": "m", "এল": "l", "এক্সএল": "xl", "ডাবল এক্সএল": "xxl", "২এক্সএল": "xxl", "এক্সএক্সএল": "xxl",
+  "লাল": "red", "কালো": "black", "সাদা": "white", "নীল": "blue", "সবুজ": "green", "হলুদ": "yellow", "গোলাপি": "pink",
+  "সোনালী": "golden", "সোনালি": "golden", "রুপালি": "silver", "খয়েরি": "brown", "বাদামি": "brown", "ধূসর": "gray", "কমলা": "orange", "বেগুনি": "purple",
+};
+const norm = (s: string) => {
+  const t = String(s ?? "").trim().toLowerCase();
+  return SIZE_ALIAS[t] ?? (t === "grey" ? "gray" : t === "gold" ? "golden" : t === "2xl" ? "xxl" : t);
+};
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+async function guardVariants(
+  sb: any,
+  text: string,
+  opts: { storeId: string; focusProductId?: string | null },
+  corrections: GuardResult["corrections"],
+) {
+  if (!opts.focusProductId) return text;
+  const { data } = await sb
+    .from("products")
+    .select("variants,stock,product_type")
+    .eq("store_id", opts.storeId)
+    .eq("id", opts.focusProductId)
+    .maybeSingle();
+  if (!data || isStockless(data.product_type)) return text;
+  const v = data.variants;
+  const optionDefs: { name: string; values: string[] }[] = Array.isArray(v?.options) ? v.options : [];
+  const items: { options?: Record<string, string>; stock?: number | null }[] = Array.isArray(v?.items) ? v.items : [];
+  if (!optionDefs.length) return text;
+  const productStock = Number(data.stock ?? 0);
+  // value (normalized) → available?
+  const avail = new Map<string, { label: string; ok: boolean }>();
+  for (const def of optionDefs) {
+    for (const val of def.values ?? []) {
+      const matching = items.filter((it) => String(it.options?.[def.name] ?? "") === String(val));
+      const ok = matching.length
+        ? matching.some((it) => (it.stock == null ? productStock > 0 : Number(it.stock) > 0))
+        : productStock > 0;
+      avail.set(norm(val), { label: String(val), ok });
+    }
+  }
+  const inStock = [...avail.values()].filter((a) => a.ok).map((a) => a.label);
+  const CLAIM = /(আছে|রয়েছে|পাওয়া যাবে|পাবেন|available|in stock|have)/i;
+  const sentences = text.split(/(?<=[।.!?\n])/);
+  let changed = false;
+  const out = sentences.map((s) => {
+    if (!CLAIM.test(s) || /নেই|not available|out of stock/i.test(s)) return s;
+    const words = s.toLowerCase().match(/[a-z0-9]+|[\u0980-\u09FF]+/g) ?? [];
+    const bad = new Set<string>();
+    for (const w of words) {
+      const n = norm(w);
+      const hit = avail.get(n);
+      if (hit && !hit.ok) bad.add(hit.label);
+    }
+    // Claimed a size token that doesn't exist at all for this product.
+    const sizeDef = optionDefs.find((d) => /size|সাইজ/i.test(d.name));
+    if (sizeDef) {
+      for (const m of s.matchAll(/\b(XXS|XS|S|M|L|XL|XXL|XXXL|2XL|3XL)\b/g)) {
+        if (!avail.has(norm(m[1]!))) bad.add(m[1]!);
+      }
+    }
+    if (!bad.size) return s;
+    changed = true;
+    const list = [...bad].join(", ");
+    corrections.push({ kind: "variant_claim", detail: `${list} :: ${s.trim().slice(0, 160)}` });
+    const offer = inStock.length ? ` পাওয়া যাচ্ছে: ${inStock.join(", ")}।` : " এই মুহূর্তে কোনো অপশন স্টকে নেই।";
+    return `${list} এই মুহূর্তে নেই।${offer}${/\n$/.test(s) ? "\n" : " "}`;
+  });
+  void escapeRe;
+  return changed ? out.join("").trim() : text;
+}
+
+async function guardPolicy(
+  sb: any,
+  text: string,
+  opts: { storeId: string; focusProductId?: string | null },
+  corrections: GuardResult["corrections"],
+) {
+  const DELIV = /(ডেলিভারি|ডেলিভারী|delivery|পৌঁছ|হাতে পাবেন)/i;
+  const RET = /(রিটার্ন|ফেরত|এক্সচেঞ্জ|বদল|return|exchange|refund)/i;
+  const DAYS = /([0-9০-৯]+)\s*(?:-|–|থেকে|to)?\s*(?:[0-9০-৯]+)?\s*(?:দিন|day|days|কর্মদিবস|working)/gi;
+  if (!(DELIV.test(text) || RET.test(text)) || !/[0-9০-৯]\s*(?:-|–|থেকে|to)?\s*[0-9০-৯]*\s*(দিন|day|কর্মদিবস|working)/i.test(text)) {
+    // Still block "returns accepted" when the store disabled returns.
+    if (!RET.test(text)) return text;
+  }
+  const { loadStorePolicy, allowedDelivery, allowedReturn, returnPolicyText } = await import("./store-policy.server");
+  const p = await loadStorePolicy(sb, opts.storeId, opts.focusProductId);
+  const okD = allowedDelivery(p);
+  const okR = allowedReturn(p);
+  const bnDigits = (s: string) => Number(s.replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d))));
+  let changed = false;
+  const bn = /[\u0980-\u09FF]/.test(text);
+  const sentences = text.split(/(?<=[।.!?\n])/).map((s) => {
+    const isRet = RET.test(s);
+    const isDel = !isRet && DELIV.test(s);
+    if (!isRet && !isDel) return s;
+    if (isRet && p.returns.configured && !p.returns.accepts_returns && !p.returns.exchange && !/(নেই|না|not|no)\b/i.test(s)) {
+      changed = true;
+      corrections.push({ kind: "policy_return_disabled", detail: s.trim().slice(0, 160) });
+      return (returnPolicyText(p, bn) ?? "") + " ";
+    }
+    const nums = [...s.matchAll(DAYS)].map((m) => bnDigits(m[1]!));
+    if (!nums.length) return s;
+    const allowed = isRet ? okR : okD;
+    if (nums.every((n) => allowed.has(n))) return s;
+    changed = true;
+    corrections.push({ kind: isRet ? "policy_return_days" : "policy_delivery_days", detail: s.trim().slice(0, 160) });
+    if (isRet) return (returnPolicyText(p, bn) ?? (bn ? "রিটার্নের নিয়ম দোকান থেকে নিশ্চিত করে জানাচ্ছি।" : "Let me confirm the return policy with the store.")) + " ";
+    const rows = p.delivery.filter((z) => z.eta);
+    if (rows.length) return (bn ? "ডেলিভারি সময়: " : "Delivery time: ") + rows.map((z) => `${z.zone} ${z.eta}`).join(", ") + (bn ? "। " : ". ");
+    if (p.product_delivery_days != null) return bn ? `ডেলিভারি সময় প্রায় ${p.product_delivery_days} দিন। ` : `Delivery takes about ${p.product_delivery_days} days. `;
+    return bn ? "ডেলিভারি সময় দোকান থেকে নিশ্চিত করে জানাচ্ছি। " : "Let me confirm the delivery time with the store. ";
+  });
+  return changed ? sentences.join("").replace(/\s+\n/g, "\n").trim() : text;
 }
 
 /** Records guard corrections for review; never throws. */

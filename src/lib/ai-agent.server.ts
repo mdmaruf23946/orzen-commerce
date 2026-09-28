@@ -1343,6 +1343,17 @@ export function buildTools(ctx: AgentContext) {
       },
     }),
 
+    getStorePolicy: tool({
+      description:
+        "Get the store's real delivery time (per area) and return/exchange policy. ALWAYS call this before stating any delivery time or return/exchange rule. Never state a policy the tool didn't return.",
+      inputSchema: z.object({ productId: z.string().uuid().optional() }),
+      execute: async ({ productId }) => {
+        const { loadStorePolicy } = await import("./store-policy.server");
+        return loadStorePolicy(sb, storeId, productId ?? null);
+      },
+    }),
+
+
     getRelatedProducts: tool({
       description:
         "Get related products for upsell/cross-sell. kind='similar' returns same-category products; 'accessory'/'upsell' returns curated related_product_ids.",
