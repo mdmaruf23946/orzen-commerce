@@ -5362,6 +5362,7 @@ export type Database = {
           fingerprint: string | null
           fulfillment_meta: Json
           id: string
+          idempotency_key: string | null
           invoice_no: string | null
           is_test: boolean
           landing_page_connection_id: string | null
@@ -5410,6 +5411,7 @@ export type Database = {
           fingerprint?: string | null
           fulfillment_meta?: Json
           id?: string
+          idempotency_key?: string | null
           invoice_no?: string | null
           is_test?: boolean
           landing_page_connection_id?: string | null
@@ -5458,6 +5460,7 @@ export type Database = {
           fingerprint?: string | null
           fulfillment_meta?: Json
           id?: string
+          idempotency_key?: string | null
           invoice_no?: string | null
           is_test?: boolean
           landing_page_connection_id?: string | null
@@ -11171,6 +11174,15 @@ export type Database = {
       }
       claim_whatsapp_job: {
         Args: { _job_id: string; _wake_token: string }
+        Returns: Json
+      }
+      create_chat_order: {
+        Args: {
+          _idem_key: string
+          _items: Json
+          _order: Json
+          _store_id: string
+        }
         Returns: Json
       }
       customer_change_password: {

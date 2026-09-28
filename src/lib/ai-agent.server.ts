@@ -1883,13 +1883,21 @@ export function buildTools(ctx: AgentContext) {
           if (existing) customerId = existing.id;
         }
 
-        // Short, readable order number (e.g. PH-000123) from the store's invoice settings.
-        const { data: invoiceNo } = await sb.rpc("generate_invoice_no", { _store_id: storeId } as any);
-
-        const { data: order, error } = await sb
-          .from("orders")
-          .insert({
-            store_id: storeId,
+        // One transaction: idempotency lock → stock check under row lock →
+        // invoice number → order + items. Same key within 30 min = same order.
+        const { buildIdempotencyKey, createChatOrder } = await import("./chat-order.server");
+        const created = await createChatOrder(
+          sb,
+          storeId,
+          buildIdempotencyKey({
+            channel: String((ctx as any).channel ?? "chat"),
+            conversationId: convId,
+            productId: product.id,
+            variant: (slot as any).variant ?? null,
+            qty: slot.qty,
+            phone: phoneNorm || slot.phone,
+          }),
+          {
             customer_name: slot.customer_name,
             phone: phoneNorm || slot.phone,
             address: slot.full_address,
@@ -1901,22 +1909,28 @@ export function buildTools(ctx: AgentContext) {
             subtotal: subtotal + delivery,
             delivery_amount: delivery,
             delivery_zone_id: zone?.id ?? null,
-            invoice_no: (invoiceNo as string | null) || null,
-            status: "pending",
             notes: "Placed via AI Sales Agent (Messenger)",
             customer_id: customerId,
-          } as any)
-          .select("id,invoice_no")
-          .single();
-        if (error || !order) return { ok: false, error: error?.message ?? "insert_failed" };
-
-        await sb.from("order_items").insert({
-          order_id: order.id,
-          product_id: product.id,
-          name_snapshot: product.name,
-          price_snapshot: product.price,
-          qty: slot.qty,
-        } as any);
+          },
+          [{ product_id: product.id, name: product.name, price: Number(product.price), qty: slot.qty }],
+        );
+        if (!created.ok) {
+          if (created.error === "out_of_stock")
+            return { ok: false, error: "out_of_stock", available: (created as any).available };
+          return { ok: false, error: created.error };
+        }
+        const order = { id: created.id, invoice_no: created.invoice_no };
+        if (created.existing) {
+          await clearConversationSlot(convId);
+          const no = shortOrderNo(order.invoice_no, order.id);
+          return {
+            ok: true,
+            duplicate: true,
+            orderId: order.id,
+            invoice_no: no,
+            instruction: `This order was ALREADY placed. Do not create another. Tell the customer: "আপনার অর্ডার #${no} আগেই নেওয়া হয়েছে।"`,
+          };
+        }
 
         // Admin notification
         await sb.from("admin_notifications").insert({
