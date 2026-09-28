@@ -2250,6 +2250,13 @@ export async function generateAgentReply(opts: {
   }
   const { result, modelId } = attempt;
   void logUsage(opts.ctx.storeId, modelId, result.usage, "messenger");
+  try {
+    const { setTraceMeta } = await import("./telemetry.server");
+    const u: any = (result as any).usage ?? {};
+    setTraceMeta("model", modelId);
+    setTraceMeta("ai_steps", Array.isArray((result as any).steps) ? (result as any).steps.length : null);
+    setTraceMeta("tokens", Number(u.totalTokens ?? (Number(u.inputTokens ?? 0) + Number(u.outputTokens ?? 0))) || null);
+  } catch { /* telemetry never blocks */ }
   const verified = collectVerifiedFacts(result);
   const duplicateReply = findDuplicateBlockedReply(result as any);
   if (duplicateReply) return { text: duplicateReply, facts: {} as MessengerPayloadFacts, verified, raw: true };

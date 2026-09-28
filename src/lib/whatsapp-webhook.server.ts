@@ -1,6 +1,7 @@
 // WhatsApp Cloud API webhook — per-store, signature verified.
 // Mirrors the Messenger webhook flow: log event → upsert conversation →
 // store inbound message → AI reply (unless a human took over).
+import { traceTime, setTraceMeta } from "./telemetry.server";
 import { createClient } from "@supabase/supabase-js";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Database } from "@/integrations/supabase/types";
@@ -114,7 +115,7 @@ async function sendAndLog(
   text: string,
 ) {
   try {
-    const res = await sendWaText(phoneNumberId, token, to, text);
+    const res = await traceTime("send", () => sendWaText(phoneNumberId, token, to, text));
     await sb.from("ai_messages").insert({
       conversation_id: conversationId,
       role: "assistant",
@@ -565,7 +566,8 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
   }
 
   if (type === "image" && (job.event_payload as WaJobPayload)?.media_id) {
-    const handled = await handleWaPhoto({
+    setTraceMeta("route", "photo");
+    const handled = await traceTime("photo", () => handleWaPhoto({
       sb, storeId, conversationId, to: waId, token, phoneNumberId, jobId: job.id,
       mediaId: String((job.event_payload as WaJobPayload).media_id),
     });
@@ -579,6 +581,8 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
     const { tryFastPath } = await import("@/lib/fast-path.server");
     const fast = await tryFastPath(sb, { storeId, conversationId, text, customerPhone: waId });
     if (fast) {
+      setTraceMeta("route", "fast");
+      setTraceMeta("fast_kind", fast.kind);
       await sendAndLog(sb, phoneNumberId, token, waId, conversationId, fast.reply);
       await (sb as any).from("whatsapp_jobs").update({ reply_text: fast.reply, route: `fast:${fast.kind}` }).eq("id", job.id);
       return { reply: fast.reply };
@@ -597,7 +601,8 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
       resolveFocusProduct({ storeId, conversationId, text }),
     ]);
 
-    const reply = await generateAgentReply({
+    setTraceMeta("route", "ai");
+    const reply = await traceTime("ai", () => generateAgentReply({
       ctx: {
         storeId,
         storeSlug: (store as any).slug,
@@ -622,13 +627,13 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
         latestUserText: text,
       }),
       fast: true,
-    });
+    }));
 
     const rawText = reply?.text ?? "";
     let guardedText = rawText;
     if (reply?.verified && !reply.raw && rawText.trim()) {
       const { guardReply, logGuardCorrections } = await import("@/lib/reply-guard.server");
-      const g = await guardReply(sb, rawText, reply.verified, { storeId, focusProductId: focus?.product?.id ?? null });
+      const g = await traceTime("guard", () => guardReply(sb, rawText, reply.verified, { storeId, focusProductId: focus?.product?.id ?? null }));
       guardedText = g.text;
       await logGuardCorrections(sb, conversationId, g, rawText);
     }
