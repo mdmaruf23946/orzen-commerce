@@ -1946,7 +1946,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
           const { data: integ } = await sb
             .from("messenger_integrations")
             .select(
-              "id,store_id,page_access_token,page_access_token_encrypted,app_secret_encrypted,ai_auto_reply,human_takeover,conversation_history,delivery_failures,reply_delay_seconds,reply_speed,app_id,verify_token",
+              "id,store_id,page_access_token,page_access_token_encrypted,app_secret_encrypted,ai_auto_reply,human_takeover,conversation_history,compact_memory,delivery_failures,reply_delay_seconds,reply_speed,app_id,verify_token",
             )
             .eq("page_id", pageId)
             .maybeSingle();
@@ -2506,28 +2506,19 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               // Previously these six reads ran one after another and dominated the
               // reply latency.
               const useHistory = (integ as any).conversation_history !== false;
-              // Shorter context = fewer tokens = faster first token.
-              const historyLimit = replySpeed === "thorough" ? 30 : replySpeed === "balanced" ? 16 : 8;
+              const compact = (integ as any).compact_memory !== false;
               const smallTalk = isSmallTalkIntent(effectiveText);
-              const [aiCtx, historyRes, pending, convStateRes, recentRecsRes, focusRes] = await Promise.all([
+              const { loadConversationContext, memoryCard, refreshSummary } = await import(
+                "./conversation-context.server"
+              );
+              const [aiCtx, cc, focusRes] = await Promise.all([
                 loadAiContext(integ.store_id),
-                useHistory
-                  ? sb
-                      .from("ai_messages")
-                      .select("role,content,message_type")
-                      .eq("conversation_id", conv!.id)
-                      .in("message_type", ["text", "quick_reply", "postback", "audio", "image"])
-                      .order("created_at", { ascending: false })
-                      .limit(historyLimit)
-                  : Promise.resolve({ data: [] as any[] }),
-                getConversationPendingOrder(sb, conv!.id),
-                sb.from("ai_conversations").select("psid_profile").eq("id", conv!.id).maybeSingle(),
-                sb
-                  .from("ai_product_recommendations")
-                  .select("product_id")
-                  .eq("conversation_id", conv!.id)
-                  .order("created_at", { ascending: false })
-                  .limit(3),
+                loadConversationContext(sb, {
+                  conversationId: conv!.id,
+                  compact,
+                  useHistory,
+                  latestText: effectiveText,
+                }),
                 smallTalk
                   ? Promise.resolve({ product: null, ambiguous: false, candidates: [] as any[] })
                   : resolveFocusProduct({
@@ -2537,33 +2528,9 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                     }),
               ]);
               const { store, agent, settings } = aiCtx;
-              const history = (historyRes as any).data ?? [];
-              const messages = [...history].reverse()
-                .filter((m: any) => m.role === "user" || m.role === "assistant")
-                .map((m: any) => ({
-                  role: m.role as "user" | "assistant",
-                  content:
-                    m.message_type && m.message_type !== "text" && m.message_type !== "quick_reply"
-                      ? `[${m.message_type}] ${m.content ?? ""}`.trim()
-                      : (m.content ?? ""),
-                }));
-              const latestInHistory = [...messages]
-                .reverse()
-                .find((m) => m.role === "user")?.content?.trim();
-              if (latestInHistory !== effectiveText.trim()) {
-                messages.push({ role: "user", content: effectiveText.trim() });
-              }
-
-              // Conversation-state block so the model always sees what's already collected.
-              const lastOrder = ((convStateRes as any)?.data?.psid_profile as any)?.last_order ?? null;
-              const recentIds = Array.from(
-                new Set(
-                  ((recentRecsRes as any).data ?? [])
-                    .map((r: any) => String(r.product_id ?? ""))
-                    .filter(Boolean) as string[],
-                ),
-              );
+              const messages = cc.messages;
               const focus = focusRes as any;
+              void replySpeed;
 
               const reply = await generateAgentReply({
                 ctx: {
@@ -2580,12 +2547,18 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                   settings,
                   state: smallTalk
                     ? { pending_order: {}, last_order: null, recent_product_ids: [] }
-                    : { pending_order: pending, last_order: lastOrder, recent_product_ids: recentIds },
+                    : {
+                        pending_order: cc.pending_order,
+                        last_order: cc.last_order,
+                        recent_product_ids: cc.memory.recent_product_ids ?? [],
+                        memory_card: compact ? memoryCard(cc.memory) : null,
+                      },
                   focus,
                   latestUserText: effectiveText,
                 }),
                 fast: true,
               });
+              if (compact) void refreshSummary(sb, cc, conv!.id);
 
 
 

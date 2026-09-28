@@ -590,26 +590,12 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
   try {
     const { store, agent, settings } = await loadAiContext(storeId);
     const useHistory = (integ as any).conversation_history !== false;
-    const history = useHistory
-      ? (
-          await sb
-            .from("ai_messages")
-            .select("role,content,message_type")
-            .eq("conversation_id", conversationId)
-            .in("message_type", ["text", "quick_reply"])
-            .order("created_at", { ascending: false })
-            .limit(30)
-        ).data ?? []
-      : [];
-    const messages = [...history]
-      .reverse()
-      .filter((m: any) => m.role === "user" || m.role === "assistant")
-      .map((m: any) => ({ role: m.role as "user" | "assistant", content: m.content ?? "" }));
-    const latest = [...messages].reverse().find((m) => m.role === "user")?.content?.trim();
-    if (latest !== text.trim()) messages.push({ role: "user", content: text.trim() });
-
-    const pending = await pendingOrder(sb, conversationId);
-    const focus = await resolveFocusProduct({ storeId, conversationId, text });
+    const compact = (integ as any).compact_memory !== false;
+    const { loadConversationContext, memoryCard, refreshSummary } = await import("./conversation-context.server");
+    const [cc, focus] = await Promise.all([
+      loadConversationContext(sb, { conversationId, compact, useHistory, latestText: text }),
+      resolveFocusProduct({ storeId, conversationId, text }),
+    ]);
 
     const reply = await generateAgentReply({
       ctx: {
@@ -622,11 +608,16 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
         waPhoneNumberId: phoneNumberId,
         focusProductId: focus.product?.id ?? null,
       },
-      messages,
+      messages: cc.messages,
       system: buildSystemPrompt(store, agent, {
         channel: "whatsapp",
         settings,
-        state: { pending_order: pending, last_order: null, recent_product_ids: [] },
+        state: {
+          pending_order: cc.pending_order,
+          last_order: cc.last_order,
+          recent_product_ids: cc.memory.recent_product_ids ?? [],
+          memory_card: compact ? memoryCard(cc.memory) : null,
+        },
         focus,
         latestUserText: text,
       }),
@@ -639,6 +630,7 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
       // Record at once so a later crash never re-sends this reply.
       await (sb as any).from("whatsapp_jobs").update({ reply_text: replyText, route: "ai" }).eq("id", job.id);
     }
+    if (compact) await refreshSummary(sb, cc, conversationId);
     await sb.from("whatsapp_integrations").update({ last_error: null } as any).eq("id", (integ as any).id);
     return { reply: replyText || null };
   } catch (e) {
