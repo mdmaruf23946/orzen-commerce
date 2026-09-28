@@ -982,6 +982,26 @@ async function maybeBlockDuplicateMessengerOrder(opts: {
   return true;
 }
 
+const FIELD_ASK_BN: Record<string, string> = {
+  customer_name: "নাম",
+  full_address: "সম্পূর্ণ ঠিকানা",
+  phone: "মোবাইল নম্বর",
+};
+
+/** Did the customer ask about the delivery charge in the last few messages? */
+async function recentlyAskedDeliveryCharge(sb: ReturnType<typeof admin>, conversationId: string) {
+  const since = new Date(Date.now() - 30 * 60_000).toISOString();
+  const { data } = await sb
+    .from("ai_messages")
+    .select("content,role")
+    .eq("conversation_id", conversationId)
+    .eq("role", "user")
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+    .limit(5);
+  return ((data ?? []) as any[]).some((m) => isDeliveryChargeQuestion(String(m.content ?? "")));
+}
+
 async function maybeApplyPendingOrderText(opts: {
   sb: ReturnType<typeof admin>;
   storeId: string;
@@ -990,14 +1010,122 @@ async function maybeApplyPendingOrderText(opts: {
   token: string;
   text: string;
 }) {
-  // Context-only: merge any order details from this message into the pending-order slot
-  // so the LLM sees them via the state block, and block duplicates. NEVER sends a canned reply.
+  // Merge order details from this message into the pending-order slot (so the
+  // LLM sees them), confirm unclear values with the customer, and short-circuit
+  // for duplicates / complete orders. Returns true when a reply was sent.
   const { sb, storeId, conversationId, psid, token, text } = opts;
-  const current = await getConversationPendingOrder(sb, conversationId);
-  const details = parseOrderDetailsText(text);
+  let current = await getConversationPendingOrder(sb, conversationId);
+  const cfg = await loadStoreOrderFlow(sb, storeId);
+  const missingBefore = current.product_id ? orderMissingKeys(current, cfg) : [];
+
+  const askMissing = async (slot: Record<string, any>) => {
+    if (!slot.product_id) return false;
+    const missing = orderMissingFields(slot, cfg);
+    if (!missing.length) return finalizePendingMessengerOrder({ sb, storeId, conversationId, psid, token });
+    await sendAndLogText(sb, token, psid, conversationId, buildMissingFieldsMessage(missing));
+    return true;
+  };
+
+  // 1) We asked "আপনার নাম কি …?" last time — handle the yes / no answer.
+  const pendingConfirm = current.confirm as { field?: string; value?: string } | null | undefined;
+  if (pendingConfirm?.field) {
+    if (isAffirmative(text) && pendingConfirm.value) {
+      const slot = await patchConversationPendingOrder(sb, conversationId, {
+        [pendingConfirm.field]: pendingConfirm.value,
+        confirm: null,
+      });
+      return askMissing(slot);
+    }
+    current = await patchConversationPendingOrder(sb, conversationId, { confirm: null });
+    if (isNegative(text)) {
+      const label = FIELD_ASK_BN[pendingConfirm.field] ?? "তথ্য";
+      await sendAndLogText(sb, token, psid, conversationId, `ঠিক আছে, আপনার সঠিক ${label} লিখে পাঠান।`);
+      return true;
+    }
+  }
+
+  const { patch: details, leftover } = parseOrderDetailsTextEx(text, {
+    awaitingName: missingBefore.includes("customer_name"),
+    awaitingAddress: missingBefore.includes("full_address"),
+  });
+
+  // 2) Waiting for details but the rules could not place the text (half-written,
+  //    misspelt, unusual) → a small AI step reads it. Unsure → ask, never guess.
+  const stillMissing = missingBefore.filter((k) => !details[k]);
+  const canUnderstand =
+    leftover &&
+    leftover.length <= 200 &&
+    stillMissing.some((k) => k === "customer_name" || k === "full_address") &&
+    !looksLikeQuestion(leftover) &&
+    !isOrderIntent(leftover) &&
+    !isSmallTalkIntent(leftover) &&
+    !isProductIntent(leftover) &&
+    !(checkPersonName(leftover) as any).reason?.match?.(/chitchat|product_talk/);
+  if (canUnderstand) {
+    const { understandOrderReply } = await import("./order-understand.server");
+    const u = await traceTime("understand", () => understandOrderReply(leftover, stillMissing));
+    setTraceMeta("understand", u ? `${u.kind}:${u.confidence}` : "none");
+    if (u && u.kind !== "question" && u.kind !== "other") {
+      const cand: Record<string, string> = {};
+      if (u.name && stillMissing.includes("customer_name")) cand.customer_name = u.name;
+      if (u.address && stillMissing.includes("full_address")) cand.full_address = u.address;
+      if (u.phone && !details.phone && stillMissing.includes("phone")) {
+        const p = normalizePhone(u.phone);
+        if (p) cand.phone = p;
+      }
+      const entries = Object.entries(cand);
+      if (entries.length && u.confidence >= 0.8) {
+        Object.assign(details, cand);
+      } else if (entries.length && u.confidence >= 0.4) {
+        const [field, value] = entries[0]!;
+        await patchConversationPendingOrder(sb, conversationId, { ...details, confirm: { field, value } });
+        const q =
+          field === "customer_name"
+            ? `আপনার নাম কি "${value}"? ঠিক থাকলে "হ্যাঁ" লিখুন, না হলে সঠিক নামটা লিখে দিন।`
+            : field === "full_address"
+            ? `আপনার ঠিকানা কি "${value}"? ঠিক থাকলে "হ্যাঁ" লিখুন, না হলে সঠিক ঠিকানা লিখে দিন।`
+            : `আপনার মোবাইল নম্বর কি ${value}? ঠিক থাকলে "হ্যাঁ" লিখুন।`;
+        await sendAndLogText(sb, token, psid, conversationId, q);
+        return true;
+      }
+    }
+    if (!Object.keys(details).length && (!u || (u.kind !== "question" && u.confidence < 0.4))) {
+      const label = FIELD_ASK_BN[stillMissing.find((k) => FIELD_ASK_BN[k]) ?? "customer_name"]!;
+      await sendAndLogText(
+        sb,
+        token,
+        psid,
+        conversationId,
+        `দুঃখিত, ঠিক বুঝতে পারিনি। আপনি কি আপনার ${label} লিখেছেন? অনুগ্রহ করে শুধু আপনার ${label} লিখে পাঠান।`,
+      );
+      return true;
+    }
+  }
+
   const hasNewOrderDetails = Object.keys(details).length > 0;
+
+  // 3) Asked the delivery charge earlier, now sent an address (no product yet)
+  //    → answer with that area's real charge instead of changing the topic.
+  if (!current.product_id && details.full_address && !details.phone) {
+    if (await recentlyAskedDeliveryCharge(sb, conversationId)) {
+      const zones = await fetchDeliveryZones(sb, storeId);
+      const { charge, zone } = resolveDeliveryCharge(details.full_address, zones, null);
+      if (zone) {
+        await patchConversationPendingOrder(sb, conversationId, { ...current, ...details });
+        await sendAndLogText(
+          sb,
+          token,
+          psid,
+          conversationId,
+          `আপনার এলাকায় (${zone.name}) ডেলিভারি চার্জ ${money(charge)}।\nকোন পণ্যটি নিতে চান? নাম লিখুন বা ছবি পাঠান।`,
+        );
+        return true;
+      }
+    }
+  }
+
   if (!hasNewOrderDetails && !isOrderIntent(text)) return false;
-  const slot = Object.keys(details).length
+  const slot = hasNewOrderDetails
     ? await patchConversationPendingOrder(sb, conversationId, { ...current, ...details })
     : current;
   if (!slot.product_id) return false;
@@ -1005,7 +1133,7 @@ async function maybeApplyPendingOrderText(opts: {
   // create the order and send the confirmation directly (no AI round-trip,
   // which could time out and leave the customer without any reply).
   if (hasNewOrderDetails) {
-    const missing = orderMissingFields(slot, await loadStoreOrderFlow(sb, storeId));
+    const missing = orderMissingFields(slot, cfg);
     if (!missing.length) {
       return finalizePendingMessengerOrder({ sb, storeId, conversationId, psid, token });
     }
