@@ -73,7 +73,7 @@ export async function tryFastPath(
     rows = data ?? [];
     // Only reveal an order looked up by number to the customer who placed it.
     const mine = phoneTail(opts.customerPhone);
-    if (rows.length === 1 && mine && phoneTail(rows[0].phone) !== mine) rows = [];
+    if (rows.length === 1 && (!mine || phoneTail(rows[0].phone) !== mine)) rows = [];
   } else {
     const tail = phoneTail(opts.customerPhone);
     if (!tail) return null;

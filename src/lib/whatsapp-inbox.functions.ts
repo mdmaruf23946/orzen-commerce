@@ -131,6 +131,7 @@ export const listMessages = createServerFn({ method: "POST" })
         "id,conversation_id,role,content,direction,message_type,attachments,mid,delivery_status,error,sent_by_user_id,created_at",
       )
       .eq("conversation_id", data.conversationId)
+      .or("message_type.is.null,message_type.neq.guard")
       .order("created_at", { ascending: false })
       .limit(data.limit);
     if (error) throw new Error(error.message);

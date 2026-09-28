@@ -2483,7 +2483,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                   storeId: integ.store_id,
                   conversationId: conv!.id,
                   text: effectiveText,
-                  customerPhone: (conv as any)?.customer_phone ?? null,
+                  customerPhone: null,
                 });
                 if (fast) {
                   setTraceMeta("route", "fast");
