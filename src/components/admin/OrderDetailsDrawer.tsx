@@ -126,10 +126,16 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
   const isPhysical = kind === "physical";
   const fulfil: any = order?.fulfillment_meta ?? {};
 
-  const subtotal = Number(order?.subtotal ?? 0);
+  // orders.subtotal already holds the grand total (items + delivery − discount)
+  // for storefront, quick and chat orders — never add delivery to it again.
   const discount = Number(order?.discount_amount ?? 0);
   const delivery = Number(order?.delivery_amount ?? 0);
-  const total = subtotal + delivery - discount;
+  const itemsTotal = items.reduce(
+    (sum, it) => sum + Number(it.price_snapshot ?? 0) * Number(it.qty ?? 0),
+    0,
+  );
+  const total = Number(order?.subtotal ?? 0);
+  const subtotal = items.length ? itemsTotal : Math.max(total - delivery + discount, 0);
 
   return (
     <>
