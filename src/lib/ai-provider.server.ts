@@ -417,9 +417,12 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
     if (!eligible.length) throw new Error("No AI key on this site can read images. Enable a vision-capable key.");
     // Circuit breaker: skip keys whose primary model is currently "open",
     // unless every key is open (then try all anyway).
-    const closed = eligible.filter((c) => !breakerOpen(`${c.label}|${c.modelId}`));
+    const isOpen = (c: Candidate) =>
+      breakerOpen(`${c.label}|*`) || [c.modelId, ...c.fallbacks].every((m) => breakerOpen(`${c.label}|${m}`));
+    const closed = eligible.filter((c) => !isOpen(c));
     const usable = closed.length ? [...closed, ...eligible.filter((c) => !closed.includes(c))] : eligible;
     for (const c of usable) {
+      if (closed.length && !closed.includes(c) && breakerOpen(`${c.label}|*`)) continue;
       const headers = new Headers(init?.headers);
       headers.delete("authorization");
       headers.delete("Lovable-API-Key");
@@ -459,14 +462,24 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
             onUse({ provider: c.provider, label: c.label });
             return new Response(text, { status: res.status, headers: res.headers });
           }
-          if (res.status >= 500 || res.status === 429) breakerFail(bKey, lastError);
           console.warn("[ai-route] switching:", lastError.slice(0, 160));
           const invalidKey = res.status === 401 || res.status === 403 || (res.status === 400 && /api key/i.test(text));
           if (invalidKey) {
+            // Dead key: skip every model on it, go straight to the next key.
+            breakerTrip(`${c.label}|*`, KEY_DEAD_MS, lastError);
             keyDead = true;
             break;
           }
-          if (res.status === 429) quotaHits += 1;
+          if (res.status === 429) {
+            // Quota: open this key+model right away (honour Retry-After).
+            breakerTrip(bKey, retryAfterMs(res), lastError);
+            quotaHits += 1;
+          } else if (res.status === 404) {
+            // Retired / wrong model name: never retry it for an hour.
+            breakerTrip(bKey, MODEL_GONE_MS, lastError);
+          } else if (res.status >= 500) {
+            breakerFail(bKey, lastError);
+          }
         } catch (e) {
           if (init?.signal?.aborted || (e as any)?.budget) throw e;
           lastError = `${c.label}: ${(e as Error).name === "TimeoutError" ? `timeout ${ATTEMPT_TIMEOUT_MS}ms` : (e as Error).message}`;
