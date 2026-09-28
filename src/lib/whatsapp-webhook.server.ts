@@ -624,7 +624,15 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
       fast: true,
     });
 
-    const replyText = sanitizeOutgoingText(reply?.text ?? "", reply?.facts ?? {});
+    const rawText = reply?.text ?? "";
+    let guardedText = rawText;
+    if (reply?.verified && !reply.raw && rawText.trim()) {
+      const { guardReply, logGuardCorrections } = await import("@/lib/reply-guard.server");
+      const g = await guardReply(sb, rawText, reply.verified, { storeId, focusProductId: focus?.product?.id ?? null });
+      guardedText = g.text;
+      await logGuardCorrections(sb, conversationId, g, rawText);
+    }
+    const replyText = sanitizeOutgoingText(guardedText, reply?.facts ?? {});
     if (replyText) {
       await sendAndLog(sb, phoneNumberId, token, waId, conversationId, replyText);
       // Record at once so a later crash never re-sends this reply.
