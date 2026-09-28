@@ -195,6 +195,29 @@ function retryable(status: number) {
   return status === 400 || status === 401 || status === 403 || status === 404 || status === 429 || status >= 500;
 }
 
+// Per-attempt time limit + per-isolate circuit breaker (key|model).
+const ATTEMPT_TIMEOUT_MS = 12_000;
+const BREAKER_FAILS = 3;
+const BREAKER_OPEN_MS = 120_000;
+const breaker = new Map<string, { fails: number; openUntil: number }>();
+function breakerOpen(k: string) {
+  const b = breaker.get(k);
+  return !!b && b.openUntil > Date.now();
+}
+function breakerFail(k: string, why: string) {
+  const b = breaker.get(k) ?? { fails: 0, openUntil: 0 };
+  b.fails += 1;
+  if (b.fails >= BREAKER_FAILS) {
+    b.openUntil = Date.now() + BREAKER_OPEN_MS;
+    b.fails = BREAKER_FAILS - 1; // half-open: one more failure re-opens
+    console.warn("[ai-route] breaker open 120s:", k, why.slice(0, 120));
+  }
+  breaker.set(k, b);
+}
+function breakerSuccess(k: string) {
+  breaker.delete(k);
+}
+
 // ---------------------------------------------------------------------------
 // Gemini's OpenAI-compatible endpoint rejects remote image links with
 // "400 Request contains an invalid argument" — it only accepts inline base64
@@ -366,8 +389,12 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
       && bodyObj.messages.some((m: any) =>
         Array.isArray(m?.content) && m.content.some((p: any) => p?.type === "image_url"),
       );
-    const usable = needsVision ? candidates.filter((c) => c.vision) : candidates;
-    if (!usable.length) throw new Error("No AI key on this site can read images. Enable a vision-capable key.");
+    const eligible = needsVision ? candidates.filter((c) => c.vision) : candidates;
+    if (!eligible.length) throw new Error("No AI key on this site can read images. Enable a vision-capable key.");
+    // Circuit breaker: skip keys whose primary model is currently "open",
+    // unless every key is open (then try all anyway).
+    const closed = eligible.filter((c) => !breakerOpen(`${c.label}|${c.modelId}`));
+    const usable = closed.length ? [...closed, ...eligible.filter((c) => !closed.includes(c))] : eligible;
     for (const c of usable) {
       const headers = new Headers(init?.headers);
       headers.delete("authorization");
@@ -390,8 +417,13 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
         const sendPayload = payload && c.provider === "gemini" ? withThoughtSignatures(payload) : payload;
         const body = sendPayload ? JSON.stringify({ ...sendPayload, model: modelId }) : (init?.body as any);
         try {
-          const res = await fetch(`${c.baseURL}${suffix}`, { ...init, headers, body });
+          const bKey = `${c.label}|${modelId}`;
+          if (breakerOpen(bKey) && closed.length) continue;
+          const timeout = AbortSignal.timeout(ATTEMPT_TIMEOUT_MS);
+          const signal = init?.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
+          const res = await fetch(`${c.baseURL}${suffix}`, { ...init, headers, body, signal });
           if (res.ok) {
+            breakerSuccess(bKey);
             onUse({ provider: c.provider, label: c.label });
             return res;
           }
@@ -401,6 +433,8 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
             onUse({ provider: c.provider, label: c.label });
             return new Response(text, { status: res.status, headers: res.headers });
           }
+          if (res.status >= 500 || res.status === 429) breakerFail(bKey, lastError);
+          console.warn("[ai-route] switching:", lastError.slice(0, 160));
           const invalidKey = res.status === 401 || res.status === 403 || (res.status === 400 && /api key/i.test(text));
           if (invalidKey) {
             keyDead = true;
@@ -408,7 +442,10 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
           }
           if (res.status === 429) quotaHits += 1;
         } catch (e) {
-          lastError = `${c.label}: ${(e as Error).message}`;
+          if (init?.signal?.aborted) throw e;
+          lastError = `${c.label}: ${(e as Error).name === "TimeoutError" ? `timeout ${ATTEMPT_TIMEOUT_MS}ms` : (e as Error).message}`;
+          breakerFail(`${c.label}|${modelId}`, lastError);
+          console.warn("[ai-route] switching:", lastError.slice(0, 160));
         }
       }
       // Only park a key for the day when the key itself is bad or every model
