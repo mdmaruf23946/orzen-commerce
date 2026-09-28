@@ -1642,3 +1642,70 @@ export const ownerAiUsageReport = createServerFn({ method: "GET" })
       })),
     };
   });
+
+// ---------------- MESSAGE PERFORMANCE (Phase 9 telemetry) ----------------
+
+/** Per-message stage timings for WhatsApp + Messenger replies. */
+export const ownerMessagePerformance = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { days?: number } | undefined) => ({ days: Math.max(1, Math.min(30, Number(d?.days) || 1)) }))
+  .handler(async ({ context, data }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const sb: any = supabaseAdmin;
+    const since = new Date(Date.now() - data.days * 86400000).toISOString();
+    const cols = "id,store_id,status,created_at,completed_at,processing_ms,last_error,timings";
+    const [wa, ms, stores] = await Promise.all([
+      sb.from("whatsapp_jobs").select(cols + ",route").gte("created_at", since).neq("status", "merged").order("created_at", { ascending: false }).limit(2000),
+      sb.from("messenger_jobs").select(cols).gte("created_at", since).order("created_at", { ascending: false }).limit(2000),
+      sb.from("stores").select("id,name"),
+    ]);
+    const storeName = new Map<string, string>(((stores.data ?? []) as any[]).map((s) => [s.id, s.name]));
+    const n = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+    const rows = [
+      ...((wa.data ?? []) as any[]).map((r) => ({ ...r, channel: "whatsapp" })),
+      ...((ms.data ?? []) as any[]).map((r) => ({ ...r, channel: "messenger" })),
+    ].map((r) => {
+      const t = (r.timings ?? {}) as Record<string, unknown>;
+      const fallbackTotal = r.completed_at ? new Date(r.completed_at).getTime() - new Date(r.created_at).getTime() : n(r.processing_ms);
+      return {
+        id: r.id as string,
+        channel: r.channel as string,
+        store: storeName.get(r.store_id) ?? "—",
+        status: r.status as string,
+        created_at: r.created_at as string,
+        route: (t.route as string) ?? r.route ?? (r.timings ? "other" : "—"),
+        model: (t.model as string) ?? null,
+        tokens: n(t.tokens) || null,
+        error: (r.last_error as string) ?? null,
+        traced: !!r.timings,
+        queue: n(t.queue_ms), db: n(t.db_ms), ai: n(t.ai_ms), guard: n(t.guard_ms),
+        send: n(t.send_ms), photo: n(t.photo_ms), delay: n(t.delay_ms),
+        total: n(t.total_ms) || Math.max(0, fallbackTotal),
+      };
+    });
+    const traced = rows.filter((r) => r.traced && r.status === "sent");
+    const totals = rows.filter((r) => r.status === "sent").map((r) => r.total).sort((a, b) => a - b);
+    const avg = (xs: number[]) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : 0);
+    const byRoute = new Map<string, typeof traced>();
+    for (const r of traced) byRoute.set(r.route, [...(byRoute.get(r.route) ?? []), r]);
+    return {
+      summary: {
+        messages: rows.length,
+        sent: totals.length,
+        failed: rows.filter((r) => r.status === "failed").length,
+        avg: avg(totals),
+        p95: totals.length ? totals[Math.min(totals.length - 1, Math.floor(totals.length * 0.95))] : 0,
+        under10: totals.length ? Math.round((totals.filter((x) => x < 10000).length / totals.length) * 100) : 0,
+        tracedCount: traced.length,
+      },
+      breakdown: [...byRoute.entries()].map(([route, rs]) => ({
+        route, count: rs.length,
+        queue: avg(rs.map((r) => r.queue)), db: avg(rs.map((r) => r.db)), ai: avg(rs.map((r) => r.ai)),
+        guard: avg(rs.map((r) => r.guard)), send: avg(rs.map((r) => r.send)), photo: avg(rs.map((r) => r.photo)),
+        delay: avg(rs.map((r) => r.delay)),
+      })),
+      slowest: [...rows].sort((a, b) => b.total - a.total).slice(0, 50),
+      stores: [...new Set(rows.map((r) => r.store))].sort(),
+    };
+  });
