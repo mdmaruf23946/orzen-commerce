@@ -342,98 +342,104 @@ export function buildSystemPrompt(
     ].join("\n");
   }
 
-  return `${globalBlock ? globalBlock + "\n\n" : ""}You are ${agent.agent_name}, the sales assistant for "${store.name}".
-${agentDescription ? `Role: ${agentDescription}\n` : ""}${lang} ${emoji} ${human}
-Style: ${agent.style}.
+  // ---- Compact prompt (Phase 2 prompt diet): one rule per idea, conditional sections ----
+  const userLow = latestUserText.toLowerCase();
+  const orderActive = !!po || /অর্ডার|order|কিনব|কিনতে|buy|নিব|নেব|confirm|কনফার্ম/i.test(latestUserText);
+  const focusKind = focus?.product ? productKind(focus.product) : null;
+  const nonPhysicalInPlay =
+    (focusKind && focusKind !== "physical") ||
+    /digital|service|subscription|ডিজিটাল|সার্ভিস|সাবস্ক্রিপশন|course|কোর্স|ebook/i.test(latestUserText);
 
+  // FAQ: only the (max 3) entries that overlap with the latest message.
+  const faqList: Array<{ q: string; a: string }> = Array.isArray(k.faqs) ? k.faqs : [];
+  const words = userLow.split(/[\s,.?!।]+/).filter((w) => w.length > 2);
+  const pickedFaqs = words.length
+    ? faqList
+        .map((f) => {
+          const hay = `${f.q ?? ""} ${f.a ?? ""}`.toLowerCase();
+          return { f, score: words.filter((w) => hay.includes(w)).length };
+        })
+        .filter((x) => x.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3)
+        .map((x) => `Q: ${x.f.q}\nA: ${x.f.a}`)
+        .join("\n")
+    : "";
+  void faqs;
 
-# Behaviour (configured by the merchant panel)
-${behaviourLines}
+  const policyAsked = /return|ফেরত|রিটার্ন|exchange|এক্সচেঞ্জ|warranty|ওয়ারেন্টি|গ্যারান্টি|payment|পেমেন্ট|বিকাশ|bkash|nagad|নগদ|cod|ক্যাশ|time|সময়|খোলা|hour|ঠিকানা|address|location|কোথায়|phone|নম্বর|delivery|ডেলিভারি|policy|পলিসি/i.test(
+    latestUserText,
+  );
+  const factLines = [
+    srcOn("store_info") && (store.phone || store.address)
+      ? `Phone: ${store.phone || "n/a"} | Address: ${store.address || "n/a"}`
+      : "",
+    srcOn("payments") && k.payment_methods ? `Payment: ${k.payment_methods}` : "",
+    ...(policyAsked
+      ? [
+          srcOn("delivery") && k.delivery_policy ? `Delivery: ${k.delivery_policy}` : "",
+          srcOn("returns") && k.return_policy ? `Returns: ${k.return_policy}` : "",
+          srcOn("warranty") && k.warranty_policy ? `Warranty: ${k.warranty_policy}` : "",
+          srcOn("business_hours") && k.business_hours ? `Hours: ${k.business_hours}` : "",
+          srcOn("store_info") && (k.store_info || store.description)
+            ? `About: ${String(k.store_info || store.description).slice(0, 400)}`
+            : "",
+        ]
+      : []),
+  ].filter(Boolean);
 
-# Allowed knowledge sources
-${sourceLines}
+  const orderSection = !allowOrders
+    ? `# Orders\nOrdering is off. For buying/tracking send the customer to the website or store contact.`
+    : orderActive
+      ? `# Order flow (physical only)
+Required: ${requiredKeys.map(label).join(", ") || "none"}. Optional (ask once, never block): ${optionalKeys.map(label).join(", ") || "none"}.
+Payment methods allowed: ${payLine}.
+Ask ${orderFlow.collection_style === "combined" ? "all missing fields in ONE short numbered message" : "ONE missing field per message"}. Save each field with collectOrderInfo; never re-ask collected fields.
+When all required fields exist call finalizeOrder and send its confirmation as written. On error "duplicate_blocked" send the returned reply and stop. On "not_orderable_in_messenger" stop and call sendProductLink.
+${allowRelated ? "After success you may offer 2-3 add-ons (getRelatedProducts)." : "After success just thank the customer."}
+Tracking: use trackOrder with invoice or phone.`
+      : `# Orders\nPhysical products can be ordered here (collectOrderInfo → finalizeOrder). Tracking: trackOrder.`;
 
+  const typeSection = nonPhysicalInPlay
+    ? `# Non-physical products
+digital/service/subscription are bought on the website only: never collect order info, confirm purchase, or ask for card/OTP/password. Explain what they get, then call sendProductLink.`
+    : `- digital/service/subscription products are website-only: use sendProductLink, never take the order here.`;
 
-# Hard rules — never violate
-- NEVER invent product names, prices, stock, features, or policies. Every product fact must come from a tool call in this turn OR from the Focus product block below.
-- First understand the customer's latest message intent. If it is only a greeting or small talk (hi, hello, কেমন আছেন, কি খবর, কী অবস্থা), do NOT call product tools, do NOT mention previous products/orders, and answer naturally like a human sales assistant.
-- Every reply must be freshly generated for the customer's latest message and the current conversation state. Never repeat the same sentence you sent earlier in this conversation — vary the wording.
-- Sound like a warm, real human shop assistant chatting on Messenger — casual, short, natural spoken Bangla (or the customer's language). NEVER sound robotic or technical: do not use words like "শনাক্ত", "ক্যাটালগ", "exact product", "উপলব্ধ", "মডেল নম্বর", "ব্র্যান্ড/মডেল", and never put English product-type labels or brand names in brackets like "(shoe)" or "(Nike)". Do not list the store's categories unless asked. Say it the way a friendly person would, e.g. "এই জুতাটা এখন আমাদের কাছে নেই, দুঃখিত! অন্য কিছু দেখাবো?"
-- For shoes also search "sneaker"/"shoe"/"জুতা"; product names written by the merchant can be imprecise (e.g. colour), so show the closest real match instead of saying "not available".
-- The MOMENT a customer mentions a product, category, price range, brand, or asks "what do you sell / show me products / আপনাদের কি আছে / দাম কত" — IMMEDIATELY call searchProducts (or listCategories if they ask for categories). Do not answer from memory, do not ask clarifying questions first for a general browse intent.
-- If a Focus product is set below, you MUST use its id when calling sendProductCard/showProduct, and every product fact in your text MUST come from that record. Never mix in facts from another product, earlier turn, or the pending-order slot.
-- If searchProducts returns 0 results, try again with a broader query (drop filters, translate Bangla→English keyword, try a synonym) before telling the customer "not found".
-- When you have products to show, call ${displayTools}, plus one short friendly line of text that adds something the card does NOT already show (why it fits, stock, next step). Do not restate the name, price or image in that line.
-- Never say a product image is unavailable until you checked the product tool result. If primary_image_url or gallery has an image, send a product card.
+  const toggles = [
+    salesFocused ? "Be sales-focused but never pushy." : "Be informative; do not push sales.",
+    allowRecommend ? (allowRelated ? "You may suggest matching and 2-3 related items." : "You may suggest matching items, no add-ons.") : "Do not recommend products unless asked.",
+    askForInfo ? "Ask one short question when info is missing." : "Avoid questioning; ask only if impossible to proceed.",
+    allowEscalate ? "If stuck or asked for a human, call escalateToHuman." : "Never promise a human callback.",
+    fallbackMessage ? `If you truly don't know, say: "${fallbackMessage}"` : "If you truly don't know, say so plainly.",
+  ].join(" ");
+  const offSources = [
+    !srcOn("products") && "products/prices",
+    !srcOn("stock") && "stock",
+    !srcOn("delivery") && "delivery charges",
+    !srcOn("payments") && "payment methods",
+    !srcOn("returns") && "returns",
+    !srcOn("warranty") && "warranty",
+    !srcOn("business_hours") && "business hours",
+  ].filter(Boolean);
 
-# Message / payload consistency (STRICT)
-- You may only point at something ("নিচে দেখুন", "ছবিটি দিলাম", "এই লিংকে ক্লিক করুন", "see below", "tap the button", 👇) when you are calling the matching tool in the SAME turn.
-- If no card, image, link or button is being sent, state the information plainly in words with no pointer phrase and no arrow emoji.
-- Never type a raw URL. Links are always delivered by a tool that renders a button.
-- Never promise something you are not sending in this turn ("I'll send the photo", "details are coming below") — either call the tool now or say plainly what you can.
+  return `${globalBlock ? globalBlock + "\n\n" : ""}You are ${agent.agent_name}, a warm human-sounding sales assistant for "${store.name}" chatting on ${channel}.
+${agentDescription ? `Role: ${agentDescription}\n` : ""}${lang} ${emoji} ${human} Style: ${agent.style}.
+${toggles}${offSources.length ? `\nDo not discuss: ${offSources.join(", ")}.` : ""}
 
-# Human-like conversation
-- One clear intent per reply. Short when a short answer is enough; never pad.
-- Do not start replies with the same stock opener every time (অবশ্যই!, জি!, Sure!). Vary naturally, or start straight with the answer.
-- Mirror the customer's language; mix Bangla and English only where it sounds natural.
-- Explain product benefits conversationally from the real product data (features, short description) — vary your phrasing, never invent a benefit.
-- Never re-ask for anything the customer already gave. If they change product or quantity, update only that part and keep the rest.
-- If a product is out of stock, tell the customer${allowRecommend ? " and call searchProducts in the same category to suggest alternatives" : ""}.
-- If the customer changes topic mid-conversation (e.g. asks about delivery charge while an order is pending), answer the new topic FIRST using the appropriate tool, then only resume the order flow when they signal they're ready to continue.
-- Never expose internal tool errors, productId problems, ids, database wording, or implementation details to the customer. If a tool fails, recover naturally or ask one helpful follow-up question.
+# Rules
+- Facts (price, stock, delivery charge, policy, product details) come ONLY from this turn's tool results, the Focus block or Store facts. Unverified numbers are auto-removed. Delivery charge: always call getDeliveryCharge.
+- Greeting/small talk: reply naturally, no tools, no old products.
+- Product/category/price/browse intent: call searchProducts immediately (listCategories for categories). If 0 results retry broader/English synonym before saying not found.
+- Show products with ${displayTools}, plus one short line that adds value (don't repeat name/price).
+- Out of stock: say so${allowRecommend ? " and search alternatives in the same category" : ""}.
+- Short, natural spoken language; vary openers; never repeat earlier sentences; no technical words (ক্যাটালগ, শনাক্ত, ids, errors).
+- Only say "see below"/👇 when sending a card/link this turn. Never type raw URLs; links come from tools. Never promise to send later.
+- Customer changes topic: answer the new topic first, resume order later. Never re-ask known info.
+${typeSection}
 
-# Product type rules (STRICT — never violate)
-Every product record has product_type: physical, digital, service or subscription. Always check it before you offer anything.
-- physical → information + image + price + stock, AND you may take the order here in Messenger.
-- digital → information + image + price + what the customer receives + the official product link. NO order here.
-- service → information + image + price + what is included + the official service link. NO order here.
-- subscription → information + image + price + billing frequency + benefits + the official subscription link. NO subscription here.
-- For digital, service and subscription: never call collectOrderInfo or finalizeOrder, never confirm a purchase, never say an order is placed, and never ask for or accept card number, CVV, OTP, banking password, or any payment credential.
-- If the customer says "buy this / order this / I want this / can I pay here" for a digital, service or subscription product, reply politely that it is purchased on the website and call sendProductLink with a short friendly text. The button will say "View site" and take the customer to the product page. NEVER type the raw URL in the text reply.
-- Product links MUST come from a tool result (sendProductLink, sendProductCard, sendProductCarousel). Never invent, guess, shorten, or modify a URL, and never share admin or internal links.
-- Never type a raw product URL in a text reply. Always present product links through a tool that renders a button.
-- In mixed conversations apply the rule per product: a physical item stays orderable in Messenger even when a digital/service/subscription item was just discussed, and vice versa. Recommendations follow the same rule.
-- If a detail (price, billing frequency, feature, availability) is not in the tool result, say it is currently unavailable — never guess.
+${orderSection}
 
-${
-  allowOrders
-    ? `
-# Order flow (PHYSICAL products only — configured by the merchant panel)
-Required information (must all be collected before finalizeOrder): ${requiredKeys.map(label).join(", ") || "none"}.
-Optional information (ask at most once, never block the order): ${optionalKeys.map(label).join(", ") || "none"}.
-Allowed payment methods: ${payLine}. Never offer a method that is not on this list.
-Collection style: ${orderFlow.collection_style === "combined" ? "ask for all missing details in ONE clear message, as a short numbered list." : "ask for ONE missing detail per message, in a natural conversational way."}
-
-1. Use collectOrderInfo to save each field the moment the customer gives it.
-2. Ask only for fields that are still missing — never re-ask what you already have (see the pending-order slot in the state block below).
-3. Once every required field above is present, call finalizeOrder. It creates the order and returns the confirmation text — send that confirmation as written.
-4. If finalizeOrder returns error="duplicate_blocked", send the returned reply exactly and stop the order flow. Do not show product cards or say you are ordering again.
-5. If collectOrderInfo or finalizeOrder returns error="not_orderable_in_messenger", stop the order flow immediately and call sendProductLink with a short friendly line. Do not type the raw URL in the text.
-${allowRelated ? "6. After finalizeOrder succeeds, use getRelatedProducts and offer 2-3 add-ons via sendProductCarousel." : "6. After finalizeOrder succeeds, thank the customer. Do not upsell."}
-
-
-# Tracking
-If asked "where is my order" / "track my order", call trackOrder with orderId, invoice_no, or phone.
-`
-    : `
-# Orders
-Order assistance is turned off. Do not collect order details or create orders. If the customer wants to buy or track an order, ask them to use the website or contact the store.
-`
-}
-# Memory
-At the start of each conversation call getCustomerMemory to see previous orders and preferences. Personalise your greeting.
-
-${latestBlock ? latestBlock + "\n\n" : ""}${focusBlock ? focusBlock + "\n\n" : ""}${stateBlock ? stateBlock + "\n\n" : ""}# Store facts
-${srcOn("store_info") ? `Address: ${store.address || "n/a"}\nPhone: ${store.phone || "n/a"}` : ""}
-${srcOn("delivery") ? `Delivery: ${k.delivery_policy ? k.delivery_policy + " " : ""}(exact charges: call getDeliveryCharge)` : ""}
-${srcOn("returns") ? `Returns: ${k.return_policy || ""}` : ""}
-${srcOn("warranty") ? `Warranty: ${k.warranty_policy || ""}` : ""}
-${srcOn("payments") ? `Payment: ${k.payment_methods || ""}` : ""}
-${srcOn("business_hours") ? `Business hours: ${k.business_hours || ""}` : ""}
-${srcOn("store_info") ? `Store info: ${k.store_info || store.description || ""}` : ""}
-
-FAQs:
-${faqs}`;
+${latestBlock ? latestBlock + "\n\n" : ""}${focusBlock ? focusBlock + "\n\n" : ""}${stateBlock ? stateBlock + "\n\n" : ""}${factLines.length ? `# Store facts\n${factLines.join("\n")}\n\n` : ""}${pickedFaqs ? `# Relevant FAQ\n${pickedFaqs}` : ""}`.trim();
 }
 
 // ---------- Helpers ----------
@@ -2116,7 +2122,8 @@ export async function getModelForStore(opts?: { fast?: boolean; modelOverride?: 
 function generationParams(settings: GlobalAiSettings | null | undefined, modelId?: string) {
   const params: { temperature?: number; maxOutputTokens?: number } = {};
   const t = settings?.temperature;
-  if (typeof t === "number" && Number.isFinite(t)) params.temperature = Math.max(0, Math.min(2, t));
+  // Sales replies must stay factual: cap creativity at 1.0 (values >1 caused slow, rambling output).
+  if (typeof t === "number" && Number.isFinite(t)) params.temperature = Math.max(0, Math.min(1, t));
   const m = settings?.max_tokens;
   // Skip maxOutputTokens for OpenAI models — newer models (o1/gpt-5 family) reject
   // `max_tokens` and require `max_completion_tokens`, which the AI SDK doesn't emit here.
@@ -2182,6 +2189,24 @@ function isTransientGatewayError(err: unknown) {
   return /\b(429|rate.?limit|timeout|overload|5\d\d)\b/i.test(String(msg));
 }
 
+/** Phase 2 tool diet: drop rarely-needed tools unless the latest message asks for them. */
+function toolsForTurn(ctx: AgentContext, messages: any[]) {
+  const all = buildTools(ctx) as Record<string, any>;
+  const last = [...messages].reverse().find((m) => m?.role === "user");
+  const text =
+    typeof last?.content === "string"
+      ? last.content
+      : Array.isArray(last?.content)
+        ? last.content.map((p: any) => (p?.type === "text" ? p.text : "")).join(" ")
+        : "";
+  const drop: string[] = [];
+  if (!/compare|তুলনা|vs|পার্থক্য|difference|কোনটা ভালো/i.test(text)) drop.push("compareProducts");
+  if (!/brand|ব্র্যান্ড|ব্রান্ড/i.test(text)) drop.push("listBrands");
+  if (!/track|ট্র্যাক|কোথায়|কই|order|অর্ডার|invoice|\d{5,}/i.test(text)) drop.push("trackOrder");
+  for (const k of drop) delete all[k];
+  return all;
+}
+
 async function runGenerate(opts: {
   ctx: AgentContext;
   messages: any[];
@@ -2193,14 +2218,26 @@ async function runGenerate(opts: {
     fast: opts.fast,
     modelOverride: opts.modelOverride,
   });
+  const tools = toolsForTurn(opts.ctx, opts.messages);
+  try {
+    const { setTraceMeta } = await import("./telemetry.server");
+    setTraceMeta("prompt_chars", opts.system.length);
+    setTraceMeta("tool_count", Object.keys(tools).length);
+  } catch {}
   const result = await generateText({
     model,
     system: opts.system,
     messages: opts.messages,
-    tools: buildTools(opts.ctx),
-    stopWhen: stepCountIs(opts.fast ? 6 : 8),
+    tools,
+    stopWhen: stepCountIs(opts.fast ? 5 : 6),
     ...generationParams(settings, modelId),
   });
+  try {
+    const { setTraceMeta } = await import("./telemetry.server");
+    const u: any = (result as any).totalUsage ?? result.usage;
+    setTraceMeta("input_tokens", u?.inputTokens ?? null);
+    setTraceMeta("output_tokens", u?.outputTokens ?? null);
+  } catch {}
   return { result, modelId, settings };
 }
 
