@@ -38,6 +38,16 @@ import {
   shortOrderNo,
   toBnDigits,
 } from "@/lib/chat-order-format";
+import {
+  checkPersonName,
+  cleanNameValue,
+  isAffirmative,
+  isLikelyAddress,
+  isNegative,
+  looksLikeQuestion,
+  sanitizeSlot,
+} from "@/lib/slot-validate";
+import { isDeliveryChargeQuestion } from "@/lib/text-normalize";
 
 // Absolute origin used for images and product links sent to Messenger.
 // Configurable per deployment so it follows the live custom domain.
@@ -485,7 +495,17 @@ async function getConversationPendingOrder(sb: ReturnType<typeof admin>, convers
     .eq("id", conversationId)
     .maybeSingle();
   const profile = ((data as any)?.psid_profile ?? {}) as Record<string, any>;
-  return (profile.pending_order ?? {}) as Record<string, any>;
+  const raw = (profile.pending_order ?? {}) as Record<string, any>;
+  // A question/greeting stored earlier as a name or address is dropped here,
+  // so it is asked again instead of ending up on an order.
+  const { slot, dropped } = sanitizeSlot(raw);
+  if (dropped.length) {
+    await sb
+      .from("ai_conversations")
+      .update({ psid_profile: { ...profile, pending_order: slot } } as any)
+      .eq("id", conversationId);
+  }
+  return slot;
 }
 
 async function patchConversationPendingOrder(
@@ -528,13 +548,17 @@ async function loadStoreOrderFlow(sb: ReturnType<typeof admin>, storeId: string)
   return normalizeOrderFlow((data as any)?.order_flow);
 }
 
-function orderMissingFields(slot: Record<string, any>, cfg?: OrderFlowConfig) {
+function orderMissingKeys(slot: Record<string, any>, cfg?: OrderFlowConfig) {
   // Chat orders are always cash on delivery, so the customer is never asked
   // to choose a payment method.
   const keys = requiredSlotFields(cfg ?? normalizeOrderFlow(null)).filter(
     (k) => k !== "product_id" && k !== "payment_method",
   );
-  return keys.filter((k) => !slot[k]).map((k) => ORDER_FIELD_BN[k] ?? k);
+  return keys.filter((k) => !slot[k]);
+}
+
+function orderMissingFields(slot: Record<string, any>, cfg?: OrderFlowConfig) {
+  return orderMissingKeys(slot, cfg).map((k) => ORDER_FIELD_BN[k] ?? k);
 }
 
 function normalizePhone(value: string | null | undefined) {
