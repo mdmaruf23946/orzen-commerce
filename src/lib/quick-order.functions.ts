@@ -532,7 +532,14 @@ export const createQuickOrder = createServerFn({ method: "POST" })
     const { error: iErr } = await sb
       .from("order_items")
       .insert(itemRows.map((r) => ({ ...r, order_id: (order as any).id })));
-    if (iErr) throw new Error(iErr.message);
+    if (iErr) {
+      await sb.from("order_timeline").delete().eq("order_id", (order as any).id);
+      await sb.from("orders").delete().eq("id", (order as any).id);
+      if (/out_of_stock/.test(iErr.message)) {
+        throw new Error("স্টক যথেষ্ট নেই (অন্য অপেক্ষমাণ অর্ডারে রিজার্ভ আছে)। / Not enough stock — reserved by other pending orders.");
+      }
+      throw new Error(iErr.message);
+    }
 
     // Confirming here fires the existing database workflow: invoice number,
     // stock deduction, stock movements, timeline entry and the notification

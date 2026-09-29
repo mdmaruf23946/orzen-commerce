@@ -395,6 +395,11 @@ export async function intakeLandingPageOrder(input: IntakeInput): Promise<Intake
       order_id: order.id, request_hash: rHash, ip: input.ip, ua: input.ua,
       error: iErr.message,
     });
+    await sb.from("order_timeline").delete().eq("order_id", order.id);
+    await sb.from("orders").delete().eq("id", order.id);
+    if (/out_of_stock/.test(iErr.message)) {
+      return { status: 409, body: { ok: false, error: "Sorry, this item just sold out." } };
+    }
     return { status: 500, body: { ok: false, error: "Order created but item failed" } };
   }
 
