@@ -163,8 +163,8 @@ const menuGroups: NavGroupDef[] = [
         label: "Channel Setup",
         icon: MessageCircle,
         children: [
-          { to: "/admin/messenger", label: "Messenger", icon: MessageSquare },
-          { to: "/admin/whatsapp", label: "WhatsApp Integration", icon: MessageCircle },
+          { to: "/admin/messenger", label: "Messenger AI Integration", icon: MessageSquare },
+          { to: "/admin/whatsapp", label: "WhatsApp AI Integration", icon: MessageCircle },
         ],
       },
       {
