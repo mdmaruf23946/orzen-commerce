@@ -40,9 +40,9 @@ export const PANEL_SECTIONS: PanelSection[] = [
   { key: "ai_agent", label: "AI Sales Agent", group: "Channels & AI", paths: ["/admin/ai-agent"], feature: "ai_agent" },
   { key: "ai_recommendations", label: "AI Recommendations", group: "Channels & AI", paths: ["/admin/ai-recommendations"] },
   { key: "handoff_queue", label: "Handoff Queue", group: "Channels & AI", paths: ["/admin/handoff-queue"] },
-  { key: "messenger", label: "Messenger", group: "Channels & AI", paths: ["/admin/messenger"], feature: "ai_messenger" },
+  { key: "messenger", label: "Messenger AI Integration", group: "Channels & AI", paths: ["/admin/messenger"], feature: "ai_messenger" },
   { key: "messenger_inbox", label: "Messenger Inbox", group: "Channels & AI", paths: ["/admin/messenger-inbox"], feature: "messenger_inbox" },
-  { key: "whatsapp", label: "WhatsApp Integration", group: "Channels & AI", paths: ["/admin/whatsapp"], feature: "whatsapp" },
+  { key: "whatsapp", label: "WhatsApp AI Integration", group: "Channels & AI", paths: ["/admin/whatsapp"], feature: "whatsapp" },
   { key: "whatsapp_inbox", label: "WhatsApp Inbox", group: "Channels & AI", paths: ["/admin/whatsapp-inbox"], feature: "whatsapp" },
   { key: "facebook", label: "Facebook Page", group: "Marketing & Sales", paths: ["/admin/facebook"], feature: "facebook_page" },
 
