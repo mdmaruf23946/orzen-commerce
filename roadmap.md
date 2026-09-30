@@ -36,4 +36,4 @@
 
 ## Merchant Auto Connect visibility (2026-09-30)
 - [x] Hide Auto Connect from Merchant Panel Messenger and WhatsApp pages
-- [ ] Verify both pages still show Manual Connect and deploy to orzen.top
+- [x] Verify both pages still show Manual Connect and deploy to orzen.top
