@@ -18,7 +18,6 @@ import {
   clearMessengerLastError,
 } from "@/lib/ai.functions";
 import { MessengerMark } from "@/components/admin/brand/MessengerMark";
-import { MetaAutoConnect } from "@/components/admin/MetaAutoConnect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -457,12 +456,6 @@ function AdminMessenger() {
           )}
         </div>
       ) : null}
-
-      {/* Auto Connect — an alternative to, never a replacement for, the manual form */}
-      <MetaAutoConnect
-        channel="messenger"
-        onConnected={() => qc.invalidateQueries({ queryKey: ["admin", "messenger"] })}
-      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Connection */}

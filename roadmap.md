@@ -33,3 +33,7 @@
 - [x] Tables, admin page, pixel, CAPI, consent, payment hooks
 - [x] Verify, deploy
 - [ ] Live Meta check (needs Pixel ID + CAPI token from user)
+
+## Merchant Auto Connect visibility (2026-09-30)
+- [x] Hide Auto Connect from Merchant Panel Messenger and WhatsApp pages
+- [ ] Verify both pages still show Manual Connect and deploy to orzen.top

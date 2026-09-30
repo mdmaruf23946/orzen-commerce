@@ -18,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { MetaAutoConnect } from "@/components/admin/MetaAutoConnect";
 
 export const Route = createFileRoute("/_authenticated/admin/whatsapp")({
   component: () => (
@@ -174,9 +173,6 @@ function WhatsappPage() {
           ))}
         </div>
       )}
-
-      {/* Auto Connect — sits next to, and never replaces, the manual credentials below */}
-      <MetaAutoConnect channel="whatsapp" onConnected={() => qc.invalidateQueries({ queryKey: ["admin", "whatsapp"] })} />
 
       {/* Connection */}
       <section className="space-y-4 rounded-xl border bg-card p-4">
