@@ -11,6 +11,7 @@ import {
   deleteGlobalGeminiKey,
   moveGlobalGeminiKey,
   testGlobalGeminiKey,
+  listAiKeyUsage,
 } from "@/lib/owner.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,8 @@ function AIControlCenter() {
         <Kpi icon={Zap} label="Cost (7d)" value={`$${t.cost7.toFixed(2)}`} />
         <Kpi icon={Sparkles} label="Enabled stores" value={`${(overview as any)?.enabledStores ?? 0}/${(overview as any)?.configuredStores ?? 0}`} />
       </div>
+
+      <KeyUsageOverview />
 
       <ApiKeysManager />
     </div>
@@ -87,6 +90,11 @@ function ApiKeysManager() {
   const [model, setModel] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [vision, setVision] = useState(true);
+  const [dailyLimit, setDailyLimit] = useState("");
+  const [monthlyLimit, setMonthlyLimit] = useState("");
+  const usageFn = useServerFn(listAiKeyUsage);
+  const { data: usageData } = useQuery({ queryKey: ["ai", "key-usage"], queryFn: () => usageFn(), staleTime: 30_000 });
+  const usageById = new Map<string, any>(((usageData as any)?.keys ?? []).map((u: any) => [u.id, u]));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [tested, setTested] = useState<Record<string, { ok: boolean; msg?: string }>>({});
@@ -104,16 +112,20 @@ function ApiKeysManager() {
     setBaseUrl(k.base_url ?? "");
     setApiKey("");
     setVision(!!k.vision);
+    setDailyLimit(k.daily_token_limit ? String(k.daily_token_limit) : "");
+    setMonthlyLimit(k.monthly_token_limit ? String(k.monthly_token_limit) : "");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function cancelEdit() {
     setEditingId(null);
     setName(""); setBaseUrl(""); setModel(""); setApiKey(""); setVision(true);
+    setDailyLimit(""); setMonthlyLimit("");
   }
 
   function refresh() {
     qc.invalidateQueries({ queryKey: ["ai", "gemini-keys"] });
+    qc.invalidateQueries({ queryKey: ["ai", "key-usage"] });
     qc.invalidateQueries({ queryKey: ["ai", "provider-status"] });
   }
 
@@ -157,10 +169,13 @@ function ApiKeysManager() {
           model: model.trim(),
           base_url: url,
           vision,
+          daily_token_limit: Number(dailyLimit.replace(/[^0-9]/g, "")) || null,
+          monthly_token_limit: Number(monthlyLimit.replace(/[^0-9]/g, "")) || null,
         };
         if (url) payload.provider = detectProvider(url);
         if (apiKey.trim().length >= 10) payload.key = apiKey.trim();
         await updFn({ data: payload });
+        setDailyLimit(""); setMonthlyLimit("");
         setEditingId(null);
         setName(""); setBaseUrl(""); setModel(""); setApiKey(""); setVision(true);
         refresh();
@@ -221,6 +236,17 @@ function ApiKeysManager() {
           <Field label="API base URL (optional)" className="sm:col-span-2">
             <Input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="Auto-detected if empty" />
           </Field>
+          {editing && (
+            <>
+              <Field label="Daily token limit (optional)">
+                <Input inputMode="numeric" value={dailyLimit} onChange={(e) => setDailyLimit(e.target.value)} placeholder="e.g. 500000" />
+              </Field>
+              <Field label="Monthly token limit (optional)">
+                <Input inputMode="numeric" value={monthlyLimit} onChange={(e) => setMonthlyLimit(e.target.value)} placeholder="e.g. 10000000" />
+              </Field>
+              <p className="sm:col-span-2 -mt-1 text-[11px] text-muted-foreground">Limit শেষ হলে এই key থেমে যাবে আর পরের key কাজ করবে। খালি রাখলে কোনো limit নেই।</p>
+            </>
+          )}
           <Field label="API key" className="sm:col-span-2">
             <Input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder={editing ? "Leave empty to keep the current key" : "Paste your API key"} autoComplete="off" />
           </Field>
@@ -286,6 +312,7 @@ function ApiKeysManager() {
                       <span className="truncate font-mono">Key: {k.masked}</span>
                       <span>Images: {k.vision ? "yes" : "no"}</span>
                     </div>
+                    <UsageBlock u={usageById.get(k.id)} />
                     {r?.ok && (
                       <div className="mt-1 flex items-center gap-1 text-[11px] text-primary"><CheckCircle2 className="h-3 w-3" /> Connected</div>
                     )}
@@ -335,6 +362,97 @@ function ApiKeysManager() {
           })}
         </div>
       </div>
+    </div>
+  );
+}
+
+function fmtTok(n: number) {
+  if (n >= 1e9) return `${(n / 1e9).toFixed(1)}B`;
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}k`;
+  return String(Math.round(n));
+}
+
+function remainingText(u: any): string {
+  if (u.remaining === null || u.remaining === undefined) return "Limit সেট করা নেই";
+  if (u.unit === "usd" || u.unit === "usd_free") {
+    return u.limit === null ? "সীমাহীন (limit নেই)" : `$${Number(u.remaining).toFixed(2)} / $${Number(u.limit).toFixed(2)}`;
+  }
+  return u.limit ? `${fmtTok(u.remaining)} / ${fmtTok(u.limit)}` : fmtTok(u.remaining);
+}
+
+function sourceText(u: any): string {
+  if (u.source === "provider") return u.unit?.startsWith("usd") ? "কোম্পানি থেকে (ক্রেডিট)" : "কোম্পানি থেকে";
+  if (u.source === "limit") return u.period === "day" ? "আপনার দৈনিক limit থেকে" : "আপনার মাসিক limit থেকে";
+  return "কোম্পানি বাকি জানায় না";
+}
+
+function UsageBar({ u }: { u: any }) {
+  if (u.remaining === null || u.remaining === undefined || !u.limit) return null;
+  const pct = Math.max(0, Math.min(100, (Number(u.remaining) / Number(u.limit)) * 100));
+  const tone = pct > 50 ? "bg-primary" : pct > 20 ? "bg-amber-500" : "bg-destructive";
+  return (
+    <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+      <div className={`h-full ${tone}`} style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
+function UsageBlock({ u }: { u: any }) {
+  if (!u) return null;
+  return (
+    <div className="mt-2 rounded-md border bg-muted/30 p-2 text-[11px]">
+      <div className="grid grid-cols-3 gap-2">
+        <div><div className="text-muted-foreground">আজ খরচ</div><div className="font-semibold text-foreground">{fmtTok(u.used_today)}</div></div>
+        <div><div className="text-muted-foreground">এই মাসে</div><div className="font-semibold text-foreground">{fmtTok(u.used_month)}</div></div>
+        <div><div className="text-muted-foreground">বাকি</div><div className={`font-semibold ${u.over_limit ? "text-destructive" : "text-foreground"}`}>{u.over_limit ? "Limit শেষ" : remainingText(u)}</div></div>
+      </div>
+      <UsageBar u={u} />
+      <div className="mt-1 text-muted-foreground">
+        {u.requests_month} বার ব্যবহার · {sourceText(u)}
+        {u.last_used ? ` · শেষ: ${new Date(u.last_used).toLocaleString()}` : ""}
+      </div>
+    </div>
+  );
+}
+
+function KeyUsageOverview() {
+  const usageFn = useServerFn(listAiKeyUsage);
+  const { data, isLoading } = useQuery({ queryKey: ["ai", "key-usage"], queryFn: () => usageFn(), staleTime: 30_000 });
+  const rows: any[] = (data as any)?.keys ?? [];
+  return (
+    <div className="rounded-xl border bg-card p-4 min-w-0">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Cpu className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-base font-semibold">API Key Usage</h2>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          সব key মিলিয়ে — আজ {fmtTok((data as any)?.total_today ?? 0)} · এই মাসে {fmtTok((data as any)?.total_month ?? 0)} token
+        </span>
+      </div>
+      {isLoading ? (
+        <p className="mt-3 text-sm text-muted-foreground">লোড হচ্ছে…</p>
+      ) : rows.length === 0 ? (
+        <p className="mt-3 text-sm text-muted-foreground">কোনো API key যুক্ত নেই।</p>
+      ) : (
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {rows.map((u) => (
+            <div key={u.id} className={`min-w-0 rounded-lg border p-3 ${u.enabled ? "" : "opacity-60"}`}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate text-sm font-medium">{u.order}. {u.label}</span>
+                <span className="shrink-0 text-[10px] text-muted-foreground">{u.provider_name}</span>
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+                <div><div className="text-muted-foreground">খরচ হয়েছে (মাস)</div><div className="text-base font-bold">{fmtTok(u.used_month)}</div></div>
+                <div><div className="text-muted-foreground">বাকি আছে</div><div className={`text-sm font-bold ${u.over_limit ? "text-destructive" : ""}`}>{u.over_limit ? "Limit শেষ" : remainingText(u)}</div></div>
+              </div>
+              <UsageBar u={u} />
+              <div className="mt-1 text-[10px] text-muted-foreground">আজ {fmtTok(u.used_today)} · {sourceText(u)}</div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
