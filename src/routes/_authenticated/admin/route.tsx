@@ -263,7 +263,7 @@ const menuGroups: NavGroupDef[] = [
       { to: "/admin/notifications", label: "Customer Notification Setup", icon: Bell, badgeKey: "notifications" },
       { to: "/admin/subscription", label: "My Subscription", icon: CreditCard },
       { to: "/admin/billing", label: "Billing & Plans", icon: Wallet },
-      { to: "/admin/support", label: "Support", icon: MessageSquare },
+      { to: "/admin/support", label: "Help Center", icon: MessageSquare },
     ],
   },
 ];

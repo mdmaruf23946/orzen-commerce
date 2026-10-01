@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { LifeBuoy, Plus, Send, CheckCircle2 } from "lucide-react";
+import { LifeBuoy, Plus, Send, CheckCircle2, MessageCircle, Phone, Mail, Clock } from "lucide-react";
 import {
   listMyTickets, getMyTicket, createMyTicket, replyMyTicket, closeMyTicket,
 } from "@/lib/store-support.functions";
@@ -72,15 +72,39 @@ function SupportPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-xl font-semibold">
-            <LifeBuoy className="h-5 w-5" /> Support
+            <LifeBuoy className="h-5 w-5" /> Help Center
           </h1>
-          <p className="text-sm text-muted-foreground">Ask the ORZEN team for help with your store.</p>
+          <p className="text-sm text-muted-foreground">যেকোনো সমস্যায় ORZEN টিমের সাথে যোগাযোগ করুন অথবা সমস্যা জমা দিন।</p>
         </div>
         <Button size="sm" onClick={() => setOpenNew(true)}>
-          <Plus className="mr-1 h-4 w-4" /> New ticket
+          <Plus className="mr-1 h-4 w-4" /> নতুন সমস্যা জানান
         </Button>
       </div>
 
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <a href="https://wa.me/8801624975734" target="_blank" rel="noopener noreferrer" className="rounded-2xl border bg-card p-4 hover:bg-muted/40">
+          <MessageCircle className="h-5 w-5 text-primary" />
+          <div className="mt-2 text-sm font-semibold">WhatsApp হেল্পলাইন</div>
+          <div className="text-sm text-muted-foreground">01624975734</div>
+        </a>
+        <a href="tel:+8801624975734" className="rounded-2xl border bg-card p-4 hover:bg-muted/40">
+          <Phone className="h-5 w-5 text-primary" />
+          <div className="mt-2 text-sm font-semibold">সরাসরি কল</div>
+          <div className="text-sm text-muted-foreground">01624975734</div>
+        </a>
+        <a href="mailto:support@orzen.top" className="rounded-2xl border bg-card p-4 hover:bg-muted/40">
+          <Mail className="h-5 w-5 text-primary" />
+          <div className="mt-2 text-sm font-semibold">ইমেইল</div>
+          <div className="text-sm text-muted-foreground">support@orzen.top</div>
+        </a>
+        <div className="rounded-2xl border bg-card p-4">
+          <Clock className="h-5 w-5 text-primary" />
+          <div className="mt-2 text-sm font-semibold">সাপোর্টের সময়</div>
+          <div className="text-sm text-muted-foreground">প্রতিদিন সকাল ৯টা – রাত ১০টা</div>
+        </div>
+      </div>
+
+      <h2 className="text-sm font-semibold">আমার জমা দেওয়া সমস্যা</h2>
       <div className="rounded-2xl border bg-card">
         {isLoading ? (
           <div className="h-40 animate-pulse rounded-2xl bg-muted/40" />
