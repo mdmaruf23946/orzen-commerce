@@ -47,7 +47,7 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: { error: any; reset: () => void; info?: unknown }) {
   console.error(error);
   const router = useRouter();
   const [recovering] = useState(() => recoverFromChunkError(error));

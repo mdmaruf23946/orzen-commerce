@@ -32,7 +32,7 @@ export const Route = createFileRoute("/_authenticated/owner/themes")({
   }),
 });
 
-function ThemesError({ error, reset }: { error: Error; reset: () => void }) {
+function ThemesError({ error, reset }: { error: any; reset: () => void; info?: unknown }) {
   const router = useRouter();
   return (
     <div className="mx-auto max-w-md space-y-3 py-12 text-center">
