@@ -310,7 +310,7 @@ function AdminMessenger() {
       <div className="flex items-center gap-3 rounded-xl border border-messenger/20 bg-messenger/5 p-3">
         <MessengerMark size={44} />
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold sm:text-2xl">Messenger Integration</h1>
+          <h1 className="text-xl font-semibold sm:text-2xl">Messenger AI Integration</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Connect your Facebook Page so the AI agent can reply to Messenger chats automatically.
           </p>

@@ -140,7 +140,7 @@ function WhatsappPage() {
       <header className="flex flex-wrap items-center gap-3 rounded-xl border border-whatsapp/20 bg-whatsapp/5 p-3">
         <WhatsAppMark size={40} />
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-semibold sm:text-2xl">WhatsApp Integration</h1>
+          <h1 className="text-xl font-semibold sm:text-2xl">WhatsApp AI Integration</h1>
           <p className="text-sm text-muted-foreground">
             Connect WhatsApp Cloud API so your AI sales agent can chat with customers.
           </p>
