@@ -1122,6 +1122,8 @@ export const listGlobalGeminiKeys = createServerFn({ method: "GET" })
         enabled: k.enabled,
         failed_today: k.failed_on === today,
         last_error: k.last_error,
+        daily_token_limit: k.daily_token_limit ?? null,
+        monthly_token_limit: k.monthly_token_limit ?? null,
         order: i + 1,
       })),
     };
@@ -1208,6 +1210,8 @@ export const updateGlobalGeminiKey = createServerFn({ method: "POST" })
       key: z.string().min(10).max(500).optional(),
       provider: z.enum(["gemini", "groq", "openrouter", "openai", "custom"]).optional(),
       reset_failure: z.boolean().optional(),
+      daily_token_limit: z.number().int().min(0).max(1e12).nullable().optional(),
+      monthly_token_limit: z.number().int().min(0).max(1e13).nullable().optional(),
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -1222,6 +1226,8 @@ export const updateGlobalGeminiKey = createServerFn({ method: "POST" })
     if (data.model !== undefined) k.model = data.model.trim() || null;
     if (data.base_url !== undefined) k.base_url = data.base_url.trim() || null;
     if (data.provider !== undefined) k.provider = data.provider;
+    if (data.daily_token_limit !== undefined) k.daily_token_limit = data.daily_token_limit || null;
+    if (data.monthly_token_limit !== undefined) k.monthly_token_limit = data.monthly_token_limit || null;
     const newKey = data.key !== undefined ? data.key.trim().replace(/^["'`]+|["'`]+$/g, "").trim().replace(/^bearer\s+/i, "").replace(/\s+/g, "") : undefined;
     if (newKey !== undefined && newKey && newKey !== k.key) {
       k.key = newKey;
@@ -1707,5 +1713,58 @@ export const ownerMessagePerformance = createServerFn({ method: "GET" })
       })),
       slowest: [...rows].sort((a, b) => b.total - a.total).slice(0, 50),
       stores: [...new Set(rows.map((r) => r.store))].sort(),
+    };
+  });
+
+
+/** Token usage + remaining balance per connected AI key (owner only, no secrets). */
+export const listAiKeyUsage = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const sb: any = context.supabase;
+    const { helpers, keys } = await loadGeminiKeys(sb);
+    const usage = await import("@/lib/ai-key-usage.server");
+    // Refresh OpenRouter balances at most every 5 minutes.
+    const { data: q0 } = await sb.from("ai_key_quota").select("*");
+    const quota0 = new Map<string, any>(((q0 as any[]) ?? []).map((r) => [r.key_id, r]));
+    const stale = keys.filter((k) => k.provider === "openrouter" && (!quota0.get(k.id) || Date.now() - new Date(quota0.get(k.id).checked_at).getTime() > 300_000));
+    if (stale.length) await Promise.all(stale.map((k) => usage.refreshOpenRouterQuota(k.id, k.key)));
+    const { data: q1 } = stale.length ? await sb.from("ai_key_quota").select("*") : { data: q0 };
+    const quota = new Map<string, any>(((q1 as any[]) ?? []).map((r) => [r.key_id, r]));
+    const totals = await usage.loadKeyTotals(sb);
+    const rows = keys.map((k, i) => {
+      const t = totals[k.id] ?? { today: 0, month: 0, requests: 0, last: null };
+      const q = quota.get(k.id);
+      const daily = k.daily_token_limit ?? null;
+      const monthly = k.monthly_token_limit ?? null;
+      let remaining: number | null = null;
+      let limit: number | null = null;
+      let unit = "tokens";
+      let source: "provider" | "limit" | "none" = "none";
+      let period: "day" | "month" | null = null;
+      if (q && q.remaining_tokens !== null && q.remaining_tokens !== undefined) {
+        remaining = Number(q.remaining_tokens);
+        limit = q.limit_tokens !== null ? Number(q.limit_tokens) : null;
+        unit = q.unit;
+        source = "provider";
+      } else if (daily) {
+        limit = daily; remaining = Math.max(0, daily - t.today); source = "limit"; period = "day";
+      } else if (monthly) {
+        limit = monthly; remaining = Math.max(0, monthly - t.month); source = "limit"; period = "month";
+      }
+      const over = (!!daily && t.today >= daily) || (!!monthly && t.month >= monthly);
+      return {
+        id: k.id, order: i + 1, label: k.label, provider: k.provider,
+        provider_name: helpers.providerPreset(k.provider).name, enabled: k.enabled,
+        used_today: t.today, used_month: t.month, requests_month: t.requests, last_used: t.last,
+        remaining, limit, unit, source, period, over_limit: over,
+        reset_at: q?.reset_at ?? null, checked_at: q?.checked_at ?? null,
+      };
+    });
+    return {
+      keys: rows,
+      total_today: rows.reduce((a, r) => a + r.used_today, 0),
+      total_month: rows.reduce((a, r) => a + r.used_month, 0),
     };
   });
