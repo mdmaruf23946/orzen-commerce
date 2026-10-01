@@ -23,6 +23,7 @@ import {
   type KeyProvider,
 } from "./gemini-keys.server";
 import { requireServerEnv } from "./server-env";
+import { overLimitKeyIds, recordKeyUsage } from "./ai-key-usage.server";
 
 const SENTINEL_BASE = "https://ai-router.internal/v1";
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai";
@@ -42,6 +43,8 @@ type Candidate = {
   /** Whether this key's model can read images. */
   vision: boolean;
   headers: Record<string, string>;
+  dailyLimit?: number | null;
+  monthlyLimit?: number | null;
 };
 
 export type ResolvedAi = {
@@ -122,6 +125,8 @@ function candidateFromKey(k: GeminiKey, modelId: string): Candidate | null {
       ? [preset.model, ...preset.fallbacks].filter((m): m is string => !!m && m !== k.model)
       : preset.fallbacks,
     vision: k.vision,
+    dailyLimit: k.daily_token_limit ?? null,
+    monthlyLimit: k.monthly_token_limit ?? null,
     headers:
       k.provider === "openrouter"
         ? { "http-referer": "https://orzen.top", "x-title": "Orzen Commerce" }
@@ -413,7 +418,15 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
       && bodyObj.messages.some((m: any) =>
         Array.isArray(m?.content) && m.content.some((p: any) => p?.type === "image_url"),
       );
-    const eligible = needsVision ? candidates.filter((c) => c.vision) : candidates;
+    let eligible = needsVision ? candidates.filter((c) => c.vision) : candidates;
+    // Owner-set token limits: skip keys whose limit is used up (unless all are).
+    const over = await overLimitKeyIds(
+      eligible.filter((c) => c.keyId).map((c) => ({ id: c.keyId!, daily: c.dailyLimit ?? null, monthly: c.monthlyLimit ?? null })),
+    );
+    if (over.size) {
+      const within = eligible.filter((c) => !c.keyId || !over.has(c.keyId));
+      if (within.length) eligible = within;
+    }
     if (!eligible.length) throw new Error("No AI key on this site can read images. Enable a vision-capable key.");
     // Circuit breaker: skip keys whose primary model is currently "open",
     // unless every key is open (then try all anyway).
@@ -453,6 +466,7 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
           const res = await fetch(`${c.baseURL}${suffix}`, { ...init, headers, body, signal });
           if (res.ok) {
             breakerSuccess(bKey);
+            if (c.keyId && isChat) recordKeyUsage(c.keyId, c.provider, modelId, res, typeof body === "string" ? body : null);
             onUse({ provider: c.provider, label: c.label });
             return res;
           }
