@@ -1768,3 +1768,28 @@ export const listAiKeyUsage = createServerFn({ method: "GET" })
       total_month: rows.reduce((a, r) => a + r.used_month, 0),
     };
   });
+
+export const playgroundChat = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      ids: z.array(z.string().min(1)).min(1).max(30),
+      messages: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().min(1).max(4000) })).min(1).max(20),
+      histories: z.record(z.string(), z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(4000) })).max(20)).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertOwner(context.supabase, context.userId);
+    const { keys } = await loadGeminiKeys(context.supabase as any);
+    const { chatWithSavedKey } = await import("./ai-provider.server");
+    const results = await Promise.all(
+      data.ids.map(async (id) => {
+        const k = keys.find((x: any) => x.id === id);
+        if (!k) return { id, ok: false, error: "Key not found", ms: 0 };
+        const hist = data.histories?.[id];
+        const msgs = hist ? [...hist, data.messages[data.messages.length - 1]] : data.messages;
+        return { id, ...(await chatWithSavedKey(k, msgs.filter((m) => m.content))) };
+      }),
+    );
+    return { results };
+  });

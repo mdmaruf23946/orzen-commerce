@@ -758,3 +758,44 @@ export async function routedTranscribeAudio(bytes: Uint8Array, mime: string): Pr
   }
   return null;
 }
+
+/** Owner playground: send one conversation directly to one saved key (no rotation). */
+export async function chatWithSavedKey(
+  k: GeminiKey,
+  messages: { role: "user" | "assistant"; content: string }[],
+): Promise<{ ok: boolean; text?: string; error?: string; model?: string; ms: number; tokens?: number }> {
+  const started = Date.now();
+  const c = candidateFromKey(k, "google/gemini-2.5-flash");
+  if (!c) return { ok: false, error: "এই key-এর জন্য URL বা model সেট করা নেই।", ms: 0 };
+  const models = [c.modelId, ...c.fallbacks].slice(0, 3);
+  let lastErr = "Unknown error";
+  for (const model of models) {
+    const body = JSON.stringify({
+      model,
+      messages: [{ role: "system", content: "You are a helpful assistant. Reply briefly." }, ...messages],
+    });
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 30000);
+      const res = await fetch(`${c.baseURL.replace(/\/$/, "")}/chat/completions`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${c.apiKey}`, "content-type": "application/json", ...c.headers },
+        body,
+        signal: ctrl.signal,
+      }).finally(() => clearTimeout(t));
+      if (res.ok && c.keyId) recordKeyUsage(c.keyId, c.provider, model, res, body);
+      if (!res.ok) {
+        lastErr = `HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`;
+        if (res.status === 401 || res.status === 403) break;
+        continue;
+      }
+      const j: any = await res.json();
+      const text = j?.choices?.[0]?.message?.content ?? "";
+      if (!text) { lastErr = "খালি উত্তর এসেছে"; continue; }
+      return { ok: true, text: String(text), model, ms: Date.now() - started, tokens: j?.usage?.total_tokens };
+    } catch (e) {
+      lastErr = (e as Error).name === "AbortError" ? "৩০ সেকেন্ডে উত্তর আসেনি (timeout)" : (e as Error).message;
+    }
+  }
+  return { ok: false, error: lastErr, ms: Date.now() - started };
+}
