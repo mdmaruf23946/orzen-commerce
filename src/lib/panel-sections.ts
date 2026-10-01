@@ -71,7 +71,7 @@ export const PANEL_SECTIONS: PanelSection[] = [
   { key: "domains", label: "Domains & DNS", group: "Settings & Management", paths: ["/admin/domains", "/admin/dns-check"], ownerOnly: true },
   { key: "employees", label: "Employees & Team", group: "Settings & Management", paths: ["/admin/employees", "/admin/staff"], ownerOnly: true, feature: "staff" },
 
-  { key: "support", label: "Support", group: "Settings & Management", paths: ["/admin/support"] },
+  { key: "support", label: "Help Center", group: "Settings & Management", paths: ["/admin/support"] },
   { key: "subscription", label: "My Subscription", group: "Settings & Management", paths: ["/admin/subscription"], ownerOnly: true },
   { key: "billing", label: "Billing & Plans", group: "Settings & Management", paths: ["/admin/billing"], ownerOnly: true },
   { key: "settings", label: "Store Settings", group: "Settings & Management", paths: ["/admin/settings"], ownerOnly: true },
