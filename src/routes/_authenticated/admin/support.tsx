@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { LifeBuoy, Plus, Send, CheckCircle2, MessageCircle, Phone, Mail, Clock } from "lucide-react";
+import { LifeBuoy, Plus, Send, CheckCircle2, MessageCircle, Mail } from "lucide-react";
 import {
   listMyTickets, getMyTicket, createMyTicket, replyMyTicket, closeMyTicket,
 } from "@/lib/store-support.functions";
