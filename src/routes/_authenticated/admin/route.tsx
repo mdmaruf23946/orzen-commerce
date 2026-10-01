@@ -332,7 +332,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 /** Keeps a transient failure (stale chunk, network blip, server hiccup)
  *  contained inside the admin panel with a retry, instead of blanking the app. */
-function AdminErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function AdminErrorComponent({ error, reset }: { error: any; reset: () => void; info?: unknown }) {
   console.error(error);
   const router = useRouter();
   const [recovering] = useState(() => recoverFromChunkError(error));

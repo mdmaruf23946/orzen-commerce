@@ -1327,6 +1327,69 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_key_quota: {
+        Row: {
+          checked_at: string
+          key_id: string
+          limit_tokens: number | null
+          remaining_tokens: number | null
+          reset_at: string | null
+          source: string
+          unit: string
+        }
+        Insert: {
+          checked_at?: string
+          key_id: string
+          limit_tokens?: number | null
+          remaining_tokens?: number | null
+          reset_at?: string | null
+          source?: string
+          unit?: string
+        }
+        Update: {
+          checked_at?: string
+          key_id?: string
+          limit_tokens?: number | null
+          remaining_tokens?: number | null
+          reset_at?: string | null
+          source?: string
+          unit?: string
+        }
+        Relationships: []
+      }
+      ai_key_usage: {
+        Row: {
+          completion_tokens: number
+          created_at: string
+          id: string
+          key_id: string
+          model: string
+          ok: boolean
+          prompt_tokens: number
+          provider: string
+        }
+        Insert: {
+          completion_tokens?: number
+          created_at?: string
+          id?: string
+          key_id: string
+          model?: string
+          ok?: boolean
+          prompt_tokens?: number
+          provider?: string
+        }
+        Update: {
+          completion_tokens?: number
+          created_at?: string
+          id?: string
+          key_id?: string
+          model?: string
+          ok?: boolean
+          prompt_tokens?: number
+          provider?: string
+        }
+        Relationships: []
+      }
       ai_messages: {
         Row: {
           attachments: Json

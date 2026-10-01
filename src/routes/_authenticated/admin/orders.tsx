@@ -49,7 +49,7 @@ export const Route = createFileRoute("/_authenticated/admin/orders")({
 });
 
 /** Route-level boundary: shows the real error, stack and user context. */
-function OrdersErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function OrdersErrorComponent({ error, reset }: { error: any; reset: () => void; info?: unknown }) {
   const router = useRouter();
   const [recovering] = useState(() => recoverFromChunkError(error));
   if (recovering) {

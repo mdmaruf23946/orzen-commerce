@@ -25,6 +25,9 @@ export type GeminiKey = {
   enabled: boolean;
   failed_on: string | null; // Dhaka date (YYYY-MM-DD) of the last failure
   last_error: string | null;
+  /** Optional owner-set token limits; key is skipped once used up. */
+  daily_token_limit?: number | null;
+  monthly_token_limit?: number | null;
 };
 
 export type ProviderPreset = {
@@ -273,6 +276,8 @@ export function normalizeGeminiKeys(raw: unknown): GeminiKey[] {
         enabled: k.enabled !== false,
         failed_on: typeof k.failed_on === "string" ? k.failed_on : null,
         last_error: typeof k.last_error === "string" ? k.last_error.slice(0, 300) : null,
+        daily_token_limit: Number(k.daily_token_limit) > 0 ? Math.floor(Number(k.daily_token_limit)) : null,
+        monthly_token_limit: Number(k.monthly_token_limit) > 0 ? Math.floor(Number(k.monthly_token_limit)) : null,
       };
     });
 }
