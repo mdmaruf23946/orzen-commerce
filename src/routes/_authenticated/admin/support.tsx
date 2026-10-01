@@ -81,15 +81,10 @@ function SupportPage() {
         </Button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2">
         <a href="https://wa.me/8801624975734" target="_blank" rel="noopener noreferrer" className="rounded-2xl border bg-card p-4 hover:bg-muted/40">
           <MessageCircle className="h-5 w-5 text-primary" />
           <div className="mt-2 text-sm font-semibold">WhatsApp হেল্পলাইন</div>
-          <div className="text-sm text-muted-foreground">01624975734</div>
-        </a>
-        <a href="tel:+8801624975734" className="rounded-2xl border bg-card p-4 hover:bg-muted/40">
-          <Phone className="h-5 w-5 text-primary" />
-          <div className="mt-2 text-sm font-semibold">সরাসরি কল</div>
           <div className="text-sm text-muted-foreground">01624975734</div>
         </a>
         <a href="mailto:support@orzen.top" className="rounded-2xl border bg-card p-4 hover:bg-muted/40">
@@ -97,11 +92,6 @@ function SupportPage() {
           <div className="mt-2 text-sm font-semibold">ইমেইল</div>
           <div className="text-sm text-muted-foreground">support@orzen.top</div>
         </a>
-        <div className="rounded-2xl border bg-card p-4">
-          <Clock className="h-5 w-5 text-primary" />
-          <div className="mt-2 text-sm font-semibold">সাপোর্টের সময়</div>
-          <div className="text-sm text-muted-foreground">প্রতিদিন সকাল ৯টা – রাত ১০টা</div>
-        </div>
       </div>
 
       <h2 className="text-sm font-semibold">আমার জমা দেওয়া সমস্যা</h2>
