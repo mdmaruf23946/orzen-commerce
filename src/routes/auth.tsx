@@ -84,9 +84,20 @@ function AuthPage() {
   }
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: getNext(), replace: true });
-    });
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) return;
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2") {
+        // Pending 2FA: ask for the code, never skip into the panel.
+        const { data: factors } = await supabase.auth.mfa.listFactors();
+        const factor = (factors?.totp ?? [])[0];
+        if (factor) setMfaFactorId(factor.id);
+        else await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+        return;
+      }
+      navigate({ to: getNext(), replace: true });
+    })();
   }, [navigate]);
 
   // auto-suggest slug from store name
