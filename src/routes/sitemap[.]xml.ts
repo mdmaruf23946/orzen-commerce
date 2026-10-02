@@ -12,8 +12,13 @@ export const Route = createFileRoute("/sitemap.xml")({
         const slug = await slugFromHost(host);
 
         if (!slug) {
-          // Platform site: always emit the canonical domain, never a preview host.
+          // Platform site: emit the host that actually served the request
+          // (published Lovable URL or orzen.top); never an ephemeral preview host.
           const { PLATFORM_ORIGIN } = await import("@/lib/seo");
+          const platBase =
+            host.endsWith(".lovable.app") && !host.includes("id-preview--")
+              ? origin
+              : PLATFORM_ORIGIN;
           const paths: Array<[string, string]> = [
             ["/", "1.0"],
             ["/about", "0.6"],
@@ -29,7 +34,7 @@ export const Route = createFileRoute("/sitemap.xml")({
             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
             ...paths.map(
               ([p, priority]) =>
-                `  <url><loc>${PLATFORM_ORIGIN}${p === "/" ? "/" : p}</loc><changefreq>weekly</changefreq><priority>${priority}</priority></url>`,
+                `  <url><loc>${platBase}${p === "/" ? "/" : p}</loc><changefreq>weekly</changefreq><priority>${priority}</priority></url>`,
             ),
             "</urlset>",
           ].join("\n");
