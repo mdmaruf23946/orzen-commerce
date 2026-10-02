@@ -11,10 +11,14 @@ export const Route = createFileRoute("/robots.txt")({
         const slug = await slugFromHost(host);
 
         if (!slug) {
-          // Platform site: always advertise the canonical domain, never an
-          // ephemeral preview/deploy host.
+          // Platform site: advertise the host that actually served the request
+          // (published Lovable URL or orzen.top); never an ephemeral preview host.
           const { PLATFORM_ORIGIN } = await import("@/lib/seo");
-          return new Response(`User-agent: *\nAllow: /\n\nSitemap: ${PLATFORM_ORIGIN}/sitemap.xml\n`, {
+          const platBase =
+            host.endsWith(".lovable.app") && !host.includes("id-preview--")
+              ? origin
+              : PLATFORM_ORIGIN;
+          return new Response(`User-agent: *\nAllow: /\n\nSitemap: ${platBase}/sitemap.xml\n`, {
             headers: { "Content-Type": "text/plain", "Cache-Control": "public, max-age=3600" },
           });
         }
