@@ -34,7 +34,7 @@ export const Route = createFileRoute("/sitemap.xml")({
             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
             ...paths.map(
               ([p, priority]) =>
-                `  <url><loc>${PLATFORM_ORIGIN}${p === "/" ? "/" : p}</loc><changefreq>weekly</changefreq><priority>${priority}</priority></url>`,
+                `  <url><loc>${platBase}${p === "/" ? "/" : p}</loc><changefreq>weekly</changefreq><priority>${priority}</priority></url>`,
             ),
             "</urlset>",
           ].join("\n");
