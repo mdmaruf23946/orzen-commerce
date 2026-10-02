@@ -112,6 +112,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Launch, run, and grow your online store with ORZEN — an all-in-one platform for store building, AI sales assistance, messenger automation, courier delivery, analytics, and secure payments.",
       },
       { name: "author", content: "ORZEN" },
+      {
+        name: "google-site-verification",
+        content: "dX3JmX3UsN3QyrwZYiIa85MqhK6eJuaVqGItJ1Wziqk",
+      },
       { property: "og:title", content: "ORZEN — Launch your online store in minutes" },
       {
         property: "og:description",
