@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/PasswordInput";
 import { Label } from "@/components/ui/label";
 import { checkStoreSlugAvailable, createMyStoreWithSlug, getMyStore } from "@/lib/admin.functions";
 import { myAccountKind } from "@/lib/employees.functions";
@@ -363,9 +364,8 @@ function AuthPage() {
                 />
               </Field>
               <Field label="Password" id="password">
-                <Input
+                <PasswordInput
                   id="password"
-                  type="password"
                   autoComplete="new-password"
                   required
                   minLength={6}
@@ -374,9 +374,8 @@ function AuthPage() {
                 />
               </Field>
               <Field label="Confirm password" id="confirm">
-                <Input
+                <PasswordInput
                   id="confirm"
-                  type="password"
                   autoComplete="new-password"
                   required
                   minLength={6}
@@ -403,9 +402,8 @@ function AuthPage() {
                 />
               </Field>
               <Field label="Password" id="password">
-                <Input
+                <PasswordInput
                   id="password"
-                  type="password"
                   autoComplete="current-password"
                   required
                   minLength={6}
