@@ -1995,10 +1995,14 @@ export type Database = {
         Row: {
           agent_email: string | null
           agent_id: string | null
+          answered_at: string | null
+          call_type: string
+          connection_id: string | null
           created_at: string
           customer_id: string | null
           customer_name: string | null
           direction: string
+          dtmf: string | null
           duration_sec: number
           ended_at: string | null
           id: string
@@ -2007,7 +2011,9 @@ export type Database = {
           phone: string
           provider: string
           provider_call_sid: string | null
+          recording_ref: string | null
           result: string | null
+          retry_count: number
           started_at: string
           status: string
           store_id: string
@@ -2016,10 +2022,14 @@ export type Database = {
         Insert: {
           agent_email?: string | null
           agent_id?: string | null
+          answered_at?: string | null
+          call_type?: string
+          connection_id?: string | null
           created_at?: string
           customer_id?: string | null
           customer_name?: string | null
           direction?: string
+          dtmf?: string | null
           duration_sec?: number
           ended_at?: string | null
           id?: string
@@ -2028,7 +2038,9 @@ export type Database = {
           phone: string
           provider?: string
           provider_call_sid?: string | null
+          recording_ref?: string | null
           result?: string | null
+          retry_count?: number
           started_at?: string
           status?: string
           store_id: string
@@ -2037,10 +2049,14 @@ export type Database = {
         Update: {
           agent_email?: string | null
           agent_id?: string | null
+          answered_at?: string | null
+          call_type?: string
+          connection_id?: string | null
           created_at?: string
           customer_id?: string | null
           customer_name?: string | null
           direction?: string
+          dtmf?: string | null
           duration_sec?: number
           ended_at?: string | null
           id?: string
@@ -2049,7 +2065,9 @@ export type Database = {
           phone?: string
           provider?: string
           provider_call_sid?: string | null
+          recording_ref?: string | null
           result?: string | null
+          retry_count?: number
           started_at?: string
           status?: string
           store_id?: string
@@ -10849,6 +10867,257 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      voice_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          metadata: Json
+          store_id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          store_id: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          store_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_audit_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_automation_settings: {
+        Row: {
+          auto_call_enabled: boolean
+          business_hours_only: boolean
+          call_immediately: boolean
+          created_at: string
+          delay_minutes: number
+          hours_from: string
+          hours_to: string
+          manual_calling_enabled: boolean
+          messages: Json
+          representative_transfer: boolean
+          retry_count: number
+          retry_delay_minutes: number
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          auto_call_enabled?: boolean
+          business_hours_only?: boolean
+          call_immediately?: boolean
+          created_at?: string
+          delay_minutes?: number
+          hours_from?: string
+          hours_to?: string
+          manual_calling_enabled?: boolean
+          messages?: Json
+          representative_transfer?: boolean
+          retry_count?: number
+          retry_delay_minutes?: number
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          auto_call_enabled?: boolean
+          business_hours_only?: boolean
+          call_immediately?: boolean
+          created_at?: string
+          delay_minutes?: number
+          hours_from?: string
+          hours_to?: string
+          manual_calling_enabled?: boolean
+          messages?: Json
+          representative_transfer?: boolean
+          retry_count?: number
+          retry_delay_minutes?: number
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_automation_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_call_events: {
+        Row: {
+          call_id: string | null
+          created_at: string
+          id: string
+          payload: Json
+          provider: string
+          provider_event_id: string
+          store_id: string
+        }
+        Insert: {
+          call_id?: string | null
+          created_at?: string
+          id?: string
+          payload?: Json
+          provider: string
+          provider_event_id: string
+          store_id: string
+        }
+        Update: {
+          call_id?: string | null
+          created_at?: string
+          id?: string
+          payload?: Json
+          provider?: string
+          provider_event_id?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_call_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_call_queue: {
+        Row: {
+          attempt: number
+          call_id: string | null
+          created_at: string
+          id: string
+          last_error: string | null
+          order_id: string
+          run_at: string
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempt?: number
+          call_id?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          order_id: string
+          run_at?: string
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempt?: number
+          call_id?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          order_id?: string
+          run_at?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_call_queue_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_call_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_provider_connections: {
+        Row: {
+          account_id: string | null
+          account_info: Json
+          connected_at: string | null
+          created_at: string
+          default_caller_id: string | null
+          default_extension: string | null
+          encrypted_token: string | null
+          id: string
+          last_error: string | null
+          last_tested_at: string | null
+          provider: string
+          status: string
+          store_id: string
+          token_preview: string | null
+          updated_at: string
+          webhook_secret_hash: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          account_info?: Json
+          connected_at?: string | null
+          created_at?: string
+          default_caller_id?: string | null
+          default_extension?: string | null
+          encrypted_token?: string | null
+          id?: string
+          last_error?: string | null
+          last_tested_at?: string | null
+          provider: string
+          status?: string
+          store_id: string
+          token_preview?: string | null
+          updated_at?: string
+          webhook_secret_hash?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          account_info?: Json
+          connected_at?: string | null
+          created_at?: string
+          default_caller_id?: string | null
+          default_extension?: string | null
+          encrypted_token?: string | null
+          id?: string
+          last_error?: string | null
+          last_tested_at?: string | null
+          provider?: string
+          status?: string
+          store_id?: string
+          token_preview?: string | null
+          updated_at?: string
+          webhook_secret_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_provider_connections_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       wallet_transactions: {
         Row: {
