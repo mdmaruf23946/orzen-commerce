@@ -32,7 +32,6 @@ export function CallButton({
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [resultFor, setResultFor] = useState<string | null>(null);
-  const [manual, setManual] = useState(false);
 
   async function go() {
     if (!phone) return;
@@ -58,13 +57,7 @@ export function CallButton({
         qc.invalidateQueries({ queryKey: ["order-calls"] }),
         qc.invalidateQueries({ queryKey: ["phone-calls"] }),
       ]);
-      if (res.mode === "device") {
-        setManual(true);
-        window.location.href = `tel:${res.dial}`;
-      } else {
-        setManual(false);
-        toast.success("Calling… your phone will ring first.");
-      }
+      toast.success("ePBX call started");
       setResultFor(res.callId);
     } catch {
       setConfirm(false);
@@ -127,7 +120,8 @@ export function CallButton({
           <AlertDialogFooter className="gap-2 sm:gap-2">
             <AlertDialogCancel>Close</AlertDialogCancel>
             <Link
-              to="/admin/call-center"
+              to="/admin/ai-call-center"
+              search={{ tab: "provider" }}
               onClick={() => setNotConnected(false)}
               className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground"
             >
@@ -162,7 +156,7 @@ export function CallButton({
         open={!!resultFor}
         onOpenChange={(v) => !v && setResultFor(null)}
         callId={resultFor}
-        manualStatus={manual}
+        manualStatus={false}
         phone={phone}
       />
     </>

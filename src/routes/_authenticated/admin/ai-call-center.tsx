@@ -469,7 +469,7 @@ function CallCenterHub() {
   return (
     <FeatureGate feature="call_center">
       <div className="space-y-4">
-        <AdminPageHeader title="AI Call Center" description="Order confirmation calls, manual calls, history and your calling provider." />
+        <AdminPageHeader title="AI Call Center" description="Order confirmation calls, customer calls, history and your ePBX connection." />
         <div className="flex gap-1.5 overflow-x-auto pb-1">
           {HUB_TABS.map((t) => (
             <button key={t.key} type="button" onClick={() => navigate({ search: { tab: t.key } })}

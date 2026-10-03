@@ -1,25 +1,17 @@
 import { Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Phone, PhoneCall, PhoneMissed, PhoneOff, Clock, Search, Trash2, Plug, ShieldCheck } from "lucide-react";
+import { Phone, PhoneCall, PhoneMissed, PhoneOff, Clock, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import { CallButton } from "@/components/admin/calls/CallButton";
 import { CallResultBadge, CallStatusBadge } from "@/components/admin/calls/CallStatusBadge";
+import { getCallCenterOverview, listCalls, deleteCall } from "@/lib/call-center.functions";
 import {
-  getCallProvider, saveCallProvider, testCallProvider, disconnectCallProvider,
-  getCallCenterOverview, listCalls, deleteCall,
-} from "@/lib/call-center.functions";
-import {
-  formatDuration, LIVE_STATUSES, PROVIDER_LABEL, PROVIDER_STATE_LABEL,
-  type CallProvider, type CallRow,
+  formatDuration, LIVE_STATUSES, type CallRow,
 } from "@/lib/call-center";
 
 const FILTERS = [
@@ -57,11 +49,9 @@ export function CallCenterPage() {
   return (
     <div className="space-y-4">
       <AdminPageHeader
-        title="Manual Call Center"
-        description="Call customers in one click and log the result against the order."
+        title="Calls & History"
+        description="Call customers through ePBX and review the result against each order."
       />
-
-      <ProviderCard />
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
         <Stat icon={PhoneCall} label="Calls Today" value={stats?.total ?? 0} />
@@ -238,181 +228,3 @@ function CallCardRow({ call }: { call: CallRow }) {
   );
 }
 
-/* ------------------------------ provider UI ----------------------------- */
-
-function ProviderCard() {
-  const getFn = useServerFn(getCallProvider);
-  const saveFn = useServerFn(saveCallProvider);
-  const testFn = useServerFn(testCallProvider);
-  const disconnectFn = useServerFn(disconnectCallProvider);
-  const qc = useQueryClient();
-
-  const { data, isLoading } = useQuery({ queryKey: ["call-center", "provider"], queryFn: () => getFn() });
-
-  const [draft, setDraft] = useState<{
-    provider: CallProvider; caller_id: string; agent_phone: string; account_sid: string; auth_token: string;
-  } | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const form = useMemo(
-    () =>
-      draft ?? {
-        provider: (data?.provider ?? "device") as CallProvider,
-        caller_id: data?.caller_id ?? "",
-        agent_phone: "",
-        account_sid: "",
-        auth_token: "",
-      },
-    [draft, data],
-  );
-
-  const state = data?.status ?? "not_connected";
-  const tone =
-    state === "connected"
-      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-      : state === "error"
-        ? "bg-destructive/10 text-destructive border-destructive/20"
-        : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
-
-  async function refresh() {
-    await qc.invalidateQueries({ queryKey: ["call-center", "provider"] });
-  }
-
-  async function save() {
-    setBusy(true);
-    try {
-      await saveFn({ data: form });
-      setDraft(null);
-      await refresh();
-      toast.success("Calling provider saved");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Could not save the calling provider.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function test() {
-    setBusy(true);
-    try {
-      const res: any = await testFn();
-      await refresh();
-      if (res.ok) toast.success("Connection is working");
-      else toast.error(res.error ?? "Connection failed");
-    } catch {
-      toast.error("Connection failed");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function disconnect() {
-    setBusy(true);
-    try {
-      await disconnectFn();
-      setDraft(null);
-      await refresh();
-      toast.success("Calling provider disconnected");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <section className="rounded-2xl border bg-card p-3 sm:p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Plug className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold">Calling Provider</h2>
-          <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${tone}`}>
-            {PROVIDER_STATE_LABEL[state]}
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Button variant="outline" size="sm" onClick={() => void test()} disabled={busy || isLoading}>
-            Test Connection
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => void disconnect()} disabled={busy || isLoading}>
-            Disconnect
-          </Button>
-        </div>
-      </div>
-
-      {data?.last_error && (
-        <p className="mt-2 rounded-lg bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive">{data.last_error}</p>
-      )}
-
-      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <Label className="text-xs">Provider</Label>
-          <Select
-            value={form.provider}
-            onValueChange={(v) => setDraft({ ...form, provider: v as CallProvider })}
-          >
-            <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {(Object.keys(PROVIDER_LABEL) as CallProvider[]).map((p) => (
-                <SelectItem key={p} value={p}>{PROVIDER_LABEL[p]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <Label className="text-xs">Caller ID / Business Number</Label>
-          <Input
-            className="mt-1 h-9"
-            value={form.caller_id}
-            onChange={(e) => setDraft({ ...form, caller_id: e.target.value })}
-            placeholder="+8801XXXXXXXXX"
-          />
-        </div>
-
-        <div>
-          <Label className="text-xs">Your Phone (rings first)</Label>
-          <Input
-            className="mt-1 h-9"
-            value={form.agent_phone}
-            onChange={(e) => setDraft({ ...form, agent_phone: e.target.value })}
-            placeholder={data?.has_credentials ? "Saved — leave blank to keep" : "+8801XXXXXXXXX"}
-          />
-        </div>
-
-        {form.provider === "twilio" && (
-          <>
-            <div>
-              <Label className="text-xs">Account SID</Label>
-              <Input
-                className="mt-1 h-9"
-                value={form.account_sid}
-                onChange={(e) => setDraft({ ...form, account_sid: e.target.value })}
-                placeholder={data?.has_credentials ? "Saved — leave blank to keep" : "AC…"}
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Auth Token</Label>
-              <Input
-                type="password"
-                className="mt-1 h-9"
-                value={form.auth_token}
-                onChange={(e) => setDraft({ ...form, auth_token: e.target.value })}
-                placeholder={data?.has_credentials ? "•••••••• saved" : "Auth token"}
-                autoComplete="new-password"
-              />
-            </div>
-          </>
-        )}
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <ShieldCheck className="h-3.5 w-3.5" />
-          Credentials are encrypted{data?.credentials_preview ? ` (${data.credentials_preview})` : ""} and never shown again.
-        </p>
-        <Button size="sm" onClick={() => void save()} disabled={busy || isLoading}>
-          {busy ? "Saving…" : "Save Provider"}
-        </Button>
-      </div>
-    </section>
-  );
-}

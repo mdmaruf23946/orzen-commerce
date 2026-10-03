@@ -47,7 +47,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   ai_messenger: "AI Messenger",
   ai_product_builder: "AI Product Builder",
   ai_call_center: "AI Call Center",
-  call_center: "Manual Call Center",
+  call_center: "AI Call Center",
   landing_pages: "Landing Pages",
   landing_page_create: "Landing Page Builder",
   landing_page_connect: "Landing Page Integrations",
