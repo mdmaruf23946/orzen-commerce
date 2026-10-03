@@ -18,7 +18,7 @@ async function handle(request: Request) {
   const ref: string | undefined = call?.recording_ref;
   if (!ref || !/^https:\/\//i.test(ref)) return new Response("Not found", { status: 404 });
 
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { "User-Agent": "ORZEN-Recording/1.0", Accept: "audio/*,*/*" };
   const range = request.headers.get("range");
   if (range) headers["Range"] = range;
   const host = new URL(ref).hostname;
