@@ -40,4 +40,5 @@
 - [x] SEO: sitemap/robots host-aware base (orzen-commerce.lovable.app vs orzen.top) — fixed 2026-10-02, needs Lovable publish to go live
 
 - [ ] Reconnect Google Search Console in new workspace (2026-10-03)
-- [ ] ePBX calling inside AI Call Center — ePBX API docs pending from user
+- [x] Replace Merchant AI Call Center's legacy Device/Manual provider setup with the store-scoped ePBX connection (2026-10-03)
+- [ ] Complete ePBX callbacks, automatic order calls, recordings, and production deployment
