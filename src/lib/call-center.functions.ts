@@ -178,6 +178,7 @@ export const startCall = createServerFn({ method: "POST" })
     }
 
     const { openToken, getVoiceProvider, friendlyVoiceError } = await import("@/lib/voice/service.server");
+    const { signedWebhookUrl } = await import("@/lib/voice/queue.server");
     const creds = openToken(connection.encrypted_token);
     if (!creds) return { ok: false as const, reason: "not_connected" as const };
 
@@ -210,7 +211,7 @@ export const startCall = createServerFn({ method: "POST" })
         to: data.phone,
         callerId: connection.default_caller_id ?? undefined,
         extension: connection.default_extension ?? undefined,
-        webhookUrl: `${proto}://${host}/api/public/voice/epbx`,
+        webhookUrl: signedWebhookUrl(`${proto}://${host}`, callId),
       });
       await context.supabase.from("calls").update({ provider_call_sid: result.provider_call_id }).eq("id", callId);
       return { ok: true as const, callId, mode: "provider" as const };
@@ -277,4 +278,18 @@ export const deleteCall = createServerFn({ method: "POST" })
     const storeId = await storeIdOrThrow(context.supabase, context.userId);
     await context.supabase.from("calls").delete().eq("id", data.callId).eq("store_id", storeId);
     return { ok: true };
+  });
+
+export const listCallRecordings = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const storeId = await storeIdOrThrow(context.supabase, context.userId);
+    const { data } = await context.supabase
+      .from("calls")
+      .select("id,customer_name,phone,status,result,duration_sec,recording_ref,call_type,created_at")
+      .eq("store_id", storeId)
+      .not("recording_ref", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    return (data ?? []) as any[];
   });

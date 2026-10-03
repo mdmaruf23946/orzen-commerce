@@ -107,7 +107,9 @@ export const epbxProvider: VoiceProvider = {
       event_id: `${body.call_id}:${raw}:${body.timestamp ?? ""}`,
       provider_call_id: String(body.call_id),
       status,
-      dtmf: body.digit_pressed != null ? String(body.digit_pressed) : undefined,
+      dtmf: body.digit_pressed != null ? String(body.digit_pressed) : (body.dtmf != null ? String(body.dtmf) : undefined),
+      duration_sec: Number.isFinite(Number(body.duration ?? body.billsec)) ? Math.round(Number(body.duration ?? body.billsec)) : undefined,
+      recording_ref: typeof (body.recording_url ?? body.recording) === "string" && /^https:\/\//.test(body.recording_url ?? body.recording) ? String(body.recording_url ?? body.recording) : undefined,
     };
   },
 };

@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   getVoiceConnection, testVoiceToken, connectVoiceProvider, retestVoiceProvider, disconnectVoiceProvider,
-  getVoiceSettings, saveVoiceSettings, type VoiceSettings,
+  getVoiceSettings, saveVoiceSettings, saveVoiceDefaults, type VoiceSettings,
 } from "@/lib/voice.functions";
 
 const fmt = (d?: string | null) => (d ? new Date(d).toLocaleString() : "—");
@@ -71,6 +71,7 @@ export function VoiceProviderPanel() {
             {c.account_info?.name && (<><dt className="text-muted-foreground">Account</dt><dd>{c.account_info.name}</dd></>)}
             {c.account_info?.balance != null && (<><dt className="text-muted-foreground">Balance</dt><dd>৳{c.account_info.balance}</dd></>)}
           </dl>
+          <VoiceDefaultsForm callerId={c.default_caller_id ?? ""} extension={c.default_extension ?? ""} />
           <div className="flex gap-2">
             <Button size="sm" variant="outline" disabled={busy} onClick={() => run(retestFn())}>Test Connection</Button>
             <Button size="sm" variant="destructive" disabled={busy} onClick={() => {
@@ -164,4 +165,33 @@ export function VoiceSettingsPanel() {
 
 export function ProviderManagedNote({ text }: { text: string }) {
   return <div className="rounded-2xl border bg-card p-6 text-center text-sm text-muted-foreground">{text}</div>;
+}
+
+function VoiceDefaultsForm({ callerId, extension }: { callerId: string; extension: string }) {
+  const qc = useQueryClient();
+  const saveFn = useServerFn(saveVoiceDefaults);
+  const [cid, setCid] = useState(callerId);
+  const [ext, setExt] = useState(extension);
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="grid gap-2 rounded-xl border p-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+      <div className="space-y-1">
+        <Label htmlFor="v-cid" className="text-xs">Default Caller ID</Label>
+        <Input id="v-cid" inputMode="tel" placeholder="e.g. 09612345678" value={cid} onChange={(e) => setCid(e.target.value.replace(/[^0-9+]/g, ""))} />
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor="v-ext" className="text-xs">Agent Extension</Label>
+        <Input id="v-ext" inputMode="numeric" placeholder="e.g. 101" value={ext} onChange={(e) => setExt(e.target.value.replace(/\D/g, ""))} />
+      </div>
+      <Button size="sm" disabled={busy} onClick={async () => {
+        setBusy(true);
+        try {
+          await saveFn({ data: { default_caller_id: cid, default_extension: ext } });
+          toast.success("Saved");
+          await qc.invalidateQueries({ queryKey: ["voice"] });
+        } catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }
+      }}>Save</Button>
+      <p className="text-[11px] text-muted-foreground sm:col-span-3">The extension is the ePBX phone that rings when you press Call, and receives customers who press 0.</p>
+    </div>
+  );
 }

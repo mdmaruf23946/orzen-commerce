@@ -105,6 +105,24 @@ export const disconnectVoiceProvider = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const saveVoiceDefaults = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    default_caller_id: z.string().trim().max(20).regex(/^[0-9+]*$/),
+    default_extension: z.string().trim().max(10).regex(/^[0-9]*$/),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const storeId = await ownStore(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("voice_provider_connections").update({
+      default_caller_id: data.default_caller_id || null, default_extension: data.default_extension || null,
+    }).eq("store_id", storeId).eq("provider", "epbx");
+    if (error) throw new Error("Could not save. Please try again.");
+    const { auditVoice } = await import("@/lib/voice/service.server");
+    await auditVoice(supabaseAdmin, storeId, context.userId, "defaults_changed");
+    return { ok: true, message: "Saved" };
+  });
+
 /* ----------------------------- automation ----------------------------- */
 
 const SettingsSchema = z.object({
