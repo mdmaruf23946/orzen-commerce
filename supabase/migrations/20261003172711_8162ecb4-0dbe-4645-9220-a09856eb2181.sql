@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.tg_enqueue_voice_order_call() TO service_role;

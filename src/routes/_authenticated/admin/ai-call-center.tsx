@@ -17,6 +17,7 @@ import {
 import { AI_RESULT_LABEL, AI_RESULT_TONE, AI_STATUS_LABEL, AI_STATUS_TONE, formatMinutes } from "@/lib/ai-call-center";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { CallCenterPage } from "@/components/admin/calls/ManualCallCenter";
+import { listCallRecordings } from "@/lib/call-center.functions";
 import { VoiceProviderPanel, VoiceSettingsPanel, ProviderManagedNote, useVoiceConnection } from "@/components/admin/calls/VoicePanels";
 
 export const Route = createFileRoute("/_authenticated/admin/ai-call-center")({
@@ -482,7 +483,7 @@ function CallCenterHub() {
           </div>
         )}
         {tab === "calls" && <CallCenterPage />}
-        {tab === "recordings" && needProvider}
+        {tab === "recordings" && (connected ? <RecordingsPanel /> : needProvider)}
         {tab === "agents" && <ProviderManagedNote text="Agent management is controlled by the connected provider." />}
         {tab === "numbers" && needProvider}
         {tab === "provider" && <VoiceProviderPanel />}
@@ -490,5 +491,26 @@ function CallCenterHub() {
         {tab === "ai" && <AiVoiceAgentPanel />}
       </div>
     </FeatureGate>
+  );
+}
+
+function RecordingsPanel() {
+  const fn = useServerFn(listCallRecordings);
+  const q = useQuery({ queryKey: ["voice", "recordings"], queryFn: () => fn() });
+  const rows = q.data ?? [];
+  if (q.isLoading) return <div className="rounded-2xl border bg-card p-4 text-sm text-muted-foreground">Loading…</div>;
+  if (!rows.length) return <ProviderManagedNote text="No recordings yet. When ePBX sends a call recording, it will appear here." />;
+  return (
+    <div className="space-y-2">
+      {rows.map((r: any) => (
+        <div key={r.id} className="rounded-xl border bg-card p-3">
+          <div className="flex items-center justify-between gap-2 text-sm">
+            <span className="truncate font-medium">{r.customer_name || r.phone}</span>
+            <span className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString()} · {Math.floor((r.duration_sec ?? 0) / 60)}m {(r.duration_sec ?? 0) % 60}s</span>
+          </div>
+          <audio controls preload="none" className="mt-2 w-full" src={r.recording_ref} />
+        </div>
+      ))}
+    </div>
   );
 }

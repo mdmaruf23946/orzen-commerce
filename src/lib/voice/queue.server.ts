@@ -57,7 +57,7 @@ export async function drainVoiceQueue(admin: any, limit = 10) {
       admin.from("voice_call_queue").update({ status, ...extra }).eq("id", job.id);
 
     const [{ data: order }, { data: conn }, { data: st }] = await Promise.all([
-      admin.from("orders").select("id,status,customer_name,customer_phone,payment_method").eq("id", job.order_id).eq("store_id", job.store_id).maybeSingle(),
+      admin.from("orders").select("id,status,customer_name,phone,payment_method").eq("id", job.order_id).eq("store_id", job.store_id).maybeSingle(),
       admin.from("voice_provider_connections").select("id,encrypted_token,status,default_caller_id,default_extension").eq("store_id", job.store_id).eq("provider", "epbx").maybeSingle(),
       admin.from("voice_automation_settings").select("*").eq("store_id", job.store_id).maybeSingle(),
     ]);
@@ -74,7 +74,7 @@ export async function drainVoiceQueue(admin: any, limit = 10) {
       }
     }
 
-    const phone = order.customer_phone;
+    const phone = order.phone;
     const { data: call } = await admin.from("calls").insert({
       store_id: job.store_id, order_id: order.id, customer_name: order.customer_name, phone,
       provider: "epbx", connection_id: conn.id, call_type: "auto_verification",
