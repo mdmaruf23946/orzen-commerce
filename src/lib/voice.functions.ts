@@ -20,7 +20,8 @@ export const getVoiceConnection = createServerFn({ method: "GET" })
       .from("voice_provider_connections")
       .select("provider,token_preview,status,account_id,account_info,default_caller_id,default_extension,last_error,connected_at,last_tested_at")
       .eq("store_id", storeId).eq("provider", "epbx").maybeSingle();
-    const { ready } = { ready: false };
+    const { epbxProvider } = await import("@/lib/voice/epbx.server");
+    const ready = epbxProvider.ready;
     return { connection: data ?? null, provider_ready: ready };
   });
 
