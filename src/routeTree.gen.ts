@@ -238,7 +238,6 @@ import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/
 import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
 import { Route as AuthenticatedAdminBillingCheckoutPackageIdRouteImport } from './routes/_authenticated/admin/billing.checkout.$packageId'
 import { Route as AuthenticatedOwnerCommunicationHistoryIdRouteImport } from './routes/_authenticated/owner/communication.history.$id'
-import { Route as ApiPublicCallsTwilioStatusStoreRouteImport } from './routes/api/public/calls/twilio-status.$store'
 import { Route as ApiPublicLandingPagesConnectionIdOrdersRouteImport } from './routes/api/public/landing-pages/$connectionId/orders'
 import { Route as ApiPublicSubscriptionPayWebhookProviderRouteImport } from './routes/api/public/subscription-pay/webhook.$provider'
 import { Route as ApiPublicLandingPagesConnectionIdApiOrdersRouteImport } from './routes/api/public/landing-pages/$connectionId/api.orders'
@@ -1545,12 +1544,6 @@ const AuthenticatedOwnerCommunicationHistoryIdRoute =
     path: '/$id',
     getParentRoute: () => AuthenticatedOwnerCommunicationHistoryRoute,
   } as any)
-const ApiPublicCallsTwilioStatusStoreRoute =
-  ApiPublicCallsTwilioStatusStoreRouteImport.update({
-    id: '/api/public/calls/twilio-status/$store',
-    path: '/api/public/calls/twilio-status/$store',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiPublicLandingPagesConnectionIdOrdersRoute =
   ApiPublicLandingPagesConnectionIdOrdersRouteImport.update({
     id: '/api/public/landing-pages/$connectionId/orders',
@@ -1817,7 +1810,6 @@ export interface FileRoutesByFullPath {
   '/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
   '/owner/communication/history/$id': typeof AuthenticatedOwnerCommunicationHistoryIdRoute
-  '/api/public/calls/twilio-status/$store': typeof ApiPublicCallsTwilioStatusStoreRoute
   '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
   '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
@@ -2044,7 +2036,6 @@ export interface FileRoutesByTo {
   '/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
   '/owner/communication/history/$id': typeof AuthenticatedOwnerCommunicationHistoryIdRoute
-  '/api/public/calls/twilio-status/$store': typeof ApiPublicCallsTwilioStatusStoreRoute
   '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
   '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
@@ -2283,7 +2274,6 @@ export interface FileRoutesById {
   '/_authenticated/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/_authenticated/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
   '/_authenticated/owner/communication/history/$id': typeof AuthenticatedOwnerCommunicationHistoryIdRoute
-  '/api/public/calls/twilio-status/$store': typeof ApiPublicCallsTwilioStatusStoreRoute
   '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
   '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
@@ -2522,7 +2512,6 @@ export interface FileRouteTypes {
     | '/owner/subscription-pay/'
     | '/admin/billing/checkout/$packageId'
     | '/owner/communication/history/$id'
-    | '/api/public/calls/twilio-status/$store'
     | '/api/public/landing-pages/$connectionId/orders'
     | '/api/public/subscription-pay/webhook/$provider'
     | '/api/public/landing-pages/$connectionId/api/orders'
@@ -2749,7 +2738,6 @@ export interface FileRouteTypes {
     | '/owner/subscription-pay'
     | '/admin/billing/checkout/$packageId'
     | '/owner/communication/history/$id'
-    | '/api/public/calls/twilio-status/$store'
     | '/api/public/landing-pages/$connectionId/orders'
     | '/api/public/subscription-pay/webhook/$provider'
     | '/api/public/landing-pages/$connectionId/api/orders'
@@ -2987,7 +2975,6 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/subscription-pay/'
     | '/_authenticated/admin/billing/checkout/$packageId'
     | '/_authenticated/owner/communication/history/$id'
-    | '/api/public/calls/twilio-status/$store'
     | '/api/public/landing-pages/$connectionId/orders'
     | '/api/public/subscription-pay/webhook/$provider'
     | '/api/public/landing-pages/$connectionId/api/orders'
@@ -3051,7 +3038,6 @@ export interface RootRouteChildren {
   ApiPublicWhatsappProcessRoute: typeof ApiPublicWhatsappProcessRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
-  ApiPublicCallsTwilioStatusStoreRoute: typeof ApiPublicCallsTwilioStatusStoreRoute
   ApiPublicLandingPagesConnectionIdOrdersRoute: typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   ApiPublicSubscriptionPayWebhookProviderRoute: typeof ApiPublicSubscriptionPayWebhookProviderRoute
   ApiPublicLandingPagesConnectionIdApiOrdersRoute: typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
@@ -4665,13 +4651,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerCommunicationHistoryIdRouteImport
       parentRoute: typeof AuthenticatedOwnerCommunicationHistoryRoute
     }
-    '/api/public/calls/twilio-status/$store': {
-      id: '/api/public/calls/twilio-status/$store'
-      path: '/api/public/calls/twilio-status/$store'
-      fullPath: '/api/public/calls/twilio-status/$store'
-      preLoaderRoute: typeof ApiPublicCallsTwilioStatusStoreRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/landing-pages/$connectionId/orders': {
       id: '/api/public/landing-pages/$connectionId/orders'
       path: '/api/public/landing-pages/$connectionId/orders'
@@ -5323,7 +5302,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicWhatsappProcessRoute: ApiPublicWhatsappProcessRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
-  ApiPublicCallsTwilioStatusStoreRoute: ApiPublicCallsTwilioStatusStoreRoute,
   ApiPublicLandingPagesConnectionIdOrdersRoute:
     ApiPublicLandingPagesConnectionIdOrdersRoute,
   ApiPublicSubscriptionPayWebhookProviderRoute:

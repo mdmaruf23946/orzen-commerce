@@ -1,6 +1,4 @@
 // Shared, client-safe types and labels for call history.
-export type ProviderStatus = "connected" | "not_connected" | "error";
-
 export type CallStatus =
   | "calling"
   | "ringing"
