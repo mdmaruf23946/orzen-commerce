@@ -229,6 +229,7 @@ import { Route as ApiPublicPlatformMetaTrackRouteImport } from './routes/api/pub
 import { Route as ApiPublicTiktokTrackRouteImport } from './routes/api/public/tiktok/track'
 import { Route as ApiPublicVoiceEpbxRouteImport } from './routes/api/public/voice/epbx'
 import { Route as ApiPublicVoiceProcessRouteImport } from './routes/api/public/voice/process'
+import { Route as ApiPublicVoiceRecordingRouteImport } from './routes/api/public/voice/recording'
 import { Route as ApiPublicWhatsappProcessRouteImport } from './routes/api/public/whatsapp/process'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
@@ -1495,6 +1496,11 @@ const ApiPublicVoiceProcessRoute = ApiPublicVoiceProcessRouteImport.update({
   path: '/api/public/voice/process',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicVoiceRecordingRoute = ApiPublicVoiceRecordingRouteImport.update({
+  id: '/api/public/voice/recording',
+  path: '/api/public/voice/recording',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWhatsappProcessRoute =
   ApiPublicWhatsappProcessRouteImport.update({
     id: '/api/public/whatsapp/process',
@@ -1803,6 +1809,7 @@ export interface FileRoutesByFullPath {
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/api/public/voice/epbx': typeof ApiPublicVoiceEpbxRoute
   '/api/public/voice/process': typeof ApiPublicVoiceProcessRoute
+  '/api/public/voice/recording': typeof ApiPublicVoiceRecordingRoute
   '/api/public/whatsapp/process': typeof ApiPublicWhatsappProcessRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -2031,6 +2038,7 @@ export interface FileRoutesByTo {
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/api/public/voice/epbx': typeof ApiPublicVoiceEpbxRoute
   '/api/public/voice/process': typeof ApiPublicVoiceProcessRoute
+  '/api/public/voice/recording': typeof ApiPublicVoiceRecordingRoute
   '/api/public/whatsapp/process': typeof ApiPublicWhatsappProcessRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -2271,6 +2279,7 @@ export interface FileRoutesById {
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/api/public/voice/epbx': typeof ApiPublicVoiceEpbxRoute
   '/api/public/voice/process': typeof ApiPublicVoiceProcessRoute
+  '/api/public/voice/recording': typeof ApiPublicVoiceRecordingRoute
   '/api/public/whatsapp/process': typeof ApiPublicWhatsappProcessRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -2511,6 +2520,7 @@ export interface FileRouteTypes {
     | '/api/public/tiktok/track'
     | '/api/public/voice/epbx'
     | '/api/public/voice/process'
+    | '/api/public/voice/recording'
     | '/api/public/whatsapp/process'
     | '/api/public/whatsapp/webhook'
     | '/lovable/email/queue/process'
@@ -2739,6 +2749,7 @@ export interface FileRouteTypes {
     | '/api/public/tiktok/track'
     | '/api/public/voice/epbx'
     | '/api/public/voice/process'
+    | '/api/public/voice/recording'
     | '/api/public/whatsapp/process'
     | '/api/public/whatsapp/webhook'
     | '/lovable/email/queue/process'
@@ -2978,6 +2989,7 @@ export interface FileRouteTypes {
     | '/api/public/tiktok/track'
     | '/api/public/voice/epbx'
     | '/api/public/voice/process'
+    | '/api/public/voice/recording'
     | '/api/public/whatsapp/process'
     | '/api/public/whatsapp/webhook'
     | '/lovable/email/queue/process'
@@ -3061,6 +3073,7 @@ export interface RootRouteChildren {
   ApiPublicTiktokTrackRoute: typeof ApiPublicTiktokTrackRoute
   ApiPublicVoiceEpbxRoute: typeof ApiPublicVoiceEpbxRoute
   ApiPublicVoiceProcessRoute: typeof ApiPublicVoiceProcessRoute
+  ApiPublicVoiceRecordingRoute: typeof ApiPublicVoiceRecordingRoute
   ApiPublicWhatsappProcessRoute: typeof ApiPublicWhatsappProcessRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
@@ -4614,6 +4627,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicVoiceProcessRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/voice/recording': {
+      id: '/api/public/voice/recording'
+      path: '/api/public/voice/recording'
+      fullPath: '/api/public/voice/recording'
+      preLoaderRoute: typeof ApiPublicVoiceRecordingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/whatsapp/process': {
       id: '/api/public/whatsapp/process'
       path: '/api/public/whatsapp/process'
@@ -5341,6 +5361,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicTiktokTrackRoute: ApiPublicTiktokTrackRoute,
   ApiPublicVoiceEpbxRoute: ApiPublicVoiceEpbxRoute,
   ApiPublicVoiceProcessRoute: ApiPublicVoiceProcessRoute,
+  ApiPublicVoiceRecordingRoute: ApiPublicVoiceRecordingRoute,
   ApiPublicWhatsappProcessRoute: ApiPublicWhatsappProcessRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,

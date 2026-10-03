@@ -17,6 +17,23 @@ export function signedWebhookUrl(origin: string, callId: string) {
   return `${origin.replace(/\/$/, "")}/api/public/voice/epbx?c=${callId}&k=${webhookSig(callId)}`;
 }
 
+export function recordingSig(callId: string, exp: number) {
+  return createHmac("sha256", key()).update(`rec:${callId}:${exp}`).digest("hex").slice(0, 40);
+}
+
+/** Short-lived (2h) playable URL for a call recording; the audio is fetched server-side with the store's ePBX token. */
+export function signedRecordingPath(callId: string) {
+  const exp = Math.floor(Date.now() / 1000) + 7200;
+  return `/api/public/voice/recording?c=${callId}&e=${exp}&k=${recordingSig(callId, exp)}`;
+}
+
+export function verifyRecordingSig(callId: string, exp: number, sig: string) {
+  if (!Number.isFinite(exp) || exp < Date.now() / 1000) return false;
+  const a = Buffer.from(recordingSig(callId, exp));
+  const b = Buffer.from(sig || "");
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 export function verifyWebhookSig(callId: string, sig: string) {
   const a = Buffer.from(webhookSig(callId));
   const b = Buffer.from(sig || "");
@@ -123,7 +140,7 @@ export async function handleEpbxWebhook(admin: any, callId: string, body: any) {
   if (!ev) return { ok: false, reason: "bad_payload" };
 
   const { error: dupErr } = await admin.from("voice_call_events").insert({
-    store_id: call.store_id, provider: "epbx", provider_event_id: ev.event_id, call_id: call.id,
+    store_id: call.store_id, provider: "epbx", provider_event_id: `${call.id}:${ev.event_id}`, call_id: call.id,
     payload: body ?? {},
   });
   if (dupErr) return { ok: true, duplicate: true };
@@ -152,6 +169,10 @@ export async function handleEpbxWebhook(admin: any, callId: string, body: any) {
   if (orderStatus && call.order_id) {
     await admin.from("orders").update({ status: orderStatus })
       .eq("id", call.order_id).eq("store_id", call.store_id).eq("status", "pending");
+    await admin.from("order_timeline").insert({
+      order_id: call.order_id, store_id: call.store_id, stage: orderStatus,
+      note: orderStatus === "confirmed" ? "Customer pressed 1 on ePBX verification call" : "Customer pressed 2 on ePBX verification call",
+    }).then(() => null, () => null);
   }
 
   if (final && call.call_type === "auto_verification" && call.order_id) {

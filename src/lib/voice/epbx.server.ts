@@ -95,7 +95,17 @@ export const epbxProvider: VoiceProvider = {
     return { provider_call_id: callIdOf(j) };
   },
   parseWebhook(body) {
-    if (!body || !body.call_id) return null;
+    if (!body || typeof body !== "object") return null;
+    if (body.data && typeof body.data === "object") body = { ...body.data, ...body };
+    if (!body.call_id) body = { ...body, call_id: body.uniqueid ?? body.id ?? "cb" };
+    const recRaw = [body.recording_url, body.recording, body.recordingfile, body.record_url, body.recording_file]
+      .find((v) => typeof v === "string" && v.trim().length > 0) as string | undefined;
+    let recording: string | undefined;
+    if (recRaw) {
+      const r = recRaw.trim();
+      if (/^https:\/\//i.test(r)) recording = r;
+      else if (/^\/?[\w\-./]+$/.test(r) && !r.includes("..")) recording = `https://epbx.bd/${r.replace(/^\//, "")}`;
+    }
     const raw = String(body.status ?? "").toLowerCase().replace(/\s+/g, "_");
     const status =
       raw === "confirmed" ? "confirmed" :
@@ -109,7 +119,7 @@ export const epbxProvider: VoiceProvider = {
       status,
       dtmf: body.digit_pressed != null ? String(body.digit_pressed) : (body.dtmf != null ? String(body.dtmf) : undefined),
       duration_sec: Number.isFinite(Number(body.duration ?? body.billsec)) ? Math.round(Number(body.duration ?? body.billsec)) : undefined,
-      recording_ref: typeof (body.recording_url ?? body.recording) === "string" && /^https:\/\//.test(body.recording_url ?? body.recording) ? String(body.recording_url ?? body.recording) : undefined,
+      recording_ref: recording,
     };
   },
 };

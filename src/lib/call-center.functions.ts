@@ -291,5 +291,6 @@ export const listCallRecordings = createServerFn({ method: "GET" })
       .not("recording_ref", "is", null)
       .order("created_at", { ascending: false })
       .limit(50);
-    return (data ?? []) as any[];
+    const { signedRecordingPath } = await import("@/lib/voice/queue.server");
+    return ((data ?? []) as any[]).map(({ recording_ref, ...r }) => ({ ...r, play_url: signedRecordingPath(r.id) }));
   });
