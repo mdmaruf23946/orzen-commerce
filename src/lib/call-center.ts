@@ -1,6 +1,4 @@
-// Shared, client-safe types and labels for the Manual Call Center.
-
-export type CallProvider = "device" | "twilio";
+// Shared, client-safe types and labels for call history.
 export type ProviderStatus = "connected" | "not_connected" | "error";
 
 export type CallStatus =
@@ -64,17 +62,6 @@ export const RESULT_LABEL: Record<CallResult, string> = {
 
 export const CALL_RESULTS = Object.keys(RESULT_LABEL) as CallResult[];
 
-export const PROVIDER_LABEL: Record<CallProvider, string> = {
-  device: "Device / Manual",
-  twilio: "Twilio",
-};
-
-export const PROVIDER_STATE_LABEL: Record<ProviderStatus, string> = {
-  connected: "Connected",
-  not_connected: "Not Connected",
-  error: "Connection Error",
-};
-
 export type CallRow = {
   id: string;
   store_id: string;
@@ -83,7 +70,7 @@ export type CallRow = {
   customer_name: string | null;
   phone: string;
   agent_email: string | null;
-  provider: CallProvider;
+  provider: string;
   status: CallStatus;
   duration_sec: number;
   result: CallResult | null;

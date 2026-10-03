@@ -74,7 +74,7 @@ export function VoiceProviderPanel() {
           <div className="flex gap-2">
             <Button size="sm" variant="outline" disabled={busy} onClick={() => run(retestFn())}>Test Connection</Button>
             <Button size="sm" variant="destructive" disabled={busy} onClick={() => {
-              if (confirm("Disconnect ePBX? Automated and manual calls will stop until another provider is connected.")) run(discFn());
+              if (confirm("Disconnect ePBX? Automated and customer calls will stop until ePBX is connected again.")) run(discFn());
             }}>Disconnect</Button>
           </div>
         </div>
