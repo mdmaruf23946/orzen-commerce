@@ -7,7 +7,6 @@ import {
   PhoneCall, PhoneIncoming, PhoneOutgoing, CheckCircle2, XCircle, Clock, Bot, Sparkles, Lock,
 } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
-import { ComingSoon } from "@/components/owner/ComingSoon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -290,7 +289,7 @@ function SetupWizard({ setup, onDone }: { setup: any; onDone: () => Promise<void
     try {
       const res: any = await activate({ data: form });
       if (res?.ok) {
-        toast.success("Your AI Call Center is live");
+        toast.success("Your AI Voice Agent is live");
         await onDone();
       } else {
         toast.error(res?.error ?? "Could not activate AI calling");
