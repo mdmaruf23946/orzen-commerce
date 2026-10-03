@@ -132,7 +132,7 @@ const menuGroups: NavGroupDef[] = [
         ],
       },
       {
-        to: "/admin/call-center",
+        to: "/admin/ai-call-center",
         label: "Call Center",
         icon: PhoneCall,
         children: [
