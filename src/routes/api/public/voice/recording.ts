@@ -35,7 +35,7 @@ async function handle(request: Request) {
   for (const h of ["content-type", "content-length", "content-range", "accept-ranges"]) {
     const v = up.headers.get(h); if (v) out.set(h, v);
   }
-  if (!out.get("content-type")?.startsWith("audio")) out.set("content-type", "audio/mpeg");
+  if (!out.get("content-type")) out.set("content-type", "audio/mpeg");
   return new Response(up.body, { status: up.status, headers: out });
 }
 
