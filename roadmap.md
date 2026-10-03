@@ -41,4 +41,5 @@
 
 - [ ] Reconnect Google Search Console in new workspace (2026-10-03)
 - [x] Replace Merchant AI Call Center's legacy Device/Manual provider setup with the store-scoped ePBX connection (2026-10-03)
-- [ ] Complete ePBX callbacks, automatic order calls, recordings, and production deployment
+- [x] Deploy the ePBX-only provider UI and customer-call path to orzen.top
+- [ ] Complete ePBX callbacks, automatic order calls, and recordings
