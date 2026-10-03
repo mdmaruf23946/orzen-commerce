@@ -508,7 +508,10 @@ function RecordingsPanel() {
             <span className="truncate font-medium">{r.customer_name || r.phone}</span>
             <span className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString()} · {Math.floor((r.duration_sec ?? 0) / 60)}m {(r.duration_sec ?? 0) % 60}s</span>
           </div>
-          <audio controls preload="none" className="mt-2 w-full" src={r.recording_ref} />
+          <div className="mt-1 text-xs text-muted-foreground">
+            {r.result === "order_confirmed" ? "Order confirmed (pressed 1)" : r.result === "order_cancelled" ? "Order cancelled (pressed 2)" : r.status}
+          </div>
+          <audio controls preload="none" className="mt-2 w-full" src={r.play_url} />
         </div>
       ))}
     </div>
