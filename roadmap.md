@@ -38,3 +38,6 @@
 - [x] Hide Auto Connect from Merchant Panel Messenger and WhatsApp pages
 - [x] Verify both pages still show Manual Connect and deploy to orzen.top
 - [x] SEO: sitemap/robots host-aware base (orzen-commerce.lovable.app vs orzen.top) — fixed 2026-10-02, needs Lovable publish to go live
+
+- [ ] Reconnect Google Search Console in new workspace (2026-10-03)
+- [ ] ePBX calling inside AI Call Center — ePBX API docs pending from user
