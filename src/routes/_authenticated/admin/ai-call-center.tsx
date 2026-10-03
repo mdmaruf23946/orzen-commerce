@@ -16,9 +16,13 @@ import {
   storeAiCallOverview, listStoreAiCalls, getStoreAiCall,
 } from "@/lib/ai-call-center-store.functions";
 import { AI_RESULT_LABEL, AI_RESULT_TONE, AI_STATUS_LABEL, AI_STATUS_TONE, formatMinutes } from "@/lib/ai-call-center";
+import { FeatureGate } from "@/components/admin/FeatureGate";
+import { CallCenterPage } from "@/components/admin/calls/ManualCallCenter";
+import { VoiceProviderPanel, VoiceSettingsPanel, ProviderManagedNote, useVoiceConnection } from "@/components/admin/calls/VoicePanels";
 
 export const Route = createFileRoute("/_authenticated/admin/ai-call-center")({
-  component: StoreAiCallCenter,
+  component: CallCenterHub,
+  validateSearch: (s: Record<string, unknown>) => ({ tab: typeof s.tab === "string" ? s.tab : undefined }),
   head: () => ({
     meta: [
       { title: "AI Call Center — ORZEN Merchant Panel" },
@@ -32,7 +36,7 @@ export const Route = createFileRoute("/_authenticated/admin/ai-call-center")({
   }),
 });
 
-function StoreAiCallCenter() {
+function AiVoiceAgentPanel() {
   const qc = useQueryClient();
   const setupFn = useServerFn(getStoreAiCallSetup);
   const overviewFn = useServerFn(storeAiCallOverview);
@@ -439,5 +443,58 @@ function Choice({
       </div>
       {aside}
     </div>
+  );
+}
+
+const HUB_TABS = [
+  { key: "overview", label: "Overview" },
+  { key: "calls", label: "Calls & History" },
+  { key: "recordings", label: "Recordings" },
+  { key: "agents", label: "Agents" },
+  { key: "numbers", label: "Phone Numbers" },
+  { key: "provider", label: "Provider" },
+  { key: "settings", label: "Settings" },
+  { key: "ai", label: "AI Voice Agent" },
+] as const;
+
+function CallCenterHub() {
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const tab = (HUB_TABS.find((t) => t.key === search.tab)?.key ?? "overview") as (typeof HUB_TABS)[number]["key"];
+  const conn = useVoiceConnection();
+  const c: any = conn.data?.connection;
+  const connected = c?.status === "connected";
+  const needProvider = <ProviderManagedNote text={connected ? "This is controlled by your connected provider and will appear here when ePBX makes it available." : "Connect a calling provider in the Provider tab to see this."} />;
+
+  return (
+    <FeatureGate feature="call_center">
+      <div className="space-y-4">
+        <AdminPageHeader title="AI Call Center" description="Order confirmation calls, manual calls, history and your calling provider." />
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {HUB_TABS.map((t) => (
+            <button key={t.key} type="button" onClick={() => navigate({ search: { tab: t.key } })}
+              className={`whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-medium ${tab === t.key ? "border-primary bg-primary/10 text-primary" : "hover:bg-muted"}`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {tab === "overview" && (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Stat icon={PhoneCall} label="Provider" value="ePBX" />
+            <Stat icon={connected ? CheckCircle2 : XCircle} label="Status" value={connected ? "Connected" : "Not connected"} tone={connected ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"} />
+            <Stat icon={Clock} label="Balance" value={c?.account_info?.balance != null ? `৳${c.account_info.balance}` : "—"} />
+            <Stat icon={PhoneOutgoing} label="Default Caller ID" value={c?.default_caller_id || "—"} />
+          </div>
+        )}
+        {tab === "calls" && <CallCenterPage />}
+        {tab === "recordings" && needProvider}
+        {tab === "agents" && <ProviderManagedNote text="Agent management is controlled by the connected provider." />}
+        {tab === "numbers" && needProvider}
+        {tab === "provider" && <VoiceProviderPanel />}
+        {tab === "settings" && <VoiceSettingsPanel />}
+        {tab === "ai" && <AiVoiceAgentPanel />}
+      </div>
+    </FeatureGate>
   );
 }
