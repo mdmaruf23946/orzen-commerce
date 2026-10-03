@@ -7,7 +7,6 @@ import {
   PhoneCall, PhoneIncoming, PhoneOutgoing, CheckCircle2, XCircle, Clock, Bot, Sparkles, Lock,
 } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
-import { ComingSoon } from "@/components/owner/ComingSoon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -66,18 +65,13 @@ function AiVoiceAgentPanel() {
     await qc.invalidateQueries({ queryKey: ["store-ai-call"] });
   }
 
-  const AI_CALL_CENTER_ENABLED = false;
+  const AI_VOICE_AGENT_ENABLED = false;
+  const header = (
+    <AdminPageHeader title="AI Voice Agent" description="AI voice agents that can confirm orders and answer customer calls." />
+  );
 
-  if (!AI_CALL_CENTER_ENABLED) {
-    return (
-      <div className="space-y-4">
-        <AdminPageHeader title="AI Call Center" description="AI voice agents that confirm orders and answer customer calls." />
-        <ComingSoon
-          title="AI Call Center is coming soon"
-          description="We're building AI voice agents that can confirm orders and answer customer calls around the clock. Setup options, phone numbers, voice selection and call controls will appear here automatically once the feature is live."
-        />
-      </div>
-    );
+  if (!AI_VOICE_AGENT_ENABLED) {
+    return <div className="space-y-4">{header}</div>;
   }
 
   if (setup.isLoading) {
@@ -87,10 +81,10 @@ function AiVoiceAgentPanel() {
   if (!s?.feature_enabled) {
     return (
       <div className="space-y-4">
-        <AdminPageHeader title="AI Call Center" description="AI voice agents that confirm orders and answer customer calls." />
+        {header}
         <div className="rounded-2xl border bg-card p-8 text-center">
           <Lock className="mx-auto h-8 w-8 text-muted-foreground" />
-          <h2 className="mt-3 text-base font-semibold">AI Call Center is not included in your plan</h2>
+          <h2 className="mt-3 text-base font-semibold">AI Voice Agent is not included in your plan</h2>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
             Upgrade your subscription to unlock AI voice calling. After upgrading you can pick a phone number, a voice
             and a tone, and your AI agent starts calling customers to confirm orders.
@@ -108,8 +102,8 @@ function AiVoiceAgentPanel() {
   return (
     <div className="space-y-4">
       <AdminPageHeader
-        title="AI Call Center"
-        description="Your AI voice agent confirms orders and answers customer calls."
+        title="AI Voice Agent"
+        description="AI voice agents that can confirm orders and answer customer calls."
         action={
           s.selection?.activated_at ? (
             <label className="flex items-center gap-2 text-xs">
@@ -295,7 +289,7 @@ function SetupWizard({ setup, onDone }: { setup: any; onDone: () => Promise<void
     try {
       const res: any = await activate({ data: form });
       if (res?.ok) {
-        toast.success("Your AI Call Center is live");
+        toast.success("Your AI Voice Agent is live");
         await onDone();
       } else {
         toast.error(res?.error ?? "Could not activate AI calling");
