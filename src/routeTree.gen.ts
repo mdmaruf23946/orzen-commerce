@@ -227,6 +227,7 @@ import { Route as ApiPublicMetaOauthCallbackRouteImport } from './routes/api/pub
 import { Route as ApiPublicPlatformMetaConsentRouteImport } from './routes/api/public/platform-meta/consent'
 import { Route as ApiPublicPlatformMetaTrackRouteImport } from './routes/api/public/platform-meta/track'
 import { Route as ApiPublicTiktokTrackRouteImport } from './routes/api/public/tiktok/track'
+import { Route as ApiPublicVoiceCdrRecordingRouteImport } from './routes/api/public/voice/cdr-recording'
 import { Route as ApiPublicVoiceEpbxRouteImport } from './routes/api/public/voice/epbx'
 import { Route as ApiPublicVoiceProcessRouteImport } from './routes/api/public/voice/process'
 import { Route as ApiPublicVoiceRecordingRouteImport } from './routes/api/public/voice/recording'
@@ -1486,6 +1487,12 @@ const ApiPublicTiktokTrackRoute = ApiPublicTiktokTrackRouteImport.update({
   path: '/api/public/tiktok/track',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicVoiceCdrRecordingRoute =
+  ApiPublicVoiceCdrRecordingRouteImport.update({
+    id: '/api/public/voice/cdr-recording',
+    path: '/api/public/voice/cdr-recording',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicVoiceEpbxRoute = ApiPublicVoiceEpbxRouteImport.update({
   id: '/api/public/voice/epbx',
   path: '/api/public/voice/epbx',
@@ -1807,6 +1814,7 @@ export interface FileRoutesByFullPath {
   '/api/public/platform-meta/consent': typeof ApiPublicPlatformMetaConsentRoute
   '/api/public/platform-meta/track': typeof ApiPublicPlatformMetaTrackRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
+  '/api/public/voice/cdr-recording': typeof ApiPublicVoiceCdrRecordingRoute
   '/api/public/voice/epbx': typeof ApiPublicVoiceEpbxRoute
   '/api/public/voice/process': typeof ApiPublicVoiceProcessRoute
   '/api/public/voice/recording': typeof ApiPublicVoiceRecordingRoute
@@ -2036,6 +2044,7 @@ export interface FileRoutesByTo {
   '/api/public/platform-meta/consent': typeof ApiPublicPlatformMetaConsentRoute
   '/api/public/platform-meta/track': typeof ApiPublicPlatformMetaTrackRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
+  '/api/public/voice/cdr-recording': typeof ApiPublicVoiceCdrRecordingRoute
   '/api/public/voice/epbx': typeof ApiPublicVoiceEpbxRoute
   '/api/public/voice/process': typeof ApiPublicVoiceProcessRoute
   '/api/public/voice/recording': typeof ApiPublicVoiceRecordingRoute
@@ -2277,6 +2286,7 @@ export interface FileRoutesById {
   '/api/public/platform-meta/consent': typeof ApiPublicPlatformMetaConsentRoute
   '/api/public/platform-meta/track': typeof ApiPublicPlatformMetaTrackRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
+  '/api/public/voice/cdr-recording': typeof ApiPublicVoiceCdrRecordingRoute
   '/api/public/voice/epbx': typeof ApiPublicVoiceEpbxRoute
   '/api/public/voice/process': typeof ApiPublicVoiceProcessRoute
   '/api/public/voice/recording': typeof ApiPublicVoiceRecordingRoute
@@ -2518,6 +2528,7 @@ export interface FileRouteTypes {
     | '/api/public/platform-meta/consent'
     | '/api/public/platform-meta/track'
     | '/api/public/tiktok/track'
+    | '/api/public/voice/cdr-recording'
     | '/api/public/voice/epbx'
     | '/api/public/voice/process'
     | '/api/public/voice/recording'
@@ -2747,6 +2758,7 @@ export interface FileRouteTypes {
     | '/api/public/platform-meta/consent'
     | '/api/public/platform-meta/track'
     | '/api/public/tiktok/track'
+    | '/api/public/voice/cdr-recording'
     | '/api/public/voice/epbx'
     | '/api/public/voice/process'
     | '/api/public/voice/recording'
@@ -2987,6 +2999,7 @@ export interface FileRouteTypes {
     | '/api/public/platform-meta/consent'
     | '/api/public/platform-meta/track'
     | '/api/public/tiktok/track'
+    | '/api/public/voice/cdr-recording'
     | '/api/public/voice/epbx'
     | '/api/public/voice/process'
     | '/api/public/voice/recording'
@@ -3071,6 +3084,7 @@ export interface RootRouteChildren {
   ApiPublicPlatformMetaConsentRoute: typeof ApiPublicPlatformMetaConsentRoute
   ApiPublicPlatformMetaTrackRoute: typeof ApiPublicPlatformMetaTrackRoute
   ApiPublicTiktokTrackRoute: typeof ApiPublicTiktokTrackRoute
+  ApiPublicVoiceCdrRecordingRoute: typeof ApiPublicVoiceCdrRecordingRoute
   ApiPublicVoiceEpbxRoute: typeof ApiPublicVoiceEpbxRoute
   ApiPublicVoiceProcessRoute: typeof ApiPublicVoiceProcessRoute
   ApiPublicVoiceRecordingRoute: typeof ApiPublicVoiceRecordingRoute
@@ -4613,6 +4627,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicTiktokTrackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/voice/cdr-recording': {
+      id: '/api/public/voice/cdr-recording'
+      path: '/api/public/voice/cdr-recording'
+      fullPath: '/api/public/voice/cdr-recording'
+      preLoaderRoute: typeof ApiPublicVoiceCdrRecordingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/voice/epbx': {
       id: '/api/public/voice/epbx'
       path: '/api/public/voice/epbx'
@@ -5359,6 +5380,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicPlatformMetaConsentRoute: ApiPublicPlatformMetaConsentRoute,
   ApiPublicPlatformMetaTrackRoute: ApiPublicPlatformMetaTrackRoute,
   ApiPublicTiktokTrackRoute: ApiPublicTiktokTrackRoute,
+  ApiPublicVoiceCdrRecordingRoute: ApiPublicVoiceCdrRecordingRoute,
   ApiPublicVoiceEpbxRoute: ApiPublicVoiceEpbxRoute,
   ApiPublicVoiceProcessRoute: ApiPublicVoiceProcessRoute,
   ApiPublicVoiceRecordingRoute: ApiPublicVoiceRecordingRoute,

@@ -159,6 +159,7 @@ const StartSchema = z.object({
   customer_name: z.string().trim().max(120).optional().nullable(),
   order_id: z.string().uuid().optional().nullable(),
   customer_id: z.string().uuid().optional().nullable(),
+  extension: z.string().trim().regex(/^\d{2,6}$/).optional().nullable(),
 });
 
 export const startCall = createServerFn({ method: "POST" })
@@ -210,7 +211,7 @@ export const startCall = createServerFn({ method: "POST" })
       const result = await getVoiceProvider("epbx").makeCall(creds, {
         to: data.phone,
         callerId: connection.default_caller_id ?? undefined,
-        extension: connection.default_extension ?? undefined,
+        extension: data.extension || connection.default_extension || undefined,
         webhookUrl: signedWebhookUrl(`${proto}://${host}`, callId),
       });
       await context.supabase.from("calls").update({ provider_call_sid: result.provider_call_id }).eq("id", callId);

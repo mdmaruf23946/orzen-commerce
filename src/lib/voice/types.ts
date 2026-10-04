@@ -16,6 +16,28 @@ export type VoiceNumber = { number: string; label?: string; verified: boolean };
 
 export type VoiceCallResult = { provider_call_id: string };
 
+/** What the connected provider's API actually exposes; the UI shows "not available" for false. */
+export type VoiceCapabilities = {
+  click_to_call: boolean; order_verification: boolean; call_history: boolean; recordings: boolean;
+  numbers_list: boolean; extensions_list: boolean; ivr: boolean; webrtc: boolean;
+};
+
+export type VoiceOverview = {
+  tenant?: string; balance: number | null; currency: string;
+  trunk_number?: string | null; trunk_balance?: number | null;
+};
+
+export type VoiceCdrRow = {
+  id: string; date: string; source: string; destination: string; caller_id: string;
+  direction: "incoming" | "outgoing" | "internal"; disposition: string;
+  duration_sec: number; billable_sec: number; has_recording: boolean;
+};
+
+export type VoiceCdrFilter = {
+  start_date?: string; end_date?: string; phone_number?: string; extension?: string;
+  disposition?: "ANSWERED" | "NO ANSWER" | "BUSY" | "FAILED"; page: number; per_page: number;
+};
+
 export class VoiceProviderError extends Error {
   constructor(public code: "invalid_token" | "unavailable" | "not_supported" | "insufficient_balance" | "invalid_phone" | "rate_limited" | "failed", message: string) {
     super(message);
@@ -32,6 +54,11 @@ export interface VoiceProvider {
   getNumbers(creds: VoiceCreds): Promise<VoiceNumber[]>;
   makeCall(creds: VoiceCreds, opts: { to: string; callerId?: string; extension?: string; webhookUrl: string }): Promise<VoiceCallResult>;
   makeOrderVerificationCall(creds: VoiceCreds, opts: { to: string; callerId?: string; messages: Record<string, string>; webhookUrl: string }): Promise<VoiceCallResult>;
+  capabilities: VoiceCapabilities;
+  getOverview(creds: VoiceCreds): Promise<VoiceOverview>;
+  getCallHistory(creds: VoiceCreds, f: VoiceCdrFilter): Promise<{ rows: VoiceCdrRow[]; page: number; last_page: number; total: number }>;
+  /** Provider URL for a recording, fetched only server-side with the store's token. */
+  recordingUrl(providerCallId: string): string;
   parseWebhook(body: any): { event_id: string; provider_call_id: string; status?: string; dtmf?: string; duration_sec?: number; recording_ref?: string } | null;
 }
 
