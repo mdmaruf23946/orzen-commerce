@@ -50,7 +50,26 @@ HUMAN SUPPORT RELAY (important):
 - Use support_open_list when you are unsure who is waiting, and support_history to read what the customer
   already said before you answer. If more than one customer is waiting, ask the admin which one.
 - After sending, confirm briefly to the admin what exactly you told the customer.
-- When the admin says the matter is finished ("সাপোর্ট বন্ধ করো", "close it", "done"), call support_close.`;
+- When the admin says the matter is finished ("সাপোর্ট বন্ধ করো", "close it", "done"), call support_close.
+
+ANSWER ONLY WHAT WAS ASKED (strict):
+- Greetings or small talk ("হেই", "hi", "হ্যালো", "কেমন আছো") get a short friendly greeting back
+  (1-2 lines) and a question about how you can help. Do NOT call any tool for a greeting.
+- Only call support_open_list / support_history when the admin actually asks about a customer or support.
+- NEVER paste raw tool output, JSON, code, IDs lists, timestamps or "role"/"content" fields into the reply.
+  Summarise in a few short, clear sentences in the admin's language.
+- Keep replies under about 8 short lines unless the admin asks for details.`;
+
+/** Last-resort guard: never send raw JSON/tool dumps to the admin. */
+function cleanReply(reply: string, userText: string): string {
+  const bn = /[\u0980-\u09FF]/.test(userText);
+  const looksLikeDump =
+    /"role"\s*:|"content"\s*:|"created_at"\s*:|\{\s*"[a-z_]+"\s*:/i.test(reply) || reply.length > 1800;
+  if (!looksLikeDump) return reply;
+  return bn
+    ? "দুঃখিত, উত্তরটা ঠিকমতো তৈরি হয়নি। আপনি কী জানতে চান একটু বলবেন? যেমন: \"আজকের অর্ডার কত\" বা \"কে সাপোর্টের জন্য অপেক্ষা করছে\"।"
+    : "Sorry, that reply did not come out right. What would you like to know? For example: \"today's orders\" or \"who is waiting for support\".";
+}
 
 type BuildArgs = {
   waId?: string | null;
@@ -269,5 +288,5 @@ export async function runAdminAgent(args: {
     stopWhen: stepCountIs(50),
   });
 
-  return { reply: text?.trim() || "I could not produce a reply.", actions: executed };
+  return { reply: cleanReply(text?.trim() || "I could not produce a reply.", args.text), actions: executed };
 }
