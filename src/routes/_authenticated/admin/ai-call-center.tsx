@@ -18,6 +18,9 @@ import { AI_RESULT_LABEL, AI_RESULT_TONE, AI_STATUS_LABEL, AI_STATUS_TONE, forma
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { CallCenterPage } from "@/components/admin/calls/ManualCallCenter";
 import { listCallRecordings } from "@/lib/call-center.functions";
+import {
+  ProviderOverviewCard, PhoneNumbersPanel, AgentsPanel, DialPad, ProviderCallLog, AutomatedOrderCalls, WebRtcPanel, NotAvailable,
+} from "@/components/admin/calls/EpbxPanels";
 import { VoiceProviderPanel, VoiceSettingsPanel, ProviderManagedNote, useVoiceConnection } from "@/components/admin/calls/VoicePanels";
 
 export const Route = createFileRoute("/_authenticated/admin/ai-call-center")({
@@ -475,18 +478,35 @@ function CallCenterHub() {
         </div>
 
         {tab === "overview" && (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Stat icon={PhoneCall} label="Provider" value="ePBX" />
-            <Stat icon={connected ? CheckCircle2 : XCircle} label="Status" value={connected ? "Connected" : "Not connected"} tone={connected ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"} />
-            <Stat icon={Clock} label="Balance" value={c?.account_info?.balance != null ? `৳${c.account_info.balance}` : "—"} />
-            <Stat icon={PhoneOutgoing} label="Default Caller ID" value={c?.default_caller_id || "—"} />
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <Stat icon={PhoneCall} label="Provider" value="ePBX" />
+              <Stat icon={connected ? CheckCircle2 : XCircle} label="Status" value={connected ? "Connected" : "Not connected"} tone={connected ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"} />
+              <Stat icon={Clock} label="Balance" value={c?.account_info?.balance != null ? `৳${c.account_info.balance}` : "—"} />
+              <Stat icon={PhoneOutgoing} label="Default Caller ID" value={c?.default_caller_id || "—"} />
+            </div>
+            {connected && <ProviderOverviewCard />}
+            {connected && <AutomatedOrderCalls />}
           </div>
         )}
-        {tab === "calls" && <CallCenterPage />}
-        {tab === "recordings" && (connected ? <RecordingsPanel /> : needProvider)}
-        {tab === "agents" && <ProviderManagedNote text="Agent management is controlled by the connected provider." />}
-        {tab === "numbers" && needProvider}
-        {tab === "provider" && <VoiceProviderPanel />}
+        {tab === "calls" && (
+          <div className="space-y-4">
+            {connected && <div className="grid gap-4 lg:grid-cols-[320px_1fr]"><DialPad /><AutomatedOrderCalls /></div>}
+            <CallCenterPage />
+            {connected && <ProviderCallLog />}
+          </div>
+        )}
+        {tab === "recordings" && (connected ? <div className="space-y-4"><RecordingsPanel /><ProviderCallLog recordingsOnly /></div> : needProvider)}
+        {tab === "agents" && (connected ? <AgentsPanel /> : needProvider)}
+        {tab === "numbers" && (connected ? <PhoneNumbersPanel /> : needProvider)}
+        {tab === "provider" && (
+          <div className="space-y-4">
+            <VoiceProviderPanel />
+            {connected && <ProviderOverviewCard />}
+            {connected && <NotAvailable title="IVR" text="IVR menus, DTMF routes and destinations are not available through the current ePBX API access. Order calls use ePBX's built-in verification IVR (1 = confirm, 2 = cancel)." />}
+            {connected && <WebRtcPanel />}
+          </div>
+        )}
         {tab === "settings" && <VoiceSettingsPanel />}
         {tab === "ai" && <AiVoiceAgentPanel />}
       </div>
@@ -499,7 +519,7 @@ function RecordingsPanel() {
   const q = useQuery({ queryKey: ["voice", "recordings"], queryFn: () => fn() });
   const rows = q.data ?? [];
   if (q.isLoading) return <div className="rounded-2xl border bg-card p-4 text-sm text-muted-foreground">Loading…</div>;
-  if (!rows.length) return <ProviderManagedNote text="No recordings yet. When ePBX sends a call recording, it will appear here." />;
+  if (!rows.length) return null;
   return (
     <div className="space-y-2">
       {rows.map((r: any) => (
