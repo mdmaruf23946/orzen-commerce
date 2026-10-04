@@ -1,5 +1,5 @@
 // ePBX adapter — https://epbx.bd/docs/api (REST v1, Bearer token, 120 req/min).
-import { VoiceProviderError, type VoiceCreds, type VoiceProvider } from "./types";
+import { VoiceProviderError, type VoiceCdrRow, type VoiceCreds, type VoiceProvider } from "./types";
 
 const BASE = "https://epbx.bd/api/v1";
 
@@ -55,6 +55,49 @@ export const epbxProvider: VoiceProvider = {
   id: "epbx",
   label: "ePBX",
   ready: true,
+  // Per https://epbx.bd/docs/api: no endpoints for listing numbers, extensions, IVR or WebRTC/SIP credentials.
+  capabilities: {
+    click_to_call: true, order_verification: true, call_history: true, recordings: true,
+    numbers_list: false, extensions_list: false, ivr: false, webrtc: false,
+  },
+  async getOverview(creds) {
+    const g = await call(creds, "/balance/global");
+    let ip: any = null;
+    try { ip = await call(creds, "/balance/ip"); } catch { /* trunk optional */ }
+    return {
+      tenant: g.tenant ?? undefined,
+      balance: g.balance == null ? null : Number(g.balance),
+      currency: g.currency ?? "BDT",
+      trunk_number: ip?.trunk ? String(ip.trunk) : null,
+      trunk_balance: ip?.balance == null ? null : Number(ip.balance),
+    };
+  },
+  async getCallHistory(creds, f) {
+    const q = new URLSearchParams({ page: String(f.page), per_page: String(f.per_page) });
+    for (const k of ["start_date", "end_date", "phone_number", "extension", "disposition"] as const) {
+      if (f[k]) q.set(k, String(f[k]));
+    }
+    const j = await call(creds, `/calls/history?${q}`);
+    const isExt = (v: string) => /^\d{2,6}$/.test(v);
+    const rows: VoiceCdrRow[] = (Array.isArray(j.data) ? j.data : []).map((r: any) => {
+      const src = String(r.source ?? ""), dst = String(r.destination ?? "");
+      return {
+        id: String(r.call_id ?? r.uniqueid ?? ""),
+        date: String(r.date ?? ""),
+        source: src, destination: dst, caller_id: String(r.caller_id ?? ""),
+        direction: isExt(src) && isExt(dst) ? "internal" : isExt(src) ? "outgoing" : "incoming",
+        disposition: String(r.disposition ?? "").toUpperCase(),
+        duration_sec: Number(r.duration_seconds ?? 0) || 0,
+        billable_sec: Number(r.billable_seconds ?? 0) || 0,
+        has_recording: !!r.has_recording,
+      };
+    }).filter((r: VoiceCdrRow) => r.id);
+    const p = j.pagination ?? {};
+    return { rows, page: Number(p.current_page ?? f.page), last_page: Number(p.last_page ?? 1), total: Number(p.total ?? rows.length) };
+  },
+  recordingUrl(id) {
+    return `${BASE}/calls/recordings/${encodeURIComponent(id)}`;
+  },
   async testConnection(creds) {
     const j = await call(creds, "/balance/global");
     if (typeof j.balance === "undefined") throw new VoiceProviderError("invalid_token", "Invalid ePBX API token.");

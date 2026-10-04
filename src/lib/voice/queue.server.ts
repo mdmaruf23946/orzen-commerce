@@ -34,6 +34,20 @@ export function verifyRecordingSig(callId: string, exp: number, sig: string) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+/** Signed (2h) URL to stream a provider call-log (CDR) recording for one store. */
+export function signedCdrRecordingPath(storeId: string, cdrId: string) {
+  const exp = Math.floor(Date.now() / 1000) + 7200;
+  const k = createHmac("sha256", key()).update(`cdr:${storeId}:${cdrId}:${exp}`).digest("hex").slice(0, 40);
+  return `/api/public/voice/cdr-recording?s=${storeId}&id=${encodeURIComponent(cdrId)}&e=${exp}&k=${k}`;
+}
+
+export function verifyCdrRecordingSig(storeId: string, cdrId: string, exp: number, sig: string) {
+  if (!Number.isFinite(exp) || exp < Date.now() / 1000) return false;
+  const a = Buffer.from(createHmac("sha256", key()).update(`cdr:${storeId}:${cdrId}:${exp}`).digest("hex").slice(0, 40));
+  const b = Buffer.from(sig || "");
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 export function verifyWebhookSig(callId: string, sig: string) {
   const a = Buffer.from(webhookSig(callId));
   const b = Buffer.from(sig || "");
