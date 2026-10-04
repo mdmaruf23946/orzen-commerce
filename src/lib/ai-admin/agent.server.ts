@@ -281,7 +281,10 @@ export async function runAdminAgent(args: {
         ? `\nAlways reply in ${settings.reply_language}.`
         : `\n${detectLanguageInstruction(args.text)}`),
     messages: [
-      ...(args.history ?? []).slice(-10).map((m) => ({ role: m.role, content: m.content })),
+      ...(args.history ?? [])
+        .filter((m) => !/"role"\s*:|"created_at"\s*:/.test(m.content) && m.content.length < 1800)
+        .slice(-10)
+        .map((m) => ({ role: m.role, content: m.content })),
       { role: "user" as const, content: args.text },
     ],
     tools,

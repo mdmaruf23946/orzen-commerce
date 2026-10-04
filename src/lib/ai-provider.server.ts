@@ -461,9 +461,21 @@ function makeRoutedFetch(candidates: Candidate[], onUse: (u: { provider: AiProvi
           if (breakerOpen(bKey) && closed.length) continue;
           const left = CALL_BUDGET_MS - (Date.now() - callStarted);
           if (left < 1500) throw Object.assign(new Error(`AI busy: ${lastError}`), { budget: true });
-          const timeout = AbortSignal.timeout(Math.min(ATTEMPT_TIMEOUT_MS, left));
-          const signal = init?.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
-          const res = await fetch(`${c.baseURL}${suffix}`, { ...init, headers, body, signal });
+          // The timeout only covers waiting for the provider to answer. Once
+          // headers arrive it is cleared, so a long reply body is never cut off
+          // mid-read (that surfaced as "aborted due to timeout" to admins).
+          const ctrl = new AbortController();
+          const timer = setTimeout(
+            () => ctrl.abort(new DOMException("timeout", "TimeoutError")),
+            Math.min(ATTEMPT_TIMEOUT_MS, left),
+          );
+          const signal = init?.signal ? AbortSignal.any([init.signal, ctrl.signal]) : ctrl.signal;
+          let res: Response;
+          try {
+            res = await fetch(`${c.baseURL}${suffix}`, { ...init, headers, body, signal });
+          } finally {
+            clearTimeout(timer);
+          }
           if (res.ok) {
             breakerSuccess(bKey);
             if (c.keyId && isChat) recordKeyUsage(c.keyId, c.provider, modelId, res, typeof body === "string" ? body : null);
