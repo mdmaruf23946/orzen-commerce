@@ -43,3 +43,4 @@
 - [x] Replace Merchant AI Call Center's legacy Device/Manual provider setup with the store-scoped ePBX connection (2026-10-03)
 - [x] Deploy the ePBX-only provider UI and customer-call path to orzen.top
 - [x] Complete ePBX callbacks, automatic order calls, and recordings
+- [x] ePBX: provider overview, numbers, extensions, dial pad, CDR call log + recordings, automated order calls, IVR/WebRTC marked not available
