@@ -118,11 +118,17 @@ export async function supportHistory(hint?: string | null, limit = 12) {
     .eq("thread_id", target.threadId)
     .order("created_at", { ascending: false })
     .limit(limit);
+  // Compact plain-text transcript (no timestamps/JSON) so the model summarises
+  // instead of echoing raw rows back to the admin.
+  const transcript = (data ?? [])
+    .reverse()
+    .map((m) => `${m.role === "user" ? "Customer" : m.role === "admin" ? "Admin" : "AI"}: ${String(m.content).slice(0, 200)}`)
+    .join("\n");
   return {
     customer: target.name ?? "Messenger user",
-    psid: target.psid,
     reason: target.reason,
-    messages: (data ?? []).reverse(),
+    transcript,
+    note: "Summarise this for the admin in 2-4 short sentences. Do not paste it verbatim.",
   };
 }
 
