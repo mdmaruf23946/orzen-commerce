@@ -60,10 +60,13 @@ export const connectVoiceProvider = createServerFn({ method: "POST" })
     const { sealToken, newWebhookSecret, auditVoice } = await import("@/lib/voice/service.server");
     const sealed = sealToken(data.api_token);
     const hook = newWebhookSecret();
+    const { data: prev } = await supabaseAdmin.from("voice_provider_connections")
+      .select("account_info").eq("store_id", storeId).eq("provider", "epbx").maybeSingle();
+    const keep = (prev as any)?.account_info?.saved_extensions;
     const now = new Date().toISOString();
     const { error } = await supabaseAdmin.from("voice_provider_connections").upsert({
       store_id: storeId, provider: "epbx", encrypted_token: sealed.enc, token_preview: sealed.preview,
-      status: "connected", account_id: r.account.account_id ?? null, account_info: r.account as any,
+      status: "connected", account_id: r.account.account_id ?? null, account_info: { ...(r.account as any), ...(keep ? { saved_extensions: keep } : {}) },
       webhook_secret_hash: hook.hash, last_error: null, connected_at: now, last_tested_at: now,
     }, { onConflict: "store_id,provider" });
     if (error) throw new Error("Could not save the connection. Please try again.");
@@ -82,11 +85,13 @@ export const retestVoiceProvider = createServerFn({ method: "POST" })
     const creds = openToken((row as any)?.encrypted_token ?? null);
     if (!creds) return { ok: false, message: "ePBX is not connected." };
     const r = await runTest(creds.api_token);
+    const { data: prev } = await supabaseAdmin.from("voice_provider_connections")
+      .select("account_info").eq("store_id", storeId).eq("provider", "epbx").maybeSingle();
     await supabaseAdmin.from("voice_provider_connections").update({
       last_tested_at: new Date().toISOString(),
       status: r.ok ? "connected" : "error",
       last_error: r.ok ? null : r.message,
-      ...(r.ok ? { account_info: r.account as any } : {}),
+      ...(r.ok ? { account_info: { ...((prev as any)?.account_info ?? {}), ...(r.account as any) } } : {}),
     }).eq("store_id", storeId).eq("provider", "epbx");
     await auditVoice(supabaseAdmin, storeId, context.userId, "provider_tested", { ok: r.ok });
     return r.ok ? { ok: true, message: "Connection successful" } : { ok: false, message: r.message };
@@ -114,6 +119,16 @@ export const saveVoiceDefaults = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const storeId = await ownStore(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (data.default_caller_id) {
+      // Caller ID must be one ePBX reports for this account (no spoofing).
+      const { data: row } = await supabaseAdmin.from("voice_provider_connections")
+        .select("encrypted_token,status").eq("store_id", storeId).eq("provider", "epbx").maybeSingle();
+      const { openToken, getVoiceProvider } = await import("@/lib/voice/service.server");
+      const creds = (row as any)?.status === "connected" ? openToken((row as any).encrypted_token ?? null) : null;
+      let allowed: string[] = [];
+      if (creds) { try { allowed = (await getVoiceProvider("epbx").listNumbers(creds)).map((n: any) => n.number); } catch { /* ignore */ } }
+      if (!allowed.includes(data.default_caller_id)) throw new Error("This caller ID is not active on your ePBX account.");
+    }
     const { error } = await supabaseAdmin.from("voice_provider_connections").update({
       default_caller_id: data.default_caller_id || null, default_extension: data.default_extension || null,
     }).eq("store_id", storeId).eq("provider", "epbx");
@@ -121,6 +136,34 @@ export const saveVoiceDefaults = createServerFn({ method: "POST" })
     const { auditVoice } = await import("@/lib/voice/service.server");
     await auditVoice(supabaseAdmin, storeId, context.userId, "defaults_changed");
     return { ok: true, message: "Saved" };
+  });
+
+export const saveVoiceExtensions = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    extensions: z.array(z.object({
+      extension: z.string().trim().regex(/^\d{2,6}$/),
+      name: z.string().trim().max(40).optional(),
+    })).max(20),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const storeId = await ownStore(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row } = await supabaseAdmin.from("voice_provider_connections")
+      .select("account_info,default_extension").eq("store_id", storeId).eq("provider", "epbx").maybeSingle();
+    if (!row) throw new Error("Connect ePBX first.");
+    const seen = new Set<string>();
+    const list = data.extensions.filter((e) => !seen.has(e.extension) && seen.add(e.extension))
+      .map((e) => ({ extension: e.extension, ...(e.name ? { name: e.name } : {}) }));
+    const def = (row as any).default_extension;
+    const { error } = await supabaseAdmin.from("voice_provider_connections").update({
+      account_info: { ...((row as any).account_info ?? {}), saved_extensions: list } as any,
+      ...(def && !seen.has(def) ? { default_extension: list[0]?.extension ?? null } : {}),
+    }).eq("store_id", storeId).eq("provider", "epbx");
+    if (error) throw new Error("Could not save. Please try again.");
+    const { auditVoice } = await import("@/lib/voice/service.server");
+    await auditVoice(supabaseAdmin, storeId, context.userId, "extensions_changed");
+    return { ok: true };
   });
 
 /* ----------------------------- automation ----------------------------- */
