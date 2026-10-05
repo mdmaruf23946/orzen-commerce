@@ -384,10 +384,34 @@ export function ProviderCallLog({ recordingsOnly = false }: { recordingsOnly?: b
 
 const RESULT_TEXT: Record<string, string> = { order_confirmed: "Confirmed (1)", order_cancelled: "Cancelled / rejected (2)" };
 
+function RetryCell({ r, onCancel }: { r: any; onCancel: (id: string) => void }) {
+  const j = r.retry;
+  if (!j) return <>—</>;
+  if (j.next_at) {
+    const d = new Date(j.next_at);
+    const sameDay = d.toDateString() === new Date().toDateString();
+    return (
+      <span className="inline-flex items-center gap-2">
+        Next {sameDay ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : d.toLocaleString([], { dateStyle: "short", timeStyle: "short" })}
+        <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => onCancel(j.id)}>Cancel</Button>
+      </span>
+    );
+  }
+  if (j.status === "cancelled") return <>Cancelled{j.cancel_reason ? ` — ${j.cancel_reason}` : ""}</>;
+  return <span className="capitalize">{j.status}</span>;
+}
+
 export function AutomatedOrderCalls() {
   const fn = useServerFn(listAutomatedOrderCalls);
+  const cancelFn = useServerFn(cancelQueuedCall);
+  const qc = useQueryClient();
   const q = useQuery({ queryKey: ["voice", "auto-calls"], queryFn: () => fn() });
   const rows: any[] = q.data ?? [];
+  const onCancel = async (id: string) => {
+    const r = await cancelFn({ data: { id } });
+    if (r.ok) toast.success("Scheduled call cancelled"); else toast.error("This call is no longer scheduled");
+    qc.invalidateQueries({ queryKey: ["voice", "auto-calls"] });
+  };
   return (
     <Card title="Automated Order Calls">
       {q.isLoading ? <p className="text-xs text-muted-foreground">Loading…</p> : !rows.length ? (
@@ -404,8 +428,8 @@ export function AutomatedOrderCalls() {
                 <td className="text-xs">{r.customer_name ?? ""} <span className="font-mono">{r.phone}</span></td>
                 <td className="text-xs capitalize">{String(r.status).replace("_", " ")}</td>
                 <td className="text-xs">{RESULT_TEXT[r.result] ?? (r.status === "answered" || r.status === "completed" ? "No response" : "—")}</td>
-                <td className="text-xs">{r.attempt}</td>
-                <td className="text-xs">{r.retry?.next_at ? `Next ${new Date(r.retry.next_at).toLocaleTimeString()}` : r.retry?.status ?? "—"}</td>
+                <td className="text-xs">{r.attempt} / {r.max_attempts}</td>
+                <td className="text-xs"><RetryCell r={r} onCancel={onCancel} /></td>
                 <td className="text-xs">{new Date(r.created_at).toLocaleString()}</td>
               </tr>))}
             </tbody>
