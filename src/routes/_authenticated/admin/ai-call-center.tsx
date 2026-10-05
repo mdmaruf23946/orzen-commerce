@@ -22,6 +22,7 @@ import { listCallRecordings } from "@/lib/call-center.functions";
 import {
   ProviderOverviewCard, PhoneNumbersPanel, AgentsPanel, DialPad, ProviderCallLog, AutomatedOrderCalls, WebRtcPanel, NotAvailable, AccountHubCard, LowBalanceBanner,
 } from "@/components/admin/calls/EpbxPanels";
+import { EpbxEndpointsCard, EpbxTestCallCard } from "@/components/admin/calls/EpbxIntegrationCards";
 import { VoiceProviderPanel, VoiceSettingsPanel, ProviderManagedNote, useVoiceConnection } from "@/components/admin/calls/VoicePanels";
 
 export const Route = createFileRoute("/_authenticated/admin/ai-call-center")({
@@ -507,6 +508,8 @@ function CallCenterHub() {
         {tab === "provider" && (
           <div className="space-y-4">
             <VoiceProviderPanel />
+            {connected && <EpbxTestCallCard />}
+            <EpbxEndpointsCard />
             {connected && <ProviderOverviewCard />}
             {connected && <NotAvailable title="IVR" text="IVR menus, DTMF routes and destinations are not available through the current ePBX API access. Order calls use ePBX's built-in verification IVR (1 = confirm, 2 = cancel)." />}
             {connected && <WebRtcPanel />}
