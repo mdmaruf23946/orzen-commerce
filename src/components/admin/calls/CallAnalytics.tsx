@@ -175,7 +175,7 @@ export function CallLogTable() {
 
   const sel = "h-8 rounded-md border bg-background px-2 text-xs";
   return (
-    <div className="space-y-3 rounded-2xl border bg-card p-4">
+    <div className="min-w-0 max-w-full space-y-3 overflow-hidden rounded-2xl border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold">Detailed Call Logs</h3>
         <Button size="sm" variant="outline" onClick={exportCsv} disabled={exporting || !rows.length}>
@@ -199,7 +199,7 @@ export function CallLogTable() {
       ) : !rows.length ? (
         <p className="text-xs text-muted-foreground">No calls in this period.</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="max-w-full overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-left text-xs text-muted-foreground"><tr>
               <th className="py-1 pr-2">Order</th><th className="pr-2">Customer</th><th className="pr-2">Time</th><th className="pr-2">Type</th>

@@ -28,11 +28,11 @@ export function NotAvailable({ title, text = NOT_AVAILABLE }: { title: string; t
 
 function Card({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border bg-card">
+    <section className="min-w-0 max-w-full overflow-hidden rounded-2xl border bg-card">
       <div className="flex items-center justify-between gap-2 border-b px-4 py-2.5">
         <h3 className="text-sm font-semibold">{title}</h3>{action}
       </div>
-      <div className="p-4">{children}</div>
+      <div className="min-w-0 p-4">{children}</div>
     </section>
   );
 }
@@ -266,7 +266,7 @@ export function DialPad() {
 
   return (
     <Card title="Dial Pad">
-      <div className="mx-auto max-w-xs space-y-3">
+      <div className="mx-auto w-full max-w-xs space-y-3">
         <div>
           <label className="text-xs text-muted-foreground" htmlFor="dp-ext">Agent extension</label>
           <select id="dp-ext" className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm" value={extension}
@@ -280,7 +280,7 @@ export function DialPad() {
         <div className="grid grid-cols-3 gap-2">
           {KEYS.map((k) => (
             <button key={k} type="button" onClick={() => setNum((n) => (n + k).slice(0, 16))}
-              className="h-12 rounded-xl border text-lg font-semibold transition-colors hover:bg-muted">{k}</button>
+              className="h-12 min-w-0 rounded-xl border text-lg font-semibold transition-colors hover:bg-muted">{k}</button>
           ))}
         </div>
         <div className="grid grid-cols-3 gap-2">

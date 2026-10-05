@@ -495,8 +495,8 @@ function CallCenterHub() {
           </div>
         )}
         {tab === "calls" && (
-          <div className="space-y-4">
-            {connected && <div className="grid gap-4 lg:grid-cols-[320px_1fr]"><DialPad /><CallLogTable /></div>}
+          <div className="min-w-0 space-y-4">
+            {connected && <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[320px_minmax(0,1fr)]"><DialPad /><CallLogTable /></div>}
             {!connected && <CallLogTable />}
             <CallCenterPage />
             {connected && <ProviderCallLog />}
