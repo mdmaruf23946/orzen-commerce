@@ -3,7 +3,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 // Legacy URL now opens AI Call Center → Calls & History.
 export const Route = createFileRoute("/_authenticated/admin/call-center")({
   beforeLoad: () => {
-    throw redirect({ to: "/admin/ai-call-center", search: { tab: "calls" } as any });
+    throw redirect({ to: "/admin/call-sms/epbx", search: { tab: "calls" } });
   },
   head: () => ({
     meta: [

@@ -126,7 +126,7 @@ export function CallButton({
                     </select>
                   </label>
                 ) : (
-                  <p className="text-destructive">No agent extension saved. Add one in AI Call Center → Agents.</p>
+                  <p className="text-destructive">No agent extension saved. Add one in Call & SMS Apps → ePBX → Agents.</p>
                 )}
                 {zeroBalance && <p className="text-destructive">Your ePBX balance is ৳0 — the call will likely fail until you recharge.</p>}
               </>
@@ -155,7 +155,7 @@ export function CallButton({
           <AlertDialogFooter className="gap-2 sm:gap-2">
             <AlertDialogCancel>Close</AlertDialogCancel>
             <Link
-              to="/admin/ai-call-center"
+              to="/admin/call-sms/epbx"
               search={{ tab: "provider" }}
               onClick={() => setNotConnected(false)}
               className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground"
