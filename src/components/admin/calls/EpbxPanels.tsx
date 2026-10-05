@@ -12,6 +12,7 @@ import {
 } from "@/lib/voice-provider.functions";
 import { startCall } from "@/lib/call-center.functions";
 import { formatDuration } from "@/lib/call-center";
+import { CallResultDialog } from "@/components/admin/calls/CallResultDialog";
 
 export const NOT_AVAILABLE = "Not available through the current ePBX API access.";
 
@@ -144,6 +145,7 @@ export function DialPad() {
   const [num, setNum] = useState("");
   const [sel, setSel] = useState("");
   const [busy, setBusy] = useState(false);
+  const [resultFor, setResultFor] = useState<string | null>(null);
   const extension = sel || def;
   const connected = (ext.data as any)?.connected;
 
@@ -154,6 +156,7 @@ export function DialPad() {
       if (r.ok) {
         toast.success(`Ringing extension ${extension} first — pick it up to connect the customer.`);
         await qc.invalidateQueries({ queryKey: ["calls"] });
+        setResultFor(r.callId);
       } else toast.error(r.reason === "not_connected" ? "Connect ePBX in the Provider tab first." : r.message ?? "Call failed");
     } catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }
   }
@@ -188,6 +191,13 @@ export function DialPad() {
         </div>
         <p className="text-[11px] text-muted-foreground">Your extension rings first. When you answer, ePBX calls the customer and connects you.</p>
       </div>
+      <CallResultDialog
+        open={!!resultFor}
+        onOpenChange={(v) => !v && setResultFor(null)}
+        callId={resultFor}
+        manualStatus={true}
+        phone={num}
+      />
     </Card>
   );
 }

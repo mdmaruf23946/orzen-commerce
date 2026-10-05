@@ -117,7 +117,12 @@ export const epbxProvider: VoiceProvider = {
     if (!o.extension) throw new VoiceProviderError("failed", "Set an agent extension first (e.g. 101).");
     const j = await call(creds, "/calls/originate", {
       method: "POST",
-      body: { extension: o.extension, phone_number: normPhone(o.to), ...(o.callerId ? { caller_id: o.callerId } : {}) },
+      body: {
+        extension: o.extension,
+        phone_number: normPhone(o.to),
+        ...(o.callerId ? { caller_id: o.callerId } : {}),
+        ...(o.webhookUrl ? { webhook_url: o.webhookUrl } : {}),
+      },
     });
     return { provider_call_id: callIdOf(j) };
   },
