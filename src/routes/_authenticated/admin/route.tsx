@@ -1,3 +1,4 @@
+import { CALL_SMS_PROVIDERS } from "@/lib/call-sms-providers";
 import { createFileRoute, Link, Outlet, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -132,11 +133,12 @@ const menuGroups: NavGroupDef[] = [
         ],
       },
       {
-        to: "/admin/ai-call-center",
-        label: "Call Center",
+        to: CALL_SMS_PROVIDERS[0]?.path ?? "/admin/call-sms/ai-voice-agent",
+        label: "Call & SMS Apps",
         icon: PhoneCall,
         children: [
-          { to: "/admin/ai-call-center", label: "AI Call Center", icon: Bot },
+          ...CALL_SMS_PROVIDERS.map((p) => ({ to: p.path, label: p.name, icon: p.kind === "sms" ? MessageSquare : PhoneCall })),
+          { to: "/admin/call-sms/ai-voice-agent", label: "AI Voice Agent", icon: Bot },
         ],
       },
       { to: "/admin/duplicate-protection", label: "Duplicate Protection", icon: ShieldCheck, badgeKey: "duplicate_protection" },

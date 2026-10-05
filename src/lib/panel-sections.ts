@@ -34,7 +34,7 @@ export const PANEL_SECTIONS: PanelSection[] = [
   { key: "customer_accounts", label: "Customer Accounts", group: "Customers & Support", paths: ["/admin/customers-accounts"], feature: "customer_accounts" },
   { key: "duplicate_protection", label: "Duplicate Protection", group: "Customers & Support", paths: ["/admin/duplicate-protection"], feature: "duplicate_protection" },
 
-  { key: "call_center", label: "AI Call Center", group: "Customers & Support", paths: ["/admin/ai-call-center", "/admin/call-center"], feature: "call_center" },
+  { key: "call_center", label: "Call & SMS Apps", group: "Customers & Support", paths: ["/admin/call-sms", "/admin/ai-call-center", "/admin/call-center"], feature: "call_center" },
 
   { key: "ai_agent", label: "AI Sales Agent", group: "Channels & AI", paths: ["/admin/ai-agent"], feature: "ai_agent" },
   { key: "ai_recommendations", label: "AI Recommendations", group: "Channels & AI", paths: ["/admin/ai-recommendations"] },
