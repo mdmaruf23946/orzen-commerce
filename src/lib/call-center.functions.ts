@@ -246,6 +246,8 @@ const OutcomeSchema = z.object({
   duration_sec: z.number().int().min(0).max(24 * 3600).optional(),
   result: z.enum(CALL_RESULTS as [string, ...string[]]).optional().nullable(),
   note: z.string().trim().max(500).optional().nullable(),
+  apply_to_order: z.boolean().optional(),
+  new_address: z.string().trim().min(5).max(500).optional().nullable(),
 });
 
 export const updateCallOutcome = createServerFn({ method: "POST" })
@@ -261,15 +263,41 @@ export const updateCallOutcome = createServerFn({ method: "POST" })
     if (data.duration_sec != null) patch.duration_sec = data.duration_sec;
     if (data.result !== undefined) patch.result = data.result;
     if (data.note !== undefined) patch.note = data.note;
-    if (!Object.keys(patch).length) return { ok: true };
+    let orderChanged: string | null = null;
+    if (Object.keys(patch).length) {
+      const { error } = await context.supabase
+        .from("calls")
+        .update(patch as never)
+        .eq("id", data.callId)
+        .eq("store_id", storeId);
+      if (error) throw new Error(error.message);
+    }
 
-    const { error } = await context.supabase
-      .from("calls")
-      .update(patch as never)
-      .eq("id", data.callId)
-      .eq("store_id", storeId);
-    if (error) throw new Error(error.message);
-    return { ok: true };
+    // Order-side effects: only for this store's call linked to an order.
+    const { data: call } = await context.supabase.from("calls")
+      .select("order_id").eq("id", data.callId).eq("store_id", storeId).maybeSingle();
+    const orderId = (call as any)?.order_id as string | null;
+    if (orderId && (data.result || data.note || data.new_address)) {
+      const sb = context.supabase as any;
+      let stage: string | null = null;
+      if (data.apply_to_order && (data.result === "order_confirmed" || data.result === "order_cancelled")) {
+        const next = data.result === "order_confirmed" ? "confirmed" : "cancelled";
+        const { data: upd } = await sb.from("orders").update({ status: next })
+          .eq("id", orderId).eq("store_id", storeId).eq("status", "pending").select("id");
+        if (upd?.length) { stage = next; orderChanged = next; }
+      }
+      if (data.result === "address_updated" && data.new_address) {
+        const { error: aErr } = await sb.from("orders").update({ address: data.new_address })
+          .eq("id", orderId).eq("store_id", storeId);
+        if (!aErr) orderChanged = orderChanged ?? "address";
+      }
+      const { data: ord } = await sb.from("orders").select("status").eq("id", orderId).eq("store_id", storeId).maybeSingle();
+      const stageNow = stage ?? (ord?.status === "confirmed" || ord?.status === "cancelled" ? ord.status : "placed");
+      const parts = ["Call with ePBX", data.result ? RESULT_LABEL[data.result as CallResult] : null,
+        data.new_address ? `New address: ${data.new_address}` : null, data.note || null].filter(Boolean);
+      await sb.from("order_timeline").insert({ store_id: storeId, order_id: orderId, stage: stageNow, note: parts.join(" — ") });
+    }
+    return { ok: true, order_changed: orderChanged };
   });
 
 export const deleteCall = createServerFn({ method: "POST" })
