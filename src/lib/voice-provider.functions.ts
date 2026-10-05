@@ -6,12 +6,14 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getOwnedStoreId } from "@/lib/admin-order.server";
 
+export const LOW_BALANCE_THRESHOLD = 10;
+
 async function ctxCreds(context: any) {
   const storeId = await getOwnedStoreId(context.supabase, context.userId);
   if (!storeId) throw new Error("Store not found");
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: row } = await (supabaseAdmin as any).from("voice_provider_connections")
-    .select("provider,status,encrypted_token,default_caller_id,default_extension,last_tested_at")
+    .select("provider,status,encrypted_token,default_caller_id,default_extension,last_tested_at,account_info")
     .eq("store_id", storeId).eq("provider", "epbx").maybeSingle();
   const { openToken, getVoiceProvider, friendlyVoiceError } = await import("@/lib/voice/service.server");
   const creds = row?.status === "connected" ? openToken(row.encrypted_token ?? null) : null;
@@ -21,18 +23,31 @@ async function ctxCreds(context: any) {
 export const getProviderOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { row, creds, provider, friendlyVoiceError } = await ctxCreds(context);
+    const { storeId, row, creds, provider, friendlyVoiceError } = await ctxCreds(context);
+    const info: any = row?.account_info ?? {};
     const base = {
       provider: provider.label,
       capabilities: provider.capabilities,
       default_caller_id: row?.default_caller_id ?? null,
       default_extension: row?.default_extension ?? null,
+      saved_extensions: (Array.isArray(info.saved_extensions) ? info.saved_extensions : []) as { extension: string; name?: string }[],
+      low_balance_threshold: LOW_BALANCE_THRESHOLD,
     };
     if (!creds) return { ...base, connected: false as const };
     const started = Date.now();
     try {
-      const o = await provider.getOverview(creds);
-      return { ...base, connected: true as const, healthy: true, latency_ms: Date.now() - started, synced_at: new Date().toISOString(), ...o };
+      const o: any = await provider.getOverview(creds);
+      const synced_at = new Date().toISOString();
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await (supabaseAdmin as any).from("voice_provider_connections")
+        .update({ account_info: { ...info, balance: o.balance ?? null, last_synced_at: synced_at } })
+        .eq("store_id", storeId).eq("provider", "epbx");
+      const caller_ids = o.trunk_number ? [String(o.trunk_number)] : [];
+      return {
+        ...base, connected: true as const, healthy: true, latency_ms: Date.now() - started, synced_at, ...o,
+        trunk_active: !!o.trunk_number, caller_ids,
+        low_balance: o.balance != null && Number(o.balance) < LOW_BALANCE_THRESHOLD,
+      };
     } catch (e) {
       return { ...base, connected: true as const, healthy: false, error: friendlyVoiceError(e), synced_at: new Date().toISOString() };
     }
@@ -80,8 +95,10 @@ export const listProviderExtensions = createServerFn({ method: "GET" })
     const { row, creds, provider, friendlyVoiceError } = await ctxCreds(context);
     const def = row?.default_extension ?? null;
     if (!creds) return { connected: false as const, list_supported: provider.capabilities.extensions_list, extensions: [] as any[] };
-    const map = new Map<string, { extension: string; calls: number; last_call: string | null; is_default: boolean }>();
-    if (def) map.set(def, { extension: def, calls: 0, last_call: null, is_default: true });
+    const saved: any[] = Array.isArray((row?.account_info as any)?.saved_extensions) ? (row!.account_info as any).saved_extensions : [];
+    const map = new Map<string, { extension: string; name: string | null; saved: boolean; calls: number; last_call: string | null; is_default: boolean }>();
+    for (const x of saved) map.set(x.extension, { extension: x.extension, name: x.name ?? null, saved: true, calls: 0, last_call: null, is_default: x.extension === def });
+    if (def && !map.has(def)) map.set(def, { extension: def, name: null, saved: false, calls: 0, last_call: null, is_default: true });
     let error: string | undefined;
     try {
       const day = (d: Date) => new Date(d.getTime() + 6 * 3600e3).toISOString().slice(0, 10);
@@ -91,7 +108,7 @@ export const listProviderExtensions = createServerFn({ method: "GET" })
       for (const c of r.rows) {
         for (const v of [c.source, c.destination]) {
           if (!/^\d{2,6}$/.test(v)) continue;
-          const e = map.get(v) ?? { extension: v, calls: 0, last_call: null, is_default: v === def };
+          const e = map.get(v) ?? { extension: v, name: null, saved: false, calls: 0, last_call: null, is_default: v === def };
           e.calls++;
           if (!e.last_call || c.date > e.last_call) e.last_call = c.date;
           map.set(v, e);
