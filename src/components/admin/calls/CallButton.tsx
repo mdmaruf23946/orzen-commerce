@@ -156,7 +156,7 @@ export function CallButton({
         open={!!resultFor}
         onOpenChange={(v) => !v && setResultFor(null)}
         callId={resultFor}
-        manualStatus={false}
+        manualStatus={true}
         phone={phone}
       />
     </>
