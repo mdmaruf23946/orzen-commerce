@@ -315,7 +315,7 @@ function providerItems(connected: ProviderConnectionMap): LinkDef[] {
     to: p.path,
     label: p.name,
     icon: p.kind === "sms" ? MessageSquare : PhoneCall,
-    children: p.sections.map((sec) => ({ to: p.path, search: { tab: sec.key }, label: sec.label, icon: p.kind === "sms" ? MessageSquare : PhoneCall })),
+    children: p.sections.map((sec) => ({ to: p.path, search: { tab: sec.key }, label: sec.label, icon: sec.icon })),
   }));
 }
 
