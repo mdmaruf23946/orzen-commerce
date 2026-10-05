@@ -134,9 +134,11 @@ export const listAutomatedOrderCalls = createServerFn({ method: "GET" })
         .eq("store_id", storeId).eq("call_type", "auto_verification")
         .order("created_at", { ascending: false }).limit(50),
       (context.supabase as any).from("voice_call_queue")
-        .select("order_id,status,attempt,run_at,last_error")
+        .select("id,order_id,status,attempt,run_at,last_error,cancel_reason")
         .eq("store_id", storeId).order("created_at", { ascending: false }).limit(100),
     ]);
+    const { data: st } = await (context.supabase as any).from("voice_automation_settings")
+      .select("retry_count").eq("store_id", storeId).maybeSingle();
     const q = new Map<string, any>();
     for (const j of (queue ?? []) as any[]) if (!q.has(j.order_id)) q.set(j.order_id, j);
     return ((calls ?? []) as any[]).map((c) => {
@@ -144,8 +146,22 @@ export const listAutomatedOrderCalls = createServerFn({ method: "GET" })
       return {
         id: c.id, invoice_no: c.orders?.invoice_no ?? null, customer_name: c.customer_name, phone: c.phone,
         status: c.status, result: c.result, duration_sec: c.duration_sec, attempt: (c.retry_count ?? 0) + 1,
+        max_attempts: (st?.retry_count ?? 0) + 1,
         created_at: c.created_at,
-        retry: j ? { status: j.status, next_at: j.status === "queued" ? j.run_at : null } : null,
+        retry: j ? { id: j.id, status: j.status, next_at: j.status === "queued" ? j.run_at : null, cancel_reason: j.cancel_reason } : null,
       };
     });
+  });
+
+export const cancelQueuedCall = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const storeId = await getOwnedStoreId(context.supabase, context.userId);
+    if (!storeId) throw new Error("Store not found");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows } = await (supabaseAdmin as any).from("voice_call_queue")
+      .update({ status: "cancelled", cancel_reason: "Cancelled by merchant" })
+      .eq("id", data.id).eq("store_id", storeId).eq("status", "queued").select("id");
+    return { ok: !!rows?.length };
   });

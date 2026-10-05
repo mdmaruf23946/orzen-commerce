@@ -130,13 +130,26 @@ export function VoiceSettingsPanel() {
         <Toggle k="call_immediately" label="Call immediately after order" />
         <div className="grid grid-cols-2 gap-3 py-2 sm:grid-cols-4">
           <div><Label className="text-xs">Delay (minutes)</Label><Input type="number" value={f.delay_minutes} onChange={(e) => set("delay_minutes", num(e.target.value))} /></div>
-          <div><Label className="text-xs">Retry count</Label>
+          <div><Label className="text-xs">Max retries</Label>
             <select className="h-9 w-full rounded-md border bg-background px-2 text-sm" value={f.retry_count} onChange={(e) => set("retry_count", Number(e.target.value))}>
-              {[0, 1, 2, 3].map((n) => <option key={n} value={n}>{n}</option>)}
+              {[0, 1, 2, 3].map((n) => <option key={n} value={n}>{n === 0 ? "No retry" : `${n} time${n > 1 ? "s" : ""}`}</option>)}
             </select></div>
-          <div><Label className="text-xs">Retry delay (minutes)</Label><Input type="number" value={f.retry_delay_minutes} onChange={(e) => set("retry_delay_minutes", Math.max(1, num(e.target.value)))} /></div>
+          <div><Label className="text-xs">Retry every</Label>
+            <select className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+              value={[10, 30, 60, 120].includes(f.retry_delay_minutes) ? String(f.retry_delay_minutes) : "custom"}
+              onChange={(e) => { if (e.target.value !== "custom") set("retry_delay_minutes", Number(e.target.value)); else set("retry_delay_minutes", 45); }}>
+              <option value="10">10 minutes</option><option value="30">30 minutes</option>
+              <option value="60">1 hour</option><option value="120">2 hours</option><option value="custom">Custom…</option>
+            </select></div>
+          {![10, 30, 60, 120].includes(f.retry_delay_minutes) && (
+            <div><Label className="text-xs">Custom (minutes)</Label><Input type="number" min={1} max={1440} value={f.retry_delay_minutes} onChange={(e) => set("retry_delay_minutes", Math.min(1440, Math.max(1, num(e.target.value))))} /></div>
+          )}
         </div>
-        <Toggle k="business_hours_only" label="Call only during business hours" />
+        <p className="pb-2 text-xs text-muted-foreground">
+          {f.retry_count === 0 ? "One call only — no retry." : `First call + up to ${f.retry_count} retr${f.retry_count > 1 ? "ies" : "y"}, every ${f.retry_delay_minutes >= 60 && f.retry_delay_minutes % 60 === 0 ? `${f.retry_delay_minutes / 60} hour${f.retry_delay_minutes > 60 ? "s" : ""}` : `${f.retry_delay_minutes} minutes`}.`}
+          {" "}Scheduled calls are cancelled automatically if the order is confirmed or changed before the call.
+        </p>
+        <Toggle k="business_hours_only" label="Call only during business hours (Bangladesh time) — orders outside these hours are called when the window opens" />
         <div className="grid grid-cols-2 gap-3 py-2 sm:w-1/2">
           <div><Label className="text-xs">From</Label><Input type="time" value={f.hours_from} onChange={(e) => set("hours_from", e.target.value)} /></div>
           <div><Label className="text-xs">To</Label><Input type="time" value={f.hours_to} onChange={(e) => set("hours_to", e.target.value)} /></div>

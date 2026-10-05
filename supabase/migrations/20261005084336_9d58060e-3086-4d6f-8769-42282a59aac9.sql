@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.tg_cancel_voice_queue_on_order() TO service_role;
