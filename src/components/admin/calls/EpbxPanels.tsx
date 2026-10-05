@@ -144,6 +144,7 @@ export function DialPad() {
   const [num, setNum] = useState("");
   const [sel, setSel] = useState("");
   const [busy, setBusy] = useState(false);
+  const [resultFor, setResultFor] = useState<string | null>(null);
   const extension = sel || def;
   const connected = (ext.data as any)?.connected;
 
@@ -154,6 +155,7 @@ export function DialPad() {
       if (r.ok) {
         toast.success(`Ringing extension ${extension} first — pick it up to connect the customer.`);
         await qc.invalidateQueries({ queryKey: ["calls"] });
+        setResultFor(r.callId);
       } else toast.error(r.reason === "not_connected" ? "Connect ePBX in the Provider tab first." : r.message ?? "Call failed");
     } catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }
   }
