@@ -12,6 +12,7 @@ import {
 } from "@/lib/voice-provider.functions";
 import { startCall } from "@/lib/call-center.functions";
 import { formatDuration } from "@/lib/call-center";
+import { CallResultDialog } from "@/components/admin/calls/CallResultDialog";
 
 export const NOT_AVAILABLE = "Not available through the current ePBX API access.";
 
