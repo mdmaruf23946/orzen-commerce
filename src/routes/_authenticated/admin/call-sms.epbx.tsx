@@ -25,7 +25,7 @@ import {
 import { EpbxEndpointsCard, EpbxTestCallCard } from "@/components/admin/calls/EpbxIntegrationCards";
 import { VoiceProviderPanel, VoiceSettingsPanel, ProviderManagedNote, useVoiceConnection } from "@/components/admin/calls/VoicePanels";
 
-export const Route = createFileRoute("/_authenticated/admin/ai-call-center")({
+export const Route = createFileRoute("/_authenticated/admin/call-sms/epbx")({
   component: CallCenterHub,
   validateSearch: (s: Record<string, unknown>) => ({ tab: typeof s.tab === "string" ? s.tab : undefined }),
   head: () => ({
