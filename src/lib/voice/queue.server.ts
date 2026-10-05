@@ -72,7 +72,7 @@ export function verifyAudioSig(path: string, sig: string) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-function platformOrigin() {
+export function platformOrigin() {
   return process.env.PLATFORM_ORIGIN || "https://orzen.top";
 }
 
