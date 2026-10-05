@@ -1,4 +1,5 @@
-import { CALL_SMS_PROVIDERS } from "@/lib/call-sms-providers";
+import { CALL_SMS_PROVIDERS, CALL_SMS_HUB_PATH, type ProviderConnectionMap } from "@/lib/call-sms-providers";
+import { useProviderConnections } from "@/lib/use-call-sms-connections";
 import { createFileRoute, Link, Outlet, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -48,6 +49,7 @@ type LinkDef = {
 
 type ChildLinkDef = {
   to: string;
+  search?: Record<string, string>;
   label: string;
   icon: typeof LayoutDashboard;
   exact?: boolean;
@@ -61,6 +63,8 @@ type NavGroupDef = {
 };
 
 type VisibleLinkDef = Omit<LinkDef, "children"> & { children?: ChildLinkDef[] };
+
+const CALL_SMS_GROUP = "AI Call & SMS Integration";
 
 const menuGroups: NavGroupDef[] = [
   {
@@ -132,16 +136,15 @@ const menuGroups: NavGroupDef[] = [
           { to: "/admin/customers-accounts", label: "Customer Accounts", icon: UserCog, badgeKey: "customers" },
         ],
       },
-      {
-        to: CALL_SMS_PROVIDERS[0]?.path ?? "/admin/call-sms/ai-voice-agent",
-        label: "Call & SMS Apps",
-        icon: PhoneCall,
-        children: [
-          ...CALL_SMS_PROVIDERS.map((p) => ({ to: p.path, label: p.name, icon: p.kind === "sms" ? MessageSquare : PhoneCall })),
-          { to: "/admin/call-sms/ai-voice-agent", label: "AI Voice Agent", icon: Bot },
-        ],
-      },
       { to: "/admin/duplicate-protection", label: "Duplicate Protection", icon: ShieldCheck, badgeKey: "duplicate_protection" },
+    ],
+  },
+  {
+    label: CALL_SMS_GROUP,
+    icon: PhoneCall,
+    items: [
+      { to: CALL_SMS_HUB_PATH, label: "AI & SMS Apps", icon: Store },
+      { to: "/admin/call-sms/ai-voice-agent", label: "AI Voice Agent", icon: Bot },
     ],
   },
   {
@@ -306,11 +309,24 @@ function activeInItem(pathname: string, item: LinkDef) {
   return (item.children ?? []).some((child) => matchesPath(pathname, child));
 }
 
-function buildGroups(query: string, canSee: (path: string) => boolean) {
+/** Connected providers only — each gets its own menu with its own sections. */
+function providerItems(connected: ProviderConnectionMap): LinkDef[] {
+  return CALL_SMS_PROVIDERS.filter((p) => connected[p.id]).map((p) => ({
+    to: p.path,
+    label: p.name,
+    icon: p.kind === "sms" ? MessageSquare : PhoneCall,
+    children: p.sections.map((sec) => ({ to: p.path, search: { tab: sec.key }, label: sec.label, icon: p.kind === "sms" ? MessageSquare : PhoneCall })),
+  }));
+}
+
+function buildGroups(query: string, canSee: (path: string) => boolean, connected: ProviderConnectionMap = {}) {
   const q = query.trim().toLowerCase();
   return menuGroups
     .map((group) => {
-      const items = group.items.reduce<VisibleLinkDef[]>((visible, item) => {
+      const groupItems = group.label === CALL_SMS_GROUP
+        ? [group.items[0], ...providerItems(connected), ...group.items.slice(1)]
+        : group.items;
+      const items = groupItems.reduce<VisibleLinkDef[]>((visible, item) => {
           const visibleChildren = (item.children ?? []).filter((child) => canSee(child.to));
           const isVisible = canSee(item.to) || visibleChildren.length > 0;
           if (!isVisible || !itemMatchesQuery({ ...item, children: visibleChildren }, q)) return visible;
@@ -469,7 +485,10 @@ function AdminLayout() {
     },
     [access],
   );
-  const groups = useMemo(() => buildGroups(search, canSee), [search, canSee]);
+  const { connected: providerConnected } = useProviderConnections();
+  const providerKey = JSON.stringify(providerConnected);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const groups = useMemo(() => buildGroups(search, canSee, providerConnected), [search, canSee, providerKey]);
 
   const currentSection = sectionForPath(currentPath);
   const pageAllowed =
@@ -644,10 +663,11 @@ function AdminLayout() {
                               const childBadge = c.badgeKey ? counts[c.badgeKey] ?? 0 : 0;
                               return (
                               <Link
-                                key={c.to}
+                                key={c.to + (c.search?.tab ?? "")}
                                 to={c.to}
+                                search={c.search as any}
                                 onClick={() => setOpen(false)}
-                                activeOptions={c.exact ? { exact: true } : undefined}
+                                activeOptions={c.search ? { includeSearch: true } : c.exact ? { exact: true } : undefined}
                                 activeProps={{ className: "bg-primary/10 text-primary font-medium" }}
                                 className="flex min-h-8 items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-muted-foreground transition hover:bg-muted hover:text-foreground"
                               >
