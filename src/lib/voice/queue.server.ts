@@ -82,8 +82,8 @@ function dhakaMinutes(d = new Date()) {
 }
 const toMin = (s: string) => { const [h, m] = s.split(":").map(Number); return (h || 0) * 60 + (m || 0); };
 
-function minutesUntilOpen(from: string, to: string): number {
-  const now = dhakaMinutes(), f = toMin(from), t = toMin(to);
+export function minutesUntilOpen(from: string, to: string, atMs = Date.now()): number {
+  const now = dhakaMinutes(new Date(atMs)), f = toMin(from), t = toMin(to);
   const open = f <= t ? now >= f && now < t : now >= f || now < t;
   if (open) return 0;
   return (f - now + 1440) % 1440 || 1440;
@@ -111,7 +111,11 @@ export async function drainVoiceQueue(admin: any, limit = 10) {
       admin.from("voice_automation_settings").select("*").eq("store_id", job.store_id).maybeSingle(),
     ]);
 
-    if (!order || order.status !== "pending" || !st?.auto_call_enabled) { await done("skipped"); skipped++; continue; }
+    if (!order || order.status !== "pending") {
+      await done("cancelled", { cancel_reason: !order ? "Order deleted" : order.status === "confirmed" ? "Order confirmed" : `Status changed to ${order.status}` });
+      skipped++; continue;
+    }
+    if (!st?.auto_call_enabled) { await done("skipped", { cancel_reason: "Automated calling turned off" }); skipped++; continue; }
     const creds = conn?.status === "connected" ? openToken(conn.encrypted_token) : null;
     if (!creds) { await done("skipped", { last_error: "not_connected" }); skipped++; continue; }
 
