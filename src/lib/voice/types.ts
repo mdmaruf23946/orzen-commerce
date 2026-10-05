@@ -53,7 +53,7 @@ export interface VoiceProvider {
   getBalance(creds: VoiceCreds): Promise<number | null>;
   getNumbers(creds: VoiceCreds): Promise<VoiceNumber[]>;
   makeCall(creds: VoiceCreds, opts: { to: string; callerId?: string; extension?: string; webhookUrl: string }): Promise<VoiceCallResult>;
-  makeOrderVerificationCall(creds: VoiceCreds, opts: { to: string; callerId?: string; messages: Record<string, string>; webhookUrl: string }): Promise<VoiceCallResult>;
+  makeOrderVerificationCall(creds: VoiceCreds, opts: { to: string; callerId?: string; messages: Record<string, string>; webhookUrl: string; vars?: { customer_name?: string; amount?: string; store_name?: string; order_id?: string }; audio?: { main?: string; confirm?: string; cancel?: string } }): Promise<VoiceCallResult>;
   capabilities: VoiceCapabilities;
   getOverview(creds: VoiceCreds): Promise<VoiceOverview>;
   getCallHistory(creds: VoiceCreds, f: VoiceCdrFilter): Promise<{ rows: VoiceCdrRow[]; page: number; last_page: number; total: number }>;
@@ -71,3 +71,9 @@ export const DEFAULT_VOICE_MESSAGES: Record<string, string> = {
   busy: "আপনি ব্যস্ত আছেন, আমরা পরে আবার কল করব।",
   retry: "আপনার অর্ডার নিশ্চিত করার জন্য আবার কল করছি।",
 };
+
+export const TTS_TAGS = ["{customer_name}", "{store_name}", "{amount}", "{order_id}"] as const;
+export const DEFAULT_TTS_TEMPLATE = "আসসালামু আলাইকুম {customer_name}। {store_name} থেকে আপনার {amount} টাকার অর্ডার {order_id} নিশ্চিত করতে 1 চাপুন, বাতিল করতে 2 চাপুন।";
+export function fillTemplate(t: string, v: Record<string, string | undefined>) {
+  return t.replace(/\{(customer_name|store_name|amount|order_id)\}/g, (_, k) => v[k] ?? "");
+}

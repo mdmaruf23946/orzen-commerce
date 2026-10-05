@@ -13,6 +13,7 @@ import {
   getVoiceSettings, saveVoiceSettings, saveVoiceDefaults, type VoiceSettings,
 } from "@/lib/voice.functions";
 import { useProviderOverview } from "@/components/admin/calls/EpbxPanels";
+import { CallScriptPanel } from "@/components/admin/calls/CallScriptPanel";
 
 const fmt = (d?: string | null) => (d ? new Date(d).toLocaleString() : "—");
 
@@ -143,6 +144,8 @@ export function VoiceSettingsPanel() {
         <Toggle k="manual_calling_enabled" label="Enable manual calling" />
         <Toggle k="representative_transfer" label="Allow representative transfer" />
       </div>
+
+      <CallScriptPanel f={f} set={set} />
 
       <div className="rounded-2xl border bg-card p-4">
         <h3 className="mb-2 text-sm font-semibold">Voice messages</h3>

@@ -1,6 +1,6 @@
 // ePBX order-verification queue + webhook handling. Server-only.
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { DEFAULT_VOICE_MESSAGES } from "./types";
+import { DEFAULT_VOICE_MESSAGES, DEFAULT_TTS_TEMPLATE, fillTemplate } from "./types";
 import { getVoiceProvider, openToken, friendlyVoiceError } from "./service.server";
 
 function key() {
@@ -54,6 +54,24 @@ export function verifyWebhookSig(callId: string, sig: string) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+function audioSig(path: string) {
+  return createHmac("sha256", key()).update(`audio:${path}`).digest("hex").slice(0, 32);
+}
+/** Public, signed URL ePBX can fetch for an uploaded MP3 ("storage:<path>"); plain https links pass through. */
+export function resolveAudioUrl(v: string | null | undefined) {
+  if (!v) return undefined;
+  if (v.startsWith("storage:")) {
+    const path = v.slice(8);
+    return `${platformOrigin()}/api/public/voice/audio?p=${encodeURIComponent(path)}&k=${audioSig(path)}`;
+  }
+  return /^https:\/\//i.test(v) ? v : undefined;
+}
+export function verifyAudioSig(path: string, sig: string) {
+  const a = Buffer.from(audioSig(path));
+  const b = Buffer.from(sig || "");
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 function platformOrigin() {
   return process.env.PLATFORM_ORIGIN || "https://orzen.top";
 }
@@ -88,7 +106,7 @@ export async function drainVoiceQueue(admin: any, limit = 10) {
       admin.from("voice_call_queue").update({ status, ...extra }).eq("id", job.id);
 
     const [{ data: order }, { data: conn }, { data: st }] = await Promise.all([
-      admin.from("orders").select("id,status,customer_name,phone,payment_method").eq("id", job.order_id).eq("store_id", job.store_id).maybeSingle(),
+      admin.from("orders").select("id,status,customer_name,phone,payment_method,invoice_no,subtotal,stores(name)").eq("id", job.order_id).eq("store_id", job.store_id).maybeSingle(),
       admin.from("voice_provider_connections").select("id,encrypted_token,status,default_caller_id,default_extension").eq("store_id", job.store_id).eq("provider", "epbx").maybeSingle(),
       admin.from("voice_automation_settings").select("*").eq("store_id", job.store_id).maybeSingle(),
     ]);
@@ -114,10 +132,18 @@ export async function drainVoiceQueue(admin: any, limit = 10) {
     if (!call) { await done("failed", { last_error: "call_insert_failed" }); failed++; continue; }
 
     const msgs = { ...DEFAULT_VOICE_MESSAGES, ...(st.messages ?? {}) } as Record<string, string>;
-    if (st.representative_transfer && conn.default_extension) msgs.agent_extension = conn.default_extension;
+    if (st.press2_action === "forward" && conn.default_extension) msgs.agent_extension = conn.default_extension;
+    const vars = {
+      customer_name: order.customer_name ?? "", store_name: (order as any).stores?.name ?? "",
+      amount: String(Math.round(Number(order.subtotal ?? 0))), order_id: order.invoice_no ?? "",
+    };
+    msgs.custom_text = fillTemplate(st.tts_template || DEFAULT_TTS_TEMPLATE, vars);
+    if (st.confirm_text) msgs.confirm_text = fillTemplate(st.confirm_text, vars);
+    if (st.cancel_text) msgs.cancel_text = fillTemplate(st.cancel_text, vars);
     try {
       const r = await getVoiceProvider("epbx").makeOrderVerificationCall(creds, {
-        to: phone, callerId: conn.default_caller_id ?? undefined, messages: msgs,
+        to: phone, callerId: conn.default_caller_id ?? undefined, messages: msgs, vars,
+        audio: { main: resolveAudioUrl(st.main_audio_url), confirm: resolveAudioUrl(st.confirm_audio_url), cancel: resolveAudioUrl(st.cancel_audio_url) },
         webhookUrl: signedWebhookUrl(platformOrigin(), call.id),
       });
       await admin.from("calls").update({ provider_call_sid: r.provider_call_id }).eq("id", call.id);
@@ -165,42 +191,89 @@ export async function handleEpbxWebhook(admin: any, callId: string, body: any) {
   if (ev.duration_sec != null) patch.duration_sec = ev.duration_sec;
   if (ev.recording_ref) patch.recording_ref = ev.recording_ref;
 
+  const { data: st } = await admin.from("voice_automation_settings")
+    .select("retry_count,retry_delay_minutes,press2_action,sms_on_confirm,retry_on_no_answer,retry_on_no_keypress")
+    .eq("store_id", call.store_id).maybeSingle();
+  const isAuto = call.call_type === "auto_verification";
+  const press2Forward = st?.press2_action === "forward";
+
   let orderStatus: "confirmed" | "cancelled" | null = null;
+  let verification: "verified" | "cancelled" | "needs_agent" | "unanswered" | null = null;
+  let retryable = false;
   let final = false;
   switch (ev.status) {
-    case "confirmed": patch.status = "completed"; patch.result = "order_confirmed"; orderStatus = "confirmed"; final = true; break;
-    case "cancelled": patch.status = "completed"; patch.result = "order_cancelled"; orderStatus = "cancelled"; final = true; break;
-    case "busy": patch.status = "busy"; final = true; break;
-    case "no_answer": case "no_response": patch.status = "no_answer"; final = true; break;
+    case "confirmed": patch.status = "completed"; patch.result = "order_confirmed"; orderStatus = "confirmed"; verification = "verified"; final = true; break;
+    case "cancelled":
+      patch.status = "completed"; final = true;
+      if (isAuto && press2Forward) { patch.result = "transferred"; verification = "needs_agent"; }
+      else { patch.result = "order_cancelled"; orderStatus = "cancelled"; verification = "cancelled"; }
+      break;
+    case "busy": patch.status = "busy"; final = true; verification = "unanswered"; retryable = st?.retry_on_no_answer !== false; break;
+    case "no_answer": patch.status = "no_answer"; final = true; verification = "unanswered"; retryable = st?.retry_on_no_answer !== false; break;
+    case "no_response": patch.status = "no_answer"; patch.result = "no_keypress"; final = true; verification = "unanswered"; retryable = st?.retry_on_no_keypress !== false; break;
     case "answered": patch.status = "answered"; patch.answered_at = call.answered_at ?? now; break;
     case "ringing": patch.status = "ringing"; break;
-    case "completed": case "hangup": case "ended": patch.status = "completed"; final = true; break;
-    case "failed": patch.status = "failed"; final = true; break;
+    case "completed": case "hangup": case "ended":
+      patch.status = "completed"; final = true;
+      if (isAuto && !ev.dtmf) { verification = "unanswered"; retryable = st?.retry_on_no_keypress !== false; }
+      break;
+    case "failed": patch.status = "failed"; final = true; verification = "unanswered"; retryable = st?.retry_on_no_answer !== false; break;
   }
   if (final) patch.ended_at = now;
   if (Object.keys(patch).length) await admin.from("calls").update(patch).eq("id", call.id);
 
-  if (orderStatus && call.order_id) {
+  if (call.order_id && isAuto && verification) {
+    // Only while the order is still pending — a manual decision always wins.
+    const upd: Record<string, unknown> = { voice_verification: verification };
+    if (orderStatus) upd.status = orderStatus;
+    const { data: changed } = await admin.from("orders").update(upd)
+      .eq("id", call.order_id).eq("store_id", call.store_id).eq("status", "pending").select("id,phone,invoice_no,customer_name");
+    const note =
+      verification === "verified" ? "কাস্টমার ফোনে ১ চেপে অর্ডার নিশ্চিত করেছেন (AI Verified)" :
+      verification === "cancelled" ? "কাস্টমার ফোনে ২ চেপে অর্ডার বাতিল করেছেন" :
+      verification === "needs_agent" ? "কাস্টমার ২ চেপেছেন — কল এজেন্টের কাছে পাঠানো হয়েছে (Needs agent)" :
+      `অটো কল: ${patch.status === "busy" ? "ব্যস্ত" : patch.result === "no_keypress" || patch.status === "completed" ? "কিছু চাপেননি" : "ফোন ধরেননি"}`;
+    if (changed?.length) {
+      await admin.from("order_timeline").insert({
+        order_id: call.order_id, store_id: call.store_id, stage: orderStatus ?? "placed", note,
+      }).then(() => null, () => null);
+      if (verification === "verified" && st?.sms_on_confirm) {
+        await sendConfirmSms(admin, call.store_id, changed[0]).catch(() => null);
+      }
+    }
+  } else if (orderStatus && call.order_id) {
     await admin.from("orders").update({ status: orderStatus })
       .eq("id", call.order_id).eq("store_id", call.store_id).eq("status", "pending");
-    await admin.from("order_timeline").insert({
-      order_id: call.order_id, store_id: call.store_id, stage: orderStatus,
-      note: orderStatus === "confirmed" ? "Customer pressed 1 on ePBX verification call" : "Customer pressed 2 on ePBX verification call",
-    }).then(() => null, () => null);
   }
 
-  if (final && call.call_type === "auto_verification" && call.order_id) {
+  if (final && isAuto && call.order_id) {
     const { data: job } = await admin.from("voice_call_queue").select("id,attempt,status")
       .eq("order_id", call.order_id).maybeSingle();
     if (job && job.status === "calling") {
-      if (orderStatus || patch.status === "completed") {
+      if (!retryable) {
         await admin.from("voice_call_queue").update({ status: "done" }).eq("id", job.id);
       } else {
-        const { data: st } = await admin.from("voice_automation_settings")
-          .select("retry_count,retry_delay_minutes").eq("store_id", call.store_id).maybeSingle();
-        await scheduleRetryOrFail(admin, job, st, String(patch.status), call.id);
+        await scheduleRetryOrFail(admin, job, st, String(patch.result ?? patch.status), call.id);
       }
     }
   }
   return { ok: true };
+}
+
+/** Optional confirmation SMS through the store's own SMS settings. Never throws. */
+async function sendConfirmSms(admin: any, storeId: string, order: any) {
+  try {
+    const { loadSettings, readSecret } = await import("@/lib/notify-settings.server");
+    const [{ data: row }, settings] = await Promise.all([
+      admin.from("stores").select("name").eq("id", storeId).maybeSingle(),
+      loadSettings(admin, storeId),
+    ]);
+    const sms: any = (settings as any)?.sms;
+    if (!sms?.enabled || !sms.sender_id || !order?.phone) return;
+    const apiKey = readSecret(sms.api_key_enc);
+    if (!apiKey) return;
+    const { sendSms } = await import("@/lib/notify/sms.server");
+    await sendSms({ apiKey, senderId: sms.sender_id, to: order.phone,
+      text: `${row?.name ?? ""}: আপনার অর্ডার ${order.invoice_no ?? ""} নিশ্চিত করা হয়েছে। ধন্যবাদ।` });
+  } catch { /* ignore */ }
 }
