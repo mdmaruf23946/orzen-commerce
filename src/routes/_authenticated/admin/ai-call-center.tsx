@@ -19,7 +19,7 @@ import { FeatureGate } from "@/components/admin/FeatureGate";
 import { CallCenterPage } from "@/components/admin/calls/ManualCallCenter";
 import { listCallRecordings } from "@/lib/call-center.functions";
 import {
-  ProviderOverviewCard, PhoneNumbersPanel, AgentsPanel, DialPad, ProviderCallLog, AutomatedOrderCalls, WebRtcPanel, NotAvailable,
+  ProviderOverviewCard, PhoneNumbersPanel, AgentsPanel, DialPad, ProviderCallLog, AutomatedOrderCalls, WebRtcPanel, NotAvailable, AccountHubCard, LowBalanceBanner,
 } from "@/components/admin/calls/EpbxPanels";
 import { VoiceProviderPanel, VoiceSettingsPanel, ProviderManagedNote, useVoiceConnection } from "@/components/admin/calls/VoicePanels";
 
@@ -468,6 +468,7 @@ function CallCenterHub() {
     <FeatureGate feature="call_center">
       <div className="space-y-4">
         <AdminPageHeader title="AI Call Center" description="Order confirmation calls, customer calls, history and your ePBX connection." />
+        {connected && <LowBalanceBanner />}
         <div className="flex gap-1.5 overflow-x-auto pb-1">
           {HUB_TABS.map((t) => (
             <button key={t.key} type="button" onClick={() => navigate({ search: { tab: t.key } })}
@@ -479,6 +480,7 @@ function CallCenterHub() {
 
         {tab === "overview" && (
           <div className="space-y-3">
+            {connected && <AccountHubCard />}
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <Stat icon={PhoneCall} label="Provider" value="ePBX" />
               <Stat icon={connected ? CheckCircle2 : XCircle} label="Status" value={connected ? "Connected" : "Not connected"} tone={connected ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"} />

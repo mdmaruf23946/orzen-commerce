@@ -126,7 +126,7 @@ export const saveVoiceDefaults = createServerFn({ method: "POST" })
       const { openToken, getVoiceProvider } = await import("@/lib/voice/service.server");
       const creds = (row as any)?.status === "connected" ? openToken((row as any).encrypted_token ?? null) : null;
       let allowed: string[] = [];
-      if (creds) { try { allowed = (await getVoiceProvider("epbx").listNumbers(creds)).map((n: any) => n.number); } catch { /* ignore */ } }
+      if (creds) { try { allowed = (await getVoiceProvider("epbx").getNumbers(creds)).map((n: any) => n.number); } catch { /* ignore */ } }
       if (!allowed.includes(data.default_caller_id)) throw new Error("This caller ID is not active on your ePBX account.");
     }
     const { error } = await supabaseAdmin.from("voice_provider_connections").update({
