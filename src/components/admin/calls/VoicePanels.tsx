@@ -156,6 +156,12 @@ export function VoiceSettingsPanel() {
         </div>
         <Toggle k="manual_calling_enabled" label="Enable manual calling" />
         <Toggle k="representative_transfer" label="Allow representative transfer" />
+        <div className="grid grid-cols-2 gap-3 pt-2 sm:w-1/2">
+          <div><Label className="text-xs">Call rate (৳ per minute)</Label>
+            <Input type="number" step="0.01" min={0} placeholder="e.g. 0.45" value={f.call_rate_per_min ?? ""}
+              onChange={(e) => set("call_rate_per_min", e.target.value === "" ? null : Math.min(100, Math.max(0, Number(e.target.value))))} /></div>
+        </div>
+        <p className="text-xs text-muted-foreground">Used only to estimate call cost on the Overview. ePBX does not send cost data.</p>
       </div>
 
       <CallScriptPanel f={f} set={set} />

@@ -193,6 +193,7 @@ const SettingsSchema = z.object({
   sms_on_confirm: z.boolean(),
   retry_on_no_answer: z.boolean(),
   retry_on_no_keypress: z.boolean(),
+  call_rate_per_min: z.number().min(0).max(100).nullable(),
 });
 export type VoiceSettings = z.infer<typeof SettingsSchema>;
 
@@ -224,6 +225,7 @@ export const getVoiceSettings = createServerFn({ method: "GET" })
       sms_on_confirm: d.sms_on_confirm ?? false,
       retry_on_no_answer: d.retry_on_no_answer ?? true,
       retry_on_no_keypress: d.retry_on_no_keypress ?? true,
+      call_rate_per_min: d.call_rate_per_min != null ? Number(d.call_rate_per_min) : null,
     } as VoiceSettings;
   });
 
