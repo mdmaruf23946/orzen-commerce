@@ -12,6 +12,7 @@ import {
   getVoiceConnection, testVoiceToken, connectVoiceProvider, retestVoiceProvider, disconnectVoiceProvider,
   getVoiceSettings, saveVoiceSettings, saveVoiceDefaults, type VoiceSettings,
 } from "@/lib/voice.functions";
+import { useProviderOverview } from "@/components/admin/calls/EpbxPanels";
 
 const fmt = (d?: string | null) => (d ? new Date(d).toLocaleString() : "—");
 
@@ -173,15 +174,30 @@ function VoiceDefaultsForm({ callerId, extension }: { callerId: string; extensio
   const [cid, setCid] = useState(callerId);
   const [ext, setExt] = useState(extension);
   const [busy, setBusy] = useState(false);
+  const ov: any = useProviderOverview().data;
+  const callerIds: string[] = ov?.caller_ids ?? [];
+  const savedExts: string[] = (ov?.saved_extensions ?? []).map((e: any) => e.extension);
   return (
     <div className="grid gap-2 rounded-xl border p-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
       <div className="space-y-1">
         <Label htmlFor="v-cid" className="text-xs">Default Caller ID</Label>
-        <Input id="v-cid" inputMode="tel" placeholder="e.g. 09612345678" value={cid} onChange={(e) => setCid(e.target.value.replace(/[^0-9+]/g, ""))} />
+        <select id="v-cid" className="h-9 w-full rounded-md border bg-background px-2 text-sm" value={cid} onChange={(e) => setCid(e.target.value)}>
+          <option value="">{callerIds.length ? "Not set" : "No approved caller ID from ePBX"}</option>
+          {[...new Set([...callerIds, ...(cid && !callerIds.includes(cid) ? [cid] : [])])].map((n) => (
+            <option key={n} value={n}>{n}{callerIds.includes(n) ? " · Active" : " · not active"}</option>
+          ))}
+        </select>
       </div>
       <div className="space-y-1">
         <Label htmlFor="v-ext" className="text-xs">Agent Extension</Label>
-        <Input id="v-ext" inputMode="numeric" placeholder="e.g. 101" value={ext} onChange={(e) => setExt(e.target.value.replace(/\D/g, ""))} />
+        {savedExts.length ? (
+          <select id="v-ext" className="h-9 w-full rounded-md border bg-background px-2 text-sm" value={ext} onChange={(e) => setExt(e.target.value)}>
+            <option value="">Not set</option>
+            {savedExts.map((x) => <option key={x} value={x}>{x}</option>)}
+          </select>
+        ) : (
+          <Input id="v-ext" inputMode="numeric" placeholder="e.g. 101" value={ext} onChange={(e) => setExt(e.target.value.replace(/\D/g, ""))} />
+        )}
       </div>
       <Button size="sm" disabled={busy} onClick={async () => {
         setBusy(true);
