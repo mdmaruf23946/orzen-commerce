@@ -62,6 +62,19 @@ export function Thumb({ url, alt, className = "" }: { url?: string | null; alt: 
   );
 }
 
+const VOICE_BADGE: Record<string, [string, string]> = {
+  verified: ["AI Verified", "bg-emerald-500/10 text-emerald-600 ring-emerald-500/30 dark:text-emerald-400"],
+  cancelled: ["Cancelled by call", "bg-destructive/10 text-destructive ring-destructive/30"],
+  needs_agent: ["Needs agent", "bg-amber-500/10 text-amber-600 ring-amber-500/30 dark:text-amber-400"],
+  unanswered: ["Unanswered", "bg-muted text-muted-foreground ring-border"],
+};
+
+export function VoiceBadge({ v }: { v?: string | null }) {
+  const b = v ? VOICE_BADGE[v] : null;
+  if (!b) return null;
+  return <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset ${b[1]}`}>{b[0]}</span>;
+}
+
 export function StatusBadge({ status }: { status: string }) {
   return (
     <span
@@ -209,6 +222,7 @@ export function OrderCard({ order, onView, onFraud, onStatus, selected, onSelect
           )}
           <PaymentBadge order={order} />
           <StatusBadge status={order.status} />
+          <VoiceBadge v={order.voice_verification} />
           <div className="flex flex-wrap justify-end gap-1">
             <CourierBadge order={order} />
             <ParcelBadge status={order.parcel?.status} />

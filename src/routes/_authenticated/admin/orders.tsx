@@ -185,6 +185,7 @@ function OrdersPage() {
   const [q, setQ] = useState("");
   const [payment, setPayment] = useState("all");
   const [courier, setCourier] = useState("all");
+  const [aiCall, setAiCall] = useState("all");
   const [range, setRange] = useState("all");
   const [subPlan, setSubPlan] = useState("all");
   const [subCustomer, setSubCustomer] = useState("all");
@@ -268,6 +269,7 @@ function OrdersPage() {
       if (payment === "cod" && o.payment_method !== "cod") return false;
       if (payment === "paid" && !(o.payment_method !== "cod" && o.payment_status === "paid")) return false;
       if (payment === "unpaid" && o.payment_status === "paid") return false;
+      if (aiCall !== "all" && o.voice_verification !== aiCall) return false;
       if (courier === "none" && o.courier_key) return false;
       if (courier !== "all" && courier !== "none" && o.courier_key !== courier) return false;
       if (type === "subscription") {
@@ -290,7 +292,7 @@ function OrdersPage() {
       : +new Date(b.created_at) - +new Date(a.created_at),
     );
     return out;
-  }, [rows, tab, typeTab, type, physicalView, q, payment, courier, range, sort, subPlan, subCustomer, renewFrom, renewTo]);
+  }, [rows, tab, typeTab, type, physicalView, q, payment, courier, aiCall, range, sort, subPlan, subCustomer, renewFrom, renewTo]);
 
   const selectableIds = useMemo(
     () => (physicalView ? filtered.filter(isPhysical).map((o) => o.id) : []),
@@ -465,6 +467,14 @@ function OrdersPage() {
               <Select value={courier} onChange={setCourier} options={[
                 ["all", "All couriers"], ["none", "Not sent"],
                 ...courierOptions.map((c) => [c, c.replace(/_/g, " ")] as [string, string]),
+              ]} />
+            </Field>
+            )}
+            {physicalView && (
+            <Field label="AI call">
+              <Select value={aiCall} onChange={setAiCall} options={[
+                ["all", "All"], ["verified", "AI Verified"], ["needs_agent", "Needs agent"],
+                ["unanswered", "Unanswered"], ["cancelled", "Cancelled by call"],
               ]} />
             </Field>
             )}
