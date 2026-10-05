@@ -273,3 +273,44 @@ export const getCallScriptContext = createServerFn({ method: "GET" })
       default_extension: (conn as any)?.default_extension ?? null,
     };
   });
+
+/** Sends a real ePBX verification call to the merchant's own phone with a sample order. No order is touched. */
+export const sendEpbxTestCall = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    phone: z.string().trim().regex(/^(\+?88)?01[3-9]\d{8}$/, "Enter a valid Bangladeshi mobile number"),
+    amount: z.number().int().min(1).max(1_000_000).default(100),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const storeId = await ownStore(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { openToken, getVoiceProvider, friendlyVoiceError, auditVoice } = await import("@/lib/voice/service.server");
+    const { signedWebhookUrl, platformOrigin, resolveAudioUrl } = await import("@/lib/voice/queue.server");
+    const { fillTemplate } = await import("@/lib/voice/types");
+    const [{ data: conn }, { data: st }, { data: store }] = await Promise.all([
+      supabaseAdmin.from("voice_provider_connections").select("encrypted_token,status,default_caller_id,default_extension").eq("store_id", storeId).eq("provider", "epbx").maybeSingle(),
+      (supabaseAdmin as any).from("voice_automation_settings").select("*").eq("store_id", storeId).maybeSingle(),
+      supabaseAdmin.from("stores").select("name").eq("id", storeId).maybeSingle(),
+    ]);
+    const creds = (conn as any)?.status === "connected" ? openToken((conn as any).encrypted_token ?? null) : null;
+    if (!creds) return { ok: false, message: "ePBX is not connected." };
+    const s: any = st ?? {};
+    const vars = { customer_name: "Test Customer", store_name: (store as any)?.name ?? "", amount: String(data.amount), order_id: "TEST-1001" };
+    const msgs: Record<string, string> = { ...DEFAULT_VOICE_MESSAGES, ...(s.messages ?? {}) };
+    msgs.custom_text = fillTemplate(s.tts_template || DEFAULT_TTS_TEMPLATE, vars);
+    if (s.confirm_text) msgs.confirm_text = fillTemplate(s.confirm_text, vars);
+    if (s.cancel_text) msgs.cancel_text = fillTemplate(s.cancel_text, vars);
+    try {
+      const r = await getVoiceProvider("epbx").makeOrderVerificationCall(creds, {
+        to: data.phone, callerId: (conn as any).default_caller_id ?? undefined, messages: msgs as any, vars,
+        audio: { main: resolveAudioUrl(s.main_audio_url), confirm: resolveAudioUrl(s.confirm_audio_url), cancel: resolveAudioUrl(s.cancel_audio_url) },
+        // Unknown id → webhook result is ignored, so a test call never changes any order.
+        webhookUrl: signedWebhookUrl(platformOrigin(), crypto.randomUUID()),
+      } as any);
+      await auditVoice(supabaseAdmin, storeId, context.userId, "test_call_sent", { ok: true });
+      return { ok: true, message: `Test call sent${r.provider_call_id ? ` (ID ${r.provider_call_id})` : ""}. Your phone should ring shortly.` };
+    } catch (e) {
+      await auditVoice(supabaseAdmin, storeId, context.userId, "test_call_sent", { ok: false });
+      return { ok: false, message: friendlyVoiceError(e) };
+    }
+  });
