@@ -5473,6 +5473,7 @@ export type Database = {
           txn_id: string | null
           updated_at: string
           utm: Json | null
+          voice_verification: string | null
         }
         Insert: {
           address: string
@@ -5522,6 +5523,7 @@ export type Database = {
           txn_id?: string | null
           updated_at?: string
           utm?: Json | null
+          voice_verification?: string | null
         }
         Update: {
           address?: string
@@ -5571,6 +5573,7 @@ export type Database = {
           txn_id?: string | null
           updated_at?: string
           utm?: Json | null
+          voice_verification?: string | null
         }
         Relationships: [
           {
@@ -10908,48 +10911,78 @@ export type Database = {
           auto_call_enabled: boolean
           business_hours_only: boolean
           call_immediately: boolean
+          cancel_audio_url: string | null
+          cancel_text: string | null
+          confirm_audio_url: string | null
+          confirm_text: string | null
           created_at: string
           delay_minutes: number
           hours_from: string
           hours_to: string
+          main_audio_url: string | null
           manual_calling_enabled: boolean
           messages: Json
+          press2_action: string
           representative_transfer: boolean
           retry_count: number
           retry_delay_minutes: number
+          retry_on_no_answer: boolean
+          retry_on_no_keypress: boolean
+          sms_on_confirm: boolean
           store_id: string
+          tts_template: string | null
           updated_at: string
         }
         Insert: {
           auto_call_enabled?: boolean
           business_hours_only?: boolean
           call_immediately?: boolean
+          cancel_audio_url?: string | null
+          cancel_text?: string | null
+          confirm_audio_url?: string | null
+          confirm_text?: string | null
           created_at?: string
           delay_minutes?: number
           hours_from?: string
           hours_to?: string
+          main_audio_url?: string | null
           manual_calling_enabled?: boolean
           messages?: Json
+          press2_action?: string
           representative_transfer?: boolean
           retry_count?: number
           retry_delay_minutes?: number
+          retry_on_no_answer?: boolean
+          retry_on_no_keypress?: boolean
+          sms_on_confirm?: boolean
           store_id: string
+          tts_template?: string | null
           updated_at?: string
         }
         Update: {
           auto_call_enabled?: boolean
           business_hours_only?: boolean
           call_immediately?: boolean
+          cancel_audio_url?: string | null
+          cancel_text?: string | null
+          confirm_audio_url?: string | null
+          confirm_text?: string | null
           created_at?: string
           delay_minutes?: number
           hours_from?: string
           hours_to?: string
+          main_audio_url?: string | null
           manual_calling_enabled?: boolean
           messages?: Json
+          press2_action?: string
           representative_transfer?: boolean
           retry_count?: number
           retry_delay_minutes?: number
+          retry_on_no_answer?: boolean
+          retry_on_no_keypress?: boolean
+          sms_on_confirm?: boolean
           store_id?: string
+          tts_template?: string | null
           updated_at?: string
         }
         Relationships: [
