@@ -499,7 +499,7 @@ function OrderCallsPanel({
   });
   return (
     <div className="space-y-2">
-      <CallButton phone={phone} customerName={customerName} orderId={orderId} />
+      <CallButton phone={phone} customerName={customerName} orderId={orderId} label="Call with ePBX" />
       <CallHistoryList calls={(data ?? []) as any} empty="No calls for this order yet" />
     </div>
   );

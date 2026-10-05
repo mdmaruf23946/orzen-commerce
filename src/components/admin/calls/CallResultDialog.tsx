@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { updateCallOutcome } from "@/lib/call-center.functions";
+import { getCall, updateCallOutcome } from "@/lib/call-center.functions";
+import { formatDuration } from "@/lib/call-center";
 import {
   CALL_RESULTS, RESULT_LABEL, STATUS_LABEL, type CallResult, type CallStatus,
 } from "@/lib/call-center";
@@ -31,6 +32,21 @@ export function CallResultDialog({
   const [seconds, setSeconds] = useState("");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const [applyToOrder, setApplyToOrder] = useState(true);
+  const [newAddress, setNewAddress] = useState("");
+  const [openedAt, setOpenedAt] = useState(0);
+  const fetchCall = useServerFn(getCall);
+  const live = useQuery({
+    queryKey: ["call-live", callId],
+    enabled: open && !!callId,
+    queryFn: () => fetchCall({ data: { callId: callId! } }),
+    refetchInterval: (q) => {
+      const st = (q.state.data as any)?.status;
+      if (Date.now() - openedAt > 180_000) return false;
+      return !st || ["calling", "ringing", "answered"].includes(st) ? 3000 : false;
+    },
+  });
+  const liveCall: any = live.data;
 
   useEffect(() => {
     if (open) {
@@ -39,6 +55,9 @@ export function CallResultDialog({
       setMinutes("");
       setSeconds("");
       setNote("");
+      setApplyToOrder(true);
+      setNewAddress("");
+      setOpenedAt(Date.now());
     }
   }, [open]);
 
@@ -54,6 +73,8 @@ export function CallResultDialog({
           ...(duration > 0 ? { duration_sec: duration } : {}),
           result,
           note: note.trim() || null,
+          apply_to_order: applyToOrder,
+          ...(result === "address_updated" && newAddress.trim().length >= 5 ? { new_address: newAddress.trim() } : {}),
         },
       });
       await Promise.all([
@@ -61,6 +82,8 @@ export function CallResultDialog({
         qc.invalidateQueries({ queryKey: ["call-center"] }),
         qc.invalidateQueries({ queryKey: ["order-calls"] }),
         qc.invalidateQueries({ queryKey: ["phone-calls"] }),
+        qc.invalidateQueries({ queryKey: ["voice"] }),
+        qc.invalidateQueries({ queryKey: ["admin"] }),
       ]);
       toast.success("Call saved");
       onOpenChange(false);
@@ -79,6 +102,12 @@ export function CallResultDialog({
         </DialogHeader>
 
         <div className="space-y-3">
+          {liveCall && (
+            <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-3 py-2 text-xs">
+              <span>Live status: <b>{STATUS_LABEL[liveCall.status as CallStatus] ?? liveCall.status}</b></span>
+              {liveCall.duration_sec > 0 && <span className="font-mono">{formatDuration(liveCall.duration_sec)}</span>}
+            </div>
+          )}
           {manualStatus && (
             <div>
               <div className="mb-1.5 text-xs font-medium text-muted-foreground">Call status</div>
@@ -112,6 +141,19 @@ export function CallResultDialog({
               ))}
             </div>
           </div>
+
+          {(result === "order_confirmed" || result === "order_cancelled") && (
+            <label className="flex items-center gap-2 text-xs">
+              <input type="checkbox" checked={applyToOrder} onChange={(e) => setApplyToOrder(e.target.checked)} />
+              Also mark the order as {result === "order_confirmed" ? "Confirmed" : "Cancelled"} (only if still pending)
+            </label>
+          )}
+          {result === "address_updated" && (
+            <div>
+              <div className="mb-1.5 text-xs font-medium text-muted-foreground">New delivery address</div>
+              <Input value={newAddress} onChange={(e) => setNewAddress(e.target.value)} maxLength={500} className="h-9" placeholder="House, road, area, district" />
+            </div>
+          )}
 
           <div>
             <div className="mb-1.5 text-xs font-medium text-muted-foreground">Duration (optional)</div>

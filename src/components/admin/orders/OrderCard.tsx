@@ -253,7 +253,7 @@ export function OrderCard({ order, onView, onFraud, onStatus, selected, onSelect
           customerName={order.customer_name}
           orderId={order.id}
           variant="outline"
-          label="Call"
+          label="Call with ePBX"
         />
         <a
           href={waLink(order.phone)}

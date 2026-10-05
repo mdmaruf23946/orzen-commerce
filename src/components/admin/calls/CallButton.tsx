@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getProviderOverview } from "@/lib/voice-provider.functions";
 import { Phone } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -32,6 +33,18 @@ export function CallButton({
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [resultFor, setResultFor] = useState<string | null>(null);
+  const [extension, setExtension] = useState("");
+  const overviewFn = useServerFn(getProviderOverview);
+  const ov = useQuery({
+    queryKey: ["voice", "overview"], queryFn: () => overviewFn(), enabled: confirm, staleTime: 30_000,
+  });
+  const o: any = ov.data;
+  const extOptions: string[] = Array.from(new Set([
+    ...(o?.default_extension ? [String(o.default_extension)] : []),
+    ...((o?.saved_extensions ?? []) as { extension: string }[]).map((x) => x.extension),
+  ]));
+  const chosenExt = extension || o?.default_extension || extOptions[0] || "";
+  const zeroBalance = o?.connected && o?.balance != null && Number(o.balance) <= 0;
 
   async function go() {
     if (!phone) return;
@@ -43,6 +56,7 @@ export function CallButton({
           customer_name: customerName ?? null,
           order_id: orderId ?? null,
           customer_id: customerId ?? null,
+          ...(chosenExt ? { extension: chosenExt } : {}),
         },
       });
       setConfirm(false);
@@ -56,6 +70,7 @@ export function CallButton({
         qc.invalidateQueries({ queryKey: ["call-center"] }),
         qc.invalidateQueries({ queryKey: ["order-calls"] }),
         qc.invalidateQueries({ queryKey: ["phone-calls"] }),
+        qc.invalidateQueries({ queryKey: ["voice"] }),
       ]);
       toast.success("ePBX call started");
       setResultFor(res.callId);
@@ -97,6 +112,26 @@ export function CallButton({
             <AlertDialogTitle className="text-base">Call {phone}?</AlertDialogTitle>
             {customerName && <AlertDialogDescription>{customerName}</AlertDialogDescription>}
           </AlertDialogHeader>
+          <div className="space-y-2 text-xs">
+            <p className="text-muted-foreground">Your phone/extension rings first. When you answer, ePBX calls the customer.</p>
+            {ov.isLoading ? <p className="text-muted-foreground">Checking ePBX…</p> : o && !o.connected ? (
+              <p className="text-destructive">ePBX is not connected.</p>
+            ) : (
+              <>
+                {extOptions.length ? (
+                  <label className="block">
+                    <span className="mb-1 block font-medium text-muted-foreground">Ring this extension first</span>
+                    <select className="h-9 w-full rounded-md border bg-background px-2 text-sm" value={chosenExt} onChange={(e) => setExtension(e.target.value)}>
+                      {extOptions.map((x) => <option key={x} value={x}>{x}{x === o?.default_extension ? " (default)" : ""}</option>)}
+                    </select>
+                  </label>
+                ) : (
+                  <p className="text-destructive">No agent extension saved. Add one in AI Call Center → Agents.</p>
+                )}
+                {zeroBalance && <p className="text-destructive">Your ePBX balance is ৳0 — the call will likely fail until you recharge.</p>}
+              </>
+            )}
+          </div>
           <AlertDialogFooter className="gap-2 sm:gap-2">
             <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
             <AlertDialogAction
@@ -104,7 +139,7 @@ export function CallButton({
                 e.preventDefault();
                 void go();
               }}
-              disabled={busy}
+              disabled={busy || (o && !o.connected)}
             >
               {busy ? "Starting…" : "Call Now"}
             </AlertDialogAction>

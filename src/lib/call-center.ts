@@ -11,6 +11,8 @@ export type CallStatus =
 
 export type CallResult =
   | "order_confirmed"
+  | "address_updated"
+  | "delivery_rescheduled"
   | "callback"
   | "unavailable"
   | "order_cancelled"
@@ -49,6 +51,8 @@ export const LIVE_STATUSES: CallStatus[] = ["calling", "ringing", "answered"];
 
 export const RESULT_LABEL: Record<CallResult, string> = {
   order_confirmed: "Order Confirmed",
+  address_updated: "Address Updated",
+  delivery_rescheduled: "Delivery Rescheduled",
   callback: "Wants Callback",
   unavailable: "Customer Unavailable",
   order_cancelled: "Order Cancelled",
