@@ -17,6 +17,7 @@ import {
 import { AI_RESULT_LABEL, AI_RESULT_TONE, AI_STATUS_LABEL, AI_STATUS_TONE, formatMinutes } from "@/lib/ai-call-center";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { CallCenterPage } from "@/components/admin/calls/ManualCallCenter";
+import { CallAnalyticsCards, CallLogTable } from "@/components/admin/calls/CallAnalytics";
 import { listCallRecordings } from "@/lib/call-center.functions";
 import {
   ProviderOverviewCard, PhoneNumbersPanel, AgentsPanel, DialPad, ProviderCallLog, AutomatedOrderCalls, WebRtcPanel, NotAvailable, AccountHubCard, LowBalanceBanner,
@@ -487,13 +488,15 @@ function CallCenterHub() {
               <Stat icon={Clock} label="Balance" value={c?.account_info?.balance != null ? `৳${c.account_info.balance}` : "—"} />
               <Stat icon={PhoneOutgoing} label="Default Caller ID" value={c?.default_caller_id || "—"} />
             </div>
+            <CallAnalyticsCards />
             {connected && <ProviderOverviewCard />}
             {connected && <AutomatedOrderCalls />}
           </div>
         )}
         {tab === "calls" && (
           <div className="space-y-4">
-            {connected && <div className="grid gap-4 lg:grid-cols-[320px_1fr]"><DialPad /><AutomatedOrderCalls /></div>}
+            {connected && <div className="grid gap-4 lg:grid-cols-[320px_1fr]"><DialPad /><CallLogTable /></div>}
+            {!connected && <CallLogTable />}
             <CallCenterPage />
             {connected && <ProviderCallLog />}
           </div>
