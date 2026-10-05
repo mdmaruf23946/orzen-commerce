@@ -190,6 +190,13 @@ export function DialPad() {
         </div>
         <p className="text-[11px] text-muted-foreground">Your extension rings first. When you answer, ePBX calls the customer and connects you.</p>
       </div>
+      <CallResultDialog
+        open={!!resultFor}
+        onOpenChange={(v) => !v && setResultFor(null)}
+        callId={resultFor}
+        manualStatus={true}
+        phone={num}
+      />
     </Card>
   );
 }
