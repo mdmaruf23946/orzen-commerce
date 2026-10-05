@@ -128,7 +128,9 @@ export const epbxProvider: VoiceProvider = {
   },
   async makeOrderVerificationCall(creds, o) {
     const m = o.messages;
-    const text = [m.greeting, m.confirm, m.cancel].filter(Boolean).join(" ");
+    const text = m.custom_text || [m.greeting, m.confirm, m.cancel].filter(Boolean).join(" ");
+    const v = o.vars ?? {};
+    const a = o.audio ?? {};
     const j = await call(creds, "/calls/verify", {
       method: "POST",
       body: {
@@ -138,6 +140,13 @@ export const epbxProvider: VoiceProvider = {
         ...(m.confirm_text ? { confirm_text: m.confirm_text } : {}),
         ...(m.cancel_text ? { cancel_text: m.cancel_text } : {}),
         ...(m.agent_extension ? { agent_extension: m.agent_extension } : {}),
+        ...(o.callerId ? { caller_id: o.callerId } : {}),
+        ...(v.customer_name ? { customer_name: v.customer_name } : {}),
+        ...(v.amount ? { amount: v.amount } : {}),
+        ...(v.store_name ? { store_name: v.store_name } : {}),
+        ...(a.main ? { custom_audio_url: a.main } : {}),
+        ...(a.confirm ? { confirm_audio_url: a.confirm } : {}),
+        ...(a.cancel ? { cancel_audio_url: a.cancel } : {}),
       },
     });
     return { provider_call_id: callIdOf(j) };
