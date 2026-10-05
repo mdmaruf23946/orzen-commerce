@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { CALL_SMS_PROVIDERS } from "@/lib/call-sms-providers";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -32,10 +33,10 @@ export const Route = createFileRoute("/_authenticated/admin/call-sms/epbx")({
   validateSearch: (s: Record<string, unknown>) => ({ tab: typeof s.tab === "string" ? s.tab : undefined }),
   head: () => ({
     meta: [
-      { title: "ePBX — Call & SMS Apps — ORZEN Merchant Panel" },
-      { name: "description", content: "Your ePBX calling connection: order confirmation calls, call history, recordings and agents." },
-      { property: "og:title", content: "ePBX — Call & SMS Apps — ORZEN Merchant Panel" },
-      { property: "og:description", content: "Your ePBX calling connection: order confirmation calls, call history, recordings and agents." },
+      { title: "ePBX — AI Call & SMS Integration — ORZEN Merchant Panel" },
+      { name: "description", content: "Your ePBX calling connection: order confirmation calls, call history, recordings & extensions." },
+      { property: "og:title", content: "ePBX — AI Call & SMS Integration — ORZEN Merchant Panel" },
+      { property: "og:description", content: "Your ePBX calling connection: order confirmation calls, call history, recordings & extensions." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
@@ -43,29 +44,23 @@ export const Route = createFileRoute("/_authenticated/admin/call-sms/epbx")({
   }),
 });
 
-const HUB_TABS = [
-  { key: "overview", label: "Overview" },
-  { key: "calls", label: "Calls & History" },
-  { key: "recordings", label: "Recordings" },
-  { key: "agents", label: "Agents" },
-  { key: "numbers", label: "Phone Numbers" },
-  { key: "provider", label: "Connection" },
-  { key: "settings", label: "Settings" },
-] as const;
+const HUB_TABS = CALL_SMS_PROVIDERS.find((p) => p.id === "epbx")!.sections;
+const LEGACY_TABS: Record<string, string> = { provider: "integration", agents: "extensions" };
 
 function CallCenterHub() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
-  const tab = (HUB_TABS.find((t) => t.key === search.tab)?.key ?? "overview") as (typeof HUB_TABS)[number]["key"];
+  const wanted = LEGACY_TABS[search.tab ?? ""] ?? search.tab;
+  const tab = HUB_TABS.find((t) => t.key === wanted)?.key ?? "overview";
   const conn = useVoiceConnection();
   const c: any = conn.data?.connection;
   const connected = c?.status === "connected";
-  const needProvider = <ProviderManagedNote text={connected ? "This is controlled by your connected provider and will appear here when ePBX makes it available." : "Connect a calling provider in the Provider tab to see this."} />;
+  const needProvider = <ProviderManagedNote text={connected ? "This is controlled by your connected provider and will appear here when ePBX makes it available." : "Connect ePBX in the Integration section to see this."} />;
 
   return (
     <FeatureGate feature="call_center">
       <div className="space-y-4">
-        <AdminPageHeader title="ePBX" description="Call & SMS Apps → ePBX: order confirmation calls, customer calls, history and your ePBX connection." />
+        <AdminPageHeader title="ePBX" description="AI Call & SMS Integration → ePBX: order confirmation calls, customer calls, history & your ePBX connection." />
         {connected && <LowBalanceBanner />}
         <div className="flex gap-1.5 overflow-x-auto pb-1">
           {HUB_TABS.map((t) => (
@@ -99,19 +94,20 @@ function CallCenterHub() {
           </div>
         )}
         {tab === "recordings" && (connected ? <div className="space-y-4"><RecordingsPanel /><ProviderCallLog recordingsOnly /></div> : needProvider)}
-        {tab === "agents" && (connected ? <AgentsPanel /> : needProvider)}
+        {tab === "extensions" && (connected ? <AgentsPanel /> : needProvider)}
         {tab === "numbers" && (connected ? <PhoneNumbersPanel /> : needProvider)}
-        {tab === "provider" && (
+        {tab === "integration" && (
           <div className="space-y-4">
             <VoiceProviderPanel />
             {connected && <EpbxTestCallCard />}
             <EpbxEndpointsCard />
             {connected && <ProviderOverviewCard />}
-            {connected && <NotAvailable title="IVR" text="IVR menus, DTMF routes and destinations are not available through the current ePBX API access. Order calls use ePBX's built-in verification IVR (1 = confirm, 2 = cancel)." />}
             {connected && <WebRtcPanel />}
           </div>
         )}
         {tab === "settings" && <VoiceSettingsPanel />}
+        {tab === "automation" && (connected ? <AutomatedOrderCalls /> : needProvider)}
+        {tab === "ivr" && <NotAvailable title="IVR" text="IVR menus, DTMF routes & destinations: Not available through the current ePBX API access. Order calls use ePBX's built-in verification IVR (1 = confirm, 2 = cancel)." />}
       </div>
     </FeatureGate>
   );

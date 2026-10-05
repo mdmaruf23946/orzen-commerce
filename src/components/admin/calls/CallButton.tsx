@@ -126,7 +126,7 @@ export function CallButton({
                     </select>
                   </label>
                 ) : (
-                  <p className="text-destructive">No agent extension saved. Add one in Call & SMS Apps → ePBX → Agents.</p>
+                  <p className="text-destructive">No agent extension saved. Add one in AI Call & SMS Integration → ePBX → Extensions.</p>
                 )}
                 {zeroBalance && <p className="text-destructive">Your ePBX balance is ৳0 — the call will likely fail until you recharge.</p>}
               </>
