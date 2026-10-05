@@ -4,7 +4,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getOwnedStoreId } from "@/lib/admin-order.server";
-import { DEFAULT_VOICE_MESSAGES } from "@/lib/voice/types";
+import { DEFAULT_VOICE_MESSAGES, DEFAULT_TTS_TEMPLATE } from "@/lib/voice/types";
 
 async function ownStore(ctx: any) {
   const id = await getOwnedStoreId(ctx.supabase, ctx.userId);
@@ -168,6 +168,11 @@ export const saveVoiceExtensions = createServerFn({ method: "POST" })
 
 /* ----------------------------- automation ----------------------------- */
 
+const AudioRef = z.string().trim().max(500).refine(
+  (v) => v === "" || /^https:\/\/\S+$/i.test(v) || /^storage:[0-9a-f-]{36}\/[\w-]+\.mp3$/i.test(v),
+  "Audio must be an https link or an uploaded MP3.",
+);
+
 const SettingsSchema = z.object({
   auto_call_enabled: z.boolean(),
   call_immediately: z.boolean(),
@@ -180,6 +185,14 @@ const SettingsSchema = z.object({
   manual_calling_enabled: z.boolean(),
   representative_transfer: z.boolean(),
   messages: z.record(z.string().max(40), z.string().max(500)),
+  tts_template: z.string().max(600),
+  confirm_text: z.string().max(300),
+  cancel_text: z.string().max(300),
+  main_audio_url: AudioRef, confirm_audio_url: AudioRef, cancel_audio_url: AudioRef,
+  press2_action: z.enum(["cancel", "forward"]),
+  sms_on_confirm: z.boolean(),
+  retry_on_no_answer: z.boolean(),
+  retry_on_no_keypress: z.boolean(),
 });
 export type VoiceSettings = z.infer<typeof SettingsSchema>;
 
@@ -201,6 +214,16 @@ export const getVoiceSettings = createServerFn({ method: "GET" })
       manual_calling_enabled: d.manual_calling_enabled ?? true,
       representative_transfer: d.representative_transfer ?? true,
       messages: { ...DEFAULT_VOICE_MESSAGES, ...(d.messages ?? {}) },
+      tts_template: d.tts_template ?? DEFAULT_TTS_TEMPLATE,
+      confirm_text: d.confirm_text ?? "আপনার অর্ডারটি নিশ্চিত করা হয়েছে, ধন্যবাদ।",
+      cancel_text: d.cancel_text ?? "আপনার অনুরোধ অনুযায়ী অর্ডারটি বাতিল করা হলো।",
+      main_audio_url: d.main_audio_url ?? "",
+      confirm_audio_url: d.confirm_audio_url ?? "",
+      cancel_audio_url: d.cancel_audio_url ?? "",
+      press2_action: d.press2_action === "forward" ? "forward" : "cancel",
+      sms_on_confirm: d.sms_on_confirm ?? false,
+      retry_on_no_answer: d.retry_on_no_answer ?? true,
+      retry_on_no_keypress: d.retry_on_no_keypress ?? true,
     } as VoiceSettings;
   });
 
@@ -209,11 +232,42 @@ export const saveVoiceSettings = createServerFn({ method: "POST" })
   .inputValidator((d) => SettingsSchema.parse(d))
   .handler(async ({ data, context }) => {
     const storeId = await ownStore(context);
+    for (const k of ["main_audio_url", "confirm_audio_url", "cancel_audio_url"] as const) {
+      const v = data[k];
+      if (v.startsWith("storage:") && !v.slice(8).startsWith(`${storeId}/`)) throw new Error("Invalid audio file.");
+    }
+    const row: any = { store_id: storeId, ...data };
+    for (const k of ["main_audio_url", "confirm_audio_url", "cancel_audio_url"]) row[k] = row[k] || null;
     const { error } = await context.supabase.from("voice_automation_settings")
-      .upsert({ store_id: storeId, ...data }, { onConflict: "store_id" });
+      .upsert(row, { onConflict: "store_id" });
     if (error) throw new Error("Could not save settings.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { auditVoice } = await import("@/lib/voice/service.server");
     await auditVoice(supabaseAdmin, storeId, context.userId, "automation_settings_changed");
     return { ok: true };
+  });
+
+/** Context for the Call Script editor: sample order for preview, SMS availability, default extension. */
+export const getCallScriptContext = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const storeId = await ownStore(context);
+    const [{ data: store }, { data: order }, { data: conn }] = await Promise.all([
+      context.supabase.from("stores").select("name,notifications").eq("id", storeId).maybeSingle(),
+      context.supabase.from("orders").select("customer_name,invoice_no,subtotal").eq("store_id", storeId)
+        .order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      context.supabase.from("voice_provider_connections").select("default_extension").eq("store_id", storeId).eq("provider", "epbx").maybeSingle(),
+    ]);
+    const sms: any = (store as any)?.notifications?.sms;
+    return {
+      storeId,
+      sample: {
+        customer_name: (order as any)?.customer_name ?? "রহিম",
+        store_name: (store as any)?.name ?? "আপনার স্টোর",
+        amount: String(Math.round(Number((order as any)?.subtotal ?? 1250))),
+        order_id: (order as any)?.invoice_no ?? "1001",
+      },
+      sms_ready: !!(sms?.enabled && sms?.sender_id),
+      default_extension: (conn as any)?.default_extension ?? null,
+    };
   });
