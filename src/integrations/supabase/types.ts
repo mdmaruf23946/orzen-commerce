@@ -10911,6 +10911,7 @@ export type Database = {
           auto_call_enabled: boolean
           business_hours_only: boolean
           call_immediately: boolean
+          call_rate_per_min: number | null
           cancel_audio_url: string | null
           cancel_text: string | null
           confirm_audio_url: string | null
@@ -10937,6 +10938,7 @@ export type Database = {
           auto_call_enabled?: boolean
           business_hours_only?: boolean
           call_immediately?: boolean
+          call_rate_per_min?: number | null
           cancel_audio_url?: string | null
           cancel_text?: string | null
           confirm_audio_url?: string | null
@@ -10963,6 +10965,7 @@ export type Database = {
           auto_call_enabled?: boolean
           business_hours_only?: boolean
           call_immediately?: boolean
+          call_rate_per_min?: number | null
           cancel_audio_url?: string | null
           cancel_text?: string | null
           confirm_audio_url?: string | null
