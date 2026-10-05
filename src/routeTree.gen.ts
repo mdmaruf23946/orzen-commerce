@@ -165,6 +165,7 @@ import { Route as AuthenticatedAdminAiSettingsRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminBillingIndexRouteImport } from './routes/_authenticated/admin/billing.index'
 import { Route as AuthenticatedAdminBillingReturnRouteImport } from './routes/_authenticated/admin/billing.return'
 import { Route as AuthenticatedAdminCallSmsAiVoiceAgentRouteImport } from './routes/_authenticated/admin/call-sms.ai-voice-agent'
+import { Route as AuthenticatedAdminCallSmsAppsRouteImport } from './routes/_authenticated/admin/call-sms.apps'
 import { Route as AuthenticatedAdminCallSmsEpbxRouteImport } from './routes/_authenticated/admin/call-sms.epbx'
 import { Route as AuthenticatedAdminFacebookIndexRouteImport } from './routes/_authenticated/admin/facebook.index'
 import { Route as AuthenticatedAdminFacebookCommentsRouteImport } from './routes/_authenticated/admin/facebook.comments'
@@ -1129,6 +1130,12 @@ const AuthenticatedAdminCallSmsAiVoiceAgentRoute =
     path: '/call-sms/ai-voice-agent',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminCallSmsAppsRoute =
+  AuthenticatedAdminCallSmsAppsRouteImport.update({
+    id: '/call-sms/apps',
+    path: '/call-sms/apps',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminCallSmsEpbxRoute =
   AuthenticatedAdminCallSmsEpbxRouteImport.update({
     id: '/call-sms/epbx',
@@ -1780,6 +1787,7 @@ export interface FileRoutesByFullPath {
   '/admin/ai/settings': typeof AuthenticatedAdminAiSettingsRoute
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/call-sms/ai-voice-agent': typeof AuthenticatedAdminCallSmsAiVoiceAgentRoute
+  '/admin/call-sms/apps': typeof AuthenticatedAdminCallSmsAppsRoute
   '/admin/call-sms/epbx': typeof AuthenticatedAdminCallSmsEpbxRoute
   '/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
   '/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
@@ -2013,6 +2021,7 @@ export interface FileRoutesByTo {
   '/admin/ai/settings': typeof AuthenticatedAdminAiSettingsRoute
   '/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/admin/call-sms/ai-voice-agent': typeof AuthenticatedAdminCallSmsAiVoiceAgentRoute
+  '/admin/call-sms/apps': typeof AuthenticatedAdminCallSmsAppsRoute
   '/admin/call-sms/epbx': typeof AuthenticatedAdminCallSmsEpbxRoute
   '/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
   '/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
@@ -2258,6 +2267,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/ai/settings': typeof AuthenticatedAdminAiSettingsRoute
   '/_authenticated/admin/billing/return': typeof AuthenticatedAdminBillingReturnRoute
   '/_authenticated/admin/call-sms/ai-voice-agent': typeof AuthenticatedAdminCallSmsAiVoiceAgentRoute
+  '/_authenticated/admin/call-sms/apps': typeof AuthenticatedAdminCallSmsAppsRoute
   '/_authenticated/admin/call-sms/epbx': typeof AuthenticatedAdminCallSmsEpbxRoute
   '/_authenticated/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
   '/_authenticated/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
@@ -2503,6 +2513,7 @@ export interface FileRouteTypes {
     | '/admin/ai/settings'
     | '/admin/billing/return'
     | '/admin/call-sms/ai-voice-agent'
+    | '/admin/call-sms/apps'
     | '/admin/call-sms/epbx'
     | '/admin/facebook/comments'
     | '/admin/facebook/compose'
@@ -2736,6 +2747,7 @@ export interface FileRouteTypes {
     | '/admin/ai/settings'
     | '/admin/billing/return'
     | '/admin/call-sms/ai-voice-agent'
+    | '/admin/call-sms/apps'
     | '/admin/call-sms/epbx'
     | '/admin/facebook/comments'
     | '/admin/facebook/compose'
@@ -2980,6 +2992,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/ai/settings'
     | '/_authenticated/admin/billing/return'
     | '/_authenticated/admin/call-sms/ai-voice-agent'
+    | '/_authenticated/admin/call-sms/apps'
     | '/_authenticated/admin/call-sms/epbx'
     | '/_authenticated/admin/facebook/comments'
     | '/_authenticated/admin/facebook/compose'
@@ -4232,6 +4245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCallSmsAiVoiceAgentRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/call-sms/apps': {
+      id: '/_authenticated/admin/call-sms/apps'
+      path: '/call-sms/apps'
+      fullPath: '/admin/call-sms/apps'
+      preLoaderRoute: typeof AuthenticatedAdminCallSmsAppsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/call-sms/epbx': {
       id: '/_authenticated/admin/call-sms/epbx'
       path: '/call-sms/epbx'
@@ -4968,6 +4988,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminAiLogsRoute: typeof AuthenticatedAdminAiLogsRoute
   AuthenticatedAdminAiSettingsRoute: typeof AuthenticatedAdminAiSettingsRoute
   AuthenticatedAdminCallSmsAiVoiceAgentRoute: typeof AuthenticatedAdminCallSmsAiVoiceAgentRoute
+  AuthenticatedAdminCallSmsAppsRoute: typeof AuthenticatedAdminCallSmsAppsRoute
   AuthenticatedAdminCallSmsEpbxRoute: typeof AuthenticatedAdminCallSmsEpbxRoute
   AuthenticatedAdminInvoiceOrderIdRoute: typeof AuthenticatedAdminInvoiceOrderIdRoute
   AuthenticatedAdminLandingBuilderIdRoute: typeof AuthenticatedAdminLandingBuilderIdRoute
@@ -5044,6 +5065,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminAiSettingsRoute: AuthenticatedAdminAiSettingsRoute,
     AuthenticatedAdminCallSmsAiVoiceAgentRoute:
       AuthenticatedAdminCallSmsAiVoiceAgentRoute,
+    AuthenticatedAdminCallSmsAppsRoute: AuthenticatedAdminCallSmsAppsRoute,
     AuthenticatedAdminCallSmsEpbxRoute: AuthenticatedAdminCallSmsEpbxRoute,
     AuthenticatedAdminInvoiceOrderIdRoute:
       AuthenticatedAdminInvoiceOrderIdRoute,

@@ -7,9 +7,9 @@ export const Route = createFileRoute("/_authenticated/admin/call-sms/ai-voice-ag
   component: Page,
   head: () => ({
     meta: [
-      { title: "AI Voice Agent — Call & SMS Apps — ORZEN" },
+      { title: "AI Voice Agent — AI Call & SMS Integration — ORZEN" },
       { name: "description", content: "Let an AI voice agent confirm orders by phone and answer customer calls." },
-      { property: "og:title", content: "AI Voice Agent — Call & SMS Apps — ORZEN" },
+      { property: "og:title", content: "AI Voice Agent — AI Call & SMS Integration — ORZEN" },
       { property: "og:description", content: "Let an AI voice agent confirm orders by phone and answer customer calls." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
