@@ -159,11 +159,18 @@ export async function drainVoiceQueue(admin: any, limit = 10) {
   return { placed, skipped, failed };
 }
 
+/** Next run time: now + delay, pushed into the business-hours window when enabled. */
+export function nextRetryAt(st: any, nowMs = Date.now()): Date {
+  let t = nowMs + (st?.retry_delay_minutes ?? 30) * 60000;
+  if (st?.business_hours_only) t += minutesUntilOpen(st.hours_from, st.hours_to, t) * 60000;
+  return new Date(t);
+}
+
 async function scheduleRetryOrFail(admin: any, job: any, st: any, err: string, callId: string | null) {
   if (job.attempt < (st?.retry_count ?? 0)) {
     await admin.from("voice_call_queue").update({
       status: "queued", attempt: job.attempt + 1, call_id: callId, last_error: err,
-      run_at: new Date(Date.now() + (st.retry_delay_minutes ?? 30) * 60000).toISOString(),
+      run_at: nextRetryAt(st).toISOString(),
     }).eq("id", job.id);
   } else {
     await admin.from("voice_call_queue").update({ status: "failed", call_id: callId, last_error: err }).eq("id", job.id);
