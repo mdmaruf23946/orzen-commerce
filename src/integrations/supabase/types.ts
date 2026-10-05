@@ -11037,6 +11037,7 @@ export type Database = {
         Row: {
           attempt: number
           call_id: string | null
+          cancel_reason: string | null
           created_at: string
           id: string
           last_error: string | null
@@ -11049,6 +11050,7 @@ export type Database = {
         Insert: {
           attempt?: number
           call_id?: string | null
+          cancel_reason?: string | null
           created_at?: string
           id?: string
           last_error?: string | null
@@ -11061,6 +11063,7 @@ export type Database = {
         Update: {
           attempt?: number
           call_id?: string | null
+          cancel_reason?: string | null
           created_at?: string
           id?: string
           last_error?: string | null
