@@ -10,9 +10,9 @@ export const Route = createFileRoute("/_authenticated/admin/call-sms/apps")({
   component: AppsHub,
   head: () => ({
     meta: [
-      { title: "AI & SMS Apps — ORZEN Merchant Panel" },
+      { title: "Call & SMS Apps — ORZEN Merchant Panel" },
       { name: "description", content: "Connect & manage your Call & SMS providers." },
-      { property: "og:title", content: "AI & SMS Apps — ORZEN Merchant Panel" },
+      { property: "og:title", content: "Call & SMS Apps — ORZEN Merchant Panel" },
       { property: "og:description", content: "Connect & manage your Call & SMS providers." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -26,7 +26,7 @@ function AppsHub() {
   return (
     <FeatureGate feature="call_center">
       <div className="space-y-4">
-        <AdminPageHeader title="AI & SMS Apps" description="Connect a Call or SMS provider. Once connected, it gets its own menu in the sidebar." />
+        <AdminPageHeader title="Call & SMS Apps" description="Connect a Call or SMS provider. Once connected, it gets its own menu in the sidebar." />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {CALL_SMS_PROVIDERS.map((p) => {
             const on = !!connected[p.id];

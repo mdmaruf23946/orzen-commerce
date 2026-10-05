@@ -1,6 +1,6 @@
 // Registry of Call & SMS providers. A provider gets its own sidebar menu ONLY
 // while it is connected for the store; otherwise it shows only on the
-// "AI & SMS Apps" hub with a Connect button. Provider features never mix.
+// "Call & SMS Apps" hub with a Connect button. Provider features never mix.
 // SMS = standard mobile-number SMS only (not Messenger/WhatsApp/chat).
 export type CallSmsProviderSection = { key: string; label: string };
 
