@@ -83,8 +83,7 @@ export function CallResultDialog({
         qc.invalidateQueries({ queryKey: ["order-calls"] }),
         qc.invalidateQueries({ queryKey: ["phone-calls"] }),
         qc.invalidateQueries({ queryKey: ["voice"] }),
-        qc.invalidateQueries({ queryKey: ["admin-orders"] }),
-        qc.invalidateQueries({ queryKey: ["orders"] }),
+        qc.invalidateQueries({ queryKey: ["admin"] }),
       ]);
       toast.success("Call saved");
       onOpenChange(false);
