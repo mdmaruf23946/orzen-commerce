@@ -8,7 +8,7 @@ import { Delete, Phone, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Trash2,
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  getProviderOverview, listProviderCallLog, listProviderExtensions, listAutomatedOrderCalls,
+  getProviderOverview, listProviderCallLog, listProviderExtensions, listAutomatedOrderCalls, cancelQueuedCall,
 } from "@/lib/voice-provider.functions";
 import { startCall } from "@/lib/call-center.functions";
 import { saveVoiceExtensions } from "@/lib/voice.functions";
