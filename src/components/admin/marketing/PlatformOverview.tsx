@@ -100,7 +100,7 @@ export function PlatformOverview({ platform, platformName }: { platform: Platfor
           <Table title="Campaigns" note="From campaign tags in your ad links. Ad spend is not available from current tracking data."
             head={["Campaign", "Visitors", "Orders", "Revenue"]}
             rows={data.campaigns.map((c) => [c.name, num(c.visitors), num(c.orders), compactMoney(c.revenue)])} />
-          <Table title="Landing pages" note="Where {short} visitors first arrived and how they behaved.".replace("{short}", short)
+          <Table title="Landing pages" note={`Where ${short} visitors first arrived and how they behaved.`}
             head={["Page", "Sessions", "Bounce", "Orders"]}
             rows={data.landingPages.map((l) => [l.path, num(l.sessions), pct(l.bounceRate), num(l.orders)])} />
         </>
