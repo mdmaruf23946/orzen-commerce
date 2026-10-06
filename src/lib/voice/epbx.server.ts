@@ -1,7 +1,8 @@
 // ePBX adapter — https://epbx.bd/docs/api (REST v1, Bearer token, 120 req/min).
 import { VoiceProviderError, type VoiceCdrRow, type VoiceCreds, type VoiceProvider } from "./types";
 
-const BASE = "https://epbx.bd/api/v1";
+export const EPBX_DEFAULT_BASE = "https://epbx.bd/api/v1";
+const baseOf = (c?: VoiceCreds) => (c?.base_url || EPBX_DEFAULT_BASE).replace(/\/+$/, "");
 
 function normPhone(p: string): string {
   let d = (p || "").replace(/\D/g, "");
@@ -14,7 +15,7 @@ function normPhone(p: string): string {
 async function call(creds: VoiceCreds, path: string, init: { method?: string; body?: unknown } = {}) {
   let res: Response;
   try {
-    res = await fetch(BASE + path, {
+    res = await fetch(baseOf(creds) + path, {
       method: init.method ?? "GET",
       headers: {
         Authorization: `Bearer ${creds.api_token}`,
@@ -95,8 +96,8 @@ export const epbxProvider: VoiceProvider = {
     const p = j.pagination ?? {};
     return { rows, page: Number(p.current_page ?? f.page), last_page: Number(p.last_page ?? 1), total: Number(p.total ?? rows.length) };
   },
-  recordingUrl(id) {
-    return `${BASE}/calls/recordings/${encodeURIComponent(id)}`;
+  recordingUrl(id, creds) {
+    return `${baseOf(creds)}/calls/recordings/${encodeURIComponent(id)}`;
   },
   async testConnection(creds) {
     const j = await call(creds, "/balance/global");

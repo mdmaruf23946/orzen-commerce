@@ -25,12 +25,23 @@ export const getVoiceConnection = createServerFn({ method: "GET" })
     return { connection: data ?? null, provider_ready: ready };
   });
 
-const TokenSchema = z.object({ api_token: z.string().trim().min(8).max(500) });
+// Each ePBX tenant may use its own (sub)domain, so the API base URL is per store.
+const BaseUrlSchema = z.string().trim().max(300).optional().transform((v, ctx) => {
+  if (!v) return undefined;
+  let u: URL;
+  try { u = new URL(v); } catch { ctx.addIssue({ code: "custom", message: "API Base URL is not a valid link." }); return z.NEVER; }
+  const h = u.hostname.toLowerCase();
+  if (u.protocol !== "https:" || u.username || u.password || h === "localhost" || /^[\d.]+$/.test(h) || h.includes(":") || !h.includes(".") || /\.(local|internal)$/.test(h)) {
+    ctx.addIssue({ code: "custom", message: "API Base URL must be a public https:// address." }); return z.NEVER;
+  }
+  return (u.origin + u.pathname).replace(/\/+$/, "");
+});
+const TokenSchema = z.object({ api_token: z.string().trim().min(8).max(500), base_url: BaseUrlSchema });
 
-async function runTest(token: string) {
+async function runTest(token: string, baseUrl?: string) {
   const { getVoiceProvider, friendlyVoiceError } = await import("@/lib/voice/service.server");
   try {
-    const account = await getVoiceProvider("epbx").testConnection({ api_token: token });
+    const account = await getVoiceProvider("epbx").testConnection({ api_token: token, base_url: baseUrl });
     return { ok: true as const, account };
   } catch (e) {
     return { ok: false as const, message: friendlyVoiceError(e) };
@@ -42,7 +53,7 @@ export const testVoiceToken = createServerFn({ method: "POST" })
   .inputValidator((d) => TokenSchema.parse(d))
   .handler(async ({ data, context }) => {
     const storeId = await ownStore(context);
-    const r = await runTest(data.api_token);
+    const r = await runTest(data.api_token, data.base_url);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { auditVoice } = await import("@/lib/voice/service.server");
     await auditVoice(supabaseAdmin, storeId, context.userId, "provider_tested", { ok: r.ok });
@@ -54,11 +65,11 @@ export const connectVoiceProvider = createServerFn({ method: "POST" })
   .inputValidator((d) => TokenSchema.parse(d))
   .handler(async ({ data, context }) => {
     const storeId = await ownStore(context);
-    const r = await runTest(data.api_token);
+    const r = await runTest(data.api_token, data.base_url);
     if (!r.ok) return { ok: false, message: r.message };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { sealToken, newWebhookSecret, auditVoice } = await import("@/lib/voice/service.server");
-    const sealed = sealToken(data.api_token);
+    const sealed = sealToken(data.api_token, data.base_url);
     const hook = newWebhookSecret();
     const { data: prev } = await supabaseAdmin.from("voice_provider_connections")
       .select("account_info").eq("store_id", storeId).eq("provider", "epbx").maybeSingle();
@@ -66,7 +77,7 @@ export const connectVoiceProvider = createServerFn({ method: "POST" })
     const now = new Date().toISOString();
     const { error } = await supabaseAdmin.from("voice_provider_connections").upsert({
       store_id: storeId, provider: "epbx", encrypted_token: sealed.enc, token_preview: sealed.preview,
-      status: "connected", account_id: r.account.account_id ?? null, account_info: { ...(r.account as any), ...(keep ? { saved_extensions: keep } : {}) },
+      status: "connected", account_id: r.account.account_id ?? null, account_info: { ...(r.account as any), base_url: data.base_url ?? null, ...(keep ? { saved_extensions: keep } : {}) },
       webhook_secret_hash: hook.hash, last_error: null, connected_at: now, last_tested_at: now,
     }, { onConflict: "store_id,provider" });
     if (error) throw new Error("Could not save the connection. Please try again.");
@@ -84,7 +95,7 @@ export const retestVoiceProvider = createServerFn({ method: "POST" })
       .select("encrypted_token").eq("store_id", storeId).eq("provider", "epbx").maybeSingle();
     const creds = openToken((row as any)?.encrypted_token ?? null);
     if (!creds) return { ok: false, message: "ePBX is not connected." };
-    const r = await runTest(creds.api_token);
+    const r = await runTest(creds.api_token, creds.base_url);
     const { data: prev } = await supabaseAdmin.from("voice_provider_connections")
       .select("account_info").eq("store_id", storeId).eq("provider", "epbx").maybeSingle();
     await supabaseAdmin.from("voice_provider_connections").update({
@@ -95,6 +106,29 @@ export const retestVoiceProvider = createServerFn({ method: "POST" })
     }).eq("store_id", storeId).eq("provider", "epbx");
     await auditVoice(supabaseAdmin, storeId, context.userId, "provider_tested", { ok: r.ok });
     return r.ok ? { ok: true, message: "Connection successful" } : { ok: false, message: r.message };
+  });
+
+export const updateVoiceBaseUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ base_url: BaseUrlSchema }).parse(d))
+  .handler(async ({ data, context }) => {
+    const storeId = await ownStore(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { openToken, sealToken, auditVoice } = await import("@/lib/voice/service.server");
+    const { data: row } = await supabaseAdmin.from("voice_provider_connections")
+      .select("encrypted_token,account_info").eq("store_id", storeId).eq("provider", "epbx").maybeSingle();
+    const creds = openToken((row as any)?.encrypted_token ?? null);
+    if (!creds) return { ok: false, message: "ePBX is not connected." };
+    const r = await runTest(creds.api_token, data.base_url);
+    if (!r.ok) return { ok: false, message: r.message };
+    const sealed = sealToken(creds.api_token, data.base_url);
+    const { error } = await supabaseAdmin.from("voice_provider_connections").update({
+      encrypted_token: sealed.enc, status: "connected", last_error: null, last_tested_at: new Date().toISOString(),
+      account_info: { ...((row as any)?.account_info ?? {}), ...(r.account as any), base_url: data.base_url ?? null },
+    }).eq("store_id", storeId).eq("provider", "epbx");
+    if (error) throw new Error("Could not save the API Base URL. Please try again.");
+    await auditVoice(supabaseAdmin, storeId, context.userId, "provider_base_url_updated", {});
+    return { ok: true, message: "API Base URL saved" };
   });
 
 export const disconnectVoiceProvider = createServerFn({ method: "POST" })

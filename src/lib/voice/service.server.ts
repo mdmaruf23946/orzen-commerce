@@ -12,8 +12,8 @@ export function getVoiceProvider(id: string): VoiceProvider {
   return p;
 }
 
-export function sealToken(token: string) {
-  return { enc: encryptJSON({ api_token: token } satisfies VoiceCreds), preview: `••••${token.slice(-4)}` };
+export function sealToken(token: string, baseUrl?: string) {
+  return { enc: encryptJSON({ api_token: token, ...(baseUrl ? { base_url: baseUrl } : {}) } satisfies VoiceCreds), preview: `••••${token.slice(-4)}` };
 }
 
 export function openToken(enc: string | null): VoiceCreds | null {

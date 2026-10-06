@@ -3,7 +3,7 @@
 
 export type VoiceProviderId = "epbx";
 
-export type VoiceCreds = { api_token: string };
+export type VoiceCreds = { api_token: string; base_url?: string };
 
 export type VoiceAccount = {
   account_id?: string;
@@ -58,7 +58,7 @@ export interface VoiceProvider {
   getOverview(creds: VoiceCreds): Promise<VoiceOverview>;
   getCallHistory(creds: VoiceCreds, f: VoiceCdrFilter): Promise<{ rows: VoiceCdrRow[]; page: number; last_page: number; total: number }>;
   /** Provider URL for a recording, fetched only server-side with the store's token. */
-  recordingUrl(providerCallId: string): string;
+  recordingUrl(providerCallId: string, creds?: VoiceCreds): string;
   parseWebhook(body: any): { event_id: string; provider_call_id: string; status?: string; dtmf?: string; duration_sec?: number; recording_ref?: string } | null;
 }
 
