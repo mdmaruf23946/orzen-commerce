@@ -46,5 +46,22 @@ export function useMarketingForm<T extends Record<string, any>>(
     }
   }
 
-  return { form, set, saving, submit };
+  async function submitPatch(patch: Partial<T>, onDone?: () => void) {
+    if (!form) return;
+    const next = { ...form, ...patch };
+    setForm(next);
+    setSaving(true);
+    try {
+      await save({ data: next });
+      await qc.invalidateQueries({ queryKey: ["admin", "store"] });
+      toast.success("Saved");
+      onDone?.();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return { form, set, saving, submit, submitPatch };
 }

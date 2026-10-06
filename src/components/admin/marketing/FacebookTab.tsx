@@ -2,17 +2,17 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { FlaskConical, Save } from "lucide-react";
+import { FlaskConical, Save, Unplug } from "lucide-react";
 import { getFacebookStatus, sendFbTestEvent } from "@/lib/admin.functions";
 import { updateMarketingFacebook } from "@/lib/marketing.functions";
 import { facebookDefaults } from "@/lib/marketing.schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, Row, StatusBadge, TestResult, AUTO_EVENTS, type StatusKind } from "./ui";
+import { Card, Row, StatusBadge, TestResult, type StatusKind } from "./ui";
 import { useMarketingForm } from "./useMarketingForm";
 
 export function FacebookTab() {
-  const { form, set, saving, submit } = useMarketingForm(null, facebookDefaults, updateMarketingFacebook);
+  const { form, set, saving, submit, submitPatch } = useMarketingForm(null, facebookDefaults, updateMarketingFacebook);
   const qc = useQueryClient();
   const getStatus = useServerFn(getFacebookStatus);
   const sendTest = useServerFn(sendFbTestEvent);
@@ -101,11 +101,6 @@ export function FacebookTab() {
 
         <TestResult result={result} />
 
-        <div className="rounded-md border bg-muted/40 p-2.5 text-[11px] leading-relaxed text-muted-foreground">
-          <div className="font-medium text-foreground">Auto-tracked events</div>
-          {AUTO_EVENTS}. Each event fires on the browser and on the server with a shared{" "}
-          <code>event_id</code> so Meta deduplicates.
-        </div>
       </Card>
 
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -123,6 +118,11 @@ export function FacebookTab() {
           <FlaskConical className="mr-1.5 h-4 w-4" />
           {testing ? "Sending…" : "Test Event"}
         </Button>
+        {!!status?.pixel_id && (
+          <Button type="button" variant="outline" onClick={() => submitPatch({ fb_pixel_enabled: false, fb_capi_enabled: false })} disabled={saving} className="w-full sm:w-auto">
+            <Unplug className="mr-1.5 h-4 w-4" /> Disconnect
+          </Button>
+        )}
       </div>
     </div>
   );

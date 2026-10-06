@@ -34,6 +34,13 @@
 - [x] Verify, deploy
 - [ ] Live Meta check (needs Pixel ID + CAPI token from user)
 
+## Marketing platform workspaces (2026-10-06)
+- [x] Consolidate Facebook, Google and TikTok technical controls into Integration only
+- [x] Add honest store performance Overview with period comparison
+- [x] Keep landing-page tracking platform-isolated and remove duplicated Main Store setup
+- [x] Reduce connected platform menus to Overview and Integration
+- [x] Verify preview build and authenticated navigation; full content preview is blocked by the test account's expired plan
+
 ## Merchant Auto Connect visibility (2026-09-30)
 - [x] Hide Auto Connect from Merchant Panel Messenger and WhatsApp pages
 - [x] Verify both pages still show Manual Connect and deploy to orzen.top

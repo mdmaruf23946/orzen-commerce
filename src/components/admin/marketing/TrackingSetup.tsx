@@ -31,7 +31,7 @@ export function TrackingSetup({ platform }: { platform: TrackingPlatform }) {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["admin", "tracking-setups"], queryFn: () => fetchSetups() });
 
-  const [target, setTarget] = useState("main");
+  const [target, setTarget] = useState("");
   const [form, setForm] = useState<Form>({ ...(trackingDefaults as any)[platform] });
   const [saving, setSaving] = useState(false);
 
@@ -45,9 +45,9 @@ export function TrackingSetup({ platform }: { platform: TrackingPlatform }) {
     setForm({ ...(trackingDefaults as any)[platform], ...(saved ?? {}) });
   }, [saved, platform, target]);
 
-  // If the selected landing page disappears, fall back to Main Store.
+  // Keep the selection on a real landing page; Main Store uses the primary integration above.
   useEffect(() => {
-    if (target !== "main" && data && !pages.some((p: any) => p.id === target)) setTarget("main");
+    if (data && !pages.some((p: any) => p.id === target)) setTarget(pages[0]?.id ?? "");
   }, [data, pages, target]);
 
   function set(k: string, v: any) {
@@ -73,7 +73,7 @@ export function TrackingSetup({ platform }: { platform: TrackingPlatform }) {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (hasError) return;
+    if (hasError || !target) return;
     setSaving(true);
     try {
       const config: Record<string, any> = { active: !!form.active };
@@ -98,13 +98,21 @@ export function TrackingSetup({ platform }: { platform: TrackingPlatform }) {
     }
   }
 
+  if (data && pages.length === 0) {
+    return (
+      <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+        No landing pages are available. Main Store uses the connection settings above.
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={submit} className="space-y-4 rounded-xl border bg-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold">Tracking Setup</h2>
+          <h2 className="text-sm font-semibold">Landing Page Tracking</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            One setup per platform for your store and for each landing page.
+            Optional, isolated tracking for each landing page. Main Store uses the connection settings above.
           </p>
         </div>
         <StatusBadge kind={status as any} label={statusLabel} />
@@ -114,10 +122,9 @@ export function TrackingSetup({ platform }: { platform: TrackingPlatform }) {
         <Label className="text-sm">Target</Label>
         <Select value={target} onValueChange={setTarget}>
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Main Store" />
+            <SelectValue placeholder="Select a landing page" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="main">Main Store</SelectItem>
             {pages.map((p: any) => (
               <SelectItem key={p.id} value={p.id}>
                 {p.title || p.slug}
@@ -173,7 +180,7 @@ export function TrackingSetup({ platform }: { platform: TrackingPlatform }) {
         <Switch checked={!!form.active} onCheckedChange={(v) => set("active", v)} />
       </div>
 
-      <Button type="submit" disabled={saving || hasError} className="w-full sm:w-auto">
+      <Button type="submit" disabled={saving || hasError || !target} className="w-full sm:w-auto">
         {saving ? "Saving…" : "Save Tracking Setup"}
       </Button>
     </form>

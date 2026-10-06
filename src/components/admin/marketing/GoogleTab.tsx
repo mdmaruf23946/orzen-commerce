@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { FlaskConical, Save, ShieldCheck } from "lucide-react";
+import { FlaskConical, Save, ShieldCheck, Unplug } from "lucide-react";
 import {
   updateMarketingGoogle,
   getGoogleStatus,
@@ -13,11 +13,11 @@ import {
 import { googleDefaults, GA4_ID_RE, ADS_ID_RE, GTM_ID_RE } from "@/lib/marketing.schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, Row, StatusBadge, TestResult, AUTO_EVENTS, type StatusKind } from "./ui";
+import { Card, Row, StatusBadge, TestResult, type StatusKind } from "./ui";
 import { useMarketingForm } from "./useMarketingForm";
 
 export function GoogleTab() {
-  const { form, set, saving, submit } = useMarketingForm("google", googleDefaults, updateMarketingGoogle);
+  const { form, set, saving, submit, submitPatch } = useMarketingForm("google", googleDefaults, updateMarketingGoogle);
   const qc = useQueryClient();
   const getStatus = useServerFn(getGoogleStatus);
   const ga4Test = useServerFn(sendGa4TestEvent);
@@ -88,10 +88,6 @@ export function GoogleTab() {
           {busy === "ga4" ? "Sending…" : "Send Test Event"}
         </Button>
         <TestResult result={res.ga4 ?? null} />
-        <div className="rounded-md border bg-muted/40 p-2.5 text-[11px] leading-relaxed text-muted-foreground">
-          <span className="font-medium text-foreground">Automatic e-commerce events: </span>
-          {AUTO_EVENTS} — mapped to GA4 names (view_item, add_to_cart, begin_checkout, purchase…).
-        </div>
       </Card>
 
       <Card
@@ -139,6 +135,11 @@ export function GoogleTab() {
         <Save className="mr-1.5 h-4 w-4" />
         {saving ? "Saving…" : "Save Changes"}
       </Button>
+      {(status?.ga4.configured || status?.ads.configured || status?.gtm.configured) && (
+        <Button type="button" variant="outline" onClick={() => submitPatch({ ga4_enabled: false, ads_enabled: false, gtm_enabled: false })} disabled={saving} className="w-full sm:w-auto">
+          <Unplug className="mr-1.5 h-4 w-4" /> Disconnect
+        </Button>
+      )}
     </div>
   );
 }

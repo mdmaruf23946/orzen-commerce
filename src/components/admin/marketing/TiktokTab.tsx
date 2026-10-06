@@ -2,16 +2,16 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { FlaskConical, Save } from "lucide-react";
+import { FlaskConical, Save, Unplug } from "lucide-react";
 import { updateMarketingTiktok, getTiktokStatus, sendTiktokTestEvent } from "@/lib/marketing.functions";
 import { tiktokDefaults, TT_PIXEL_RE } from "@/lib/marketing.schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, Row, StatusBadge, TestResult, AUTO_EVENTS, type StatusKind } from "./ui";
+import { Card, Row, StatusBadge, TestResult, type StatusKind } from "./ui";
 import { useMarketingForm } from "./useMarketingForm";
 
 export function TiktokTab() {
-  const { form, set, saving, submit } = useMarketingForm("tiktok", tiktokDefaults, updateMarketingTiktok);
+  const { form, set, saving, submit, submitPatch } = useMarketingForm("tiktok", tiktokDefaults, updateMarketingTiktok);
   const qc = useQueryClient();
   const getStatus = useServerFn(getTiktokStatus);
   const sendTest = useServerFn(sendTiktokTestEvent);
@@ -79,16 +79,16 @@ export function TiktokTab() {
         <Row label="External ID matching" checked={form.match_external_id !== false} onCheckedChange={(v) => set("match_external_id", v)} />
       </Card>
 
-      <div className="rounded-md border bg-muted/40 p-2.5 text-[11px] leading-relaxed text-muted-foreground">
-        <div className="font-medium text-foreground">Auto-tracked events &amp; deduplication</div>
-        {AUTO_EVENTS}. Browser and server events share one <code>event_id</code>, so TikTok removes duplicates automatically.
-      </div>
-
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button onClick={() => submit()} disabled={saving} className="w-full sm:w-auto">
           <Save className="mr-1.5 h-4 w-4" />
           {saving ? "Saving…" : "Save Changes"}
         </Button>
+        {status?.pixel.configured && (
+          <Button type="button" variant="outline" onClick={() => submitPatch({ pixel_enabled: false, events_api_enabled: false })} disabled={saving} className="w-full sm:w-auto">
+            <Unplug className="mr-1.5 h-4 w-4" /> Disconnect
+          </Button>
+        )}
         <Button
           type="button"
           variant="outline"
