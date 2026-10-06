@@ -108,7 +108,7 @@ export function VoiceProviderPanel() {
           <div className="flex gap-2">
             <Button size="sm" variant="outline" disabled={busy || token.length < 8} onClick={() => run(testFn({ data: { api_token: token, base_url: baseUrl.trim() || undefined } }))}>Test Connection</Button>
             <Button size="sm" disabled={busy || token.length < 8} onClick={async () => {
-              if (await run(connectFn({ data: { api_token: token } }))) { setToken(""); setOpen(false); }
+              if (await run(connectFn({ data: { api_token: token, base_url: baseUrl.trim() || undefined } }))) { setToken(""); setBaseUrl(""); setOpen(false); }
             }}>Connect</Button>
           </div>
           <p className="text-[11px] text-muted-foreground">Your token is stored encrypted and is never shown again. We never ask for your ePBX password.</p>

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { sendEpbxTestCall } from "@/lib/voice.functions";
 
+import { useVoiceConnection } from "@/lib/use-voice-connection";
 const API_BASE = "https://epbx.bd/api/v1";
 
 function Box({ icon: Icon, title, desc, children }: { icon: any; title: string; desc: string; children: React.ReactNode }) {
@@ -36,7 +37,7 @@ export function EpbxEndpointsCard() {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Box icon={Link2} title="API endpoint" desc="ORZEN talks to ePBX through this address. Calls, balance, history and recordings all use it.">
-        <CopyField value={API_BASE} />
+        <CopyField value={(useVoiceConnection().data?.connection as any)?.account_info?.base_url || API_BASE} />
       </Box>
       <Box icon={ShieldCheck} title="Webhook / call results" desc="Set up automatically — nothing to paste in ePBX.">
         <CopyField value={`${origin}/api/public/voice/epbx`} />
