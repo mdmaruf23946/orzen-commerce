@@ -17,11 +17,6 @@ import {
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/admin/marketing/ui";
 
-const PLATFORM_LABEL: Record<TrackingPlatform, string> = {
-  facebook: "Facebook",
-  google: "Google",
-  tiktok: "TikTok",
-};
 
 type Form = Record<string, any>;
 
