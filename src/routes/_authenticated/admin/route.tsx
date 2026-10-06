@@ -1,3 +1,4 @@
+import { MARKETING_PLATFORMS, useMarketingConnections, type MarketingConnectionMap } from "@/lib/marketing-platforms";
 import { CALL_SMS_PROVIDERS, CALL_SMS_HUB_PATH, type ProviderConnectionMap } from "@/lib/call-sms-providers";
 import { useProviderConnections } from "@/lib/use-call-sms-connections";
 import { createFileRoute, Link, Outlet, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
@@ -190,7 +191,7 @@ const menuGroups: NavGroupDef[] = [
     label: "Marketing & Sales",
     icon: Megaphone,
     items: [
-      { to: "/admin/marketing", label: "Marketing & Tracking", icon: Megaphone },
+      { to: "/admin/marketing/apps", label: "Marketing & Targeting Apps", icon: Megaphone },
       { to: "/admin/coupons", label: "Coupons & Discounts", icon: Ticket },
       {
         to: "/admin/landing-builder",
@@ -318,13 +319,25 @@ function providerItems(connected: ProviderConnectionMap): LinkDef[] {
   }));
 }
 
-function buildGroups(query: string, canSee: (path: string) => boolean, connected: ProviderConnectionMap = {}) {
+/** Connected marketing platforms only — each gets its own isolated menu. */
+function marketingItems(connected: MarketingConnectionMap): LinkDef[] {
+  return MARKETING_PLATFORMS.filter((p) => connected[p.id]).map((p) => ({
+    to: p.path,
+    label: p.name,
+    icon: Megaphone,
+    children: p.sections.map((sec) => ({ to: p.path, search: { tab: sec.key }, label: sec.label, icon: sec.icon })),
+  }));
+}
+
+function buildGroups(query: string, canSee: (path: string) => boolean, connected: ProviderConnectionMap = {}, mkt: MarketingConnectionMap = {}) {
   const q = query.trim().toLowerCase();
   return menuGroups
     .map((group) => {
       const groupItems = group.label === CALL_SMS_GROUP
         ? [group.items[0], ...providerItems(connected), ...group.items.slice(1)]
-        : group.items;
+        : group.label === "Marketing & Sales"
+          ? [group.items[0], ...marketingItems(mkt), ...group.items.slice(1)]
+          : group.items;
       const items = groupItems.reduce<VisibleLinkDef[]>((visible, item) => {
           const visibleChildren = (item.children ?? []).filter((child) => canSee(child.to));
           const isVisible = canSee(item.to) || visibleChildren.length > 0;
@@ -487,7 +500,10 @@ function AdminLayout() {
   const { connected: providerConnected } = useProviderConnections();
   const providerKey = JSON.stringify(providerConnected);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const groups = useMemo(() => buildGroups(search, canSee, providerConnected), [search, canSee, providerKey]);
+  const { connected: mktConnected } = useMarketingConnections();
+  const mktKey = JSON.stringify(mktConnected);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const groups = useMemo(() => buildGroups(search, canSee, providerConnected, mktConnected), [search, canSee, providerKey, mktKey]);
 
   const currentSection = sectionForPath(currentPath);
   const pageAllowed =
