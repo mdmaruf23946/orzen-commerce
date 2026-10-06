@@ -1,0 +1,1 @@
+- Uploaded marketing logo pointers use an absolute asset-serving origin for Cloudflare production; relative asset paths otherwise return the HTML shell.
