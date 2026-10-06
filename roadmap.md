@@ -54,4 +54,4 @@
 
 ## TikTok logo (2026-10-06)
 - [x] Replace TikTok icon with the merchant-uploaded logo
-- [ ] Verify logo and deploy to orzen.top
+- [x] Verify logo and deploy to orzen.top

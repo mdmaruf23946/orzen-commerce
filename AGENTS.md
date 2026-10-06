@@ -29,3 +29,5 @@
 - ePBX auto-call outcomes are written to `orders.voice_verification` (verified/cancelled/needs_agent/unanswered) only while the order is still pending, and call-script MP3s live in the private `voice-audio` bucket served to ePBX via HMAC-signed `/api/public/voice/audio` — manual decisions always win and audio stays non-enumerable.
 - Call & SMS providers are listed in src/lib/call-sms-providers.ts (with capability sections); the sidebar shows a provider menu only while useProviderConnections reports it connected, otherwise it appears only on the AI & SMS Apps hub — keeps providers isolated and menus dynamic.
 - Marketing platform menus are registry-driven and connected-only; each workspace keeps store results in Overview and all technical controls in Integration to prevent duplicated configuration.
+
+- Uploaded marketing logo pointers use an absolute asset-serving origin for Cloudflare production; its relative asset path otherwise returns the HTML shell.
