@@ -17,11 +17,6 @@ import {
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/admin/marketing/ui";
 
-const PLATFORM_LABEL: Record<TrackingPlatform, string> = {
-  facebook: "Facebook",
-  google: "Google",
-  tiktok: "TikTok",
-};
 
 type Form = Record<string, any>;
 
@@ -134,11 +129,16 @@ export function TrackingSetup({ platform }: { platform: TrackingPlatform }) {
         </Select>
       </div>
 
-      <div className="rounded-md border bg-muted/30 px-3 py-2">
-        <div className="text-sm font-medium">{PLATFORM_LABEL[platform]}</div>
-        <div className="text-xs text-muted-foreground">This target is isolated to {PLATFORM_LABEL[platform]}.</div>
+      <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 px-3 py-2">
+        <div>
+          <Label className="text-sm">Separate tracking for this page</Label>
+          <p className="text-xs text-muted-foreground">{form.active ? "On — this page uses its own IDs below" : "Off — this page uses the main connection above"}</p>
+        </div>
+        <Switch checked={!!form.active} onCheckedChange={(v) => set("active", v)} />
       </div>
 
+      {form.active && (
+        <>
       {platform === "facebook" && (
         <div className="space-y-3">
           <Field label="Pixel ID" error={errors.pixel_id}>
@@ -172,13 +172,8 @@ export function TrackingSetup({ platform }: { platform: TrackingPlatform }) {
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 px-3 py-2">
-        <div>
-          <Label className="text-sm">Status</Label>
-          <p className="text-xs text-muted-foreground">{form.active ? "Active" : "Inactive"}</p>
-        </div>
-        <Switch checked={!!form.active} onCheckedChange={(v) => set("active", v)} />
-      </div>
+        </>
+      )}
 
       <Button type="submit" disabled={saving || hasError || !target} className="w-full sm:w-auto">
         {saving ? "Saving…" : "Save Tracking Setup"}
