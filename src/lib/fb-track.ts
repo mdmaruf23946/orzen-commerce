@@ -125,6 +125,7 @@ export function track(
   opts?: { eventId?: string; userData?: { email?: string; phone?: string; external_id?: string } },
 ) {
   if (typeof window === "undefined") return;
+  import("@/lib/marketing-attribution").then((m) => m.recordFunnelEvent(event, params as any, opts?.eventId)).catch(() => {});
   const init = window.__trackInit;
   const fbInit = window.__fbInit;
   if (!init && !fbInit) return;
