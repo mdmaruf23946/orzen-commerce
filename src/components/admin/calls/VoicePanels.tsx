@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  getVoiceConnection, testVoiceToken, connectVoiceProvider, retestVoiceProvider, disconnectVoiceProvider,
+  getVoiceConnection, testVoiceToken, connectVoiceProvider, updateVoiceBaseUrl, retestVoiceProvider, disconnectVoiceProvider,
   getVoiceSettings, saveVoiceSettings, saveVoiceDefaults, type VoiceSettings,
 } from "@/lib/voice.functions";
 import { useProviderOverview } from "@/components/admin/calls/EpbxPanels";
@@ -30,7 +30,10 @@ export function VoiceProviderPanel() {
   const retestFn = useServerFn(retestVoiceProvider);
   const discFn = useServerFn(disconnectVoiceProvider);
   const [open, setOpen] = useState(false);
+  const baseFn = useServerFn(updateVoiceBaseUrl);
   const [token, setToken] = useState("");
+  const [baseUrl, setBaseUrl] = useState("");
+  const [editBase, setEditBase] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const c: any = conn.data?.connection;
   const connected = c?.status === "connected";
@@ -68,11 +71,25 @@ export function VoiceProviderPanel() {
         <div className="mt-3 space-y-3">
           <dl className="grid grid-cols-2 gap-2 text-xs">
             <dt className="text-muted-foreground">Token</dt><dd>{c.token_preview}</dd>
+            <dt className="text-muted-foreground">API Base URL</dt><dd className="break-all font-mono">{c.account_info?.base_url || "https://epbx.bd/api/v1"}</dd>
             <dt className="text-muted-foreground">Connected</dt><dd>{fmt(c.connected_at)}</dd>
             <dt className="text-muted-foreground">Last test</dt><dd>{fmt(c.last_tested_at)}</dd>
             {c.account_info?.name && (<><dt className="text-muted-foreground">Account</dt><dd>{c.account_info.name}</dd></>)}
             {c.account_info?.balance != null && (<><dt className="text-muted-foreground">Balance</dt><dd>৳{c.account_info.balance}</dd></>)}
           </dl>
+          {editBase === null ? (
+            <Button size="sm" variant="outline" onClick={() => setEditBase(c.account_info?.base_url ?? "")}>Change API Base URL</Button>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="epbx-base-edit">ePBX API Base URL</Label>
+              <Input id="epbx-base-edit" inputMode="url" placeholder="https://epbx.bd/api/v1" value={editBase} onChange={(e) => setEditBase(e.target.value)} />
+              <p className="text-[11px] text-muted-foreground">Use your own ePBX sub-domain address. Leave empty for the default.</p>
+              <div className="flex gap-2">
+                <Button size="sm" disabled={busy} onClick={async () => { if (await run(baseFn({ data: { base_url: editBase.trim() || undefined } }))) setEditBase(null); }}>Test & Save</Button>
+                <Button size="sm" variant="ghost" disabled={busy} onClick={() => setEditBase(null)}>Cancel</Button>
+              </div>
+            </div>
+          )}
           <VoiceDefaultsForm callerId={c.default_caller_id ?? ""} extension={c.default_extension ?? ""} />
           <div className="flex gap-2">
             <Button size="sm" variant="outline" disabled={busy} onClick={() => run(retestFn())}>Test Connection</Button>
@@ -83,10 +100,13 @@ export function VoiceProviderPanel() {
         </div>
       ) : open ? (
         <div className="mt-3 space-y-2">
+          <Label htmlFor="epbx-base">ePBX API Base URL</Label>
+          <Input id="epbx-base" inputMode="url" placeholder="https://epbx.bd/api/v1" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} />
+          <p className="text-[11px] text-muted-foreground">Your ePBX sub-domain API address (e.g. https://yourname.epbx.bd/api/v1). Leave empty for the default.</p>
           <Label htmlFor="epbx-token">ePBX API Token</Label>
           <Input id="epbx-token" type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} />
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" disabled={busy || token.length < 8} onClick={() => run(testFn({ data: { api_token: token } }))}>Test Connection</Button>
+            <Button size="sm" variant="outline" disabled={busy || token.length < 8} onClick={() => run(testFn({ data: { api_token: token, base_url: baseUrl.trim() || undefined } }))}>Test Connection</Button>
             <Button size="sm" disabled={busy || token.length < 8} onClick={async () => {
               if (await run(connectFn({ data: { api_token: token } }))) { setToken(""); setOpen(false); }
             }}>Connect</Button>
