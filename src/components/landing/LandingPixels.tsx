@@ -68,6 +68,7 @@ export function LandingPixels({ pageId }: { pageId: string }) {
     if (googleTag) {
       (window as any).gtag?.("event", "page_view");
     }
+    import("@/lib/marketing-attribution").then((m) => m.recordPageView(slug)).catch(() => {});
     track("ViewContent", { content_type: "product" });
     return () => {
       for (const s of added) s.remove();

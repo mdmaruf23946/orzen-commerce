@@ -115,6 +115,9 @@ function StoreLayout() {
   const agent = agentData ?? loaderAgent;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const search = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
+  useEffect(() => {
+    import("@/lib/marketing-attribution").then((m) => m.recordPageView(slug)).catch(() => {});
+  }, [slug, pathname]);
   const isPreview = String(search?.[THEME_PREVIEW_PARAM] ?? "") === "1";
   const previewTheme = useThemePreviewListener(isPreview);
   if (!store) return null;
