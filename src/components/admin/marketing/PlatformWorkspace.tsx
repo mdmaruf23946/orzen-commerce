@@ -43,7 +43,7 @@ export function PlatformWorkspace({ id, tab }: { id: MarketingPlatform["id"]; ta
         </div>
       </div>
 
-      {current === "overview" && <PlatformOverview platformName={p.name} />}
+      {current === "overview" && <PlatformOverview key={id} platform={id} platformName={p.name} />}
       {current === "integration" && <div className="space-y-5">
         <TrackingSetup platform={id} mainEditor={<Settings />} />
         <div className="rounded-md border bg-card p-4"><h2 className="text-sm font-semibold">Storefront event coverage</h2><p className="mt-1 text-xs text-muted-foreground">{String(AUTO_EVENTS)}</p></div>
