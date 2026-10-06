@@ -48,8 +48,8 @@ export function TrackingSetup({ platform, mainEditor }: { platform: TrackingPlat
   }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border bg-card p-4 space-y-3">
+    <div className="space-y-4 rounded-xl border bg-card p-3 sm:p-4">
+      <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div>
             <h2 className="text-sm font-semibold">Connections</h2>
