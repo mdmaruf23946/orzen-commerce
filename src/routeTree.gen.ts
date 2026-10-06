@@ -178,6 +178,11 @@ import { Route as AuthenticatedAdminLandingBuilderIndexRouteImport } from './rou
 import { Route as AuthenticatedAdminLandingBuilderIdRouteImport } from './routes/_authenticated/admin/landing-builder.$id'
 import { Route as AuthenticatedAdminLandingPagesIndexRouteImport } from './routes/_authenticated/admin/landing-pages.index'
 import { Route as AuthenticatedAdminLandingPagesIdRouteImport } from './routes/_authenticated/admin/landing-pages.$id'
+import { Route as AuthenticatedAdminMarketingIndexRouteImport } from './routes/_authenticated/admin/marketing.index'
+import { Route as AuthenticatedAdminMarketingAppsRouteImport } from './routes/_authenticated/admin/marketing.apps'
+import { Route as AuthenticatedAdminMarketingFacebookRouteImport } from './routes/_authenticated/admin/marketing.facebook'
+import { Route as AuthenticatedAdminMarketingGoogleRouteImport } from './routes/_authenticated/admin/marketing.google'
+import { Route as AuthenticatedAdminMarketingTiktokRouteImport } from './routes/_authenticated/admin/marketing.tiktok'
 import { Route as AuthenticatedAdminSettingsIndexRouteImport } from './routes/_authenticated/admin/settings.index'
 import { Route as AuthenticatedAdminSettingsConfigurationRouteImport } from './routes/_authenticated/admin/settings.configuration'
 import { Route as AuthenticatedAdminSettingsInformationRouteImport } from './routes/_authenticated/admin/settings.information'
@@ -1208,6 +1213,36 @@ const AuthenticatedAdminLandingPagesIdRoute =
     path: '/landing-pages/$id',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminMarketingIndexRoute =
+  AuthenticatedAdminMarketingIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAdminMarketingRoute,
+  } as any)
+const AuthenticatedAdminMarketingAppsRoute =
+  AuthenticatedAdminMarketingAppsRouteImport.update({
+    id: '/apps',
+    path: '/apps',
+    getParentRoute: () => AuthenticatedAdminMarketingRoute,
+  } as any)
+const AuthenticatedAdminMarketingFacebookRoute =
+  AuthenticatedAdminMarketingFacebookRouteImport.update({
+    id: '/facebook',
+    path: '/facebook',
+    getParentRoute: () => AuthenticatedAdminMarketingRoute,
+  } as any)
+const AuthenticatedAdminMarketingGoogleRoute =
+  AuthenticatedAdminMarketingGoogleRouteImport.update({
+    id: '/google',
+    path: '/google',
+    getParentRoute: () => AuthenticatedAdminMarketingRoute,
+  } as any)
+const AuthenticatedAdminMarketingTiktokRoute =
+  AuthenticatedAdminMarketingTiktokRouteImport.update({
+    id: '/tiktok',
+    path: '/tiktok',
+    getParentRoute: () => AuthenticatedAdminMarketingRoute,
+  } as any)
 const AuthenticatedAdminSettingsIndexRoute =
   AuthenticatedAdminSettingsIndexRouteImport.update({
     id: '/',
@@ -1692,7 +1727,7 @@ export interface FileRoutesByFullPath {
   '/admin/invoice-templates': typeof AuthenticatedAdminInvoiceTemplatesRoute
   '/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
-  '/admin/marketing': typeof AuthenticatedAdminMarketingRoute
+  '/admin/marketing': typeof AuthenticatedAdminMarketingRouteWithChildren
   '/admin/messenger': typeof AuthenticatedAdminMessengerRoute
   '/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
@@ -1797,6 +1832,10 @@ export interface FileRoutesByFullPath {
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/admin/landing-builder/$id': typeof AuthenticatedAdminLandingBuilderIdRoute
   '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
+  '/admin/marketing/apps': typeof AuthenticatedAdminMarketingAppsRoute
+  '/admin/marketing/facebook': typeof AuthenticatedAdminMarketingFacebookRoute
+  '/admin/marketing/google': typeof AuthenticatedAdminMarketingGoogleRoute
+  '/admin/marketing/tiktok': typeof AuthenticatedAdminMarketingTiktokRoute
   '/admin/settings/configuration': typeof AuthenticatedAdminSettingsConfigurationRoute
   '/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
   '/admin/settings/security': typeof AuthenticatedAdminSettingsSecurityRoute
@@ -1863,6 +1902,7 @@ export interface FileRoutesByFullPath {
   '/admin/facebook/': typeof AuthenticatedAdminFacebookIndexRoute
   '/admin/landing-builder/': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
+  '/admin/marketing/': typeof AuthenticatedAdminMarketingIndexRoute
   '/admin/settings/': typeof AuthenticatedAdminSettingsIndexRoute
   '/owner/ai-admin/': typeof AuthenticatedOwnerAiAdminIndexRoute
   '/owner/communication/': typeof AuthenticatedOwnerCommunicationIndexRoute
@@ -1927,7 +1967,6 @@ export interface FileRoutesByTo {
   '/admin/invoice-templates': typeof AuthenticatedAdminInvoiceTemplatesRoute
   '/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
-  '/admin/marketing': typeof AuthenticatedAdminMarketingRoute
   '/admin/messenger': typeof AuthenticatedAdminMessengerRoute
   '/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
@@ -2031,6 +2070,10 @@ export interface FileRoutesByTo {
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/admin/landing-builder/$id': typeof AuthenticatedAdminLandingBuilderIdRoute
   '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
+  '/admin/marketing/apps': typeof AuthenticatedAdminMarketingAppsRoute
+  '/admin/marketing/facebook': typeof AuthenticatedAdminMarketingFacebookRoute
+  '/admin/marketing/google': typeof AuthenticatedAdminMarketingGoogleRoute
+  '/admin/marketing/tiktok': typeof AuthenticatedAdminMarketingTiktokRoute
   '/admin/settings/configuration': typeof AuthenticatedAdminSettingsConfigurationRoute
   '/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
   '/admin/settings/security': typeof AuthenticatedAdminSettingsSecurityRoute
@@ -2097,6 +2140,7 @@ export interface FileRoutesByTo {
   '/admin/facebook': typeof AuthenticatedAdminFacebookIndexRoute
   '/admin/landing-builder': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/admin/landing-pages': typeof AuthenticatedAdminLandingPagesIndexRoute
+  '/admin/marketing': typeof AuthenticatedAdminMarketingIndexRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsIndexRoute
   '/owner/ai-admin': typeof AuthenticatedOwnerAiAdminIndexRoute
   '/owner/communication': typeof AuthenticatedOwnerCommunicationIndexRoute
@@ -2172,7 +2216,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/invoice-templates': typeof AuthenticatedAdminInvoiceTemplatesRoute
   '/_authenticated/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/_authenticated/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
-  '/_authenticated/admin/marketing': typeof AuthenticatedAdminMarketingRoute
+  '/_authenticated/admin/marketing': typeof AuthenticatedAdminMarketingRouteWithChildren
   '/_authenticated/admin/messenger': typeof AuthenticatedAdminMessengerRoute
   '/_authenticated/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
   '/_authenticated/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
@@ -2277,6 +2321,10 @@ export interface FileRoutesById {
   '/_authenticated/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/_authenticated/admin/landing-builder/$id': typeof AuthenticatedAdminLandingBuilderIdRoute
   '/_authenticated/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
+  '/_authenticated/admin/marketing/apps': typeof AuthenticatedAdminMarketingAppsRoute
+  '/_authenticated/admin/marketing/facebook': typeof AuthenticatedAdminMarketingFacebookRoute
+  '/_authenticated/admin/marketing/google': typeof AuthenticatedAdminMarketingGoogleRoute
+  '/_authenticated/admin/marketing/tiktok': typeof AuthenticatedAdminMarketingTiktokRoute
   '/_authenticated/admin/settings/configuration': typeof AuthenticatedAdminSettingsConfigurationRoute
   '/_authenticated/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
   '/_authenticated/admin/settings/security': typeof AuthenticatedAdminSettingsSecurityRoute
@@ -2343,6 +2391,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/facebook/': typeof AuthenticatedAdminFacebookIndexRoute
   '/_authenticated/admin/landing-builder/': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/_authenticated/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
+  '/_authenticated/admin/marketing/': typeof AuthenticatedAdminMarketingIndexRoute
   '/_authenticated/admin/settings/': typeof AuthenticatedAdminSettingsIndexRoute
   '/_authenticated/owner/ai-admin/': typeof AuthenticatedOwnerAiAdminIndexRoute
   '/_authenticated/owner/communication/': typeof AuthenticatedOwnerCommunicationIndexRoute
@@ -2523,6 +2572,10 @@ export interface FileRouteTypes {
     | '/admin/invoice/$orderId'
     | '/admin/landing-builder/$id'
     | '/admin/landing-pages/$id'
+    | '/admin/marketing/apps'
+    | '/admin/marketing/facebook'
+    | '/admin/marketing/google'
+    | '/admin/marketing/tiktok'
     | '/admin/settings/configuration'
     | '/admin/settings/information'
     | '/admin/settings/security'
@@ -2589,6 +2642,7 @@ export interface FileRouteTypes {
     | '/admin/facebook/'
     | '/admin/landing-builder/'
     | '/admin/landing-pages/'
+    | '/admin/marketing/'
     | '/admin/settings/'
     | '/owner/ai-admin/'
     | '/owner/communication/'
@@ -2653,7 +2707,6 @@ export interface FileRouteTypes {
     | '/admin/invoice-templates'
     | '/admin/legal'
     | '/admin/low-stock'
-    | '/admin/marketing'
     | '/admin/messenger'
     | '/admin/messenger-inbox'
     | '/admin/notifications'
@@ -2757,6 +2810,10 @@ export interface FileRouteTypes {
     | '/admin/invoice/$orderId'
     | '/admin/landing-builder/$id'
     | '/admin/landing-pages/$id'
+    | '/admin/marketing/apps'
+    | '/admin/marketing/facebook'
+    | '/admin/marketing/google'
+    | '/admin/marketing/tiktok'
     | '/admin/settings/configuration'
     | '/admin/settings/information'
     | '/admin/settings/security'
@@ -2823,6 +2880,7 @@ export interface FileRouteTypes {
     | '/admin/facebook'
     | '/admin/landing-builder'
     | '/admin/landing-pages'
+    | '/admin/marketing'
     | '/admin/settings'
     | '/owner/ai-admin'
     | '/owner/communication'
@@ -3002,6 +3060,10 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/invoice/$orderId'
     | '/_authenticated/admin/landing-builder/$id'
     | '/_authenticated/admin/landing-pages/$id'
+    | '/_authenticated/admin/marketing/apps'
+    | '/_authenticated/admin/marketing/facebook'
+    | '/_authenticated/admin/marketing/google'
+    | '/_authenticated/admin/marketing/tiktok'
     | '/_authenticated/admin/settings/configuration'
     | '/_authenticated/admin/settings/information'
     | '/_authenticated/admin/settings/security'
@@ -3068,6 +3130,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/facebook/'
     | '/_authenticated/admin/landing-builder/'
     | '/_authenticated/admin/landing-pages/'
+    | '/_authenticated/admin/marketing/'
     | '/_authenticated/admin/settings/'
     | '/_authenticated/owner/ai-admin/'
     | '/_authenticated/owner/communication/'
@@ -4336,6 +4399,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminLandingPagesIdRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/marketing/': {
+      id: '/_authenticated/admin/marketing/'
+      path: '/'
+      fullPath: '/admin/marketing/'
+      preLoaderRoute: typeof AuthenticatedAdminMarketingIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminMarketingRoute
+    }
+    '/_authenticated/admin/marketing/apps': {
+      id: '/_authenticated/admin/marketing/apps'
+      path: '/apps'
+      fullPath: '/admin/marketing/apps'
+      preLoaderRoute: typeof AuthenticatedAdminMarketingAppsRouteImport
+      parentRoute: typeof AuthenticatedAdminMarketingRoute
+    }
+    '/_authenticated/admin/marketing/facebook': {
+      id: '/_authenticated/admin/marketing/facebook'
+      path: '/facebook'
+      fullPath: '/admin/marketing/facebook'
+      preLoaderRoute: typeof AuthenticatedAdminMarketingFacebookRouteImport
+      parentRoute: typeof AuthenticatedAdminMarketingRoute
+    }
+    '/_authenticated/admin/marketing/google': {
+      id: '/_authenticated/admin/marketing/google'
+      path: '/google'
+      fullPath: '/admin/marketing/google'
+      preLoaderRoute: typeof AuthenticatedAdminMarketingGoogleRouteImport
+      parentRoute: typeof AuthenticatedAdminMarketingRoute
+    }
+    '/_authenticated/admin/marketing/tiktok': {
+      id: '/_authenticated/admin/marketing/tiktok'
+      path: '/tiktok'
+      fullPath: '/admin/marketing/tiktok'
+      preLoaderRoute: typeof AuthenticatedAdminMarketingTiktokRouteImport
+      parentRoute: typeof AuthenticatedAdminMarketingRoute
+    }
     '/_authenticated/admin/settings/': {
       id: '/_authenticated/admin/settings/'
       path: '/'
@@ -4904,6 +5002,32 @@ const AuthenticatedAdminFacebookRouteRouteWithChildren =
     AuthenticatedAdminFacebookRouteRouteChildren,
   )
 
+interface AuthenticatedAdminMarketingRouteChildren {
+  AuthenticatedAdminMarketingAppsRoute: typeof AuthenticatedAdminMarketingAppsRoute
+  AuthenticatedAdminMarketingFacebookRoute: typeof AuthenticatedAdminMarketingFacebookRoute
+  AuthenticatedAdminMarketingGoogleRoute: typeof AuthenticatedAdminMarketingGoogleRoute
+  AuthenticatedAdminMarketingTiktokRoute: typeof AuthenticatedAdminMarketingTiktokRoute
+  AuthenticatedAdminMarketingIndexRoute: typeof AuthenticatedAdminMarketingIndexRoute
+}
+
+const AuthenticatedAdminMarketingRouteChildren: AuthenticatedAdminMarketingRouteChildren =
+  {
+    AuthenticatedAdminMarketingAppsRoute: AuthenticatedAdminMarketingAppsRoute,
+    AuthenticatedAdminMarketingFacebookRoute:
+      AuthenticatedAdminMarketingFacebookRoute,
+    AuthenticatedAdminMarketingGoogleRoute:
+      AuthenticatedAdminMarketingGoogleRoute,
+    AuthenticatedAdminMarketingTiktokRoute:
+      AuthenticatedAdminMarketingTiktokRoute,
+    AuthenticatedAdminMarketingIndexRoute:
+      AuthenticatedAdminMarketingIndexRoute,
+  }
+
+const AuthenticatedAdminMarketingRouteWithChildren =
+  AuthenticatedAdminMarketingRoute._addFileChildren(
+    AuthenticatedAdminMarketingRouteChildren,
+  )
+
 interface AuthenticatedAdminSettingsRouteChildren {
   AuthenticatedAdminSettingsConfigurationRoute: typeof AuthenticatedAdminSettingsConfigurationRoute
   AuthenticatedAdminSettingsInformationRoute: typeof AuthenticatedAdminSettingsInformationRoute
@@ -4962,7 +5086,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminInvoiceTemplatesRoute: typeof AuthenticatedAdminInvoiceTemplatesRoute
   AuthenticatedAdminLegalRoute: typeof AuthenticatedAdminLegalRoute
   AuthenticatedAdminLowStockRoute: typeof AuthenticatedAdminLowStockRoute
-  AuthenticatedAdminMarketingRoute: typeof AuthenticatedAdminMarketingRoute
+  AuthenticatedAdminMarketingRoute: typeof AuthenticatedAdminMarketingRouteWithChildren
   AuthenticatedAdminMessengerRoute: typeof AuthenticatedAdminMessengerRoute
   AuthenticatedAdminMessengerInboxRoute: typeof AuthenticatedAdminMessengerInboxRoute
   AuthenticatedAdminNotificationsRoute: typeof AuthenticatedAdminNotificationsRoute
@@ -5034,7 +5158,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
       AuthenticatedAdminInvoiceTemplatesRoute,
     AuthenticatedAdminLegalRoute: AuthenticatedAdminLegalRoute,
     AuthenticatedAdminLowStockRoute: AuthenticatedAdminLowStockRoute,
-    AuthenticatedAdminMarketingRoute: AuthenticatedAdminMarketingRoute,
+    AuthenticatedAdminMarketingRoute:
+      AuthenticatedAdminMarketingRouteWithChildren,
     AuthenticatedAdminMessengerRoute: AuthenticatedAdminMessengerRoute,
     AuthenticatedAdminMessengerInboxRoute:
       AuthenticatedAdminMessengerInboxRoute,
