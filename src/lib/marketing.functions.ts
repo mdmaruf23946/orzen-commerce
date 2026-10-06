@@ -4,6 +4,63 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { facebookSchema, googleSchema, tiktokSchema, saveTrackingSetupSchema } from "@/lib/marketing.schema";
 
+const marketingPerformanceInput = z.object({
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  compare_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  compare_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+const dayStart = (value: string) => `${value}T00:00:00.000Z`;
+const dayEnd = (value: string) => `${value}T23:59:59.999Z`;
+const amount = (value: unknown) => Number(value ?? 0) || 0;
+
+/** Store results only. No platform attribution is implied because it is not recorded yet. */
+export const getMarketingPerformance = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => marketingPerformanceInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: store } = await context.supabase
+      .from("stores")
+      .select("id")
+      .eq("owner_user_id", context.userId)
+      .maybeSingle();
+    if (!store?.id) return null;
+
+    const read = (from: string, to: string) =>
+      context.supabase
+        .from("orders")
+        .select("phone,subtotal,payment_status,status")
+        .eq("store_id", store.id)
+        .gte("created_at", dayStart(from))
+        .lte("created_at", dayEnd(to))
+        .limit(20000);
+    const [{ data: current }, { data: previous }] = await Promise.all([
+      read(data.from, data.to),
+      read(data.compare_from, data.compare_to),
+    ]);
+
+    const summarize = (rows: any[] | null) => {
+      const all = rows ?? [];
+      const orders = all.filter((row) => row.status !== "cancelled");
+      const purchases = orders.filter((row) =>
+        String(row.payment_status ?? "").toLowerCase() === "paid" ||
+        ["confirmed", "processing", "shipped", "delivered"].includes(String(row.status ?? "")),
+      ).length;
+      const revenue = orders.reduce((sum, row) => sum + amount(row.subtotal), 0);
+      return {
+        customers: new Set(orders.map((row) => String(row.phone ?? "")).filter(Boolean)).size,
+        orders: orders.length,
+        purchases,
+        revenue,
+        averageOrderValue: orders.length ? revenue / orders.length : 0,
+        purchaseRate: orders.length ? (purchases / orders.length) * 100 : 0,
+      };
+    };
+
+    return { current: summarize(current), previous: summarize(previous) };
+  });
+
 export const updateMarketingGoogle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => googleSchema.parse(d))
