@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Facebook, Chrome, Music2 } from "lucide-react";
 import { MARKETING_PLATFORMS, useMarketingConnections } from "@/lib/marketing-platforms";
 import { StatusBadge } from "@/components/admin/marketing/ui";
+import { FacebookLogo, GoogleLogo, TikTokLogo } from "@/components/admin/marketing/BrandLogos";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/admin/marketing/apps")({
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_authenticated/admin/marketing/apps")({
   component: HubPage,
 });
 
-const ICONS = { facebook: Facebook, google: Chrome, tiktok: Music2 } as const;
+const LOGOS = { facebook: FacebookLogo, google: GoogleLogo, tiktok: TikTokLogo } as const;
 
 function HubPage() {
   const { connected } = useMarketingConnections();
@@ -33,11 +33,11 @@ function HubPage() {
       </div>
       <div className="grid gap-3">
         {MARKETING_PLATFORMS.map((p) => {
-          const Icon = ICONS[p.id];
+          const Logo = LOGOS[p.id];
           const on = !!connected[p.id];
           return (
             <div key={p.id} className="flex items-center gap-3 rounded-xl border bg-card p-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted"><Icon className="h-5 w-5" /></div>
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted"><Logo className="h-6 w-6" /></div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium">{p.name}</span>
