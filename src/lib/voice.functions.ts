@@ -331,7 +331,7 @@ export const sendEpbxTestCall = createServerFn({ method: "POST" })
     const s: any = st ?? {};
     const vars = { customer_name: "Test Customer", store_name: (store as any)?.name ?? "", amount: String(data.amount), order_id: "TEST-1001" };
     const msgs: Record<string, string> = { ...DEFAULT_VOICE_MESSAGES, ...(s.messages ?? {}) };
-    msgs.custom_text = fillTemplate(s.tts_template || DEFAULT_TTS_TEMPLATE, vars);
+    if (s.tts_template?.trim()) msgs.custom_text = fillTemplate(s.tts_template, vars);
     if (s.confirm_text) msgs.confirm_text = fillTemplate(s.confirm_text, vars);
     if (s.cancel_text) msgs.cancel_text = fillTemplate(s.cancel_text, vars);
     try {
