@@ -141,7 +141,7 @@ export async function drainVoiceQueue(admin: any, limit = 10) {
       customer_name: order.customer_name ?? "", store_name: (order as any).stores?.name ?? "",
       amount: String(Math.round(Number(order.subtotal ?? 0))), order_id: order.invoice_no ?? "",
     };
-    msgs.custom_text = fillTemplate(st.tts_template || DEFAULT_TTS_TEMPLATE, vars);
+    if (st.tts_template?.trim()) msgs.custom_text = fillTemplate(st.tts_template, vars);
     if (st.confirm_text) msgs.confirm_text = fillTemplate(st.confirm_text, vars);
     if (st.cancel_text) msgs.cancel_text = fillTemplate(st.cancel_text, vars);
     try {
