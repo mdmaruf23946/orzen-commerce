@@ -4611,6 +4611,50 @@ export type Database = {
           },
         ]
       }
+      marketing_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          order_id: string | null
+          path: string | null
+          platform: string
+          session_id: string
+          store_id: string
+          value: number | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          order_id?: string | null
+          path?: string | null
+          platform: string
+          session_id: string
+          store_id: string
+          value?: number | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          order_id?: string | null
+          path?: string | null
+          platform?: string
+          session_id?: string
+          store_id?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketing_pixel_defaults: {
         Row: {
           capi_token: string | null
@@ -4643,6 +4687,56 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      marketing_visits: {
+        Row: {
+          campaign: string | null
+          click_id: string | null
+          created_at: string
+          id: string
+          landing_path: string | null
+          last_seen_at: string
+          platform: string
+          referrer: string | null
+          session_id: string
+          store_id: string
+          visitor_id: string
+        }
+        Insert: {
+          campaign?: string | null
+          click_id?: string | null
+          created_at?: string
+          id?: string
+          landing_path?: string | null
+          last_seen_at?: string
+          platform: string
+          referrer?: string | null
+          session_id: string
+          store_id: string
+          visitor_id: string
+        }
+        Update: {
+          campaign?: string | null
+          click_id?: string | null
+          created_at?: string
+          id?: string
+          landing_path?: string | null
+          last_seen_at?: string
+          platform?: string
+          referrer?: string | null
+          session_id?: string
+          store_id?: string
+          visitor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_visits_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       merchant_auth_codes: {
         Row: {
@@ -5429,6 +5523,9 @@ export type Database = {
           address: string
           allow_duplicate: boolean
           area: string | null
+          attribution_campaign: string | null
+          attribution_platform: string | null
+          attribution_session_id: string | null
           company: string | null
           confirmation_status: string
           confirmed_at: string | null
@@ -5479,6 +5576,9 @@ export type Database = {
           address: string
           allow_duplicate?: boolean
           area?: string | null
+          attribution_campaign?: string | null
+          attribution_platform?: string | null
+          attribution_session_id?: string | null
           company?: string | null
           confirmation_status?: string
           confirmed_at?: string | null
@@ -5529,6 +5629,9 @@ export type Database = {
           address?: string
           allow_duplicate?: boolean
           area?: string | null
+          attribution_campaign?: string | null
+          attribution_platform?: string | null
+          attribution_session_id?: string | null
           company?: string | null
           confirmation_status?: string
           confirmed_at?: string | null
