@@ -1,6 +1,6 @@
 // Official brand logos for the Marketing & Targeting platforms.
 // Facebook and Google use inline vectors; TikTok uses the merchant-provided logo.
-import tiktokAsset from "@/assets/tiktok-official.png.asset.json";
+import tiktokAsset from "@/assets/tiktok-official-large.png.asset.json";
 
 export function FacebookLogo({ className }: { className?: string }) {
   return (
