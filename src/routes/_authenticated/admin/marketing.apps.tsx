@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_authenticated/admin/marketing/apps")({
   component: HubPage,
 });
 
-const ICONS = { facebook: Facebook, google: Chrome, tiktok: Music2 } as const;
+const LOGOS = { facebook: FacebookLogo, google: GoogleLogo, tiktok: TikTokLogo } as const;
 
 function HubPage() {
   const { connected } = useMarketingConnections();
