@@ -45,7 +45,7 @@ export const PANEL_SECTIONS: PanelSection[] = [
   { key: "whatsapp_inbox", label: "WhatsApp Inbox", group: "Channels & AI", paths: ["/admin/whatsapp-inbox"], feature: "whatsapp" },
   { key: "facebook", label: "Facebook Page", group: "Marketing & Sales", paths: ["/admin/facebook"], feature: "facebook_page" },
 
-  { key: "marketing", label: "Marketing & Tracking", group: "Marketing & Sales", paths: ["/admin/marketing"], feature: "pixel" },
+  { key: "marketing", label: "Marketing & Targeting Apps", group: "Marketing & Sales", paths: ["/admin/marketing"], feature: "pixel" },
   { key: "coupons", label: "Coupons & Discounts", group: "Marketing & Sales", paths: ["/admin/coupons"], feature: "coupons" },
   { key: "seo", label: "SEO Tools", group: "Marketing & Sales", paths: ["/admin/seo"], feature: "seo" },
   { key: "banners", label: "Banners & Sliders", group: "Online Storefront", paths: ["/admin/banners"] },
