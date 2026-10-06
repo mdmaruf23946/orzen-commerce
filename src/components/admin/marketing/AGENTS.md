@@ -1,1 +1,1 @@
-- Uploaded marketing logo pointers use an absolute asset-serving origin for Cloudflare production; relative asset paths otherwise return the HTML shell.
+- Uploaded marketing logo pointers use an absolute asset-serving origin for Cloudflare production; relative asset paths otherwise return the HTML shell.- Platform Overviews read only first-party attributed data (`marketing_visits`/`marketing_events`/`orders.attribution_platform`, beacon `/api/public/marketing/visit`), filtered to one platform — never store-wide or merged, direct traffic never attributed.
