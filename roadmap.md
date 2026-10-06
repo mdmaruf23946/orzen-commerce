@@ -55,3 +55,8 @@
 ## TikTok logo (2026-10-06)
 - [x] Replace TikTok icon with the merchant-uploaded logo
 - [x] Verify logo and deploy to orzen.top
+
+## Marketing Overview and refreshed TikTok logo release (2026-10-06)
+- [ ] Use the latest uploaded logo with tight framing and verify its displayed size
+- [ ] Apply attributed marketing schema to production without changing existing data
+- [ ] Deploy platform-specific Overview and logo to orzen.top and verify
