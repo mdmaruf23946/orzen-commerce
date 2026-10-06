@@ -71,7 +71,15 @@ export const Route = createFileRoute("/")({
     }
   },
   head: () => ({
-    meta: [{ property: "og:url", content: "https://orzen.top/" }],
+    meta: [
+      { title: "ORZEN — Online Store & Commerce" },
+      { name: "description", content: "Grow your online store with ORZEN commerce, order management and merchant tools." },
+      { property: "og:title", content: "ORZEN — Online Store & Commerce" },
+      { property: "og:description", content: "Grow your online store with ORZEN commerce, order management and merchant tools." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:url", content: "https://orzen.top/" },
+    ],
     links: [{ rel: "canonical", href: "https://orzen.top/" }],
     scripts: [
       {

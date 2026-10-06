@@ -51,3 +51,7 @@
 - [x] Deploy the ePBX-only provider UI and customer-call path to orzen.top
 - [x] Complete ePBX callbacks, automatic order calls, and recordings
 - [x] ePBX: provider overview, numbers, extensions, dial pad, CDR call log + recordings, automated order calls, IVR/WebRTC marked not available
+
+## TikTok logo (2026-10-06)
+- [x] Replace TikTok icon with the merchant-uploaded logo
+- [ ] Verify logo and deploy to orzen.top
