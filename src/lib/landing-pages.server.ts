@@ -105,8 +105,18 @@ export function normalizePayload(
       utm_content: p.utm_content ?? null,
       fbclid: p.fbclid ?? null,
       gclid: p.gclid ?? null,
+      ttclid: p.ttclid ?? null,
     },
   };
+}
+
+/** Maps landing UTM/click IDs to one ad platform; direct/unknown → null. */
+function utmPlatform(u: Record<string, any>): "facebook" | "google" | "tiktok" | null {
+  const src = String(u?.utm_source ?? "").toLowerCase();
+  if (u?.fbclid || ["facebook", "fb", "meta", "instagram", "ig"].includes(src)) return "facebook";
+  if (u?.gclid || src === "google") return "google";
+  if (u?.ttclid || src === "tiktok") return "tiktok";
+  return null;
 }
 
 export interface IntakeInput {
@@ -355,6 +365,8 @@ export async function intakeLandingPageOrder(input: IntakeInput): Promise<Intake
         ? String(canonical.landing_page_url).slice(0, 500)
         : null,
       utm: canonical.utm,
+      attribution_platform: utmPlatform(canonical.utm),
+      attribution_campaign: utmPlatform(canonical.utm) ? (canonical.utm.utm_campaign ? String(canonical.utm.utm_campaign).slice(0, 200) : null) : null,
       is_test: !!input.isTest,
     })
     .select("id,invoice_no")
