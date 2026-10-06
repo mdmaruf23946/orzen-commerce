@@ -144,7 +144,6 @@ const menuGroups: NavGroupDef[] = [
     icon: PhoneCall,
     items: [
       { to: CALL_SMS_HUB_PATH, label: "Call & SMS Apps", icon: Store },
-      { to: "/admin/call-sms/ai-voice-agent", label: "AI Voice Agent", icon: Bot },
     ],
   },
   {
