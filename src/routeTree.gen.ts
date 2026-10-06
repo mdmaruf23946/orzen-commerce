@@ -228,6 +228,7 @@ import { Route as ApiPublicFbCapiTrackRouteImport } from './routes/api/public/fb
 import { Route as ApiPublicGa4TrackRouteImport } from './routes/api/public/ga4/track'
 import { Route as ApiPublicLpManifestSlugRouteImport } from './routes/api/public/lp-manifest.$slug'
 import { Route as ApiPublicLpOrderRouteImport } from './routes/api/public/lp.order'
+import { Route as ApiPublicMarketingVisitRouteImport } from './routes/api/public/marketing/visit'
 import { Route as ApiPublicMessengerBuyRouteImport } from './routes/api/public/messenger/buy'
 import { Route as ApiPublicMessengerProcessRouteImport } from './routes/api/public/messenger/process'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
@@ -1504,6 +1505,11 @@ const ApiPublicLpOrderRoute = ApiPublicLpOrderRouteImport.update({
   path: '/api/public/lp/order',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicMarketingVisitRoute = ApiPublicMarketingVisitRouteImport.update({
+  id: '/api/public/marketing/visit',
+  path: '/api/public/marketing/visit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicMessengerBuyRoute = ApiPublicMessengerBuyRouteImport.update({
   id: '/api/public/messenger/buy',
   path: '/api/public/messenger/buy',
@@ -1876,6 +1882,7 @@ export interface FileRoutesByFullPath {
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
   '/api/public/lp-manifest/$slug': typeof ApiPublicLpManifestSlugRoute
   '/api/public/lp/order': typeof ApiPublicLpOrderRoute
+  '/api/public/marketing/visit': typeof ApiPublicMarketingVisitRoute
   '/api/public/messenger/buy': typeof ApiPublicMessengerBuyRoute
   '/api/public/messenger/process': typeof ApiPublicMessengerProcessRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
@@ -2114,6 +2121,7 @@ export interface FileRoutesByTo {
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
   '/api/public/lp-manifest/$slug': typeof ApiPublicLpManifestSlugRoute
   '/api/public/lp/order': typeof ApiPublicLpOrderRoute
+  '/api/public/marketing/visit': typeof ApiPublicMarketingVisitRoute
   '/api/public/messenger/buy': typeof ApiPublicMessengerBuyRoute
   '/api/public/messenger/process': typeof ApiPublicMessengerProcessRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
@@ -2365,6 +2373,7 @@ export interface FileRoutesById {
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
   '/api/public/lp-manifest/$slug': typeof ApiPublicLpManifestSlugRoute
   '/api/public/lp/order': typeof ApiPublicLpOrderRoute
+  '/api/public/marketing/visit': typeof ApiPublicMarketingVisitRoute
   '/api/public/messenger/buy': typeof ApiPublicMessengerBuyRoute
   '/api/public/messenger/process': typeof ApiPublicMessengerProcessRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
@@ -2616,6 +2625,7 @@ export interface FileRouteTypes {
     | '/api/public/ga4/track'
     | '/api/public/lp-manifest/$slug'
     | '/api/public/lp/order'
+    | '/api/public/marketing/visit'
     | '/api/public/messenger/buy'
     | '/api/public/messenger/process'
     | '/api/public/messenger/webhook'
@@ -2854,6 +2864,7 @@ export interface FileRouteTypes {
     | '/api/public/ga4/track'
     | '/api/public/lp-manifest/$slug'
     | '/api/public/lp/order'
+    | '/api/public/marketing/visit'
     | '/api/public/messenger/buy'
     | '/api/public/messenger/process'
     | '/api/public/messenger/webhook'
@@ -3104,6 +3115,7 @@ export interface FileRouteTypes {
     | '/api/public/ga4/track'
     | '/api/public/lp-manifest/$slug'
     | '/api/public/lp/order'
+    | '/api/public/marketing/visit'
     | '/api/public/messenger/buy'
     | '/api/public/messenger/process'
     | '/api/public/messenger/webhook'
@@ -3191,6 +3203,7 @@ export interface RootRouteChildren {
   ApiPublicGa4TrackRoute: typeof ApiPublicGa4TrackRoute
   ApiPublicLpManifestSlugRoute: typeof ApiPublicLpManifestSlugRoute
   ApiPublicLpOrderRoute: typeof ApiPublicLpOrderRoute
+  ApiPublicMarketingVisitRoute: typeof ApiPublicMarketingVisitRoute
   ApiPublicMessengerBuyRoute: typeof ApiPublicMessengerBuyRoute
   ApiPublicMessengerProcessRoute: typeof ApiPublicMessengerProcessRoute
   ApiPublicMessengerWebhookRoute: typeof ApiPublicMessengerWebhookRoute
@@ -4749,6 +4762,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicLpOrderRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/marketing/visit': {
+      id: '/api/public/marketing/visit'
+      path: '/api/public/marketing/visit'
+      fullPath: '/api/public/marketing/visit'
+      preLoaderRoute: typeof ApiPublicMarketingVisitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/messenger/buy': {
       id: '/api/public/messenger/buy'
       path: '/api/public/messenger/buy'
@@ -5585,6 +5605,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicGa4TrackRoute: ApiPublicGa4TrackRoute,
   ApiPublicLpManifestSlugRoute: ApiPublicLpManifestSlugRoute,
   ApiPublicLpOrderRoute: ApiPublicLpOrderRoute,
+  ApiPublicMarketingVisitRoute: ApiPublicMarketingVisitRoute,
   ApiPublicMessengerBuyRoute: ApiPublicMessengerBuyRoute,
   ApiPublicMessengerProcessRoute: ApiPublicMessengerProcessRoute,
   ApiPublicMessengerWebhookRoute: ApiPublicMessengerWebhookRoute,

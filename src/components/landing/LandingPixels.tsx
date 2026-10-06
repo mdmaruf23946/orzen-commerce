@@ -22,6 +22,10 @@ export function LandingPixels({ pageId }: { pageId: string }) {
   const slug = data?.store_slug ?? "";
 
   useEffect(() => {
+    if (slug) import("@/lib/marketing-attribution").then((m) => m.recordPageView(slug)).catch(() => {});
+  }, [slug]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
     if (!fbPixel && !googleTag && !googleServer && !ttPixel && !ttServer) return;
     const added: HTMLScriptElement[] = [];
