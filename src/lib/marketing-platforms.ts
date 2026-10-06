@@ -3,9 +3,7 @@
 // only on the "Marketing & Targeting Apps" hub. Platform settings never mix.
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  Activity, BarChart3, LayoutDashboard, Megaphone, Plug, Radar, Server, Settings, Target, Users, type LucideIcon,
-} from "lucide-react";
+import { LayoutDashboard, Plug, type LucideIcon } from "lucide-react";
 import { getMyStore } from "@/lib/admin.functions";
 
 export type MarketingSection = { key: string; label: string; icon: LucideIcon };
@@ -27,12 +25,6 @@ export const MARKETING_PLATFORMS: MarketingPlatform[] = [
     sections: [
       { key: "overview", label: "Overview", icon: LayoutDashboard },
       { key: "integration", label: "Integration", icon: Plug },
-      { key: "pixel", label: "Tracking & Pixel", icon: Radar },
-      { key: "capi", label: "Conversions API", icon: Server },
-      { key: "events", label: "Events", icon: Activity },
-      { key: "audiences", label: "Audiences", icon: Users },
-      { key: "attribution", label: "Attribution", icon: BarChart3 },
-      { key: "settings", label: "Settings", icon: Settings },
     ],
   },
   {
@@ -41,10 +33,6 @@ export const MARKETING_PLATFORMS: MarketingPlatform[] = [
     sections: [
       { key: "overview", label: "Overview", icon: LayoutDashboard },
       { key: "integration", label: "Integration", icon: Plug },
-      { key: "ads", label: "Google Ads", icon: Megaphone },
-      { key: "conversions", label: "Conversion Tracking", icon: Target },
-      { key: "audiences", label: "Audiences", icon: Users },
-      { key: "settings", label: "Settings", icon: Settings },
     ],
   },
   {
@@ -53,10 +41,6 @@ export const MARKETING_PLATFORMS: MarketingPlatform[] = [
     sections: [
       { key: "overview", label: "Overview", icon: LayoutDashboard },
       { key: "integration", label: "Integration", icon: Plug },
-      { key: "pixel", label: "Pixel", icon: Radar },
-      { key: "events", label: "Events", icon: Activity },
-      { key: "conversions", label: "Conversion Tracking", icon: Target },
-      { key: "settings", label: "Settings", icon: Settings },
     ],
   },
 ];

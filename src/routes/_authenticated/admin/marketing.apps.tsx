@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Facebook, Chrome, Music2 } from "lucide-react";
 import { MARKETING_PLATFORMS, useMarketingConnections } from "@/lib/marketing-platforms";
-import { TrackingSetup } from "@/components/admin/marketing/TrackingSetup";
 import { StatusBadge } from "@/components/admin/marketing/ui";
 import { Button } from "@/components/ui/button";
 
@@ -53,7 +52,6 @@ function HubPage() {
           );
         })}
       </div>
-      <TrackingSetup />
     </div>
   );
 }

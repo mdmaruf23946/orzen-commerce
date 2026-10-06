@@ -3,12 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { getTrackingSetups, saveTrackingSetup } from "@/lib/marketing.functions";
-import {
-  GOOGLE_TAG_RE,
-  TRACKING_PLATFORMS,
-  trackingDefaults,
-  type TrackingPlatform,
-} from "@/lib/marketing.schema";
+import { GOOGLE_TAG_RE, trackingDefaults, type TrackingPlatform } from "@/lib/marketing.schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +16,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/admin/marketing/ui";
-import { cn } from "@/lib/utils";
 
 const PLATFORM_LABEL: Record<TrackingPlatform, string> = {
   facebook: "Facebook",
@@ -31,15 +25,14 @@ const PLATFORM_LABEL: Record<TrackingPlatform, string> = {
 
 type Form = Record<string, any>;
 
-export function TrackingSetup() {
+export function TrackingSetup({ platform }: { platform: TrackingPlatform }) {
   const fetchSetups = useServerFn(getTrackingSetups);
   const save = useServerFn(saveTrackingSetup);
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["admin", "tracking-setups"], queryFn: () => fetchSetups() });
 
   const [target, setTarget] = useState("main");
-  const [platform, setPlatform] = useState<TrackingPlatform>("facebook");
-  const [form, setForm] = useState<Form>({ ...trackingDefaults.facebook });
+  const [form, setForm] = useState<Form>({ ...(trackingDefaults as any)[platform] });
   const [saving, setSaving] = useState(false);
 
   const pages = data?.pages ?? [];
@@ -134,23 +127,9 @@ export function TrackingSetup() {
         </Select>
       </div>
 
-      <div className="space-y-1.5">
-        <Label className="text-sm">Platform</Label>
-        <div className="flex gap-2 overflow-x-auto pb-0.5">
-          {TRACKING_PLATFORMS.map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => setPlatform(p)}
-              className={cn(
-                "min-h-[40px] shrink-0 rounded-full border px-4 text-sm font-medium transition-colors",
-                platform === p ? "border-primary bg-primary text-primary-foreground" : "bg-background hover:bg-muted",
-              )}
-            >
-              {PLATFORM_LABEL[p]}
-            </button>
-          ))}
-        </div>
+      <div className="rounded-md border bg-muted/30 px-3 py-2">
+        <div className="text-sm font-medium">{PLATFORM_LABEL[platform]}</div>
+        <div className="text-xs text-muted-foreground">This target is isolated to {PLATFORM_LABEL[platform]}.</div>
       </div>
 
       {platform === "facebook" && (
