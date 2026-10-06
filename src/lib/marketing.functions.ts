@@ -5,60 +5,95 @@ import { z } from "zod";
 import { facebookSchema, googleSchema, tiktokSchema, saveTrackingSetupSchema } from "@/lib/marketing.schema";
 
 const marketingPerformanceInput = z.object({
+  platform: z.enum(["facebook", "google", "tiktok"]),
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   compare_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   compare_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
 
-const dayStart = (value: string) => `${value}T00:00:00.000Z`;
-const dayEnd = (value: string) => `${value}T23:59:59.999Z`;
+const dayStart = (value: string) => `${value}T00:00:00.000+06:00`;
+const dayEnd = (value: string) => `${value}T23:59:59.999+06:00`;
 const amount = (value: unknown) => Number(value ?? 0) || 0;
 
-/** Store results only. No platform attribution is implied because it is not recorded yet. */
+/** Strictly one platform's attributed data — never store-wide, never merged. */
 export const getMarketingPerformance = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => marketingPerformanceInput.parse(d))
   .handler(async ({ data, context }) => {
     const { data: store } = await context.supabase
-      .from("stores")
-      .select("id")
-      .eq("owner_user_id", context.userId)
-      .maybeSingle();
+      .from("stores").select("id").eq("owner_user_id", context.userId).maybeSingle();
     if (!store?.id) return null;
+    const sb = context.supabase as any;
+    const platform = data.platform;
 
-    const read = (from: string, to: string) =>
-      context.supabase
-        .from("orders")
-        .select("phone,subtotal,payment_status,status")
-        .eq("store_id", store.id)
-        .gte("created_at", dayStart(from))
-        .lte("created_at", dayEnd(to))
-        .limit(20000);
-    const [{ data: current }, { data: previous }] = await Promise.all([
-      read(data.from, data.to),
-      read(data.compare_from, data.compare_to),
-    ]);
+    const load = async (from: string, to: string) => {
+      const [v, e, o] = await Promise.all([
+        sb.from("marketing_visits").select("visitor_id,session_id,campaign,landing_path")
+          .eq("store_id", store.id).eq("platform", platform)
+          .gte("created_at", dayStart(from)).lte("created_at", dayEnd(to)).limit(50000),
+        sb.from("marketing_events").select("session_id,event_type")
+          .eq("store_id", store.id).eq("platform", platform)
+          .gte("created_at", dayStart(from)).lte("created_at", dayEnd(to)).limit(100000),
+        sb.from("orders").select("phone,subtotal,payment_status,status,attribution_campaign,attribution_session_id")
+          .eq("store_id", store.id).eq("attribution_platform", platform)
+          .gte("created_at", dayStart(from)).lte("created_at", dayEnd(to)).limit(20000),
+      ]);
+      return { visits: (v.data ?? []) as any[], events: (e.data ?? []) as any[], orders: ((o.data ?? []) as any[]).filter((r) => r.status !== "cancelled") };
+    };
 
-    const summarize = (rows: any[] | null) => {
-      const all = rows ?? [];
-      const orders = all.filter((row) => row.status !== "cancelled");
-      const purchases = orders.filter((row) =>
-        String(row.payment_status ?? "").toLowerCase() === "paid" ||
-        ["confirmed", "processing", "shipped", "delivered"].includes(String(row.status ?? "")),
-      ).length;
-      const revenue = orders.reduce((sum, row) => sum + amount(row.subtotal), 0);
+    const summarize = ({ visits, events, orders }: Awaited<ReturnType<typeof load>>) => {
+      const visitors = new Set(visits.map((r) => r.visitor_id)).size;
+      const sessions = visits.length;
+      const purchases = orders.filter((r) =>
+        String(r.payment_status ?? "").toLowerCase() === "paid" ||
+        ["confirmed", "processing", "shipped", "delivered"].includes(String(r.status ?? ""))).length;
+      const revenue = orders.reduce((s, r) => s + amount(r.subtotal), 0);
+      const sess = (t: string) => new Set(events.filter((x) => x.event_type === t).map((x) => x.session_id)).size;
       return {
-        customers: new Set(orders.map((row) => String(row.phone ?? "")).filter(Boolean)).size,
-        orders: orders.length,
-        purchases,
-        revenue,
+        visitors, sessions,
+        pageViews: events.filter((x) => x.event_type === "page_view").length,
+        customers: new Set(orders.map((r) => String(r.phone ?? "")).filter(Boolean)).size,
+        orders: orders.length, purchases, revenue,
         averageOrderValue: orders.length ? revenue / orders.length : 0,
-        purchaseRate: orders.length ? (purchases / orders.length) * 100 : 0,
+        conversionRate: sessions ? (orders.length / sessions) * 100 : 0,
+        funnel: { visitors, productViews: sess("product_view"), addToCart: sess("add_to_cart"), checkout: sess("checkout"), purchase: orders.length },
       };
     };
 
-    return { current: summarize(current), previous: summarize(previous) };
+    const [cur, prev] = await Promise.all([load(data.from, data.to), load(data.compare_from, data.compare_to)]);
+
+    const camp = new Map<string, { name: string; visitors: Set<string>; orders: number; revenue: number }>();
+    const c = (k: string | null) => {
+      const name = k || "(no campaign)";
+      if (!camp.has(name)) camp.set(name, { name, visitors: new Set(), orders: 0, revenue: 0 });
+      return camp.get(name)!;
+    };
+    cur.visits.forEach((v) => c(v.campaign).visitors.add(v.visitor_id));
+    cur.orders.forEach((o) => { const x = c(o.attribution_campaign); x.orders++; x.revenue += amount(o.subtotal); });
+
+    const views = new Map<string, number>();
+    cur.events.forEach((e) => e.event_type === "page_view" && views.set(e.session_id, (views.get(e.session_id) ?? 0) + 1));
+    const ordered = new Set(cur.orders.map((o) => o.attribution_session_id).filter(Boolean));
+    const lp = new Map<string, { path: string; sessions: number; bounces: number; orders: number }>();
+    cur.visits.forEach((v) => {
+      const path = v.landing_path || "/";
+      const x = lp.get(path) ?? { path, sessions: 0, bounces: 0, orders: 0 };
+      x.sessions++;
+      if ((views.get(v.session_id) ?? 0) <= 1) x.bounces++;
+      if (ordered.has(v.session_id)) x.orders++;
+      lp.set(path, x);
+    });
+
+    return {
+      platform,
+      current: summarize(cur),
+      previous: summarize(prev),
+      campaigns: [...camp.values()].map((x) => ({ name: x.name, visitors: x.visitors.size, orders: x.orders, revenue: x.revenue }))
+        .sort((a, b) => b.revenue - a.revenue || b.visitors - a.visitors).slice(0, 20),
+      landingPages: [...lp.values()].map((x) => ({ path: x.path, sessions: x.sessions, bounceRate: x.sessions ? (x.bounces / x.sessions) * 100 : 0, orders: x.orders }))
+        .sort((a, b) => b.sessions - a.sessions).slice(0, 20),
+    };
   });
 
 export const updateMarketingGoogle = createServerFn({ method: "POST" })
