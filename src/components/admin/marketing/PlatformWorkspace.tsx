@@ -7,6 +7,7 @@ import { TiktokTab } from "./TiktokTab";
 import { AUTO_EVENTS, StatusBadge } from "./ui";
 import { TrackingSetup } from "./TrackingSetup";
 import { PlatformOverview } from "./PlatformOverview";
+import { Button } from "@/components/ui/button";
 
 const SETTINGS = { facebook: FacebookTab, google: GoogleTab, tiktok: TiktokTab } as const;
 
@@ -34,10 +35,10 @@ export function PlatformWorkspace({ id, tab }: { id: MarketingPlatform["id"]; ta
       <div className="-mx-3 overflow-x-auto px-3">
         <div className="flex w-max gap-1">
           {p.sections.map((s) => (
-            <button key={s.key} type="button" onClick={() => navigate({ to: p.path, search: { tab: s.key } as any })}
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-medium ${current === s.key ? "border-primary bg-primary/10 text-primary" : "hover:bg-muted"}`}>
+            <Button key={s.key} type="button" size="sm" variant={current === s.key ? "secondary" : "outline"} onClick={() => navigate({ to: p.path, search: { tab: s.key } as any })}
+              className="whitespace-nowrap">
               <s.icon className="h-3.5 w-3.5" /> {s.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
