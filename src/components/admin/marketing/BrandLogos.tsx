@@ -37,5 +37,5 @@ export function GoogleLogo({ className }: { className?: string }) {
 }
 
 export function TikTokLogo({ className }: { className?: string }) {
-  return <img src={`https://orzen-commerce.lovable.app${tiktokAsset.url}`} alt="TikTok" className={className} />;
+  return <img src={`https://orzen-commerce.lovable.app${tiktokAsset.url}`} alt="TikTok" className={`rounded-full object-cover ${className ?? ""}`} />;
 }
