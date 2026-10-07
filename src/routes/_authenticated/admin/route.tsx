@@ -11,12 +11,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard, Package, Tags, ShoppingBag, Users, Image as ImageIcon,
-  Settings, CreditCard, LogOut, Menu, Megaphone, Truck,
+  Settings, CreditCard, Menu, Megaphone, Truck,
   Search as SearchIcon, PackageOpen, Wallet, Bell, ClipboardList, Bot,
   MessageSquare, MessageCircle, Boxes, Ticket, RotateCcw, BarChart3, FileUp, Globe,
   Radar, ShieldCheck, FileText, PhoneCall, Sparkles, AlertTriangle, UserCog, Palette,
   ChevronDown, ChevronsLeft, ChevronsRight, Moon, Sun, ExternalLink, LayoutTemplate, X,
-  Gauge, PackageCheck, Headphones, LayoutGrid, Inbox as InboxIcon, Plug as PlugIcon, Store, SlidersHorizontal,
+  Gauge, PackageCheck, Headphones, LayoutGrid, Inbox as InboxIcon, Plug as PlugIcon, Store, SlidersHorizontal, LifeBuoy, UserRound,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { amIOwner } from "@/lib/owner.functions";
@@ -36,6 +36,8 @@ import { ReadOnlyGuard } from "@/components/admin/ReadOnlyGuard";
 import { PlanLockGate } from "@/components/admin/PlanLockGate";
 import { EmailVerifyBanner, EmailVerifyGate } from "@/components/admin/EmailVerifyGate";
 import { sectionForPath } from "@/lib/panel-sections";
+import { getAccountProfile } from "@/lib/account-profile.functions";
+import { AccountAvatar } from "@/components/admin/AccountAvatar";
 
 
 type BadgeKey =
@@ -261,8 +263,6 @@ const menuGroups: NavGroupDef[] = [
       { to: "/admin/activity", label: "Activity Log", icon: ClipboardList },
       { to: "/admin/notifications", label: "Customer Notification Setup", icon: Bell, badgeKey: "notifications" },
       { to: "/admin/subscription", label: "My Subscription", icon: CreditCard },
-      { to: "/admin/billing", label: "Billing & Plans", icon: Wallet },
-      { to: "/admin/support", label: "Help Center", icon: MessageSquare },
     ],
   },
 ];
@@ -465,6 +465,12 @@ function AdminLayout() {
   });
   const fetchStore = useServerFn(getMyStore);
   const { data: myStore } = useQuery({ queryKey: ["admin", "store"], queryFn: () => fetchStore() });
+  const fetchAccountProfile = useServerFn(getAccountProfile);
+  const { data: accountProfile } = useQuery({
+    queryKey: ["admin", "account-profile"],
+    queryFn: () => fetchAccountProfile(),
+    staleTime: 60_000,
+  });
   const storeIcon = resolveStoreIcon(myStore as any);
   const storeName = (myStore as any)?.name ?? "";
   const { counts, storeId } = useBadgeCounts();
@@ -525,12 +531,6 @@ function AdminLayout() {
     localStorage.setItem("admin.theme.dark", v ? "1" : "0");
   }
 
-  async function signOut() {
-    const wasEmployee = access.isEmployee;
-    await supabase.auth.signOut();
-    navigate({ to: wasEmployee ? "/employee-login" : "/auth", replace: true });
-  }
-
   const access = useStoreAccess();
   const canSee = useMemo(
     () => (path: string) => {
@@ -558,8 +558,10 @@ function AdminLayout() {
   const groups = useMemo(() => buildGroups(search, canSee, providerConnected, mktConnected, aimConnected, courConnected, payConnected), [search, canSee, providerKey, mktKey, aimKey, courKey, payKey]);
 
   const currentSection = sectionForPath(currentPath);
-  const pageAllowed =
-    !access.isEmployee || (!!currentSection && access.can(currentSection.key, "view"));
+  const isPersonalProfile = currentPath === "/admin/profile";
+  const pageAllowed = isPersonalProfile
+    || !access.isEmployee
+    || (!!currentSection && access.can(currentSection.key, "view"));
 
   const asideWidth = collapsed ? "md:w-[72px]" : "md:w-64";
 
@@ -772,17 +774,59 @@ function AdminLayout() {
               </Link>
             )}
 
-            <button
-              onClick={signOut}
-              title={collapsed ? "Logout" : undefined}
+            <div className={cn("grid grid-cols-2 gap-1", collapsed && !open && "md:grid-cols-1")}>
+              {!access.isEmployee && (
+                <Link
+                  to="/admin/billing"
+                  onClick={() => setOpen(false)}
+                  title={collapsed ? "Billing" : undefined}
+                  className={cn(
+                    "flex min-w-0 items-center justify-center gap-2 rounded-md px-2 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground",
+                    collapsed && !open && "md:px-1",
+                  )}
+                >
+                  <Wallet className="h-4 w-4 shrink-0" />
+                  {(!collapsed || open) && <span>Billing</span>}
+                </Link>
+              )}
+              <Link
+                to="/admin/support"
+                onClick={() => setOpen(false)}
+                title={collapsed ? "Help Center" : undefined}
+                className={cn(
+                  "flex min-w-0 items-center justify-center gap-2 rounded-md px-2 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground",
+                  access.isEmployee && "col-span-2",
+                  collapsed && !open && "md:col-span-1 md:px-1",
+                )}
+              >
+                <LifeBuoy className="h-4 w-4 shrink-0" />
+                {(!collapsed || open) && <span>Help Center</span>}
+              </Link>
+            </div>
+
+            <Link
+              to="/admin/profile"
+              onClick={() => setOpen(false)}
+              title={collapsed ? "Profile" : undefined}
               className={cn(
-                "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-destructive/10",
-                collapsed && "md:justify-center md:px-2",
+                "flex min-w-0 items-center gap-2.5 rounded-lg border px-2.5 py-2 hover:bg-muted",
+                collapsed && !open && "md:justify-center md:border-0 md:px-1",
               )}
             >
-              <LogOut className="h-4 w-4" />
-              {(!collapsed || open) && <span>Logout</span>}
-            </button>
+              {accountProfile ? (
+                <AccountAvatar name={accountProfile.name} avatarUrl={accountProfile.avatarUrl} />
+              ) : (
+                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border bg-muted">
+                  <UserRound className="h-4 w-4 text-muted-foreground" />
+                </div>
+              )}
+              {(!collapsed || open) && (
+                <div className="min-w-0 leading-tight">
+                  <div className="truncate text-sm font-semibold">{accountProfile?.name ?? "My Profile"}</div>
+                  <div className="truncate text-[11px] text-muted-foreground">{accountProfile?.email ?? "Account settings"}</div>
+                </div>
+              )}
+            </Link>
           </div>
         </aside>
 
@@ -860,7 +904,7 @@ function AdminLayout() {
                 )}
                 <ReadOnlyGuard
                   active={
-                    access.isEmployee && (!currentSection || !access.can(currentSection.key, "manage"))
+                    !isPersonalProfile && access.isEmployee && (!currentSection || !access.can(currentSection.key, "manage"))
                   }
                 >
                   <PlanLockGate path={currentPath}>
