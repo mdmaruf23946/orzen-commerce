@@ -60,3 +60,8 @@
 - [x] Use the latest uploaded logo with tight framing and verify its displayed size
 - [x] Apply attributed marketing schema to production without changing existing data
 - [x] Deploy platform-specific Overview and logo to orzen.top and verify
+
+## Profile and sidebar footer release (2026-10-07)
+- [ ] Apply existing account-avatar upload policies to production
+- [ ] Deploy Profile page and account sidebar footer to orzen.top
+- [ ] Verify live pages and account navigation
