@@ -777,7 +777,7 @@ function AdminLayout() {
               {!access.isEmployee && (
                 <Link
                   to="/admin/billing"
-                  search={{}}
+                  search={{ highlight: undefined, plan: undefined, from: undefined }}
                   onClick={() => setOpen(false)}
                   title={collapsed ? "Billing" : undefined}
                   className={cn(
