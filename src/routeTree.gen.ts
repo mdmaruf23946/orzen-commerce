@@ -168,6 +168,10 @@ import { Route as AuthenticatedAdminBillingReturnRouteImport } from './routes/_a
 import { Route as AuthenticatedAdminCallSmsAiVoiceAgentRouteImport } from './routes/_authenticated/admin/call-sms.ai-voice-agent'
 import { Route as AuthenticatedAdminCallSmsAppsRouteImport } from './routes/_authenticated/admin/call-sms.apps'
 import { Route as AuthenticatedAdminCallSmsEpbxRouteImport } from './routes/_authenticated/admin/call-sms.epbx'
+import { Route as AuthenticatedAdminCouriersIndexRouteImport } from './routes/_authenticated/admin/couriers.index'
+import { Route as AuthenticatedAdminCouriersProviderRouteImport } from './routes/_authenticated/admin/couriers.$provider'
+import { Route as AuthenticatedAdminCouriersAppsRouteImport } from './routes/_authenticated/admin/couriers.apps'
+import { Route as AuthenticatedAdminCouriersOverviewRouteImport } from './routes/_authenticated/admin/couriers.overview'
 import { Route as AuthenticatedAdminFacebookIndexRouteImport } from './routes/_authenticated/admin/facebook.index'
 import { Route as AuthenticatedAdminFacebookCommentsRouteImport } from './routes/_authenticated/admin/facebook.comments'
 import { Route as AuthenticatedAdminFacebookComposeRouteImport } from './routes/_authenticated/admin/facebook.compose'
@@ -1155,6 +1159,30 @@ const AuthenticatedAdminCallSmsEpbxRoute =
     path: '/call-sms/epbx',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminCouriersIndexRoute =
+  AuthenticatedAdminCouriersIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAdminCouriersRoute,
+  } as any)
+const AuthenticatedAdminCouriersProviderRoute =
+  AuthenticatedAdminCouriersProviderRouteImport.update({
+    id: '/$provider',
+    path: '/$provider',
+    getParentRoute: () => AuthenticatedAdminCouriersRoute,
+  } as any)
+const AuthenticatedAdminCouriersAppsRoute =
+  AuthenticatedAdminCouriersAppsRouteImport.update({
+    id: '/apps',
+    path: '/apps',
+    getParentRoute: () => AuthenticatedAdminCouriersRoute,
+  } as any)
+const AuthenticatedAdminCouriersOverviewRoute =
+  AuthenticatedAdminCouriersOverviewRouteImport.update({
+    id: '/overview',
+    path: '/overview',
+    getParentRoute: () => AuthenticatedAdminCouriersRoute,
+  } as any)
 const AuthenticatedAdminFacebookIndexRoute =
   AuthenticatedAdminFacebookIndexRouteImport.update({
     id: '/',
@@ -1724,7 +1752,7 @@ export interface FileRoutesByFullPath {
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/admin/courier-orders': typeof AuthenticatedAdminCourierOrdersRoute
-  '/admin/couriers': typeof AuthenticatedAdminCouriersRoute
+  '/admin/couriers': typeof AuthenticatedAdminCouriersRouteWithChildren
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/customers-accounts': typeof AuthenticatedAdminCustomersAccountsRoute
   '/admin/delivery': typeof AuthenticatedAdminDeliveryRoute
@@ -1838,6 +1866,9 @@ export interface FileRoutesByFullPath {
   '/admin/call-sms/ai-voice-agent': typeof AuthenticatedAdminCallSmsAiVoiceAgentRoute
   '/admin/call-sms/apps': typeof AuthenticatedAdminCallSmsAppsRoute
   '/admin/call-sms/epbx': typeof AuthenticatedAdminCallSmsEpbxRoute
+  '/admin/couriers/$provider': typeof AuthenticatedAdminCouriersProviderRoute
+  '/admin/couriers/apps': typeof AuthenticatedAdminCouriersAppsRoute
+  '/admin/couriers/overview': typeof AuthenticatedAdminCouriersOverviewRoute
   '/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
   '/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
   '/admin/facebook/moderation': typeof AuthenticatedAdminFacebookModerationRoute
@@ -1914,6 +1945,7 @@ export interface FileRoutesByFullPath {
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/ai/': typeof AuthenticatedAdminAiIndexRoute
   '/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
+  '/admin/couriers/': typeof AuthenticatedAdminCouriersIndexRoute
   '/admin/facebook/': typeof AuthenticatedAdminFacebookIndexRoute
   '/admin/landing-builder/': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
@@ -1966,7 +1998,6 @@ export interface FileRoutesByTo {
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/admin/courier-orders': typeof AuthenticatedAdminCourierOrdersRoute
-  '/admin/couriers': typeof AuthenticatedAdminCouriersRoute
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/customers-accounts': typeof AuthenticatedAdminCustomersAccountsRoute
   '/admin/delivery': typeof AuthenticatedAdminDeliveryRoute
@@ -2078,6 +2109,9 @@ export interface FileRoutesByTo {
   '/admin/call-sms/ai-voice-agent': typeof AuthenticatedAdminCallSmsAiVoiceAgentRoute
   '/admin/call-sms/apps': typeof AuthenticatedAdminCallSmsAppsRoute
   '/admin/call-sms/epbx': typeof AuthenticatedAdminCallSmsEpbxRoute
+  '/admin/couriers/$provider': typeof AuthenticatedAdminCouriersProviderRoute
+  '/admin/couriers/apps': typeof AuthenticatedAdminCouriersAppsRoute
+  '/admin/couriers/overview': typeof AuthenticatedAdminCouriersOverviewRoute
   '/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
   '/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
   '/admin/facebook/moderation': typeof AuthenticatedAdminFacebookModerationRoute
@@ -2154,6 +2188,7 @@ export interface FileRoutesByTo {
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/admin/ai': typeof AuthenticatedAdminAiIndexRoute
   '/admin/billing': typeof AuthenticatedAdminBillingIndexRoute
+  '/admin/couriers': typeof AuthenticatedAdminCouriersIndexRoute
   '/admin/facebook': typeof AuthenticatedAdminFacebookIndexRoute
   '/admin/landing-builder': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/admin/landing-pages': typeof AuthenticatedAdminLandingPagesIndexRoute
@@ -2217,7 +2252,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/_authenticated/admin/courier-orders': typeof AuthenticatedAdminCourierOrdersRoute
-  '/_authenticated/admin/couriers': typeof AuthenticatedAdminCouriersRoute
+  '/_authenticated/admin/couriers': typeof AuthenticatedAdminCouriersRouteWithChildren
   '/_authenticated/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/_authenticated/admin/customers-accounts': typeof AuthenticatedAdminCustomersAccountsRoute
   '/_authenticated/admin/delivery': typeof AuthenticatedAdminDeliveryRoute
@@ -2331,6 +2366,9 @@ export interface FileRoutesById {
   '/_authenticated/admin/call-sms/ai-voice-agent': typeof AuthenticatedAdminCallSmsAiVoiceAgentRoute
   '/_authenticated/admin/call-sms/apps': typeof AuthenticatedAdminCallSmsAppsRoute
   '/_authenticated/admin/call-sms/epbx': typeof AuthenticatedAdminCallSmsEpbxRoute
+  '/_authenticated/admin/couriers/$provider': typeof AuthenticatedAdminCouriersProviderRoute
+  '/_authenticated/admin/couriers/apps': typeof AuthenticatedAdminCouriersAppsRoute
+  '/_authenticated/admin/couriers/overview': typeof AuthenticatedAdminCouriersOverviewRoute
   '/_authenticated/admin/facebook/comments': typeof AuthenticatedAdminFacebookCommentsRoute
   '/_authenticated/admin/facebook/compose': typeof AuthenticatedAdminFacebookComposeRoute
   '/_authenticated/admin/facebook/moderation': typeof AuthenticatedAdminFacebookModerationRoute
@@ -2407,6 +2445,7 @@ export interface FileRoutesById {
   '/store/$slug/product/$productId': typeof StoreSlugProductProductIdRoute
   '/_authenticated/admin/ai/': typeof AuthenticatedAdminAiIndexRoute
   '/_authenticated/admin/billing/': typeof AuthenticatedAdminBillingIndexRoute
+  '/_authenticated/admin/couriers/': typeof AuthenticatedAdminCouriersIndexRoute
   '/_authenticated/admin/facebook/': typeof AuthenticatedAdminFacebookIndexRoute
   '/_authenticated/admin/landing-builder/': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/_authenticated/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
@@ -2584,6 +2623,9 @@ export interface FileRouteTypes {
     | '/admin/call-sms/ai-voice-agent'
     | '/admin/call-sms/apps'
     | '/admin/call-sms/epbx'
+    | '/admin/couriers/$provider'
+    | '/admin/couriers/apps'
+    | '/admin/couriers/overview'
     | '/admin/facebook/comments'
     | '/admin/facebook/compose'
     | '/admin/facebook/moderation'
@@ -2660,6 +2702,7 @@ export interface FileRouteTypes {
     | '/store/$slug/product/$productId'
     | '/admin/ai/'
     | '/admin/billing/'
+    | '/admin/couriers/'
     | '/admin/facebook/'
     | '/admin/landing-builder/'
     | '/admin/landing-pages/'
@@ -2712,7 +2755,6 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/coupons'
     | '/admin/courier-orders'
-    | '/admin/couriers'
     | '/admin/customers'
     | '/admin/customers-accounts'
     | '/admin/delivery'
@@ -2824,6 +2866,9 @@ export interface FileRouteTypes {
     | '/admin/call-sms/ai-voice-agent'
     | '/admin/call-sms/apps'
     | '/admin/call-sms/epbx'
+    | '/admin/couriers/$provider'
+    | '/admin/couriers/apps'
+    | '/admin/couriers/overview'
     | '/admin/facebook/comments'
     | '/admin/facebook/compose'
     | '/admin/facebook/moderation'
@@ -2900,6 +2945,7 @@ export interface FileRouteTypes {
     | '/store/$slug/product/$productId'
     | '/admin/ai'
     | '/admin/billing'
+    | '/admin/couriers'
     | '/admin/facebook'
     | '/admin/landing-builder'
     | '/admin/landing-pages'
@@ -3076,6 +3122,9 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/call-sms/ai-voice-agent'
     | '/_authenticated/admin/call-sms/apps'
     | '/_authenticated/admin/call-sms/epbx'
+    | '/_authenticated/admin/couriers/$provider'
+    | '/_authenticated/admin/couriers/apps'
+    | '/_authenticated/admin/couriers/overview'
     | '/_authenticated/admin/facebook/comments'
     | '/_authenticated/admin/facebook/compose'
     | '/_authenticated/admin/facebook/moderation'
@@ -3152,6 +3201,7 @@ export interface FileRouteTypes {
     | '/store/$slug/product/$productId'
     | '/_authenticated/admin/ai/'
     | '/_authenticated/admin/billing/'
+    | '/_authenticated/admin/couriers/'
     | '/_authenticated/admin/facebook/'
     | '/_authenticated/admin/landing-builder/'
     | '/_authenticated/admin/landing-pages/'
@@ -4355,6 +4405,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCallSmsEpbxRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/couriers/': {
+      id: '/_authenticated/admin/couriers/'
+      path: '/'
+      fullPath: '/admin/couriers/'
+      preLoaderRoute: typeof AuthenticatedAdminCouriersIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminCouriersRoute
+    }
+    '/_authenticated/admin/couriers/$provider': {
+      id: '/_authenticated/admin/couriers/$provider'
+      path: '/$provider'
+      fullPath: '/admin/couriers/$provider'
+      preLoaderRoute: typeof AuthenticatedAdminCouriersProviderRouteImport
+      parentRoute: typeof AuthenticatedAdminCouriersRoute
+    }
+    '/_authenticated/admin/couriers/apps': {
+      id: '/_authenticated/admin/couriers/apps'
+      path: '/apps'
+      fullPath: '/admin/couriers/apps'
+      preLoaderRoute: typeof AuthenticatedAdminCouriersAppsRouteImport
+      parentRoute: typeof AuthenticatedAdminCouriersRoute
+    }
+    '/_authenticated/admin/couriers/overview': {
+      id: '/_authenticated/admin/couriers/overview'
+      path: '/overview'
+      fullPath: '/admin/couriers/overview'
+      preLoaderRoute: typeof AuthenticatedAdminCouriersOverviewRouteImport
+      parentRoute: typeof AuthenticatedAdminCouriersRoute
+    }
     '/_authenticated/admin/facebook/': {
       id: '/_authenticated/admin/facebook/'
       path: '/'
@@ -5042,6 +5120,28 @@ const AuthenticatedAdminFacebookRouteRouteWithChildren =
     AuthenticatedAdminFacebookRouteRouteChildren,
   )
 
+interface AuthenticatedAdminCouriersRouteChildren {
+  AuthenticatedAdminCouriersProviderRoute: typeof AuthenticatedAdminCouriersProviderRoute
+  AuthenticatedAdminCouriersAppsRoute: typeof AuthenticatedAdminCouriersAppsRoute
+  AuthenticatedAdminCouriersOverviewRoute: typeof AuthenticatedAdminCouriersOverviewRoute
+  AuthenticatedAdminCouriersIndexRoute: typeof AuthenticatedAdminCouriersIndexRoute
+}
+
+const AuthenticatedAdminCouriersRouteChildren: AuthenticatedAdminCouriersRouteChildren =
+  {
+    AuthenticatedAdminCouriersProviderRoute:
+      AuthenticatedAdminCouriersProviderRoute,
+    AuthenticatedAdminCouriersAppsRoute: AuthenticatedAdminCouriersAppsRoute,
+    AuthenticatedAdminCouriersOverviewRoute:
+      AuthenticatedAdminCouriersOverviewRoute,
+    AuthenticatedAdminCouriersIndexRoute: AuthenticatedAdminCouriersIndexRoute,
+  }
+
+const AuthenticatedAdminCouriersRouteWithChildren =
+  AuthenticatedAdminCouriersRoute._addFileChildren(
+    AuthenticatedAdminCouriersRouteChildren,
+  )
+
 interface AuthenticatedAdminMarketingRouteChildren {
   AuthenticatedAdminMarketingAppsRoute: typeof AuthenticatedAdminMarketingAppsRoute
   AuthenticatedAdminMarketingFacebookRoute: typeof AuthenticatedAdminMarketingFacebookRoute
@@ -5110,7 +5210,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminCouponsRoute: typeof AuthenticatedAdminCouponsRoute
   AuthenticatedAdminCourierOrdersRoute: typeof AuthenticatedAdminCourierOrdersRoute
-  AuthenticatedAdminCouriersRoute: typeof AuthenticatedAdminCouriersRoute
+  AuthenticatedAdminCouriersRoute: typeof AuthenticatedAdminCouriersRouteWithChildren
   AuthenticatedAdminCustomersRoute: typeof AuthenticatedAdminCustomersRoute
   AuthenticatedAdminCustomersAccountsRoute: typeof AuthenticatedAdminCustomersAccountsRoute
   AuthenticatedAdminDeliveryRoute: typeof AuthenticatedAdminDeliveryRoute
@@ -5180,7 +5280,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
     AuthenticatedAdminCouponsRoute: AuthenticatedAdminCouponsRoute,
     AuthenticatedAdminCourierOrdersRoute: AuthenticatedAdminCourierOrdersRoute,
-    AuthenticatedAdminCouriersRoute: AuthenticatedAdminCouriersRoute,
+    AuthenticatedAdminCouriersRoute:
+      AuthenticatedAdminCouriersRouteWithChildren,
     AuthenticatedAdminCustomersRoute: AuthenticatedAdminCustomersRoute,
     AuthenticatedAdminCustomersAccountsRoute:
       AuthenticatedAdminCustomersAccountsRoute,

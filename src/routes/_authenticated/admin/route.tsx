@@ -1,3 +1,5 @@
+import { COURIERS } from "@/components/admin/couriers/providers";
+import { useCourierConnections, type CourierConnectionMap } from "@/lib/courier-apps";
 import { MARKETING_PLATFORMS, useMarketingConnections, type MarketingConnectionMap } from "@/lib/marketing-platforms";
 import { CALL_SMS_PROVIDERS, CALL_SMS_HUB_PATH, type ProviderConnectionMap } from "@/lib/call-sms-providers";
 import { useProviderConnections } from "@/lib/use-call-sms-connections";
@@ -90,8 +92,16 @@ const menuGroups: NavGroupDef[] = [
         children: [
           { to: "/admin/courier-orders", label: "Courier Orders", icon: ClipboardList, badgeKey: "delivery" },
           { to: "/admin/parcels", label: "Courier Parcels", icon: PackageOpen, badgeKey: "delivery" },
-          { to: "/admin/couriers", label: "Courier Setup", icon: Truck, badgeKey: "delivery" },
           { to: "/admin/delivery", label: "Delivery Zones", icon: Radar, badgeKey: "delivery" },
+        ],
+      },
+      {
+        to: "/admin/couriers/apps",
+        label: "Courier Apps",
+        icon: Truck,
+        children: [
+          { to: "/admin/couriers/apps", label: "All Courier Apps", icon: Truck },
+          { to: "/admin/couriers/overview", label: "Courier Overview", icon: LayoutDashboard },
         ],
       },
       { to: "/admin/returns", label: "Returns & Exchanges", icon: RotateCcw, badgeKey: "returns" },
@@ -302,6 +312,19 @@ function providerItems(connected: ProviderConnectionMap): LinkDef[] {
   }));
 }
 
+/** Connected couriers only — each gets its own isolated menu. */
+function courierItems(connected: CourierConnectionMap): LinkDef[] {
+  return COURIERS.filter((c) => connected[c.key]).map((c) => ({
+    to: `/admin/couriers/${c.key}`,
+    label: c.label,
+    icon: Truck,
+    children: [
+      { to: `/admin/couriers/${c.key}`, search: { section: "overview" }, label: "Overview", icon: LayoutDashboard },
+      { to: `/admin/couriers/${c.key}`, search: { section: "integration" }, label: "Integration", icon: PlugIcon },
+    ],
+  }));
+}
+
 /** Connected marketing platforms only — each gets its own isolated menu. */
 function marketingItems(connected: MarketingConnectionMap): LinkDef[] {
   return MARKETING_PLATFORMS.filter((p) => connected[p.id]).map((p) => ({
@@ -326,7 +349,7 @@ function aiMessagingItems(connected: AiMessagingConnectionMap): LinkDef[] {
   })) as LinkDef[];
 }
 
-function buildGroups(query: string, canSee: (path: string) => boolean, connected: ProviderConnectionMap = {}, mkt: MarketingConnectionMap = {}, aim: AiMessagingConnectionMap = {}) {
+function buildGroups(query: string, canSee: (path: string) => boolean, connected: ProviderConnectionMap = {}, mkt: MarketingConnectionMap = {}, aim: AiMessagingConnectionMap = {}, cour: CourierConnectionMap = {}) {
   const q = query.trim().toLowerCase();
   return menuGroups
     .map((group) => {
@@ -336,7 +359,12 @@ function buildGroups(query: string, canSee: (path: string) => boolean, connected
           ? [group.items[0], ...marketingItems(mkt), ...group.items.slice(1)]
           : group.label === "Channels & AI"
             ? [group.items[0], ...aiMessagingItems(aim), ...group.items.slice(1)]
-            : group.items;
+            : group.label === "Orders & Delivery"
+              ? (() => {
+                  const i = group.items.findIndex((it) => it.to === "/admin/couriers/apps");
+                  return [...group.items.slice(0, i + 1), ...courierItems(cour), ...group.items.slice(i + 1)];
+                })()
+              : group.items;
       const items = groupItems.reduce<VisibleLinkDef[]>((visible, item) => {
           const visibleChildren = (item.children ?? []).filter((child) => canSee(child.to));
           const isVisible = canSee(item.to) || visibleChildren.length > 0;
@@ -505,7 +533,10 @@ function AdminLayout() {
   const { connected: aimConnected } = useAiMessagingConnections();
   const aimKey = JSON.stringify(aimConnected);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const groups = useMemo(() => buildGroups(search, canSee, providerConnected, mktConnected, aimConnected), [search, canSee, providerKey, mktKey, aimKey]);
+  const { connected: courConnected } = useCourierConnections();
+  const courKey = JSON.stringify(courConnected);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const groups = useMemo(() => buildGroups(search, canSee, providerConnected, mktConnected, aimConnected, courConnected), [search, canSee, providerKey, mktKey, aimKey, courKey]);
 
   const currentSection = sectionForPath(currentPath);
   const pageAllowed =

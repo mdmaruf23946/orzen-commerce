@@ -167,7 +167,7 @@ function ParcelsPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <Link to="/admin/couriers" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+          <Link to="/admin/couriers/apps" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-3.5 w-3.5" /> Courier Integration
           </Link>
           <h1 className="mt-1 truncate text-xl font-semibold sm:text-2xl">
