@@ -18,7 +18,6 @@ import {
   ChevronDown, ChevronsLeft, ChevronsRight, Moon, Sun, ExternalLink, LayoutTemplate, X,
   Gauge, PackageCheck, Headphones, LayoutGrid, Inbox as InboxIcon, Plug as PlugIcon, Store, SlidersHorizontal, LifeBuoy, UserRound,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { amIOwner } from "@/lib/owner.functions";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -778,6 +777,7 @@ function AdminLayout() {
               {!access.isEmployee && (
                 <Link
                   to="/admin/billing"
+                  search={{}}
                   onClick={() => setOpen(false)}
                   title={collapsed ? "Billing" : undefined}
                   className={cn(
