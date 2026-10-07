@@ -1,6 +1,7 @@
 import { MARKETING_PLATFORMS, useMarketingConnections, type MarketingConnectionMap } from "@/lib/marketing-platforms";
 import { CALL_SMS_PROVIDERS, CALL_SMS_HUB_PATH, type ProviderConnectionMap } from "@/lib/call-sms-providers";
 import { useProviderConnections } from "@/lib/use-call-sms-connections";
+import { AI_MESSAGING_APPS, useAiMessagingConnections, type AiMessagingConnectionMap } from "@/lib/ai-messaging-apps";
 import { createFileRoute, Link, Outlet, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -12,7 +13,7 @@ import {
   MessageSquare, MessageCircle, Boxes, Ticket, RotateCcw, BarChart3, FileUp, Globe,
   Radar, ShieldCheck, FileText, PhoneCall, Sparkles, AlertTriangle, UserCog, Palette,
   ChevronDown, ChevronsLeft, ChevronsRight, Moon, Sun, ExternalLink, LayoutTemplate, X,
-  Gauge, PackageCheck, Headphones, Store, SlidersHorizontal,
+  Gauge, PackageCheck, Headphones, LayoutGrid, Inbox as InboxIcon, Plug as PlugIcon, Store, SlidersHorizontal,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { amIOwner } from "@/lib/owner.functions";
@@ -151,26 +152,7 @@ const menuGroups: NavGroupDef[] = [
     label: "Channels & AI",
     icon: Bot,
     items: [
-      {
-        to: "/admin/messenger-inbox",
-        label: "Omnichannel Inbox",
-        icon: MessageSquare,
-        badgeKey: "messenger",
-        children: [
-          { to: "/admin/messenger-inbox", label: "Messenger Inbox", icon: MessageSquare, badgeKey: "messenger" },
-          { to: "/admin/whatsapp-inbox", label: "WhatsApp Inbox", icon: MessageCircle },
-          { to: "/admin/handoff-queue", label: "Handoff Queue", icon: Headphones, badgeKey: "handoff" },
-        ],
-      },
-      {
-        to: "/admin/messenger",
-        label: "Channel Setup",
-        icon: MessageCircle,
-        children: [
-          { to: "/admin/messenger", label: "Messenger AI Integration", icon: MessageSquare },
-          { to: "/admin/whatsapp", label: "WhatsApp AI Integration", icon: MessageCircle },
-        ],
-      },
+      { to: "/admin/ai-messaging/apps", label: "AI Messaging Apps", icon: LayoutGrid },
       {
         to: "/admin/ai",
         label: "AI Command Center",
@@ -181,6 +163,7 @@ const menuGroups: NavGroupDef[] = [
           { to: "/admin/ai/identity", label: "Merchant Identity", icon: UserCog },
           { to: "/admin/ai/settings", label: "AI Settings", icon: Settings },
           { to: "/admin/ai/logs", label: "Activity Log", icon: ClipboardList },
+          { to: "/admin/handoff-queue", label: "Handoff Queue", icon: Headphones, badgeKey: "handoff" },
         ],
       },
       { to: "/admin/ai-agent", label: "AI Sales Agent", icon: Bot },
@@ -329,7 +312,21 @@ function marketingItems(connected: MarketingConnectionMap): LinkDef[] {
   }));
 }
 
-function buildGroups(query: string, canSee: (path: string) => boolean, connected: ProviderConnectionMap = {}, mkt: MarketingConnectionMap = {}) {
+/** Connected AI messaging apps only — each keeps its existing Inbox + Integration. */
+function aiMessagingItems(connected: AiMessagingConnectionMap): LinkDef[] {
+  return AI_MESSAGING_APPS.filter((a) => connected[a.id]).map((a) => ({
+    to: a.inboxPath,
+    label: a.name,
+    icon: a.id === "messenger" ? MessageSquare : MessageCircle,
+    ...(a.id === "messenger" ? { badgeKey: "messenger" as const } : {}),
+    children: [
+      { to: a.inboxPath, label: "Inbox", icon: InboxIcon, ...(a.id === "messenger" ? { badgeKey: "messenger" as const } : {}) },
+      { to: a.integrationPath, label: "Integration", icon: PlugIcon },
+    ],
+  })) as LinkDef[];
+}
+
+function buildGroups(query: string, canSee: (path: string) => boolean, connected: ProviderConnectionMap = {}, mkt: MarketingConnectionMap = {}, aim: AiMessagingConnectionMap = {}) {
   const q = query.trim().toLowerCase();
   return menuGroups
     .map((group) => {
@@ -337,7 +334,9 @@ function buildGroups(query: string, canSee: (path: string) => boolean, connected
         ? [group.items[0], ...providerItems(connected), ...group.items.slice(1)]
         : group.label === "Marketing & Sales"
           ? [group.items[0], ...marketingItems(mkt), ...group.items.slice(1)]
-          : group.items;
+          : group.label === "Channels & AI"
+            ? [group.items[0], ...aiMessagingItems(aim), ...group.items.slice(1)]
+            : group.items;
       const items = groupItems.reduce<VisibleLinkDef[]>((visible, item) => {
           const visibleChildren = (item.children ?? []).filter((child) => canSee(child.to));
           const isVisible = canSee(item.to) || visibleChildren.length > 0;
@@ -503,7 +502,10 @@ function AdminLayout() {
   const { connected: mktConnected } = useMarketingConnections();
   const mktKey = JSON.stringify(mktConnected);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const groups = useMemo(() => buildGroups(search, canSee, providerConnected, mktConnected), [search, canSee, providerKey, mktKey]);
+  const { connected: aimConnected } = useAiMessagingConnections();
+  const aimKey = JSON.stringify(aimConnected);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const groups = useMemo(() => buildGroups(search, canSee, providerConnected, mktConnected, aimConnected), [search, canSee, providerKey, mktKey, aimKey]);
 
   const currentSection = sectionForPath(currentPath);
   const pageAllowed =
