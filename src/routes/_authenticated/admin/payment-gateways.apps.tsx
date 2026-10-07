@@ -58,7 +58,7 @@ function HubPage() {
                         <Badge variant="outline" className="text-[10px]"><Star className="mr-1 h-3 w-3 fill-current" /> Default</Badge>
                       )}
                     </div>
-                    <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{brand.tagline}</p>
+                    <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{g.label} · {brand.tagline}</p>
                   </div>
                   <Button asChild size="sm" variant={on ? "outline" : "default"}>
                     <Link to="/admin/payment-gateways/$gateway" params={{ gateway: g.provider_id }} search={{ section: on ? "overview" : "integration" }}>
