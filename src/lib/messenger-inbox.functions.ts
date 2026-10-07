@@ -636,7 +636,14 @@ export const retryFailedMessage = createServerFn({ method: "POST" })
 export const getInboxStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const storeId = await getOwnedStoreId(context.supabase, context.userId);
+    // Dashboard tiles poll this for every user: no store yet, or a staff
+    // member without inbox access, gets zeros instead of a 500.
+    let storeId: string;
+    try {
+      storeId = await getOwnedStoreId(context.supabase, context.userId);
+    } catch {
+      return { total: 0, unread: 0, today: 0, ai_replied: 0, human_replied: 0, failed: 0 };
+    }
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
     const iso = startOfDay.toISOString();
