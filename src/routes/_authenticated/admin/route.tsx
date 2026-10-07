@@ -151,26 +151,7 @@ const menuGroups: NavGroupDef[] = [
     label: "Channels & AI",
     icon: Bot,
     items: [
-      {
-        to: "/admin/messenger-inbox",
-        label: "Omnichannel Inbox",
-        icon: MessageSquare,
-        badgeKey: "messenger",
-        children: [
-          { to: "/admin/messenger-inbox", label: "Messenger Inbox", icon: MessageSquare, badgeKey: "messenger" },
-          { to: "/admin/whatsapp-inbox", label: "WhatsApp Inbox", icon: MessageCircle },
-          { to: "/admin/handoff-queue", label: "Handoff Queue", icon: Headphones, badgeKey: "handoff" },
-        ],
-      },
-      {
-        to: "/admin/messenger",
-        label: "Channel Setup",
-        icon: MessageCircle,
-        children: [
-          { to: "/admin/messenger", label: "Messenger AI Integration", icon: MessageSquare },
-          { to: "/admin/whatsapp", label: "WhatsApp AI Integration", icon: MessageCircle },
-        ],
-      },
+      { to: "/admin/ai-messaging/apps", label: "AI Messaging Apps", icon: LayoutGrid },
       {
         to: "/admin/ai",
         label: "AI Command Center",
@@ -181,6 +162,7 @@ const menuGroups: NavGroupDef[] = [
           { to: "/admin/ai/identity", label: "Merchant Identity", icon: UserCog },
           { to: "/admin/ai/settings", label: "AI Settings", icon: Settings },
           { to: "/admin/ai/logs", label: "Activity Log", icon: ClipboardList },
+          { to: "/admin/handoff-queue", label: "Handoff Queue", icon: Headphones, badgeKey: "handoff" },
         ],
       },
       { to: "/admin/ai-agent", label: "AI Sales Agent", icon: Bot },
