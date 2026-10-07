@@ -99,6 +99,23 @@ if [ -d dist/client ]; then
   printf '/assets/*\n  Cache-Control: public, max-age=31536000, immutable\n' > dist/client/_headers
 fi
 
+# unenv's CJS interop chunk calls createRequire(import.meta.url) at module
+# scope. Some Worker runtimes leave import.meta.url undefined there, which
+# crashes every SSR request with ERR_INVALID_ARG_VALUE. Guard it with a fixed
+# file URL fallback (the real value is kept when it is defined).
+python3 - <<'PY'
+import pathlib, re
+path = pathlib.Path("dist/server/_runtime.mjs")
+if path.is_file():
+    s = path.read_text(encoding="utf-8")
+    s = re.sub(
+        r'(\w+)\(import\.meta\.url\)',
+        lambda m: f'{m.group(1)}(typeof import.meta.url!=="undefined"?import.meta.url:"file:///app/")',
+        s,
+    )
+    path.write_text(s, encoding="utf-8")
+PY
+
 
 # Assert on the actual Supabase endpoint compiled into the browser bundle, not
 # on a bare project id (guard constants in source contain the expected id and
