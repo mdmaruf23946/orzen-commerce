@@ -62,6 +62,6 @@
 - [x] Deploy platform-specific Overview and logo to orzen.top and verify
 
 ## Profile and sidebar footer release (2026-10-07)
-- [ ] Apply existing account-avatar upload policies to production
-- [ ] Deploy Profile page and account sidebar footer to orzen.top
-- [ ] Verify live pages and account navigation
+- [x] Apply existing account-avatar upload policies to production
+- [x] Deploy Profile page and account sidebar footer to orzen.top
+- [x] Verify live page responses and signed-out protection; authenticated preview shows Profile and footer links (live authenticated session unavailable)
