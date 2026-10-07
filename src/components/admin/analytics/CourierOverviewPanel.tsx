@@ -38,7 +38,7 @@ export function CourierOverviewPanel({ data }: { data: CourierOverview }) {
         </p>
         <button
           type="button"
-          onClick={() => navigate({ to: "/admin/couriers" })}
+          onClick={() => navigate({ to: "/admin/couriers/apps" })}
           className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
         >
           Go to Couriers

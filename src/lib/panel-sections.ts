@@ -57,7 +57,7 @@ export const PANEL_SECTIONS: PanelSection[] = [
   { key: "analytics", label: "Analytics", group: "Finance & Analytics", paths: ["/admin/analytics"], feature: "analytics" },
 
   { key: "delivery", label: "Delivery Zones", group: "Orders & Delivery", paths: ["/admin/delivery"], feature: "delivery_zones" },
-  { key: "couriers", label: "Courier Setup", group: "Orders & Delivery", paths: ["/admin/couriers"], feature: "courier" },
+  { key: "couriers", label: "Courier Apps", group: "Orders & Delivery", paths: ["/admin/couriers"], feature: "courier" },
   { key: "parcels", label: "Courier Parcels", group: "Orders & Delivery", paths: ["/admin/parcels"], feature: "courier" },
   { key: "landing_builder", label: "Landing Page Builder", group: "Marketing & Sales", paths: ["/admin/landing-builder"], feature: "landing_page_create" },
   { key: "landing_pages", label: "Landing Page Integrations", group: "Marketing & Sales", paths: ["/admin/landing-pages"], feature: "landing_page_connect" },

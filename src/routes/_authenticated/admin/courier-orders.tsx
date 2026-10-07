@@ -262,7 +262,7 @@ function CourierOrdersPage() {
             <RefreshCw className={`mr-1 h-4 w-4 ${syncNow.isPending ? "animate-spin" : ""}`} /> Sync Now
           </Button>
           <Button asChild size="sm" variant="outline">
-            <Link to="/admin/couriers">
+            <Link to="/admin/couriers/apps">
               <Settings2 className="mr-1 h-4 w-4" /> Courier Integration
             </Link>
           </Button>
@@ -275,7 +275,7 @@ function CourierOrdersPage() {
           <Truck className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">No courier connected yet.</p>
           <Button asChild size="sm" className="mt-3">
-            <Link to="/admin/couriers">Go to Courier Integration</Link>
+            <Link to="/admin/couriers/apps">Go to Courier Apps</Link>
           </Button>
         </div>
       ) : (
