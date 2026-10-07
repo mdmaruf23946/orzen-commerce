@@ -52,7 +52,7 @@ export const PANEL_SECTIONS: PanelSection[] = [
   { key: "theme", label: "Theme & Styling", group: "Online Storefront", paths: ["/admin/theme"], feature: "themes" },
   { key: "notifications", label: "Customer Notification Setup", group: "Settings & Management", paths: ["/admin/notifications"], feature: "notifications" },
 
-  { key: "payment_gateway", label: "Payment Gateways", group: "Finance & Analytics", paths: ["/admin/payment-gateway"], ownerOnly: true, feature: "payment_gateways" },
+  { key: "payment_gateway", label: "Payment Gateway Apps", group: "Finance & Analytics", paths: ["/admin/payment-gateway", "/admin/payment-gateways"], ownerOnly: true, feature: "payment_gateways" },
   { key: "finance", label: "Business Finance", group: "Finance & Analytics", paths: ["/admin/finance"] },
   { key: "analytics", label: "Analytics", group: "Finance & Analytics", paths: ["/admin/analytics"], feature: "analytics" },
 

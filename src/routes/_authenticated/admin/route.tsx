@@ -3,6 +3,7 @@ import { useCourierConnections, type CourierConnectionMap } from "@/lib/courier-
 import { MARKETING_PLATFORMS, useMarketingConnections, type MarketingConnectionMap } from "@/lib/marketing-platforms";
 import { CALL_SMS_PROVIDERS, CALL_SMS_HUB_PATH, type ProviderConnectionMap } from "@/lib/call-sms-providers";
 import { useProviderConnections } from "@/lib/use-call-sms-connections";
+import { PAYMENT_SECTIONS, usePaymentGatewayConnections } from "@/lib/payment-gateway-apps";
 import { AI_MESSAGING_APPS, useAiMessagingConnections, type AiMessagingConnectionMap } from "@/lib/ai-messaging-apps";
 import { createFileRoute, Link, Outlet, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -218,7 +219,8 @@ const menuGroups: NavGroupDef[] = [
     items: [
       { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
       { to: "/admin/finance", label: "Business Finance", icon: Wallet },
-      { to: "/admin/payment-gateway", label: "Payment Gateways", icon: CreditCard, badgeKey: "payment_gateway" },
+      { to: "/admin/payment-gateways/apps", label: "Payment Gateway Apps", icon: CreditCard, badgeKey: "payment_gateway" },
+      { to: "/admin/payment-gateways/overview", label: "Payment Overview", icon: Gauge },
     ],
   },
   {
@@ -349,7 +351,17 @@ function aiMessagingItems(connected: AiMessagingConnectionMap): LinkDef[] {
   })) as LinkDef[];
 }
 
-function buildGroups(query: string, canSee: (path: string) => boolean, connected: ProviderConnectionMap = {}, mkt: MarketingConnectionMap = {}, aim: AiMessagingConnectionMap = {}, cour: CourierConnectionMap = {}) {
+/** Connected payment gateways only — each gets its own isolated menu. */
+function paymentItems(gws: { id: string; label: string }[]): LinkDef[] {
+  return gws.map((g) => ({
+    to: `/admin/payment-gateways/${g.id}`,
+    label: g.label,
+    icon: Wallet,
+    children: PAYMENT_SECTIONS.map((sec) => ({ to: `/admin/payment-gateways/${g.id}`, search: { section: sec.key }, label: sec.label, icon: sec.icon })),
+  }));
+}
+
+function buildGroups(query: string, canSee: (path: string) => boolean, connected: ProviderConnectionMap = {}, mkt: MarketingConnectionMap = {}, aim: AiMessagingConnectionMap = {}, cour: CourierConnectionMap = {}, pay: { id: string; label: string }[] = []) {
   const q = query.trim().toLowerCase();
   return menuGroups
     .map((group) => {
@@ -364,7 +376,12 @@ function buildGroups(query: string, canSee: (path: string) => boolean, connected
                   const i = group.items.findIndex((it) => it.to === "/admin/couriers/apps");
                   return [...group.items.slice(0, i + 1), ...courierItems(cour), ...group.items.slice(i + 1)];
                 })()
-              : group.items;
+              : group.label === "Finance & Analytics"
+                ? (() => {
+                    const i = group.items.findIndex((it) => it.to === "/admin/payment-gateways/overview");
+                    return [...group.items.slice(0, i + 1), ...paymentItems(pay), ...group.items.slice(i + 1)];
+                  })()
+                : group.items;
       const items = groupItems.reduce<VisibleLinkDef[]>((visible, item) => {
           const visibleChildren = (item.children ?? []).filter((child) => canSee(child.to));
           const isVisible = canSee(item.to) || visibleChildren.length > 0;
