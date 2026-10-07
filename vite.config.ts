@@ -6,22 +6,42 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
+import { readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
-// Nitro build preset. The build emits `dist/client` + `dist/server/index.mjs`;
-// `scripts/pages-postbuild.sh` then reshapes that into the Cloudflare Pages
-// layout (`dist/_worker.js` + static assets at the root) when running on the
-// Pages build runner. Override with NITRO_PRESET if another target is needed.
 process.env.NITRO_PRESET ||= "cloudflare_module";
+
+// unenv's interop chunk calls createRequire(import.meta.url) at module scope;
+// some Worker runtimes leave import.meta.url undefined, crashing every SSR
+// request. Guard it in every build (preview + production).
+async function guardRuntime(serverDir?: string) {
+  if (!serverDir) return;
+  const file = join(serverDir, "_runtime.mjs");
+  try {
+    const s = await readFile(file, "utf-8");
+    const out = s.replace(
+      /(\w+)\(import\.meta\.url\)/g,
+      '$1(typeof import.meta.url!=="undefined"?import.meta.url:"file:///app/")',
+    );
+    if (out !== s) await writeFile(file, out, "utf-8");
+  } catch {
+    /* file absent — nothing to guard */
+  }
+}
 
 export default defineConfig({
   tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
     server: { entry: "server" },
   },
+  nitro: {
+    hooks: {
+      compiled: async (nitro: any) => {
+        await guardRuntime(nitro?.options?.output?.serverDir);
+      },
+    },
+  } as any,
   vite: {
     plugins: [mcpPlugin()],
-    // Allow tenant hostnames (subdomains + custom domains) to be tested in dev.
     server: { allowedHosts: true },
   },
 });
