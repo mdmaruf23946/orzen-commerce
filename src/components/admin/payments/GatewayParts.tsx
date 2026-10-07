@@ -628,15 +628,25 @@ function CredentialInput({
   );
 }
 
+const PlainDiv = (p: any) => <div {...p} />;
+const PlainH2 = (p: any) => <h2 {...p} />;
+const PlainP = (p: any) => <p {...p} />;
+
 export function ConfigureForm({
   g,
   storeId,
   onDone,
+  inline = false,
 }: {
   g: Gateway;
   storeId: string;
   onDone: () => void;
+  inline?: boolean;
 }) {
+  const Header: any = inline ? PlainDiv : SheetHeader;
+  const Footer: any = inline ? PlainDiv : SheetFooter;
+  const Title: any = inline ? PlainH2 : SheetTitle;
+  const Desc: any = inline ? PlainP : SheetDescription;
   const save = useServerFn(saveStorePaymentGateway);
   const test = useServerFn(testStorePaymentGateway);
   const testHook = useServerFn(testStorePaymentWebhook);
@@ -760,7 +770,7 @@ export function ConfigureForm({
 
   return (
     <>
-      <SheetHeader className="space-y-0 border-b pb-4 text-left">
+      <Header className="space-y-0 border-b pb-4 text-left">
         <div className="flex items-center gap-3">
           <BrandMark brand={brand} logoUrl={g.logo_url} size="md" />
           <div className="min-w-0 flex-1 text-left">
@@ -771,13 +781,13 @@ export function ConfigureForm({
                 className="h-6 w-auto max-w-[180px] object-contain sm:h-7"
               />
             ) : (
-              <SheetTitle className="truncate text-left text-base sm:text-lg" style={{ color: brand.brandColor }}>
+              <Title className="truncate text-left text-base font-semibold sm:text-lg" style={{ color: brand.brandColor }}>
                 {brand.label}
-              </SheetTitle>
+              </Title>
             )}
-            <SheetDescription className="mt-0.5 truncate text-left text-xs sm:text-sm">
+            <Desc className="mt-0.5 text-left text-xs text-muted-foreground sm:text-sm">
               {brand.tagline}
-            </SheetDescription>
+            </Desc>
           </div>
         </div>
         {(g.website_url || g.docs_url) && (
@@ -806,8 +816,7 @@ export function ConfigureForm({
             )}
           </div>
         )}
-
-      </SheetHeader>
+      </Header>
 
 
       <div className="my-4 space-y-4">
@@ -890,7 +899,7 @@ export function ConfigureForm({
         )}
       </div>
 
-      <SheetFooter className="sticky bottom-0 -mx-6 flex-col gap-2 border-t bg-background/95 px-6 py-3 backdrop-blur sm:flex-col">
+      <Footer className={inline ? "flex flex-col gap-2 border-t pt-3" : "sticky bottom-0 -mx-6 flex-col gap-2 border-t bg-background/95 px-6 py-3 backdrop-blur sm:flex-col"}>
         <div className="flex w-full flex-wrap gap-2">
           <Button
             variant="outline"
@@ -940,7 +949,7 @@ export function ConfigureForm({
         {invalidFormat && !missingRequired && (
           <p className="w-full text-center text-xs text-destructive">One or more fields have an invalid format.</p>
         )}
-      </SheetFooter>
+      </Footer>
     </>
   );
 }
