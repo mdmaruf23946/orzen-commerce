@@ -76,6 +76,7 @@ import { Route as AuthenticatedAdminPaymentGatewayRouteImport } from './routes/_
 import { Route as AuthenticatedAdminPaymentGatewaysRouteImport } from './routes/_authenticated/admin/payment-gateways'
 import { Route as AuthenticatedAdminProductDefaultsRouteImport } from './routes/_authenticated/admin/product-defaults'
 import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authenticated/admin/products'
+import { Route as AuthenticatedAdminProfileRouteImport } from './routes/_authenticated/admin/profile'
 import { Route as AuthenticatedAdminReturnsRouteImport } from './routes/_authenticated/admin/returns'
 import { Route as AuthenticatedAdminSeoRouteImport } from './routes/_authenticated/admin/seo'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin/settings'
@@ -641,6 +642,12 @@ const AuthenticatedAdminProductsRoute =
   AuthenticatedAdminProductsRouteImport.update({
     id: '/products',
     path: '/products',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminProfileRoute =
+  AuthenticatedAdminProfileRouteImport.update({
+    id: '/profile',
+    path: '/profile',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminReturnsRoute =
@@ -1814,6 +1821,7 @@ export interface FileRoutesByFullPath {
   '/admin/payment-gateways': typeof AuthenticatedAdminPaymentGatewaysRouteWithChildren
   '/admin/product-defaults': typeof AuthenticatedAdminProductDefaultsRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
+  '/admin/profile': typeof AuthenticatedAdminProfileRoute
   '/admin/returns': typeof AuthenticatedAdminReturnsRoute
   '/admin/seo': typeof AuthenticatedAdminSeoRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRouteWithChildren
@@ -2062,6 +2070,7 @@ export interface FileRoutesByTo {
   '/admin/payment-gateway': typeof AuthenticatedAdminPaymentGatewayRoute
   '/admin/product-defaults': typeof AuthenticatedAdminProductDefaultsRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
+  '/admin/profile': typeof AuthenticatedAdminProfileRoute
   '/admin/returns': typeof AuthenticatedAdminReturnsRoute
   '/admin/seo': typeof AuthenticatedAdminSeoRoute
   '/admin/staff': typeof AuthenticatedAdminStaffRoute
@@ -2323,6 +2332,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/payment-gateways': typeof AuthenticatedAdminPaymentGatewaysRouteWithChildren
   '/_authenticated/admin/product-defaults': typeof AuthenticatedAdminProductDefaultsRoute
   '/_authenticated/admin/products': typeof AuthenticatedAdminProductsRoute
+  '/_authenticated/admin/profile': typeof AuthenticatedAdminProfileRoute
   '/_authenticated/admin/returns': typeof AuthenticatedAdminReturnsRoute
   '/_authenticated/admin/seo': typeof AuthenticatedAdminSeoRoute
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRouteWithChildren
@@ -2585,6 +2595,7 @@ export interface FileRouteTypes {
     | '/admin/payment-gateways'
     | '/admin/product-defaults'
     | '/admin/products'
+    | '/admin/profile'
     | '/admin/returns'
     | '/admin/seo'
     | '/admin/settings'
@@ -2833,6 +2844,7 @@ export interface FileRouteTypes {
     | '/admin/payment-gateway'
     | '/admin/product-defaults'
     | '/admin/products'
+    | '/admin/profile'
     | '/admin/returns'
     | '/admin/seo'
     | '/admin/staff'
@@ -3093,6 +3105,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/payment-gateways'
     | '/_authenticated/admin/product-defaults'
     | '/_authenticated/admin/products'
+    | '/_authenticated/admin/profile'
     | '/_authenticated/admin/returns'
     | '/_authenticated/admin/seo'
     | '/_authenticated/admin/settings'
@@ -3822,6 +3835,13 @@ declare module '@tanstack/react-router' {
       path: '/products'
       fullPath: '/admin/products'
       preLoaderRoute: typeof AuthenticatedAdminProductsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/profile': {
+      id: '/_authenticated/admin/profile'
+      path: '/profile'
+      fullPath: '/admin/profile'
+      preLoaderRoute: typeof AuthenticatedAdminProfileRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/returns': {
@@ -5359,6 +5379,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminPaymentGatewaysRoute: typeof AuthenticatedAdminPaymentGatewaysRouteWithChildren
   AuthenticatedAdminProductDefaultsRoute: typeof AuthenticatedAdminProductDefaultsRoute
   AuthenticatedAdminProductsRoute: typeof AuthenticatedAdminProductsRoute
+  AuthenticatedAdminProfileRoute: typeof AuthenticatedAdminProfileRoute
   AuthenticatedAdminReturnsRoute: typeof AuthenticatedAdminReturnsRoute
   AuthenticatedAdminSeoRoute: typeof AuthenticatedAdminSeoRoute
   AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRouteWithChildren
@@ -5439,6 +5460,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminProductDefaultsRoute:
       AuthenticatedAdminProductDefaultsRoute,
     AuthenticatedAdminProductsRoute: AuthenticatedAdminProductsRoute,
+    AuthenticatedAdminProfileRoute: AuthenticatedAdminProfileRoute,
     AuthenticatedAdminReturnsRoute: AuthenticatedAdminReturnsRoute,
     AuthenticatedAdminSeoRoute: AuthenticatedAdminSeoRoute,
     AuthenticatedAdminSettingsRoute:

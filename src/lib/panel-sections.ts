@@ -74,6 +74,7 @@ export const PANEL_SECTIONS: PanelSection[] = [
   { key: "subscription", label: "My Subscription", group: "Settings & Management", paths: ["/admin/subscription"], ownerOnly: true },
   { key: "billing", label: "Billing & Plans", group: "Settings & Management", paths: ["/admin/billing"], ownerOnly: true },
   { key: "settings", label: "Store Settings", group: "Settings & Management", paths: ["/admin/settings"], ownerOnly: true },
+  { key: "profile", label: "Profile", group: "Account", paths: ["/admin/profile"] },
 ];
 
 export const GRANTABLE_SECTIONS = PANEL_SECTIONS.filter((s) => !s.ownerOnly);
