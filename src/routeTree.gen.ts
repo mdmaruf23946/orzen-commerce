@@ -73,6 +73,7 @@ import { Route as AuthenticatedAdminOrdersRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminPagesRouteImport } from './routes/_authenticated/admin/pages'
 import { Route as AuthenticatedAdminParcelsRouteImport } from './routes/_authenticated/admin/parcels'
 import { Route as AuthenticatedAdminPaymentGatewayRouteImport } from './routes/_authenticated/admin/payment-gateway'
+import { Route as AuthenticatedAdminPaymentGatewaysRouteImport } from './routes/_authenticated/admin/payment-gateways'
 import { Route as AuthenticatedAdminProductDefaultsRouteImport } from './routes/_authenticated/admin/product-defaults'
 import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authenticated/admin/products'
 import { Route as AuthenticatedAdminReturnsRouteImport } from './routes/_authenticated/admin/returns'
@@ -188,6 +189,10 @@ import { Route as AuthenticatedAdminMarketingAppsRouteImport } from './routes/_a
 import { Route as AuthenticatedAdminMarketingFacebookRouteImport } from './routes/_authenticated/admin/marketing.facebook'
 import { Route as AuthenticatedAdminMarketingGoogleRouteImport } from './routes/_authenticated/admin/marketing.google'
 import { Route as AuthenticatedAdminMarketingTiktokRouteImport } from './routes/_authenticated/admin/marketing.tiktok'
+import { Route as AuthenticatedAdminPaymentGatewaysIndexRouteImport } from './routes/_authenticated/admin/payment-gateways.index'
+import { Route as AuthenticatedAdminPaymentGatewaysGatewayRouteImport } from './routes/_authenticated/admin/payment-gateways.$gateway'
+import { Route as AuthenticatedAdminPaymentGatewaysAppsRouteImport } from './routes/_authenticated/admin/payment-gateways.apps'
+import { Route as AuthenticatedAdminPaymentGatewaysOverviewRouteImport } from './routes/_authenticated/admin/payment-gateways.overview'
 import { Route as AuthenticatedAdminSettingsIndexRouteImport } from './routes/_authenticated/admin/settings.index'
 import { Route as AuthenticatedAdminSettingsConfigurationRouteImport } from './routes/_authenticated/admin/settings.configuration'
 import { Route as AuthenticatedAdminSettingsInformationRouteImport } from './routes/_authenticated/admin/settings.information'
@@ -618,6 +623,12 @@ const AuthenticatedAdminPaymentGatewayRoute =
   AuthenticatedAdminPaymentGatewayRouteImport.update({
     id: '/payment-gateway',
     path: '/payment-gateway',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminPaymentGatewaysRoute =
+  AuthenticatedAdminPaymentGatewaysRouteImport.update({
+    id: '/payment-gateways',
+    path: '/payment-gateways',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminProductDefaultsRoute =
@@ -1279,6 +1290,30 @@ const AuthenticatedAdminMarketingTiktokRoute =
     path: '/tiktok',
     getParentRoute: () => AuthenticatedAdminMarketingRoute,
   } as any)
+const AuthenticatedAdminPaymentGatewaysIndexRoute =
+  AuthenticatedAdminPaymentGatewaysIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAdminPaymentGatewaysRoute,
+  } as any)
+const AuthenticatedAdminPaymentGatewaysGatewayRoute =
+  AuthenticatedAdminPaymentGatewaysGatewayRouteImport.update({
+    id: '/$gateway',
+    path: '/$gateway',
+    getParentRoute: () => AuthenticatedAdminPaymentGatewaysRoute,
+  } as any)
+const AuthenticatedAdminPaymentGatewaysAppsRoute =
+  AuthenticatedAdminPaymentGatewaysAppsRouteImport.update({
+    id: '/apps',
+    path: '/apps',
+    getParentRoute: () => AuthenticatedAdminPaymentGatewaysRoute,
+  } as any)
+const AuthenticatedAdminPaymentGatewaysOverviewRoute =
+  AuthenticatedAdminPaymentGatewaysOverviewRouteImport.update({
+    id: '/overview',
+    path: '/overview',
+    getParentRoute: () => AuthenticatedAdminPaymentGatewaysRoute,
+  } as any)
 const AuthenticatedAdminSettingsIndexRoute =
   AuthenticatedAdminSettingsIndexRouteImport.update({
     id: '/',
@@ -1776,6 +1811,7 @@ export interface FileRoutesByFullPath {
   '/admin/pages': typeof AuthenticatedAdminPagesRoute
   '/admin/parcels': typeof AuthenticatedAdminParcelsRoute
   '/admin/payment-gateway': typeof AuthenticatedAdminPaymentGatewayRoute
+  '/admin/payment-gateways': typeof AuthenticatedAdminPaymentGatewaysRouteWithChildren
   '/admin/product-defaults': typeof AuthenticatedAdminProductDefaultsRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/returns': typeof AuthenticatedAdminReturnsRoute
@@ -1881,6 +1917,9 @@ export interface FileRoutesByFullPath {
   '/admin/marketing/facebook': typeof AuthenticatedAdminMarketingFacebookRoute
   '/admin/marketing/google': typeof AuthenticatedAdminMarketingGoogleRoute
   '/admin/marketing/tiktok': typeof AuthenticatedAdminMarketingTiktokRoute
+  '/admin/payment-gateways/$gateway': typeof AuthenticatedAdminPaymentGatewaysGatewayRoute
+  '/admin/payment-gateways/apps': typeof AuthenticatedAdminPaymentGatewaysAppsRoute
+  '/admin/payment-gateways/overview': typeof AuthenticatedAdminPaymentGatewaysOverviewRoute
   '/admin/settings/configuration': typeof AuthenticatedAdminSettingsConfigurationRoute
   '/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
   '/admin/settings/security': typeof AuthenticatedAdminSettingsSecurityRoute
@@ -1950,6 +1989,7 @@ export interface FileRoutesByFullPath {
   '/admin/landing-builder/': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/admin/marketing/': typeof AuthenticatedAdminMarketingIndexRoute
+  '/admin/payment-gateways/': typeof AuthenticatedAdminPaymentGatewaysIndexRoute
   '/admin/settings/': typeof AuthenticatedAdminSettingsIndexRoute
   '/owner/ai-admin/': typeof AuthenticatedOwnerAiAdminIndexRoute
   '/owner/communication/': typeof AuthenticatedOwnerCommunicationIndexRoute
@@ -2124,6 +2164,9 @@ export interface FileRoutesByTo {
   '/admin/marketing/facebook': typeof AuthenticatedAdminMarketingFacebookRoute
   '/admin/marketing/google': typeof AuthenticatedAdminMarketingGoogleRoute
   '/admin/marketing/tiktok': typeof AuthenticatedAdminMarketingTiktokRoute
+  '/admin/payment-gateways/$gateway': typeof AuthenticatedAdminPaymentGatewaysGatewayRoute
+  '/admin/payment-gateways/apps': typeof AuthenticatedAdminPaymentGatewaysAppsRoute
+  '/admin/payment-gateways/overview': typeof AuthenticatedAdminPaymentGatewaysOverviewRoute
   '/admin/settings/configuration': typeof AuthenticatedAdminSettingsConfigurationRoute
   '/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
   '/admin/settings/security': typeof AuthenticatedAdminSettingsSecurityRoute
@@ -2193,6 +2236,7 @@ export interface FileRoutesByTo {
   '/admin/landing-builder': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/admin/landing-pages': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/admin/marketing': typeof AuthenticatedAdminMarketingIndexRoute
+  '/admin/payment-gateways': typeof AuthenticatedAdminPaymentGatewaysIndexRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsIndexRoute
   '/owner/ai-admin': typeof AuthenticatedOwnerAiAdminIndexRoute
   '/owner/communication': typeof AuthenticatedOwnerCommunicationIndexRoute
@@ -2276,6 +2320,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/pages': typeof AuthenticatedAdminPagesRoute
   '/_authenticated/admin/parcels': typeof AuthenticatedAdminParcelsRoute
   '/_authenticated/admin/payment-gateway': typeof AuthenticatedAdminPaymentGatewayRoute
+  '/_authenticated/admin/payment-gateways': typeof AuthenticatedAdminPaymentGatewaysRouteWithChildren
   '/_authenticated/admin/product-defaults': typeof AuthenticatedAdminProductDefaultsRoute
   '/_authenticated/admin/products': typeof AuthenticatedAdminProductsRoute
   '/_authenticated/admin/returns': typeof AuthenticatedAdminReturnsRoute
@@ -2381,6 +2426,9 @@ export interface FileRoutesById {
   '/_authenticated/admin/marketing/facebook': typeof AuthenticatedAdminMarketingFacebookRoute
   '/_authenticated/admin/marketing/google': typeof AuthenticatedAdminMarketingGoogleRoute
   '/_authenticated/admin/marketing/tiktok': typeof AuthenticatedAdminMarketingTiktokRoute
+  '/_authenticated/admin/payment-gateways/$gateway': typeof AuthenticatedAdminPaymentGatewaysGatewayRoute
+  '/_authenticated/admin/payment-gateways/apps': typeof AuthenticatedAdminPaymentGatewaysAppsRoute
+  '/_authenticated/admin/payment-gateways/overview': typeof AuthenticatedAdminPaymentGatewaysOverviewRoute
   '/_authenticated/admin/settings/configuration': typeof AuthenticatedAdminSettingsConfigurationRoute
   '/_authenticated/admin/settings/information': typeof AuthenticatedAdminSettingsInformationRoute
   '/_authenticated/admin/settings/security': typeof AuthenticatedAdminSettingsSecurityRoute
@@ -2450,6 +2498,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/landing-builder/': typeof AuthenticatedAdminLandingBuilderIndexRoute
   '/_authenticated/admin/landing-pages/': typeof AuthenticatedAdminLandingPagesIndexRoute
   '/_authenticated/admin/marketing/': typeof AuthenticatedAdminMarketingIndexRoute
+  '/_authenticated/admin/payment-gateways/': typeof AuthenticatedAdminPaymentGatewaysIndexRoute
   '/_authenticated/admin/settings/': typeof AuthenticatedAdminSettingsIndexRoute
   '/_authenticated/owner/ai-admin/': typeof AuthenticatedOwnerAiAdminIndexRoute
   '/_authenticated/owner/communication/': typeof AuthenticatedOwnerCommunicationIndexRoute
@@ -2533,6 +2582,7 @@ export interface FileRouteTypes {
     | '/admin/pages'
     | '/admin/parcels'
     | '/admin/payment-gateway'
+    | '/admin/payment-gateways'
     | '/admin/product-defaults'
     | '/admin/products'
     | '/admin/returns'
@@ -2638,6 +2688,9 @@ export interface FileRouteTypes {
     | '/admin/marketing/facebook'
     | '/admin/marketing/google'
     | '/admin/marketing/tiktok'
+    | '/admin/payment-gateways/$gateway'
+    | '/admin/payment-gateways/apps'
+    | '/admin/payment-gateways/overview'
     | '/admin/settings/configuration'
     | '/admin/settings/information'
     | '/admin/settings/security'
@@ -2707,6 +2760,7 @@ export interface FileRouteTypes {
     | '/admin/landing-builder/'
     | '/admin/landing-pages/'
     | '/admin/marketing/'
+    | '/admin/payment-gateways/'
     | '/admin/settings/'
     | '/owner/ai-admin/'
     | '/owner/communication/'
@@ -2881,6 +2935,9 @@ export interface FileRouteTypes {
     | '/admin/marketing/facebook'
     | '/admin/marketing/google'
     | '/admin/marketing/tiktok'
+    | '/admin/payment-gateways/$gateway'
+    | '/admin/payment-gateways/apps'
+    | '/admin/payment-gateways/overview'
     | '/admin/settings/configuration'
     | '/admin/settings/information'
     | '/admin/settings/security'
@@ -2950,6 +3007,7 @@ export interface FileRouteTypes {
     | '/admin/landing-builder'
     | '/admin/landing-pages'
     | '/admin/marketing'
+    | '/admin/payment-gateways'
     | '/admin/settings'
     | '/owner/ai-admin'
     | '/owner/communication'
@@ -3032,6 +3090,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/pages'
     | '/_authenticated/admin/parcels'
     | '/_authenticated/admin/payment-gateway'
+    | '/_authenticated/admin/payment-gateways'
     | '/_authenticated/admin/product-defaults'
     | '/_authenticated/admin/products'
     | '/_authenticated/admin/returns'
@@ -3137,6 +3196,9 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/marketing/facebook'
     | '/_authenticated/admin/marketing/google'
     | '/_authenticated/admin/marketing/tiktok'
+    | '/_authenticated/admin/payment-gateways/$gateway'
+    | '/_authenticated/admin/payment-gateways/apps'
+    | '/_authenticated/admin/payment-gateways/overview'
     | '/_authenticated/admin/settings/configuration'
     | '/_authenticated/admin/settings/information'
     | '/_authenticated/admin/settings/security'
@@ -3206,6 +3268,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/landing-builder/'
     | '/_authenticated/admin/landing-pages/'
     | '/_authenticated/admin/marketing/'
+    | '/_authenticated/admin/payment-gateways/'
     | '/_authenticated/admin/settings/'
     | '/_authenticated/owner/ai-admin/'
     | '/_authenticated/owner/communication/'
@@ -3738,6 +3801,13 @@ declare module '@tanstack/react-router' {
       path: '/payment-gateway'
       fullPath: '/admin/payment-gateway'
       preLoaderRoute: typeof AuthenticatedAdminPaymentGatewayRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/payment-gateways': {
+      id: '/_authenticated/admin/payment-gateways'
+      path: '/payment-gateways'
+      fullPath: '/admin/payment-gateways'
+      preLoaderRoute: typeof AuthenticatedAdminPaymentGatewaysRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/product-defaults': {
@@ -4545,6 +4615,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminMarketingTiktokRouteImport
       parentRoute: typeof AuthenticatedAdminMarketingRoute
     }
+    '/_authenticated/admin/payment-gateways/': {
+      id: '/_authenticated/admin/payment-gateways/'
+      path: '/'
+      fullPath: '/admin/payment-gateways/'
+      preLoaderRoute: typeof AuthenticatedAdminPaymentGatewaysIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminPaymentGatewaysRoute
+    }
+    '/_authenticated/admin/payment-gateways/$gateway': {
+      id: '/_authenticated/admin/payment-gateways/$gateway'
+      path: '/$gateway'
+      fullPath: '/admin/payment-gateways/$gateway'
+      preLoaderRoute: typeof AuthenticatedAdminPaymentGatewaysGatewayRouteImport
+      parentRoute: typeof AuthenticatedAdminPaymentGatewaysRoute
+    }
+    '/_authenticated/admin/payment-gateways/apps': {
+      id: '/_authenticated/admin/payment-gateways/apps'
+      path: '/apps'
+      fullPath: '/admin/payment-gateways/apps'
+      preLoaderRoute: typeof AuthenticatedAdminPaymentGatewaysAppsRouteImport
+      parentRoute: typeof AuthenticatedAdminPaymentGatewaysRoute
+    }
+    '/_authenticated/admin/payment-gateways/overview': {
+      id: '/_authenticated/admin/payment-gateways/overview'
+      path: '/overview'
+      fullPath: '/admin/payment-gateways/overview'
+      preLoaderRoute: typeof AuthenticatedAdminPaymentGatewaysOverviewRouteImport
+      parentRoute: typeof AuthenticatedAdminPaymentGatewaysRoute
+    }
     '/_authenticated/admin/settings/': {
       id: '/_authenticated/admin/settings/'
       path: '/'
@@ -5168,6 +5266,30 @@ const AuthenticatedAdminMarketingRouteWithChildren =
     AuthenticatedAdminMarketingRouteChildren,
   )
 
+interface AuthenticatedAdminPaymentGatewaysRouteChildren {
+  AuthenticatedAdminPaymentGatewaysGatewayRoute: typeof AuthenticatedAdminPaymentGatewaysGatewayRoute
+  AuthenticatedAdminPaymentGatewaysAppsRoute: typeof AuthenticatedAdminPaymentGatewaysAppsRoute
+  AuthenticatedAdminPaymentGatewaysOverviewRoute: typeof AuthenticatedAdminPaymentGatewaysOverviewRoute
+  AuthenticatedAdminPaymentGatewaysIndexRoute: typeof AuthenticatedAdminPaymentGatewaysIndexRoute
+}
+
+const AuthenticatedAdminPaymentGatewaysRouteChildren: AuthenticatedAdminPaymentGatewaysRouteChildren =
+  {
+    AuthenticatedAdminPaymentGatewaysGatewayRoute:
+      AuthenticatedAdminPaymentGatewaysGatewayRoute,
+    AuthenticatedAdminPaymentGatewaysAppsRoute:
+      AuthenticatedAdminPaymentGatewaysAppsRoute,
+    AuthenticatedAdminPaymentGatewaysOverviewRoute:
+      AuthenticatedAdminPaymentGatewaysOverviewRoute,
+    AuthenticatedAdminPaymentGatewaysIndexRoute:
+      AuthenticatedAdminPaymentGatewaysIndexRoute,
+  }
+
+const AuthenticatedAdminPaymentGatewaysRouteWithChildren =
+  AuthenticatedAdminPaymentGatewaysRoute._addFileChildren(
+    AuthenticatedAdminPaymentGatewaysRouteChildren,
+  )
+
 interface AuthenticatedAdminSettingsRouteChildren {
   AuthenticatedAdminSettingsConfigurationRoute: typeof AuthenticatedAdminSettingsConfigurationRoute
   AuthenticatedAdminSettingsInformationRoute: typeof AuthenticatedAdminSettingsInformationRoute
@@ -5234,6 +5356,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminPagesRoute: typeof AuthenticatedAdminPagesRoute
   AuthenticatedAdminParcelsRoute: typeof AuthenticatedAdminParcelsRoute
   AuthenticatedAdminPaymentGatewayRoute: typeof AuthenticatedAdminPaymentGatewayRoute
+  AuthenticatedAdminPaymentGatewaysRoute: typeof AuthenticatedAdminPaymentGatewaysRouteWithChildren
   AuthenticatedAdminProductDefaultsRoute: typeof AuthenticatedAdminProductDefaultsRoute
   AuthenticatedAdminProductsRoute: typeof AuthenticatedAdminProductsRoute
   AuthenticatedAdminReturnsRoute: typeof AuthenticatedAdminReturnsRoute
@@ -5311,6 +5434,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminParcelsRoute: AuthenticatedAdminParcelsRoute,
     AuthenticatedAdminPaymentGatewayRoute:
       AuthenticatedAdminPaymentGatewayRoute,
+    AuthenticatedAdminPaymentGatewaysRoute:
+      AuthenticatedAdminPaymentGatewaysRouteWithChildren,
     AuthenticatedAdminProductDefaultsRoute:
       AuthenticatedAdminProductDefaultsRoute,
     AuthenticatedAdminProductsRoute: AuthenticatedAdminProductsRoute,
