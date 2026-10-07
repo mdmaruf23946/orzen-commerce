@@ -70,6 +70,17 @@ export function isRewritablePath(pathname: string): boolean {
   return true;
 }
 
+// Shared per-datacenter edge cache (Cloudflare Cache API) so fresh Worker
+// isolates don't re-query routing data on every request. Same TTLs as the
+// in-memory caches; silently skipped where the Cache API is unavailable.
+function edgeCache(): Cache | null {
+  try {
+    return (globalThis as any).caches?.default ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function rpc<T>(
   name: string,
   body: unknown,
@@ -78,6 +89,17 @@ async function rpc<T>(
   const url = env["SUPABASE_URL"];
   const key = env["SUPABASE_PUBLISHABLE_KEY"];
   if (!url || !key) return null;
+  const ttlSec = name === "platform_routing_hosts" ? SETTINGS_TTL_MS / 1000 : CACHE_TTL_MS / 1000;
+  const cache = edgeCache();
+  const cacheKey = `https://edge-cache.internal/rpc/${name}?b=${encodeURIComponent(JSON.stringify(body))}`;
+  if (cache) {
+    try {
+      const hit = await cache.match(cacheKey);
+      if (hit) return (await hit.json()) as T;
+    } catch {
+      /* ignore cache errors */
+    }
+  }
   try {
     const res = await fetch(`${url}/rest/v1/rpc/${name}`, {
       method: "POST",
@@ -85,7 +107,18 @@ async function rpc<T>(
       body: JSON.stringify(body),
     });
     if (!res.ok) return null;
-    return (await res.json()) as T;
+    const text = await res.text();
+    if (cache) {
+      cache
+        .put(
+          cacheKey,
+          new Response(text, {
+            headers: { "content-type": "application/json", "cache-control": `public, max-age=${ttlSec}` },
+          }),
+        )
+        .catch(() => {});
+    }
+    return JSON.parse(text) as T;
   } catch {
     return null;
   }
