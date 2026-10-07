@@ -156,6 +156,7 @@ import { Route as StoreSlugSitemapDotxmlRouteImport } from './routes/store/$slug
 import { Route as StoreSlugTermsRouteImport } from './routes/store/$slug/terms'
 import { Route as StoreSlugTermsConditionsRouteImport } from './routes/store/$slug/terms-conditions'
 import { Route as StoreSlugTrackOrderRouteImport } from './routes/store/$slug/track-order'
+import { Route as AuthenticatedAdminAiMessagingAppsRouteImport } from './routes/_authenticated/admin/ai-messaging.apps'
 import { Route as AuthenticatedAdminAiIndexRouteImport } from './routes/_authenticated/admin/ai.index'
 import { Route as AuthenticatedAdminAiAgentsRouteImport } from './routes/_authenticated/admin/ai.agents'
 import { Route as AuthenticatedAdminAiApprovalsRouteImport } from './routes/_authenticated/admin/ai.approvals'
@@ -1082,6 +1083,12 @@ const StoreSlugTrackOrderRoute = StoreSlugTrackOrderRouteImport.update({
   path: '/track-order',
   getParentRoute: () => StoreSlugRouteRoute,
 } as any)
+const AuthenticatedAdminAiMessagingAppsRoute =
+  AuthenticatedAdminAiMessagingAppsRouteImport.update({
+    id: '/ai-messaging/apps',
+    path: '/ai-messaging/apps',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminAiIndexRoute =
   AuthenticatedAdminAiIndexRouteImport.update({
     id: '/ai/',
@@ -1821,6 +1828,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/owner/': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
+  '/admin/ai-messaging/apps': typeof AuthenticatedAdminAiMessagingAppsRoute
   '/admin/ai/agents': typeof AuthenticatedAdminAiAgentsRoute
   '/admin/ai/approvals': typeof AuthenticatedAdminAiApprovalsRoute
   '/admin/ai/identity': typeof AuthenticatedAdminAiIdentityRoute
@@ -2060,6 +2068,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/owner': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug': typeof StoreSlugIndexRoute
+  '/admin/ai-messaging/apps': typeof AuthenticatedAdminAiMessagingAppsRoute
   '/admin/ai/agents': typeof AuthenticatedAdminAiAgentsRoute
   '/admin/ai/approvals': typeof AuthenticatedAdminAiApprovalsRoute
   '/admin/ai/identity': typeof AuthenticatedAdminAiIdentityRoute
@@ -2312,6 +2321,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/owner/': typeof AuthenticatedOwnerIndexRoute
   '/store/$slug/': typeof StoreSlugIndexRoute
+  '/_authenticated/admin/ai-messaging/apps': typeof AuthenticatedAdminAiMessagingAppsRoute
   '/_authenticated/admin/ai/agents': typeof AuthenticatedAdminAiAgentsRoute
   '/_authenticated/admin/ai/approvals': typeof AuthenticatedAdminAiApprovalsRoute
   '/_authenticated/admin/ai/identity': typeof AuthenticatedAdminAiIdentityRoute
@@ -2564,6 +2574,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/owner/'
     | '/store/$slug/'
+    | '/admin/ai-messaging/apps'
     | '/admin/ai/agents'
     | '/admin/ai/approvals'
     | '/admin/ai/identity'
@@ -2803,6 +2814,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/owner'
     | '/store/$slug'
+    | '/admin/ai-messaging/apps'
     | '/admin/ai/agents'
     | '/admin/ai/approvals'
     | '/admin/ai/identity'
@@ -3054,6 +3066,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/owner/'
     | '/store/$slug/'
+    | '/_authenticated/admin/ai-messaging/apps'
     | '/_authenticated/admin/ai/agents'
     | '/_authenticated/admin/ai/approvals'
     | '/_authenticated/admin/ai/identity'
@@ -4258,6 +4271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreSlugTrackOrderRouteImport
       parentRoute: typeof StoreSlugRouteRoute
     }
+    '/_authenticated/admin/ai-messaging/apps': {
+      id: '/_authenticated/admin/ai-messaging/apps'
+      path: '/ai-messaging/apps'
+      fullPath: '/admin/ai-messaging/apps'
+      preLoaderRoute: typeof AuthenticatedAdminAiMessagingAppsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/ai/': {
       id: '/_authenticated/admin/ai/'
       path: '/ai'
@@ -5126,6 +5146,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminWhatsappRoute: typeof AuthenticatedAdminWhatsappRoute
   AuthenticatedAdminWhatsappInboxRoute: typeof AuthenticatedAdminWhatsappInboxRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+  AuthenticatedAdminAiMessagingAppsRoute: typeof AuthenticatedAdminAiMessagingAppsRoute
   AuthenticatedAdminAiAgentsRoute: typeof AuthenticatedAdminAiAgentsRoute
   AuthenticatedAdminAiApprovalsRoute: typeof AuthenticatedAdminAiApprovalsRoute
   AuthenticatedAdminAiIdentityRoute: typeof AuthenticatedAdminAiIdentityRoute
@@ -5203,6 +5224,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminWhatsappRoute: AuthenticatedAdminWhatsappRoute,
     AuthenticatedAdminWhatsappInboxRoute: AuthenticatedAdminWhatsappInboxRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+    AuthenticatedAdminAiMessagingAppsRoute:
+      AuthenticatedAdminAiMessagingAppsRoute,
     AuthenticatedAdminAiAgentsRoute: AuthenticatedAdminAiAgentsRoute,
     AuthenticatedAdminAiApprovalsRoute: AuthenticatedAdminAiApprovalsRoute,
     AuthenticatedAdminAiIdentityRoute: AuthenticatedAdminAiIdentityRoute,
