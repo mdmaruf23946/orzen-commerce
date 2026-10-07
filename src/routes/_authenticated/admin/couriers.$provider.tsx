@@ -110,7 +110,7 @@ function ProviderOverview({ k }: { k: CourierKey }) {
             </div>
           ))
         )}
-        <Link to="/admin/parcels" className="block border-t px-4 py-2 text-center text-xs text-muted-foreground hover:text-foreground">
+        <Link to="/admin/parcels" search={{} as any} className="block border-t px-4 py-2 text-center text-xs text-muted-foreground hover:text-foreground">
           Open Courier Parcels
         </Link>
       </div>
