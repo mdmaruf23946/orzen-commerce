@@ -552,8 +552,10 @@ function AdminLayout() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const { connected: courConnected } = useCourierConnections();
   const courKey = JSON.stringify(courConnected);
+  const payConnected = usePaymentGatewayConnections();
+  const payKey = JSON.stringify(payConnected);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const groups = useMemo(() => buildGroups(search, canSee, providerConnected, mktConnected, aimConnected, courConnected), [search, canSee, providerKey, mktKey, aimKey, courKey]);
+  const groups = useMemo(() => buildGroups(search, canSee, providerConnected, mktConnected, aimConnected, courConnected, payConnected), [search, canSee, providerKey, mktKey, aimKey, courKey, payKey]);
 
   const currentSection = sectionForPath(currentPath);
   const pageAllowed =
