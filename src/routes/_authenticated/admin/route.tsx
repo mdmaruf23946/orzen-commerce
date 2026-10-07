@@ -90,8 +90,16 @@ const menuGroups: NavGroupDef[] = [
         children: [
           { to: "/admin/courier-orders", label: "Courier Orders", icon: ClipboardList, badgeKey: "delivery" },
           { to: "/admin/parcels", label: "Courier Parcels", icon: PackageOpen, badgeKey: "delivery" },
-          { to: "/admin/couriers", label: "Courier Setup", icon: Truck, badgeKey: "delivery" },
           { to: "/admin/delivery", label: "Delivery Zones", icon: Radar, badgeKey: "delivery" },
+        ],
+      },
+      {
+        to: "/admin/couriers/apps",
+        label: "Courier Apps",
+        icon: Truck,
+        children: [
+          { to: "/admin/couriers/apps", label: "All Courier Apps", icon: Truck },
+          { to: "/admin/couriers/overview", label: "Courier Overview", icon: LayoutDashboard },
         ],
       },
       { to: "/admin/returns", label: "Returns & Exchanges", icon: RotateCcw, badgeKey: "returns" },
