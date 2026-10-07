@@ -8,6 +8,13 @@
       "when": 1791396994226,
       "tag": "0000_allow_account_avatar_uploads",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791397421850,
+      "tag": "0001_tighten_account_avatar_policies",
+      "breakpoints": true
     }
   ]
 }
