@@ -115,28 +115,17 @@ function GatewayOverview({ storeId, gatewayId }: { storeId: string; gatewayId: s
 
 function GatewayIntegration({ storeId, g }: { storeId: string; g: any }) {
   const qc = useQueryClient();
-  const [open, setOpen] = useState(false);
   const refresh = () => qc.invalidateQueries({ queryKey: ["storePaymentGateways", storeId] });
+  const scrollToForm = () => document.getElementById("gateway-form")?.scrollIntoView({ behavior: "smooth" });
   return (
     <div className="space-y-4">
-      <GatewayCard g={g} storeId={storeId} onConfigure={() => setOpen(true)} onChange={refresh} />
+      {g.connection && <GatewayCard g={g} storeId={storeId} onConfigure={scrollToForm} onChange={refresh} />}
+      <div id="gateway-form" className="rounded-xl border bg-card p-4 sm:p-6">
+        <ConfigureForm key={g.connection?.connected_at ?? "new"} g={g} storeId={storeId} inline onDone={refresh} />
+      </div>
       {g.connection && (
         <WebhookEventsPanel storeId={storeId} providers={[{ provider_id: g.provider_id, label: g.label }]} />
       )}
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
-          {open && (
-            <ConfigureForm
-              g={g}
-              storeId={storeId}
-              onDone={() => {
-                setOpen(false);
-                refresh();
-              }}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }
