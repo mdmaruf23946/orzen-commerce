@@ -129,8 +129,9 @@ export function guessProviderFromKey(key: string): KeyProvider {
 // is verified with a tiny chat request.
 // `chatCheck`: the service lists models without checking the key, so it is
 // always verified with a tiny chat request instead of the model list.
-type CompatService = { name: string; baseURL: string; prefix?: RegExp; prefixOnly?: boolean; chatCheck?: boolean; model?: string };
+type CompatService = { name: string; baseURL: string; prefix?: RegExp; prefixOnly?: boolean; chatCheck?: boolean; model?: string; discover?: boolean };
 const OPENAI_COMPATIBLE_SERVICES: CompatService[] = [
+  { name: "Torve AI", baseURL: "https://api.torveai.com/v1", discover: true },
   { name: "xAI Grok", baseURL: "https://api.x.ai/v1", prefix: /^xai-/ },
   { name: "Cerebras", baseURL: "https://api.cerebras.ai/v1", prefix: /^csk-/ },
   { name: "NVIDIA", baseURL: "https://integrate.api.nvidia.com/v1", prefix: /^nvapi-/, prefixOnly: true, model: "meta/llama-3.3-70b-instruct" },
@@ -230,6 +231,10 @@ export async function detectKeyProvider(rawKey: string): Promise<{ detected: Det
 
   const presetProbes = presetOrder.map((p) => tryPreset(p));
   const serviceProbes = services.map(async (s): Promise<DetectedKey | null> => {
+    if (s.discover) {
+      const model = await discoverWorkingModel(s.baseURL, key);
+      return model ? { provider: "custom", base_url: s.baseURL, model, service: s.name } : null;
+    }
     if (s.prefixOnly || s.chatCheck) {
       if (!s.model || (s.prefixOnly && !s.prefix?.test(key))) return null;
       const r = await chatProbe(s.baseURL, key, s.model);
@@ -316,6 +321,31 @@ async function chatProbe(base: string, key: string, model: string): Promise<{ ok
   if (!res) return { ok: false, error: "No answer from the AI service (timeout or network error)." };
   if (res.ok) return { ok: true };
   return { ok: false, error: `HTTP ${res.status}: ${(await res.text()).slice(0, 200)}` };
+}
+
+/**
+ * For any OpenAI-compatible service: list its models with the key and return
+ * the first chat model that really answers. Null when the key is rejected.
+ */
+export async function discoverWorkingModel(base: string, key: string): Promise<string | null> {
+  const b = base.replace(/\/+$/, "");
+  const res = await fetchWithTimeout(`${b}/models`, { headers: { authorization: `Bearer ${key}` } });
+  if (!res || !res.ok) return null;
+  let ids: string[] = [];
+  try {
+    const body: any = await res.json();
+    const list: any[] = Array.isArray(body?.data) ? body.data : Array.isArray(body?.models) ? body.models : Array.isArray(body) ? body : [];
+    ids = list.map((m) => String(m?.id ?? m?.name ?? "")).filter(Boolean);
+  } catch {
+    return null;
+  }
+  const chat = ids.filter((id) => !/embed|whisper|tts|speech|audio|transcri|image|dall-e|moderation|guard|rerank/i.test(id));
+  const first = pickChatModel(chat);
+  const ordered = first ? [first, ...chat.filter((i) => i !== first)] : chat;
+  for (const m of ordered.slice(0, 6)) {
+    if ((await chatProbe(b, key, m)).ok) return m;
+  }
+  return null;
 }
 
 /** Live check against the provider's own API. */

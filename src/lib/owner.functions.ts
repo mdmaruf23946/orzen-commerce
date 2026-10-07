@@ -1178,7 +1178,11 @@ export const addGlobalGeminiKey = createServerFn({ method: "POST" })
       throw new Error("Please fill in the API base URL (it must start with https://).");
     }
     if (provider === "custom" && !modelName) {
-      throw new Error("Please fill in the Model ID for this AI service.");
+      const found = await helpers.discoverWorkingModel(baseUrl, cleanKey);
+      if (found) modelName = found;
+    }
+    if (provider === "custom" && !modelName) {
+      throw new Error("This AI service did not accept the key, or no working model was found. Please check the key and fill in the Model ID.");
     }
     const newId = crypto.randomUUID();
     keys.push({
