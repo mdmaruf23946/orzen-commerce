@@ -26,7 +26,6 @@ import { UpgradeProvider } from "@/components/admin/UpgradeModal";
 import { ProductTypeScopeProvider } from "@/lib/product-type-scope";
 import { StoreBrandMark } from "@/components/admin/StoreBrandMark";
 import { StoreSwitcher, DelegatedStoreBanner } from "@/components/admin/access/StoreSwitcher";
-import { DELEGATE_ROLES } from "@/lib/panel-sections";
 import { CountBadge } from "@/components/admin/CountBadge";
 import { useBadgeCounts, useMarkSeen } from "@/lib/use-badge-counts";
 import { getMyStore } from "@/lib/admin.functions";
@@ -36,7 +35,7 @@ import { StoreAccessProvider, useStoreAccess } from "@/lib/use-store-access";
 import { ReadOnlyGuard } from "@/components/admin/ReadOnlyGuard";
 import { PlanLockGate } from "@/components/admin/PlanLockGate";
 import { EmailVerifyBanner, EmailVerifyGate } from "@/components/admin/EmailVerifyGate";
-import { sectionForPath } from "@/lib/panel-sections";
+import { sectionForPath, DELEGATE_ROLES } from "@/lib/panel-sections";
 import { getAccountProfile } from "@/lib/account-profile.functions";
 import { AccountAvatar } from "@/components/admin/AccountAvatar";
 
