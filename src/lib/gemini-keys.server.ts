@@ -132,6 +132,8 @@ export function guessProviderFromKey(key: string): KeyProvider {
 type CompatService = { name: string; baseURL: string; prefix?: RegExp; prefixOnly?: boolean; chatCheck?: boolean; model?: string; discover?: boolean };
 const OPENAI_COMPATIBLE_SERVICES: CompatService[] = [
   { name: "Torve AI", baseURL: "https://api.torveai.com/v1", discover: true },
+  { name: "xKiro", baseURL: "https://api.xkiro.com/v1", discover: true },
+  { name: "Kira AI", baseURL: "https://kiraai.vn/api/v1", discover: true },
   { name: "xAI Grok", baseURL: "https://api.x.ai/v1", prefix: /^xai-/ },
   { name: "Cerebras", baseURL: "https://api.cerebras.ai/v1", prefix: /^csk-/ },
   { name: "NVIDIA", baseURL: "https://integrate.api.nvidia.com/v1", prefix: /^nvapi-/, prefixOnly: true, model: "meta/llama-3.3-70b-instruct" },
@@ -377,4 +379,21 @@ export async function testProviderKey(k: GeminiKey): Promise<{ ok: boolean; erro
 /** Back-compat: live check for a raw Gemini key string. */
 export async function testGeminiKey(key: string): Promise<{ ok: boolean; error?: string }> {
   return testProviderKey({ ...(normalizeGeminiKeys([{ key }])[0] as GeminiKey) });
+}
+
+/**
+ * Any website: derive likely OpenAI-compatible API addresses from a website
+ * name/URL (e.g. "xkiro.com") and return the first one that accepts the key.
+ */
+export async function detectFromWebsite(site: string, key: string): Promise<{ base_url: string; model: string } | null> {
+  const raw = site.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/^www\./, "");
+  if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(raw)) return null;
+  const hosts = [`api.${raw}`, raw];
+  const paths = ["/v1", "/api/v1", "/openai/v1", "/api/openai/v1"];
+  const bases = hosts.flatMap((h) => paths.map((p) => `https://${h}${p}`));
+  const hits = await Promise.all(bases.map(async (b) => {
+    const m = await discoverWorkingModel(b, key);
+    return m ? { base_url: b, model: m } : null;
+  }));
+  return hits.find((h) => h) ?? null;
 }

@@ -1162,6 +1162,13 @@ export const addGlobalGeminiKey = createServerFn({ method: "POST" })
         detectedName = detected.service;
         if (detected.base_url) baseUrl = detected.base_url;
         if (!modelName && detected.model) modelName = detected.model;
+      } else if (data.label && (await helpers.detectFromWebsite(data.label, cleanKey).then((w) => {
+        if (!w) return false;
+        provider = "custom"; baseUrl = w.base_url; if (!modelName) modelName = w.model;
+        detectedName = data.label!.trim();
+        return true;
+      }))) {
+        // detected from the website name in "Display name"
       } else {
         if (lastError) console.warn("[ai-keys] auto-detect failed:", lastError.slice(0, 200));
         const n = helpers.DETECTABLE_SERVICE_NAMES.length;
@@ -1169,7 +1176,7 @@ export const addGlobalGeminiKey = createServerFn({ method: "POST" })
           `This key was rejected by all ${n} AI services we checked (Google Gemini, Groq, OpenRouter, OpenAI, DeepSeek, Claude, Qwen, Kimi and more). ` +
             "This almost always means the key itself is not valid: it was copied incompletely, it was deleted or regenerated on the website that gave it, " +
             "or the account is not activated yet. Please create a fresh key on that website and paste the full key. " +
-            "If the key is from a website not listed here, also fill in that website's API base URL and Model ID.",
+            "If the key is from another website, write that website's address (e.g. example.com) in Display name, or fill in its API base URL and Model ID.",
         );
       }
     }
