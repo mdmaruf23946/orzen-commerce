@@ -2,6 +2,7 @@ import { createStart, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
+import { ACTIVE_STORE_HEADER, getActiveStoreId } from "@/lib/active-store";
 
 const errorMiddleware = createMiddleware().server(async ({ next, request }) => {
   const url = new URL(request.url);
@@ -22,7 +23,14 @@ const errorMiddleware = createMiddleware().server(async ({ next, request }) => {
   }
 });
 
+// Tells the server which store (own or delegated) the panel is working in.
+// The server re-checks membership; an invalid value falls back to the own store.
+const attachActiveStore = createMiddleware({ type: "function" }).client(async ({ next }) => {
+  const id = getActiveStoreId();
+  return next({ headers: id ? { [ACTIVE_STORE_HEADER]: id } : {} });
+});
+
 export const startInstance = createStart(() => ({
-  functionMiddleware: [attachSupabaseAuth],
+  functionMiddleware: [attachSupabaseAuth, attachActiveStore],
   requestMiddleware: [errorMiddleware],
 }));
