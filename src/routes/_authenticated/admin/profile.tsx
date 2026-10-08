@@ -4,16 +4,17 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
-  BadgeCheck, CalendarDays, Copy, Fingerprint, Info, Lock, LogIn, LogOut, Mail, ShieldCheck, UserRound,
+  BadgeCheck, CalendarDays, Camera, Copy, Fingerprint, Info, Lock, LogIn, LogOut, Mail, ShieldCheck, UserRound,
 } from "lucide-react";
 import { AccountAvatar } from "@/components/admin/AccountAvatar";
-import { ImageUploader } from "@/components/admin/ImageUploader";
+import { EditBadge, MediaMenu } from "@/components/admin/profile/ProfileMediaEditor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { getAccountProfile, updateAccountProfile } from "@/lib/account-profile.functions";
+import { getAccountProfile, updateAccountMedia, updateAccountProfile } from "@/lib/account-profile.functions";
+import { AVATAR_TEMPLATES, COVER_TEMPLATES, resolveMediaSrc } from "@/lib/profile-media-templates";
 import { useStoreAccess } from "@/lib/use-store-access";
 
 export const Route = createFileRoute("/_authenticated/admin/profile")({
@@ -69,25 +70,32 @@ function ProfilePage() {
   const access = useStoreAccess();
   const load = useServerFn(getAccountProfile);
   const save = useServerFn(updateAccountProfile);
+  const saveMedia = useServerFn(updateAccountMedia);
   const { data: profile, isLoading } = useQuery({
     queryKey: ["admin", "account-profile"],
     queryFn: () => load(),
   });
   const [name, setName] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
     setName(profile.name);
-    setAvatarUrl(profile.avatarUrl);
   }, [profile]);
+
+  async function applyMedia(kind: "avatar" | "cover", value: string | null) {
+    await saveMedia({ data: { kind, value } });
+    queryClient.setQueryData(["admin", "account-profile"], (old: typeof profile) =>
+      old ? { ...old, [kind === "avatar" ? "avatarUrl" : "coverUrl"]: value } : old);
+    await queryClient.invalidateQueries({ queryKey: ["admin", "account-profile"] });
+    toast.success(kind === "avatar" ? "Profile photo updated" : "Cover photo updated");
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setSaving(true);
     try {
-      await save({ data: { name, avatarUrl } });
+      await save({ data: { name } });
       await queryClient.invalidateQueries({ queryKey: ["admin", "account-profile"] });
       toast.success("Profile updated");
     } catch (error) {
@@ -115,6 +123,8 @@ function ProfilePage() {
   if (isLoading || !profile) return <div className="text-sm text-muted-foreground">Loading…</div>;
 
   const roleLabel = profile.role ? profile.role.replaceAll("_", " ") : null;
+  const mediaFolder = profile.storeId ? `${profile.storeId}/profiles/${profile.id}` : undefined;
+  const coverSrc = resolveMediaSrc(profile.coverUrl);
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -125,13 +135,37 @@ function ProfilePage() {
 
       {/* Header */}
       <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
-        <div className="h-20 bg-gradient-to-r from-primary/20 via-primary/10 to-accent sm:h-24" />
+        <MediaMenu
+          kind="cover"
+          folder={mediaFolder}
+          templates={COVER_TEMPLATES}
+          hasValue={Boolean(profile.coverUrl)}
+          onApply={(v) => applyMedia("cover", v)}
+          triggerClassName="block w-full"
+        >
+          <div className="relative h-36 w-full overflow-hidden bg-gradient-to-r from-primary/25 via-primary/10 to-accent sm:h-52">
+            {coverSrc && <img src={coverSrc} alt="" className="h-full w-full object-cover" />}
+            <span className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full border bg-background/85 px-3 py-1.5 text-xs font-medium shadow-sm backdrop-blur transition group-hover:bg-background">
+              <Camera className="h-3.5 w-3.5" /><span className="hidden sm:inline">Edit cover</span>
+            </span>
+          </div>
+        </MediaMenu>
         <div className="flex flex-col gap-4 px-5 pb-5 sm:flex-row sm:items-end">
-          <AccountAvatar
-            name={profile.name}
-            avatarUrl={profile.avatarUrl}
-            className="-mt-10 h-20 w-20 border-4 border-card shadow-md ring-1 ring-border sm:-mt-12 sm:h-24 sm:w-24"
-          />
+          <MediaMenu
+            kind="avatar"
+            folder={mediaFolder}
+            templates={AVATAR_TEMPLATES}
+            hasValue={Boolean(profile.avatarUrl)}
+            onApply={(v) => applyMedia("avatar", v)}
+            triggerClassName="-mt-14 w-fit rounded-full sm:-mt-16"
+          >
+            <AccountAvatar
+              name={profile.name}
+              avatarUrl={profile.avatarUrl}
+              className="h-28 w-28 border-4 border-card shadow-md ring-1 ring-border sm:h-32 sm:w-32"
+            />
+            <EditBadge className="absolute bottom-1 right-1 h-8 w-8 transition group-hover:scale-110" />
+          </MediaMenu>
           <div className="min-w-0 flex-1">
             <div className="truncate text-xl font-semibold">{profile.name}</div>
             <div className="mt-0.5 flex items-center gap-1.5 truncate text-sm text-muted-foreground">
@@ -155,7 +189,7 @@ function ProfilePage() {
           <SectionCard
             icon={<UserRound className="h-4 w-4" />}
             title="Profile Settings"
-            description="Update the name and photo shown across your account."
+            description="Update the name shown across your account. Photo and cover save automatically."
             footer={
               <div className="flex justify-end">
                 <Button type="submit" className="w-full sm:w-auto" disabled={saving || name.trim().length < 2}>
@@ -165,18 +199,6 @@ function ProfilePage() {
             }
           >
             <div className="space-y-6">
-              <div className="space-y-2">
-                <Label>Profile photo</Label>
-                <ImageUploader
-                  folder={profile.storeId ? `${profile.storeId}/profiles/${profile.id}` : undefined}
-                  value={avatarUrl}
-                  onChange={setAvatarUrl}
-                  accept="image/png,image/jpeg,image/webp"
-                  maxBytes={2 * 1024 * 1024}
-                  label="Upload photo"
-                />
-                <p className="text-xs text-muted-foreground">PNG, JPG or WEBP, up to 2MB.</p>
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="profile-name">Full name</Label>
                 <Input id="profile-name" className="h-11" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} required />
