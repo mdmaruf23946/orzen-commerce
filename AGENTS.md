@@ -30,3 +30,4 @@
 - Provider sidebar menus are registry-driven and connected-only; account profile fields live in authenticated user metadata, separate from store branding.
 - Prod minute jobs run as one pg_cron `dispatch_minute_jobs()`; tenant-host RPCs use the edge cache.
 - `deploy-production.sh` guards `_runtime.mjs`'s `createRequire(import.meta.url)` (undefined → SSR 500s); never remove the patch.
+- Delegated (merchant-to-merchant) access reuses `store_staff` (access_type=delegated) and the panel selects a store via the `x-orzen-store` header, re-verified server-side in resolveStoreAccess/ensureStoreForAccount; invite/update/revoke always use the caller's truly owned store — prevents re-sharing and cross-store leaks.
