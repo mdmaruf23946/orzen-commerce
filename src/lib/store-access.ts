@@ -191,20 +191,8 @@ export async function resolveStoreRef(
   supabase: any,
   userId: string,
 ): Promise<{ id: string } | null> {
-  const { data: own } = await supabase
-    .from("stores")
-    .select("id")
-    .eq("owner_user_id", userId)
-    .maybeSingle();
-  if (own?.id) return { id: own.id };
-
-  const { data: staff } = await supabase
-    .from("store_staff")
-    .select("store_id")
-    .eq("user_id", userId)
-    .eq("status", "active")
-    .maybeSingle();
-  return staff?.store_id ? { id: staff.store_id } : null;
+  const access = await resolveStoreAccess(supabase, userId);
+  return access.storeId ? { id: access.storeId } : null;
 }
 
 /**
