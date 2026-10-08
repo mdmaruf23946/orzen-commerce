@@ -46,6 +46,8 @@ export const getMyAccess = createServerFn({ method: "GET" })
       isEmployee: !!access.staff,
       staff: access.staff,
       permissions: access.permissions,
+      accessType: access.staff?.access_type ?? (access.isOwner ? "owner" : null),
+      ownStoreId: access.ownStoreId ?? null,
     };
   });
 

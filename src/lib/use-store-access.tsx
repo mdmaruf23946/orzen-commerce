@@ -19,6 +19,8 @@ export type AccessState = {
   staff: StaffInfoLike | null;
   permissions: PermissionMap | null;
   can: (section: string, level?: "view" | "manage") => boolean;
+  storeId: string | null;
+  isDelegated: boolean;
 };
 
 const Ctx = createContext<AccessState>({
@@ -28,6 +30,8 @@ const Ctx = createContext<AccessState>({
   staff: null,
   permissions: null,
   can: () => true,
+  storeId: null,
+  isDelegated: false,
 });
 
 export function StoreAccessProvider({ children }: { children: ReactNode }) {
@@ -48,6 +52,8 @@ export function StoreAccessProvider({ children }: { children: ReactNode }) {
     isEmployee,
     staff: ((data as any)?.staff ?? null) as StaffInfoLike | null,
     permissions,
+    storeId: (data as any)?.storeId ?? null,
+    isDelegated: (data as any)?.accessType === "delegated",
     can: (section, level = "view") => (isEmployee ? allows(permissions, section, level) : true),
   };
 

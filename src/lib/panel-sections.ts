@@ -164,3 +164,40 @@ export function presetPermissions(role: EmployeeRole): PermissionMap {
   }
   return map;
 }
+
+/** Roles for merchant-to-merchant delegated access (Profile → Access & Permissions). */
+export const DELEGATE_ROLES = [
+  { value: "support_manager", label: "Support Manager", description: "Orders, customers, courier and chat" },
+  { value: "manager", label: "Manager", description: "Runs the store day to day" },
+  { value: "marketing_manager", label: "Marketing Manager", description: "Marketing, ads, SEO and Facebook" },
+  { value: "developer", label: "Developer", description: "Technical integrations, pages and themes" },
+  { value: "viewer", label: "Viewer", description: "Read-only access" },
+  { value: "custom", label: "Custom", description: "Pick permissions manually" },
+] as const;
+export type DelegateRole = (typeof DELEGATE_ROLES)[number]["value"];
+
+export function delegatePresetPermissions(role: DelegateRole): PermissionMap {
+  const map: PermissionMap = {};
+  const set = (keys: string[], level: PermissionLevel) => {
+    for (const k of keys) if (SECTION_BY_KEY[k] && !SECTION_BY_KEY[k].ownerOnly) map[k] = level;
+  };
+  switch (role) {
+    case "support_manager":
+      set(["dashboard", "orders", "courier_orders", "returns", "customers", "customer_accounts", "parcels", "couriers", "delivery", "inbox", "messenger_inbox", "whatsapp_inbox", "handoff_queue", "support"], "manage");
+      set(["products", "inventory"], "view");
+      break;
+    case "manager":
+      return presetPermissions("manager");
+    case "marketing_manager":
+      set(["dashboard", "marketing", "facebook", "coupons", "seo", "banners", "landing_builder", "landing_pages", "analytics", "notifications"], "manage");
+      set(["products", "orders"], "view");
+      break;
+    case "developer":
+      set(["dashboard", "messenger", "whatsapp", "facebook", "marketing", "theme", "pages", "landing_builder", "landing_pages", "seo", "ai_agent", "call_center", "import_export", "invoice_templates"], "manage");
+      set(["products", "orders"], "view");
+      break;
+    case "viewer":
+      return presetPermissions("viewer");
+  }
+  return map;
+}

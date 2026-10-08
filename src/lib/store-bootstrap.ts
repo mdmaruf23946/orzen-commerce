@@ -1,4 +1,6 @@
 import { fetchTemplate, seedStoreFromTemplate, templateStoreFields } from "@/lib/store-template";
+import { getRequestHeader } from "@tanstack/react-start/server";
+import { ACTIVE_STORE_HEADER, isUuid } from "@/lib/active-store";
 
 type ClaimsLike = {
   email?: string;
