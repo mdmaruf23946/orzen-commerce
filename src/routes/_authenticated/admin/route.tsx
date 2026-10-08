@@ -25,6 +25,8 @@ import { SubscriptionStatusBanner } from "@/components/admin/SubscriptionStatusB
 import { UpgradeProvider } from "@/components/admin/UpgradeModal";
 import { ProductTypeScopeProvider } from "@/lib/product-type-scope";
 import { StoreBrandMark } from "@/components/admin/StoreBrandMark";
+import { StoreSwitcher, DelegatedStoreBanner } from "@/components/admin/access/StoreSwitcher";
+import { DELEGATE_ROLES } from "@/lib/panel-sections";
 import { CountBadge } from "@/components/admin/CountBadge";
 import { useBadgeCounts, useMarkSeen } from "@/lib/use-badge-counts";
 import { getMyStore } from "@/lib/admin.functions";
@@ -616,30 +618,16 @@ function AdminLayout() {
             </button>
           </div>
 
-          {/* Store identity (per-store icon + name) */}
+          {/* Store identity + switcher (own store / delegated stores) */}
           {(!collapsed || open) && storeName && (
-            <div className="flex items-center gap-2.5 border-b px-4 py-2.5">
-              {storeIcon ? (
-                <img
-                  src={storeIcon}
-                  alt=""
-                  className="h-8 w-8 shrink-0 rounded-md border object-cover"
-                />
-              ) : (
-                <div
-                  className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-xs font-bold text-white"
-                  style={{ backgroundColor: (myStore as any)?.primary_color || "hsl(var(--primary))" }}
-                >
-                  {storeName.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div className="min-w-0 leading-tight">
-                <div className="truncate text-sm font-semibold">{storeName}</div>
-                <div className="text-[11px] text-muted-foreground">Store</div>
-              </div>
-            </div>
+            <StoreSwitcher
+              currentStoreId={access.storeId ?? (myStore as any)?.id ?? null}
+              storeName={storeName}
+              storeIcon={storeIcon}
+              color={(myStore as any)?.primary_color}
+              roleLabel={access.isOwner ? "Owner" : (DELEGATE_ROLES.find((r) => r.value === access.staff?.role)?.label ?? access.staff?.role ?? "Team member")}
+            />
           )}
-
 
           {/* Search */}
           {(!collapsed || open) && (
@@ -892,6 +880,12 @@ function AdminLayout() {
           <main className={cn("min-w-0 flex-1 overflow-x-hidden p-4 pb-[70px] md:p-6 md:pb-8 lg:p-8", isPersonalProfile && "pt-0 md:pt-0 lg:pt-0")}>
             {!access.isEmployee && <SubscriptionStatusBanner />}
             {!access.isEmployee && <EmailVerifyBanner />}
+            {access.isDelegated && storeName && (
+              <DelegatedStoreBanner
+                storeName={storeName}
+                roleLabel={DELEGATE_ROLES.find((r) => r.value === access.staff?.role)?.label ?? access.staff?.role ?? "Team member"}
+              />
+            )}
             {access.loading ? (
               <div className="h-40 animate-pulse rounded-2xl bg-muted/40" />
             ) : pageAllowed ? (
