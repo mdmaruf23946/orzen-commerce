@@ -54,8 +54,11 @@ export const updateAccountProfile = createServerFn({ method: "POST" })
     if (readError || !current.user) throw new Error("Account could not be verified");
 
     const metadata = (current.user.user_metadata ?? {}) as AccountMetadata;
-    const { error } = await context.supabase.auth.updateUser({
-      data: {
+    // Server client has no stored session (bearer only), so updateUser() fails with
+    // "Auth session missing". Update the verified caller's own metadata via admin API.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(current.user.id, {
+      user_metadata: {
         ...metadata,
         owner_name: data.name,
         full_name: data.name,
