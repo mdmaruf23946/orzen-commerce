@@ -1,10 +1,12 @@
 // Shared store-access layer for the Merchant Panel.
-// Resolves whether the caller is the store owner or one of its employees,
-// and enforces per-section permissions on the server.
+// Resolves whether the caller is the store owner, an employee, or a delegated
+// member of the store selected in the panel, and enforces section permissions.
 import { createMiddleware } from "@tanstack/react-start";
+import { getRequestHeader } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { allows, SECTION_BY_KEY, type PermissionMap } from "@/lib/panel-sections";
 import { ensureStoreForAccount } from "@/lib/store-bootstrap";
+import { ACTIVE_STORE_HEADER, isUuid } from "@/lib/active-store";
 
 export type StaffInfo = {
   id: string;
@@ -13,6 +15,7 @@ export type StaffInfo = {
   status: string;
   employee_code: string | null;
   must_change_password: boolean;
+  access_type: "employee" | "delegated";
 };
 
 export type StoreAccess = {
@@ -22,9 +25,64 @@ export type StoreAccess = {
   ownerUserId: string;
   staff: StaffInfo | null;
   permissions: PermissionMap | null;
+  /** The caller's own store id (when they own one), even while working elsewhere. */
+  ownStoreId?: string | null;
 };
 
-/** Owner => own store. Active employee => the store they belong to. */
+const STAFF_COLS =
+  "id,name,role,status,permissions,store_id,employee_code,must_change_password,access_type,expires_at";
+
+/** Store selected in the panel (header). Never trusted on its own. */
+export function requestedStoreId(): string | null {
+  try {
+    const v = getRequestHeader(ACTIVE_STORE_HEADER);
+    return isUuid(v) ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+function notExpired(row: any) {
+  return !row?.expires_at || new Date(row.expires_at).getTime() > Date.now();
+}
+
+/** Active, unexpired membership of `userId` in `storeId` (employee or delegated). */
+export async function activeMembership(supabase: any, userId: string, storeId: string) {
+  const { data } = await supabase
+    .from("store_staff")
+    .select(STAFF_COLS)
+    .eq("user_id", userId)
+    .eq("store_id", storeId)
+    .eq("status", "active")
+    .maybeSingle();
+  return data && notExpired(data) ? data : null;
+}
+
+async function staffAccess(supabase: any, userId: string, staff: any, ownStoreId: string | null): Promise<StoreAccess> {
+  const { data: store } = await supabase
+    .from("stores")
+    .select("id,owner_user_id")
+    .eq("id", staff.store_id)
+    .maybeSingle();
+  return {
+    storeId: staff.store_id,
+    isOwner: false,
+    ownerUserId: store?.owner_user_id ?? userId,
+    ownStoreId,
+    staff: {
+      id: staff.id,
+      name: staff.name,
+      role: staff.role,
+      status: staff.status,
+      employee_code: staff.employee_code ?? null,
+      must_change_password: !!staff.must_change_password,
+      access_type: staff.access_type === "delegated" ? "delegated" : "employee",
+    },
+    permissions: (staff.permissions ?? {}) as PermissionMap,
+  };
+}
+
+/** Owner => own store. Member => the selected (or first) store they belong to. */
 export async function resolveStoreAccess(
   supabase: any,
   userId: string,
@@ -35,17 +93,27 @@ export async function resolveStoreAccess(
     .select("id")
     .eq("owner_user_id", userId)
     .maybeSingle();
+  const ownId: string | null = own?.id ?? null;
 
-  if (own?.id) {
-    return { storeId: own.id, isOwner: true, ownerUserId: userId, staff: null, permissions: null };
+  const wanted = requestedStoreId();
+  if (wanted && wanted !== ownId) {
+    const m = await activeMembership(supabase, userId, wanted);
+    if (m) return staffAccess(supabase, userId, m, ownId);
   }
 
-  const { data: staff } = await supabase
+  if (ownId) {
+    return { storeId: ownId, isOwner: true, ownerUserId: userId, ownStoreId: ownId, staff: null, permissions: null };
+  }
+
+  const { data: rows } = await supabase
     .from("store_staff")
-    .select("id,name,role,status,permissions,store_id,employee_code,must_change_password")
+    .select(STAFF_COLS)
     .eq("user_id", userId)
     .eq("status", "active")
-    .maybeSingle();
+    .order("access_type", { ascending: false })
+    .order("created_at", { ascending: true })
+    .limit(5);
+  const staff = (rows ?? []).find(notExpired);
 
   if (!staff) {
     if (claims) {
@@ -54,6 +122,7 @@ export async function resolveStoreAccess(
         storeId: ensured.store.id,
         isOwner: !ensured.isEmployee,
         ownerUserId: ensured.store.owner_user_id ?? userId,
+        ownStoreId: ensured.isEmployee ? null : ensured.store.id,
         staff: null,
         permissions: null,
       };
@@ -61,26 +130,7 @@ export async function resolveStoreAccess(
     return { storeId: null, isOwner: false, ownerUserId: userId, staff: null, permissions: null };
   }
 
-  const { data: store } = await supabase
-    .from("stores")
-    .select("id,owner_user_id")
-    .eq("id", staff.store_id)
-    .maybeSingle();
-
-  return {
-    storeId: staff.store_id,
-    isOwner: false,
-    ownerUserId: store?.owner_user_id ?? userId,
-    staff: {
-      id: staff.id,
-      name: staff.name,
-      role: staff.role,
-      status: staff.status,
-      employee_code: staff.employee_code ?? null,
-      must_change_password: !!staff.must_change_password,
-    },
-    permissions: (staff.permissions ?? {}) as PermissionMap,
-  };
+  return staffAccess(supabase, userId, staff, null);
 }
 
 export function assertSection(
