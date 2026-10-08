@@ -1,6 +1,5 @@
 import { fetchTemplate, seedStoreFromTemplate, templateStoreFields } from "@/lib/store-template";
-import { getRequestHeader } from "@tanstack/react-start/server";
-import { ACTIVE_STORE_HEADER, isUuid } from "@/lib/active-store";
+import { requestedStoreId } from "@/lib/request-store";
 
 type ClaimsLike = {
   email?: string;
@@ -85,13 +84,7 @@ export async function ensureStoreForAccount(
   if (ownerError) throw new Error(ownerError.message);
 
   // Store selected in the panel (own or delegated) — membership re-verified here.
-  let wanted: string | null = null;
-  try {
-    const v = getRequestHeader(ACTIVE_STORE_HEADER);
-    wanted = isUuid(v) ? v : null;
-  } catch {
-    wanted = null;
-  }
+  const wanted = requestedStoreId();
   if (wanted && wanted !== (owned as any)?.id) {
     const { data: m } = await supabase
       .from("store_staff")
