@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getAccountProfile, updateAccountMedia, updateAccountProfile } from "@/lib/account-profile.functions";
 import { AVATAR_TEMPLATES, COVER_TEMPLATES, resolveMediaSrc } from "@/lib/profile-media-templates";
 import { useStoreAccess } from "@/lib/use-store-access";
+import { AccessPermissionsSection } from "@/components/admin/access/AccessPermissionsSection";
 
 export const Route = createFileRoute("/_authenticated/admin/profile")({
   head: () => ({
@@ -231,6 +232,9 @@ function ProfilePage() {
           </dl>
         </SectionCard>
       </div>
+
+      <AccessPermissionsSection />
+
 
       <section className="flex flex-col gap-4 rounded-xl border border-destructive/30 bg-destructive/5 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>

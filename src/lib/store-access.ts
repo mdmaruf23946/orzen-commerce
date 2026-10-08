@@ -2,11 +2,11 @@
 // Resolves whether the caller is the store owner, an employee, or a delegated
 // member of the store selected in the panel, and enforces section permissions.
 import { createMiddleware } from "@tanstack/react-start";
-import { getRequestHeader } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { allows, SECTION_BY_KEY, type PermissionMap } from "@/lib/panel-sections";
 import { ensureStoreForAccount } from "@/lib/store-bootstrap";
-import { ACTIVE_STORE_HEADER, isUuid } from "@/lib/active-store";
+import { requestedStoreId } from "@/lib/request-store";
+export { requestedStoreId };
 
 export type StaffInfo = {
   id: string;
@@ -31,16 +31,6 @@ export type StoreAccess = {
 
 const STAFF_COLS =
   "id,name,role,status,permissions,store_id,employee_code,must_change_password,access_type,expires_at";
-
-/** Store selected in the panel (header). Never trusted on its own. */
-export function requestedStoreId(): string | null {
-  try {
-    const v = getRequestHeader(ACTIVE_STORE_HEADER);
-    return isUuid(v) ? v : null;
-  } catch {
-    return null;
-  }
-}
 
 function notExpired(row: any) {
   return !row?.expires_at || new Date(row.expires_at).getTime() > Date.now();

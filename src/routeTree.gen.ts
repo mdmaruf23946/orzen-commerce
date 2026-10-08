@@ -134,6 +134,7 @@ import { Route as AuthenticatedOwnerSystemRouteImport } from './routes/_authenti
 import { Route as AuthenticatedOwnerThemesRouteImport } from './routes/_authenticated/owner/themes'
 import { Route as AuthenticatedOwnerUsersRouteImport } from './routes/_authenticated/owner/users'
 import { Route as AuthenticatedOwnerWebhooksRouteImport } from './routes/_authenticated/owner/webhooks'
+import { Route as AccessInviteTokenRouteImport } from './routes/access.invite.$token'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
 import { Route as ApiImgSplatRouteImport } from './routes/api/img.$'
 import { Route as ApiPublicDeploymentHealthRouteImport } from './routes/api/public/deployment-health'
@@ -981,6 +982,11 @@ const AuthenticatedOwnerWebhooksRoute =
     path: '/webhooks',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
+const AccessInviteTokenRoute = AccessInviteTokenRouteImport.update({
+  id: '/access/invite/$token',
+  path: '/access/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAiChatRoute = ApiAiChatRouteImport.update({
   id: '/api/ai/chat',
   path: '/api/ai/chat',
@@ -1874,6 +1880,7 @@ export interface FileRoutesByFullPath {
   '/owner/themes': typeof AuthenticatedOwnerThemesRoute
   '/owner/users': typeof AuthenticatedOwnerUsersRoute
   '/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
+  '/access/invite/$token': typeof AccessInviteTokenRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
   '/api/public/deployment-health': typeof ApiPublicDeploymentHealthRoute
@@ -2122,6 +2129,7 @@ export interface FileRoutesByTo {
   '/owner/themes': typeof AuthenticatedOwnerThemesRoute
   '/owner/users': typeof AuthenticatedOwnerUsersRoute
   '/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
+  '/access/invite/$token': typeof AccessInviteTokenRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
   '/api/public/deployment-health': typeof ApiPublicDeploymentHealthRoute
@@ -2385,6 +2393,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/themes': typeof AuthenticatedOwnerThemesRoute
   '/_authenticated/owner/users': typeof AuthenticatedOwnerUsersRoute
   '/_authenticated/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
+  '/access/invite/$token': typeof AccessInviteTokenRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/img/$': typeof ApiImgSplatRoute
   '/api/public/deployment-health': typeof ApiPublicDeploymentHealthRoute
@@ -2648,6 +2657,7 @@ export interface FileRouteTypes {
     | '/owner/themes'
     | '/owner/users'
     | '/owner/webhooks'
+    | '/access/invite/$token'
     | '/api/ai/chat'
     | '/api/img/$'
     | '/api/public/deployment-health'
@@ -2896,6 +2906,7 @@ export interface FileRouteTypes {
     | '/owner/themes'
     | '/owner/users'
     | '/owner/webhooks'
+    | '/access/invite/$token'
     | '/api/ai/chat'
     | '/api/img/$'
     | '/api/public/deployment-health'
@@ -3158,6 +3169,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/themes'
     | '/_authenticated/owner/users'
     | '/_authenticated/owner/webhooks'
+    | '/access/invite/$token'
     | '/api/ai/chat'
     | '/api/img/$'
     | '/api/public/deployment-health'
@@ -3323,6 +3335,7 @@ export interface RootRouteChildren {
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   DotwellKnownOrzenDomainVerificationTokenRoute: typeof DotwellKnownOrzenDomainVerificationTokenRoute
+  AccessInviteTokenRoute: typeof AccessInviteTokenRoute
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiImgSplatRoute: typeof ApiImgSplatRoute
   ApiPublicDeploymentHealthRoute: typeof ApiPublicDeploymentHealthRoute
@@ -4242,6 +4255,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/owner/webhooks'
       preLoaderRoute: typeof AuthenticatedOwnerWebhooksRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/access/invite/$token': {
+      id: '/access/invite/$token'
+      path: '/access/invite/$token'
+      fullPath: '/access/invite/$token'
+      preLoaderRoute: typeof AccessInviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/ai/chat': {
       id: '/api/ai/chat'
@@ -5855,6 +5875,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   DotwellKnownOrzenDomainVerificationTokenRoute:
     DotwellKnownOrzenDomainVerificationTokenRoute,
+  AccessInviteTokenRoute: AccessInviteTokenRoute,
   ApiAiChatRoute: ApiAiChatRoute,
   ApiImgSplatRoute: ApiImgSplatRoute,
   ApiPublicDeploymentHealthRoute: ApiPublicDeploymentHealthRoute,
