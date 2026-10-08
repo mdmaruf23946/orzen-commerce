@@ -81,13 +81,39 @@ export async function ensureStoreForAccount(
 
   const { data: owned, error: ownerError } = await ownerLookup();
   if (ownerError) throw new Error(ownerError.message);
+
+  // Store selected in the panel (own or delegated) — membership re-verified here.
+  let wanted: string | null = null;
+  try {
+    const v = getRequestHeader(ACTIVE_STORE_HEADER);
+    wanted = isUuid(v) ? v : null;
+  } catch {
+    wanted = null;
+  }
+  if (wanted && wanted !== (owned as any)?.id) {
+    const { data: m } = await supabase
+      .from("store_staff")
+      .select("store_id,expires_at")
+      .eq("user_id", userId)
+      .eq("store_id", wanted)
+      .eq("status", "active")
+      .maybeSingle();
+    if (m && (!m.expires_at || new Date(m.expires_at).getTime() > Date.now())) {
+      const { data: s } = await supabase.from("stores").select(columns).eq("id", wanted).maybeSingle();
+      if (s) return { store: s, isEmployee: true, created: false };
+    }
+  }
+
   if (owned) return { store: owned, isEmployee: false, created: false };
 
-  const { data: staff, error: staffError } = await supabase
+  const { data: staffRows, error: staffError } = await supabase
     .from("store_staff")
     .select("store_id,status")
     .eq("user_id", userId)
-    .maybeSingle();
+    .order("access_type", { ascending: false })
+    .order("created_at", { ascending: true })
+    .limit(1);
+  const staff = staffRows?.[0] ?? null;
   if (staffError) throw new Error(staffError.message);
   if (staff) {
     if (staff.status !== "active")
