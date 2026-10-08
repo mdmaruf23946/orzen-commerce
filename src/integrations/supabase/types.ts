@@ -7882,6 +7882,68 @@ export type Database = {
           },
         ]
       }
+      store_access_invitations: {
+        Row: {
+          accepted_user_id: string | null
+          access_expires_at: string | null
+          created_at: string
+          display_name: string | null
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          invited_by_name: string | null
+          permissions: Json
+          responded_at: string | null
+          role: string
+          status: string
+          store_id: string
+          token_hash: string
+        }
+        Insert: {
+          accepted_user_id?: string | null
+          access_expires_at?: string | null
+          created_at?: string
+          display_name?: string | null
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          invited_by_name?: string | null
+          permissions?: Json
+          responded_at?: string | null
+          role?: string
+          status?: string
+          store_id: string
+          token_hash: string
+        }
+        Update: {
+          accepted_user_id?: string | null
+          access_expires_at?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          invited_by_name?: string | null
+          permissions?: Json
+          responded_at?: string | null
+          role?: string
+          status?: string
+          store_id?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_access_invitations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_ai_activity_logs: {
         Row: {
           action_key: string | null
@@ -9553,13 +9615,17 @@ export type Database = {
       }
       store_staff: {
         Row: {
+          access_type: string
           created_at: string
           created_by: string | null
           email: string | null
           employee_code: string | null
+          expires_at: string | null
           id: string
           invited_at: string
+          invited_by: string | null
           joined_at: string | null
+          last_active_at: string | null
           last_login_at: string | null
           must_change_password: boolean
           name: string
@@ -9573,13 +9639,17 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          access_type?: string
           created_at?: string
           created_by?: string | null
           email?: string | null
           employee_code?: string | null
+          expires_at?: string | null
           id?: string
           invited_at?: string
+          invited_by?: string | null
           joined_at?: string | null
+          last_active_at?: string | null
           last_login_at?: string | null
           must_change_password?: boolean
           name: string
@@ -9593,13 +9663,17 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          access_type?: string
           created_at?: string
           created_by?: string | null
           email?: string | null
           employee_code?: string | null
+          expires_at?: string | null
           id?: string
           invited_at?: string
+          invited_by?: string | null
           joined_at?: string | null
+          last_active_at?: string | null
           last_login_at?: string | null
           must_change_password?: boolean
           name?: string

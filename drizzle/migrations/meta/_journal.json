@@ -15,6 +15,13 @@
       "when": 1791397421850,
       "tag": "0001_tighten_account_avatar_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791479704694,
+      "tag": "0002_delegated_store_access",
+      "breakpoints": true
     }
   ]
 }
