@@ -1,9 +1,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { resolveMediaSrc } from "@/lib/profile-media-templates";
 
 export function accountAvatarSrc(value: string | null | undefined) {
-  if (!value) return undefined;
-  return value.startsWith("http") ? value : `/api/img/${value}`;
+  return resolveMediaSrc(value);
 }
 
 function accountInitials(name: string) {
