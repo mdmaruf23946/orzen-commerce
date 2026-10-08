@@ -1,9 +1,9 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { BadgeCheck, CalendarDays, KeyRound, LogOut, Palette, ShieldCheck, UserRound } from "lucide-react";
+import { LogOut, UserRound } from "lucide-react";
 import { AccountAvatar } from "@/components/admin/AccountAvatar";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { Badge } from "@/components/ui/badge";
@@ -139,29 +139,10 @@ function ProfilePage() {
               <div className="space-y-1"><dt className="text-muted-foreground">Account ID</dt><dd className="break-all font-mono text-xs">{profile.id}</dd></div>
             </dl>
           </section>
-
-          <section className="border-y bg-card py-5 sm:rounded-lg sm:border sm:p-5">
-            <div className="flex items-start gap-3">
-              <BadgeCheck className="mt-0.5 h-5 w-5 text-muted-foreground" />
-              <div>
-                <h2 className="font-semibold">Account verification / KYC</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Verification will be available here in a future update.</p>
-                <Badge variant="outline" className="mt-3">Coming soon</Badge>
-              </div>
-            </div>
-          </section>
         </div>
       </div>
 
-      <section className="border-y bg-card py-5 sm:rounded-lg sm:border sm:p-5">
-        <h2 className="font-semibold">Account tools</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Link to="/admin/settings/security" className="flex items-center gap-3 rounded-md border p-3 text-sm hover:bg-muted"><ShieldCheck className="h-4 w-4 text-primary" /> Security settings</Link>
-          <div className="flex items-center gap-3 rounded-md border p-3 text-sm text-muted-foreground"><KeyRound className="h-4 w-4" /> API access · Future</div>
-          <div className="flex items-center gap-3 rounded-md border p-3 text-sm text-muted-foreground"><Palette className="h-4 w-4" /> Personalization · Future</div>
-          <div className="flex items-center gap-3 rounded-md border p-3 text-sm text-muted-foreground"><CalendarDays className="h-4 w-4" /> Account settings · Future</div>
-        </div>
-      </section>
+
 
       <section className="flex flex-wrap items-center justify-between gap-4 border-t pt-5">
         <div>
