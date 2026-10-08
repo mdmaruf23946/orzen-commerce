@@ -889,7 +889,7 @@ function AdminLayout() {
             </div>
           </header>
 
-          <main className="min-w-0 flex-1 overflow-x-hidden p-4 pb-[70px] md:p-6 md:pb-8 lg:p-8">
+          <main className={cn("min-w-0 flex-1 overflow-x-hidden p-4 pb-[70px] md:p-6 md:pb-8 lg:p-8", isPersonalProfile && "pt-0 md:pt-0 lg:pt-0")}>
             {!access.isEmployee && <SubscriptionStatusBanner />}
             {!access.isEmployee && <EmailVerifyBanner />}
             {access.loading ? (

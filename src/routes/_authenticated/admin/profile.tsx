@@ -128,11 +128,6 @@ function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Manage your personal account details and preferences.</p>
-      </div>
-
       {/* Header */}
       <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
         <MediaMenu
