@@ -12,6 +12,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { listMyStores, switchStore } from "@/lib/delegated-access.functions";
 import { getActiveStoreId, setActiveStoreId } from "@/lib/active-store";
+import { resolveStoreIcon } from "@/lib/store-icon";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 
 type Props = {
   currentStoreId: string | null;
@@ -40,36 +43,38 @@ export function StoreSwitcher({ currentStoreId, storeName, storeIcon, color, rol
     }
   }
 
-  const mark = (name: string, icon: string | null, c?: string | null, size = "h-8 w-8") =>
-    icon ? (
-      <img src={icon} alt="" className={`${size} shrink-0 rounded-md border object-cover`} />
-    ) : (
-      <div
-        className={`grid ${size} shrink-0 place-items-center rounded-md bg-primary text-xs font-bold text-primary-foreground`}
-        style={c ? { backgroundColor: c } : undefined}
-      >
-        {name.charAt(0).toUpperCase() || <Store className="h-4 w-4" />}
-      </div>
+  const mark = (name: string, icon: string | null, size = "h-8 w-8") => {
+    // Stored logos may be storage paths, not directly usable image URLs.
+    // Use the same resolver as the sidebar identity for every store row.
+    const src = resolveStoreIcon({ logo_url: icon });
+    return (
+      <Avatar className={`${size} rounded-md border`}>
+        {src && <AvatarImage src={src} alt={`${name} logo`} className="object-contain" />}
+        <AvatarFallback className="rounded-md bg-primary text-xs font-bold text-primary-foreground">
+          {name.charAt(0).toUpperCase() || <Store className="h-4 w-4" />}
+        </AvatarFallback>
+      </Avatar>
     );
+  };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex w-full items-center gap-2.5 border-b px-4 py-2.5 text-left transition-colors hover:bg-muted/50">
-          {mark(storeName, storeIcon, color)}
+        <Button variant="ghost" className="flex h-auto w-full justify-start gap-2.5 rounded-none border-b px-4 py-2.5 text-left transition-colors hover:bg-muted/50">
+          {mark(storeName, storeIcon)}
           <div className="min-w-0 flex-1 leading-tight">
             <div className="truncate text-sm font-semibold">{storeName}</div>
             <div className="truncate text-[11px] text-muted-foreground">{roleLabel}</div>
           </div>
           {stores.length > 1 && <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />}
-        </button>
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64">
         <DropdownMenuLabel className="text-xs text-muted-foreground">My Stores</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {stores.map((s) => (
           <DropdownMenuItem key={s.id} onClick={() => choose(s.id, s.kind)} className="gap-2.5 py-2">
-            {mark(s.name, s.logo, s.color, "h-7 w-7")}
+            {mark(s.name, s.logo, "h-7 w-7")}
             <div className="min-w-0 flex-1 leading-tight">
               <div className="truncate text-sm font-medium">{s.name}</div>
               <div className="truncate text-[11px] text-muted-foreground">{s.role}</div>
