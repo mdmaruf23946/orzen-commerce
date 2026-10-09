@@ -1496,11 +1496,14 @@ export const myDashboardOverview = createServerFn({ method: "GET" })
     );
     const store = ensured.store;
 
-    const ownerName =
-      (claims.user_metadata as { full_name?: string; name?: string } | undefined)?.full_name ??
-      (claims.user_metadata as { name?: string } | undefined)?.name ??
-      (claims.email as string | undefined)?.split("@")[0] ??
-      "there";
+    // In a delegated/employee store, greet with that store's name so the
+    // merchant can see whose dashboard is open.
+    const ownerName = ensured.isEmployee
+      ? (store?.name ?? "Store")
+      : (claims.user_metadata as { full_name?: string; name?: string } | undefined)?.full_name ??
+        (claims.user_metadata as { name?: string } | undefined)?.name ??
+        (claims.email as string | undefined)?.split("@")[0] ??
+        "there";
 
     const now = new Date();
     const startOfDay = (d: Date) => {
