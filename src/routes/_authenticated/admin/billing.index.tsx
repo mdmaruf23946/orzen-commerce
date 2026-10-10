@@ -441,45 +441,28 @@ function BillingPage() {
                   </ul>
                 )}
 
-                {/* Features — always visible on ≥sm, collapsible on mobile */}
-                <ul className="mt-2 hidden space-y-1 border-t pt-2 text-xs sm:mt-3 sm:block sm:pt-3">
-                  {FEATURE_KEYS.map((k) => {
-                    const on = isCustom ? true : !!p.features?.[k];
-                    return (
-                      <li key={k} className="flex items-start gap-2">
-                        {on ? (
-                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                        ) : (
-                          <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
-                        )}
-                        <span className={on ? "" : "text-muted-foreground/70 line-through"}>
-                          {FEATURE_LABELS[k]}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-
-                <details className="mt-2 border-t pt-2 sm:hidden">
-                  <summary className="cursor-pointer text-[11px] font-medium text-primary">Show all features</summary>
-                  <ul className="mt-2 space-y-1 text-[11px]">
-                    {FEATURE_KEYS.map((k) => {
-                      const on = isCustom ? true : !!p.features?.[k];
-                      return (
-                        <li key={k} className="flex items-start gap-1.5">
-                          {on ? (
-                            <Check className="mt-0.5 h-3 w-3 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                          ) : (
-                            <X className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground/50" />
-                          )}
-                          <span className={on ? "min-w-0" : "min-w-0 text-muted-foreground/70 line-through"}>
-                            {FEATURE_LABELS[k]}
-                          </span>
+                {/* Headline perks — only what this plan includes */}
+                {(() => {
+                  const enabled = HIGHLIGHT_PRIORITY.filter((k) => isCustom || !!p.features?.[k]);
+                  const shown = enabled.slice(0, 6);
+                  const more = enabled.length - shown.length;
+                  return (
+                    <ul className="mt-3 flex-1 space-y-2 border-t pt-3 text-sm sm:text-[15px]">
+                      {shown.length === 0 && (
+                        <li className="text-muted-foreground">All core store features</li>
+                      )}
+                      {shown.map((k) => (
+                        <li key={k} className="flex items-start gap-2">
+                          <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                          <span className="min-w-0">{FEATURE_LABELS[k]}</span>
                         </li>
-                      );
-                    })}
-                  </ul>
-                </details>
+                      ))}
+                      {more > 0 && (
+                        <li className="pl-6 text-xs font-medium text-primary">+{more} more features</li>
+                      )}
+                    </ul>
+                  );
+                })()}
 
                 <div className="mt-3 sm:mt-4">
                   {isCurrent ? (
@@ -545,22 +528,31 @@ function BillingPage() {
               {plans.some((p) => tierOf(p) === "custom" || !!p.features?.landing_page_create) && (
                 <CompareLimitRow label="Landing Pages" plans={plans} accessor={(p) => formatLimit(p.landing_page_limit)} />
               )}
-              {FEATURE_KEYS.map((k) => (
-                <tr key={k} className="border-b last:border-0">
-                  <th className="sticky left-0 z-10 bg-card p-3 text-left font-medium">{FEATURE_LABELS[k]}</th>
-                  {plans.map((p) => {
-                    const on = tierOf(p) === "custom" ? true : !!p.features?.[k];
-                    return (
-                      <td key={p.id} className="p-3 text-center">
-                        {on ? (
-                          <Check className="mx-auto h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                        ) : (
-                          <X className="mx-auto h-4 w-4 text-muted-foreground/50" />
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
+              {PLAN_FEATURE_GROUPS.map((g) => (
+                <Fragment key={g.title}>
+                  <tr className="border-b bg-muted/30">
+                    <th colSpan={plans.length + 1} className="sticky left-0 p-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {g.title}
+                    </th>
+                  </tr>
+                  {g.keys.map((k) => (
+                    <tr key={k} className="border-b last:border-0">
+                      <th className="sticky left-0 z-10 bg-card p-3 text-left font-medium">{FEATURE_LABELS[k]}</th>
+                      {plans.map((p) => {
+                        const on = tierOf(p) === "custom" ? true : !!p.features?.[k];
+                        return (
+                          <td key={p.id} className="p-3 text-center">
+                            {on ? (
+                              <Check className="mx-auto h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                            ) : (
+                              <span className="text-muted-foreground/60">—</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </Fragment>
               ))}
             </tbody>
           </table>
@@ -587,15 +579,22 @@ function BillingPage() {
                   {(isCustom || !!p.features?.landing_page_create) && (
                     <MobileRow label="Landing Pages" value={formatLimit(p.landing_page_limit)} />
                   )}
-                  {FEATURE_KEYS.map((k) => {
-                    const on = isCustom ? true : !!p.features?.[k];
-                    return (
-                      <li key={k} className="flex items-center justify-between gap-3">
-                        <span className="text-muted-foreground">{FEATURE_LABELS[k]}</span>
-                        {on ? <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <X className="h-4 w-4 text-muted-foreground/50" />}
-                      </li>
-                    );
-                  })}
+                  {PLAN_FEATURE_GROUPS.map((g) => (
+                    <li key={g.title} className="pt-2">
+                      <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">{g.title}</div>
+                      <ul className="space-y-1.5">
+                        {g.keys.map((k) => {
+                          const on = isCustom ? true : !!p.features?.[k];
+                          return (
+                            <li key={k} className="flex items-center justify-between gap-3">
+                              <span>{FEATURE_LABELS[k]}</span>
+                              {on ? <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <span className="text-muted-foreground/60">—</span>}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </li>
+                  ))}
                 </ul>
               </details>
             );

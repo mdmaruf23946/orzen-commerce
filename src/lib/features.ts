@@ -123,11 +123,38 @@ const LEGACY_FALLBACK: Partial<Record<FeatureKey, string>> = {
   whatsapp: "ai_messenger",
 };
 
+/** Core store features open on every active plan — never shown as plan perks. */
+export const ALWAYS_INCLUDED: FeatureKey[] = [
+  "themes", "custom_pages", "seo", "delivery_zones", "payment_gateways",
+  "customer_accounts", "notifications", "digital_products", "service_products",
+  "subscription_products", "wallet", "invoice", "customer_notes",
+];
+
+/** Plan-differentiating features, grouped for the billing comparison. */
+export const PLAN_FEATURE_GROUPS: { title: string; keys: FeatureKey[] }[] = [
+  { title: "AI & Automation", keys: ["ai_agent", "ai_messenger", "ai_product_builder", "call_center"] },
+  { title: "Messaging Channels", keys: ["facebook_page", "messenger_inbox", "whatsapp"] },
+  { title: "Courier & Orders", keys: ["courier", "quick_order", "duplicate_protection", "fraud_checker", "returns"] },
+  { title: "Marketing & Growth", keys: ["pixel", "coupons", "landing_page_create", "landing_page_connect", "product_reviews", "custom_domain"] },
+  { title: "Store Management", keys: ["inventory", "analytics", "import_export", "bulk_actions", "staff"] },
+];
+
+/** Order used to pick the few headline perks shown on each plan card. */
+export const HIGHLIGHT_PRIORITY: FeatureKey[] = [
+  "ai_agent", "ai_messenger", "call_center", "courier", "pixel", "custom_domain",
+  "landing_page_create", "whatsapp", "fraud_checker", "duplicate_protection",
+  "coupons", "analytics", "inventory", "staff", "landing_page_connect",
+  "messenger_inbox", "facebook_page", "ai_product_builder", "returns",
+  "import_export", "bulk_actions", "quick_order", "product_reviews",
+];
+
 export function hasFeature(store: StoreWithPackage, key: FeatureKey): boolean {
   const pkg = effectivePackage(store);
   if (!pkg) return false;
   // Trial unlocks everything
   if (pkg.is_trial) return true;
+  if (ALWAYS_INCLUDED.includes(key)) return true;
+  if (key === "ai_call_center") return !!(pkg.features?.call_center ?? pkg.features?.ai_call_center);
   const f = pkg.features ?? {};
   if (f[key] !== undefined) return !!f[key];
   // Backwards compatibility: plans saved before a flag existed.
