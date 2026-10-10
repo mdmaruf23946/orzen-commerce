@@ -65,3 +65,8 @@
 - [x] Apply existing account-avatar upload policies to production
 - [x] Deploy Profile page and account sidebar footer to orzen.top
 - [x] Verify live page responses and signed-out protection; authenticated preview shows Profile and footer links (live authenticated session unavailable)
+
+## Package feature grouping release (2026-10-10)
+- [x] Merchant Panel plan cards show the grouped feature list (max 16), nothing hidden
+- [x] Winner Admin /owner/packages uses the same grouped toggles; create/edit/delete stays dynamic
+- [x] Guarded wrangler deployment to orzen.top; identity + parity checks passed; public routes 200
