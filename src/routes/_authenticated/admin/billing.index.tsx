@@ -443,22 +443,36 @@ function BillingPage() {
 
                 {/* All plan perks — only what this plan includes */}
                 {(() => {
-                  const f = p.features ?? {};
-                  const enabled = FEATURE_KEYS.filter((k) => {
-                    if (k === "ai_call_center" || k === "landing_pages") return false; // duplicates
-                    if (isCustom || ALWAYS_INCLUDED.includes(k)) return true;
-                    if (k === "call_center") return !!(f.call_center ?? f.ai_call_center);
-                    return !!f[k];
-                  });
+                  const f = (p.features ?? {}) as Record<string, boolean>;
+                  const any = (...ks: string[]) => isCustom || ks.some((k) => !!f[k]);
+                  const items: { key: string; label: string; on: boolean }[] = [
+                    { key: "ai_agent", label: "AI Sales Agent", on: any("ai_agent") },
+                    { key: "messaging", label: "AI Messaging (Messenger, WhatsApp & more)", on: any("ai_messenger", "whatsapp", "messenger_inbox", "facebook_page") },
+                    { key: "call", label: "AI Call Center", on: any("call_center", "ai_call_center") },
+                    { key: "builder", label: "AI Product Builder", on: any("ai_product_builder") },
+                    { key: "lp_create", label: "Landing Page Create", on: any("landing_page_create") || (f.landing_page_create === undefined && !!f.landing_pages) },
+                    { key: "lp_connect", label: "Landing Page Integration", on: any("landing_page_connect") || (f.landing_page_connect === undefined && !!f.landing_pages) },
+                    { key: "courier", label: "Courier Integration", on: any("courier") },
+                    { key: "fraud", label: "Fraud Checker & Duplicate Protection", on: any("fraud_checker", "duplicate_protection") },
+                    { key: "pixel", label: "Facebook Pixel & Tracking", on: any("pixel") },
+                    { key: "domain", label: "Custom Domain", on: any("custom_domain") },
+                    { key: "coupons", label: "Coupons & Discounts", on: any("coupons") },
+                    { key: "inventory", label: "Inventory, Bulk & Import/Export", on: any("inventory", "bulk_actions", "import_export", "quick_order") },
+                    { key: "analytics", label: "Analytics", on: any("analytics") },
+                    { key: "returns", label: "Returns & Exchanges", on: any("returns") },
+                    { key: "reviews", label: "Product Reviews", on: any("product_reviews") },
+                    { key: "staff", label: "Staff Management", on: any("staff") },
+                  ];
+                  const enabled = items.filter((i) => i.on);
                   return (
                     <ul className="mt-3 flex-1 space-y-2 border-t pt-3 text-sm sm:text-[15px]">
                       {enabled.length === 0 && (
                         <li className="text-muted-foreground">All core store features</li>
                       )}
-                      {enabled.map((k) => (
-                        <li key={k} className="flex items-start gap-2">
+                      {enabled.map((i) => (
+                        <li key={i.key} className="flex items-start gap-2">
                           <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                          <span className="min-w-0">{FEATURE_LABELS[k]}</span>
+                          <span className="min-w-0">{i.label}</span>
                         </li>
                       ))}
                     </ul>
