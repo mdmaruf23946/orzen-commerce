@@ -12,7 +12,7 @@ import {
   activateFreePlan,
   type CycleKey,
 } from "@/lib/billing.functions";
-import { FEATURE_LABELS, ALWAYS_INCLUDED, PLAN_FEATURE_GROUPS, HIGHLIGHT_PRIORITY, formatLimit } from "@/lib/features";
+import { FEATURE_KEYS, FEATURE_LABELS, ALWAYS_INCLUDED, PLAN_FEATURE_GROUPS, HIGHLIGHT_PRIORITY, formatLimit } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import WalletPanel from "@/components/admin/billing/WalletPanel";
