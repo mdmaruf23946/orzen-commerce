@@ -139,6 +139,35 @@ export const PLAN_FEATURE_GROUPS: { title: string; keys: FeatureKey[] }[] = [
   { title: "Store Management", keys: ["inventory", "analytics", "import_export", "bulk_actions", "staff"] },
 ];
 
+/** The 16 package features shown on plan cards and toggled in Winner Admin. Each maps to the underlying flags. */
+export const PLAN_DISPLAY_FEATURES: { key: string; label: string; flags: string[] }[] = [
+  { key: "ai_agent", label: "AI Sales Agent", flags: ["ai_agent"] },
+  { key: "messaging", label: "AI Messaging (Messenger, WhatsApp & more)", flags: ["ai_messenger", "whatsapp", "messenger_inbox", "facebook_page"] },
+  { key: "call", label: "AI Call Center", flags: ["call_center", "ai_call_center"] },
+  { key: "builder", label: "AI Product Builder", flags: ["ai_product_builder"] },
+  { key: "lp_create", label: "Landing Page Create", flags: ["landing_page_create"] },
+  { key: "lp_connect", label: "Landing Page Integration", flags: ["landing_page_connect"] },
+  { key: "courier", label: "Courier Integration", flags: ["courier"] },
+  { key: "fraud", label: "Fraud Checker & Duplicate Protection", flags: ["fraud_checker", "duplicate_protection"] },
+  { key: "pixel", label: "Facebook Pixel & Tracking", flags: ["pixel"] },
+  { key: "domain", label: "Custom Domain", flags: ["custom_domain"] },
+  { key: "coupons", label: "Coupons & Discounts", flags: ["coupons"] },
+  { key: "inventory", label: "Inventory, Bulk & Import/Export", flags: ["inventory", "bulk_actions", "import_export", "quick_order"] },
+  { key: "analytics", label: "Analytics", flags: ["analytics"] },
+  { key: "returns", label: "Returns & Exchanges", flags: ["returns"] },
+  { key: "reviews", label: "Product Reviews", flags: ["product_reviews"] },
+  { key: "staff", label: "Staff Management", flags: ["staff"] },
+];
+
+/** Whether a display feature is on for a package's stored feature map. */
+export function displayFeatureOn(f: Record<string, boolean | undefined>, flags: string[]): boolean {
+  if (flags.some((k) => !!f[k])) return true;
+  if (flags[0] === "landing_page_create" || flags[0] === "landing_page_connect") {
+    return f[flags[0]] === undefined && !!f.landing_pages;
+  }
+  return false;
+}
+
 /** Order used to pick the few headline perks shown on each plan card. */
 export const HIGHLIGHT_PRIORITY: FeatureKey[] = [
   "ai_agent", "ai_messenger", "call_center", "courier", "pixel", "custom_domain",

@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { BILLING_CYCLES } from "@/lib/features";
+import { BILLING_CYCLES, PLAN_DISPLAY_FEATURES, displayFeatureOn } from "@/lib/features";
 
 export const Route = createFileRoute("/_authenticated/owner/packages")({
   component: PackagesPage,
@@ -79,11 +79,10 @@ function PackagesPage() {
               <div>Sort: {p.sort_order ?? 0}</div>
             </div>
             <div className="mt-2 flex flex-wrap gap-1">
-              {Object.entries((p.features ?? {}) as Record<string, boolean>)
-                .filter(([, v]) => p.is_trial || v)
-                .slice(0, 6)
-                .map(([k]) => (
-                  <span key={k} className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] text-emerald-700">{k}</span>
+              {PLAN_DISPLAY_FEATURES
+                .filter((g) => p.is_trial || displayFeatureOn(p.features ?? {}, g.flags))
+                .map((g) => (
+                  <span key={g.key} className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">{g.label}</span>
                 ))}
             </div>
           </div>
@@ -208,12 +207,19 @@ function PackageDialog({ editing, onClose, onSaved }: { editing: any; onClose: (
             </TabsContent>
 
             <TabsContent value="features" className="space-y-2">
-              <p className="text-xs text-muted-foreground">Enable individual features for this package. Trial packages unlock everything automatically. Add new features from the Feature Access page.</p>
+              <p className="text-xs text-muted-foreground">যে ফিচার ON রাখবেন, Merchant Panel-এ এই package-এ সেটা দেখাবে; OFF করলে দেখাবে না। Trial package-এ সব খোলা থাকে।</p>
               <div className="grid gap-2 sm:grid-cols-2">
-                {(catalog as any[]).map((f: any) => (
-                  <label key={f.flag_key} className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm">
-                    <span>{f.label ?? f.flag_key}</span>
-                    <Switch checked={!!form.features[f.flag_key]} onCheckedChange={() => toggleFeature(f.flag_key)} />
+                {PLAN_DISPLAY_FEATURES.map((g) => (
+                  <label key={g.key} className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm">
+                    <span>{g.label}</span>
+                    <Switch
+                      checked={displayFeatureOn(form.features, g.flags)}
+                      onCheckedChange={(v) => {
+                        const next = { ...form.features };
+                        g.flags.forEach((k) => { next[k] = v; });
+                        set("features", next);
+                      }}
+                    />
                   </label>
                 ))}
               </div>
