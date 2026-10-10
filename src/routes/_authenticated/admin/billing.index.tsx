@@ -12,7 +12,7 @@ import {
   activateFreePlan,
   type CycleKey,
 } from "@/lib/billing.functions";
-import { FEATURE_LABELS, ALWAYS_INCLUDED, PLAN_FEATURE_GROUPS, HIGHLIGHT_PRIORITY, formatLimit } from "@/lib/features";
+import { FEATURE_KEYS, FEATURE_LABELS, ALWAYS_INCLUDED, PLAN_FEATURE_GROUPS, HIGHLIGHT_PRIORITY, formatLimit } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import WalletPanel from "@/components/admin/billing/WalletPanel";
@@ -443,7 +443,13 @@ function BillingPage() {
 
                 {/* All plan perks — only what this plan includes */}
                 {(() => {
-                  const enabled = HIGHLIGHT_PRIORITY.filter((k) => isCustom || !!p.features?.[k]);
+                  const f = p.features ?? {};
+                  const enabled = FEATURE_KEYS.filter((k) => {
+                    if (k === "ai_call_center" || k === "landing_pages") return false; // duplicates
+                    if (isCustom || ALWAYS_INCLUDED.includes(k)) return true;
+                    if (k === "call_center") return !!(f.call_center ?? f.ai_call_center);
+                    return !!f[k];
+                  });
                   return (
                     <ul className="mt-3 flex-1 space-y-2 border-t pt-3 text-sm sm:text-[15px]">
                       {enabled.length === 0 && (
