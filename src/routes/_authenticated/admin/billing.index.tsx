@@ -432,7 +432,7 @@ function BillingPage() {
                 {/* Summary bullets */}
                 {p.feature_summary && p.feature_summary.length > 0 && (
                   <ul className="mt-2 space-y-0.5 text-[11px] text-muted-foreground sm:mt-3 sm:space-y-1 sm:text-xs">
-                    {p.feature_summary.slice(0, 3).map((s, i) => (
+                    {p.feature_summary.map((s, i) => (
                       <li key={i} className="flex items-start gap-1.5">
                         <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-primary/60" />
                         <span className="min-w-0">{s}</span>
@@ -441,25 +441,20 @@ function BillingPage() {
                   </ul>
                 )}
 
-                {/* Headline perks — only what this plan includes */}
+                {/* All plan perks — only what this plan includes */}
                 {(() => {
                   const enabled = HIGHLIGHT_PRIORITY.filter((k) => isCustom || !!p.features?.[k]);
-                  const shown = enabled.slice(0, 6);
-                  const more = enabled.length - shown.length;
                   return (
                     <ul className="mt-3 flex-1 space-y-2 border-t pt-3 text-sm sm:text-[15px]">
-                      {shown.length === 0 && (
+                      {enabled.length === 0 && (
                         <li className="text-muted-foreground">All core store features</li>
                       )}
-                      {shown.map((k) => (
+                      {enabled.map((k) => (
                         <li key={k} className="flex items-start gap-2">
                           <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
                           <span className="min-w-0">{FEATURE_LABELS[k]}</span>
                         </li>
                       ))}
-                      {more > 0 && (
-                        <li className="pl-6 text-xs font-medium text-primary">+{more} more features</li>
-                      )}
                     </ul>
                   );
                 })()}
