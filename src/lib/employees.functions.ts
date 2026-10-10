@@ -28,10 +28,11 @@ function cleanPermissions(input: Record<string, string> | undefined): Record<str
 }
 
 async function nextEmployeeCode(supabase: any, storeId: string) {
-  const { count } = await supabase
-    .from("store_staff")
-    .select("id", { count: "exact", head: true })
-    .eq("store_id", storeId);
+    const { count } = await supabase
+      .from("store_staff")
+      .select("id", { count: "exact", head: true })
+      .eq("store_id", storeId)
+      .or("access_type.eq.employee,access_type.is.null");
   return `EMP-${String((count ?? 0) + 1).padStart(4, "0")}`;
 }
 
@@ -62,6 +63,7 @@ export const listEmployees = createServerFn({ method: "GET" })
           "id,name,email,phone,role,status,notes,permissions,employee_code,user_id,last_login_at,must_change_password,created_at",
         )
         .eq("store_id", sid)
+        .or("access_type.eq.employee,access_type.is.null")
         .order("created_at", { ascending: false }),
       context.supabase
         .from("stores")
@@ -297,20 +299,24 @@ export const myAccountKind = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const { data: staff } = await supabase
-      .from("store_staff")
-      .select("id,status")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (staff) {
-      return { kind: "employee" as const, active: staff.status === "active" };
-    }
+    // Store ownership wins: a merchant who accepted delegated access to
+    // another store must still be treated as a merchant on login.
     const { data: store } = await supabase
       .from("stores")
       .select("id")
       .eq("owner_user_id", userId)
       .maybeSingle();
-    return { kind: store ? ("merchant" as const) : ("none" as const), active: true };
+    if (store) return { kind: "merchant" as const, active: true };
+    const { data: staff } = await supabase
+      .from("store_staff")
+      .select("id,status")
+      .eq("user_id", userId)
+      .or("access_type.eq.employee,access_type.is.null")
+      .maybeSingle();
+    if (staff) {
+      return { kind: "employee" as const, active: staff.status === "active" };
+    }
+    return { kind: "none" as const, active: true };
   });
 
 /** Employee signs in: verify they belong to a store and stamp last login. */

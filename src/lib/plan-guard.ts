@@ -135,7 +135,8 @@ export async function assertLimit(
     const { count } = await supabase
       .from("store_staff")
       .select("id", { count: "exact", head: true })
-      .eq("store_id", storeId);
+      .eq("store_id", storeId)
+      .or("access_type.eq.employee,access_type.is.null");
     used = count ?? 0;
   } else {
     // Orders are counted for the current calendar month.
