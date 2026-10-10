@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Check, X, Sparkles, Crown, Sparkle, Download, Loader2 } from "lucide-react";
 import {
@@ -12,7 +12,7 @@ import {
   activateFreePlan,
   type CycleKey,
 } from "@/lib/billing.functions";
-import { FEATURE_KEYS, FEATURE_LABELS, formatLimit } from "@/lib/features";
+import { FEATURE_LABELS, ALWAYS_INCLUDED, PLAN_FEATURE_GROUPS, HIGHLIGHT_PRIORITY, formatLimit } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import WalletPanel from "@/components/admin/billing/WalletPanel";
@@ -419,7 +419,7 @@ function BillingPage() {
                 </div>
 
                 {/* Limits */}
-                <ul className="mt-3 space-y-1 text-[11px] sm:space-y-1.5 sm:text-xs">
+                <ul className="mt-3 space-y-1.5 text-sm">
                   <LimitRow label="Products" value={formatLimit(p.product_limit, undefined)} />
                   <LimitRow label="Orders / month" value={formatLimit(p.order_limit, undefined)} />
                   <LimitRow label="Storage" value={formatLimit(p.storage_mb, "MB")} />
@@ -499,6 +499,16 @@ function BillingPage() {
               </div>
             );
           })}
+        </div>
+        <div className="mt-3 rounded-xl border bg-muted/30 p-3 sm:mt-4 sm:p-4">
+          <div className="text-sm font-semibold sm:text-base">Included in every plan</div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {["Physical Products", ...ALWAYS_INCLUDED.map((k) => FEATURE_LABELS[k])].map((l) => (
+              <span key={l} className="inline-flex items-center gap-1 rounded-full border bg-card px-2.5 py-1 text-xs sm:text-sm">
+                <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />{l}
+              </span>
+            ))}
+          </div>
         </div>
       </section>
 
