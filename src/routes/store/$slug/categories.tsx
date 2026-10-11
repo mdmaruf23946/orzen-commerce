@@ -8,6 +8,8 @@ import { getCategoryIcon } from "@/lib/category-icons";
 import { useStoreUI } from "@/lib/store-ui";
 import { useStoreT } from "@/lib/store-i18n";
 import { StoreErrorState } from "@/components/storefront/StoreErrorState";
+import { getRequestOrigin } from "@/lib/seo.functions";
+import { resolveStoreSeo } from "@/lib/seo";
 
 const stable = {
   staleTime: 5 * 60_000,
@@ -32,7 +34,7 @@ const categoriesQuery = (storeId: string) =>
   });
 
 export const Route = createFileRoute("/store/$slug/categories")({
-  head: () => ({
+  head: ({ loaderData }) => ({
     meta: [
       { title: "All Categories — Browse the full catalog" },
       {
@@ -48,12 +50,19 @@ export const Route = createFileRoute("/store/$slug/categories")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
+    links: (loaderData as any)?.canonical
+      ? [{ rel: "canonical", href: (loaderData as any).canonical }]
+      : [],
   }),
   loader: async ({ context, params }) => {
     const store = await context.queryClient.ensureQueryData(storeQuery(params.slug));
     if (!store) return null;
-    const categories = await context.queryClient.ensureQueryData(categoriesQuery(store.id));
-    return { categories };
+    const [categories, origin] = await Promise.all([
+      context.queryClient.ensureQueryData(categoriesQuery(store.id)),
+      getRequestOrigin().catch(() => ""),
+    ]);
+    const canonical = resolveStoreSeo(store as any, { origin, path: "/categories" }).canonical;
+    return { categories, canonical };
   },
   errorComponent: ({ error }) => <StoreErrorState error={error} scope="storefront:categories" />,
   component: CategoriesPage,

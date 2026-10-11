@@ -13,6 +13,7 @@ import { StorePageBody } from "@/components/storefront/StorePageLayout";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { StoreErrorState } from "@/components/storefront/StoreErrorState";
 import { Input } from "@/components/ui/input";
+import { resolveStoreSeo } from "@/lib/seo";
 
 const PAGE_KEY = "shop";
 const STALE = 5 * 60_000;
@@ -41,7 +42,8 @@ export const Route = createFileRoute("/store/$slug/shop")({
       ),
       getStorePagePublic({ data: { slug: params.slug, pageKey: PAGE_KEY } }),
     ]);
-    return { store, products, categories, page };
+    const canonicalBase = resolveStoreSeo(store as any, { origin: (page as any)?.origin ?? "" }).canonical;
+    return { store, products, categories, page: { ...(page as any), origin: canonicalBase ?? (page as any)?.origin } };
   },
   head: ({ loaderData }) => storePageHead((loaderData as any)?.page, PAGE_KEY),
   errorComponent: ({ error }) => <StoreErrorState error={error} scope="storefront:shop" />,

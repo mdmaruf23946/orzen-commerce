@@ -1,4 +1,4 @@
-import { platformHead, ORG_NODE, WEBSITE_NODE, softwareAppNode } from "@/lib/platform-seo";
+import { platformHead, ORG_NODE, WEBSITE_NODE, softwareAppNode, faqNode } from "@/lib/platform-seo";
 import { getPlatformSeoOverrides } from "@/lib/platform-seo-pages.functions";
 import { effectiveSeo } from "@/lib/platform-seo-pages";
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
@@ -78,7 +78,7 @@ export const Route = createFileRoute("/")({
     platformHead({
       path: "/",
       ...effectiveSeo("home", (loaderData as any)?.seo),
-      jsonLd: [ORG_NODE, WEBSITE_NODE, softwareAppNode()],
+      jsonLd: [ORG_NODE, WEBSITE_NODE, softwareAppNode(), faqNode("/")],
     }),
   component: Landing,
 });
