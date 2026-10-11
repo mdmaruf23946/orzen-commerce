@@ -87,3 +87,4 @@
 - [x] Real English sentences ("Do you ship internationally?") still answer in English
 - [x] Guarded wrangler deployment (version 2b331d40) to orzen.top; identity + parity checks passed; home/login 200, health ok
 - [x] SEO Step 1: product custom SEO in head, platform meta/schema, /features & /pricing, sitemap/robots (preview; live deploy pending approval)
+- [x] SEO Step 2: change tracking (semantic SHA-256 triggers), recommendations table, history + 1-click rollback (preview)
