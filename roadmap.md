@@ -86,3 +86,4 @@
 - [x] "customise number need" style messages (roman letters, few common English words) now answer in Banglish
 - [x] Real English sentences ("Do you ship internationally?") still answer in English
 - [x] Guarded wrangler deployment (version 2b331d40) to orzen.top; identity + parity checks passed; home/login 200, health ok
+- [x] SEO Step 1: product custom SEO in head, platform meta/schema, /features & /pricing, sitemap/robots (preview; live deploy pending approval)
