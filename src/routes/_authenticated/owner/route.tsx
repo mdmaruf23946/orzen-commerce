@@ -50,6 +50,7 @@ const groups: NavGroup[] = [
     { to: "/owner/themes", label: "Themes & Templates", icon: Palette },
     { to: "/owner/features", label: "Feature Flags", icon: ToggleLeft },
     { to: "/owner/domains", label: "Domains", icon: Globe },
+    { to: "/owner/seo", label: "Platform SEO", icon: BarChart3 },
     { to: "/owner/system", label: "System Settings", icon: Settings },
     { to: "/owner/footer", label: "Footer Settings", icon: Settings },
     { to: "/owner/reviews", label: "Reviews & Testimonials", icon: Star },
