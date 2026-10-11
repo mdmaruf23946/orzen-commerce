@@ -75,3 +75,9 @@
 - [x] Test Chat hard-caps the answer (300 tokens) and keeps only the last few turns
 - [x] Chat replies get a default output cap (1024) and temperature capped at 1.0
 - [x] Guarded wrangler deployment (version c0e5c998) to orzen.top; identity + parity checks passed; home/login 200, health ok
+
+## AI language-mirroring + short-reply release (2026-10-11)
+- [x] One reply-style detector drives every AI channel: Bangla script -> Bangla, Banglish -> Banglish, English -> English
+- [x] Long/English answers fixed on Winner Admin Messenger and merchant Messenger/WhatsApp/Webchat; replies capped at 1-3 short sentences
+- [x] Guarded wrangler deployment (version bb4c0c9e) to orzen.top; identity + parity checks passed; home/login 200, health ok
+- [x] Live chat verified in all three styles (Banglish, Bangla script, English)
