@@ -115,7 +115,8 @@ export function renderSitemap(origin: string, base: string, data: SitemapData) {
     );
   };
   push("/", null, "1.0", "daily");
-  for (const c of data.categories) push(`/?category=${c.id}`, null, "0.5", "weekly");
+  push("/shop", null, "0.9", "daily");
+  push("/categories", null, "0.7", "weekly");
   for (const p of data.products) push(`/product/${p.id}`, p.updated_at ?? null, "0.8", "weekly");
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',

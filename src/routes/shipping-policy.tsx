@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PLATFORM_OG_IMAGE } from "@/lib/platform-seo";
 import { getLegalPagePublic } from "@/lib/legal.functions";
 import { LegalPage, LegalPageMissing } from "@/components/storefront/LegalPage";
 
@@ -21,6 +22,9 @@ export const Route = createFileRoute("/shipping-policy")({
       { property: "og:title", content: title },
       { property: "og:description", content: description },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: PLATFORM_OG_IMAGE },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: PLATFORM_OG_IMAGE },
     ];
     if (canonical) meta.push({ property: "og:url", content: canonical });
     const links: any[] = canonical ? [{ rel: "canonical", href: canonical }] : [];
