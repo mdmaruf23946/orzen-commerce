@@ -21,7 +21,9 @@ export const Route = createFileRoute("/employee-login")({
       { property: "og:description", content: "Sign in to your store's Merchant Panel with your ORZEN employee account." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex, nofollow" },
     ],
+    links: [{ rel: "canonical", href: "https://orzen.top/employee-login" }],
   }),
 });
 
