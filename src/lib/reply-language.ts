@@ -28,7 +28,7 @@ export function detectReplyStyle(text: string | null | undefined): ReplyStyle {
   // words are not common English, the writer is almost always a Bangla
   // speaker typing in roman letters — answer in Banglish, not formal English.
   const englishHits = words.filter((w) => COMMON_ENGLISH.has(w)).length;
-  if (words.length >= 2 && englishHits / words.length < 0.5) return "banglish";
+  if (words.length >= 2 && englishHits / words.length < 0.75) return "banglish";
   return "en";
 }
 
