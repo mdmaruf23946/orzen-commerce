@@ -62,6 +62,7 @@ function PricingPage() {
           </Link>
         </div>
       </section>
+      <PlatformFaq />
     </main>
   );
 }

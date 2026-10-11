@@ -41,6 +41,7 @@ function FeaturesPage() {
           </Link>
         </div>
       </section>
+      <PlatformFaq />
     </main>
   );
 }
