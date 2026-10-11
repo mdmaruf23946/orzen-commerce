@@ -7122,6 +7122,159 @@ export type Database = {
           },
         ]
       }
+      seo_change_tracking: {
+        Row: {
+          changed_fields: string[]
+          created_at: string
+          current_hash: string
+          entity_id: string
+          entity_type: string
+          id: string
+          previous_hash: string | null
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          changed_fields?: string[]
+          created_at?: string
+          current_hash: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          previous_hash?: string | null
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          changed_fields?: string[]
+          created_at?: string
+          current_hash?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          previous_hash?: string | null
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_change_tracking_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seo_history_rollback: {
+        Row: {
+          applied_by: string | null
+          change_source: string
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          metadata_after: Json
+          metadata_before: Json
+          rolled_back_at: string | null
+          store_id: string
+        }
+        Insert: {
+          applied_by?: string | null
+          change_source?: string
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          metadata_after?: Json
+          metadata_before?: Json
+          rolled_back_at?: string | null
+          store_id: string
+        }
+        Update: {
+          applied_by?: string | null
+          change_source?: string
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          metadata_after?: Json
+          metadata_before?: Json
+          rolled_back_at?: string | null
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_history_rollback_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seo_recommendations: {
+        Row: {
+          content_hash: string | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          proposed_description: string | null
+          proposed_keywords: string | null
+          proposed_title: string | null
+          reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source: string
+          status: string
+          store_id: string
+        }
+        Insert: {
+          content_hash?: string | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          proposed_description?: string | null
+          proposed_keywords?: string | null
+          proposed_title?: string | null
+          reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string
+          status?: string
+          store_id: string
+        }
+        Update: {
+          content_hash?: string | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          proposed_description?: string | null
+          proposed_keywords?: string | null
+          proposed_title?: string | null
+          reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string
+          status?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_recommendations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_checkout_settings: {
         Row: {
           auto_confirm: boolean
@@ -12129,6 +12282,28 @@ export type Database = {
       resolve_host_kind: { Args: { _host: string }; Returns: Json }
       seed_store_ai_agent_state: {
         Args: { _store_id: string }
+        Returns: undefined
+      }
+      seo_rollback: { Args: { _snapshot: string }; Returns: undefined }
+      seo_semantic_hash: { Args: { _parts: string[] }; Returns: string }
+      seo_snapshot: {
+        Args: {
+          _after: Json
+          _before: Json
+          _id: string
+          _store: string
+          _type: string
+        }
+        Returns: undefined
+      }
+      seo_track_change: {
+        Args: {
+          _fields: string[]
+          _hash: string
+          _id: string
+          _store: string
+          _type: string
+        }
         Returns: undefined
       }
       staff_can: {

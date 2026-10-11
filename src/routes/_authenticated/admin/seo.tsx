@@ -12,6 +12,7 @@ import { BasicTab } from "@/components/admin/seo/BasicTab";
 import { SocialTab } from "@/components/admin/seo/SocialTab";
 import { SearchTab } from "@/components/admin/seo/SearchTab";
 import { VerificationTab } from "@/components/admin/seo/VerificationTab";
+import { HistoryTab } from "@/components/admin/seo/HistoryTab";
 import { SeoHealth } from "@/components/admin/seo/SeoHealth";
 import type { SeoOverview } from "@/components/admin/seo/shared";
 
@@ -39,6 +40,7 @@ const TABS = [
   { key: "social", label: "Social" },
   { key: "search", label: "Search" },
   { key: "verification", label: "Verification" },
+  { key: "history", label: "History" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -117,6 +119,7 @@ function SeoPage() {
       {tab === "social" && <SocialTab {...props} />}
       {tab === "search" && <SearchTab {...props} />}
       {tab === "verification" && <VerificationTab {...props} />}
+      {tab === "history" && <HistoryTab />}
       <SeoHealth items={health} />
     </div>
   );
