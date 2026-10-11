@@ -781,20 +781,32 @@ export async function chatWithSavedKey(
   if (!c) return { ok: false, error: "এই key-এর জন্য URL বা model সেট করা নেই।", ms: 0 };
   const models = [c.modelId, ...c.fallbacks].slice(0, 3);
   let lastErr = "Unknown error";
+  // Test chat: keep only the last few turns and hard-cap the answer so one test
+  // message can never burn a large amount of the key's credit.
+  const trimmed = messages.slice(-6);
   for (const model of models) {
-    const body = JSON.stringify({
+    const mk = (withCap: boolean) => JSON.stringify({
       model,
-      messages: [{ role: "system", content: "You are a helpful assistant. Reply briefly." }, ...messages],
+      messages: [{ role: "system", content: "You are a helpful assistant. Reply briefly." }, ...trimmed],
+      ...(withCap ? { max_tokens: 300 } : {}),
     });
+    let body = mk(true);
     try {
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 30000);
-      const res = await fetch(`${c.baseURL.replace(/\/$/, "")}/chat/completions`, {
-        method: "POST",
-        headers: { authorization: `Bearer ${c.apiKey}`, "content-type": "application/json", ...c.headers },
-        body,
-        signal: ctrl.signal,
-      }).finally(() => clearTimeout(t));
+      const call = async () => {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 30000);
+        return fetch(`${c.baseURL.replace(/\/$/, "")}/chat/completions`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${c.apiKey}`, "content-type": "application/json", ...c.headers },
+          body,
+          signal: ctrl.signal,
+        }).finally(() => clearTimeout(t));
+      };
+      let res = await call();
+      if (res.status === 400 && /max_tokens|max_completion_tokens/i.test(await res.clone().text())) {
+        body = mk(false);
+        res = await call();
+      }
       if (res.ok && c.keyId) recordKeyUsage(c.keyId, c.provider, model, res, body);
       if (!res.ok) {
         lastErr = `HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`;

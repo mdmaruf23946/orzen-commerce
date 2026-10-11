@@ -147,12 +147,12 @@ export const Route = createFileRoute("/api/ai/chat")({
           // Pull generation params inline to avoid exporting from the server module.
           const temperature =
             typeof settings?.temperature === "number"
-              ? Math.max(0, Math.min(2, settings.temperature))
+              ? Math.max(0, Math.min(1, settings.temperature))
               : undefined;
           const maxOutputTokens =
             typeof settings?.max_tokens === "number" && settings.max_tokens > 0
               ? Math.floor(settings.max_tokens)
-              : undefined;
+              : 1024;
           const lastUserText = (() => {
             const u = [...body.messages].reverse().find((m) => m.role === "user");
             if (!u) return "";

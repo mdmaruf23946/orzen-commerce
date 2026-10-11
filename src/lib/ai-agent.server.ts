@@ -2165,9 +2165,9 @@ function generationParams(settings: GlobalAiSettings | null | undefined, modelId
   // Skip maxOutputTokens for OpenAI models — newer models (o1/gpt-5 family) reject
   // `max_tokens` and require `max_completion_tokens`, which the AI SDK doesn't emit here.
   const isOpenAI = typeof modelId === "string" && modelId.startsWith("openai/");
-  if (!isOpenAI && typeof m === "number" && Number.isFinite(m) && m > 0) {
-    params.maxOutputTokens = Math.floor(m);
-  }
+  // Chat replies are short; a default cap stops runaway answers from burning credit.
+  const cap = typeof m === "number" && Number.isFinite(m) && m > 0 ? Math.floor(m) : 1024;
+  if (!isOpenAI) params.maxOutputTokens = cap;
   return params;
 }
 
