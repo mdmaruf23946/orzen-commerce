@@ -46,7 +46,7 @@
 - [x] Verify both pages still show Manual Connect and deploy to orzen.top
 - [x] SEO: sitemap/robots host-aware base (orzen-commerce.lovable.app vs orzen.top) — fixed 2026-10-02, needs Lovable publish to go live
 
-- [ ] Reconnect Google Search Console in new workspace (2026-10-03)
+- [x] Google Search Console connected, orzen.top verified, sitemap submitted, live panel on /owner/seo (2026-10-12)
 - [x] Replace Merchant AI Call Center's legacy Device/Manual provider setup with the store-scoped ePBX connection (2026-10-03)
 - [x] Deploy the ePBX-only provider UI and customer-call path to orzen.top
 - [x] Complete ePBX callbacks, automatic order calls, and recordings
@@ -91,7 +91,7 @@
 - [x] SEO Step 3: /owner/seo platform SEO manager — health score, audit, AI draft, preview, live overrides (preview; live deploy pending)
 - [x] SEO Step 4: merchant AI SEO optimizer — audit, single/bulk suggestions, approve/reject, rollback (preview)
 - [x] SEO Step 5: custom-domain 301 + canonicals (store, product, shop, categories), PageSpeed panel, FAQPage schema (home/features/pricing), /llms.txt, AI crawler rules (preview)
-- [ ] SEO Step 5: live Search Console data — BLOCKED (owner): verify orzen.top in Google Search Console
+- [x] SEO Step 5: live Search Console data (orzen.top verified 2026-10-12)
 
 ## Winner Admin SEO mobile layout
 - [x] Fit the edit form, Google/Facebook previews and PageSpeed controls within mobile width
