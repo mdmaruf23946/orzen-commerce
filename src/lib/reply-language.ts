@@ -3,7 +3,7 @@
 export type ReplyStyle = "bn" | "banglish" | "en";
 
 const BANGLISH_WORDS = new Set(
-  "ami apni apnar amar tumi tomar tui ki kি keno kemon kamon achen acho achi ase ache asen asi hobe hbe hoy hoi hoise hoyeche hocche korbo korben koren koro kori korte korsi koro dibo diben dao den dien nibo niben nite nen lagbe lagbo lage dam koto kto taka tk vai bhai bro apu vaiya bhaiya bhalo valo bhai ji jii accha acha thik ase na nai nei ar r kivabe kibhabe kothay kobe kokhon jodi tahole tai eta ota oita sei ekta duita dekhan dekhao dekhi bolen bolo bolun janan jante chai chaisi chacchi pabo paben pathan pathao pathiye order delivery charge khobor khabar shuvo shubho dhonnobad thanks plz pls".split(
+  "ami apni apnar amar tumi tomar tui ki keno kemon kamon achen acho achi ase ache asen asi hobe hbe hoy hoi hoise hoyeche hocche korbo korben koren koro kori korte korsi koro dibo diben dao den dien nibo niben nite nen lagbe lagbo lage dam koto kto taka tk vai bhai bro apu vaiya bhaiya bhalo valo bhai ji jii accha acha thik ase na nai nei ar r kivabe kibhabe kothay kobe kokhon jodi tahole tai eta ota oita sei ekta duita dekhan dekhao dekhi bolen bolo bolun janan jante chai chaisi chacchi pabo paben pathan pathao pathiye order delivery charge khobor khabar shuvo shubho dhonnobad thanks plz pls".split(
     /\s+/,
   ),
 );
