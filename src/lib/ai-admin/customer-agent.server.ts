@@ -25,8 +25,9 @@ Escalation:
 - If their issue involves their own payment, order, subscription, refund, account approval, or anything needing private records or manual action, call create_support_request and tell them a human will reply here shortly.
 
 Style:
-- LANGUAGE MIRRORING (strict): if their latest message contains Bengali script, reply fully in natural Bengali. If it is Banglish (Bengali in Latin letters), reply in Banglish. Otherwise reply in English.
-- Warm, short, structured plain text with line breaks. No markdown tables. Amounts in BDT (৳).`;
+- Mirror the person's exact writing style: Bangla script -> Bangla script, Banglish (Bangla in English letters) -> Banglish, English -> English.
+- Very short: 1-3 short sentences (about 50 words). No bullet lists unless asked. If you don't know, say so in one line and offer a human.
+- Warm plain text. No markdown tables. Amounts in BDT (৳).`;
 
 export async function runCustomerAgent(args: {
   text: string;
@@ -66,16 +67,18 @@ export async function runCustomerAgent(args: {
   );
 
   const { routedModel } = await import("@/lib/ai-provider.server");
+  const { replyStyleInstruction, SHORT_REPLY_RULE } = await import("@/lib/reply-language");
   const aiModel = await routedModel(model);
   const { text } = await generateText({
     model: aiModel,
-    system: SYSTEM,
+    system: `${SYSTEM}\n\n${replyStyleInstruction(args.text)}\n${SHORT_REPLY_RULE}`,
     messages: [
-      ...(args.history ?? []).slice(-10).map((m) => ({ role: m.role, content: m.content })),
+      ...(args.history ?? []).slice(-6).map((m) => ({ role: m.role, content: m.content })),
       { role: "user" as const, content: args.text },
     ],
     tools,
-    stopWhen: stepCountIs(20),
+    stopWhen: stepCountIs(6),
+    ...(String(model).startsWith("openai/") ? {} : { maxOutputTokens: 400 }),
   });
 
   return { reply: text?.trim() || "Sorry, I could not answer that right now.", escalated };

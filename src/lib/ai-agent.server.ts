@@ -27,6 +27,7 @@ import {
   requiredSlotFields,
   type OrderFieldKey,
 } from "./messenger-order-flow";
+import { replyStyleInstruction, SHORT_REPLY_RULE } from "./reply-language";
 
 function admin() {
   return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
@@ -165,12 +166,8 @@ export function buildSystemPrompt(
     supported.length > 0
       ? `Only respond in one of these languages: ${supported.join(", ")}. Match the customer's language when possible.`
       : "";
-  const lang =
-    agent.language === "bn"
-      ? "Respond in Bangla."
-      : agent.language === "en"
-        ? "Respond in English."
-        : "Respond in the same language the customer uses (Bangla or English).";
+  // Mirror the customer's own writing style (Bangla script / Banglish / English).
+  const lang = `${replyStyleInstruction(latestUserText)} ${SHORT_REPLY_RULE}`;
 
   const emoji = agent.use_emoji ? "Use friendly emojis sparingly." : "Do not use emojis.";
   const human = agent.human_like ? "Sound natural and human, not robotic." : "";
