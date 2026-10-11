@@ -63,7 +63,8 @@ function OwnerSeoPage() {
   );
   const avg = rows.length ? Math.round(rows.reduce((a, r) => a + r.score, 0) / rows.length) : 0;
   const live = scorePageSeo(form);
-  const page = PLATFORM_PAGES.find((p) => p.key === selected)!;
+  const page = PLATFORM_PAGES.find((p) => p.key === selected);
+  if (!page) return null;
 
   async function save(values: PageSeo) {
     setBusy("save");
@@ -87,14 +88,14 @@ function OwnerSeoPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 max-w-full space-y-4 sm:space-y-6">
       <OwnerPageHeader title="Platform SEO" description="ORZEN-এর মূল পেজগুলোর Google-এ দেখানো টাইটেল, বিবরণ ও কিওয়ার্ড নিয়ন্ত্রণ করুন।" />
       <SearchConsoleCard />
       <PageSpeedPanel />
 
-      <section className="rounded-xl border bg-card p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
+      <section className="min-w-0 rounded-xl border bg-card p-3 sm:p-5">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:gap-3">
+          <div className="min-w-0">
             <p className="text-sm text-muted-foreground">গড় SEO হেলথ স্কোর</p>
             <p className={cn("text-3xl font-bold", scoreTone(avg))}>{isLoading ? "…" : `${avg}/100`}</p>
           </div>
@@ -130,8 +131,8 @@ function OwnerSeoPage() {
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-4 rounded-xl border bg-card p-5">
+      <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-2 lg:gap-6 [&_input]:min-w-0 [&_input]:max-w-full [&_textarea]:min-w-0 [&_textarea]:max-w-full [&_textarea]:resize-y">
+        <div className="min-w-0 space-y-4 rounded-xl border bg-card p-3 sm:p-5">
           <h2 className="text-lg font-semibold">{page.label} পেজ এডিট</h2>
           <div className="space-y-1">
             <Label>SEO Title <span className="text-xs text-muted-foreground">({form.title.length}/60)</span></Label>
@@ -160,12 +161,12 @@ function OwnerSeoPage() {
           </div>
 
           {draft && (
-            <div className="space-y-2 rounded-lg border border-primary/40 bg-primary/5 p-4 text-sm">
+            <div className="min-w-0 space-y-2 break-words rounded-lg border border-primary/40 bg-primary/5 p-3 text-sm sm:p-4">
               <p className="font-semibold">AI ড্রাফট (স্কোর {scorePageSeo(draft).score}/100)</p>
               <p><b>Title:</b> {draft.title}</p>
               <p><b>Description:</b> {draft.description}</p>
               <p><b>Keywords:</b> {draft.keywords}</p>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" onClick={() => { setForm(draft); setDraft(null); }}>ফর্মে বসান</Button>
                 <Button size="sm" onClick={() => save(draft)} disabled={busy !== null}>সরাসরি সেভ</Button>
                 <Button size="sm" variant="ghost" onClick={() => setDraft(null)}>বাতিল</Button>
@@ -174,16 +175,16 @@ function OwnerSeoPage() {
           )}
         </div>
 
-        <div className="space-y-4">
-          <div className="rounded-xl border bg-card p-5">
+        <div className="min-w-0 space-y-4">
+          <div className="min-w-0 rounded-xl border bg-card p-3 sm:p-5">
             <p className="mb-2 text-sm font-medium text-muted-foreground">Google প্রিভিউ</p>
-            <div className="rounded-lg bg-background p-4">
+            <div className="min-w-0 rounded-lg bg-background p-3 sm:p-4">
               <p className="text-xs text-muted-foreground">{PLATFORM_ORIGIN.replace("https://", "")}{page.path === "/" ? "" : ` › ${page.path.slice(1)}`}</p>
               <p className="truncate text-lg text-primary">{form.title.length > 60 ? form.title.slice(0, 58) + "…" : form.title}</p>
               <p className="line-clamp-2 text-sm text-muted-foreground">{form.description.length > 160 ? form.description.slice(0, 157) + "…" : form.description}</p>
             </div>
           </div>
-          <div className="rounded-xl border bg-card p-5">
+          <div className="min-w-0 rounded-xl border bg-card p-3 sm:p-5">
             <p className="mb-2 text-sm font-medium text-muted-foreground">Facebook শেয়ার প্রিভিউ</p>
             <div className="overflow-hidden rounded-lg border">
               <img src="/og-orzen.jpg" alt="ORZEN share image" className="aspect-[1200/630] w-full object-cover" />
